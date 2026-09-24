@@ -61,7 +61,8 @@ This is not a chatbot with memory. This is a mirror — and yours.
 ## How It Works
 
 Local-first. SQLite. Four supported runtimes: Pi, Gemini CLI, Codex, Claude
-Code. One Python core. Jungian architecture: Self, Ego, Personas, Shadow.
+Code. One TypeScript core, run by Node.js. Jungian architecture: Self, Ego,
+Personas, Shadow.
 Context-activated modes — Mirror, Builder, Explorer, and Soul. The identity lives
 in your machine, not a server.
 
@@ -72,10 +73,9 @@ in your machine, not a server.
 
 ## Prerequisites
 
-- [uv](https://docs.astral.sh/uv/getting-started/installation/) — package
-  manager (handles Python 3.10+)
-- [Node.js 24+](https://nodejs.org/) — runs the TypeScript core front door
-  (`node --version` must be ≥ v24; POSIX/macOS/Linux supported)
+- [Node.js 24+](https://nodejs.org/) — runs Mirror Mind's core
+  (`node --version` must be ≥ v24; POSIX/macOS/Linux supported). Nothing
+  else to install: there is no Python and no build step
 - [OpenRouter](https://openrouter.ai) account with at least $5 in credits —
   embeddings, memory extraction, and multi-LLM
 - An AI runtime subscription:
@@ -92,7 +92,6 @@ in your machine, not a server.
 - [Getting Started](docs/getting-started.md) — step-by-step onboarding for new users
 - [REFERENCE.md](REFERENCE.md) — command reference and configuration
 - [Architecture](docs/product/architecture.md) — system design, layers, and data model
-- [Python API](docs/product/api.md) — programmatic interface for developers
 - [Project Briefing](docs/project/briefing.md) — foundational architectural decisions
 - [Decisions](docs/project/decisions.md) — incremental decision log
 - [Roadmap](docs/project/roadmap/index.md) — current and planned capability values

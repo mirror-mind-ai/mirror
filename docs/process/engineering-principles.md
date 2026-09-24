@@ -4,9 +4,15 @@
 
 Guidelines for architecture, testing, privacy, data, model-in-the-loop
 behavior, release, and process. These principles apply to all work on this
-codebase — the Python core ([`src/memory/`](https://github.com/mirror-mind-ai/mirror/tree/cv22-last-python-bearing/src/memory)), the
-TypeScript core ([`ts/`](../../ts/README.md)), and every runtime surface (Pi,
-Claude Code, Gemini CLI, Codex) that calls into them.
+codebase — the TypeScript core ([`ts/`](../../ts/README.md)) and every runtime
+surface (Pi, Claude Code, Gemini CLI, Codex) that calls into it.
+
+Until CV22.DS10.TS5 there were two cores: the Python one
+([`src/memory/`](https://github.com/mirror-mind-ai/mirror/tree/cv22-last-python-bearing/src/memory),
+readable at the `cv22-last-python-bearing` tag) and the TypeScript core that
+replaced it one command at a time. Several rules below were learned on the
+Python core; where the lesson outlived the code, the rule stays and says
+where it came from.
 
 ---
 
@@ -21,18 +27,20 @@ Principle)** and **The Essentials** below first; the rest is detail you
 consult when you touch that area. Before calling a story done, run
 **[§10](#10-definition-of-done) (Definition of Done)** as a checklist.
 
-**The TS core ships with zero runtime npm dependencies.**
-`ts/package.json` carries devDependencies only (Biome, TypeScript, types);
-users install nothing from npm to run Mirror. This is a security property,
-not a coincidence — the npm supply chain is currently unreachable from user
-machines, and `node:sqlite` over `better-sqlite3` was the load-bearing choice.
-Adding a runtime dependency requires a named justification and a security
-review; dev dependencies stay ranged behind the committed lockfile.
-(RS005/CR035; see also the decisions log on CI action pinning.)
+**The core ships with one runtime npm dependency, and adding a second is a
+decision.** `ts/package.json` carries exactly one: `yaml` (zero transitive
+dependencies, `parse()` safe by construction), added with a named
+justification when `seed` was ported (CV22.DS7.US1). Everything else is
+devDependencies (Biome, TypeScript, types). This is a security property, not a
+coincidence — the npm supply chain barely reaches a user machine, and
+`node:sqlite` over `better-sqlite3` was the load-bearing choice. Adding a
+runtime dependency requires a named justification and a security review; dev
+dependencies stay ranged behind the committed lockfile. (RS005/CR035; see also
+the decisions log on CI action pinning.)
 
-**Service layer is the architecture.**
-`MemoryClient` is a façade. Services are the implementation. Storage handles
-persistence. The import direction rule and full layer model are in
+**The front door is the architecture.** Every runtime reaches the core through
+one process entry, `ts/src/frontDoor/cli.ts`; domain modules own behavior;
+`ts/src/db/database.ts` is the driver seam. The full model is in
 [docs/product/architecture.md](../product/architecture.md).
 
 
@@ -68,9 +76,9 @@ principle.
    cost has one authority. ([§7](#7-the-model-in-the-loop))
 6. **Untrusted content stays untrusted.** The transcript is data to analyze,
    never instructions to follow. ([§5](#5-privacy--trust-boundaries))
-7. **The database is the runtime source of truth.** The TypeScript migration is
-   paused; Python is the sole product authority, and schema changes remain
-   conservative. ([§6](#6-data--persistence))
+7. **The database is the runtime source of truth.** One engine owns its
+   schema, every migration is proven against a committed fixture, and schema
+   changes remain conservative. ([§6](#6-data--persistence))
 8. **Declare your failure posture.** Fail loud in the core; fail quiet only
    where declared, and never silently.
    ([§5](#5-privacy--trust-boundaries), [§8](#8-release-confidence))
@@ -122,52 +130,53 @@ already holds the whole picture in mind.
 
 ## 2. Architecture
 
-**The layer model is the architecture.** Import direction is one-way:
-`cli`/`hooks` → `services` → `storage` → `db`. The web read model adds
-`web` → `surfaces` → `services`. `MemoryClient` is the façade over all of it.
-Full model in [Architecture](../product/architecture.md#3-layer-model--import-direction).
-`cli` and `hooks` never execute SQL directly; `storage` owns all raw SQL. No
-layer skips a level.
+**One entry, domains behind it, one driver seam.** Every runtime — skills,
+hooks, the MCP server's launcher — enters the core through the front door
+(`ts/src/frontDoor/cli.ts`), which routes a command to the domain module that
+owns it (`ts/src/conversation/`, `ts/src/builder/`, `ts/src/search/`, …). Only
+`ts/src/db/database.ts` opens SQLite through `node:sqlite`; everything else
+depends on the `Database` interface it exports, so the driver can change in
+one file. Full model in [Architecture](../product/architecture.md#3-module-model).
 
-**Interfaces are thin.** Skill scripts (`.claude/skills/`, `.pi/skills/`,
-`.agents/skills/`) are entry points. They parse arguments and call
-`sys.exit`; they do not own behavior. Logic belongs in `src/memory/skills/`
-or the relevant service
-([`D8`](../project/briefing.md#d8--skill-logic-belongs-in-srcmemoryskills);
-"Skill layer principle: Python/CLI owns DB; Agent owns filesystem; no
+**Interfaces are thin.** Skill files (`.claude/skills/`, `.pi/skills/`,
+`.agents/skills/`, and the packaged plugin) are entry points: they tell an
+agent which front-door command to run, and they do not own behavior. Hook
+wrappers are short shell scripts that exec one Node entry
+(`ts/src/hooks/main.ts`). Logic belongs in the domain module
+([`D8`](../project/briefing.md#d8--skill-logic-belongs-in-srcmemoryskills)
+and "Skill layer principle: Python/CLI owns DB; Agent owns filesystem; no
 `run.py`" in
-[Decisions](../project/decisions.md#skill-layer-principle-pythoncli-owns-db-agent-owns-filesystem-no-runpy)).
-A runtime wrapper that grows a conditional beyond argument parsing is a
-design smell, not a convenience.
+[Decisions](../project/decisions.md#skill-layer-principle-pythoncli-owns-db-agent-owns-filesystem-no-runpy)
+stated this for the Python core; the rule carried over with the code). A
+runtime wrapper that grows a conditional beyond argument parsing is a design
+smell, not a convenience. `checkSkillCommandParity.ts` holds every runtime's
+copy of a skill to the same front-door invocation.
 
-**The database is the seam between two cores.** Mirror Mind is porting its
-Python core to TypeScript through a database-seam strangler, not a rewrite:
-the [`ts/`](../../ts/README.md) package is a TS front door reading — and, as
-write capability lands, eventually writing — the **same** `memory.db` file,
-proven at read parity over real data
-([CV22.DS1](../project/roadmap/cv22-typescript-core-port/cv22-ds1-hybrid-search-parity-spike/index.md):
+**The database was the seam, and the strangler is finished.** Mirror Mind
+ported its Python core to TypeScript through a database-seam strangler, not a
+rewrite: the TypeScript front door read — then wrote — the **same**
+`memory.db` file, command by command, each one proven at parity against the
+Python oracle before it answered users
+([CV22](../project/roadmap/cv22-typescript-core-port/index.md), starting from
+[CV22.DS1](../project/roadmap/cv22-typescript-core-port/cv22-ds1-hybrid-search-parity-spike/index.md):
 480 memories, 1536-dim embeddings, hybrid-ranker parity within a margin far
-past the near-tie risk). Python remains product authority for each unported
-entry point and may evolve there; every behavior change becomes explicit TS
-parity scope. Once an entry point transfers, new behavior lands in TS and
-Python becomes compatibility-only for it. Schema, migrations, and the
-connection-pragma contract have **one authority at a time** — see
-[§6](#6-data--persistence). The database is not an implementation detail of
-one core; it is the contract between both.
+past the near-tie risk). CV22.DS10.TS5 deleted the Python core once nothing
+reached it. What the strategy leaves behind is the rule that made it safe:
+schema, migrations, and the connection-pragma contract have **one authority**
+— see [§6](#6-data--persistence) — and existing `memory.db` files keep working
+across the change of engine.
 
-**Never chain on a freshly constructed `MemoryClient`.** `get_connection()`
-opens a new connection per call, and `MemoryClient.__del__` closes it (the
-Python 3.14 file-descriptor fix). `MemoryClient(...).store.x()` lets the
-temporary be garbage-collected — closing its connection before the call
-runs (`Cannot operate on a closed database`), silently, in production hook
-subprocesses. Bind the client to a local (`mem = _memory_client(...)`) or
-use `with`. This is not a style note — it caused a real production defect
-(the `mirror_state` connection-lifecycle bug,
-[CV9.E2.S8](../project/roadmap/cv9-mirror-1-0/cv9-e2-stabilization/cv9-e2-s8-mirror-state-connection-lifecycle/index.md))
-and is now a machine gate:
-[`tests/unit/architecture/test_client_connection_lifecycle.py`](https://github.com/mirror-mind-ai/mirror/blob/cv22-last-python-bearing/tests/unit/architecture/test_client_connection_lifecycle.py).
-When a review-only rule is violated once, promoting it to an architecture
-test is the correct response — that is what happened here.
+**When a review-only rule is violated once, promote it to a machine gate.**
+The Python core's `mirror_state` connection-lifecycle bug
+([CV9.E2.S8](../project/roadmap/cv9-mirror-1-0/cv9-e2-stabilization/cv9-e2-s8-mirror-state-connection-lifecycle/index.md))
+was a garbage-collected client closing its connection mid-call in production
+hook subprocesses; the fix became a failing test first and then a repo-wide
+architecture test, so the bug class could not return silently. The code it
+guarded is gone; the response is the principle. The same move made the
+retired-surface tripwire
+([`checkRetiredSurfaces.ts`](../../ts/scripts/checkRetiredSurfaces.ts)) and
+the interpreter shadow in CI: each exists because a deletion or a spawn once
+slipped past review.
 
 ---
 
@@ -180,18 +189,20 @@ The only exceptions are user-authored content (journal entries, journey
 descriptions) and migration-only code handling old schemas.
 
 **High cohesion, small modules.** One module, one responsibility.
-`conversation.py` handles conversation lifecycle; `extraction.py` handles
-LLM extraction; `search.py` handles hybrid search. Do not grow a module
-sideways — extract a new one.
+`ts/src/conversation/` handles conversation lifecycle; `ts/src/extraction/`
+handles LLM extraction; `ts/src/search/` handles hybrid search. Do not grow a
+module sideways — extract a new one.
 
 **DRY — and actually wire the abstraction you build.** Duplication is the
 root of most maintenance debt, and the specific way it bites here is worse
 than plain copying: an abstraction gets built, then bypassed.
 [TD-001](../project/roadmap/technical-debt-ledger.md#deferred-debt-requirements)
-is this exact shape — the Pi logger reimplements the Python core's
-mirror-home resolution contract in TypeScript because a Pi extension cannot
-import [`memory.config`](https://github.com/mirror-mind-ai/mirror/blob/cv22-last-python-bearing/src/memory/config.py), and two implementations
-of one contract can silently diverge. Before writing, ask: does this already
+is this exact shape — the Pi logger carries its own copy of the core's
+mirror-home resolution contract, written when that contract lived in the
+Python core's
+[`config.py`](https://github.com/mirror-mind-ai/mirror/blob/cv22-last-python-bearing/src/memory/config.py),
+which a Pi extension could not import — and two implementations of one
+contract can silently diverge. Before writing, ask: does this already
 exist? If you build a shared helper, wire it in and delete the copies in the
 same change.
 
@@ -227,20 +238,23 @@ quality.
 **Know the pyramid, and put each test in the right tier.** This codebase has
 four, not two:
 
-- **`tests/unit/`** — mocks I/O, never hits real APIs. CI must pass without
-  `OPENAI_API_KEY` or `OPENROUTER_API_KEY`.
-- **`tests/integration/`** — hits a real SQLite file (`MEMORY_ENV=test`),
-  not mocked, but still no live model calls.
-- **`tests/live/`** — real API calls. Excluded from CI collection entirely;
-  CI runs `pytest tests/unit/ tests/integration/ -m "not live"` — belt and
-  suspenders against a live test slipping into the gate.
+- **[`ts/test/`](../../ts/test/)** — the `node:test` suite. Units against
+  replay fixtures and real SQLite files in temporary directories
+  (`MEMORY_ENV=test`); never a live model call. CI must pass without
+  `OPENROUTER_API_KEY` — and asserts that it is absent.
+- **[`ts/smoke/`](../../ts/smoke/)** — whole sequences through the real
+  front-door process on a synthetic demo database, plus the migration
+  custody proofs. CI runs the keyless ones; the `live_*` smokes spend real
+  money and run only by hand.
 - **[`ts/evals/`](../../ts/evals/)** — real model *behavior*,
   non-deterministic, separate from the test suites by design. Never added to
   CI. See [§7](#7-the-model-in-the-loop).
-- **Architecture tests** are a fifth, narrower tier: a small number of
-  repo-wide invariants (the `MemoryClient` lifecycle guard above) that
-  promote a review-only rule to a machine gate once it has actually been
-  violated.
+- **Repository guards** — invariants over the tree itself rather than the
+  code's behavior:
+  [`checkRetiredSurfaces.ts`](../../ts/scripts/checkRetiredSurfaces.ts),
+  [`checkSkillCommandParity.ts`](../../ts/scripts/checkSkillCommandParity.ts),
+  [`checkDocLinks.ts`](../../ts/scripts/checkDocLinks.ts). Each promoted a
+  review-only rule to a machine gate once it had actually been violated.
 
 **Smoke tests use an isolated environment.** End-to-end validation uses a
 temporary `HOME` and explicit `MEMORY_DIR`/`DB_PATH`, with environment
@@ -270,14 +284,15 @@ archive, quarantined or duplicate extraction. Every failure the system
 classifies and recovers from ships with a test that exercises the failure,
 not just the success.
 
-**Coverage is a ratchet, not a ceremony.** `fail_under = 40` today —
-deliberately low, because I/O-heavy paths are expensive to test fully. The
-mechanism for raising it: when you add coverage, raise the floor in the same
-commit. Never lower it to turn a red trail green. Note honestly what the
-ratchet does *not* see: [`src/*/cli/*`](https://github.com/mirror-mind-ai/mirror/tree/cv22-last-python-bearing/src/memory/cli) and
-[`__main__.py`](https://github.com/mirror-mind-ai/mirror/blob/cv22-last-python-bearing/src/memory/__main__.py) are excluded from coverage
-entirely — CLI wiring is verified by integration tests and manual runs, not
-the percentage.
+**Coverage is a ratchet, not a ceremony — and today there is no ratchet.**
+The Python core carried a `fail_under = 40` floor, deliberately low and
+raised in the same commit as new coverage. It left with the core
+(CV22.DS10.TS5), and the TypeScript suite has no coverage measurement at all.
+The strangler graded the port surface by surface against recorded goldens,
+which is a stronger claim than a percentage for the code it covered — but it
+says nothing about code written since. Named here as a gap, not assumed
+covered: `node --test --experimental-test-coverage` exists, and a floor is a
+candidate for the first story that wants one.
 
 **Every story ends with a concrete verification moment.** A test guide is a
 sequence of copy-paste-runnable commands with expected output, not a
@@ -356,41 +371,46 @@ YAML edit into the database. Runtime directories hold local operational state
 (logs, backups). Never let a cache or a generated artifact become the only
 copy of a fact.
 
-**Schema authority is singular even during transfer.** CV22.DS6 transferred
-bootstrap and migration custody to the TS engine under
-[`ts/src/db/`](../../ts/src/db/), while Python remains a compatibility reader
-and runtime authority for explicitly unported entry points. A schema change is
-still a strict cross-core event: it needs migration rehearsal, structural
-parity evidence over the same file, and proof that the Python compatibility
-path tolerates the resulting database. TS-authored migration `017` adds the
-derived `identity.parent_journey` projection; it does not replace metadata as
-the mixed-engine semantic authority while Python can still write parentage.
+**Schema authority is singular.** CV22.DS6 transferred bootstrap and
+migration custody to the TypeScript engine under
+[`ts/src/db/`](../../ts/src/db/), and since CV22.DS10.TS5 it is the **sole**
+custodian: migrate-on-open applies every pending known migration, backup
+first, and `runtime migrate` answers `applied`, `nothing pending`, or
+`declined` — declined exits non-zero. A schema change needs a committed
+pre-state fixture and an expected end-state, graded by the custody proof
+([`migration_structural_parity.ts`](../../ts/smoke/migration_structural_parity.ts)),
+because with one engine there is nothing left to compare against but the
+record.
 
-**The connection-pragma contract is shared, not reinvented per core.** Every
-Python and TS writable connection carries the same busy-timeout,
-foreign-key, and WAL discipline established during schema-custody transfer.
-A divergent pragma contract is exactly the kind of silent divergence
+**The connection-pragma contract lives in one place.** Every connection
+carries the same busy-timeout, foreign-key, and WAL discipline, applied in
+`ts/src/db/` — established while two engines shared the file, and kept
+because a user may still run a Mirror Desktop pinned to the last
+Python-bearing release against the same database. A divergent pragma contract
+is exactly the kind of silent divergence
 [TD-001](../project/roadmap/technical-debt-ledger.md#deferred-debt-requirements)
-warns about — treat any future change as cross-core from day one.
+warns about.
 
 **Claimed invariants are enforced ones.** Because `foreign_keys=ON` is set
 on every connection, `FOREIGN KEY` constraints in the schema are real
 constraints, not documentation. `NOT NULL` and `UNIQUE INDEX` close
 impossible states at the schema level where SQLite can enforce them
-([`migrations.py`](https://github.com/mirror-mind-ai/mirror/blob/cv22-last-python-bearing/src/memory/db/migrations.py)). Where SQLite cannot
+([`migrations.ts`](../../ts/src/db/migrations.ts)). Where SQLite cannot
 enforce an invariant, it lives in exactly one storage module — never in "the
 code is expected to remember."
 
 **Migrations are append-only and proven against real end-states.** Every
 migration ships with a test that runs it over a realistic seeded fixture and
-grades the result against the end-state the other engine produces
+grades the result against a committed expected end-state
 ([`migrationFixtures.test.ts`](../../ts/test/db/migrationFixtures.test.ts),
-[`migrateOnOpen.test.ts`](../../ts/test/db/migrateOnOpen.test.ts)). The
+[`migrateOnOpen.test.ts`](../../ts/test/db/migrateOnOpen.test.ts)). Until
+CV22.DS10.TS5 those end-states were recorded from the Python engine; they are
+frozen now, and a new migration records its own. The
 Portuguese-era conversion and the Python rehearsal tool that used to carry this
 paragraph were [retired in CV22.DS10.TS4](../releases/pending-cutoffs.md#legacy-migration)
 once migration custody moved to TypeScript: a rehearsal of the Python engine
 stopped saying anything about what would actually run.
-[`runtime diagnose`](https://github.com/mirror-mind-ai/mirror/blob/cv22-last-python-bearing/src/memory/cli/runtime.py) extends the same
+[`runtime diagnose`](../../ts/src/runtime/diagnose.ts) extends the same
 discipline operationally — it detects drift patterns like stray runtime state
 at the homes root (`legacy_root_runtime_state`) that a migration alone would
 not catch.
@@ -415,9 +435,10 @@ hot query actually uses (the `llm_calls` spend-summary index on `role`,
 that needs care —
 [D-004's](../project/debt.md#d-004--full-test-suite-exhausts-file-descriptors-under-a-low-ulimit--n)
 file-descriptor exhaustion under a low `ulimit -n` was a test-suite
-bottleneck, not a product one, and got fixed where it lived
-([`conftest.py`](https://github.com/mirror-mind-ai/mirror/blob/cv22-last-python-bearing/tests/conftest.py)) rather than worked around
-per-run.
+bottleneck, not a product one, and got fixed where it lived (the Python
+suite's
+[`conftest.py`](https://github.com/mirror-mind-ai/mirror/blob/cv22-last-python-bearing/tests/conftest.py))
+rather than worked around per-run.
 
 ---
 
@@ -451,8 +472,9 @@ returning results that look complete but aren't
 ([AI-04](../project/ai-engineering-audit.md#ai-04--search-has-no-offlineno-key-degradation--p0)/[CV9.E2.S10](../project/roadmap/cv9-mirror-1-0/cv9-e2-stabilization/cv9-e2-s10-search-offline-degradation/index.md)).
 Reinforcement counts only honest signal, not incidental access
 ([AI-12](../project/ai-engineering-audit.md#ai-12--internal-machinery-pollutes-the-reinforcement-signal--p0)/[CV9.E2.S11](../project/roadmap/cv9-mirror-1-0/cv9-e2-stabilization/cv9-e2-s11-reinforcement-signal-integrity/index.md)).
-Not every surface has this yet — `JourneyService` still returns a bare `[]`
-on embedding failure, indistinguishable from "no match"
+Not every surface has this yet — journey detection (`detectJourney`, ported with the
+Python core's shape) still returns a bare `[]` on a query-embedding failure,
+indistinguishable from "no match"
 ([D-002](../project/debt.md#d-002--journey-search-silently-returns--on-embedding-failure),
 open). A degraded result that looks identical to a true negative is a defect
 class, and it is named here precisely because it is not fully closed.
@@ -460,8 +482,8 @@ class, and it is named here precisely because it is not fully closed.
 **Model identity is explicit, overridable, and probed.** `EXTRACTION_MODEL`
 and `EMBEDDING_MODEL` read `MEMORY_EXTRACTION_MODEL` /
 `MEMORY_EMBEDDING_MODEL` env overrides, defaulting to the current pins
-([`config.py`](https://github.com/mirror-mind-ai/mirror/blob/cv22-last-python-bearing/src/memory/config.py)). `runtime diagnose` runs
-[`probe_model_pins()`](https://github.com/mirror-mind-ai/mirror/blob/cv22-last-python-bearing/src/memory/cli/runtime.py): one cheap
+([`providers/config.ts`](../../ts/src/providers/config.ts)). `runtime diagnose` runs
+`probeModelPins` ([`runtime/diagnose.ts`](../../ts/src/runtime/diagnose.ts)): one cheap
 OpenRouter `/models` lookup that flags an `attention` finding if the
 extraction pin no longer resolves, with the override remedy printed
 ([AI-06](../project/ai-engineering-audit.md#ai-06--model-pins-are-hard-coded-no-override-no-reachability-probe--p0)/[CV9.E2.S12](../project/roadmap/cv9-mirror-1-0/cv9-e2-stabilization/cv9-e2-s12-model-pin-overrides-probe/index.md)).
@@ -473,17 +495,17 @@ are inconclusive and yield no finding, so `diagnose` stays green offline
 rather than crying wolf.
 
 **Cost has one authority.**
-[`intelligence/cost.py`](https://github.com/mirror-mind-ai/mirror/blob/cv22-last-python-bearing/src/memory/intelligence/cost.py) is the only
+[`providers/cost.ts`](../../ts/src/providers/cost.ts) is the only
 place spend is computed — token counts arrive with every response, prices are
 a static table, cost is a pure function of the two. An unpriced model yields
-`None`, never a silent `0`, so unpriced spend stays visibly unpriced. Every
+`null`, never a silent `0`, so unpriced spend stays visibly unpriced. Every
 call lands in the `llm_calls` ledger, metadata-only by default
 ([AI-09](../project/ai-engineering-audit.md#ai-09--default-posture-is-zero-observability-and-cost-is-never-recorded--p1)/[CV9.E2.S13](../project/roadmap/cv9-mirror-1-0/cv9-e2-stabilization/cv9-e2-s13-llm-cost-authority-metadata-logging/index.md)–[S14](../project/roadmap/cv9-mirror-1-0/cv9-e2-stabilization/cv9-e2-s14-llm-spend-summary-consult-ledger/index.md)).
 
 **Instruction assets are versioned behavior, not copy.** This extends
 further than
-[`intelligence/prompts.py`](https://github.com/mirror-mind-ai/mirror/blob/cv22-last-python-bearing/src/memory/intelligence/prompts.py) and
-[`src/memory/prompts/`](https://github.com/mirror-mind-ai/mirror/tree/cv22-last-python-bearing/src/memory/prompts): persona
+[`extraction/prompts.ts`](../../ts/src/extraction/prompts.ts) and the
+other prompt builders under `ts/src/`: persona
 `routing_keywords` (authored in identity YAML, seeded into the database),
 every `SKILL.md` across four runtimes, and `AGENTS.md` all steer model
 behavior. Editing any of them is a behavior change, not a wording tweak.
@@ -520,9 +542,9 @@ exists, newer personas like `cfo` and `scholar` route queries the fixtures
 never anticipated
 ([D-005](../project/debt.md#d-005--evalsroutingpy-fixtures-are-stale-against-the-current-persona-catalog),
 surfaced by the eval infrastructure itself doing its job). Retirement leaves
-**no successor gate for routing quality**: `detectPersona`'s CI goldens prove
-parity with the Python implementation, not that the live catalogue routes
-sensibly. Refreshing those fixtures is future work, named here rather than
+**no successor gate for routing quality**: `detectPersona`'s CI goldens were
+recorded from the Python implementation and prove the port answers as it did,
+not that the live catalogue routes sensibly. Refreshing those fixtures is future work, named here rather than
 assumed covered. And the two-pass
 curation model intermittently keeps a near-duplicate memory on a close
 paraphrase — the `two-pass-dedup` probe has failed on the live model
@@ -549,8 +571,10 @@ Windows installer path rides its own tag-triggered CI workflow
 ([`.github/workflows/windows-installer.yml`](../../.github/workflows/windows-installer.yml)).
 
 **Runtime skill surfaces are the honest gap in this list.** CI gates the
-Python core ([`tests.yml`](../../.github/workflows/tests.yml)) and the TS
-core (`ts` job: `tsc`, Biome, `node:test`). It gates **none** of the `mm-*`
+core ([`tests.yml`](../../.github/workflows/tests.yml): `tsc`, Biome,
+`node:test` twice — once with the interpreters shadowed — the repository
+guards, the custody proofs, and the end-to-end smokes). It gates **none** of
+the `mm-*`
 skill behavior across Pi, Claude Code, Gemini CLI, and Codex — that
 confidence is manual and review-only today, not automated parity across four
 runtimes.
@@ -592,19 +616,20 @@ run them: they need a git checkout, a clean tree, local tags, and push rights.
 A command surface that offers an operation only its maintainer can perform is
 not a feature.
 
-**Keyless CI is a principle, not an accident.** The test workflow states it
-directly: API keys are intentionally absent from CI, and all live tests are
-excluded via `-m "not live"`. CI must stay green with zero API keys
-configured — that is what proves the keyless-degradation paths in
-[§7](#7-the-model-in-the-loop) actually work.
+**Keyless CI is a principle, not an accident.** The test workflow checks it
+rather than assuming it: a step fails the job if `OPENROUTER_API_KEY` is
+present, because since CV22.DS8 the close tail and search reach a live
+provider when no replay fixture is configured, and a leaked key would turn
+those tests into real spend. The `live_*` smokes are never in CI. CI must stay
+green with zero API keys configured — that is what proves the
+keyless-degradation paths in [§7](#7-the-model-in-the-loop) actually work.
 
-**Named gap, not yet closed:** CI's Python matrix tests `3.10` and `3.12`;
-local development runs `3.14` (the `MemoryClient` file-descriptor fix in
-[§2](#2-architecture) is a 3.14-class bug CI's current matrix could not have
-caught on its own).
-Either the matrix should include the floor-to-ceiling range in active use,
-or the policy should be stated explicitly. This is a real, cheap gap — noted
-here as a maintenance candidate, not fixed by this revision.
+**Named gap, not yet closed:** CI runs Node `24`, the `engines` floor, on
+Linux and macOS; local development may run a newer Node. The Python core had
+the same shape of gap — a `3.14`-only file-descriptor bug its `3.10`/`3.12`
+matrix could not have caught. Either the matrix should include the ceiling in
+active use, or the policy should be stated explicitly. This is a real, cheap
+gap — noted here as a maintenance candidate, not fixed by this revision.
 
 ---
 
@@ -687,9 +712,9 @@ is true.
 - [ ] **Debt registered, not discarded** — anything deferred has a `D-*`,
       `TD-*`, or `AI-*` entry ([§9](#9-process)).
 - [ ] **Schema changes are true** — new invariants are constraints where
-      SQLite can enforce them; a change touching both cores carries parity
-      evidence; a growth-class change has a recorded retention decision
-      ([§6](#6-data--persistence)).
+      SQLite can enforce them; a new migration ships its pre-state fixture
+      and expected end-state; a growth-class change has a recorded retention
+      decision ([§6](#6-data--persistence)).
 - [ ] **Model behavior is protected** — if the change touches prompts, model
       pins, routing keywords, or extraction/routing/reception/consolidation/
       shadow logic: the relevant eval ran and is recorded; cost stays inside
@@ -712,10 +737,11 @@ is true.
 Being honest about this matters more than sounding thorough — a rule with no
 real gate is a hope, not a rule.
 
-- **CI-enforced** (a green `main` is impossible without it): `ruff check`,
-  `ruff format --check`, `mypy`, the unit/integration suites (keyless,
-  `-m "not live"`), the TS `tsc`/Biome/`node:test` job, the coverage floor,
-  the `MemoryClient` lifecycle architecture test, and the `docs` workflow's
+- **CI-enforced** (a green `main` is impossible without it): `tsc`, Biome,
+  the `node:test` suite (keyless, with the absence of a key asserted) and the
+  same suite with the interpreters shadowed, the retired-surface tripwire, the
+  migration custody proofs, the updater smoke, the end-to-end smokes on the
+  demo database, the skill command parity check, and the `docs` workflow's
   link/anchor check
   ([`ts/scripts/checkDocLinks.ts`](../../ts/scripts/checkDocLinks.ts), logic
   in [`ts/src/docs/docsLint.ts`](../../ts/src/docs/docsLint.ts), self-tested
@@ -745,8 +771,8 @@ Terms used above that are not already in the
 
 - **Eval** — a non-deterministic check of *model behavior* against a real
   API (did extraction pick the right layer? did routing pick the right
-  persona?), distinct from a `tests/` assertion that checks code wiring
-  against a mock or a real database. ([§7](#7-the-model-in-the-loop))
+  persona?), distinct from a `ts/test/` assertion that checks code wiring
+  against a replay fixture or a real database. ([§7](#7-the-model-in-the-loop))
 - **Quarantine** (extraction) — isolating a failed extraction so it cannot
   corrupt session state or silently vanish; the failure is visible and
   contained rather than either crashing the session or disappearing.
@@ -759,14 +785,14 @@ Terms used above that are not already in the
   open* continues as if nothing happened (reserved for runtime hooks that
   must never break a user's session).
   ([§5](#5-privacy--trust-boundaries), [§8](#8-release-confidence))
-- **WAL** (Write-Ahead Log) — the SQLite journal mode the Python core sets on
-  every connection, and the TS core will need to replicate once it writes,
-  so concurrent readers and writers do not block each other destructively.
-  ([§6](#6-data--persistence))
-- **Database-seam strangler** — the strategy porting the Python core to
-  TypeScript: a shared database is the seam, new features land in the new
-  language, and the old implementation dissolves one observable command at
-  a time rather than being rewritten wholesale. ([§2](#2-architecture))
+- **WAL** (Write-Ahead Log) — the SQLite journal mode the core sets on every
+  connection, so concurrent readers and writers do not block each other
+  destructively. ([§6](#6-data--persistence))
+- **Database-seam strangler** — the strategy that ported the Python core to
+  TypeScript (CV22): a shared database was the seam, new behavior landed in
+  the new language, and the old implementation dissolved one observable
+  command at a time rather than being rewritten wholesale. It finished when
+  CV22.DS10.TS5 deleted the Python core. ([§2](#2-architecture))
 
 ---
 

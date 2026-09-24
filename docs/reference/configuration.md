@@ -2,23 +2,38 @@
 
 # Configuration Reference
 
-This reference explains the configuration values surfaced by the local Mirror web Configuration page. The web page is intentionally read-only: it shows active values or masked status, but changes still happen through environment files, shell exports, Mirror initialization, or dedicated service-backed flows.
+This reference explains Mirror's configuration values: what each one is, what
+reads it, how to change it, and what changes when you do. Every value named
+here is read by the TypeScript core under `ts/`; the file that reads it is
+named so a reader can check the claim rather than trust it.
+
+Until CV22.DS10.US1 this page also backed the local web Configuration page. The
+web console is [retired](../releases/pending-cutoffs.md#the-web-console-and-the-scene-surface-it-rendered),
+and so is the Python core that used to read several of these values
+(CV22.DS10.TS5). Values only the Python core read are listed as inert at the
+end, so a leftover line in a `.env` can be recognized rather than trusted.
 
 ## Safety model
 
-The Configuration page does not dump `os.environ`, does not expose secrets, and does not edit `.env`, YAML, JSON, or the database directly. It shows a small allowlist of Mirror/runtime settings and links each surfaced value back to this reference.
+Mirror reads configuration; no command writes it. Values come from the process
+environment and from the repository `.env`, which Node loads for every
+invocation (`--env-file` in the skills, `--env-file-if-exists` in the hook
+wrappers and the MCP launcher). A value already set in the environment wins
+over the same value in `.env`. Secrets are read from the environment only,
+never accepted as a command-line argument, never logged, and never included in
+an error message.
 
 ## Mirror home
 
-**What it is:** the local filesystem root for the active Mirror. It owns the runtime state for one local mind: database, preferences, backups, exports, extensions, and related generated files.
+**What it is:** the local filesystem root for the active Mirror. It owns the runtime state for one local mind: database, backups, extensions, and related generated files.
 
-**Used by:** database resolution, web preference storage, backup/export defaults, extension discovery, and Mirror switching in the web app.
+**Used by:** database resolution, backup defaults, and extension discovery.
 
-**How to change it:** set `MIRROR_HOME` to an explicit path, or set `MIRROR_USER` so Mirror derives `~/.mirror-minds/<user>`. The web Mirror selector can switch only among discovered local Mirror homes; it does not accept arbitrary paths from the browser.
+**How to change it:** set `MIRROR_HOME` to an explicit path, or set `MIRROR_USER` so Mirror derives `~/.mirror-minds/<user>`.
 
-**Active in code:** yes. Resolution happens in `memory.config.resolve_mirror_home()` and web sessions derive their database path from the selected Mirror home.
+**Active in code:** yes. Resolution happens in `ts/src/frontDoor/dbPath.ts`; the MCP server resolves the same chain in `ts/src/mcp/main.ts`.
 
-**Effects:** changing the active home changes which local database, preferences, extensions, backups, and exports the runtime sees. Conflicting `MIRROR_HOME` and `MIRROR_USER` values fail hard when the basename does not match.
+**Effects:** changing the active home changes which local database, extensions, and backups the runtime sees. Conflicting `MIRROR_HOME` and `MIRROR_USER` values fail hard when the basename does not match.
 
 ## Database
 
@@ -28,55 +43,31 @@ The Configuration page does not dump `os.environ`, does not expose secrets, and 
 
 **How to change it:** normally by changing the active Mirror home. Advanced or test runs may set `DB_PATH` to an explicit database file.
 
-**Active in code:** yes. `MemoryClient` opens this path through `memory.db.get_connection()`.
+**Active in code:** yes. `ts/src/frontDoor/dbPath.ts` resolves the path; `ts/src/db/bootstrap.ts` opens it, applies the connection pragmas, and applies any pending migration, backup first.
 
-**Effects:** changing the database changes the visible identity, journeys, conversations, memories, and preferences-dependent behavior for that runtime session. Use `DB_PATH` for isolated tests rather than pointing tests at production data.
-
-## Preferences
-
-**What it is:** the per-Mirror web preferences file, currently `<mirror-home>/web/preferences.json`.
-
-**Used by:** web display name, avatar symbol, theme, and default perspective.
-
-**How to change it:** through the web Preferences page. The file is scoped to the active Mirror.
-
-**Active in code:** yes. `WebPreferenceStore` reads and writes this JSON file through bounded preference methods.
-
-**Effects:** changes affect only the local web presentation for that Mirror. They do not alter structural identity in the memory database.
+**Effects:** changing the database changes the visible identity, journeys, conversations, and memories for that runtime session. Use `DB_PATH` for isolated tests rather than pointing tests at production data.
 
 ## Backups
 
-**What it is:** the default directory for Mirror database backups.
+**What it is:** the default directory for Mirror database backups, `<mirror home>/backups`.
 
-**Used by:** backup tooling and the `mm-backup` flow.
+**Used by:** `backup`, `runtime backup`, the updater's backup stage, and the front door's pre-write snapshot.
 
-**How to change it:** normally by changing the Mirror home. Advanced runtime configuration may use the backup-related environment settings supported by `memory.config`.
+**How to change it:** by changing the Mirror home. For one intentional destination, pass `backup --backup-dir <path>`. `BACKUP_DIR` is deprecated: `backup` warns and ignores it.
 
-**Active in code:** yes. The default is derived by `default_backup_dir_for_home()`.
+**Active in code:** yes. `ts/src/backup/zipBackup.ts` and `ts/src/frontDoor/liveBackup.ts`.
 
-**Effects:** backup files are written outside the core database and can be used for recovery or migration.
-
-## Exports
-
-**What it is:** the default directory for general user exports.
-
-**Used by:** export commands and future web export flows.
-
-**How to change it:** normally by changing the Mirror home or export-related environment settings.
-
-**Active in code:** yes. The default is derived by `default_export_dir_for_home()`.
-
-**Effects:** affects where generated export artifacts are stored.
+**Effects:** backup files are written outside the core database and can be used for recovery. A directory Mirror creates is owner-only (`0700`), and so is each archive (`0600`).
 
 ## Extensions
 
-**What it is:** the local extension directory for the active Mirror.
+**What it is:** the local extension directory for the active Mirror, `<mirror home>/extensions`.
 
-**Used by:** extension discovery and runtime extension loading.
+**Used by:** extension discovery, installation, and dispatch.
 
-**How to change it:** normally by changing the active Mirror home or extension-related runtime settings.
+**How to change it:** by changing the active Mirror home.
 
-**Active in code:** yes. The default is derived by `default_extensions_dir_for_home()`.
+**Active in code:** yes. `ts/src/extensions/`.
 
 **Effects:** controls which local Mirror extensions are available to the runtime.
 
@@ -84,13 +75,13 @@ The Configuration page does not dump `os.environ`, does not expose secrets, and 
 
 **What it is:** an environment variable that explicitly sets the active Mirror home path.
 
-**Used by:** Mirror home resolution before database/default directory construction.
+**Used by:** Mirror home resolution before database and default directory construction.
 
-**How to change it:** set it in `.env`, export it in the shell, or pass an equivalent runtime option where supported.
+**How to change it:** set it in `.env`, export it in the shell, or pass `--mirror-home` where a command supports it.
 
-**Active in code:** yes. It is read by `resolve_mirror_home()`.
+**Active in code:** yes. `ts/src/frontDoor/dbPath.ts`.
 
-**Effects:** overrides `MIRROR_USER`-derived default path. If set together with `MIRROR_USER`, the basename must match the user value or resolution raises an error.
+**Effects:** overrides the `MIRROR_USER`-derived default path. If set together with `MIRROR_USER`, the basename must match the user value or resolution fails.
 
 ## MIRROR_USER
 
@@ -106,25 +97,25 @@ The Configuration page does not dump `os.environ`, does not expose secrets, and 
 
 ## MEMORY_ENV
 
-**What it is:** the runtime environment selector, such as production, development, or test.
+**What it is:** the runtime environment selector: `production`, `development`, or `test`.
 
-**Used by:** database path selection, production safety checks, and test isolation.
+**Used by:** database name selection (`memory.db`, `memory_dev.db`, `memory_test.db`) and test isolation.
 
 **How to change it:** set `MEMORY_ENV` in `.env` or the shell for the process.
 
-**Active in code:** yes. `MemoryClient` and config defaults read it during startup.
+**Active in code:** yes. `ts/src/frontDoor/dbPath.ts` selects the database name from it; `runtime status` and the welcome card report it.
 
-**Effects:** production mode blocks destructive reset behavior and uses production defaults. Test/development modes should be used for isolated validation.
+**Effects:** selects the database **name** only, never the directory. Test and development modes should be used for isolated validation.
 
 ## MEMORY_DIR
 
 **What it is:** an optional memory runtime directory override.
 
-**Used by:** legacy/default directory resolution when Mirror home is not the sole source of paths.
+**Used by:** directory resolution when the Mirror home is not the sole source of paths. `MEMORY_PROD_DIR` overrides it in production only.
 
 **How to change it:** set `MEMORY_DIR` in `.env` or the shell.
 
-**Active in code:** yes, primarily as an advanced compatibility/configuration override.
+**Active in code:** yes. `ts/src/frontDoor/dbPath.ts`, as an advanced compatibility override.
 
 **Effects:** can change where runtime files are resolved. Prefer `MIRROR_HOME`/`MIRROR_USER` for normal Mirror separation.
 
@@ -132,37 +123,37 @@ The Configuration page does not dump `os.environ`, does not expose secrets, and 
 
 **What it is:** an optional explicit SQLite database path override.
 
-**Used by:** `MemoryClient` database selection and isolated tests/smoke runs.
+**Used by:** database selection and isolated tests and smoke runs.
 
-**How to change it:** set `DB_PATH` in `.env`, shell, or test process environment.
+**How to change it:** set `DB_PATH` in `.env`, the shell, or a test process environment.
 
-**Active in code:** yes.
+**Active in code:** yes. `ts/src/frontDoor/dbPath.ts`.
 
-**Effects:** bypasses the default database path derived from Mirror home. Use carefully: it can point the runtime at a completely different memory database.
+**Effects:** bypasses the default database path derived from the Mirror home. Use carefully: it can point the runtime at a completely different memory database.
 
 ## OPENROUTER_API_KEY
 
 **What it is:** the secret API key used for OpenRouter-backed model calls.
 
-**Used by:** embeddings, memory extraction, conversation summary/title generation, reception routing when enabled, `/mm-consult`, and other LLM-backed features.
+**Used by:** embeddings, memory extraction, conversation summary and title generation, reception routing, `/mm-consult`, and every other LLM-backed feature.
 
-**How to change it:** set `OPENROUTER_API_KEY` in `.env` or the shell. Do not paste it into the web UI.
+**How to change it:** set `OPENROUTER_API_KEY` in `.env` or the shell.
 
-**Active in code:** yes. `memory.intelligence.llm_router.send_to_model()` requires it for chat completions, and embedding generation uses OpenRouter-backed configuration.
+**Active in code:** yes. `ts/src/providers/config.ts` reads it for every chat and embedding call.
 
-**Effects:** when missing, LLM-backed actions fail safely or return no generated result depending on the caller. The web Configuration page only shows a masked status and never reveals the full key.
+**Effects:** when missing, LLM-backed actions fail safely or return no generated result depending on the caller; memory search degrades to lexical-only and says so.
 
 ## MEMORY_LOG_LLM_CALLS
 
 **What it is:** the mode for local LLM call logging.
 
-**Used by:** the shared logger seam behind extraction, curation, task extraction, summaries, reception, journal classification, consolidation, shadow scan, and conversation title/tag suggestions.
+**Used by:** the shared ledger seam behind extraction, curation, task extraction, summaries, reception, journal classification, consolidation, shadow scan, conversation title/tag suggestions, and consult.
 
 **How to change it:** one of `off | metadata | full`. Absence or `metadata` (the default) records call metadata only. `full` additionally stores prompt and response bodies. `off` (or `0`) disables logging. Legacy `1` maps to `full`.
 
-**Active in code:** yes. It maps to `config.LOG_LLM_CALLS_MODE`, with `config.LOG_LLM_CALLS` (on/off) and `config.LOG_LLM_BODIES` (full only) derived from it.
+**Active in code:** yes. `ts/src/providers/config.ts` resolves the mode; `ts/src/observability/ledgerHooks.ts` writes the rows.
 
-**Effects:** in `metadata` mode Mirror records role, model, token counts, latency, estimated cost, and conversation id to the local `llm_calls` table with empty prompt/response — no conversation content is retained. `full` adds the bodies, which can retain sensitive prompt content locally and increase storage. Estimated cost comes from a static price table (`intelligence/cost.py`) and is labeled accordingly. Inspect with `python -m memory inspect llm-calls`.
+**Effects:** in `metadata` mode Mirror records role, model, token counts, latency, estimated cost, and conversation id to the local `llm_calls` table with empty prompt/response — no conversation content is retained. `full` adds the bodies, which can retain sensitive prompt content locally and increase storage. Estimated cost comes from a static price table (`ts/src/providers/cost.ts`) and is labeled accordingly. Inspect with `mirror inspect llm-calls`.
 
 ## MEMORY_RECEPTION
 
@@ -170,35 +161,35 @@ The Configuration page does not dump `os.environ`, does not expose secrets, and 
 
 **Used by:** Mirror Mode persona/journey routing when the runtime classifies incoming turns beyond simple keyword heuristics.
 
-**How to change it:** set `MEMORY_RECEPTION=1` to enable. Any other value or absence disables it.
+**How to change it:** reception is **on** unless `MEMORY_RECEPTION=0`.
 
-**Active in code:** yes. It maps to `config.RECEPTION_ENABLED`.
+**Active in code:** yes. `ts/src/frontDoor/mirrorModeRoute.ts`.
 
-**Effects:** when enabled, Mirror may make an LLM call to classify a turn for persona/journey routing. When disabled, routing falls back to cheaper deterministic behavior.
+**Effects:** when on, Mirror makes one classification call per Mirror-mode turn to route persona and journey, failing safe to keyword routing. `0` saves that call and loses turn-aware response shaping.
 
 ## MEMORY_EXTRACTION_MAX_ATTEMPTS
 
 **What it is:** the retry budget before a conversation whose memory extraction keeps failing is quarantined.
 
-**Used by:** the session-maintenance extraction loops (`extract_pending`, `close_stale_orphans`). Each failed extraction (provider outage, oversized transcript, auth error) increments an `extraction_attempts` counter in the conversation metadata.
+**Used by:** the session-maintenance extraction loops. Each failed extraction (provider outage, oversized transcript, auth error) increments an `extraction_attempts` counter in the conversation metadata.
 
 **How to change it:** set `MEMORY_EXTRACTION_MAX_ATTEMPTS` to a positive integer. Absence defaults to `3`.
 
-**Active in code:** yes. It maps to `config.EXTRACTION_MAX_ATTEMPTS`.
+**Active in code:** yes. `ts/src/providers/config.ts`, used by `ts/src/conversation/extractionRun.ts`.
 
 **Effects:** once attempts reach this value the conversation is flagged quarantined and dropped from the pending extraction queue, so a poison-pill conversation is not retried at every session start and does not block the conversations queued behind it. The session-maintenance report names the quarantine count. Quarantine is sticky: a conversation quarantined by a transient outage stays quarantined until the flag is cleared.
 
 ## MEMORY_MAINTENANCE_MAX_EXTRACTIONS
 
-**What it is:** the maximum number of pending conversations `extract_pending` processes in one session-start maintenance run.
+**What it is:** the maximum number of pending conversations one session-start maintenance run extracts.
 
-**Used by:** `session_maintenance`, on every session start. Eligible conversations (ended, journey-bound, ≥4 messages, not quarantined) are processed oldest-ended first; any remainder stays pending and carries over to the next session start rather than being dropped.
+**Used by:** session maintenance, on every session start. Eligible conversations (ended, journey-bound, ≥4 messages, not quarantined) are processed oldest-ended first; any remainder stays pending and carries over to the next session start rather than being dropped.
 
 **How to change it:** set `MEMORY_MAINTENANCE_MAX_EXTRACTIONS` to a positive integer. Absence defaults to `10`.
 
-**Active in code:** yes. It maps to `config.MEMORY_MAINTENANCE_MAX_EXTRACTIONS`.
+**Active in code:** yes. `ts/src/providers/config.ts`, used by `ts/src/conversation/extractionDriver.ts`.
 
-**Effects:** bounds the worst-case spend and latency of a single session start — each processed conversation costs at least 2 LLM calls plus up to ~9 embedding calls. Without a cap, a backlog (a gap in usage, a dead API key, a quarantine-adjacent failure period) turns the next session start into a long, invisible, unbounded spend burst. The session-maintenance report names the carried-over count when it is greater than zero, so a chronic backlog (more eligible conversations generated per session than the cap drains) stays visible instead of silently lagging.
+**Effects:** bounds the worst-case spend and latency of a single session start — each processed conversation costs at least 2 LLM calls plus up to ~9 embedding calls. Without a cap, a backlog (a gap in usage, a dead API key, a quarantine-adjacent failure period) turns the next session start into a long, invisible, unbounded spend burst. The session-maintenance report names the carried-over count when it is greater than zero, so a chronic backlog stays visible instead of silently lagging.
 
 ## Environment
 
@@ -210,23 +201,23 @@ See [MEMORY_ENV](#memory_env).
 
 **Used by:** memory insertion, search, retrieval, and similarity checks during curation.
 
-**How to change it:** change the embedding model configuration in environment/runtime settings supported by `memory.config`.
+**How to change it:** set `MEMORY_EMBEDDING_MODEL`; absence uses the pinned default.
 
-**Active in code:** yes. It maps to `config.EMBEDDING_MODEL`.
+**Active in code:** yes. `ts/src/providers/config.ts`.
 
-**Effects:** changing it can affect search quality and may make old embeddings inconsistent with newly generated embeddings unless migration/re-embedding is handled intentionally.
+**Effects:** changing it can affect search quality and may make old embeddings inconsistent with newly generated embeddings unless re-embedding is handled intentionally.
 
 ## Memory extraction model
 
 **What it is:** the default model used for structured memory extraction and related generation tasks.
 
-**Used by:** memory extraction, task extraction, summaries, journal classification, and the single-conversation title suggestion introduced in CV13.E4.
+**Used by:** memory extraction, task extraction, summaries, journal classification, and conversation title suggestion.
 
-**How to change it:** change the extraction model configuration in environment/runtime settings supported by `memory.config`.
+**How to change it:** set `MEMORY_EXTRACTION_MODEL`; absence uses the pinned default. `runtime diagnose` checks that the pin still resolves.
 
-**Active in code:** yes. It maps to `config.EXTRACTION_MODEL`.
+**Active in code:** yes. `ts/src/providers/config.ts`.
 
-**Effects:** affects quality, cost, latency, and behavior of LLM-backed memory operations. Web title suggestions use this model through OpenRouter.
+**Effects:** affects quality, cost, latency, and behavior of LLM-backed memory operations. Follow the [model upgrade playbook](../process/development-guide.md#model-upgrade-playbook) before changing it.
 
 ## LLM audit logging
 
@@ -236,11 +227,22 @@ See [MEMORY_LOG_LLM_CALLS](#memory_log_llm_calls).
 
 See [MEMORY_RECEPTION](#memory_reception).
 
+## Hook Node resolution
+
+**What it is:** `MIRROR_NODE`, the path of the `node` binary the runtime hook wrappers should run.
+
+**Used by:** every hook wrapper under `.claude/hooks/`, `.gemini/hooks/`, and `plugins/mirror-mind/hooks/`.
+
+**How to change it:** set `MIRROR_NODE=/path/to/node` in the environment the runtime is launched with. Without it a wrapper tries `command -v node`, then the nvm `current` symlink, `/opt/homebrew/bin/node`, and `/usr/local/bin/node`.
+
+**Active in code:** yes. The wrappers read it before Node starts; `runtime diagnose` checks the same order from its own environment.
+
+**Effects:** a GUI-launched runtime often does not inherit the `PATH` that holds `node`. A wrapper that cannot find Node skips the hook and writes one line to `<mirror home>/hooks.log` instead of failing the user's turn, so "Mirror stopped remembering" has a place to be diagnosed.
+
 ## TypeScript live-provider transport (CV22.DS8)
 
-The TypeScript core reaches OpenRouter through its own `fetch`-based transport
-rather than the OpenAI SDK. It reads the same environment variables Python
-does, so a single configuration governs both engines during the migration.
+The core reaches OpenRouter through its own `fetch`-based transport
+(`ts/src/providers/`) rather than an SDK.
 
 ### Per-call bounds
 
@@ -252,69 +254,61 @@ does, so a single configuration governs both engines during the migration.
 | `MEMORY_LLM_MAX_RETRIES` | `2` | Retries **after** the first attempt (three attempts total) |
 
 Every call is bounded at construction so a hung provider connection cannot
-stall a session hook (the OpenAI SDK's own default is 600 seconds). Retries
-cover connection failures, 408, 409, 429, and 5xx — never another 4xx, which
-would spend money to receive the same answer. A `retry-after` header is
-honored but capped at 60 seconds. A non-numeric override fails loudly rather
-than silently reverting to the default, matching Python's `float()`/`int()`.
+stall a session hook. Retries cover connection failures, 408, 409, 429, and
+5xx — never another 4xx, which would spend money to receive the same answer. A
+`retry-after` header is honored but capped at 60 seconds. A non-numeric
+override fails loudly rather than silently reverting to the default.
 
-### Route control
+### Replay fixtures
 
-| Variable | Meaning |
+Every provider-crossing family accepts replay fixture paths: a deterministic
+transport that answers from a recorded fixture and makes no network call. CI
+and the smokes use them; so can you, to reproduce a run without spending.
+
+| Family | Variables |
 |---|---|
-| `MIRROR_TS_SEARCH` | Set to `0` to send `memories --search` back to the Python engine. Wins over any replay fixture. |
-| `MIRROR_TS_SEARCH_EMBEDDING_REPLAY` | Path to a replay fixture. Used by CI and the parity harness; selects a deterministic transport that makes no network call. |
+| `memories --search` | `MIRROR_TS_SEARCH_EMBEDDING_REPLAY` |
+| `build` (`build load` composes search with the previous close tail) | `MIRROR_TS_BUILD_LLM_REPLAY` with `MIRROR_TS_BUILD_EMBEDDING_REPLAY` |
+| the conversation close tail | `MIRROR_TS_CONVERSATION_LLM_REPLAY` with `MIRROR_TS_CONVERSATION_EMBEDDING_REPLAY` |
+| `consult` | `MIRROR_TS_CONSULT_LLM_REPLAY` with `MIRROR_TS_CREDITS_REPLAY` |
+| `mirror load --query` | `MIRROR_TS_MIRROR_LLM_REPLAY` with `MIRROR_TS_MIRROR_EMBEDDING_REPLAY` |
+| `consolidate`, `shadow` | `MIRROR_TS_CULTIVATION_LLM_REPLAY`, `MIRROR_TS_CULTIVATION_EMBEDDING_REPLAY` |
+| `journal` | `MIRROR_TS_JOURNAL_LLM_REPLAY` with `MIRROR_TS_JOURNAL_EMBEDDING_REPLAY` |
+| `week plan`, `week save` | `MIRROR_TS_WEEK_LLM_REPLAY` |
+| `descriptor generate` | `MIRROR_TS_DESCRIPTOR_LLM_REPLAY` |
+| `soul harvest save` | `MIRROR_TS_SOUL_EMBEDDING_REPLAY` |
 
-With neither set, `memories --search` runs a live embedding through
-TypeScript. Without `OPENROUTER_API_KEY` it degrades to lexical-only search
-and prints the same note the Python engine prints — no call is attempted and
-no `llm_calls` row is written.
+**Where a family declares two fixtures, both are required together.** Setting
+only one is refused by name rather than treated as live or as unconfigured —
+half a replay must never quietly become a live call that spends real money
+while you believe you are replaying. One exception is deliberate:
+`MIRROR_TS_CREDITS_REPLAY` alone is a complete replay setup for `consult
+credits`, which needs no chat provider, and an incomplete one for `consult
+ask`, which is refused by name. `MEMORY_RECEPTION=0` likewise removes the
+classifier from `mirror load --query`, after which the embedding fixture alone
+is complete.
 
-### The Builder/Ariad tree (CV22.DS7.US8)
-
-All 27 in-scope `build` leaves answer from TypeScript by default since
-2026-09-16. `MIRROR_TS_BUILD=0` reverts the whole family to Python with no
-code change and no data migration — one gate, because Builder is a lived mode
-whose lifecycle writes one cursor row, and a half-flipped lifecycle cannot be
-reviewed. The twenty legacy SQLite Workbench leaves under `build
-refinement-story` and `build change-request` are refused by name and answered
-by Python until DS10 retires them; the front-door log shows `build python` for
-those and `build ts leaf=<name>` for the rest.
-
-`build load` composes fresh search with the previous conversation's close tail,
-so its transport decision resolves three controls before printing any surface:
-`MIRROR_TS_BUILD`, `MIRROR_TS_SEARCH`, and
-`MIRROR_TS_CONVERSATION_LLM_TAIL`. A `0` on any one sends the whole invocation
-to Python. Replay uses both `MIRROR_TS_BUILD_LLM_REPLAY` and
-`MIRROR_TS_BUILD_EMBEDDING_REPLAY`; setting only one refuses in TypeScript
-rather than falling into live Python. The front-door log records only
-`leaf=load calls=N` and a degraded category when present — never the journey
-briefing used as the embedding query.
+With no fixture set, every family runs live. Without `OPENROUTER_API_KEY`,
+`memories --search` degrades to lexical-only search and says so — no call is
+attempted and no `llm_calls` row is written. For `build load`, the front-door
+log records only `leaf=load calls=N` and a degraded category when present,
+never the journey briefing used as the embedding query.
 
 ### The MCP server (CV22.DS9.TS2)
 
-| Variable | Meaning |
-|---|---|
-| `MIRROR_TS_MCP` | Set to `0` to make the plugin's MCP server launch the Python engine (`python3 -m memory mcp`) instead of the TypeScript one. Read from the environment **or** from `.env`, environment first. |
+The Claude plugin manifest launches `${CLAUDE_PLUGIN_ROOT}/mcp/launch.sh`,
+not an engine. The launcher `exec`s the TypeScript server, so the entry point
+can change without editing a plugin installed inside a runtime.
 
-The Claude plugin manifest launches
-`${CLAUDE_PLUGIN_ROOT}/mcp/launch.sh`, not an engine. The launcher picks the
-engine and `exec`s it, so reverting to Python never means editing a plugin
-installed inside a runtime. Unlike every other gate on this page, it is read by
-a shell script *before* Node starts, which is why the launcher parses `.env`
-itself — with `grep`, never `source`, since that file holds your API key.
-
-The TypeScript server needs `node` (≥ 24) on the `PATH` the MCP client
-spawns it with, and a configured database (`.env` in the repository, or
+The server needs `node` (≥ 24) on the `PATH` the MCP client spawns it with,
+and a configured database (`.env` in the repository, or
 `DB_PATH`/`MIRROR_HOME`/`MIRROR_USER` in the client's environment). A missing
-`node`, a Node older than 22.9 (no `--env-file-if-exists`), or an unconfigured
-home each fail loudly on stderr, which is where the MCP client's log for this
-server goes. The Python branch needs `memory` importable from a bare `python3`
-— CV21's plugin contract, unchanged by this gate.
+`node` or an unconfigured home each fail loudly on stderr, which is where the
+MCP client's log for this server goes.
 
-An agent-initiated search records one `llm_calls` row, as the Python server
-always has. It is written through a connection that can run nothing but that
-append; the tools' own handle is read-only at the driver level.
+An agent-initiated search records one `llm_calls` row. It is written through a
+connection that can run nothing but that append; the tools' own handle is
+read-only at the driver level.
 
 ### MCP wallet and abuse guards (CV22.DS9.TS1)
 
@@ -375,24 +369,23 @@ because *you* ended a conversation.
 
 **Argument bounds.** `limit` must be an integer within each tool's cap
 (`search_memories` 50, `list_conversations` 100, `recall_conversation` 200) and
-a query may be at most 4,000 characters. Python accepted `limit=0` on
-`recall_conversation` and returned the entire transcript; that is refused here,
-and `MIRROR_TS_MCP_GUARDS=0` restores it.
+a query may be at most 4,000 characters. The Python server accepted `limit=0`
+on `recall_conversation` and returned the entire transcript; that is refused
+here, and `MIRROR_TS_MCP_GUARDS=0` restores it.
 
 ### Node-specific environment differences
 
-Two behaviors differ from Python's HTTP stack and are **not** papered over in
-code. Both matter only if your machine needs them:
+Two behaviors differ from the HTTP stack the Python core used, and are **not**
+papered over in code. Both matter only if your machine needs them:
 
-- **Custom CA certificates.** Python pins `certifi`; Node uses its bundled CA
-  store. Point Node at a private CA with `NODE_EXTRA_CA_CERTS=/path/to/ca.pem`.
-- **HTTP proxies.** Python's `httpx` honors `HTTPS_PROXY` automatically; Node's
-  `fetch` ignores it unless you set `NODE_USE_ENV_PROXY=1` (Node ≥ 24). Behind
-  a proxy without that flag, a search degrades to lexical-only and the degraded
-  note will say "offline or no API key", which is misleading. The front-door
-  log records the real cause as a category — for example
-  `embedding_degraded kind=provider_error` — which is how to tell the two
-  apart.
+- **Custom CA certificates.** Node uses its bundled CA store. Point it at a
+  private CA with `NODE_EXTRA_CA_CERTS=/path/to/ca.pem`.
+- **HTTP proxies.** Node's `fetch` ignores `HTTPS_PROXY` unless you set
+  `NODE_USE_ENV_PROXY=1` (Node ≥ 24). Behind a proxy without that flag, a
+  search degrades to lexical-only and the degraded note will say "offline or no
+  API key", which is misleading. The front-door log records the real cause as a
+  category — for example `embedding_degraded kind=provider_error` — which is
+  how to tell the two apart.
 
 ### Observability
 
@@ -400,72 +393,25 @@ Live provider calls write one `llm_calls` row per round-trip, priced from the
 static model price table (an embedding call has no generation id to fetch a
 real cost for). Under `MEMORY_LOG_LLM_CALLS=metadata` — the default — the
 `prompt` and `response` columns are empty strings: your query text is never
-persisted. The API key is read from the environment only, never accepted as a
-command-line argument, never logged, and never included in an error message.
+persisted.
 
 ### Conversation close tail (CV22.DS8.US2)
 
 The close tail — title, tags, summary, memory and task extraction, and their
 embeddings — runs when a session ends, including from the Pi `session-end`
-hook. It reads the same per-call bounds as every other live surface.
-
-| Variable | Meaning |
-|---|---|
-| `MIRROR_TS_CONVERSATION_LLM_TAIL` | Set to `0` to send the five close-tail subcommands (`switch`, `session-end-pi`, `session-end`, `session-start` full run, `session-maintenance`) back to the Python engine. The seven deterministic subcommands stay on TypeScript. |
-| `MIRROR_TS_CONVERSATION_LOGGER` | Set to `0` to revert the **whole** fifteen-subcommand family, for a larger scare. |
-| `MIRROR_TS_CONVERSATION_LLM_REPLAY` | Path to a chat replay fixture. Used by CI and the parity harness. |
-| `MIRROR_TS_CONVERSATION_EMBEDDING_REPLAY` | Path to the matching embedding replay fixture. |
-
-**Both replay fixtures are required together.** Setting only one is refused by
-name rather than treated as live or as unconfigured: falling back to Python
-would not be safer, because the Python engine has no replay transport and
-would reach the live provider anyway — spending real money on the other
-engine while you believed you were replaying.
+hook. It reads the same per-call bounds as every other live surface, and its
+replay fixtures are in the table above.
 
 Every close-tail call is written to `llm_calls` with its token usage and a
-cost computed from the static price table, matching the Python engine. Under
-`MEMORY_LOG_LLM_CALLS=metadata` (the default) the `prompt` and `response`
-columns stay empty, so transcript text is never persisted by the ledger.
+cost computed from the static price table. Under `MEMORY_LOG_LLM_CALLS=metadata`
+(the default) the `prompt` and `response` columns stay empty, so transcript
+text is never persisted by the ledger.
 
 ### The long tail (CV22.DS8.US3)
 
 The remaining provider-crossing leaves — `consult`, `mirror load --query`,
 `journal`, `week plan`, `descriptor generate`, `soul harvest save`, and
-`consolidate apply` — answer from TypeScript against the live provider with no
-configuration. Each family keeps one variable that sends it back to Python.
-
-| Variable | Meaning |
-|---|---|
-| `MIRROR_TS_CONSULT` | Set to `0` to revert both `consult credits` and `consult ask`. |
-| `MIRROR_TS_MIRROR_QUERY` | Set to `0` to revert `mirror load --query` only. The deterministic `mirror load` stays on TypeScript: it is the most-used read in the product and must not be dragged back by a query-path problem. |
-| `MIRROR_TS_CULTIVATION` | Set to `0` to revert `consolidate scan\|apply` and `shadow scan`. `consolidate list\|reject\|show` stay on TypeScript — they cross no provider seam. |
-| `MIRROR_TS_JOURNAL` | Set to `0` to revert `journal`. |
-| `MIRROR_TS_WEEK` | Set to `0` to revert `week plan` and `week save`. `week view` deliberately stays outside this gate — it was flipped ungated earlier and reverting a planning problem must not take a working read with it. |
-| `MIRROR_TS_DESCRIPTOR` | Set to `0` to revert `descriptor generate`. |
-| `MIRROR_TS_SOUL` | Set to `0` to revert the whole Soul family, including `harvest save` — the one Soul leaf that reaches a provider. |
-
-Each family also accepts replay fixture paths for CI and the parity harness:
-`MIRROR_TS_CONSULT_LLM_REPLAY` with `MIRROR_TS_CREDITS_REPLAY`,
-`MIRROR_TS_MIRROR_LLM_REPLAY` with `MIRROR_TS_MIRROR_EMBEDDING_REPLAY`,
-`MIRROR_TS_CULTIVATION_LLM_REPLAY`,
-`MIRROR_TS_CULTIVATION_EMBEDDING_REPLAY`,
-`MIRROR_TS_JOURNAL_LLM_REPLAY` with `MIRROR_TS_JOURNAL_EMBEDDING_REPLAY`,
-`MIRROR_TS_WEEK_LLM_REPLAY`, `MIRROR_TS_DESCRIPTOR_LLM_REPLAY`, and
-`MIRROR_TS_SOUL_EMBEDDING_REPLAY`.
-
-**Where a family declares two fixtures, both are required together** — the
-same rule the close tail follows, and for the same reason. One exception is
-deliberate: `MIRROR_TS_CREDITS_REPLAY` alone is a complete replay setup for
-`consult credits`, which needs no chat provider, and an incomplete one for
-`consult ask`, which is refused by name rather than sent half-live.
-`MEMORY_RECEPTION=0` likewise removes the classifier from `mirror load
---query` on both engines, after which the embedding fixture alone is complete.
-
-**`MIRROR_TS_EXTERNAL_ROUTES` is retired.** It was the opt-in that let these
-leaves reach TypeScript while replay was their production route; after the live
-cutover replay is a test transport, so the gate only added a second thing to
-set. A leftover value in a shell or a script is inert — it neither enables nor
-disables anything.
+`consolidate apply` — answer against the live provider with no configuration.
 
 #### What `descriptor generate` costs
 
@@ -478,8 +424,8 @@ need one entity.
 
 `consolidate scan`, `shadow scan`, and reception report "nothing found" for a
 provider outage, for model output that could not be parsed, and for an honest
-empty result alike — this matches the Python engine exactly. The front-door log
-carries the distinction as a category:
+empty result alike — the behavior the Python engine had, kept on purpose. The
+front-door log carries the distinction as a category:
 
 ```text
 consolidation outcome=parse_failed
@@ -490,3 +436,30 @@ reception outcome=transport_failed kind=rate_limit
 `parse_failed` is a prompt-layer signal: the call arrived, was paid for, and
 came back unusable. `transport_failed` with its `kind=` is a transport signal.
 `empty` means the model answered and there was genuinely nothing to do.
+
+## Inert values
+
+Values a `.env` may still carry from an earlier release. Nothing reads them,
+and setting them changes nothing.
+
+**The migration's revert variables.** While the TypeScript core replaced the
+Python one, each ported family kept one variable that sent it back to Python:
+`MIRROR_TS_BACKUP`, `MIRROR_TS_BUILD`, `MIRROR_TS_CONSULT`,
+`MIRROR_TS_CONVERSATION_APPEND`, `MIRROR_TS_CONVERSATION_LLM_TAIL`,
+`MIRROR_TS_CONVERSATION_LOGGER`, `MIRROR_TS_CONVERSATIONS_LIFECYCLE`,
+`MIRROR_TS_CULTIVATION`, `MIRROR_TS_DESCRIPTOR`, `MIRROR_TS_EXPLORE`,
+`MIRROR_TS_EXTENSIONS`, `MIRROR_TS_EXTERNAL_ROUTES`, `MIRROR_TS_IDENTITY_EDIT`,
+`MIRROR_TS_JOURNAL`, `MIRROR_TS_MCP`, `MIRROR_TS_MIRROR_QUERY`,
+`MIRROR_TS_REPAIR_ENCODING`, `MIRROR_TS_RUNTIME_READS`,
+`MIRROR_TS_RUNTIME_UPDATE`, `MIRROR_TS_SEARCH`, `MIRROR_TS_SOUL`,
+`MIRROR_TS_WEEK`, and `MIRROR_TS_WELCOME`. CV22.DS10.TS5 deleted the engine
+they reverted to, and the gates with it. `runtime diagnose` names any still
+set, as an `info` finding, so a revert nobody can perform is never mistaken
+for one that is armed. The `*_REPLAY` variables above are **not** among them.
+
+**Paths only the Python core read.** `EXPORT_DIR`, `TRANSCRIPT_EXPORT_DIR`, and
+`DB_BACKUP_PATH` have no reader in the TypeScript core.
+
+**The web preferences file.** `<mirror-home>/web/preferences.json` was read
+only by the retired web console. Mirror leaves it where it is and reads nothing
+from it.

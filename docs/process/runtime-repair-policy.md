@@ -38,7 +38,7 @@ mv pi-session-*.html pi_exports/
 
 ### Unknown core migration rows
 
-Unknown core migration rows are entries in `_migrations` that are not present in `memory.db.migrations.MIGRATIONS` for the checked-out code.
+Unknown core migration rows are entries in `_migrations` that are not known to the checked-out code (`ts/src/db/migrations.ts`).
 
 Policy:
 
@@ -92,8 +92,8 @@ Policy:
 Current repair route:
 
 ```bash
-uv run python -m memory repair-encoding
-uv run python -m memory repair-encoding --apply
+mirror repair-encoding
+mirror repair-encoding --apply
 ```
 
 Use `--mirror-home PATH` when repairing a non-default local Mirror home.
@@ -108,8 +108,8 @@ Policy:
 
 - Treat database-unavailable status as a recoverable update gate when the rest of
   the repository state is safe.
-- Prefer a bounded, safe bootstrap through `MemoryClient` and a fresh status
-  check before failing.
+- Prefer a bounded, safe bootstrap through the database bootstrap
+  (`ts/src/db/bootstrap.ts`) and a fresh status check before failing.
 - Do not delete SQLite sidecars, kill arbitrary processes, or mutate migration
   ledgers as part of this recovery.
 - If an older updater is itself blocked, use the explicit updater repair lane
@@ -118,8 +118,8 @@ Policy:
 Current repair route:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts runtime update --repair-updater
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts runtime update
+mirror runtime update --repair-updater
+mirror runtime update
 ```
 
 The repair lane is also entered **automatically** when the status gate throws

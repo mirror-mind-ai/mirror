@@ -4,15 +4,41 @@ Command reference, configuration, and legacy migration workflow.
 
 - **Commands:** this document
 - **System architecture, schema, and runtime model:** [docs/product/architecture.md](docs/product/architecture.md)
-- **Python API:** [docs/product/api.md](docs/product/api.md)
 - **Extensions:** [docs/product/extensions/](docs/product/extensions/index.md)
 
 ---
 
+## Running a command
+
+Every command in this document runs through the front door, the one entry into
+Mirror Mind's core. It names itself `mirror` in its own usage lines, and this
+document does the same:
+
+```bash
+mirror runtime status
+```
+
+There is no `mirror` on your `PATH` yet: the npm package that installs it is
+[CV22.DS10.US3](docs/project/roadmap/cv22-typescript-core-port/cv22-ds10-python-retirement-npm-distribution/index.md).
+Until then `mirror` stands for this invocation, run from the repository root:
+
+```bash
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts runtime status
+```
+
+To make every command here runnable as written, define it once per shell:
+
+```bash
+alias mirror='NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts'
+```
+
+The skills use the full invocation, not the alias: an agent runs them in a
+non-interactive shell, where an alias does not exist.
+
 ## Commands
 
 Claude Code uses the `/mm:` prefix. Pi and Gemini CLI use the `/mm-` prefix.
-Codex uses the `$mm-` prefix. All runtimes call the same Python core.
+Codex uses the `$mm-` prefix. All runtimes call the same core.
 
 | Pi / Gemini CLI | Codex | Claude Code | Purpose | Main Arguments |
 |---------|-------|-------------|---------|----------------|
@@ -20,7 +46,7 @@ Codex uses the `$mm-` prefix. All runtimes call the same Python core.
 | `/mm-build` | `$mm-build` | `/mm:build` | Builder Mode for a journey — loads context and project docs | `<slug>` |
 | `/mm-explore` | `$mm-explore` | `/mm:explore` | Explorer Mode for a journey, with explicit deactivation, in-session story surfaces, and Builder handoff artifacts — preserves uncertainty before construction | `<slug>`, `deactivate`, `story show|update|clear|open|thicken|snapshot|attractors|experiment|handoff|promote` |
 | `/mm-soul` | `$mm-soul` | `/mm:soul` | Soul Mode ritual entry and possible-listenings surface for inner-life listening | `[slug]` |
-| `python -m memory mode` | — | — | Internal explicit Mirror operating mode lifecycle used by runtime skills and status bars | `activate <mode> [--journey J]`, `deactivate`, `status` |
+| `mirror mode` | — | — | Internal explicit Mirror operating mode lifecycle used by runtime skills and status bars | `activate <mode> [--journey J]`, `deactivate`, `status` |
 | `/mm-identity` | `$mm-identity` | `/mm:identity` | Read and update identity directly in the database | `list [--layer L]`, `get <layer> <key>`, `set <layer> <key>`, `edit <layer> <key>` |
 | `/mm-consult` | `$mm-consult` | `/mm:consult` | Asks other LLMs through OpenRouter with Mirror context | `<family> [tier] "prompt"`, `credits` |
 | `/mm-journeys` | `$mm-journeys` | `/mm:journeys` | Lists journeys with status | no arguments |
@@ -31,7 +57,7 @@ Codex uses the `$mm-` prefix. All runtimes call the same Python core.
 | `/mm-journal` | `$mm-journal` | `/mm:journal` | Records a personal journal entry | `[--journey J] "text"` |
 | `/mm-recall` | `$mm-recall` | `/mm:recall` | Loads a previous conversation into context | `<conversation_id> [--limit N]` |
 | `/mm-conversations` | `$mm-conversations` | `/mm:conversations` | Lists recent conversations | `--limit N`, `--journey J`, `--persona P` |
-| `python -m memory conversations append` | — | — | Atomically appends an explicit bounded user/assistant batch to one exact conversation | `--mirror-home PATH --format json`, JSON stdin |
+| `mirror conversations append` | — | — | Atomically appends an explicit bounded user/assistant batch to one exact conversation | `--mirror-home PATH --format json`, JSON stdin |
 | `/mm-backup` | `$mm-backup` | `/mm:backup` | Backs up the memory database | no arguments |
 | `/mm-seed` | `$mm-seed` | `/mm:seed` | Seeds identity files from the active user home into the database | no arguments |
 | `/mm-mute` | `$mm-mute` | `/mm:mute` | Toggles conversation logging | no arguments |
@@ -43,14 +69,14 @@ Codex uses the `$mm-` prefix. All runtimes call the same Python core.
 | `/mm-release-notes` | `$mm-release-notes` | `/mm:release-notes` | Shows Mirror Mind release notes | `[latest|vX.Y.Z]`, `pending` |
 | `/mm-update` | `$mm-update` | `/mm:update` | Updates the local Mirror runtime through the safe updater | no arguments |
 | `/mm-help` | `$mm-help` | `/mm:help` | Lists available commands | no arguments |
-| `python -m memory runtime` | — | — | Inspects Mirror runtime status, version, drift, backups, release notes, release promotion readiness, plans updates, and executes safe updates | `status [--mirror-home PATH] [--channel stable|main]`, `version [--start PATH] [--channel stable|main]`, `diagnose [--mirror-home PATH]`, `backup [--mirror-home PATH]`, `backup --verify PATH`, `release-notes [latest|vX.Y.Z]`, `release-notes pending [--from vX.Y.Z] [--ref REF] [--no-fetch]`, `migrate [--mirror-home PATH]`, `update --dry-run [--mirror-home PATH] [--channel stable|main]`, `update --check [--channel stable|main]`, `update [--no-fetch] [--skip-migrations] [--mirror-home PATH] [--channel stable|main]`, `update --repair-updater [--no-fetch] [--mirror-home PATH] [--channel stable|main]` |
-| `python -m memory conversation-logger` | — | — | Runtime conversation logging and repair utilities | `discard-current [--interface pi] [--session-id ID]`, `repair-journeys [--limit N] [--apply]` |
+| `mirror runtime` | — | — | Inspects Mirror runtime status, version, drift, backups, release notes, release promotion readiness, plans updates, and executes safe updates | `status [--mirror-home PATH] [--channel stable|main]`, `version [--start PATH] [--channel stable|main]`, `diagnose [--mirror-home PATH]`, `backup [--mirror-home PATH]`, `backup --verify PATH`, `release-notes [latest|vX.Y.Z]`, `release-notes pending [--from vX.Y.Z] [--ref REF] [--no-fetch]`, `migrate [--mirror-home PATH]`, `update --dry-run [--mirror-home PATH] [--channel stable|main]`, `update --check [--channel stable|main]`, `update [--no-fetch] [--skip-migrations] [--mirror-home PATH] [--channel stable|main]`, `update --repair-updater [--no-fetch] [--mirror-home PATH] [--channel stable|main]` |
+| `mirror conversation-logger` | — | — | Runtime conversation logging and repair utilities | `discard-current [--interface pi] [--session-id ID]`, `repair-journeys [--limit N] [--apply]` |
 | `ext-review-copy` | — | `ext:review-copy` | External multi-LLM copy review skill; install and expose it before use | skill-driven workflow |
 
 ## Explicit Conversation Append
 
 ```bash
-uv run python -m memory conversations append \
+mirror conversations append \
   --mirror-home <home> --format json < payload.json
 ```
 
@@ -91,9 +117,9 @@ private paths, environment values, or raw exceptions.
 ## Operating Mode Lifecycle
 
 ```bash
-uv run python -m memory mode [--session-id ID] activate "Builder Mode" --journey <slug>
-uv run python -m memory mode [--session-id ID] status
-uv run python -m memory mode [--session-id ID] deactivate
+mirror mode [--session-id ID] activate "Builder Mode" --journey <slug>
+mirror mode [--session-id ID] status
+mirror mode [--session-id ID] deactivate
 ```
 
 Operating mode lifecycle is a small runtime state surface used by Mirror skills
@@ -111,42 +137,42 @@ leave explicit lenses through contained operations. Users are never in "no
 mode": when an explicit lens is deactivated, Mirror returns to Mirror Mode,
 preserving journey context when one remains active.
 
-`memory mirror load` activates `◌ Mirror Mode`. `memory build load <slug>`
-activates `■ Builder Mode` for the selected journey. `memory soul load [slug]`
+`mirror mirror load` activates `◌ Mirror Mode`. `mirror build load <slug>`
+activates `■ Builder Mode` for the selected journey. `mirror soul load [slug]`
 activates `☾ Soul Mode` and renders the ritual entry surface without opening a
-rite or writing to the journal. `memory soul listen` renders situated Possible
-Listenings; `memory soul rite self|shadow` renders listening-lens surfaces;
-`memory soul fruit set|show|clear` manages one Fruit In Maturation; `memory soul
+rite or writing to the journal. `mirror soul listen` renders situated Possible
+Listenings; `mirror soul rite self|shadow` renders listening-lens surfaces;
+`mirror soul fruit set|show|clear` manages one Fruit In Maturation; `mirror soul
 harvest set|show|save|decline` closes and optionally saves one harvested fruit;
-and `memory soul prompt self` composes Self Voice with the user's `self/soul`
-identity layer. `memory explore load <slug>` activates `△ Explorer Mode` for the selected journey and resumes the active
-durable Exploratory Story when one exists. `memory explore story show|update|clear
+and `mirror soul prompt self` composes Self Voice with the user's `self/soul`
+identity layer. `mirror explore load <slug>` activates `△ Explorer Mode` for the selected journey and resumes the active
+durable Exploratory Story when one exists. `mirror explore story show|update|clear
 <slug>` manages the current Exploratory Story; `clear` archives the active story
-so it is no longer current but remains historical evidence. `memory explore story
+so it is no longer current but remains historical evidence. `mirror explore story
 list|archive <slug>` shows durable Explorer Story visibility and archives the
-active story explicitly. `memory explore story open|thicken|snapshot <slug>`
+active story explicitly. `mirror explore story open|thicken|snapshot <slug>`
 renders the first visible Explorer story surfaces while persisting durable state.
-`memory explore story attractors|experiment <slug>` records visible attractors and
+`mirror explore story attractors|experiment <slug>` records visible attractors and
 small experiment proposals inside the current durable story state without
-activating Builder. `memory explore story handoff <slug>` writes the Builder
+activating Builder. `mirror explore story handoff <slug>` writes the Builder
 transfer document set under `docs/project/explorations/<exploratory-story-slug>/`
 when the journey has a project path, including `index.md`,
 `exploratory-story.md`, `handoff-info.md`, and `product-design-proposal.md`. It can
 attach reviewed source conversations with `--source-conversation <id>` or
 `--source-conversation <id>:<role>`, and can write a privacy-obfuscated
 `full-conversation.md` only when `--include-full-conversation` is passed.
-`memory explore story promote <slug>` marks the durable story promoted and enters
+`mirror explore story promote <slug>` marks the durable story promoted and enters
 Builder only after an explicit handoff exists. Required Explorer story surfaces
 are wrapped with `[[MIRROR_REQUIRED_SURFACE_BEGIN:<surface-id>]]` and
 `[[MIRROR_REQUIRED_SURFACE_END:<surface-id>]]` markers so runtimes can distinguish
 product surfaces from ordinary command output; the marker lines are not
-user-facing copy. `memory explore deactivate` is the Explorer-specific exit
+user-facing copy. `mirror explore deactivate` is the Explorer-specific exit
 operation and returns the runtime to Mirror Mode semantics
 while preserving sticky journey context. Deactivation clears only the explicit
 active mode state; it does not erase sticky persona/journey defaults or rewrite
 conversation history.
 
-`memory welcome --status-line [--session-id ID]` includes active mode context when present:
+`mirror welcome --status-line [--session-id ID]` includes active mode context when present:
 
 ```text
 ◇ alisson-vale · Explorer Mode on ■ Builder Mode · ✓
@@ -173,19 +199,19 @@ The `runtime` subcommands operate in three layers: inspection (read-only), backu
 
 ```bash
 # 1. Confirm the runtime is healthy
-uv run python -m memory runtime status
+mirror runtime status
 
 # 2. Classify any drift the status surfaces
-uv run python -m memory runtime diagnose
+mirror runtime diagnose
 
 # 3. Check whether a new version is available
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts runtime update --check
+mirror runtime update --check
 
 # 4. Plan the update locally
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts runtime update --dry-run
+mirror runtime update --dry-run
 
 # 5. Execute the update through the safe pipeline
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts runtime update
+mirror runtime update
 ```
 
 Each command exits non-zero when state is not safe enough for the next step.
@@ -195,15 +221,15 @@ Each command exits non-zero when state is not safe enough for the next step.
 #### `runtime status`
 
 ```bash
-uv run python -m memory runtime status [--mirror-home PATH] [--channel stable|main]
+mirror runtime status [--mirror-home PATH] [--channel stable|main]
 ```
 
-Reports version, repository, git state, mirror home, database, core migration health, installed extensions, extension health, clone role, Python version, and environment. Exits `attention needed` when the git tree is dirty, the mirror home is not configured, core migrations are missing or unknown, or installed extension migrations are pending, drifted, or unknown.
+Reports version, repository, git state, mirror home, database, core migration health, installed extensions, extension health, clone role, update channel, Node version, and environment. Exits `attention needed` when the git tree is dirty, the mirror home is not configured, core migrations are missing or unknown, or installed extension migrations are pending, drifted, or unknown.
 
 #### `runtime version`
 
 ```bash
-uv run python -m memory runtime version [--start PATH] [--channel stable|main]
+mirror runtime version [--start PATH] [--channel stable|main]
 ```
 
 Reports the installed version, repository, branch, commit, clone role, and update channel. Local and offline. `--start` inspects a repository from a chosen path instead of the current working directory.
@@ -211,7 +237,7 @@ Reports the installed version, repository, branch, commit, clone role, and updat
 #### `runtime diagnose`
 
 ```bash
-uv run python -m memory runtime diagnose [--mirror-home PATH]
+mirror runtime diagnose [--mirror-home PATH]
 ```
 
 Classifies attention-needed drift into stable finding codes (`git_dirty`, `core_migration_pending`, `core_migration_unknown`, `extension_migration_pending`, `extension_migration_unknown`, `extension_migration_checksum_drift`, `extension_manifest_invalid`, `database_missing`, `mirror_home_missing`). Each finding carries severity, subject, recommendation, and a repair route. Read-only.
@@ -219,8 +245,8 @@ Classifies attention-needed drift into stable finding codes (`git_dirty`, `core_
 ### Backup
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts runtime backup [--mirror-home PATH]
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts runtime backup --verify PATH_TO_BACKUP.zip
+mirror runtime backup [--mirror-home PATH]
+mirror runtime backup --verify PATH_TO_BACKUP.zip
 ```
 
 Runtime backup archives contain `memory.db` and SQLite sidecars (`memory.db-wal`, `memory.db-shm`) when present. Verification is structural: the zip must be readable, contain `memory.db`, and avoid unsafe archive paths. Recovery is manual in this version: stop active runtime sessions, move current database files aside, extract the backup into the Mirror home, and rerun `runtime status`.
@@ -230,7 +256,7 @@ Runtime backup archives contain `memory.db` and SQLite sidecars (`memory.db-wal`
 #### `runtime update --check`
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts runtime update --check [--channel stable|main]
+mirror runtime update --check [--channel stable|main]
 ```
 
 Queries the configured upstream branch through `git ls-remote`. May contact the network, but does not fetch, pull, change refs, back up, migrate, or modify files. Reports `up_to_date`, `update_available`, `local_ahead`, `diverged`, `no_upstream`, or `unknown`.
@@ -240,7 +266,7 @@ On the `stable` channel, this check remains intentionally conservative: it can k
 #### `runtime update --dry-run`
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts runtime update --dry-run [--channel stable|main]
+mirror runtime update --dry-run [--channel stable|main]
 ```
 
 Plans an update from local refs only. Reuses `runtime status` as the safety gate. Reports whether a real update would be a no-op, pull known remote commits, or require manual reconciliation because the branch is ahead, diverged, dirty, or missing an upstream. Does not contact the network.
@@ -250,8 +276,8 @@ When the channel is `stable` and the local upstream ref contains release notes n
 ### Release notes
 
 ```bash
-uv run python -m memory runtime release-notes [latest|vX.Y.Z]
-uv run python -m memory runtime release-notes pending [--from vX.Y.Z] [--ref origin/stable]
+mirror runtime release-notes [latest|vX.Y.Z]
+mirror runtime release-notes pending [--from vX.Y.Z] [--ref origin/stable]
 ```
 
 Reads narrative release notes from `docs/releases/`. `latest` and explicit versions read the checked-out files. `pending` reads release notes from a git ref, defaults to `origin/stable`, fetches that ref safely before rendering, and lists every release newer than the installed runtime version. The fetch updates only remote-tracking refs; it does not merge, checkout, migrate, or modify the working tree. Use `--from` to simulate an older installed version or support a user report without mutating package metadata. Use `--ref HEAD --no-fetch` for local smoke tests before a release is published, or `--ref origin/stable` for the user-facing stable channel.
@@ -259,11 +285,11 @@ Reads narrative release notes from `docs/releases/`. `latest` and explicit versi
 Examples:
 
 ```bash
-uv run python -m memory runtime release-notes latest
-uv run python -m memory runtime release-notes v0.10.5
-uv run python -m memory runtime release-notes pending
-uv run python -m memory runtime release-notes pending --from 0.9.0 --ref origin/stable
-uv run python -m memory runtime release-notes pending --from 0.9.0 --ref HEAD --no-fetch
+mirror runtime release-notes latest
+mirror runtime release-notes v0.10.5
+mirror runtime release-notes pending
+mirror runtime release-notes pending --from 0.9.0 --ref origin/stable
+mirror runtime release-notes pending --from 0.9.0 --ref HEAD --no-fetch
 ```
 
 ### Release promotion doctor
@@ -310,8 +336,8 @@ Use `gh release edit vX.Y.Z ... --latest` if the GitHub Release already exists. 
 ### Update execution
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts runtime update [--no-fetch] [--skip-migrations] [--mirror-home PATH] [--channel stable|main]
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts runtime update --repair-updater [--no-fetch] [--mirror-home PATH] [--channel stable|main]
+mirror runtime update [--no-fetch] [--skip-migrations] [--mirror-home PATH] [--channel stable|main]
+mirror runtime update --repair-updater [--no-fetch] [--mirror-home PATH] [--channel stable|main]
 ```
 
 Executes the safe update pipeline. Stages run in order and the first failure stops execution:
@@ -402,7 +428,7 @@ authority to fall back to.
 Each Mirror Mind clone declares its role through a `.mirror-clone-role` file at the repository root. Valid values are `production` and `dev`. The file is local to each clone and ignored by git. When the file is missing, unreadable, or contains an unknown value, the role defaults to `production`.
 
 - `runtime status` and `runtime version` report the current clone role.
-- `python -m memory build load <slug>` applies the clone-role guard only when the journey `project_path` points at a Mirror Mind source checkout. In that case it refuses `production` clones unless `--ignore-production-role` is passed. Non-Mirror journey projects are not blocked by missing `.mirror-clone-role`. When no `project_path` is configured, Builder falls back to inspecting the current directory.
+- `mirror build load <slug>` applies the clone-role guard only when the journey `project_path` points at a Mirror Mind source checkout. In that case it refuses `production` clones unless `--ignore-production-role` is passed. Non-Mirror journey projects are not blocked by missing `.mirror-clone-role`. When no `project_path` is configured, Builder falls back to inspecting the current directory.
 - Production clones receive code through `runtime update`, not by direct development edits.
 
 See [Runtime Repair Policy](docs/process/runtime-repair-policy.md) and [Decisions](docs/project/decisions.md#mirror-mind-clones-declare-a-role) for the boundary and rationale.
@@ -420,16 +446,16 @@ Change a clone to stable releases:
 
 ```bash
 printf 'stable\n' > .mirror-update-channel
-uv run python -m memory runtime version
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts runtime update --check
+mirror runtime version
+mirror runtime update --check
 ```
 
 Change a clone to dogfooding/main:
 
 ```bash
 printf 'main\n' > .mirror-update-channel
-uv run python -m memory runtime version
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts runtime update --check
+mirror runtime version
+mirror runtime update --check
 ```
 
 Remove the marker to return to the safe default (`stable`):
@@ -445,7 +471,7 @@ For common channel problems, see [Troubleshooting](docs/process/troubleshooting.
 To list the active personas for the current user:
 
 ```bash
-uv run python -m memory list personas --verbose
+mirror list personas --verbose
 ```
 
 The database is the source of truth for personas. There is no authoritative
@@ -455,8 +481,11 @@ static table; `list personas --verbose` reflects the current seeded state.
 
 ## Configuration
 
-`.env` is loaded automatically by `memory.config` at import time; values
-already present in the real environment take precedence.
+`.env` is read by Node, not by Mirror: every invocation passes it. The skills
+and the `mirror` alias use `node --env-file=.env`; the hook wrappers and the
+MCP launcher use `--env-file-if-exists`, so a fresh clone without one still
+starts. Values already present in the real environment take precedence over
+the file.
 
 Two starter files live at the repo root:
 
@@ -465,20 +494,20 @@ Two starter files live at the repo root:
 
 ### Platform envelope
 
-Mirror Mind's core spans two runtimes: the Python engine (via `uv`, Python
-3.10+) and the TypeScript front door (via **Node.js ≥ 24**, required for
-`node:sqlite` and direct `.ts` execution). `runtime status` reports both
-versions; the front door refuses to run on Node below 24 with an actionable
-message.
+Mirror Mind's core is one TypeScript package, run by **Node.js ≥ 24**, required for
+`node:sqlite` and direct `.ts` execution). There is no build step and no other
+runtime: the Python engine was deleted in CV22.DS10.TS5. `runtime status`
+reports the Node version; the front door refuses to run on Node below 24 with
+an actionable message.
 
 **Supported today: POSIX (macOS, Linux).** The documented skill invocation uses
 POSIX shell syntax (`NODE_OPTIONS=--no-warnings node ts/src/frontDoor/cli.ts …`),
-which native Windows PowerShell does not parse. Windows is served by the
-PowerShell installer for the Python side; a native-Windows story for the TS
-front door (invocation syntax, path handling, ACL-based data-at-rest posture)
-is explicitly deferred. The front door must be invoked from the repository root
-(the relative-path invocation enforces this; the Python fallback inherits the
-working directory).
+which native Windows PowerShell does not parse. The PowerShell installer and
+the Windows Frame still install and call the Python engine, and are re-homed
+by CV22.DS10.US3; a native-Windows story for the front door (invocation syntax,
+path handling, ACL-based data-at-rest posture) is explicitly deferred. The
+front door must be invoked from the repository root (the relative-path
+invocation enforces this).
 
 ### Data at rest
 
@@ -486,16 +515,13 @@ A mirror home holds a person's identity, memories, and conversations. The
 expected filesystem posture is **owner-only**: directories `0700`, data files
 `0600` (POSIX; Windows ACLs are currently out of scope).
 
-- **Enforced at creation points:** the Python connection bootstrap applies the
-  posture to directories it creates and to the database file (SQLite then
-  propagates the file mode to `-wal`/`-shm`); the TS front door creates
-  `backups/` at `0700` and its snapshot at `0600`; the parity harness keeps its
-  work directory owner-only. Pre-existing directories are never mutated — a
-  user-chosen location like `~/Documents` stays as the user set it. The
-  real-DB parity harness copies and fixtures are equivalent to the live
-  database (raw memory and identity content); they are owner-only and removed
-  on a passing run (pass `--keep` to retain them for debugging).
-- **Reported on drift:** `uv run python -m memory runtime diagnose` emits a
+- **Enforced at creation points:** the database bootstrap
+  (`ts/src/db/bootstrap.ts`) applies the posture to a directory it creates and
+  to the database file and its `-wal`/`-shm` sidecars; the front door creates
+  `backups/` at `0700` and its snapshot at `0600`. Pre-existing directories
+  are never mutated — a
+  user-chosen location like `~/Documents` stays as the user set it.
+- **Reported on drift:** `mirror runtime diagnose` emits a
   `loose_permissions` finding (severity: attention) when the mirror home or
   database is group/other-accessible, including the exact `chmod` to run.
 - **Pre-write backup:** every front-door live write first snapshots the
@@ -560,7 +586,7 @@ to the homes root (`~/.mirror-minds`).
 | `MEMORY_PROD_DIR` | `MEMORY_DIR` | Production-only override. |
 | `DB_PATH` | `<mirror home>/<env db name>` | Full SQLite path. |
 | `DB_BACKUP_PATH` | `<DB_PATH parent>/backups` | Global backup default used only when no mirror home is in scope. |
-| `BACKUP_DIR` | — | **Deprecated.** No longer redirects backups. `python -m memory backup` now writes to `<mirror_home>/backups`; if this variable is set, the command warns and ignores it. Use `--backup-dir <path>` for an intentional, per-invocation destination. |
+| `BACKUP_DIR` | — | **Deprecated.** No longer redirects backups. `mirror backup` now writes to `<mirror_home>/backups`; if this variable is set, the command warns and ignores it. Use `--backup-dir <path>` for an intentional, per-invocation destination. |
 | `EXPORT_DIR` | `<MIRROR_HOME>/exports` | Markdown export root. |
 | `TRANSCRIPT_EXPORT_DIR` | `<EXPORT_DIR>/transcripts` | Full-transcript export dir. |
 
@@ -570,16 +596,15 @@ to the homes root (`~/.mirror-minds`).
 |----------|---------|------|
 | `PI_SESSIONS_DIR` | `~/.pi/agent/sessions` | Source directory for `backfill_pi_sessions`. Override for multi-user setups. |
 | `MIRROR_SESSION_ID` | (unset) | Fallback session id for conversation-logger CLIs when neither `--session-id` nor a hook payload is present. Rarely set by humans. |
-| `MIRROR_WELCOME` | (unset) | Set to `off`, `0`, `false`, or `no` to suppress the welcome card emitted by `python -m memory welcome`. See `docs/product/specs/welcome/index.md`. |
-| `MIRROR_TS_MCP` | (unset) | Set to `0` to make the Claude plugin's MCP server launch the Python engine instead of the TypeScript one. Read from the environment or from `.env`, environment first — see [Configuration](docs/reference/configuration.md#the-mcp-server-cv22ds9ts2). |
-
+| `MIRROR_WELCOME` | (unset) | Set to `off`, `0`, `false`, or `no` to suppress the welcome card emitted by `mirror welcome`. See `docs/product/specs/welcome/index.md`. |
 | `MIRROR_TS_MCP_GUARDS` | (unset) | Set to `0` to remove the MCP wallet and abuse guards (rate limit, spend ceiling, argument caps). See [Configuration](docs/reference/configuration.md#mcp-wallet-and-abuse-guards-cv22ds9ts1). |
 
-The plugin manifest launches `${CLAUDE_PLUGIN_ROOT}/mcp/launch.sh`, which picks
-the engine and `exec`s it, so reverting to Python never means editing a plugin
-installed inside a runtime. The TypeScript server requires `node` ≥ 24 on the
-PATH the MCP client spawns it with; the Python branch requires `memory` to be
-importable from a bare `python3`.
+The plugin manifest launches `${CLAUDE_PLUGIN_ROOT}/mcp/launch.sh`, which
+`exec`s the TypeScript server, so the entry point can change without editing a
+plugin installed inside a runtime. The server requires `node` ≥ 24 on the
+PATH the MCP client spawns it with. The `MIRROR_TS_*` revert variables of the
+migration, `MIRROR_TS_MCP` among them, are inert since CV22.DS10.TS5: nothing
+reads them, and `runtime diagnose` names any still set.
 
 ### Set by External Runtimes (do not set manually)
 
@@ -591,8 +616,8 @@ importable from a bare `python3`.
 
 Before CV9.E2.S6, development/test databases, the Pi `mirror-logger.log`,
 bootstrap locks, and a `backups/` directory could land directly in the homes
-root (`~/.mirror-minds/`) instead of inside a mirror home. `python -m memory
-runtime diagnose` reports such artifacts as `legacy_root_runtime_state`.
+root (`~/.mirror-minds/`) instead of inside a mirror home. `mirror runtime
+diagnose` reports such artifacts as `legacy_root_runtime_state`.
 
 Relocation is deliberately manual — histories are never merged automatically:
 
@@ -607,7 +632,7 @@ Relocation is deliberately manual — histories are never merged automatically:
    is running).
 4. `mirror-logger.log` in the root can be deleted or archived; new sessions
    write to `<mirror home>/mirror-logger.log`.
-5. Re-run `python -m memory runtime diagnose` and confirm no
+5. Re-run `mirror runtime diagnose` and confirm no
    `legacy_root_runtime_state` findings remain.
 
 The Pi logger still falls back to `~/.mirror-minds/mirror-logger.log` when no
@@ -631,4 +656,4 @@ working, and nothing about it changed.
 ---
 
 **See also:** [Getting Started](docs/getting-started.md) ·
-[Architecture](docs/product/architecture.md) · [Python API](docs/product/api.md)
+[Architecture](docs/product/architecture.md)

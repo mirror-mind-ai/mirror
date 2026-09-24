@@ -34,14 +34,15 @@ backup, repair, or update it.
 - [Troubleshooting](process/troubleshooting.md) — known bugs and operational fixes
 - [Releases](releases/index.md) — prospective narrative release notes
 
-Recommended operational sequence:
+Recommended operational sequence (`mirror` is the front door; see
+[Running a command](../REFERENCE.md#running-a-command)):
 
 ```bash
-uv run python -m memory runtime status
-uv run python -m memory runtime diagnose
-uv run python -m memory runtime update --check
-uv run python -m memory runtime update --dry-run
-uv run python -m memory runtime update
+mirror runtime status
+mirror runtime diagnose
+mirror runtime update --check
+mirror runtime update --dry-run
+mirror runtime update
 ```
 
 ### Contributor
@@ -57,10 +58,9 @@ Start here if you are working on Mirror Mind itself.
 ### Developer
 
 Start here if you need to understand the internals or integrate with Mirror
-Mind programmatically.
+Mind through its command line or its runtime contracts.
 
 - [Architecture](product/architecture.md) — system design, layers, schema, and runtime model
-- [Python API](product/api.md) — programmatic interface for developers
 - [Runtime Interface Spec](product/specs/runtime-interface/index.md) — lifecycle and runtime contract
 - [Extension Product Docs](product/extensions/index.md) — stateful extension model
 
@@ -72,7 +72,6 @@ Product docs explain what Mirror Mind is and how it should behave.
 
 - [Product index](product/index.md) — map of product documentation
 - [Principles](product/principles.md) — product behavior principles
-- [Python API](product/api.md) — programmatic interface for developers integrating with Mirror Core
 - [Envisioning](product/envisioning/index.md) — UoC model, lenses, Maestro framing, web perspectives, and coherence as product architecture
 - [Specs](product/specs/index.md) — concrete product, web surface, and runtime behavior specifications
 - [Extensions](product/extensions/index.md) — user-owned, stateful extensions outside the core
@@ -126,7 +125,6 @@ under Product when they describe product-owned Mirror Core interfaces.
 - [Command Reference](../REFERENCE.md) — CLI behavior, configuration, runtime self-update, and operational details
 - [Getting Started](getting-started.md) — prerequisites, installation, first session
 - [Architecture](product/architecture.md) — system design, layers, schema, and runtime model
-- [Python API](product/api.md) — programmatic interface for developers
 - [Releases](releases/index.md) — narrative release notes from CV9.E5 onward
 - [CLAUDE.md](../CLAUDE.md) — routing, modes, and available skills
 
@@ -138,6 +136,7 @@ Before 1.0, Mirror Mind keeps the documentation tree conservative: no broad file
 moves just to satisfy symmetry. `docs/releases/` and operations docs under
 `docs/process/` stay where they are until the project has enough pressure to
 justify a dedicated reference or operations subtree. `docs/product/architecture.md`
-and `docs/product/api.md` live under Product because architecture and the Python
-API are part of the Mirror Core product surface. This preserves stable reader
+lives under Product because architecture is part of the Mirror Core product
+surface. (So did `docs/product/api.md`, the Python API reference, until the
+Python core was deleted in CV22.DS10.TS5.) This preserves stable reader
 paths while keeping product-owned surfaces together.

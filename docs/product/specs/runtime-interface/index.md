@@ -5,34 +5,58 @@
 A **runtime** is any frontend that presents the mirror to the user. Currently
 four runtimes exist: Claude Code (hooks), Pi (TypeScript extension), Gemini CLI
 (shell hooks), and Codex (wrapper script). This document defines what every
-runtime must implement to integrate correctly with the Python `memory` core.
+runtime must implement to integrate correctly with Mirror Mind's core.
 
-The Python CLI (`python -m memory ...`) is the stable interface. Inside this
-repo, run it as `uv run python -m memory ...`. Runtimes are thin dispatchers —
-they translate lifecycle events into CLI commands and do nothing else. A new
-runtime built solely from this document will work.
+The front door is the stable interface: one process per command, entered as
+`node ts/src/frontDoor/cli.ts <command> …` from the repository. It names itself
+`mirror`, and this document uses that name for readability. A hook or a skill
+must spell the invocation out — a runtime runs them in a non-interactive shell,
+where no alias exists:
+
+```bash
+node --no-warnings --env-file-if-exists=<repo>/.env <repo>/ts/src/frontDoor/cli.ts <command> …
+```
+
+Runtimes are thin dispatchers — they translate lifecycle events into front-door
+commands and do nothing else. A new runtime built solely from this document
+will work.
+
+Until CV22.DS10.TS5 this interface was the Python CLI; the commands, their
+arguments, and their effects are the same, answered by the TypeScript core.
 
 ---
 
 ## Lifecycle Events
 
 Every runtime must handle four events. The table below lists the event, the
-required CLI command, and any arguments the runtime must supply.
+required command, and any arguments the runtime must supply.
 
-| Event | Required CLI command | Arguments supplied by runtime |
-|-------|---------------------|-------------------------------|
-| Session start | `uv run python -m memory conversation-logger session-start` | none |
-| User prompt | `uv run python -m memory conversation-logger log-user <session_id> <prompt> --interface <name>` | `session_id`, `prompt text`, `interface name` |
+| Event | Required command | Arguments supplied by runtime |
+|-------|------------------|-------------------------------|
+| Session start | `mirror conversation-logger session-start` | none |
+| User prompt | `mirror conversation-logger log-user <session_id> <prompt> --interface <name>` | `session_id`, `prompt text`, `interface name` |
 | Assistant response | see note below | — |
-| Session end | `uv run python -m memory conversation-logger session-end` or `session-end-pi <id>` | see note below |
-| Backup | `uv run python -m memory backup --silent` | none |
+| Session end | `mirror conversation-logger session-end` or `session-end-pi <id>` | see note below |
+| Backup | `mirror backup --silent` | none |
 
 Backup runs at session end immediately after the session-end command.
+
+**The in-repo hook runtimes do all of this in one process per event.** Claude
+Code, Gemini CLI, and the packaged Claude plugin register short shell wrappers
+(`.claude/hooks/`, `.gemini/hooks/`, `plugins/mirror-mind/hooks/`, generated
+by `scripts/ts5/generate_hook_wrappers.sh`). Each wrapper resolves the
+repository from its own path, finds Node, and `exec`s a single entry,
+`ts/src/hooks/main.ts <runtime>:<event>`, which reads the runtime's JSON
+payload from stdin once and runs the sequence above in-process over the front
+door's own modules. A hook never fails the user's turn: every path exits 0,
+and a failure — including a wrapper that cannot find `node` — is recorded in
+`<mirror home>/hooks.log` instead. See
+[Node resolution](#node-resolution-for-hook-runtimes).
 
 Optional runtime hygiene command:
 
 ```bash
-uv run python -m memory conversation-logger discard-current --interface pi
+mirror conversation-logger discard-current --interface pi
 ```
 
 This deletes the current runtime conversation and marks the session so the
@@ -52,7 +76,7 @@ min), and extracts memories from any conversations that ended without
 extraction.
 
 ```
-uv run python -m memory conversation-logger session-start
+mirror conversation-logger session-start
 ```
 
 No arguments. Prints a summary string (may be empty).
@@ -64,7 +88,7 @@ No arguments. Prints a summary string (may be empty).
 Runs before each model turn. Persists the user message to the database.
 
 ```
-uv run python -m memory conversation-logger log-user <session_id> <prompt> --interface <name>
+mirror conversation-logger log-user <session_id> <prompt> --interface <name>
 ```
 
 - `session_id` — opaque identifier for the current agent session, supplied by
@@ -85,14 +109,19 @@ explicitly as they arrive.
 **Pi** — logs each assistant turn explicitly at `agent_end`:
 
 ```
-uv run python -m memory conversation-logger log-assistant <session_id> <content> --interface pi
+mirror conversation-logger log-assistant <session_id> <content> --interface pi
 ```
 
 Collect all assistant messages from the turn, concatenate, and log once.
 Truncate at ~50 KB.
 
-**Claude Code** — backfills from the JSONL transcript at session end via
-`hook_session_end()`. No per-turn call is needed.
+**Claude Code** — backfills from the JSONL transcript at session end, in the
+session-end hook (`ts/src/hooks/claude.ts`). No per-turn call is needed.
+
+**Gemini CLI** — logs each assistant turn from the `AfterAgent` payload's
+`prompt_response` field. (The Node port first read the wrong field and dropped
+every assistant turn for a day — CV22.DS10.TS5 finding F11. The payload shape
+is the contract, not the variable name a port guesses.)
 
 A new runtime should use whichever model matches its architecture: explicit
 per-turn logging (like Pi) if messages are available as events; transcript
@@ -109,24 +138,24 @@ Extracts memories immediately and backfills assistant messages from the
 transcript.
 
 ```
-uv run python -m memory conversation-logger session-end
+mirror conversation-logger session-end
 ```
 
 Input: JSON on stdin — `{"session_id": "<id>", "transcript_path": "<path>"}`.
-Claude Code's `Stop` hook provides this via stdin automatically.
+Claude Code's `SessionEnd` hook provides this via stdin automatically.
 
 **Pi** — does not have transcript access. Defers extraction to the next
 `session-start`.
 
 ```
-uv run python -m memory conversation-logger session-end-pi <session_id>
+mirror conversation-logger session-end-pi <session_id>
 ```
 
 **Gemini CLI** — `SessionEnd` is best-effort (CLI exits without waiting for the
 hook). Uses `session-end-pi` for deferred extraction, same as Pi.
 
 ```
-uv run python -m memory conversation-logger session-end-pi <session_id>
+mirror conversation-logger session-end-pi <session_id>
 ```
 
 **Codex** — has no lifecycle hooks. Uses a wrapper script that backfills the
@@ -134,8 +163,8 @@ session transcript from JSONL and then calls `session-end-pi` for deferred
 extraction.
 
 ```
-uv run python -m memory conversation-logger backfill-codex-session <path>
-uv run python -m memory conversation-logger session-end-pi <session_id>
+mirror conversation-logger backfill-codex-session <path>
+mirror conversation-logger session-end-pi <session_id>
 ```
 
 A new runtime should use `session-end-pi` unless it can supply a transcript
@@ -150,13 +179,13 @@ the runtime has a stable session id, it should pass it so operating-mode status
 is session-scoped rather than leaking across simultaneous sessions:
 
 ```bash
-uv run python -m memory welcome --status-line --session-id <session_id>
+mirror welcome --status-line --session-id <session_id>
 ```
 
 Fallback for runtimes without a session id:
 
 ```bash
-uv run python -m memory welcome --status-line
+mirror welcome --status-line
 ```
 
 The command is cheap and cache-oriented. It includes active operating mode
@@ -175,13 +204,13 @@ When no journey context is active, it still shows the default Mirror lens:
 Pi renders this through `ctx.ui.setStatus("mirror", ...)` and refreshes it at
 startup and after agent turns. Other runtimes may ignore this optional surface.
 
-Operating mode lifecycle is explicit and lives in the Python core as an internal
+Operating mode lifecycle is explicit and lives in the core as an internal
 surface for Mirror skills and runtime integrations. Session-aware runtimes should
 pass `--session-id`; CLI-only callers may use the global fallback:
 
 ```bash
-uv run python -m memory mode --session-id <session_id> activate "Builder Mode" --journey <slug>
-uv run python -m memory mode --session-id <session_id> deactivate
+mirror mode --session-id <session_id> activate "Builder Mode" --journey <slug>
+mirror mode --session-id <session_id> deactivate
 ```
 
 Activation and deactivation are semantic operations that can be triggered by the
@@ -198,7 +227,7 @@ Mirror Mode runtimes inject identity context before the model responds. This
 is optional — a runtime that does not support Mirror Mode skips this entirely.
 
 ```
-uv run python -m memory mirror load --context-only --query "<user prompt>" [--persona <id>] [--journey <id>] [--org] [--session-id <id>]
+mirror mirror load --context-only --query "<user prompt>" [--persona <id>] [--journey <id>] [--org] [--session-id <id>]
 ```
 
 - `--context-only` — loads identity without starting a new database session
@@ -210,7 +239,8 @@ uv run python -m memory mirror load --context-only --query "<user prompt>" [--pe
 The command prints the identity block. The runtime injects this as a system
 note before the model sees the prompt.
 
-**Claude Code** runs this synchronously in `mirror-inject.sh` on
+**Claude Code** runs this synchronously in its inject hook
+(`.claude/hooks/mirror-inject.sh` → `ts/src/hooks/main.ts claude:inject`) on
 `UserPromptSubmit`, triggered when the prompt begins with `/mm:mirror` or when
 Mirror Mode is already active.
 
@@ -228,14 +258,18 @@ processes the prompt.
 
 ### Claude Code
 
-| Event | Hook file | Claude Code trigger |
-|-------|-----------|---------------------|
-| Session start | `.claude/hooks/session-start.sh` | `SessionStart` |
-| User prompt | `.claude/hooks/log-user-prompt.sh` | `UserPromptSubmit` |
-| Mirror inject | `.claude/hooks/mirror-inject.sh` | `UserPromptSubmit` |
-| Session end + backup | `.claude/hooks/log-session-end.sh` | `Stop` |
+| Event | Hook wrapper | Node entry | Claude Code trigger |
+|-------|--------------|------------|---------------------|
+| Session start | `.claude/hooks/session-start.sh` | `claude:session-start` | `SessionStart` |
+| User prompt | `.claude/hooks/log-user-prompt.sh` | `claude:user-prompt` | `UserPromptSubmit` |
+| Mirror inject | `.claude/hooks/mirror-inject.sh` | `claude:inject` | `UserPromptSubmit` |
+| Session end + backup | `.claude/hooks/log-session-end.sh` | `claude:session-end` | `SessionEnd` |
 
-Hook files are registered in `.claude/settings.json`.
+Hook wrappers are registered in `.claude/settings.json`, whose allowlist grants
+the two Node entries **by path** — never a bare `node *`, which would be an
+auto-approved arbitrary-execution grant. The packaged plugin carries the same
+four wrappers under `plugins/mirror-mind/hooks/`, registered in its
+`hooks.json`.
 
 Current external-skill surfacing path:
 - keep the installed source/runtime artifacts under `~/.mirror-minds/<user>/...`
@@ -243,7 +277,7 @@ Current external-skill surfacing path:
   `.claude/skills/` surface with:
 
 ```bash
-uv run python -m memory extensions expose-claude \
+mirror extensions expose-claude \
   --mirror-home ~/.mirror-minds/<user> \
   --target-root /path/to/project
 ```
@@ -251,7 +285,7 @@ uv run python -m memory extensions expose-claude \
 - remove the projected Claude external skill surface later with:
 
 ```bash
-uv run python -m memory extensions clean-claude \
+mirror extensions clean-claude \
   --target-root /path/to/project
 ```
 
@@ -280,12 +314,12 @@ Claude no longer relies on a repo-local `mm:review-copy` compatibility skill;
 
 ### Gemini CLI
 
-| Event | Hook file | Gemini CLI trigger |
-|-------|-----------|--------------------|
-| Session start | `.gemini/hooks/session-start.sh` | `SessionStart` |
-| User prompt + Mirror inject | `.gemini/hooks/log-user.sh` | `BeforeAgent` |
-| Assistant response | `.gemini/hooks/log-assistant.sh` | `AfterAgent` |
-| Session end + backup | `.gemini/hooks/session-end.sh` | `SessionEnd` (best-effort) |
+| Event | Hook wrapper | Node entry | Gemini CLI trigger |
+|-------|--------------|------------|--------------------|
+| Session start | `.gemini/hooks/session-start.sh` | `gemini:session-start` | `SessionStart` |
+| User prompt + Mirror inject | `.gemini/hooks/log-user.sh` | `gemini:log-user` | `BeforeAgent` |
+| Assistant response | `.gemini/hooks/log-assistant.sh` | `gemini:log-assistant` | `AfterAgent` |
+| Session end + backup | `.gemini/hooks/session-end.sh` | `gemini:session-end` | `SessionEnd` (best-effort) |
 
 Hook files are registered in `.gemini/settings.json`. Session ID is available
 in hook stdin and may also be available as `$GEMINI_SESSION_ID` depending on the
@@ -309,11 +343,30 @@ conflicting duplicate skills.
 | Mirror load | `AGENTS.md` + `$mm-mirror` skill | Explicit invocation |
 
 Codex has no hook system. It uses a **wrapper script** (`scripts/codex-mirror.sh`)
-that handles the lifecycle around the `codex` command. Context is supplied via a
+that handles the lifecycle around the `codex` command, calling the front door
+directly for each step. Context is supplied via a
 static `AGENTS.md` in the project root, and Mirror Mode is activated through the
 shared native skill surface at `.agents/skills/mm-*/SKILL.md` (symlinked from
 `.pi/skills/mm-*/`). Unlike Pi and Gemini CLI, Codex activates these skills with
 `$mm-*` syntax, for example `$mm-build mirror`.
+
+### Node resolution for hook runtimes
+
+A runtime spawns its hooks with the `PATH` it was launched with, and a runtime
+launched from the desktop often does not have the one that holds `node`. Each
+hook wrapper therefore resolves Node explicitly, in this order: `$MIRROR_NODE`,
+`command -v node`, `~/.nvm/current/bin/node`, `/opt/homebrew/bin/node`,
+`/usr/local/bin/node`. A wrapper that finds none writes one line to
+`<mirror home>/hooks.log` and exits 0 — skipping the hook, never failing the
+turn, never silently. `runtime diagnose` reports when Node is not resolvable
+from its own environment. (The Python hooks could end in `|| true` safely,
+because `/usr/bin/python3` is on every macOS; the same silence here would hide
+a new failure.)
+
+A wrapper resolves the repository from its own file (`$BASH_SOURCE`), never
+from the working directory, because a runtime spawns hooks from wherever the
+session is. The npm package (CV22.DS10.US3) replaces that resolution with an
+installed entry point.
 
 ---
 
@@ -471,19 +524,21 @@ explicit review.
 
 ## CLI Reference
 
-All commands assume the `memory` package is installed and accessible via
-`python -m memory`. Inside this repo, prefer `uv run python -m memory ...` so
-commands run inside the locked project environment.
+Every command runs through the front door. From the repository root, with the
+[`mirror` alias](../../../../REFERENCE.md#running-a-command) defined:
 
 ```
-uv run python -m memory conversation-logger session-start
-uv run python -m memory conversation-logger log-user <session_id> <prompt> --interface <name>
-uv run python -m memory conversation-logger log-assistant <session_id> <content> --interface <name>
-uv run python -m memory conversation-logger session-end          # reads JSON from stdin
-uv run python -m memory conversation-logger session-end-pi <id>  # explicit session id, deferred extraction
-uv run python -m memory mirror load --context-only --query <q> [--persona <p>] [--journey <j>] [--org] [--session-id <id>]
-uv run python -m memory backup --silent
+mirror conversation-logger session-start
+mirror conversation-logger log-user <session_id> <prompt> --interface <name>
+mirror conversation-logger log-assistant <session_id> <content> --interface <name>
+mirror conversation-logger session-end          # reads JSON from stdin
+mirror conversation-logger session-end-pi <id>  # explicit session id, deferred extraction
+mirror mirror load --context-only --query <q> [--persona <p>] [--journey <j>] [--org] [--session-id <id>]
+mirror backup --silent
 ```
+
+In a hook or a skill, spell out the invocation the alias stands for (see the
+top of this document).
 
 ---
 
@@ -501,20 +556,24 @@ else. Not a status line, not a debug print, not a partial JSON. Any non-JSON
 byte on stdout before the final object will break parsing silently or visibly
 depending on the runtime.
 
-**In practice:** redirect all Python CLI output to `/dev/null` or `2>/dev/null`,
+**In practice:** redirect all front-door output to `/dev/null` or `2>/dev/null`,
 never to stdout.
 
 ```bash
+MIRROR="node --no-warnings --env-file-if-exists=$REPO/.env $REPO/ts/src/frontDoor/cli.ts"
+
 # Correct
-uv run python -m memory conversation-logger session-start >/dev/null 2>&1 || true
+$MIRROR conversation-logger session-start >/dev/null 2>&1 || true
 echo '{}'
 
 # Wrong — status line leaks to stdout before the JSON
-uv run python -m memory conversation-logger session-start 2>/dev/null
+$MIRROR conversation-logger session-start 2>/dev/null
 echo '{}'
 ```
 
-Found live in Gemini CLI integration. Claude Code's `Stop` hook does not use a
+Found live in Gemini CLI integration. The Gemini hook entries keep the rule by
+construction: they print exactly one JSON object, and everything else goes to
+stderr or the hook log. Claude Code's `Stop` hook does not use a
 JSON envelope, so this class of bug was invisible there until Gemini CLI exposed
 the constraint.
 
@@ -583,8 +642,8 @@ export MEMORY_ENV="production"
 ```
 
 Do **not** use `MIRROR_HOME` for smoke tests if `MIRROR_USER` is set in `.env`.
-The path resolver raises a `ValueError` when the `MIRROR_HOME` basename does
-not match `MIRROR_USER`.
+The path resolver refuses when the `MIRROR_HOME` basename does not match
+`MIRROR_USER`.
 
 Standard smoke test structure:
 
@@ -620,7 +679,7 @@ Gemini CLI uses `/mm-*`, while Codex uses `$mm-*`.
 ### Interface label
 
 `interface` is a free-text field. Passing `--interface <runtime_name>` is all
-that is needed. No Python migrations are required to add a new runtime label.
+that is needed. No migration is required to add a new runtime label.
 
 Established labels: `claude_code`, `pi`, `gemini_cli`, `codex`.
 

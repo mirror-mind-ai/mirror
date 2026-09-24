@@ -7,6 +7,11 @@ and the fixes that addressed them. The goal is twofold: help future users (and
 future us) recognize symptoms quickly, and preserve the reasoning behind each
 fix so we don't re-debug the same class of problem.
 
+Entries written before CV22.DS10.TS5 name the Python core's code as it was at
+the time; the behavior each fix established is kept by the TypeScript core,
+and every command below is written for it (`mirror` is the front door — see
+[Running a command](../../REFERENCE.md#running-a-command)).
+
 When you resolve a non-trivial bug, add an entry here. Keep entries scoped to
 the smallest reproducible cause. Open problems that have a known workaround
 but no fix yet are also welcome (mark them `Status: mitigated`).
@@ -23,8 +28,9 @@ but no fix yet are also welcome (mark them `Status: mitigated`).
 - [`runtime release-notes latest` says release notes were not found](#runtime-release-notes-latest-says-release-notes-were-not-found)
 - [Portuguese accents appear as mojibake on Windows](#portuguese-accents-appear-as-mojibake-on-windows)
 - [Pi Builder conversations appear without journeys](#pi-builder-conversations-appear-without-journeys)
+- [Hooks skip when a runtime cannot find `node`](#hooks-skip-when-a-runtime-cannot-find-node)
 - [Pi logger fails silently when `python3` resolves outside the project venv](#pi-logger-fails-silently-when-python3-resolves-outside-the-project-venv)
-- [TS front door misbehaves: telling it apart, rolling back, restoring data](#ts-front-door-misbehaves-telling-it-apart-rolling-back-restoring-data)
+- [The front door misbehaves: telling it apart, restoring data](#the-front-door-misbehaves-telling-it-apart-restoring-data)
 - [`extensions install` writes migrations to the wrong database outside production](#extensions-install-writes-migrations-to-the-wrong-database-outside-production)
 - [`extensions install` copies through a symlinked extension path](#extensions-install-copies-through-a-symlinked-extension-path)
 - [`extensions install` collapses the runtime skill catalog to one extension](#extensions-install-collapses-the-runtime-skill-catalog-to-one-extension)
@@ -111,19 +117,20 @@ this common case.
 ### Older updater recovery
 
 If the production clone is still on an older updater and cannot reach `v0.10.6`
-through the normal path, run the updater repair lane once:
+through the normal path, run the updater repair lane once. A clone that old
+predates the TypeScript core, so run these subcommands through the entry point
+its own documentation names:
 
 ```bash
-uv run python -m memory runtime update --repair-updater
-uv run python -m memory runtime update
+mirror runtime update --repair-updater
+mirror runtime update
 ```
 
-If repair is unavailable or still blocked, inspect status and diagnosis with the
-project environment, not bare `python`:
+If repair is unavailable or still blocked, inspect status and diagnosis:
 
 ```bash
-uv run python -m memory runtime status
-uv run python -m memory runtime diagnose
+mirror runtime status
+mirror runtime diagnose
 ```
 
 ### Manual fallback
@@ -173,13 +180,13 @@ may still contain mojibake.
 Run the explicit repair command in dry-run mode:
 
 ```bash
-uv run python -m memory repair-encoding
+mirror repair-encoding
 ```
 
 For another Mirror home:
 
 ```bash
-uv run python -m memory repair-encoding --mirror-home C:/Users/you/.mirror/Name
+mirror repair-encoding --mirror-home C:/Users/you/.mirror/Name
 ```
 
 The command scans known user-text columns (`identity`, `attachments`, `messages`,
@@ -191,7 +198,7 @@ rows without changing the database.
 Apply only after reviewing the dry-run output:
 
 ```bash
-uv run python -m memory repair-encoding --apply
+mirror repair-encoding --apply
 ```
 
 The apply path creates a database backup first and aborts if backup fails. Use
@@ -232,13 +239,14 @@ conversation because it filters by the `journey` column.
 
 ### Root cause
 
-Pi invokes SKILL.md commands as separate Python processes. `/mm-build` calls:
+Pi invoked SKILL.md commands as separate processes (Python ones, at the time).
+`/mm-build` called:
 
 ```bash
-uv run python -m memory build load <slug>
+mirror build load <slug>
 ```
 
-That process does not always receive `MIRROR_SESSION_ID`. Before the fix,
+That process did not always receive `MIRROR_SESSION_ID`. Before the fix,
 `switch_conversation()` returned without changing the active runtime session
 when no explicit session id was available. The Pi extension still logged user
 and assistant messages, but they remained attached to a conversation with
@@ -259,7 +267,7 @@ historical conversations.
 Run a dry-run repair scan:
 
 ```bash
-uv run python -m memory conversation-logger repair-journeys
+mirror conversation-logger repair-journeys
 ```
 
 This prints high-confidence journeyless conversations whose title or first user
@@ -268,7 +276,7 @@ message clearly activates a known journey.
 Limit the scan while reviewing:
 
 ```bash
-uv run python -m memory conversation-logger repair-journeys --limit 250
+mirror conversation-logger repair-journeys --limit 250
 ```
 
 ### Repair
@@ -276,7 +284,7 @@ uv run python -m memory conversation-logger repair-journeys --limit 250
 Apply only after reviewing the dry-run output:
 
 ```bash
-uv run python -m memory conversation-logger repair-journeys --apply
+mirror conversation-logger repair-journeys --apply
 ```
 
 The apply path creates a database backup first and refuses to continue if backup
@@ -296,7 +304,7 @@ updating, run the dry-run repair command and inspect the candidates.
 
 **Date:** 2026-05-22
 **Status:** mitigated
-**Affected component:** `python -m memory runtime update --check|--dry-run|update`
+**Affected component:** `runtime update --check|--dry-run|update`
 **Severity:** update blocked, no mutation
 
 ### Symptom
@@ -327,7 +335,7 @@ Fetch the stable branch and retry the check:
 
 ```bash
 git fetch origin stable
-uv run python -m memory runtime update --check
+mirror runtime update --check
 ```
 
 If the project has not created `origin/stable` yet, switch temporarily to the
@@ -335,7 +343,7 @@ integration/dogfooding channel only if you intentionally accept mainline updates
 
 ```bash
 printf 'main\n' > .mirror-update-channel
-uv run python -m memory runtime update --check
+mirror runtime update --check
 ```
 
 ### Prevention
@@ -349,7 +357,7 @@ remote `stable` branch before recommending self-update to users.
 
 **Date:** 2026-05-22
 **Status:** resolved in current versions
-**Affected component:** `python -m memory runtime update`
+**Affected component:** `runtime update`
 **Severity:** update blocked, no mutation
 
 ### Symptom
@@ -359,7 +367,7 @@ After writing `.mirror-update-channel`, runtime update refuses to proceed:
 ```text
 [✗] status gate: runtime status is not ready
 Recovery:
-- Run: uv run python -m memory runtime diagnose
+- Run: mirror runtime diagnose
 ```
 
 Diagnosis reports a dirty git tree containing `.mirror-update-channel`.
@@ -377,9 +385,9 @@ it:
 
 ```bash
 rm -f .mirror-update-channel
-uv run python -m memory runtime update
+mirror runtime update
 printf 'stable\n' > .mirror-update-channel
-uv run python -m memory runtime version
+mirror runtime version
 ```
 
 Current versions ignore `.mirror-update-channel` in git, so changing it should
@@ -391,7 +399,7 @@ not dirty the repository.
 
 **Date:** 2026-05-22
 **Status:** operational guidance
-**Affected component:** `python -m memory welcome`, `python -m memory runtime version`
+**Affected component:** `welcome`, `runtime version`
 **Severity:** user confusion, no data risk
 
 ### Symptom
@@ -410,8 +418,8 @@ Write the stable marker and verify it:
 
 ```bash
 printf 'stable\n' > .mirror-update-channel
-uv run python -m memory runtime version
-uv run python -m memory runtime update --check
+mirror runtime version
+mirror runtime update --check
 ```
 
 Expected output includes:
@@ -432,7 +440,7 @@ local branch.
 
 **Date:** 2026-05-22
 **Status:** expected before first prospective release note
-**Affected component:** `python -m memory runtime release-notes`
+**Affected component:** `runtime release-notes`
 **Severity:** informational
 
 ### Symptom
@@ -462,44 +470,30 @@ latest` should render that release note.
 
 ---
 
-## TS front door misbehaves: telling it apart, rolling back, restoring data
 
-Since CV22.DS4, the Pi skills `mm-journeys`, `mm-memories`, `mm-identity set`,
-and `mm-build journey set-path` enter through the TypeScript front door
-(`ts/src/frontDoor/cli.ts`), which routes ported commands to the TS core and
-everything else to the frozen Python engine.
+## The front door misbehaves: telling it apart, restoring data
 
-### Symptoms — is the TS route the problem?
+Every command enters Mirror Mind through the front door
+(`ts/src/frontDoor/cli.ts`). Until CV22.DS10.TS5 an unported or reverted
+command fell back to a frozen Python engine, and this entry explained how to
+tell the two engines apart and how to roll a skill back to Python. There is no
+second engine any more, so there is nothing to roll back to: a misbehaving
+command is a bug to report, and a bad write is undone from a backup.
 
-TS-route failures are identifiable:
+### Symptoms — what the front door's own failures look like
 
 - Error lines prefixed `Mirror TS front door:` (configuration, schema-state
   guard) or `Mirror TS front door could not find database:` — exit code 2.
 - Schema-guard messages name migrations explicitly: `database schema is older
-  than this TS core (pending migrations: …)` → run any Python
-  `uv run python -m memory` command once to migrate; `… newer than this TS
-  core …` → `git pull` the checkout.
+  than this TS core (pending migrations: …)` → run `mirror runtime migrate`;
+  `… newer than this TS core (unknown migrations: …)` → update the checkout
+  (`git pull`) so the code matches the database.
+- A name the front door does not own answers with its own usage error (exit 1
+  for an unknown command, exit 2 for an unknown subcommand), and a retired
+  command answers in one line naming its
+  [cutoff](../releases/pending-cutoffs.md), exit 1.
 - Node-level stack traces or `node: command not found` — the runtime
   prerequisite (Node ≥ 24), not Mirror data.
-
-Python failures look like Python: `uv` resolution errors, tracebacks,
-argparse usage text.
-
-### Rollback — return the skills to the Python CLI
-
-The cutover is one commit touching exactly two skill files
-(`.pi/skills/mm-identity/SKILL.md`, `.pi/skills/mm-build/SKILL.md`):
-
-```bash
-git revert ae56322   # "Cut over identity set + journey set-path skills…"
-```
-
-(Verified to apply cleanly against current HEAD.) Read routes can be rolled
-back the same way via the commit that pointed `mm-journeys`/`mm-memories` at
-the front door (`061ff86`), or by editing the skill files to call
-`uv run python -m memory …` directly. Skills and TS code ride the same
-repository, so `git pull`/`git revert` keep them atomic — partial states can
-only come from local edits.
 
 ### Recovery — restore the pre-write snapshot
 
@@ -521,151 +515,123 @@ tested in `ts/src/frontDoor/liveBackup.ts` (`restoreFromBackup`); the manual
 steps above are their operator form. For scheduled archives use `mm-backup` —
 the pre-write snapshot only rewinds the last routed write.
 
-### Verify — prove the state you rolled back to
+### Verify — prove the state you restored
 
 ```bash
-# TS route (before rollback) — or Python route (after rollback):
-NODE_OPTIONS=--no-warnings node ts/src/frontDoor/cli.ts journeys
-uv run python -m memory journeys
-
-# Write path smoke (either route):
-uv run python -m memory identity get ego behavior | head -2
+mirror journeys
+mirror identity get ego behavior | head -2
 ```
 
-Both routes read the same `memory.db`; identical listings mean the seam is
-healthy. If the schema guard still refuses after a rollback, the database
-and checkout are from different eras — align them (`git pull` or migrate)
+If the schema guard refuses after a restore, the snapshot and the checkout are
+from different eras — run `mirror runtime migrate`, or update the checkout,
 before writing anything.
+
+---
+
+
+## Hooks skip when a runtime cannot find `node`
+
+**Date:** 2026-09-24
+**Status:** mitigated by design; diagnosable
+**Affected component:** every hook wrapper under `.claude/hooks/`, `.gemini/hooks/`, and `plugins/mirror-mind/hooks/`
+**Severity:** silent loss of logging, context injection, and the close tail, if nobody reads the log
+
+### Symptom
+
+A runtime launched from the desktop rather than a terminal works normally, but
+its sessions are missing from `mirror conversations`, Mirror Mode context is
+not injected, and conversations never get titles or memories.
+`<mirror home>/hooks.log` holds lines like:
+
+```text
+2026-09-24T10:12:03Z claude:session-start: node not found on PATH; hook skipped. Set MIRROR_NODE.
+```
+
+### Root cause
+
+Since CV22.DS10.TS5 every hook wrapper runs one Node entry
+(`ts/src/hooks/main.ts`). `node` usually lives under nvm or Homebrew, and a
+GUI-launched runtime often does not inherit the `PATH` that holds it. The
+Python hooks never met this — `/usr/bin/python3` is on every macOS — which is
+why their `|| true` was safe and the Node wrappers' silence would not have
+been: the same class of failure as the [2026-05 Pi logger
+incident](#pi-logger-fails-silently-when-python3-resolves-outside-the-project-venv),
+waiting to happen again.
+
+### Diagnosis
+
+```bash
+tail -20 ~/.mirror-minds/<user>/hooks.log
+mirror runtime diagnose
+```
+
+`runtime diagnose` resolves Node the way the wrappers do and reports when it
+cannot.
+
+### Fix
+
+Set `MIRROR_NODE` to the absolute path of `node` in the environment the runtime
+is launched with:
+
+```bash
+which node   # in a terminal where it works
+```
+
+Without it, a wrapper tries `command -v node`, then `~/.nvm/current/bin/node`,
+`/opt/homebrew/bin/node`, and `/usr/local/bin/node`. A wrapper that finds
+none skips the hook, exits 0 so the user's turn is never broken, and writes
+the line above instead of failing silently.
+
+### Recovery of affected sessions
+
+The turns a skipped hook never saw are not in the database, and Mirror has no
+backfill for Claude Code or Gemini CLI transcripts: fix the Node resolution and
+logging resumes from the next session. Pi and the Codex wrapper do not go
+through these wrappers: both spawn `node` from the terminal they were started
+in, which normally has it on its `PATH`.
 
 ---
 
 ## Pi logger fails silently when `python3` resolves outside the project venv
 
 **Date:** 2026-05-10
-**Status:** resolved
+**Status:** resolved; superseded by the TypeScript core (CV22). The class of
+failure is not — see [Hooks skip when a runtime cannot find
+`node`](#hooks-skip-when-a-runtime-cannot-find-node).
 **Affected component:** `.pi/extensions/mirror-logger.ts`
 **Severity:** silent data-pipeline loss (no conversations or messages persisted to the database during affected sessions)
 
 ### Symptom
 
-The Pi runtime appears to work normally. `mm-mirror`, `mm-journeys`, and other
-skills run fine. But the conversation history is never persisted:
-
-- `uv run python -m memory conversations --limit 10` shows no rows from the current Pi session
-- `runtime_sessions` table is empty (no row with `active = 1` for the current session)
-- `mm-recall`, `mm-conversations`, and any feature that depends on the message history return as if the session never happened
-
-The only visible signal that something is wrong is buried in
-`~/.mirror-minds/mirror-logger.log`, which accumulates lines like:
-
-```
-2026-05-10T23:22:26.518Z [WARN] stderr from [-m memory conversation-logger]:
-/Users/alissonvale/.pyenv/versions/3.10.6/bin/python3: No module named memory
-```
-
-These appear on **every turn** but never surface to the user because the
-extension is designed to swallow failures to avoid blocking Pi.
-
-### Diagnosis
-
-Three checks confirm the issue:
-
-1. Tail the extension log:
-   ```bash
-   tail -50 ~/.mirror-minds/mirror-logger.log
-   ```
-   If you see repeated `No module named memory` warnings, you are hitting this bug.
-
-2. Confirm the path of `python3`:
-   ```bash
-   which python3
-   python3 -c "import memory"
-   ```
-   The first command will usually point at a pyenv shim or a system Python. The
-   second will fail with `ModuleNotFoundError`.
-
-3. Confirm the project venv has the package:
-   ```bash
-   .venv/bin/python -c "import memory; print(memory.__file__)"
-   ```
-   This should succeed and print the path inside `.venv/lib/.../site-packages`.
-
-If the first two checks indicate `python3` resolves outside the venv but the
-third works, you are hitting the bug.
+The Pi runtime appeared to work normally — `mm-mirror`, `mm-journeys`, and
+other skills ran fine — but the conversation history was never persisted: no
+rows in `conversations` from the current session, no active
+`runtime_sessions` row, and `mm-recall` and `mm-conversations` answered as
+if the session never happened. The only signal was buried in
+`~/.mirror-minds/mirror-logger.log`, which accumulated one `No module named
+memory` warning per turn that the extension, by design, never surfaced.
 
 ### Root cause
 
-The Pi extension at `.pi/extensions/mirror-logger.ts` invokes the Python CLI
-on every conversation turn:
+The extension spawned the Python core with a bare `python3` resolved from the
+user's `PATH`. On a machine with pyenv (or any user-level Python manager)
+ahead of the project virtualenv, that interpreter did not have the `memory`
+package, and every turn failed silently. The extension swallowed failures on
+purpose so a persistence problem could never block a Pi session — correct for
+usability, and exactly why the bug lived for a month.
 
-```typescript
-const result = await pi.exec("python3", args, { timeout: 30_000 });
-```
+### Fix and recovery
 
-`pi.exec("python3", ...)` resolves `python3` via the user's `PATH`. On a
-machine with pyenv (or any user-level Python manager) ahead of the project
-venv in `PATH`, this picks up a Python that does not have the project's
-dependencies installed. The `memory` package lives in `.venv/lib/.../site-packages`,
-which is only on `sys.path` when the venv interpreter is used.
+The extension was changed to run the interpreter through `uv`, which found
+the project virtualenv regardless of `PATH` order. The Pi session files on
+disk still held every turn, and the `conversation-logger session-start`
+backfill ingested the 15 orphaned sessions with no data loss.
 
-The extension was specifically designed to **fail silently** (see the
-`try/catch` around the exec call and the comment in `runPy`) so that any
-failure in the persistence pipeline does not block the user's Pi session.
-That design choice is correct for usability, but it also means a bug at this
-layer can persist for a long time without any visible signal.
-
-### Fix
-
-Replace `python3` with `uv run python` so the project venv is used regardless
-of `PATH` order. This aligns with the project convention (`AGENTS.md`: "Use
-`uv run` for project Python commands") and works without requiring any
-filesystem-relative path resolution because `uv` discovers the venv from the
-process `cwd`.
-
-```typescript
-// .pi/extensions/mirror-logger.ts (line ~75)
-const result = await pi.exec("uv", ["run", "python", ...args], {
-    timeout: 30_000,
-});
-```
-
-After saving the file, the fix takes effect on the next Pi session. Existing
-in-flight sessions still hold the old extension code in memory and continue
-to fail until restarted.
-
-### Recovery of affected sessions
-
-The Pi runtime persists each turn to its own session file on disk (independent
-of the database). Even when the extension's database push fails, the Pi
-session file preserves every user and assistant message. The `session-start`
-sub-command of `conversation-logger` scans for orphaned Pi session files and
-backfills them into the database.
-
-Run after restarting Pi (or manually any time):
-
-```bash
-uv run python -m memory conversation-logger session-start
-```
-
-The output reports how many orphaned sessions were ingested. The most recent
-incident backfilled 15 sessions accumulated over roughly a month, with no
-data loss.
-
-### Prevention
-
-Three avenues are worth considering:
-
-1. **Surface persistence failures.** The current design swallows errors to
-   keep Pi responsive. Consider adding a visible indicator (e.g. a one-line
-   note in `mm-mirror` output or a status check on `mm-help`) when
-   `~/.mirror-minds/mirror-logger.log` shows recent `WARN`/`ERROR` lines.
-2. **Document the convention.** The project already mandates `uv run` for
-   Python invocations. Any new Pi extension should follow the same rule;
-   it is worth calling this out explicitly in the extension author guide
-   when one exists.
-3. **Periodic backfill.** Even with the fix in place, running
-   `conversation-logger session-start` opportunistically catches any future
-   regressions before they accumulate.
+Since CV22 the extension spawns `node` and the front door, and since
+CV22.DS10.TS5 there is no interpreter to resolve. The lesson outlived the code:
+**a runtime's `PATH` is not your shell's `PATH`, and a hook that fails
+silently needs somewhere to say so.** The Node-era rewrite of every hook was
+built around it.
 
 ---
 
@@ -680,7 +646,7 @@ Three avenues are worth considering:
 
 In a non-production environment (`MEMORY_ENV=development` or `test`), installing
 a command-skill extension appears to succeed, but the extension's tables are
-missing at runtime. Extension subcommands (`python -m memory ext <id> ...`)
+missing at runtime. Extension subcommands (`mirror ext <id> ...`)
 fail with `no such table: ext_<id>_*`, and a stray `<mirror home>/memory.db`
 appears next to the real `memory_dev.db`.
 
@@ -780,7 +746,7 @@ extensions source dir) still shows every extension — but the runtime catalog
 lists only one:
 
 ```bash
-uv run python -m memory inspect runtime-catalog pi --mirror-home <home>
+mirror inspect runtime-catalog pi --mirror-home <home>
 # extensions: admin -> ext-admin        (only one, though 7 ext-* dirs exist)
 ```
 
@@ -811,9 +777,9 @@ A full sync per runtime rebuilds the complete catalog without a code change (it
 also runs automatically on the next install once the fix is present):
 
 ```bash
-uv run python -m memory extensions sync --runtime pi \
+mirror extensions sync --runtime pi \
   --mirror-home <home> --target-root <home>/runtime/skills/pi
-uv run python -m memory extensions sync --runtime claude \
+mirror extensions sync --runtime claude \
   --mirror-home <home> --target-root <home>/runtime/skills/claude
 ```
 

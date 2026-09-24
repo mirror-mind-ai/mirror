@@ -35,32 +35,21 @@ OpenRouter handles the memory infrastructure: generating embeddings, extracting
 memories from conversations, and powering `/mm-consult`. Cost is pay-as-you-go;
 a few cents per session. $5 will likely last months.
 
-### uv
-
-```bash
-# macOS and Linux
-curl -LsSf https://astral.sh/uv/install.sh | sh
-```
-
-Windows: [https://docs.astral.sh/uv/getting-started/installation/](https://docs.astral.sh/uv/getting-started/installation/)
-
-Python 3.10+ is handled by uv automatically — no separate Python install needed.
-
 ### Node.js 24+
 
-Mirror Mind's core runs partly on a TypeScript front door executed by Node.js,
-so **Node.js 24 or newer** must be on your `PATH`. Pi and the other harnesses
-are themselves Node applications, so you likely have Node already — verify the
-version:
+Mirror Mind's core is TypeScript run directly by Node.js — no build step, and
+no other language runtime to install. **Node.js 24 or newer** must be on your
+`PATH`. Pi and the other harnesses are themselves Node applications, so you
+likely have Node already — verify the version:
 
 ```bash
 node --version   # must be v24.0.0 or newer
 ```
 
 Install or upgrade from [nodejs.org](https://nodejs.org/). `runtime status`
-reports the detected Node version alongside Python. Currently POSIX
-(macOS/Linux) is the supported platform for the front door; see
-[REFERENCE.md](../REFERENCE.md) for the platform envelope.
+reports the detected Node version. Currently POSIX (macOS/Linux) is the
+supported platform; see [REFERENCE.md](../REFERENCE.md#platform-envelope) for
+the platform envelope.
 
 ### Pi — recommended harness
 
@@ -85,11 +74,22 @@ If you are not using Pi as your primary harness:
 ```bash
 git clone https://github.com/viniciusteles/mirror.git
 cd mirror
-uv sync
+(cd ts && npm ci)
 ```
 
-`uv sync` creates a `.venv`, installs the exact dependency versions from
-`uv.lock`, and installs the `memory` package in editable mode.
+`npm ci` installs the exact dependency versions from `ts/package-lock.json`:
+one runtime dependency (`yaml`) and the development tools.
+
+Every command below is written as `mirror <command>`, the name the front door
+gives itself. Until Mirror Mind is published as an npm package that puts
+`mirror` on your `PATH`, define it once per shell, from the repository root:
+
+```bash
+alias mirror='NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts'
+```
+
+[REFERENCE.md](../REFERENCE.md#running-a-command) explains what that alias
+stands for.
 
 ---
 
@@ -115,7 +115,7 @@ REFERENCE.md](../REFERENCE.md#configuration).
 ## 4. Initialize
 
 ```bash
-uv run python -m memory init your-name
+mirror init your-name
 ```
 
 This copies the identity templates into `~/.mirror-minds/your-name/identity/` and
@@ -127,14 +127,14 @@ Your identity starts generic and sharpens through use. When something feels off,
 refine it at your own pace:
 
 ```bash
-uv run python -m memory identity edit user identity
+mirror identity edit user identity
 ```
 
 ---
 
 ## 5. What Ships in Your Identity
 
-The templates are editorial products, not fill-in forms. After `memory init`,
+The templates are editorial products, not fill-in forms. After `mirror init`,
 your identity home contains real, usable content.
 
 **Core identity** (used in every session):
@@ -168,7 +168,7 @@ self-knowledge, and intentional change.
 ## 6. Seed
 
 ```bash
-uv run python -m memory seed
+mirror seed
 ```
 
 This loads the identity YAML files from your user home into the database. The
@@ -245,6 +245,12 @@ Use `/mm:` prefix:
 
 Claude Code is fully supported but is now the secondary runtime rather than the primary one.
 
+**If a runtime is launched from your desktop rather than a terminal**, it may not
+inherit the `PATH` that holds `node`, and its hooks will skip logging. Each skip
+writes one line to `~/.mirror-minds/your-name/hooks.log`, and `mirror runtime
+diagnose` reports it. Set `MIRROR_NODE=/path/to/node` in the environment the
+runtime starts with.
+
 ---
 
 ## 8. Verify
@@ -252,12 +258,12 @@ Claude Code is fully supported but is now the secondary runtime rather than the 
 Confirm the onboarding flow worked end to end:
 
 ```bash
-uv run python -m memory list personas --verbose
-uv run python -m memory list journeys
-uv run python -m memory detect-persona "I want help writing an article"
-uv run python -m memory detect-persona "help me think through this idea"
-uv run python -m memory detect-persona "debug this Python issue"
-uv run python -m memory inspect persona writer
+mirror list personas --verbose
+mirror list journeys
+mirror detect-persona "I want help writing an article"
+mirror detect-persona "help me think through this idea"
+mirror detect-persona "debug this Python issue"
+mirror inspect persona writer
 ```
 
 What to check:
@@ -269,10 +275,10 @@ What to check:
 ### Success checklist
 
 - `~/.mirror-minds/your-name/identity/` exists with your name substituted in templates
-- `uv run python -m memory seed` completes without errors
-- 12 personas appear in `uv run python -m memory list personas --verbose`
-- `personal-growth` appears in `uv run python -m memory list journeys`
-- persona routing responds sensibly to `uv run python -m memory detect-persona "..."`
+- `mirror seed` completes without errors
+- 12 personas appear in `mirror list personas --verbose`
+- `personal-growth` appears in `mirror list journeys`
+- persona routing responds sensibly to `mirror detect-persona "..."`
 - your chosen runtime (Pi, Gemini CLI, Codex, or Claude Code) can use the seeded database
 
 ---

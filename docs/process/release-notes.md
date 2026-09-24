@@ -45,15 +45,15 @@ O que mudou na versão mais recente do Mirror Mind?
 Under the hood, the runtime reads release notes with:
 
 ```bash
-uv run python -m memory runtime release-notes latest
-uv run python -m memory runtime release-notes vX.Y.Z
+mirror runtime release-notes latest
+mirror runtime release-notes vX.Y.Z
 ```
 
 For users who are more than one release behind, use the cumulative pending view:
 
 ```bash
-uv run python -m memory runtime release-notes pending
-uv run python -m memory runtime release-notes pending --from 0.9.0 --ref origin/stable
+mirror runtime release-notes pending
+mirror runtime release-notes pending --from 0.9.0 --ref origin/stable
 ```
 
 `pending` compares the installed runtime version to a git ref, defaulting to
