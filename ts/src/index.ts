@@ -1,7 +1,8 @@
 // Mirror Mind TypeScript core — package entry point and public API surface.
 //
-// The core is grown as a database-seam strangler of the Python core in
-// `src/memory/` (see docs/project/roadmap/cv22-typescript-core-port/). This file
+// The core was grown as a database-seam strangler of the Python core that
+// lived in `src/memory/` until CV22.DS10.TS5 deleted it (see
+// docs/project/roadmap/cv22-typescript-core-port/). This file
 // is the deliberate public surface: everything a consumer of the package should
 // use is re-exported here, read and write. Internal modules still import each
 // other by deep path; only the public API lives here, and it is kept in sync as

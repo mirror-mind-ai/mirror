@@ -31,8 +31,9 @@ loads that context automatically. The mirror is not a stateless assistant — it
 carries terrain.
 
 **Interfaces are thin.**  
-Claude Code and Pi call the same Python core. Neither interface owns behavior.
-If behavior is in a skill script, it belongs in `src/memory/skills/` — not in
+Every runtime calls the same core, through the same front door. Neither
+interface owns behavior. If behavior is in a skill script, it belongs in the
+core (`ts/src/`) — not in
 the interface layer.
 
 **One voice, many lenses.**  

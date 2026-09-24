@@ -156,7 +156,6 @@ Common docs to check:
 - `REFERENCE.md`
 - `docs/index.md`
 - `docs/product/architecture.md`
-- `docs/product/api.md`
 - `docs/project/briefing.md`
 - `docs/project/decisions.md`
 - `docs/project/roadmap/`
@@ -222,7 +221,7 @@ Pull request policy:
 
 If the work creates a release boundary, follow [Versioning](versioning.md) and write a release note using [Release Notes](release-notes.md).
 
-**Model-behavior release gate.** A release that changes `EXTRACTION_MODEL`, `EMBEDDING_MODEL`, or any prompt in `src/memory/intelligence/prompts.py` must show a green `eval --all` (following the [model upgrade playbook](#model-upgrade-playbook)) or a consciously recorded waiver naming the reason. No green run and no waiver means no release.
+**Model-behavior release gate.** A release that changes `EXTRACTION_MODEL`, `EMBEDDING_MODEL`, or any prompt in `ts/src/extraction/prompts.ts` must show a green `eval --all` (following the [model upgrade playbook](#model-upgrade-playbook)) or a consciously recorded waiver naming the reason. No green run and no waiver means no release.
 
 ---
 
@@ -241,18 +240,17 @@ Between checkpoints, the Driver can work without asking permission for every fil
 
 ## Verification Checklist
 
-Every story starts by syncing development dependencies and ends with the same commands CI runs locally:
+Mirror Mind is one TypeScript package, run directly by Node.js 24+ with no build step. Every story starts by installing the pinned development dependencies and ends with the commands every change needs:
 
 ```bash
-uv sync --extra dev
-uv run pytest tests/unit/ tests/integration/ -m "not live"
-uv run ruff check src/ tests/
-uv run ruff format --check src/ tests/
-uv run mypy src/memory
+cd ts
+npm ci               # pinned dependencies: yaml at runtime; TypeScript and Biome for the checks
+npm run typecheck    # tsc --noEmit
+npm run lint         # Biome
+npm test             # node:test, the whole suite
+cd ..
 git diff --check
 ```
-
-Do not run bare `pytest`, `ruff`, or `mypy` unless your shell is already inside the project virtualenv. Bare commands may resolve to global tools and produce misleading missing-dependency errors.
 
 For stories that touch runtime behavior, also run an isolated smoke test with temporary `HOME`, explicit `MEMORY_DIR` or `DB_PATH`, and empty-string environment overrides when needed to prevent `.env` from repopulating production paths.
 
@@ -264,7 +262,33 @@ bash scripts/smoke_runtime_update.sh
 
 It builds a scratch origin, clone, mirror home, and env-file, and shadows `python`, `python3`, and `uv` with stubs that exit 66 — so an interpreter spawn fails the smoke instead of passing unnoticed. That is how CV22.DS10.US2 found the updater spawning `uv` to fill in a display field its own gate never read.
 
-**The checklist above is not the full gate.** CI's list is the authority, and it includes work these commands do not touch: the parity generators, the write-parity probes, the determinism gate, the smokes, and the repository checks (`check_oracle_drift`, `check_retired_surfaces`, `check_doc_links`, and the Node `checkSkillCommandParity`). Green `pytest` plus green `npm test` says nothing about any of them; CV22.DS10.TS2 failed CI twice for exactly that assumption.
+**The checklist above is not the full gate.** CI's list in `.github/workflows/` is the authority, and it includes work `npm test` does not touch. Before a push, run the rest of it from the repository root:
+
+```bash
+# The repository checks. The retired-surface sweep reads the git INDEX:
+# stage new files first, or they are invisible to it and a green run proves
+# nothing about the commit.
+node ts/scripts/checkRetiredSurfaces.ts
+node ts/scripts/checkDocLinks.ts
+node ts/scripts/checkSkillCommandParity.ts
+node ts/scripts/buildClaudePlugin.ts --check
+
+# The migration custody proofs: every migration step against its committed
+# fixture, and a fresh bootstrap under a concurrent race.
+node ts/smoke/migration_structural_parity.ts
+node ts/smoke/bootstrap_custody_parity.ts
+
+# The end-to-end smokes, on a synthetic demo database.
+node --no-warnings ts/smoke/generate_demo_memory_db.ts --out tmp/smoke/demo-memory.db
+MEMORY_ENV=test node --no-warnings ts/smoke/migrate_on_open_smoke.ts --source-db tmp/smoke/demo-memory.db
+node --no-warnings ts/smoke/conversation_lifecycle_smoke.ts
+node --no-warnings ts/smoke/builder_lifecycle_smoke.ts
+MEMORY_ENV=test node --no-warnings ts/smoke/extension_catalog_smoke.ts
+```
+
+CI also runs the whole suite a second time with `python`, `python3`, and `uv` shadowed by stubs that log and exit 66, and fails on a single logged spawn even when every test passes. The Mirror Mind repository holds no Python since CV22.DS10.TS5, and that step is how it stays true. Green `npm test` says nothing about any of the steps above; CV22.DS10.TS2 failed CI twice for exactly that assumption.
+
+The runtime smokes under `scripts/` (`smoke_codex.sh`, `smoke_gemini_cli.sh`, `smoke_claude_plugin.sh`, `smoke_mirror_mcp.sh`) are not in CI: they need a runtime installed on the machine. Run the one for the runtime a change touches.
 
 If a verification command fails because of known pre-existing debt, record that explicitly in the story notes and do not silently treat the gate as green.
 
@@ -281,10 +305,10 @@ If a verification command fails because of known pre-existing debt, record that 
 Example:
 
 ```text
-Extract mirror skill logic into src/memory/skills/mirror.py
+Read every hook payload through one module, ts/src/hooks/payload.ts
 
-Move the load/log/context-only logic from runtime wrappers into an
-importable module so every runtime can call the same implementation.
+The Claude and Gemini hooks each parsed the same JSON their own way, and
+one of them read the wrong field. One reader means one place to be right.
 ```
 
 ### After Push
@@ -311,7 +335,6 @@ When behavior changes:
 - `README.md`: public positioning, setup, stack, or usage changes.
 - `REFERENCE.md`: command behavior, configuration, runtime contracts, or operational reference.
 - `docs/product/architecture.md`: system structure, data flow, import direction, schema, runtime model.
-- `docs/product/api.md`: public `MemoryClient` API.
 - `docs/project/briefing.md`: stable architectural premises.
 - `docs/project/decisions.md`: incremental decisions.
 - `docs/project/roadmap/`: CV/Epic/Story status and plans.
@@ -322,7 +345,7 @@ When behavior changes:
 
 ## Evals
 
-Evals live in `ts/evals/`, beside `ts/parity/` and separate from `ts/test/`.
+Evals live in `ts/evals/`, beside `ts/smoke/` and separate from `ts/test/`.
 They hit real LLM APIs, cost a few cents per run, and are non-deterministic. Do
 not add them to CI.
 
@@ -442,7 +465,7 @@ Small stories validate faster. A story that cannot be verified end to end in one
 
 Design debt is in-cycle work. Ask at the end of every story what design debt was created and whether it can be cleaned now.
 
-Split by ownership, not convenience. CLI and services own database work. Agents own filesystem reading and workflow orchestration. Duplicating strong native agent capabilities in Python is usually waste.
+Split by ownership, not convenience. CLI and services own database work. Agents own filesystem reading and workflow orchestration. Duplicating strong native agent capabilities in the core is usually waste.
 
 Coherence is not polish. It is the difference between a repository that remembers itself and one that slowly drifts into contradiction.
 

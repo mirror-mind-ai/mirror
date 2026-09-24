@@ -322,13 +322,29 @@ describe("the staged python-core-mentions row", () => {
     assert.deepEqual(sweep(REPO_ROOT, ENFORCED), []);
   });
 
-  test("FIRES against today's tree when asked -- the row is graded, not merely written", () => {
-    const messages = sweep(REPO_ROOT, RETIRED, { only: "python-core-mentions" })
-      .map((problem) => problem.message)
-      .join("\n");
-    assert.ok(messages.length > 0, "python-core-mentions found nothing while mentions remain");
-    // The developer conventions still say `uv run`: slice H rewrites them.
-    assert.match(messages, /python-core-mentions: AGENTS\.md:\d+ mentions/);
+  test("FIRES on every shape it forbids -- the row is graded, not merely written", () => {
+    // Until plateau 4 this asserted against the real tree, where the
+    // developer conventions still said `uv run`. Slice H rewrote them, so the
+    // row is graded on seeds instead: one file per shape, each of which must
+    // be reported, while the prose around them must not be.
+    const row = STAGED[0] as NonNullable<(typeof STAGED)[0]>;
+    const seeds: Record<string, string> = {
+      "hooks/a.sh": "python3 -m memory backup --silent\n",
+      "hooks/b.sh": 'python3 -c "import json"\n',
+      "docs/c.md": "Run `uv run python -m memory seed`.\n",
+      "docs/d.md": "First `uv sync`, then go.\n",
+      "src/e.py.txt": "from memory.cli import main\n",
+      "src/f.txt": "import memory\n",
+      "src/g.txt": "memory.hooks.mirror_state\n",
+    };
+    const root = gitRepo({
+      ...seeds,
+      "docs/prose.md": "The Python core was deleted; run `mirror seed` instead.\n",
+    });
+    const flagged = checkResidue(row, trackedFiles(root), root).map((problem) =>
+      problem.message.split(":")[1]?.trim(),
+    );
+    assert.deepEqual(flagged.sort(), Object.keys(seeds).sort());
   });
 
   test("no longer catches the runtime hooks -- plateau 1 rewrote them", () => {

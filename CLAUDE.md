@@ -50,8 +50,8 @@ How to operate: use `/mm-soul [slug]` / `$mm-soul [slug]` / `/mm:soul [slug]`
 to render the entry surface. While Soul Mode is active, follow
 `.pi/skills/mm-soul/SKILL.md`: listen to the user's answer as living field,
 withhold Possible Listenings when the material is thin, and when living matter
-appears call `uv run python -m memory soul listen ...` to render the Possible
-Listenings surface at the end of the response. This renderer call is required
+appears call the front door's `soul listen ...` (the exact invocation is in the
+skill) to render the Possible Listenings surface at the end of the response. This renderer call is required
 Soul Mode behavior, not optional tool use. Soul Mode must not mutate files,
 implement stories, run implementation commands, package releases, or change
 project state. For operational requests, name the `☾ SOUL → BUILDER BOUNDARY`
@@ -95,9 +95,10 @@ the user explicitly asks for a persona.
 
 **Routing protocol:** persona routing is data-driven. Each persona in the
 database carries `routing_keywords` and a routing descriptor. At runtime,
-`IdentityService.detect_persona()` scores the query against those keywords. If
-no persona scores above threshold, the ego answers alone. To inspect active
-routing: `uv run python -m memory detect-persona "<query>"`.
+`detectPersona` (`ts/src/persona/detectPersona.ts`) scores the query against
+those keywords. If no persona scores above threshold, the ego answers alone. To
+inspect active routing:
+`NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts detect-persona "<query>"`.
 
 **Signature format:**
 
@@ -181,13 +182,14 @@ Full command reference: [REFERENCE.md](REFERENCE.md)
 Applies to Builder Mode sessions on this repository.
 
 Mirror Mind is a local-first memory and identity framework for agentic AI
-runtimes. One Python core (`src/memory/`), multiple runtime harnesses (Pi,
-Gemini CLI, Codex, Claude Code), SQLite database, Jungian identity architecture.
+runtimes. One TypeScript core (`ts/`, run directly by Node.js 24+), multiple
+runtime harnesses (Pi, Gemini CLI, Codex, Claude Code), SQLite database, Jungian
+identity architecture.
 
 **Live state (version and roadmap status) is not duplicated here** — it
 drifts. Read it from the source of truth:
 
-- Version: `pyproject.toml`
+- Version: `ts/package.json`
 - CV/Epic/Story status: [docs/project/roadmap/index.md](docs/project/roadmap/index.md)
 
 Builder Mode load also injects the live, database-backed journey status at
@@ -201,7 +203,9 @@ session start.
 - Decisions: [docs/project/decisions.md](docs/project/decisions.md)
 
 **Developer conventions:**
-- Use `uv run` for all project Python commands and tests
+- Run tests and checks from `ts/` with npm: `npm test`, `npm run typecheck`,
+  `npm run lint`. CI runs more than these; the full pre-push set is in the
+  development guide
 - TDD for behavior changes
 - CI must be green before a story is marked done
 - After every push, verify GitHub Actions with `gh`

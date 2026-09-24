@@ -38,8 +38,7 @@ Product is the thing itself: the core, SQLite schema, runtime integrations, skil
 
 Canonical product surfaces:
 
-- `src/memory/`
-- `tests/` and `evals/`
+- `ts/` — the core, its tests, smokes, and evals
 - Runtime surfaces: `.pi/`, `.agents/`, `.claude/`, `.gemini/`
 - [Product docs](../product/index.md)
 - [Architecture](../product/architecture.md)
