@@ -1,9 +1,10 @@
 // Gemini CLI hook entries (CV22.DS10.TS5 plateau 1, decision D4).
 //
 // These hooks already entered the TypeScript front door for every Mirror
-// command -- the Python they carried was only `python3 -c "import sys,json"`
-// to read a field out of the payload and to print one back. Four spawns of an
-// interpreter to parse JSON, in a Node process's hook.
+// command -- the Python they carried was only inline interpreter one-liners
+// importing `sys` and `json`, to read a field out of the payload and to print
+// one back. Four spawns of an interpreter to parse JSON, in a Node process's
+// hook.
 //
 // The Gemini contract, preserved exactly:
 //   stdin  -- JSON: { session_id, prompt, ... }

@@ -43,14 +43,13 @@ export interface ServeOptions {
 
 /** Resolve the server version the way `initialize` reports it. */
 export function resolveServerVersion(): string {
-  // Python reports `importlib.metadata.version("mirror")` -- 0.31.x, measured
-  // under both `uv run` and a bare `python3` with `src` on PYTHONPATH. An
-  // explicit pin wins (the parity harness sets one); otherwise walk up for
-  // `pyproject.toml`, the same source the plugin manifest is generated from and
-  // the same walk `runtime version` already performs. Falling back to "0.0.0"
-  // would have made a client see the version change with the engine, since
-  // nothing but the harness exports MIRROR_MCP_VERSION. DS10 re-points this at
-  // the npm package version.
+  // The Python server reported `importlib.metadata.version("mirror")` --
+  // 0.31.x. This reports THE product version, `packageVersion`, which reads
+  // `ts/package.json` since CV22.DS10.TS5 (decision D1): the same source the
+  // plugin manifest is generated from and the same one `runtime version`
+  // reads. An explicit MIRROR_MCP_VERSION pin still wins; the DS9 parity
+  // harness that set it is gone, and the guard probe unsets it. "0.0.0" is
+  // only what a tree that is not Mirror Mind reports.
   return process.env.MIRROR_MCP_VERSION ?? packageVersion(HERE) ?? "0.0.0";
 }
 

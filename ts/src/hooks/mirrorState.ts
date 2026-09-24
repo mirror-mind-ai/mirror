@@ -1,6 +1,7 @@
 // Mirror Mode state for one runtime session, as the inject hook needs it.
 //
-// The TypeScript replacement for `memory.hooks.mirror_state` (144 lines), which
+// The TypeScript replacement for the Python hook module `mirror_state` (144
+// lines, deleted with the core at CV22.DS10.TS5), which
 // `mirror-inject.sh` invoked up to three times per prompt -- `needs-inject`,
 // `get persona`, `get journey` -- each a separate interpreter start, each
 // re-opening the database and re-running bootstrap.

@@ -171,12 +171,21 @@ test("the shim itself is reachable, so a green result means something", (t) => {
   const f = fixture();
   t.after(() => rmSync(f.root, { recursive: true, force: true }));
 
-  const probe = spawnSync("uv", ["run", "python", "-m", "memory", "--probe"], {
-    cwd: f.root,
-    encoding: "utf8",
-    env: { PATH: `${f.binDir}:${process.env.PATH ?? ""}` },
-  });
+  // Every shim, not only the first: a guard that can catch `uv` and not a
+  // bare `python3` would report "no spawn" for exactly the invocation the
+  // runtime hooks used.
+  for (const name of SHIMMED) {
+    const probe = spawnSync(name, ["--probe"], {
+      cwd: f.root,
+      encoding: "utf8",
+      env: { PATH: `${f.binDir}:${process.env.PATH ?? ""}` },
+    });
+    assert.equal(probe.status, 0, `the ${name} shim did not run`);
+  }
 
-  assert.equal(probe.status, 0, "the shim did not run");
-  assert.deepEqual(spawned(f), ["uv run python -m memory --probe"], "the marker records argv");
+  assert.deepEqual(
+    spawned(f),
+    SHIMMED.map((name) => `${name} --probe`),
+    "the marker records each shim's name and argv",
+  );
 });

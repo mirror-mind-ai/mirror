@@ -1,8 +1,8 @@
 // Reading a runtime's hook payload from stdin.
 //
-// Replaces `memory.hooks.extract_prompt` (25 lines) and the four inline
-// `python3 -c "import json,sys; ..."` one-liners the Claude and Gemini hooks
-// used to parse the same JSON. None of them was a command, so none was in
+// Replaces the Python hook module `extract_prompt` (25 lines) and the four
+// inline interpreter one-liners the Claude and Gemini hooks used to parse the
+// same JSON. None of them was a command, so none was in
 // DS7's denominator of 29 -- which is why TS5's inventory had to find them by
 // reading the hooks rather than by counting commands.
 //

@@ -737,6 +737,48 @@ F.7).
 - (b) Leave the strings for US3, which names the program, with an expiring
   exemption per file, and take the row live whole at plateau 4.
 
+### Taken at plateau 4 (Driver, 2026-09-24)
+
+The plateau-3 handoff delegated the remaining mentions "per mention: rewrite,
+or exempt with a reason". Three of those calls change something a reader or
+a user sees, so they are recorded here rather than left in commit messages.
+Each follows a decision the Navigator already took, and each is open to
+reversal at the handoff review.
+
+**D13 — the Plan scaffold stops telling the Driver to use `uv`.** Every
+generated `plan.md` and `PLAN_CHECKPOINT` carried "Use uv run for Python
+commands and tests." as a Mirror-local Implementation Contract line (CR019's
+subject). After plateau 3 it is false for every project, including Mirror
+Mind, whose convention it stated. It is removed — not replaced, because a
+replacement would add a new Mirror-only line to other projects' plans, which
+is the defect CR019 exists to fix. The two remaining Mirror-local lines stay
+CR019's. One golden, `builder-command`, loses that line six times, recorded in
+`ts/test/goldens/README.md`. This extends D12 from "the program the product
+names" to "the tool the product tells you to run"; the alternative, exempting
+`ts/src/builder/commands.ts`, would have blinded the guard to a 1,900-line
+file to keep a false sentence.
+
+**D14 — the documentation names the program `mirror`, as the product does
+(D12).** Every `uv run python -m memory X` in a document becomes `mirror X`.
+There is no `mirror` on anyone's `PATH` until US3 names the npm `bin`, so the
+two documents a new reader starts from — `REFERENCE.md` and
+`docs/getting-started.md` — carry one bridge paragraph: the front-door
+invocation `mirror` stands for, and a shell alias that makes every command in
+the docs runnable from the repository root. US3 deletes that paragraph and
+nothing else. Skills and hooks keep the explicit `node ts/src/frontDoor/cli.ts`
+form: an agent runs them in a non-interactive shell, where an alias does not
+exist, and `checkSkillCommandParity.ts` holds them to it. The alternative —
+the long form everywhere, as US2 wrote its few updater lines — is true today
+but makes US3 rewrite every command in every document a second time.
+
+**D15 — `docs/product/api.md` is deleted, not rewritten.** It documented the
+Python `MemoryClient` — `from memory import MemoryClient` — which left with
+the core. TypeScript has no published programmatic API: `ts/package.json` is
+`private`, and what the npm package exports is US3's to decide. A rewritten
+page would describe a contract nobody has offered. The `python-core` cutoff
+names the removal and points at the recovery tag, where the page is still
+readable; every link to it is removed.
+
 ## Review
 
 **Plan review held 2026-09-23**, before implementation, per the

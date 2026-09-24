@@ -1,14 +1,14 @@
 // The hook layer (CV22.DS10.TS5 plateau 1, decision D4).
 //
 // Twelve shell scripts across four runtimes used to spawn the interpreter
-// between one and five times per event, and reach into `memory.hooks.*` and
-// `memory.cli.*` internals that were never commands. Their replacement is one
+// between one and five times per event, and reach into the Python core's hook
+// and CLI internals, which were never commands. Their replacement is one
 // Node entry point, and these are the properties it has to keep.
 //
-// The cross-engine proof lives elsewhere and can only exist now:
-// `scripts/ts5/hook_rowdiff.sh` runs the old hook and the new one against two
-// copies of the same database and diffs the rows. It dies with Python at
-// plateau 3; these cases do not.
+// The cross-engine proof lived elsewhere and could only exist while Python
+// did: `scripts/ts5/hook_rowdiff.sh` ran the old hook and the new one against
+// two copies of the same database and diffed the rows (10/10 identical, TS5
+// test guide). It died with Python at plateau 3; these cases did not.
 
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
@@ -298,9 +298,9 @@ describe("the MCP launcher", () => {
 describe("the Claude allowlist", () => {
   test("grants node BY PATH, never a bare `node *`", () => {
     // `Bash(node *)` is an auto-approved arbitrary-execution grant, strictly
-    // wider than the `python3 -m memory*` it replaces. Dropping
-    // `Bash(python3 -c *)` is a security improvement in its own right: that
-    // one was already arbitrary execution.
+    // wider than the module-scoped interpreter grant it replaces. Dropping the
+    // inline-code interpreter grant is a security improvement in its own
+    // right: that one was already arbitrary execution.
     const settings = JSON.parse(readFileSync(join(REPO_ROOT, ".claude/settings.json"), "utf8")) as {
       permissions: { allow: string[] };
     };

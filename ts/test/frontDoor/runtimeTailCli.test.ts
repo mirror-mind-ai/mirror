@@ -22,6 +22,7 @@ import { join } from "node:path";
 import test from "node:test";
 import { bootstrapDatabase } from "#db/bootstrap.ts";
 import { openDatabaseForBootstrap } from "#db/database.ts";
+import { assertNamesNoInterpreter } from "#helpers/noInterpreter.ts";
 import { stageMirrorPackage } from "../support/mirrorTree.ts";
 
 const CLI = new URL("../../src/frontDoor/cli.ts", import.meta.url).pathname;
@@ -79,9 +80,10 @@ interface RunResult {
 
 /**
  * `cwd` defaults to the fixture repository, which pins git inspection and the
- * package version. Tests that exercise the PYTHON fallback must pass the real
- * repo root instead: `uv run python -m memory` needs the project it lives in,
- * and from a temp directory it fails before Python is ever reached.
+ * package version. Until CV22.DS10.TS5, tests that exercised the Python
+ * fallback had to pass the real repo root instead, because the interpreter
+ * needed the project it lived in; the fallback is gone, and the parameter
+ * stays for the tests that want this checkout on purpose.
  */
 function runCli(
   f: Fixture,
@@ -257,7 +259,7 @@ test("the updater answers from TS", () => {
   try {
     const answered = runCli(f, ["runtime", "update", "--check"], {});
     assert.match(answered.stdout, /^Mirror runtime update check$/m);
-    assert.doesNotMatch(answered.stdout, /uv run python/);
+    assertNamesNoInterpreter(answered.stdout);
     assert.ok(
       logLines(f).some((line) => line.includes("\truntime\tts\t")),
       "expected the front-door log to record runtime update on ts",
@@ -300,10 +302,10 @@ test("an unknown runtime subcommand is answered by TS: usage, exit 2, no Python"
 });
 
 test("no runtime render tells a user to run Python", () => {
-  // CV22.DS10.US2 \u00a7F. `update --check` printed
-  // `uv run python -m memory runtime update` as its recommendation on BOTH
-  // engines -- the TypeScript core instructing the user back into the
-  // interpreter this migration is deleting.
+  // CV22.DS10.US2 \u00a7F. `update --check` printed the Python invocation of
+  // `runtime update` as its recommendation on BOTH engines -- the TypeScript
+  // core instructing the user back into the interpreter this migration was
+  // deleting. Graded against every shape the retired-surface guard forbids.
   const f = fixture();
   try {
     for (const argv of [
@@ -313,7 +315,7 @@ test("no runtime render tells a user to run Python", () => {
       ["welcome", "--mirror-home", f.home],
     ]) {
       const result = runCli(f, argv, { MIRROR_TS_RUNTIME_READS: "1" });
-      assert.doesNotMatch(result.stdout, /uv run python/, argv.join(" "));
+      assertNamesNoInterpreter(result.stdout, argv.join(" "));
     }
   } finally {
     f.cleanup();
@@ -399,7 +401,7 @@ test("runtime backup creates, verifies, and exits on the VERIFICATION", () => {
     assert.match(created.stdout, /^Mirror runtime backup\n\n/);
     assert.match(created.stdout, /^Verification result: valid$/m);
     assert.match(created.stdout, /^Manual recovery route:$/m);
-    assert.doesNotMatch(created.stdout, /uv run python/);
+    assertNamesNoInterpreter(created.stdout);
 
     const archive = /^Backup: (.+)$/m.exec(created.stdout)?.[1];
     assert.ok(archive, "the render must name the archive it created");

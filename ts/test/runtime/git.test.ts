@@ -12,6 +12,7 @@ import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
+import { assertNamesNoInterpreter } from "#helpers/noInterpreter.ts";
 import {
   checkUpdateAvailability,
   inspectCloneRole,
@@ -301,9 +302,9 @@ test("an option-shaped channel override is normalized, never passed to git", () 
 });
 
 test("the update recommendation is engine-neutral, on both engines", () => {
-  // CV22.DS10.US2 plateau 1. `update --check` recommended
-  // `uv run python -m memory runtime update` -- an invocation prefix that was
-  // a Python-era assumption, not a fact about the command. The COMMAND is the
+  // CV22.DS10.US2 plateau 1. `update --check` recommended the Python
+  // invocation of `runtime update` -- an invocation prefix that was a
+  // Python-era assumption, not a fact about the command. The COMMAND is the
   // same on both engines; the npm-era invocation does not exist until US3
   // defines a `bin`. Python's two strings changed in the same commit, so the
   // golden still grades this render byte-for-byte.
@@ -316,7 +317,7 @@ test("the update recommendation is engine-neutral, on both engines", () => {
     });
     assert.match(render, /^Preview:\nruntime update --dry-run$/m);
     assert.match(render, /^Update:\nruntime update$/m);
-    assert.doesNotMatch(render, /uv run python/);
+    assertNamesNoInterpreter(render);
   } finally {
     f.cleanup();
   }

@@ -455,8 +455,8 @@ test("an unconfigured mirror home reports the oracle's sentence", () => {
 
 test("the Node version is read from the process, never spawned", () => {
   // The front door IS the runtime the line diagnoses. (The status report also
-  // carried a `Python:` line, filled by spawning `uv run python` -- the one
-  // interpreter spawn TypeScript itself made. It left with the Python engine
+  // carried a `Python:` line, filled by spawning the interpreter through `uv`
+  // -- the one interpreter spawn TypeScript itself made. It left with the Python engine
   // at CV22.DS10.TS5, finding F7.)
   assert.equal(detectNodeVersion(), process.version.replace(/^v/, ""));
 });

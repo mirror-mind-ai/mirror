@@ -8,9 +8,10 @@
 // in-process.
 //
 // Every route answers from TypeScript. Until CV22.DS10.TS5 an unported or
-// reverted command fell back to the Python engine through `uv run python -m
-// memory`; the fallback, the revert gates that chose it, and the engine itself
-// are gone. A name nothing answers gets the front door's own usage answer.
+// reverted command fell back to the Python engine by spawning the
+// interpreter; the fallback, the revert gates that chose it, and the engine
+// itself are gone. A name nothing answers gets the front door's own usage
+// answer.
 //
 // node:sqlite emits an ExperimentalWarning at import; the skills pass
 // NODE_OPTIONS=--no-warnings to keep it off stdout/stderr.

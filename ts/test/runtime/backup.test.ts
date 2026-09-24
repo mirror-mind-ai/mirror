@@ -20,6 +20,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { entryFromFile, writeZipArchive } from "#backup/zipWriter.ts";
+import { assertNamesNoInterpreter } from "#helpers/noInterpreter.ts";
 import {
   renderBackupVerification,
   renderRuntimeBackupCreated,
@@ -150,7 +151,7 @@ test("a missing database and an unexpected passenger are both refused", () => {
 test("a backup holding a corrupt database is refused HERE and accepted by the oracle", () => {
   // The one deliberate deviation in this port, and the reason for it:
   //
-  //   $ uv run python -m memory runtime backup --verify corrupt-db.zip
+  //   $ <python core> runtime backup --verify corrupt-db.zip
   //   Entries: memory.db
   //   Verification result: valid          <- Python, on 4 KB of zeros
   //
@@ -199,7 +200,7 @@ test("the renders carry the oracle's shape, including the manual recovery route"
     assert.match(created, /^ {2}5\. Do not retry update execution until status is ready\.$/m);
     assert.match(created, /Recovery is manual in this version; no files were restored\.\n$/);
     // The updater's own instruction must not send anyone back to Python.
-    assert.doesNotMatch(created, /uv run python/);
+    assertNamesNoInterpreter(created);
   } finally {
     f.cleanup();
   }

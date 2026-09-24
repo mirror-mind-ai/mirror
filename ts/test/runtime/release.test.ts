@@ -10,6 +10,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
+import { assertNamesNoInterpreter } from "#helpers/noInterpreter.ts";
 import {
   buildReleaseDoctorReport,
   hasFailures,
@@ -200,7 +201,7 @@ test("promotion refuses when the doctor fails, before touching anything", () => 
       result.recovery.some((line) => line.includes("npm run release:doctor")),
       "the recovery names the new entry point, not the retired command",
     );
-    assert.ok(!result.recovery.some((line) => line.includes("python -m memory")));
+    assertNamesNoInterpreter(result.recovery.join("\n"));
   } finally {
     f.cleanup();
   }

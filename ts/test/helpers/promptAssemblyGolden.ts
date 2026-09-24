@@ -8,7 +8,8 @@ import { fileURLToPath } from "node:url";
  * grades its prompt bytes against the oracle.
  *
  * One loader rather than one per test file: the corpus is a single artifact
- * (`uv run python ts/parity/generate_prompt_assembly_golden.py`) and the
+ * (recorded by `ts/parity/generate_prompt_assembly_golden.py`, frozen since
+ * CV22.DS10.TS5 and readable at the `cv22-last-python-bearing` tag) and the
  * grading rule is the same everywhere — assembled bytes equal, digest equal.
  */
 

@@ -81,6 +81,31 @@ export interface RetiredSurface {
   readonly stagedUntil?: string;
 }
 
+/**
+ * Every shape in which a line of text can tell someone to run the deleted
+ * Python core: the interpreter by any name it was invoked under, `uv` itself,
+ * and the core as an importable package -- the shape the runtime hooks used,
+ * which no command-level pattern can see.
+ *
+ * Exported because two things need the same list: the `python-core-mentions`
+ * row below, which reads the TRACKED FILES, and the tests that grade what the
+ * product PRINTS -- an updater recommendation or a recovery route that sends a
+ * user back to the interpreter is the same residue, one step later, and no
+ * file scan can see a string the code assembles at runtime.
+ */
+export const INTERPRETER_INVOCATIONS: readonly string[] = [
+  // The interpreter, by any name it is invoked under.
+  "uv run python",
+  "python3? -m memory\\b",
+  "python3? -c ",
+  "\\buv (run|sync)\\b",
+  // The core as an importable Python package.
+  "from memory\\.",
+  "from memory import",
+  "import memory\\b",
+  "memory\\.hooks",
+];
+
 export const RETIRED: readonly RetiredSurface[] = [
   {
     surfaceId: "journey-projections",
@@ -107,19 +132,8 @@ export const RETIRED: readonly RetiredSurface[] = [
       "request_projection_refresh",
     ],
     exemptions: {
-      "src/memory/extensions/api.py":
-        "the deliberate refusal that tells an extension the capability was removed",
-      "tests/unit/memory/extensions/test_loader.py": "the test of that refusal",
-      "ts/test/builder/cursor.test.ts":
-        "asserts TypeScript requests no refresh against the oracle's recording",
-      "ts/test/builder/lifecycle.test.ts":
-        "documents why the corpus field is no longer asserted (D-019)",
-      "ts/test/goldens/builder-cursor.golden.json": "the recorded Python oracle",
-      "src/memory/oracle_drift.py": "a comment naming a function that used to exist",
       "docs/product/extensions/api-reference.md":
         "documents the removal for an extension author reading an older copy",
-      "src/memory/extensions/version.py":
-        "decision D-018 names the removed capability to explain why VERSION is frozen at 1.1 rather than bumped",
     },
   },
   {
@@ -184,8 +198,6 @@ export const RETIRED: readonly RetiredSurface[] = [
       "ext-dispatch\\.golden",
     ],
     exemptions: {
-      "src/memory/oracle_drift.py":
-        "a comment recording that the bridge was tracked here until TS2 deleted it",
       "ts/test/extensions/dispatch.test.ts":
         "the file that REPLACED the host's parity corpus, and whose header records what each retired group of cases proved -- the disposition itself",
     },
@@ -212,10 +224,7 @@ export const RETIRED: readonly RetiredSurface[] = [
       "_check_fixture_equality",
       "_generate_support_golden",
     ],
-    exemptions: {
-      "docs/process/development-guide.md":
-        "the guide now names ts/evals/ and npm run eval; the phrase survives only where it explains what the Python era measured and why the denominator moved",
-    },
+    exemptions: {},
   },
   // CV22.DS10.TS4 retired five surfaces, so it contributes five rows rather
   // than one. They are separate because they fail separately: a resurrected
@@ -241,13 +250,7 @@ export const RETIRED: readonly RetiredSurface[] = [
       "memory-rehearse-migration",
       "memory migrate-legacy",
     ],
-    exemptions: {
-      "docs/product/extensions/migrations.md":
-        "`ext <id> migrate-legacy` is an EXTENSION-owned subcommand name that an extension author may still choose; it never referred to the core command",
-      "ts/src/frontDoor/routing.ts": "the retired entry that answers the name",
-      "ts/test/frontDoor/retiredSurfaces.test.ts": "the test of that refusal",
-      "tests/unit/memory/test_main.py": "asserts the dispatcher no longer knows the name",
-    },
+    exemptions: {},
   },
   {
     surfaceId: "journey-admin-verbs",
@@ -269,10 +272,6 @@ export const RETIRED: readonly RetiredSurface[] = [
       "ts/src/frontDoor/cli.ts":
         "the refusal itself; the comment names the write verb to explain why it must answer BEFORE stdin is read, which is the property under test",
       "ts/test/frontDoor/retiredSurfaces.test.ts": "the test of those refusals",
-      "tests/unit/memory/cli/test_journey.py":
-        "asserts the verbs reach no service and consume no stdin",
-      "src/memory/oracle_drift.py":
-        "a comment recording that the two verbs used to be tracked here",
     },
   },
   {
@@ -325,26 +324,9 @@ export const RETIRED: readonly RetiredSurface[] = [
       "REFINEMENT_STORY_PULLED",
     ],
     exemptions: {
-      "ts/src/frontDoor/routing.ts":
-        "TS_BUILD_WORKBENCH_ACTIONS is retained as the NAME LIST the retired entries match on, which is what keeps the twenty verbs refusable",
-      "ts/test/frontDoor/buildRouting.test.ts":
-        "asserts all twenty names retire, and that the count is still twenty",
       "ts/test/frontDoor/retiredSurfaces.test.ts": "the test of those refusals",
       "scripts/ts5/capture_family_outputs.sh":
         "CV22.DS10.TS5 captures the refusal itself as a command family: the cutoff answer is a user-visible surface, so it is hashed before the deletion and replayed after it",
-      "tests/unit/memory/cli/test_build.py":
-        "asserts the mm-build skill no longer offers the retired command -- the mention is the negative assertion itself",
-      "src/memory/db/migrations.py":
-        "migrations 015/016 create the tables and REMAIN applied: the rows are kept, only the commands were retired",
-      "ts/src/db/migrations.ts": "the same two migrations on the TypeScript side",
-      "ts/src/db/schemaState.ts":
-        "still recognizes 015/016 as applied, which is what keeps an existing database from looking unmigrated",
-      "ts/parity/generate_migration_fixtures.py": "grades those two migrations",
-      "ts/parity/generate_runtime_status_golden.py": "lists the applied migration ids",
-      "tests/unit/memory/db/test_migrations.py": "tests those two migrations",
-      "ts/test/db/migrationFixtures.test.ts": "grades those two migrations",
-      "ts/test/db/schemaState.test.ts": "pins 015/016 recognition",
-      "src/memory/oracle_drift.py": "a comment recording that workbench.py used to be tracked here",
     },
   },
   {
@@ -397,35 +379,56 @@ export const RETIRED: readonly RetiredSurface[] = [
     // supported was false. So the patterns below cover the interpreter by any
     // name, the module by any import shape, and `uv` itself.
     absentPaths: [],
-    forbiddenPatterns: [
-      // The interpreter, by any name it is invoked under.
-      "uv run python",
-      "python3? -m memory\\b",
-      "python3? -c ",
-      "\\buv (run|sync)\\b",
-      // The core as an importable Python package -- the shape the hooks used,
-      // which no command-level pattern can see.
-      "from memory\\.",
-      "from memory import",
-      "import memory\\b",
-      "memory\\.hooks",
-    ],
+    forbiddenPatterns: INTERPRETER_INVOCATIONS,
     exemptions: {
       // Re-homed to US3 by US2 decision D4, because their new shape depends on
       // the npm artifact's `bin` and install path. Named here so the
       // zero-Python claim cannot be made for the shipped artifact while they
       // stand -- an exemption that expires, not one that hides.
-      "frame/main/command-registry.js":
-        "eight interpreter spawns re-homed to CV22.DS10.US3 (US2 decision D4); TS5 claims zero Python for the REPOSITORY, US3 claims it for the ARTIFACT",
-      "installer/configure.ps1": "same US3 re-homing: the installer assumes a uv-bearing clone",
+      //
+      // Not the only US3 residue: `frame/main/command-registry.js` spawns the
+      // interpreter eight times, but builds each argv as an array, so no
+      // pattern here matches it and it needs no exemption. The DS10 gate
+      // table and TS5's known risks carry it by name.
+      "installer/configure.ps1":
+        "interpreter calls re-homed to CV22.DS10.US3 (US2 decision D4): the installer assumes a uv-bearing clone. TS5 claims zero Python for the REPOSITORY, US3 claims it for the ARTIFACT",
       "installer/health-check.ps1": "same US3 re-homing",
+      "installer/bootstrap.ps1":
+        "same US3 re-homing: the bootstrap installs uv and syncs the clone",
+      "installer/lib/MirrorInstall.psm1":
+        "same US3 re-homing: the install library syncs the clone with uv",
+      "frame/main/session-gate.js":
+        "same US3 re-homing: the Frame's update gate describes the uv-bearing install it orchestrates",
+      "scripts/ci-nonascii-profile-smoke.ps1":
+        "same US3 re-homing: the Windows installer's profile smoke drives the uv-bearing install end to end",
+      // The installer's own design record describes the installer as it still
+      // is. Rewriting it before US3 decides what the installer becomes would
+      // make it describe nothing.
+      "docs/installer/README.md":
+        "documents the Windows installer, which installs a uv-bearing clone until CV22.DS10.US3 re-homes it",
+      "docs/installer/RESUME.md": "same installer documentation, same US3 re-homing",
+      "docs/installer/analysis-two-routes.md": "same installer documentation, same US3 re-homing",
+      "docs/installer/plan.md": "same installer documentation, same US3 re-homing",
+      "docs/installer/windows-compatibility.md": "same installer documentation, same US3 re-homing",
+      // Checks whose job is to name what they forbid. The table's own file is
+      // history for the same reason (HISTORY_PREFIXES).
+      "ts/scripts/checkSkillCommandParity.ts":
+        "a guard: its pattern IS the retired invocation it forbids in the skills, as this table's own patterns are here",
+      "scripts/smoke_runtime_update.sh":
+        "a negative check: the smoke FAILS if the updater's output still tells a user to run the interpreter",
+      // Frozen fixtures. Their bytes are the record; see ts/test/goldens/README.md.
+      "ts/test/goldens/README.md":
+        "the frozen goldens' changelog: its D12 row names the retired invocation that substitution replaced",
+      "ts/test/goldens/builder-command.golden.json":
+        "recorded fixture INPUT, not product output: a scenario passes `validate-item --check` a caller's own check command, and the golden records the argv and the validation artifact that echoes it",
+      "ts/test/goldens/builder-lifecycle.golden.json":
+        "the same caller-supplied check command, recorded as `automated_checks` input across the lifecycle scenarios",
       // An extension may own any executable runtime, including Python. TS2's
       // cutoff says so explicitly. Forbidding the documentation of that would
       // forbid the contract.
       "docs/product/extensions/authoring-guide.md":
         "documents that an extension may declare a Python runtime of its own; the core owning Python is what retired, not extensions choosing it",
       "docs/product/extensions/testing-guide.md": "same contract, from the testing side",
-      "docs/product/extensions/template/README.md": "same contract, in the template's README",
     },
   },
 ];

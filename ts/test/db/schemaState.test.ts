@@ -85,9 +85,9 @@ test("assertSchemaState refuses a DB missing ANY known migration, 017 included",
 });
 
 test("the remedy names a Mirror command, not an interpreter", () => {
-  // The two SchemaStateError messages used to end with "Run any Python
-  // `uv run python -m memory` command once" -- advice that stops working the
-  // day this story finishes, on the error a user is most likely to hit.
+  // The two SchemaStateError messages used to end by telling the user to run
+  // any Python core command once -- advice that stopped working the day
+  // CV22.DS10.TS5 finished, on the error a user is most likely to hit.
   const ws = tmpDb();
   try {
     seedMigrations(ws.db, KNOWN_MIGRATION_IDS.slice(0, -1));

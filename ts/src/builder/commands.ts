@@ -637,10 +637,15 @@ function artifactsSurface(options: {
  * Python `_MIRROR_LOCAL_IMPLEMENTATION_RULES`.
  *
  * Mirror Mind's own conventions, injected into every generated Plan — including
- * plans for other projects, where `uv run` is false. Reproduced; CR019 owns it.
+ * plans for other projects, where they may be false. CR019 owns that.
+ *
+ * There were three. The first told the Driver to run Python commands and tests
+ * through `uv`, which became false for every project once CV22.DS10.TS5 left
+ * Mirror Mind with no Python -- including the one whose convention it stated.
+ * TS5 removed it (decision D13) rather than keep printing an instruction to run
+ * a tool the repository no longer has. The two that remain are still CR019's.
  */
 const MIRROR_LOCAL_IMPLEMENTATION_RULES = [
-  "Use uv run for Python commands and tests.",
   "Do not use git add .; commit only story-scoped files.",
   "Use descriptive English commit messages explaining why.",
 ] as const;

@@ -5,7 +5,7 @@
 # this file starts minimal — that is intentional. The mirror works from session
 # one with what is here. Deepen this profile over time at your own pace with:
 #
-#   uv run python -m memory identity edit user identity
+#   mirror identity edit user identity
 
 version: "1.0.0"
 
@@ -27,4 +27,4 @@ user: |
     them as potentially recurring context worth remembering.
   - Let each conversation teach you something. The mirror sharpens through use.
   - When something feels off or too generic, the user can deepen this profile directly:
-    uv run python -m memory identity edit user identity
+    mirror identity edit user identity

@@ -151,8 +151,9 @@ test("the envelope is carried as messages, not only as an encoded prompt", () =>
 });
 
 test("the recorded envelope is Python's json.dumps bytes, and the wire array matches", () => {
-  // Graded against the oracle corpus rather than a hand-run comparison:
-  // `uv run python ts/parity/generate_prompt_assembly_golden.py`.
+  // Graded against the oracle corpus rather than a hand-run comparison: the
+  // frozen golden `ts/parity/generate_prompt_assembly_golden.py` recorded
+  // (readable at the `cv22-last-python-bearing` tag).
   //
   // `prompt` is what `send_to_model` records — json.dumps(messages,
   // ensure_ascii=False) — and it is both the ledger's `prompt` column and what

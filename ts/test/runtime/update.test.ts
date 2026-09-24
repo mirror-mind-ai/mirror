@@ -6,6 +6,7 @@
 
 import assert from "node:assert/strict";
 import test from "node:test";
+import { assertNamesNoInterpreter } from "#helpers/noInterpreter.ts";
 import type { InstallKind } from "#runtime/installKind.ts";
 import type { GitRunner } from "#runtime/strategies/clone.ts";
 import { runUpdate, type UpdateDeps } from "#runtime/update.ts";
@@ -213,7 +214,7 @@ test("the gate refuses a not-ready status, and allows migration drift alone", ()
   assert.deepEqual(stageNames(refused), ["status gate=fail"]);
   assert.ok(refused.recovery.some((line) => line.includes("runtime diagnose")));
   // No engine instruction leaks into the recovery route.
-  assert.ok(!refused.recovery.some((line) => line.includes("uv run python")));
+  assertNamesNoInterpreter(refused.recovery.join("\n"));
 
   const allowed = runUpdate(
     deps({
@@ -343,7 +344,7 @@ test("the render and the log line report the same run", () => {
   assert.match(render, /^\[✓\] status gate$/m);
   assert.match(render, /^\[✓\] migrate: nothing pending$/m);
   assert.match(render, /^Update result: success$/m);
-  assert.doesNotMatch(render, /uv run python/);
+  assertNamesNoInterpreter(render);
 
   const line = updateLogDetail("clone (/scratch/repo)", "main", result);
   assert.match(line, /^update install=clone/);

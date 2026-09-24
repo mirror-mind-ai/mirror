@@ -1,10 +1,10 @@
 // Claude Code hook entries (CV22.DS10.TS5 plateau 1, decision D4).
 //
-// Replaces `.claude/hooks/*.sh` and the identical set under
-// `plugins/mirror-mind/hooks/`, which invoked `python3 -m memory`,
-// `python3 -m memory.hooks.*`, and `python3 -c "from memory.cli... import
-// hook_user_prompt"` -- the last reaching into a module that was never a
-// command, and so never in DS7's denominator.
+// Replaces the bodies of `.claude/hooks/*.sh` and the identical set under
+// `plugins/mirror-mind/hooks/`, which spawned the Python interpreter for the
+// core's CLI, for two hook modules, and for an inline import of the
+// conversation logger's `hook_user_prompt` -- the last two reaching into
+// modules that were never commands, and so never in DS7's denominator.
 //
 // Behavior is preserved case for case, including the cases that look like
 // bugs and are not: a skill invocation is still logged (Claude's hook fires

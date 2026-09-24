@@ -189,6 +189,35 @@ describe("the table itself", () => {
     }
   });
 
+  test("every exemption names a file the repository still tracks", () => {
+    // An exemption for a file that cannot exist is a hole waiting for one to:
+    // whatever lands at that path later is pre-approved to mention the surface.
+    // Fourteen of them outlived the Python files they named until TS5 plateau
+    // 4 pruned them.
+    const tracked = new Set(trackedFiles(REPO_ROOT));
+    for (const surface of RETIRED) {
+      for (const path of Object.keys(surface.exemptions)) {
+        assert.ok(tracked.has(path), `${surface.surfaceId}: exempts ${path}, which is not tracked`);
+      }
+    }
+  });
+
+  test("every exemption is still needed -- the file would fail without it", () => {
+    // The other way an exemption goes stale: the file is rewritten and stops
+    // mentioning the surface, and the exemption silently widens into a blind
+    // spot for whatever that file says next.
+    for (const surface of RETIRED) {
+      const bare = { ...surface, exemptions: {} };
+      for (const path of Object.keys(surface.exemptions)) {
+        assert.equal(
+          checkResidue(bare, [path], REPO_ROOT).length,
+          1,
+          `${surface.surfaceId}: ${path} no longer mentions the surface -- drop its exemption`,
+        );
+      }
+    }
+  });
+
   test("every surface carries at least one mechanical assertion", () => {
     for (const surface of RETIRED) {
       assert.ok(
@@ -329,8 +358,10 @@ describe("the staged python-core-mentions row", () => {
     // them an npm entry point. The exemption is what keeps TS5 from claiming
     // zero Python for the shipped artifact -- a claim only US3 can make.
     const exemptions = STAGED[0]?.exemptions ?? {};
-    assert.match(exemptions["frame/main/command-registry.js"] ?? "", /US3/);
     assert.match(exemptions["installer/configure.ps1"] ?? "", /US3/);
+    for (const path of ["installer/health-check.ps1", "frame/main/session-gate.js"]) {
+      assert.match(exemptions[path] ?? "", /US3/, path);
+    }
   });
 
   test("still allows an extension to declare a Python runtime of its own", () => {

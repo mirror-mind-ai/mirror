@@ -16,10 +16,11 @@
 //     rule strings never reach any surface, which is why the DSL is graded
 //     structurally rather than through its rendering.
 //
-// The surfaces also embed literal `uv run python -m memory build …` command
-// lines. Those are wrong the moment TS answers the family, and they are still
-// reproduced here: changing them is a product decision that lands after the flip,
-// recorded as a CR, not a liberty taken inside a port.
+// The surfaces also embed literal `build …` command lines. The port reproduced
+// them with the Python program's name in front, because changing a surface is a
+// product decision rather than a liberty taken inside a port. CV22.DS10.TS5 took
+// that decision (D12) once the program they named was deleted: every such line
+// now reads `PROGRAM`.
 
 import { PROGRAM } from "#util/program.ts";
 import type {

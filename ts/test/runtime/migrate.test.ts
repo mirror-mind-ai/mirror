@@ -16,6 +16,7 @@ import { join } from "node:path";
 import test from "node:test";
 import { bootstrapDatabase } from "#db/bootstrap.ts";
 import { openDatabaseForBootstrap } from "#db/database.ts";
+import { assertNamesNoInterpreter } from "#helpers/noInterpreter.ts";
 import { readLedger, renderMigrate, runMigrate } from "#runtime/migrate.ts";
 
 function scratch(): { dir: string; cleanup: () => void } {
@@ -44,7 +45,7 @@ test("a fully migrated database reports nothing pending, and the ledger is uncha
     assert.match(render, /^Ledger before: \d+ migration\(s\)$/m);
     assert.match(render, /^Ledger after: \d+ migration\(s\)$/m);
     assert.match(render, /^Migrate result: nothing pending$/m);
-    assert.doesNotMatch(render, /uv run python/);
+    assertNamesNoInterpreter(render);
   } finally {
     f.cleanup();
   }
