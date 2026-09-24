@@ -92,6 +92,40 @@ describe("absence", () => {
   });
 });
 
+describe("absence by suffix (CV22.DS10.TS5)", () => {
+  const PY = { ...SURFACE, absentPaths: [], absentSuffixes: [".py"] } as const;
+
+  test("flags a tracked file with a retired suffix anywhere in the tree", () => {
+    const root = gitRepo({ "deep/nested/fixture/extension.py": "x\n" });
+    const problems = checkAbsent(PY, trackedFiles(root));
+    assert.equal(problems.length, 1);
+    assert.match(problems[0]?.message ?? "", /deep\/nested\/fixture\/extension\.py is tracked/);
+  });
+
+  test("matches the suffix, not a name that merely contains it", () => {
+    const root = gitRepo({
+      "cache/module.pyc": "x\n",
+      "docs/template/cli.py.template": "x\n",
+      "notes/python.md": "x\n",
+    });
+    assert.deepEqual(checkAbsent(PY, trackedFiles(root)), []);
+  });
+});
+
+describe("residue scope (CV22.DS10.TS5)", () => {
+  const SCOPED = { ...SURFACE, residueScope: [".github/workflows/"] } as const;
+
+  test("a scoped row reads only the files under its scope", () => {
+    const root = gitRepo({
+      ".github/workflows/tests.yml": "uses: forbiddenName\n",
+      "docs/guide.md": "forbiddenName is explained here\n",
+    });
+    const problems = checkResidue(SCOPED, trackedFiles(root), root);
+    assert.equal(problems.length, 1);
+    assert.match(problems[0]?.message ?? "", /\.github\/workflows\/tests\.yml:1 mentions/);
+  });
+});
+
 describe("residue", () => {
   test("flags a forbidden mention with its line number", () => {
     const root = gitRepo({ "src/caller.ts": "line one\nline two\ncalls forbiddenName here\n" });
@@ -172,7 +206,7 @@ describe("the table itself", () => {
     }
   });
 
-  test("the eight enforced rows are the ones TS1 through TS4 retired", () => {
+  test("the enforced rows are TS1 through TS4's retirements, and TS5's Python core", () => {
     assert.deepEqual(
       ENFORCED.map((surface) => surface.surfaceId),
       [
@@ -184,6 +218,7 @@ describe("the table itself", () => {
         "journey-admin-verbs",
         "conversation-metadata-backfill",
         "sqlite-refinement-workbench",
+        "python-core",
       ],
     );
   });
@@ -193,53 +228,78 @@ describe("the table itself", () => {
   });
 });
 
-describe("the staged python-core row", () => {
-  test("is staged, and says when it goes live", () => {
-    assert.equal(STAGED.length, 1);
-    assert.equal(STAGED[0]?.surfaceId, "python-core");
-    assert.match(STAGED[0]?.stagedUntil ?? "", /plateau 3/);
+describe("the live python-core row (plateau 3, decision D12)", () => {
+  const row = RETIRED.find((surface) => surface.surfaceId === "python-core");
+
+  test("is enforced", () => {
+    assert.ok(row, "the python-core row exists");
+    assert.equal(row?.stagedUntil, undefined);
+    assert.ok(ENFORCED.some((surface) => surface.surfaceId === "python-core"));
   });
 
-  test("is skipped by the default sweep while Python is still here", () => {
-    // Otherwise every build between now and plateau 3 is red, and a red build
-    // that everyone expects is the same as no build at all.
-    assert.deepEqual(sweep(REPO_ROOT, ENFORCED), []);
-  });
-
-  // Plateau 3 deletes one row of the Plan's slice F per commit, and each commit
-  // moves its paths from the second list to the first. Both halves are the
-  // point: a path in `stillTracked` proves the row can still SEE what is left,
-  // and a path in `deleted` proves the deletion happened and stays done.
-  const deleted = [
-    "src/memory/",
-    "tests/",
-    "ts/parity/",
+  // Seeded regressions, one per thing plateau 3 deleted. A path in this list
+  // coming back must fail the row; a row that cannot see them guards nothing.
+  const SEEDS = [
+    "src/memory/__init__.py",
+    "tests/conftest.py",
+    "ts/parity/generate_golden.py",
     "scripts/check_oracle_drift.py",
     "scripts/reset_sandbox_pet_store.py",
     "scripts/check_retired_surfaces.py",
     "scripts/check_doc_links.py",
     "scripts/build_claude_plugin.py",
-    "spikes/ts-search-parity/",
+    "spikes/ts-search-parity/README.md",
     "pyproject.toml",
     "uv.lock",
   ];
-  const stillTracked: string[] = [];
+
+  test("fails on every path the deletion removed, if it comes back", () => {
+    for (const path of SEEDS) {
+      const problems = checkAbsent(row as NonNullable<typeof row>, [path]);
+      assert.equal(problems.length, 1, path);
+    }
+  });
+
+  test("fails on a .py file anywhere, not only where the core used to live", () => {
+    // The six inert fixture bodies were Python nobody had listed; this is the
+    // part of the claim a path list cannot make.
+    const problems = checkAbsent(row as NonNullable<typeof row>, [
+      "ts/test/fixtures/ext-new/extension.py",
+    ]);
+    assert.equal(problems.length, 1);
+  });
+
+  test("fails on a workflow that installs an interpreter, and only on workflows", () => {
+    const root = gitRepo({
+      ".github/workflows/tests.yml": "      - uses: actions/setup-python@v6\n",
+      "docs/process/ci.md": "CI used actions/setup-python until CV22.DS10.TS5.\n",
+    });
+    const problems = checkResidue(row as NonNullable<typeof row>, trackedFiles(root), root);
+    assert.equal(problems.length, 1);
+    assert.match(problems[0]?.message ?? "", /\.github\/workflows\/tests\.yml:1 mentions/);
+  });
+});
+
+describe("the staged python-core-mentions row", () => {
+  test("is staged, and says when it goes live", () => {
+    assert.equal(STAGED.length, 1);
+    assert.equal(STAGED[0]?.surfaceId, "python-core-mentions");
+    assert.match(STAGED[0]?.stagedUntil ?? "", /plateau 4/);
+  });
+
+  test("is skipped by the default sweep until then", () => {
+    // Otherwise every build until slice H rewrites the documentation is red,
+    // and a red build that everyone expects is the same as no build at all.
+    assert.deepEqual(sweep(REPO_ROOT, ENFORCED), []);
+  });
 
   test("FIRES against today's tree when asked -- the row is graded, not merely written", () => {
-    const problems = sweep(REPO_ROOT, RETIRED, { only: "python-core" });
-
-    assert.ok(problems.length > 0, "python-core found nothing while the interpreter is present");
-    const absent = problems
-      .filter((problem) => problem.message.includes("is tracked but was retired"))
+    const messages = sweep(REPO_ROOT, RETIRED, { only: "python-core-mentions" })
       .map((problem) => problem.message)
       .join("\n");
-
-    for (const path of stillTracked) {
-      assert.ok(absent.includes(`python-core: ${path}`), `${path} is no longer reported`);
-    }
-    for (const path of deleted) {
-      assert.ok(!absent.includes(`python-core: ${path}`), `${path} is tracked again`);
-    }
+    assert.ok(messages.length > 0, "python-core-mentions found nothing while mentions remain");
+    // The developer conventions still say `uv run`: slice H rewrites them.
+    assert.match(messages, /python-core-mentions: AGENTS\.md:\d+ mentions/);
   });
 
   test("no longer catches the runtime hooks -- plateau 1 rewrote them", () => {
@@ -248,11 +308,7 @@ describe("the staged python-core row", () => {
     // memory.cli internals that were never commands. US2's Skill Invocation
     // Gate could not see any of them: its pattern was `uv run python -m
     // memory`, and these said `python3`.
-    //
-    // They are Node now, and the row's own catch list is the evidence. This
-    // assertion is the shrinking half of the same instrument: what it still
-    // reports is what plateau 3 still has to delete.
-    const messages = sweep(REPO_ROOT, RETIRED, { only: "python-core" })
+    const messages = sweep(REPO_ROOT, RETIRED, { only: "python-core-mentions" })
       .map((problem) => problem.message)
       .join("\n");
 

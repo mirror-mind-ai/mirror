@@ -51,10 +51,23 @@ export interface RetiredSurface {
   readonly story: string;
   /** Paths that must not exist. Directories end with `/`. */
   readonly absentPaths: readonly string[];
+  /**
+   * File suffixes that must not be tracked ANYWHERE -- `.py`, for the claim
+   * that the repository holds no Python at all rather than none in the paths
+   * someone thought to list (CV22.DS10.TS5).
+   */
+  readonly absentSuffixes?: readonly string[];
   /** Regexes that must not appear in tracked files outside HISTORY_PREFIXES. */
   readonly forbiddenPatterns: readonly string[];
   /** Paths allowed to mention the surface beyond the history prefixes, with why. */
   readonly exemptions: Readonly<Record<string, string>>;
+  /**
+   * When present, the residue sweep reads ONLY tracked files under these
+   * prefixes. For a claim about one kind of file -- "no workflow installs an
+   * interpreter" -- where the same words elsewhere (a guide explaining what
+   * CI used to do) are not residue.
+   */
+  readonly residueScope?: readonly string[];
   /**
    * A row that is DEFINED but not yet ENFORCED, with the reason and the moment
    * it goes live.
@@ -337,18 +350,17 @@ export const RETIRED: readonly RetiredSurface[] = [
   {
     surfaceId: "python-core",
     story: "CV22.DS10.TS5",
-    stagedUntil: "CV22.DS10.TS5 plateau 3, when the interpreter is actually gone",
-    // The row DS10's Zero Python gate asks for, written at plateau 0 and
-    // enforced at plateau 3.
+    // The row DS10's Zero Python gate asks for, written at plateau 0 and split
+    // in two at plateau 3 (decision D12). This half is the STRUCTURAL claim,
+    // live since plateau 3: nothing the Python core consisted of is tracked, no
+    // file anywhere is Python, and no workflow installs an interpreter. The
+    // other half -- what the tree still SAYS about Python -- is
+    // `python-core-mentions` below, staged until slice H has rewritten the
+    // documentation that holds most of it.
     //
-    // It is deliberately WIDER than the guard it replaces. US2's Skill
-    // Invocation Gate was satisfied by a check whose pattern was
-    // `uv run python -m memory`, scanning skills. TS5's inventory then found
-    // TWELVE runtime hook files invoking `python3 -m memory` -- and reaching
-    // into `memory.hooks.*` and `memory.cli.*` internals that were never
-    // commands at all. The narrow pattern was true and the conclusion it
-    // supported was false. So the patterns below cover the interpreter by any
-    // name, the module by any import shape, and `uv` itself.
+    // `absentSuffixes` is the part a path list could not express. The Plan's
+    // own inventory listed where the Python lived; it was the six fixture
+    // bodies nobody listed that proved the list could be short.
     absentPaths: [
       "src/memory/",
       "tests/",
@@ -362,6 +374,29 @@ export const RETIRED: readonly RetiredSurface[] = [
       "scripts/reset_sandbox_pet_store.py",
       "ts/parity/",
     ],
+    absentSuffixes: [".py"],
+    // CI installing an interpreter is the same claim at the workflow level, and
+    // it is scoped to the workflows: a guide may still explain what CI did.
+    forbiddenPatterns: ["setup-python", "astral-sh/setup-uv", "\\buv (run|sync)\\b"],
+    residueScope: [".github/workflows/"],
+    exemptions: {},
+  },
+  {
+    surfaceId: "python-core-mentions",
+    story: "CV22.DS10.TS5",
+    stagedUntil: "CV22.DS10.TS5 plateau 4, when slice H has rewritten the documentation",
+    // The second half of the Zero Python row (D12): no tracked file outside
+    // the project's record INVOKES the interpreter or imports the core.
+    //
+    // It is deliberately WIDER than the guard it replaces. US2's Skill
+    // Invocation Gate was satisfied by a check whose pattern was
+    // `uv run python -m memory`, scanning skills. TS5's inventory then found
+    // TWELVE runtime hook files invoking `python3 -m memory` -- and reaching
+    // into `memory.hooks.*` and `memory.cli.*` internals that were never
+    // commands at all. The narrow pattern was true and the conclusion it
+    // supported was false. So the patterns below cover the interpreter by any
+    // name, the module by any import shape, and `uv` itself.
+    absentPaths: [],
     forbiddenPatterns: [
       // The interpreter, by any name it is invoked under.
       "uv run python",
@@ -374,9 +409,6 @@ export const RETIRED: readonly RetiredSurface[] = [
       "from memory import",
       "import memory\\b",
       "memory\\.hooks",
-      // CI installing an interpreter is the same claim at the workflow level.
-      "setup-python",
-      "astral-sh/setup-uv",
     ],
     exemptions: {
       // Re-homed to US3 by US2 decision D4, because their new shape depends on
@@ -426,19 +458,16 @@ export function trackedFiles(repoRoot: string): string[] {
  * to distrust this check.
  */
 export function checkAbsent(surface: RetiredSurface, files: readonly string[]): SurfaceProblem[] {
-  const problems: SurfaceProblem[] = [];
-  for (const relPath of surface.absentPaths) {
-    const found = relPath.endsWith("/")
-      ? files.filter((path) => path.startsWith(relPath))
-      : files.filter((path) => path === relPath);
-    for (const path of found) {
-      problems.push({
-        surfaceId: surface.surfaceId,
-        message: `  ${surface.surfaceId}: ${path} is tracked but was retired by ${surface.story}`,
-      });
-    }
-  }
-  return problems;
+  const retired = (path: string): boolean =>
+    surface.absentPaths.some((relPath) =>
+      relPath.endsWith("/") ? path.startsWith(relPath) : path === relPath,
+    ) || (surface.absentSuffixes ?? []).some((suffix) => path.endsWith(suffix));
+  // One problem per file, however many of the row's rules it breaks: a
+  // re-added `src/memory/__init__.py` is one regression, not two.
+  return files.filter(retired).map((path) => ({
+    surfaceId: surface.surfaceId,
+    message: `  ${surface.surfaceId}: ${path} is tracked but was retired by ${surface.story}`,
+  }));
 }
 
 export function checkResidue(
@@ -450,6 +479,9 @@ export function checkResidue(
   const patterns = surface.forbiddenPatterns.map((pattern) => new RegExp(pattern));
   for (const path of files) {
     if (isHistory(path) || path in surface.exemptions) continue;
+    if (surface.residueScope && !surface.residueScope.some((prefix) => path.startsWith(prefix))) {
+      continue;
+    }
     let content: string;
     try {
       content = readFileSync(join(repoRoot, path), "utf8");

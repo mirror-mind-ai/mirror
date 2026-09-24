@@ -2,12 +2,12 @@
 // Fail CI when a surface CV22.DS10 retired comes back, or never fully left.
 //
 // The Node port of `scripts/check_retired_surfaces.py` (CV22.DS10.TS5, slice
-// B). Both run side by side for one commit and must agree -- same exit code,
-// byte-identical stdout -- before the Python original is deleted.
+// B). The two ran side by side and agreed -- same exit code, byte-identical
+// stdout, clean tree and seeded regressions -- before the Python original was
+// deleted at plateau 3. The guard outlived the deletion it proves, which was
+// the reason it had to be ported at all.
 //
-// stdout is the comparable surface, so the staged-row note goes to STDERR:
-// the Node version knows about a row the Python one never will, and that extra
-// knowledge must not break the agreement that grades the port.
+// A staged row's note goes to STDERR, so stdout stays the verdict alone.
 //
 // Usage:
 //   node ts/scripts/checkRetiredSurfaces.ts
