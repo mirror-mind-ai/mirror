@@ -16,7 +16,6 @@
 // `render_runtime_update_dry_run`, which belongs to the git-based updater that
 // the 2026-09-07 decision assigned to CV22.DS10.
 
-import { spawnSync } from "node:child_process";
 import { existsSync, readdirSync, realpathSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { type Database, openDatabaseReadOnly } from "#db/database.ts";
@@ -29,8 +28,6 @@ import { DEFAULT_EMBEDDING_MODEL, DEFAULT_EXTRACTION_MODEL } from "#providers/co
 import { sortByCodePoint } from "#util/pythonText.ts";
 import type { MarkerValue } from "./git.ts";
 import { type GitStatus, inspectCloneRole, inspectGit, inspectUpdateChannel } from "./git.ts";
-
-const PYTHON_PROBE_TIMEOUT_MS = 30_000;
 
 export interface CoreMigrationHealth {
   ready: boolean;
@@ -61,7 +58,6 @@ export interface RuntimeStatusReport {
   extensions: string[];
   extension_health: ExtensionHealth[];
   clone_role: MarkerValue;
-  python_version: string;
   memory_env: string;
   update_channel: MarkerValue;
   node_version: string | null;
@@ -350,27 +346,6 @@ export function detectNodeVersion(): string | null {
   return process.version.replace(/^v/, "") || null;
 }
 
-/**
- * The Python version, by spawning the interpreter the front door itself falls
- * back to (Navigator decision, 2026-09-08, option 1a). Python reads
- * `sys.version` in-process; TypeScript has no such interpreter, and while
- * Python still answers routed commands this line carries real information
- * about the runtime that would serve them. Bounded, off the hot path (never
- * the per-turn status line), and deleted with Python in DS10.
- *
- * `unknown` is unreachable for the oracle, so it is not a parity break on any
- * scenario Python can produce -- only a truthful answer where it has none.
- */
-export function detectPythonVersion(cwd: string): string {
-  const result = spawnSync(
-    "uv",
-    ["run", "python", "-c", "import sys; print(sys.version.split()[0])"],
-    { cwd, encoding: "utf8", timeout: PYTHON_PROBE_TIMEOUT_MS, shell: false },
-  );
-  if (result.error || result.status !== 0) return "unknown";
-  return (result.stdout ?? "").trim() || "unknown";
-}
-
 export interface BuildStatusOptions {
   start?: string;
   mirrorHome?: string | null;
@@ -378,7 +353,6 @@ export interface BuildStatusOptions {
   env?: DbPathEnv & NodeJS.ProcessEnv;
   /** Test/golden seam: the oracle pins `package_version()` the same way. */
   version?: string;
-  pythonVersion?: string;
   nodeVersion?: string | null;
 }
 
@@ -436,7 +410,6 @@ export function buildRuntimeStatus(options: BuildStatusOptions = {}): RuntimeSta
     extensions: listInstalledExtensions(mirrorHome),
     extension_health: inspectExtensionHealth(mirrorHome, dbPath, dbExists),
     clone_role: inspectCloneRole(startPath),
-    python_version: options.pythonVersion ?? detectPythonVersion(startPath),
     memory_env: memoryEnv,
     update_channel: inspectUpdateChannel(startPath, options.channel ?? null),
     node_version: options.nodeVersion === undefined ? detectNodeVersion() : options.nodeVersion,
@@ -546,7 +519,6 @@ export function renderRuntimeStatus(
   if (report.clone_role.note) lines.push(`Clone role note: ${report.clone_role.note}`);
   lines.push(`Update channel: ${report.update_channel.value}`);
   if (report.update_channel.note) lines.push(`Update channel note: ${report.update_channel.note}`);
-  lines.push(`Python: ${report.python_version}`);
   lines.push(`Node: ${report.node_version || "not found (TS front door requires Node >= 24)"}`);
   lines.push(`MEMORY_ENV: ${report.memory_env}`);
   const reception = floatEnv(env.MEMORY_LLM_TIMEOUT_RECEPTION, 10);

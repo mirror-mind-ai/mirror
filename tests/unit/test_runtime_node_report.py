@@ -24,7 +24,6 @@ def _report(node_version: str | None) -> RuntimeStatusReport:
         extensions=(),
         extension_health=(),
         clone_role=CloneRole("production", None),
-        python_version="3.12.0",
         memory_env="test",
         node_version=node_version,
     )

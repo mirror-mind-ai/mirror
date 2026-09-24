@@ -71,7 +71,6 @@ def _report(**overrides) -> RuntimeStatusReport:
         "extensions": ("maestro",),
         "extension_health": (ExtensionHealth("maestro", True),),
         "clone_role": CloneRole("dev", Path("/repo/.mirror-clone-role")),
-        "python_version": "3.12.0",
         "memory_env": "production",
     }
     base.update(overrides)

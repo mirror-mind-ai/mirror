@@ -435,14 +435,6 @@ function runRuntimeUpdate(
       channel: channelOverride,
       env,
       version,
-      // The gate needs a VERDICT, not a display field, and
-      // `detectPythonVersion` spawns `uv run python` to fill one in. An
-      // updater that spawns the interpreter it is replacing fails its own
-      // acceptance -- caught by shadowing python/python3/uv on PATH during the
-      // first end-to-end run. `statusAllowsUpdatePreflight` never reads this
-      // field; `unknown` is the value the probe itself returns when it cannot
-      // tell, so nothing downstream sees a value that could not occur.
-      pythonVersion: "unknown",
     });
     const verdict = statusAllowsUpdatePreflight(report);
     return { ready: statusVerdict(report) === "ready", ...verdict };

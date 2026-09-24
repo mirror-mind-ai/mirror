@@ -58,7 +58,6 @@ def _report(mirror_home: Path, db_path: Path) -> RuntimeStatusReport:
         extensions=(),
         extension_health=(),
         clone_role=CloneRole("production", None),
-        python_version="3",
         memory_env="test",
     )
 

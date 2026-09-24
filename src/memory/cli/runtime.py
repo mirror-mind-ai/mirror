@@ -236,7 +236,6 @@ class RuntimeStatusReport:
     extensions: tuple[str, ...]
     extension_health: tuple[ExtensionHealth, ...]
     clone_role: CloneRole
-    python_version: str
     memory_env: str
     update_channel: UpdateChannel = field(
         default_factory=lambda: UpdateChannel(_DEFAULT_UPDATE_CHANNEL, None)
@@ -1042,7 +1041,6 @@ def build_runtime_status(
         extensions=list_installed_extensions(mirror_home),
         extension_health=inspect_extension_health(mirror_home, db_path, db_exists),
         clone_role=inspect_clone_role(start_path),
-        python_version=sys.version.split()[0],
         memory_env=MEMORY_ENV,
         update_channel=inspect_update_channel(start_path, override=channel),
         node_version=detect_node_version(),
@@ -1945,7 +1943,6 @@ def render_runtime_status(report: RuntimeStatusReport) -> str:
     lines.append(f"Update channel: {report.update_channel.value}")
     if report.update_channel.note:
         lines.append(f"Update channel note: {report.update_channel.note}")
-    lines.append(f"Python: {report.python_version}")
     node_display = report.node_version or "not found (TS front door requires Node >= 24)"
     lines.append(f"Node: {node_display}")
     lines.append(f"MEMORY_ENV: {report.memory_env}")

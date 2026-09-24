@@ -17,7 +17,6 @@ import { checksum } from "#extensions/migrations.ts";
 import {
   buildRuntimeStatus,
   detectNodeVersion,
-  detectPythonVersion,
   renderRuntimeStatus,
   statusVerdict,
 } from "#runtime/status.ts";
@@ -317,7 +316,6 @@ function renderScenario(f: Fixture, home: string | null): { render: string; verd
     mirrorHome: home,
     env: ENV,
     version: golden.meta.fixture_version,
-    pythonVersion: "<python-version>",
     nodeVersion: "<node-version>",
   });
   return {
@@ -446,7 +444,6 @@ test("an unconfigured mirror home reports the oracle's sentence", () => {
       start: f.repo,
       env: { MEMORY_ENV: undefined, MIRROR_HOME: undefined, MIRROR_USER: undefined },
       version: golden.meta.fixture_version,
-      pythonVersion: "<python-version>",
       nodeVersion: "<node-version>",
     });
     const render = renderRuntimeStatus(report, ENV).replaceAll(f.root, "<root>");
@@ -456,13 +453,10 @@ test("an unconfigured mirror home reports the oracle's sentence", () => {
   }
 });
 
-test("the runtime versions are read, not spawned, where that is possible", () => {
-  // Node: the front door IS the runtime the line diagnoses, so it is read from
-  // the process with no spawn at all.
+test("the Node version is read from the process, never spawned", () => {
+  // The front door IS the runtime the line diagnoses. (The status report also
+  // carried a `Python:` line, filled by spawning `uv run python` -- the one
+  // interpreter spawn TypeScript itself made. It left with the Python engine
+  // at CV22.DS10.TS5, finding F7.)
   assert.equal(detectNodeVersion(), process.version.replace(/^v/, ""));
-
-  // Python: no interpreter in process, so the front door's own fallback is
-  // asked. Bounded, off the per-turn path, and gone with Python in DS10.
-  const version = detectPythonVersion(process.cwd());
-  assert.match(version, /^(?:\d+\.\d+\.\d+.*|unknown)$/);
 });

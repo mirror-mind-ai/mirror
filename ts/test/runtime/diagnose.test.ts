@@ -256,7 +256,6 @@ function reportFor(f: Fixture, home: string | null): RuntimeStatusReport {
     mirrorHome: home,
     env: home === null ? { MIRROR_HOME: undefined, MIRROR_USER: undefined } : ENV,
     version: golden.meta.fixture_version,
-    pythonVersion: "<python-version>",
     nodeVersion: "<node-version>",
   });
 }
