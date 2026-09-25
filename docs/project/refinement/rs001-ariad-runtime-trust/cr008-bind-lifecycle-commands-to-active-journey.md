@@ -146,11 +146,12 @@ scenario. It does not meet the Expected Behavior's "never fall back silently".
   this the plan's "no global fallback" would not be true. It keeps that
   fallback for the welcome status line and `mode status`, which are display,
   not binding.
-- `ts/src/builder/load.ts` — `build load` stamps a known session or the global
+- `ts/src/builder/load.ts` — **not implemented; open, see Found During
+  Implementation.** As planned: `build load` stamps a known session or the global
   row; never a guessed session. `switchConversation` receives the same resolved
   value it does today for a known session and `null` otherwise (verify what the
   conversation switch does with `null` before relying on it — see Validation).
-- `ts/src/mirror/runtimeSession.ts` — add `resolveKnownRuntimeSessionId` (explicit,
+- `ts/src/mirror/runtimeSession.ts` — add `resolveNamedRuntimeSessionId` (explicit,
   else environment, else `null`). `resolveRuntimeSessionId` keeps its current
   behavior for its other callers (conversation logger, soul, explore,
   orchestration); changing it is not this CR.
@@ -262,6 +263,63 @@ captured at the model level. Security, experience, and product lenses raised
 nothing: `--journey` binds only to a registered journey and its recorded
 project path, so the change narrows the blast radius rather than opening one.
 
+### Found During Implementation (2026-09-25)
+
+The read side shipped as planned. Four things differ from the approved text.
+Each is recorded here for the Navigator to accept or reject at validation.
+
+1. **The no-journey card was half-false, like the refusal.** `inspect-method`
+   with no argument said "No Builder journey is active yet" and suggested
+   `build load`. In an agent shell that is false right after a load, and
+   loading again does not change the answer. It now says "No Builder journey
+   was named" and gives the refusal's two remedies. The function is renamed
+   `renderNoJourneyNamed`, so that its name matches what it renders.
+2. **The recovery after a refusal is not `mode status`.** The plan named it,
+   following the ai-engineer finding. With no session, `mode status` reads the
+   global row, which is the last load in *any* window. In a multi-window setup
+   it would send the agent back to the wrong journey, the exact failure this
+   CR removes. The skill says to ask the Navigator, and never to take the slug
+   from `mode status` or the status line.
+3. **A named session must still be active.** `MIRROR_SESSION_ID` naming a
+   session that has ended (`active = 0`) names no journey. This is the stale
+   environment line, made explicit and tested.
+4. **The write side is not implemented, and it needs a Navigator decision.**
+   The approved plan has `build load`, with no named session, write the global
+   row instead of the guessed one. That regresses documented behavior.
+   [REFERENCE](../../../../REFERENCE.md#operating-mode-lifecycle) says
+   per-session operating mode exists so "simultaneous Pi sessions do not
+   overwrite each other's footer state". In an agent shell, the guess is how
+   `build load` reaches the window's own row: the Pi extension touches it at
+   `before_agent_start`, and the guess was introduced on purpose for that
+   ([troubleshooting](../../../process/troubleshooting.md#pi-builder-conversations-appear-without-journeys)).
+   Writing the global row instead would make a window that went Explorer →
+   Builder keep showing Explorer (its own stamp shadows the global row), and
+   every window without a stamp would show the last load anywhere.
+
+   The residual hazard the write-side change was meant to close is narrower
+   than planned. A guessed Builder stamp, whether legacy or from another
+   window's load, can bind a lifecycle command only through a *named* session,
+   and no runtime names its session today (`MIRROR_SESSION_ID` is set by
+   none).
+
+   Options:
+
+   - **A. As approved:** write the global row. This regresses the footer as
+     above, and leaves existing guessed stamps as latent binding sources.
+   - **B. Provenance:** `build load` keeps writing where it does today, and
+     records whether its session was named. A lifecycle command binds from a
+     named session's stamp only if that stamp was itself written under the
+     name. This adds one key to the operating-mode payload, with no schema
+     change. It closes the latent path now.
+   - **C. Leave the write side as it is:** display is unchanged. B becomes the
+     recorded precondition of the excluded open question, whether a runtime
+     should export `MIRROR_SESSION_ID`. That is the first moment the latent
+     path can fire.
+
+   Driver recommendation: **C**. The binding defect in the Evidence is closed
+   by the read side, which the real-data smoke below shows. B protects a path
+   nothing uses yet, and it belongs to the change that would start using it.
+
 ### Authority Boundary
 
 This plan authorizes nothing. Implementation starts after Navigator approval
@@ -343,6 +401,54 @@ Two aggravating details from this occurrence:
 
 2026-08-14 — Re-verified against `origin/main` @ `688271f`: no commit since 12 Aug touches
 `src/memory/cli/build.py` or `src/memory/builder/`; journey resolution is unchanged. Still valid.
+
+**2026-09-25 — implementation evidence (read side).** Commits `8481a2f4`
+(code, tests, hand-edited goldens) and `0924c1dc` (skill and docs) on
+`mirror-ts-core`.
+
+- Automated: `npm test` 2666/2666, `npm run typecheck` clean, `npm run lint`
+  with no errors (its one warning and one info were already there). CI's
+  Builder Ariad lifecycle smoke 54/54, conversation lifecycle smoke,
+  retired-surface tripwire, skill command parity (25 skills), and doc links:
+  all clean.
+- Tests written first. Every `--journey` case in the corpus, with the journey
+  stripped, must refuse and write nothing against five decoys: a window
+  touched later, the global row, and `MIRROR_SESSION_ID` naming no session, a
+  closed session, or another mode. That is every leaf that resolves a
+  journey. Before the change it failed because it bound the decoy. The
+  no-argument `inspect-method` test failed the same way, rendering the
+  decoy's journey. Every demo case bound through a named session, by flag or
+  by environment, reproduces its recorded bytes and leaves the decoy
+  untouched.
+- Real-data smoke, on a byte copy of the production database (integrity
+  check `ok`; deleted afterwards) with no provider key loaded. Window A was
+  in Builder Mode for `mirror-ts-core`; window B, touched later, and the
+  global row were in Builder Mode for `finances`. From a shell that names no
+  session:
+
+  ```text
+  pre-CR008 (fe32e9eb)  build pull-candidates --method ariad  -> exit 0, finances' roadmap
+                        build inspect-method                   -> journey: finances
+  CR008                 build pull-candidates --method ariad  -> exit 1, "requires a journey"
+                        build sync-cursor / set-cadence        -> exit 1, "requires a journey"
+                        build inspect-method                   -> "No Builder journey was named."
+                        --journey mirror-ts-core               -> exit 0, mirror-ts-core
+                        MIRROR_SESSION_ID=<window A>           -> exit 0, byte-identical to --journey
+                        inspect-method --session-id <window B> -> journey: finances
+                        delivery-cursor rows                   -> unchanged (hash before = after)
+  ```
+
+  The live database was only read: one `PRAGMA journal_mode` and a file
+  copy. SQLite created its usual `-wal`/`-shm` files on that open; no data
+  changed.
+
+**Navigator validation route.** (1) Read the smoke above. (2) In a live
+Builder session on this journey, run `mirror build pull-candidates --method
+ariad` and observe the refusal, then run it with `--journey mirror-ts-core`
+and observe this journey's roadmap. Both are read-only. (3) Optional: open a
+second window, `/mm-build` another journey, come back here, and run any
+lifecycle command through the skill. It binds this window's journey, and the
+other journey's cursor does not change.
 
 ## Outcome
 
