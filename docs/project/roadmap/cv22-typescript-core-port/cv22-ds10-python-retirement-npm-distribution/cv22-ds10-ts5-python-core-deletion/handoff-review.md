@@ -366,3 +366,47 @@ Taken 2026-09-25, the day the review was held:
 
 Q2 goes onto US3's list (P4), as the review recommended. Each finding's
 disposition is recorded below as it lands.
+
+## Dispositions
+
+All twelve were settled on 2026-09-25, the day the review was held, one commit
+each, with the test written red first wherever behavior changed.
+
+| # | Commit | What landed |
+|---|---|---|
+| B1 | `e400d395` | Migrate-on-open runs `createSchema` after `runMigrations` on its slow path. The v0.7.0 schema is committed as a fixture, and a migrated-equals-fresh test compares the whole canonical inventory. It was red on the four objects and their autoindexes. End to end, a v0.7.0 home migrates to `current (17/17)` and `mirror load` exits 0 |
+| P1 | `b60a72f8`, `6f7d6c73` | A failure line names the family and subcommand, never the arguments. The new test drives both Gemini hooks through a real failure, and it was red on the leaked text. Its follow-up pins `MEMORY_ENV`: CI names `memory_test.db`, which the core would not refuse |
+| P2 | `c20cb404` | Both node grants removed. The hook-entry grant was the finding. The front-door grant matched no invocation the skills make, and the review left that choice open, so the Driver removed it: users see no change, and auto-approval stays a one-line decision, written in the real form. Open to reversal. The test now checks grants against the skills' real invocations |
+| P3 | `2d2ff669` | Correction notes in the Plan's Review, the test guide's custody section and walk step 9, and the evidence section's two leftover "Pending" lines |
+| P4 | `4792cfd6` | Twelve items in `cv22-ds10-us3-npm-distribution/inherited.md`, a file the runtime does not generate, with a pointer in US3's index. Q2 is item 11 |
+| P5 | `e400d395`, `1b077744` | The docstring was rewritten with B1. `KNOWN_MIGRATION_IDS` and the schema module now say what is true, and the newer-database remedy is "update this Mirror installation" in the core, the test, and the troubleshooting guide |
+| N1 | `3dde40eb` | The wrappers no longer `exec`. A non-zero exit from Node is one `hooks.log` line naming the binary and its version. Diagnose reports `hook_failures_recorded` from the log, and its candidate list is pinned to the wrappers' by a test |
+| N2 | `885c3548` | The four runtime smokes run in CI's `smoke` job, under the interpreter shadow. The step's exact script passed in a runner-like sandbox: no `.env`, a scratch `HOME`, only `node` on PATH |
+| N3 | `b98e4b75` | `codex-mirror.sh` calls two generated wrappers, `scripts/codex-hooks/`, and the logic moved to `ts/src/hooks/codex.ts`. main.ts's two Codex entries had no caller and now have one. The new test runs the real script from a checkout path with a space; the same run against the old script logged nothing |
+| N4 | `f384017c` | Each write sweeps a staging file whose process no longer runs and which is ten minutes old. The test leaves recent, live, and unrelated files alone |
+| Q1 | `9a8b1dff` | Captured as CR097, and the inventory's record of the mechanism corrected. CR098 captured beside it, from P1's inherited note on the Pi extension |
+| Q2 | `4792cfd6` | On US3's list, item 11 |
+
+**Found while paying, and paid in the same commits.**
+
+- **N1:** when the environment lacked `MIRROR_HOME`, the "loud" line went
+  to `~/.mirror-minds/default`, a home the core never resolves. That is every
+  GUI launch of a checkout configured by `.env`. The wrappers now resolve the
+  home as the core does.
+- **N2:** `smoke_mirror_mcp.sh` and `smoke_claude_plugin.sh` passed when they
+  aborted. On bash 3.2, macOS's `/bin/bash`, an empty array is unbound under
+  `set -u`, and each script's EXIT trap turned the abort into exit 0. So on a
+  machine with no production home, the production-leak check never ran.
+  Separately, the development guide said these smokes need a runtime
+  installed. They do not.
+- **P1:** the new test passed locally and would have failed in CI, because it
+  ran without CI's `MEMORY_ENV=test`. Running the suite as CI runs it, before
+  pushing, caught it.
+
+**Evidence at `6f7d6c73`.** The suite passes 2660/2660 with `MEMORY_ENV=test`,
+and again under the interpreter shadow with 0 spawn attempts. `tsc`, Biome,
+the retired-surface guard, doc links, skill parity, the plugin build, and the
+hook-wrapper generator check are clean. Both custody proofs pass. The
+migrate-on-open, conversation, builder, and extension-catalog smokes pass, the
+updater smoke passes 34/34, and all four runtime smokes pass. Nothing is
+pushed yet, so CI has not run these commits.
