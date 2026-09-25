@@ -87,13 +87,26 @@ export async function runFrontDoor(argv: readonly string[]): Promise<FrontDoorRu
 }
 
 /**
+ * The command a failure line may name: the family and its subcommand, never
+ * the arguments. Arguments are where hooks put what the user said and what the
+ * model answered -- the Gemini logger passes the prompt and the response as
+ * argv -- and the first version of the failure line printed all of them (TS5
+ * handoff review, finding P1).
+ */
+function commandName(argv: readonly string[]): string {
+  return argv.slice(0, 2).join(" ");
+}
+
+/**
  * Run a front-door command for its effect, swallowing failure the way the
  * shell hooks did with `|| true` -- but recording it.
  */
 export async function runFrontDoorQuietly(hook: string, argv: readonly string[]): Promise<void> {
   try {
     const result = await runFrontDoor(argv);
-    if (result.code !== 0) noteHookFailure(hook, `\`${argv.join(" ")}\` exited ${result.code}`);
+    if (result.code !== 0) {
+      noteHookFailure(hook, `\`${commandName(argv)}\` exited ${result.code}`);
+    }
   } catch (error) {
     noteHookFailure(hook, error instanceof Error ? error.message : String(error));
   }

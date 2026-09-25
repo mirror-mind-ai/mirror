@@ -16,7 +16,8 @@ import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSyn
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { after, describe, test } from "node:test";
-import { openDatabaseReadOnly } from "#db/database.ts";
+import { bootstrapDatabase } from "#db/bootstrap.ts";
+import { openDatabaseForBootstrap, openDatabaseReadOnly } from "#db/database.ts";
 import { needsInject } from "#hooks/mirrorState.ts";
 import { parseHookPayload } from "#hooks/payload.ts";
 import { noteHookFailure } from "#hooks/runtime.ts";
@@ -93,20 +94,66 @@ describe("mirror state", () => {
   });
 });
 
-describe("the hooks log", () => {
-  test("records the hook and the reason, and NEVER the prompt", () => {
-    // The invariant the security lens asked for. Hook entries run in-process
-    // and bypass the CLI, where `frontDoorLog` enforces redaction -- so the
-    // rule is restated here and tested directly rather than inherited.
-    const home = tmpHome();
-    noteHookFailure("claude:inject", "boom: something failed", {
+/** A mirror home whose database this core refuses: it carries a migration from a newer core. */
+function refusingHome(): string {
+  const home = tmpHome();
+  bootstrapDatabase(join(home, "memory.db")).close();
+  const db = openDatabaseForBootstrap(join(home, "memory.db"));
+  try {
+    db.prepare("INSERT INTO _migrations (id, applied_at) VALUES (?, ?)").run(
+      "999_from_the_future",
+      "2026-09-25T00:00:00Z",
+    );
+  } finally {
+    db.close();
+  }
+  return home;
+}
+
+function runHook(hook: string, home: string, payload: Record<string, unknown>): void {
+  execFileSync(process.execPath, [join(REPO_ROOT, "ts/src/hooks/main.ts"), hook], {
+    encoding: "utf8",
+    env: {
+      ...process.env,
       MIRROR_HOME: home,
       MIRROR_USER: "",
-    } as NodeJS.ProcessEnv);
+      GEMINI_SESSION_ID: "",
+      OPENROUTER_API_KEY: "",
+      NODE_OPTIONS: "--no-warnings",
+    },
+    input: JSON.stringify(payload),
+    stdio: ["pipe", "pipe", "pipe"],
+    timeout: 30_000,
+  });
+}
 
-    const line = readFileSync(join(home, "hooks.log"), "utf8");
-    assert.match(line, /claude:inject: boom/);
-    assert.doesNotMatch(line, /prompt/i);
+describe("the hooks log", () => {
+  // The invariant the security lens asked for at the Plan review: nothing a hook
+  // entry logs -- on success or on failure -- contains what the user said or
+  // what the model answered. Hook entries run in-process and bypass the CLI,
+  // where `frontDoorLog` enforces redaction, so the rule is tested here.
+  //
+  // Through a REAL failure, not a hand-written reason. The first version of this
+  // test called `noteHookFailure` with a reason that never held a prompt and
+  // asserted the line did not say "prompt" -- it could not fail, and the Gemini
+  // hooks were writing both sides of the conversation into this file whenever
+  // the logger exited non-zero (TS5 handoff review, finding P1).
+  test("a failed Gemini turn is recorded without the prompt or the response", () => {
+    const home = refusingHome();
+    runHook("gemini:log-user", home, {
+      session_id: "s-p1",
+      prompt: "SENTINEL-PROMPT about something private",
+    });
+    runHook("gemini:log-assistant", home, {
+      session_id: "s-p1",
+      prompt_response: "SENTINEL-RESPONSE with private advice",
+    });
+
+    const log = readFileSync(join(home, "hooks.log"), "utf8");
+    assert.match(log, /gemini:log-user: `conversation-logger log-user` exited 2/);
+    assert.match(log, /gemini:log-assistant: `conversation-logger log-assistant` exited 2/);
+    assert.doesNotMatch(log, /SENTINEL|private|s-p1/);
+    assert.doesNotMatch(readFileSync(join(home, "front-door.log"), "utf8"), /SENTINEL/);
   });
 
   test("only the first line of a multi-line failure is written", () => {
