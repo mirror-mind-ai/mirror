@@ -343,20 +343,57 @@ describe("the MCP launcher", () => {
 });
 
 describe("the Claude allowlist", () => {
-  test("grants node BY PATH, never a bare `node *`", () => {
-    // `Bash(node *)` is an auto-approved arbitrary-execution grant, strictly
-    // wider than the module-scoped interpreter grant it replaces. Dropping the
-    // inline-code interpreter grant is a security improvement in its own
-    // right: that one was already arbitrary execution.
-    const settings = JSON.parse(readFileSync(join(REPO_ROOT, ".claude/settings.json"), "utf8")) as {
+  const allow = (
+    JSON.parse(readFileSync(join(REPO_ROOT, ".claude/settings.json"), "utf8")) as {
       permissions: { allow: string[] };
-    };
-    const allow = settings.permissions.allow;
+    }
+  ).permissions.allow;
 
-    assert.ok(allow.includes("Bash(node ts/src/frontDoor/cli.ts *)"));
-    assert.ok(allow.includes("Bash(node ts/src/hooks/main.ts *)"));
+  test("grants no blanket node and no interpreter", () => {
+    // `Bash(node *)` is an auto-approved arbitrary-execution grant. So were the
+    // interpreter grants TS5 dropped (`python3 -c` ran any code it was given).
     assert.ok(!allow.some((entry) => /^Bash\(node \*\)$/.test(entry)), "no blanket node grant");
     assert.ok(!allow.some((entry) => entry.includes("python")), "no interpreter grant remains");
+  });
+
+  test("grants the model nothing under ts/src/hooks: hooks run outside permissions", () => {
+    // Claude Code runs hooks itself; `permissions.allow` governs the model's
+    // Bash tool. A hook-entry grant therefore authorizes nothing a hook needs
+    // and lets the model run hook entries unasked -- `claude:session-end`
+    // closes the session and pays for extraction (TS5 handoff review, P2).
+    assert.deepEqual(
+      allow.filter((entry) => entry.includes("ts/src/hooks")),
+      [],
+    );
+  });
+
+  test("any front-door grant matches the invocation the skills actually make", () => {
+    // A prefix rule is only a grant if the command starts with it. The skills
+    // run the front door behind NODE_OPTIONS and --env-file, so the grant TS5
+    // first wrote, `Bash(node ts/src/frontDoor/cli.ts *)`, matched no skill
+    // invocation -- and the Python-era grant it replaced had not matched the
+    // interpreter form the skills used then either. The walk had to approve
+    // every call.
+    // Checked against the real form, so a stale grant cannot pass as a live one.
+    const invocations = new Set<string>();
+    const skillsDir = join(REPO_ROOT, ".claude/skills");
+    for (const skill of readdirSync(skillsDir)) {
+      const body = readFileSync(join(skillsDir, skill, "SKILL.md"), "utf8");
+      // From the command's start, leading VAR=value assignments included.
+      const command = /(?:\b[A-Z][A-Z_]*=\S+\s+)*\bnode\b[^`\n]*?ts\/src\/frontDoor\/cli\.ts/g;
+      for (const match of body.matchAll(command)) invocations.add(match[0]);
+    }
+    assert.ok(invocations.size > 0, "the skills invoke the front door");
+
+    for (const entry of allow.filter((grant) => grant.includes("ts/src/frontDoor/cli.ts"))) {
+      const prefix = entry.replace(/^Bash\(/, "").replace(/(:\*| \*)\)$/, "");
+      for (const invocation of invocations) {
+        assert.ok(
+          invocation.startsWith(prefix),
+          `${entry} does not match the skills' invocation: ${invocation}`,
+        );
+      }
+    }
   });
 });
 

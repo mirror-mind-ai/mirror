@@ -1,8 +1,6 @@
 {
   "permissions": {
     "allow": [
-      "Bash(node ts/src/hooks/main.ts *)",
-      "Bash(node ts/src/frontDoor/cli.ts *)",
       "Bash(zip *)",
       "Bash(git:*)",
       "Bash(git add:*)",
