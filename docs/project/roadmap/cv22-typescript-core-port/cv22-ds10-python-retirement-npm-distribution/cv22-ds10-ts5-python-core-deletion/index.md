@@ -603,9 +603,9 @@ order:
    on a real database copy with the interpreter shadowed; the runbook under
    *The walk, as commands* was dry-run in zsh for every step that needs no
    runtime session. Both walks' results are recorded there. The second
-   walk (2026-09-25) passed steps 2, 6, and 12 and the verdict; its step 1
-   sent the prompt 51 seconds after launch, outside the race it exists to
-   test, and is to be repeated — then the Navigator's acceptance.
+   walk (2026-09-25) passed every step — step 1 on its second attempt, the
+   prompt logged 14 ms after maintenance started. What remains is the
+   Navigator's acceptance.
 4. **The panel's handoff review** (D9: engineer, quality-assurance,
    database-architect, devops-engineer, security-engineer), over plateaus 0–4
    and the validation evidence — after validation, as the collaboration
