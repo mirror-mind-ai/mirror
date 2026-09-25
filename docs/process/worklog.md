@@ -12,6 +12,27 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-09-25 — CR008 done: Builder commands bind only a journey they were given
+
+This is the first change of the Ariad trust floor that gates the CV22
+release. A lifecycle command without `--journey` used to take the journey of
+the most recently touched runtime session in the whole database, or else of
+the global mode row. Agent shells name no session, so every such command
+guessed, and the guess had moved other journeys' cursors and written roadmap
+files into other projects while its surfaces reported success.
+
+Now a journey comes from `--journey`, or from the Builder Mode of an active
+session the caller named. Every leaf refuses otherwise, and the `mm-build`
+skill passes `--journey` on every command. On a copy of the production
+database, the old code bound `finances` from a `mirror-ts-core` shell; the
+new code refused, bound only by name, and left every cursor unchanged.
+
+The write side stays as it was (decision C). `build load` still stamps a
+guessed session so that each window's footer shows its own mode, and a
+tripwire test makes provenance the precondition for the day a runtime names
+its session. Captured on the way: CR100, CR101, and CR102. Next on the floor:
+CR079, which also closes CR004.
+
 ### 2026-09-25 — CV22.DS10.TS5 done: the sole custodian owns the whole open
 
 TS5 closed through the two checkpoints the migration keeps for a single owner.

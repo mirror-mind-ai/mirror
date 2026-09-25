@@ -45,6 +45,8 @@ promise RS001 exists to protect.
 **2026-09-25 — first change of the Ariad trust floor** ([decision](../../decisions.md#the-cv22-release-is-gated-on-an-ariad-trust-floor-worked-before-us3)).
 Plan approved by the Navigator on 2026-09-25 (`planned`) and started the same
 day (`in_progress`; Driver `@viniciusteles`, Delivery `mirror-ts-core`).
+Validated by the Navigator the same day (`validated`) after route step 2 ran
+live, reviewed for debt (below), and closed (`done`).
 
 ### Characterization (read-only, 2026-09-25, TypeScript engine)
 
@@ -337,6 +339,27 @@ Each is recorded here for the Navigator to accept or reject at validation.
      is the global row under another name;
    - a constraint on [CR100](../rs010-cv22-oracle-and-port-hygiene/cr100-the-session-resolver-guesses-from-a-table-of-three-row-kinds.md).
 
+### Debt Review (2026-09-25)
+
+Every finding has a disposition the Navigator decided in this CR's session, and
+none is left undecided.
+
+| Finding | Disposition |
+|---|---|
+| A guessed Builder stamp can bind through a named session once a runtime names its session | Deferred with an enforced trigger (decision C): `namedSessionPrecondition.test.ts` fails on that day, and option B is the fix |
+| The session resolver guesses among three kinds of `runtime_sessions` row | Captured: [CR100](../rs010-cv22-oracle-and-port-hygiene/cr100-the-session-resolver-guesses-from-a-table-of-three-row-kinds.md) |
+| Explorer and Soul activation stamp a guessed session | Captured: [CR101](../rs010-cv22-oracle-and-port-hygiene/cr101-explorer-and-soul-activation-stamp-a-guessed-session.md), moved to RS010 |
+| Claude Code's `mm-build` skill has no Builder or Ariad sections, so this CR's skill change never reached it | Captured: [CR102](../rs010-cv22-oracle-and-port-hygiene/cr102-the-claude-code-mm-build-skill-lacks-the-builder-and-ariad-sections.md) |
+| `build inspect-method` with no argument changes its output, which US3's before/after instrument records | Handed to US3 as inherited item 13 |
+
+Proportionality: in `ts/src`, four files, 107 lines added and 41 removed.
+That buys two primitives, one shared helper, and two rewritten sentences, and
+about a third of the added lines are the comments that carry decision C. The
+defect it fixes silently wrote other journeys' state. The rest is tests (a
+table over the whole corpus, the tripwire) and documentation. No refactor was
+deferred: the resolution logic that the plan found duplicated now lives in one
+helper.
+
 ### Authority Boundary
 
 This plan authorizes nothing. Implementation starts after Navigator approval
@@ -476,9 +499,21 @@ build pull-candidates --method ariad                          -> exit 1, "requir
 build pull-candidates --journey mirror-ts-core --method ariad -> exit 0, ROADMAP_SNAPSHOT + PULL_CANDIDATES for mirror-ts-core
 ```
 
-Navigator acceptance is pending. Step 3 (two windows) is optional and was not
-run.
+Accepted by the Navigator on 2026-09-25. Step 3 (two windows) is optional and
+was not run.
 
 ## Outcome
 
-Pending.
+Done 2026-09-25. A Builder lifecycle command binds only a journey it was given:
+`--journey`, or the Builder Mode of an active session named with
+`--session-id` or `MIRROR_SESSION_ID`. With neither, it refuses before it
+reads a cursor or writes a file, and `inspect-method` with no argument names
+no journey. The `mm-build` skill passes `--journey` on every command in Pi,
+Codex, and Gemini CLI; Claude Code is CR102. Decision C left the write side
+unchanged, and a tripwire enforces its precondition.
+
+Proven on a copy of the production database, where the pre-CR008 code bound
+another window's journey and the new code did not. Validated live by the
+Navigator. CI green at `42de1b55`:
+[Tests](https://github.com/mirror-mind-ai/mirror/actions/runs/36192183003),
+[Docs](https://github.com/mirror-mind-ai/mirror/actions/runs/36192182804).
