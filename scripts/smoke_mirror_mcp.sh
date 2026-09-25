@@ -75,7 +75,10 @@ JS
 echo "✓ stdio round-trip: initialize / tools/list / tools/call"
 
 # Production guard: the run's unique marker must never appear in production.
-for db in "${PROD_DBS[@]}"; do
+# `${arr[@]+...}`: bash 3.2 -- macOS's /bin/bash -- treats an EMPTY array as
+# unbound under `set -u`, and with the EXIT trap above the abort exits 0, so a
+# machine with no production home skipped this check and still "passed".
+for db in ${PROD_DBS[@]+"${PROD_DBS[@]}"}; do
   leaked="$(sqlite3 "$db" "SELECT count(*) FROM messages WHERE content LIKE '%$MARKER%';" 2>/dev/null || echo ERR)"
   [ "$leaked" = "0" ] || fail "smoke marker leaked into production: $db ($leaked)"
 done

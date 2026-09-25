@@ -288,7 +288,13 @@ MEMORY_ENV=test node --no-warnings ts/smoke/extension_catalog_smoke.ts
 
 CI also runs the whole suite a second time with `python`, `python3`, and `uv` shadowed by stubs that log and exit 66, and fails on a single logged spawn even when every test passes. The Mirror Mind repository holds no Python since CV22.DS10.TS5, and that step is how it stays true. Green `npm test` says nothing about any of the steps above; CV22.DS10.TS2 failed CI twice for exactly that assumption.
 
-The runtime smokes under `scripts/` (`smoke_codex.sh`, `smoke_gemini_cli.sh`, `smoke_claude_plugin.sh`, `smoke_mirror_mcp.sh`) are not in CI: they need a runtime installed on the machine. Run the one for the runtime a change touches.
+The runtime smokes under `scripts/` (`smoke_codex.sh`, `smoke_gemini_cli.sh`, `smoke_claude_plugin.sh`, `smoke_mirror_mcp.sh`) run in CI's `smoke` job, under the same interpreter shadow. None needs its runtime installed: each feeds its runtime's payloads to the real wrappers, against an isolated database. Run them before a push that touches hooks, the Codex wrapper, or the MCP launcher:
+
+```bash
+for smoke in smoke_codex smoke_gemini_cli smoke_claude_plugin smoke_mirror_mcp; do
+  bash "scripts/$smoke.sh" || break
+done
+```
 
 If a verification command fails because of known pre-existing debt, record that explicitly in the story notes and do not silently treat the gate as green.
 

@@ -193,3 +193,33 @@ jobs:
         run: node --no-warnings ts/smoke/extension_catalog_smoke.ts
         env:
           MEMORY_ENV: test
+
+      # The runtime smokes: each runtime's real hook wrappers, the Codex wrapper,
+      # and the MCP launcher, against isolated databases. None needs its runtime
+      # installed -- each feeds the payloads its runtime sends -- and since TS5
+      # none needs an interpreter, so they run under the same shadow as the
+      # suite. Until the TS5 handoff review (finding N2) they ran only when
+      # someone remembered, and smoke_gemini_cli.sh is the one that caught F11:
+      # every Gemini assistant turn dropped since plateau 1, a regression the
+      # hook row-diff had passed.
+      - name: Runtime smokes (hooks, Codex wrapper, MCP launcher; nothing may spawn python)
+        run: |
+          SHADOW="$(mktemp -d)"
+          export TS5_SHADOW_LOG="$SHADOW/spawns.log"
+          : > "$TS5_SHADOW_LOG"
+          for bin in python python3 uv; do
+            printf '#!/bin/sh\necho "TS5 SPAWN: %s $*" >> "$TS5_SHADOW_LOG"\nexit 66\n' "$bin" > "$SHADOW/$bin"
+            chmod +x "$SHADOW/$bin"
+          done
+          export PATH="$SHADOW:$PATH"
+          command -v sqlite3 >/dev/null || { sudo apt-get update -q && sudo apt-get install -y -q sqlite3; }
+          for smoke in smoke_codex smoke_gemini_cli smoke_claude_plugin smoke_mirror_mcp; do
+            echo "::group::$smoke"
+            bash "scripts/$smoke.sh"
+            echo "::endgroup::"
+          done
+          if [ -s "$TS5_SHADOW_LOG" ]; then
+            cat "$TS5_SHADOW_LOG"
+            echo "FAIL: a runtime smoke reached for an interpreter" >&2
+            exit 1
+          fi
