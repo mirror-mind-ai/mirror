@@ -32,7 +32,7 @@ Open work is ordered intentionally. Terminal history follows open work.
 
 | Order | ID | RS | Change | Status | Driver | Delivery |
 |------:|----|----|--------|--------|--------|----------|
-| 1 | [CR008](rs001-ariad-runtime-trust/cr008-bind-lifecycle-commands-to-active-journey.md) | RS001 | Bind lifecycle commands to the active Builder journey | captured | — | — |
+| 1 | [CR008](rs001-ariad-runtime-trust/cr008-bind-lifecycle-commands-to-active-journey.md) | RS001 | Bind lifecycle commands to the active Builder journey | in_progress | @viniciusteles | `mirror-ts-core` |
 | 2 | [CR079](rs001-ariad-runtime-trust/cr079-preserve-authored-content-in-every-lifecycle-artifact.md) | RS001 | Preserve authored content in every lifecycle artifact, not one at a time | captured | — | — |
 | 3 | [CR004](rs001-ariad-runtime-trust/cr004-preserve-authored-story-index.md) | RS001 | Preserve authored story index during Plan materialization | captured | — | — |
 | 4 | [CR002](rs001-ariad-runtime-trust/cr002-cursor-sync-roadmap-selection.md) | RS001 | Refuse ambiguous roadmap selection during cursor sync | captured | — | — |
