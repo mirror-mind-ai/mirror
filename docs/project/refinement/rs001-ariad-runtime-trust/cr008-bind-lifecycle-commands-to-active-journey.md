@@ -467,6 +467,18 @@ second window, `/mm-build` another journey, come back here, and run any
 lifecycle command through the skill. It binds this window's journey, and the
 other journey's cursor does not change.
 
+**2026-09-25: route step 2, run in the live Builder session at the
+Navigator's request** (commit `29077e91`; `MIRROR_SESSION_ID` unset in the
+shell; production database, read-only commands):
+
+```text
+build pull-candidates --method ariad                          -> exit 1, "requires a journey. Pass --journey <slug>, ..."
+build pull-candidates --journey mirror-ts-core --method ariad -> exit 0, ROADMAP_SNAPSHOT + PULL_CANDIDATES for mirror-ts-core
+```
+
+Navigator acceptance is pending. Step 3 (two windows) is optional and was not
+run.
+
 ## Outcome
 
 Pending.
