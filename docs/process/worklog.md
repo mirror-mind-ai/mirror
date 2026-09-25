@@ -54,8 +54,8 @@ The first Navigator walk (2026-09-25) then did what no suite had: it ran two
 real runtimes at once. Claude Code fires its two prompt hooks together, both
 write, and both snapshotted the database into one fixed file — so one of the
 two writes died, and two of three prompts lost their Mirror context. The same
-race had been losing the opening prompt of every Pi session launched with one
-since 2026-09-11 — DS7.US8 found that on 2026-09-16 and deferred it to DS10,
+race had been losing the opening prompt of every Pi session launched with one,
+and that session's maintenance with it, since 2026-09-11 — DS7.US8 found that on 2026-09-16 and deferred it to DS10,
 where nobody read the trigger — and plateau 1 spread it to Claude Code. Each
 write now snapshots into its own staging file and
 promotes it by atomic rename (F21): seven of eight concurrent writers failed

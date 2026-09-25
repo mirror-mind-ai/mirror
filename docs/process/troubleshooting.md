@@ -535,7 +535,7 @@ before writing anything.
 **Date:** 2026-09-25
 **Status:** fixed in CV22.DS10.TS5 (finding F21)
 **Affected component:** every routed live write — most visibly Claude Code's prompt hooks and the logging of Pi's opening prompt
-**Severity:** lost writes (a message not logged, a Mirror Mode injection not made); the database itself is never at risk
+**Severity:** lost writes (a message not logged, a Mirror Mode injection not made, a session's maintenance not run); the database itself is never at risk
 
 ### Symptom
 
@@ -546,6 +546,7 @@ session's opening prompt, when given at launch (`pi "…"`), never reaches
 ```text
 <mirror home>/hooks.log:          claude:inject: table conversations already exists
 <mirror home>/mirror-logger.log:  stderr from [conversation-logger log-user]: … Error: disk I/O error
+<mirror home>/mirror-logger.log:  BackupGateError: recorded backup hash does not match the backup file
 <mirror home>/front-door.log:     ERROR conversation-logger ts exit=1
 ```
 
@@ -556,13 +557,16 @@ Every routed write first snapshots the database into one fixed file,
 file and recreated it with `VACUUM INTO`, with no coordination, so two writers
 at the same instant broke each other: the second `VACUUM INTO` found the tables
 the first was still creating, or one removed the file the other was still
-writing. The losing write was aborted. Claude Code runs its two
+writing. The losing write was aborted, and often the other with it: its
+snapshot no longer matched the hash it had recorded. Claude Code runs its two
 `UserPromptSubmit` hooks at once, and on a prompt that owes an injection both
 write, so the collision was routine. Pi hit it on every session opened with a
 prompt at launch: that prompt is logged about 40 ms after the session's
-detached maintenance starts, while maintenance is still snapshotting. The
-`VACUUM INTO` only ever read the live database, so no data was damaged — only the write that
-lost was dropped.
+detached maintenance starts, while maintenance is still snapshotting, and
+both lost: the prompt went unlogged and the maintenance died, so closing,
+retitling, and extraction waited for a session whose first prompt came later. The
+`VACUUM INTO` only ever read the live database, so no data was damaged — only the writes that
+lost were dropped.
 
 ### Fix
 

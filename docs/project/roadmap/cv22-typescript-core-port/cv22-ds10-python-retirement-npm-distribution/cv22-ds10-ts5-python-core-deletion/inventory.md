@@ -594,7 +594,10 @@ first snapshots the database into one fixed file,
 collide. The second `VACUUM INTO` finds the tables the first is still
 creating (`table conversations already exists`), or one writer removes the
 file the other is still writing (`disk I/O error`). The losing write is
-aborted: a user message is not logged, or an injection is not made. The live
+aborted: a user message is not logged, or an injection is not made. Often
+both lose: the other writer's snapshot is then no longer the file whose hash
+it recorded, and the backup gate refuses it (`BackupGateError: recorded backup
+hash does not match the backup file`). The live
 database is never at risk — `VACUUM INTO` only reads it — but the write is
 lost, silently for the user.
 
@@ -623,7 +626,11 @@ marks the session injected, `log-user-prompt` stores the message.
   window, twenty lost, while the three opening prompts typed some twenty
   seconds in were all stored. The database agrees: the opening prompt is
   stored up to 2026-09-10, absent from 2026-09-11 to 2026-09-24, and stored
-  again after the fix. All twenty are the same journey-activation command, so
+  again after the fix. **Both writers lost, every time:** the session's
+  maintenance died too, with `BackupGateError`, so it completed only at the
+  three session starts whose first prompt came seconds later — and at none for
+  nine days, from 2026-09-12 to 2026-09-21. The first run after the fix caught
+  up: 25 Pi sessions backfilled and 2 conversations extracted. All twenty are the same journey-activation command, so
   no content was lost. *(Corrected 2026-09-25: this bullet first read four
   failures since 2026-09-23, from one turn's logging overlapping the next;
   the whole log shows twenty, all at session start.)*
