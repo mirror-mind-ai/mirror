@@ -150,12 +150,24 @@ and green CI on every push.
 ✓ DS7.TS4 — extension catalog + identity edit   → DS7 done 14/14
 ⛔ DS7.US9 — Workspace/web hierarchy rider: RETIRED UNPORTED 2026-09-17
 ✓ DS9 — TS MCP server                            (done 2026-09-19, 4/4)
-→ DS10 — retirement and npm                       ← current (pulled 2026-09-19, 0/8)
+→ DS10 — retirement and npm                       ← current (pulled 2026-09-19, 7/8)
          TS1 retires the projection seam and subsystem first (decided the same
          day, after it was pulled as a port); then the web console, the compat
          host, the eval harness, the updater, the unported cutoffs, Python
-         deletion, npm. Mirror Desktop is outside the migration.
+         deletion (TS5 done 2026-09-25), npm. Mirror Desktop is outside the
+         migration.
+→ RS001 — Ariad trust floor (seven changes)       ← next, before US3
+         CR008, CR079+CR004, CR002, CR001, CR019, CR067+CR020, CR018
+  DS10.US3 — npm distribution                      after the floor
+  release — once, when both are done
 ```
+
+Re-sequenced 2026-09-25 — see
+[Decisions — The CV22 release is gated on an Ariad trust floor, worked before US3](../../decisions.md#the-cv22-release-is-gated-on-an-ariad-trust-floor-worked-before-us3).
+The Ariad deferral existed because of the oracle: a behavior fix was a
+two-engine change while Python was product authority. TS5 removed the oracle,
+so the fix is now single-engine, and US3 — the largest story left, run through
+Ariad itself — is the floor's validation route.
 
 US9 was the last DS7 story and the only non-command rider. It was pulled, planned, and
 panel-reviewed on 2026-09-17, then declined at its approval gate: the port's own acceptance

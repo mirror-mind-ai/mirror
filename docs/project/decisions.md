@@ -3007,3 +3007,81 @@ migration too. A database that is already current never takes the slow path,
 so the schema step alone would never reach it. `createSchema` on the slow path
 heals databases from before this decision; migrations carry every schema change
 after it.
+
+### The CV22 release is gated on an Ariad trust floor, worked before US3
+
+**Date:** 2026-09-25 · **Context:** CV22.DS10 sits at 7/8 with TS5 done and
+US3 (npm distribution) the last story. RS001 (Ariad Runtime Trust) holds
+thirteen open Change Requests, deferred through the whole port. The Navigator
+asked whether the most important of them should be fixed before the migration
+finishes, so the users who adopt the TypeScript release do not meet the Ariad
+failures this project has been living with.
+
+**The decision: the CV22 release requires two things, not one — US3 and a
+fixed list of seven Ariad changes, the trust floor. The floor is worked first,
+then US3, then the release. Every other RS001 Change Request stays captured.**
+
+**Why the deferral ends now.** It existed because of the oracle. While Python
+was product authority for the Ariad tree, an Ariad behavior fix was a
+two-engine change: fix Python, re-baseline, port, prove parity. That tax made
+waiting correct. TS5 deleted the Python core and the parity harness
+(`ts/parity/` and the oracle baseline are gone), so from this date an Ariad
+fix is one engine under ordinary TDD. The migration's behavioral phase ended
+on 2026-09-25; what remains in US3 is packaging — `bin` name, package
+identity, hook resolution, `.env` location, installer, Windows promotion — and
+none of it touches Ariad.
+
+**Why before US3 rather than after.** Two reasons, both about US3 itself.
+US3 is the largest remaining story and runs through Ariad; its
+[`inherited.md`](roadmap/cv22-typescript-core-port/cv22-ds10-python-retirement-npm-distribution/cv22-ds10-us3-npm-distribution/inherited.md)
+is a separate file precisely because Plan materialization still overwrites an
+authored story index (CR004, CR079) — the workaround is baked into the
+project layout. And US3 is the floor's validation route: seven fixes run
+through one real story before any user sees them. Fixed after US3, they would
+ship without a single story run through them.
+
+**The floor.** Ordered by what breaks — silent loss of state or content
+first, then a wrong surface at the point where the Navigator decides. Seven
+changes, nine identifiers:
+
+- Silent damage: [CR008](refinement/rs001-ariad-runtime-trust/cr008-bind-lifecycle-commands-to-active-journey.md)
+  (lifecycle commands without `--journey` bind to another journey — cursor
+  clobbered, files written into another repository);
+  [CR079](refinement/rs001-ariad-runtime-trust/cr079-preserve-authored-content-in-every-lifecycle-artifact.md)
+  absorbing [CR004](refinement/rs001-ariad-runtime-trust/cr004-preserve-authored-story-index.md)
+  (one rule — never overwrite an authored artifact — for every lifecycle
+  artifact; CR015 already did it for `plan.md`; CR004 closes with CR079's
+  delivery, not separately);
+  [CR002](refinement/rs001-ariad-runtime-trust/cr002-cursor-sync-roadmap-selection.md)
+  (refuse ambiguous roadmap selection during cursor sync).
+- Wrong at the decision point: [CR001](refinement/rs001-ariad-runtime-trust/cr001-scope-confirmation-checkpoint.md)
+  (already planned);
+  [CR019](refinement/rs001-ariad-runtime-trust/cr019-plan-checkpoint-states-untruths-about-the-target-project.md)
+  (after TS5 the `uv run` contract line is false even for Mirror itself);
+  [CR067](refinement/rs001-ariad-runtime-trust/cr067-render-the-refused-checkpoint-not-a-hardcoded-implement-stage.md)
+  with [CR020](refinement/rs001-ariad-runtime-trust/cr020-no-read-only-way-to-re-render-the-active-checkpoint.md)
+  (refusals name the wrong reason and render a hardcoded Implement stage; no
+  read-only way to see the active checkpoint again);
+  [CR018](refinement/rs001-ariad-runtime-trust/cr018-story-titles-with-slashes-truncated-in-surfaces-and-scaffolds.md)
+  (titles truncated at `/`).
+
+**Outside the floor, on purpose.** CR090, CR009 and CR082 stay captured; CR090
+is one string and may be taken in passing when a floor change touches its
+surface, CR009 mostly dissolves with CR008, and the parity-golden cost CR082
+cites no longer exists. CR017's warning came from the projection subsystem,
+which DS10.TS1 retired; it is to be verified and rejected as overtaken, not
+fixed. RS003's three requests were shaped by the SQLite Workbench's lifecycle,
+which project files replaced; they get the same look. Those closures are
+Workbench decisions taken at the index, not part of this one.
+
+**The rule that follows.** The floor is a list, not a category. A Change
+Request found while working the floor is captured, not fixed. Adding one to
+the floor is an explicit decision recorded here, so that "the most important
+Ariad fixes" cannot quietly become "fix Ariad" while DS10 waits at 7/8.
+
+**Vehicle.** RS001 Change Requests through the file-first
+[Refinement route](refinement/index.md), each with Driver and Delivery
+assigned per the Collaboration Convention, on the `mirror-ts-core` branch. No
+new Delivery Story; CV22's [release-once](#cv22-releases-once-when-the-migration-is-complete)
+decision stands, with the floor now named among the things the release waits
+for.
