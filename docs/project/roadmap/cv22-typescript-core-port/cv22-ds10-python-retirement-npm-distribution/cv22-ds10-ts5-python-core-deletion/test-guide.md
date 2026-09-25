@@ -392,11 +392,30 @@ Mirror code. `mirror` is a function here rather than the documented alias, so th
 OpenRouter key: session ends and `build load` make a few live calls, costing
 cents and writing their ledger rows to the copy.
 
-**1 — Pi.** `pi` → one prompt (*"Say hello in one sentence."*) → quit.
+**1 — Pi.** `pi "Say hello in one sentence."` → wait for the answer → quit.
+
+The prompt goes on the command line on purpose: that is F21's field shape. Pi
+starts its session maintenance in the background at launch and logs a prompt
+given at launch about 40 ms later — before the fix, twenty sessions in twenty
+lost that prompt. Then read Pi's own log:
+
+```bash
+grep -E 'log-user|\[(WARN|ERROR)\]' "$MIRROR_HOME/mirror-logger.log"
+```
+
+Expect exactly one line, `[INFO] log-user: Say hello in one sentence....`, and
+no `[WARN]` or `[ERROR]` line: that is where each lost prompt left its trace.
 
 **2 — Claude Code.** `claude` → `/mm:mirror What should I focus on today?`
 (approve the front-door command if asked) → one plain follow-up → `/exit`.
-Mirror Mode context must shape the answer — that is the inject hook.
+Mirror Mode context must shape the answer — that is the inject hook. Then:
+
+```bash
+cat "$MIRROR_HOME/hooks.log" 2>/dev/null | wc -l
+```
+
+Expect `0`. A hook that cannot do its job writes one line to `hooks.log` and
+nowhere the user sees; this file is where the first walk found F21.
 
 **3 — Gemini CLI: skipped** (Navigator, 2026-09-25). Gemini CLI is retired
 and Antigravity replaces it; adapting Mirror to Antigravity is CV21's, after
@@ -444,9 +463,12 @@ sqlite3 "$MIRROR_HOME/memory.db" "select substr(id,1,8), interface,
 mirror recall <id>          # once per id above
 ```
 
-Expect one row each for `pi`, `claude_code`, `gemini_cli`, and `codex`, each
-with user **and** assistant messages. Then the isolation check — the walk
-wrote nothing to production:
+Expect one row each for `pi`, `claude_code`, and `codex` — none for
+`gemini_cli`, step 3 being skipped — each with user **and** assistant
+messages; a walk that repeats only some steps expects only the runtimes it ran
+(the second walk: `pi` and `claude_code`). Rows for Pi sessions that session
+start backfilled from `~/.pi/agent/sessions` are expected noise. Then the
+isolation check — the walk wrote nothing to production:
 
 ```bash
 sqlite3 ~/.mirror-minds/vinicius-ts/memory.db "select interface, count(*)
