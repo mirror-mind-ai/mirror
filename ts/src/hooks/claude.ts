@@ -11,9 +11,8 @@
 // for every prompt and the logger decides), a missing session id still fails
 // loud, and every failure is still non-fatal to the user's turn.
 
-import { openDatabaseForWrite } from "#db/database.ts";
 import { resolveDbPath } from "#frontDoor/dbPath.ts";
-import { ensureBackup } from "#frontDoor/liveBackup.ts";
+import { openLiveWriteDatabase } from "#frontDoor/liveBackup.ts";
 import { markInjected, needsInject, readMirrorState } from "./mirrorState.ts";
 import { parseHookPayload, readStdin } from "./payload.ts";
 import { noteHookFailure, runFrontDoor, runFrontDoorQuietly } from "./runtime.ts";
@@ -127,7 +126,13 @@ export async function claudeInject(stdin: string): Promise<number> {
     // Paying the front door's own safety contract for a real write to a real
     // user database beat inventing a second narrowed write handle inside a
     // deletion story. Recorded with the number so the trade is visible.
-    const db = openDatabaseForWrite(dbPath, ensureBackup(dbPath));
+    //
+    // This hook runs AT THE SAME TIME as `log-user-prompt`, which writes too.
+    // Until finding F21 the two snapshots collided on one fixed file and one
+    // write was lost -- in the Navigator walk, two injections in three
+    // prompts. `openLiveWriteDatabase` gives each writer its own staging
+    // snapshot, so concurrent hooks no longer race.
+    const db = openLiveWriteDatabase(dbPath);
     try {
       markInjected(db, sessionId, new Date().toISOString());
     } finally {

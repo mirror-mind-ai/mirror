@@ -36,12 +36,7 @@ import {
   DEFAULT_SHADOW_SCAN_LIMIT,
   shadowScan,
 } from "#cultivation/scan.ts";
-import {
-  type Database,
-  openDatabaseForWrite,
-  openDatabaseReadOnly,
-  type WritableDatabase,
-} from "#db/database.ts";
+import { type Database, openDatabaseReadOnly, type WritableDatabase } from "#db/database.ts";
 import { ensureDatabaseReady } from "#db/readyOnOpen.ts";
 import { assertSchemaState, SchemaStateError } from "#db/schemaState.ts";
 import { allDescriptors, descriptorsByLayer } from "#descriptor/descriptorRead.ts";
@@ -100,7 +95,7 @@ import { defaultExploreRouteDeps, runExploreRoute } from "./exploreRoute.ts";
 import { frontDoorLogPath, logFrontDoor } from "./frontDoorLog.ts";
 import { applyIdentitySet } from "./identityWrite.ts";
 import { applyJourneySetPath } from "./journeyWriteRoute.ts";
-import { ensureBackup } from "./liveBackup.ts";
+import { openLiveWriteDatabase } from "./liveBackup.ts";
 import {
   isMirrorWrite,
   isModeWrite,
@@ -590,7 +585,7 @@ function withLiveWriteDbAt(
   // applies any pending TS-authored migration (US3), then the backup-gated
   // live-write seam opens the now-current file.
   ensureDatabaseReadyForCli(dbPath, command);
-  const db = openDatabaseForWrite(dbPath, ensureBackup(dbPath));
+  const db = openLiveWriteDatabase(dbPath);
   try {
     assertSchemaState(db);
     return write(db);
@@ -618,7 +613,7 @@ async function withLiveWriteDbAsync(
   const dbPath = resolveDbPathForCli(argv.slice(2));
   if (dbPath === null) return 2;
   ensureDatabaseReadyForCli(dbPath, argv[0] ?? null);
-  const db = openDatabaseForWrite(dbPath, ensureBackup(dbPath));
+  const db = openLiveWriteDatabase(dbPath);
   try {
     assertSchemaState(db);
     return await write(db);
@@ -881,7 +876,7 @@ function runSeedCommand(argv: readonly string[]): number {
   }
 
   ensureDatabaseReadyForCli(paths.dbPath, "seed");
-  const db = openDatabaseForWrite(paths.dbPath, ensureBackup(paths.dbPath));
+  const db = openLiveWriteDatabase(paths.dbPath);
   try {
     assertSchemaState(db);
     const prints = [`Mirror home: ${paths.mirrorHome}`, `Identity root: ${paths.identityRoot}`];
@@ -1384,7 +1379,7 @@ async function withMirrorWriteDb(
   const dbPath = resolveDbPathForCli(argv.slice(1));
   if (dbPath === null) return 2;
   ensureDatabaseReadyForCli(dbPath, argv[0] ?? null);
-  const db = openDatabaseForWrite(dbPath, ensureBackup(dbPath));
+  const db = openLiveWriteDatabase(dbPath);
   try {
     assertSchemaState(db);
     return await write(db, dbPath);
@@ -1528,7 +1523,7 @@ export function tryOpenDbForConsultLogging(argv: readonly string[]): WritableDat
     // as it behaved before this CR.
     const dbPath = resolveDbPath(argv.slice(1));
     if (!existsSync(dbPath)) return null;
-    db = openDatabaseForWrite(dbPath, ensureBackup(dbPath));
+    db = openLiveWriteDatabase(dbPath);
     assertSchemaState(db);
     return db;
   } catch {
@@ -1555,7 +1550,7 @@ async function runMemorySearch(argv: readonly string[]): Promise<number> {
   // applies any pending TS-authored migration (US3) before the backup-gated
   // search read/log path opens it.
   ensureDatabaseReadyForCli(dbPath, argv[0] ?? null);
-  const db = openDatabaseForWrite(dbPath, ensureBackup(dbPath));
+  const db = openLiveWriteDatabase(dbPath);
   try {
     assertSchemaState(db);
     process.stdout.write(

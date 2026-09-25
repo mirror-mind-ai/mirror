@@ -528,7 +528,10 @@ expected filesystem posture is **owner-only**: directories `0700`, data files
   database (WAL-safe `VACUUM INTO`) to `<mirror home>/backups/`
   `frontdoor-pre-write-backup.db`. The name is fixed and overwritten per write:
   it is an undo of the most recent routed write, not an archive — scheduled
-  archives remain `mm-backup`'s job.
+  archives remain `mm-backup`'s job. Each write snapshots into a staging file
+  of its own and promotes it with an atomic rename, so concurrent writes —
+  Claude Code's parallel prompt hooks, overlapping Pi turns — never collide,
+  and the fixed file is never half-written.
 
 ### Identity (CV4 user home)
 

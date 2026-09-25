@@ -28,6 +28,7 @@ but no fix yet are also welcome (mark them `Status: mitigated`).
 - [`runtime release-notes latest` says release notes were not found](#runtime-release-notes-latest-says-release-notes-were-not-found)
 - [Portuguese accents appear as mojibake on Windows](#portuguese-accents-appear-as-mojibake-on-windows)
 - [Pi Builder conversations appear without journeys](#pi-builder-conversations-appear-without-journeys)
+- [Concurrent writes fail with `table conversations already exists` or `disk I/O error`](#concurrent-writes-fail-with-table-conversations-already-exists-or-disk-io-error)
 - [Hooks skip when a runtime cannot find `node`](#hooks-skip-when-a-runtime-cannot-find-node)
 - [Pi logger fails silently when `python3` resolves outside the project venv](#pi-logger-fails-silently-when-python3-resolves-outside-the-project-venv)
 - [The front door misbehaves: telling it apart, restoring data](#the-front-door-misbehaves-telling-it-apart-restoring-data)
@@ -528,6 +529,50 @@ before writing anything.
 
 ---
 
+
+## Concurrent writes fail with `table conversations already exists` or `disk I/O error`
+
+**Date:** 2026-09-25
+**Status:** fixed in CV22.DS10.TS5 (finding F21)
+**Affected component:** every routed live write — most visibly Claude Code's prompt hooks and Pi's turn logging
+**Severity:** lost writes (a message not logged, a Mirror Mode injection not made); the database itself is never at risk
+
+### Symptom
+
+In Claude Code, Mirror Mode context is missing from some answers. In Pi,
+occasional turns never reach `mirror conversations`. The logs name it:
+
+```text
+<mirror home>/hooks.log:          claude:inject: table conversations already exists
+<mirror home>/mirror-logger.log:  stderr from [conversation-logger log-user]: … Error: disk I/O error
+<mirror home>/front-door.log:     ERROR conversation-logger ts exit=1
+```
+
+### Root cause
+
+Every routed write first snapshots the database into one fixed file,
+`<mirror home>/backups/frontdoor-pre-write-backup.db`. Each writer removed that
+file and recreated it with `VACUUM INTO`, with no coordination, so two writers
+at the same instant broke each other: the second `VACUUM INTO` found the tables
+the first was still creating, or one removed the file the other was still
+writing. The losing write was aborted. Claude Code runs its two
+`UserPromptSubmit` hooks at once, and on a prompt that owes an injection both
+write, so the collision was routine; Pi hit it when a prompt's logging
+overlapped the previous turn's detached assistant logging. The `VACUUM INTO`
+only ever read the live database, so no data was damaged — only the write that
+lost was dropped.
+
+### Fix
+
+Each writer now snapshots into a staging file of its own, the backup gate
+verifies that file, and an atomic rename promotes it to the fixed name. Eight
+writers released at the same instant all land
+(`ts/test/frontDoor/liveWriteConcurrency.test.ts`, which failed seven in eight
+before the fix), and the two Claude hooks run together ten times with no error
+and every message logged. Nothing to do on your side: new writes no longer collide, and `hooks.log`
+stops growing. Writes lost before the fix are not replayed automatically.
+
+---
 
 ## Hooks skip when a runtime cannot find `node`
 

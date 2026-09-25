@@ -293,8 +293,9 @@ function assertLedgerStatement(sql: string): void {
  * (CV22.DS9.TS2 D1) — the MCP server's single sanctioned write.
  *
  * **Why this is not `openDatabaseForWrite`.** The DS4 backup gate is a
- * last-write undo built for a snapshot→write→exit CLI: `ensureBackup` replaces a
- * fixed-name snapshot and the record is verified once, at open. The MCP server
+ * last-write undo built for a snapshot→write→exit CLI: `openLiveWriteDatabase`
+ * promotes a fresh snapshot to a fixed name, and the record is verified once, at
+ * open. The MCP server
  * lives for an entire client session, so a snapshot taken at launch is not the
  * state before a row written forty minutes later, and re-snapshotting per write
  * would put a 399 ms / ~50 MB `VACUUM INTO` on the agent's response path while

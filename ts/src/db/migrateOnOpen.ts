@@ -24,7 +24,7 @@
 //     state is a single `_migrations` read -- no lock, no backup -- so the hot
 //     path of an already-current database pays almost nothing.
 //   - D3: the backup is conditional and owned here (not the per-write
-//     `ensureBackup`), taken only once we have committed to applying a migration.
+//     `openLiveWriteDatabase` snapshot), taken only once we have committed to applying a migration.
 //   - Backup-first, then lock, then idempotent `runMigrations`; the pending set
 //     is re-checked under the lock so concurrent openers cannot double-apply or
 //     double-backup (the loser sees nothing pending and no-ops).
