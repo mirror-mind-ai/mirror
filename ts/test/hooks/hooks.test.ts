@@ -129,6 +129,9 @@ function runHook(hook: string, home: string, payload: Record<string, unknown>): 
     encoding: "utf8",
     env: {
       ...process.env,
+      // Pinned: CI runs the suite with MEMORY_ENV=test, which names
+      // memory_test.db -- a fresh file the core would NOT refuse.
+      MEMORY_ENV: "production",
       MIRROR_HOME: home,
       MIRROR_USER: "",
       GEMINI_SESSION_ID: "",
