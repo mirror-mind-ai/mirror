@@ -22,7 +22,11 @@ import type { Database } from "./database.ts";
 /** Raised when the database's migration state does not match this TS build. */
 export class SchemaStateError extends Error {}
 
-/** The migration ids this TS core was built against (Python prefix + TS-authored). */
+/**
+ * Every migration this core knows, in order. Until CV22.DS10.TS5 the list was
+ * the Python engine's plus the TypeScript-authored tail; since then the
+ * TypeScript engine is the only custodian, and the list is simply its own.
+ */
 export const KNOWN_MIGRATION_IDS: readonly string[] = [
   "001_project_to_travessia",
   "002_create_attachments",
@@ -49,7 +53,7 @@ export const KNOWN_MIGRATION_IDS: readonly string[] = [
  * failure modes, each named in the error: `_migrations` absent (not a
  * bootstrapped Mirror database), a known id missing (database older than this
  * core — `runtime migrate` brings it forward), an unknown id present (database
- * migrated by a newer checkout than the running code — update this checkout).
+ * migrated by a newer core than the running one — update this installation).
  */
 export function assertSchemaState(db: Database): void {
   let rows: { id: string }[];
@@ -79,7 +83,7 @@ export function assertSchemaState(db: Database): void {
   if (unknown.length > 0) {
     throw new SchemaStateError(
       `database schema is newer than this TS core (unknown migrations: ${unknown.join(", ")}). ` +
-        "Update this Mirror checkout (git pull) so the TS front door matches the database.",
+        "Update this Mirror installation so its core matches the database.",
     );
   }
 }

@@ -12,11 +12,14 @@
 // `schemaInventory.ts`) against a snapshot committed from the Python side.
 //
 // Scope boundary: this module owns DDL only. It does NOT run migrations or
-// seed `_migrations` bookkeeping (CV22.DS6.TS2), and it does NOT change the
-// front door's new-database-delegates-to-Python behavior (deferred until
-// schema + migrations + locking/pragmas all exist in TS — see the DS6.TS1
-// plan). `createSchema` is safe to call against an already-populated database
-// (every statement is `IF NOT EXISTS`) and safe to call twice.
+// seed `_migrations` bookkeeping (CV22.DS6.TS2). Its two callers compose it
+// AFTER `runMigrations`, the order Python's `get_connection` used on every
+// open: `bootstrapDatabase` for a new file, and migrate-on-open's slow path
+// for an existing one (CV22.DS10.TS5 handoff review, B1). That is how a
+// database older than an object only this DDL creates, such as
+// `_ext_bindings`, still gets it. `createSchema` is safe to call against an
+// already-populated database (every statement is `IF NOT EXISTS`) and safe to
+// call twice.
 //
 // The `identity` table's `layer`/`key` enumeration comments are preserved
 // verbatim from the Python source (translated word-for-word, not paraphrased)

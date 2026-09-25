@@ -111,6 +111,15 @@ test("assertSchemaState names unknown migrations when the DB is newer than the T
   try {
     seedMigrations(ws.db, [...KNOWN_MIGRATION_IDS, "018_from_the_future"]);
     assert.throws(() => assertSchemaState(ws.db), /newer than this TS core.*018_from_the_future/);
+    // One condition, one remedy: migrate-on-open declines the same database with
+    // "update this Mirror installation". The guard used to say "git pull" --
+    // true only for a clone, and US3 makes a package the other kind of install
+    // (TS5 handoff review, finding P5).
+    assert.throws(() => assertSchemaState(ws.db), /update this Mirror installation/i);
+    assert.throws(
+      () => assertSchemaState(ws.db),
+      (error: Error) => !error.message.includes("git pull"),
+    );
   } finally {
     ws.db.close();
     ws.cleanup();
