@@ -60,3 +60,4 @@ evidence stays honest as both cores move.
 - [CR098 — The Pi extension logs the first 80 characters of every prompt](cr098-the-pi-extension-logs-the-start-of-every-prompt.md)
 - [CR099 — A `--global` capability binding is not idempotent](cr099-a-global-capability-binding-is-not-idempotent.md)
 - [CR100 — The session resolver guesses "the session" from a table that holds three kinds of row](cr100-the-session-resolver-guesses-from-a-table-of-three-row-kinds.md)
+- [CR101 — Explorer and Soul activation stamp their mode onto a guessed session](cr101-explorer-and-soul-activation-stamp-a-guessed-session.md)

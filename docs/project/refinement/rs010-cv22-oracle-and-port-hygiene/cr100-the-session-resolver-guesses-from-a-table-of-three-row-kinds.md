@@ -36,7 +36,7 @@ it:
   reaches it with no known session in an agent shell, so a wrong guess ends
   **another window's** conversation.
 - Explorer and Soul activation, `explore deactivate`, and orchestration
-  (see [CR101](../rs001-ariad-runtime-trust/cr101-explorer-and-soul-activation-stamp-a-guessed-session.md)
+  (see [CR101](cr101-explorer-and-soul-activation-stamp-a-guessed-session.md)
   for the mode side).
 
 ## Expected Behavior
