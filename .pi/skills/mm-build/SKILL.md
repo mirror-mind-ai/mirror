@@ -76,6 +76,23 @@ Builder Mode surface should orient the user around:
 - compact briefing/synthesis
 - boundary: `Builder executes commitment.`
 
+## 1.2 Journey Binding
+
+Every `build` command after `build load` carries `--journey <slug>`. The slug
+is the journey this session's `build load` activated, and its `■ BUILDER MODE
+ACTIVE` surface names it. For a journey the Navigator names explicitly, pass
+that slug instead.
+
+The runtime never guesses the journey. Without `--journey`, a command binds
+only to a session in Builder Mode named with `--session-id` or
+`MIRROR_SESSION_ID`. An agent shell names none, so the command refuses with
+`requires a journey`. A guessed journey once moved other journeys' cursors and
+wrote files into other projects.
+
+If that refusal appears and this session's slug is no longer in view, ask the
+Navigator. Do not take the slug from `mode status`, the status line, or any
+other database-wide state. They can show another window's journey.
+
 ## 2. Read Project Docs
 
 Parse `project_path` from the last output line above. If `project_path` is not
@@ -193,17 +210,12 @@ When the user asks which Builder method governs the active journey, inspect the
 current Builder method state:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build inspect-method
-```
-
-If the user names a specific journey:
-
-```bash
 NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build inspect-method --journey <slug>
 ```
 
-Render the command output visibly. If no Builder journey is active yet, say so
-plainly and ask the user to activate or name a journey. If the journey has not
+Render the command output visibly. If no Builder journey has been loaded in this
+session, do not run the command: say so plainly and ask the user to activate or
+name a journey. If the journey has not
 adopted a Builder method yet, say so plainly. Do not infer that Ariad governs the
 journey just because Ariad is available.
 
@@ -219,12 +231,6 @@ This is read-only inspection.
 ## Adopt Ariad
 
 When the user explicitly asks to adopt Ariad for the active journey, run:
-
-```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build adopt --method ariad
-```
-
-If the user names a specific journey:
 
 ```bash
 NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build adopt --journey <slug> --method ariad
@@ -489,12 +495,6 @@ When the user asks to prepare Ariad templates or make the adopted journey
 documentation-ready, run:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build prepare-templates --method ariad
-```
-
-If the user names a specific journey:
-
-```bash
 NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build prepare-templates --journey <slug> --method ariad
 ```
 
@@ -506,12 +506,6 @@ cursor, execute lifecycle work, change story status, commit, push, or release.
 
 When the user asks to sync the initial Builder delivery cursor for an
 Ariad-adopted journey, run:
-
-```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build sync-cursor --method ariad
-```
-
-If the user names a specific journey:
 
 ```bash
 NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build sync-cursor --journey <slug> --method ariad
@@ -528,26 +522,26 @@ candidates, see what can be pulled, choose the next story, or asks "o que posso
 puxar agora?", run:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build pull-candidates --method ariad
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build pull-candidates --journey <slug> --method ariad
 ```
 
-If the user names a specific journey, pass `--journey <slug>`. Render the
-configured Ariad surfaces visibly, currently `ROADMAP SNAPSHOT` and `■ Ariad Pull
-Candidates`. This is read-only: it must not pull an item, update the cursor,
-execute lifecycle work, change story status, commit, push, or release.
+Render the configured Ariad surfaces visibly, currently `ROADMAP SNAPSHOT` and
+`■ Ariad Pull Candidates`. This is read-only: it must not pull an item, update
+the cursor, execute lifecycle work, change story status, commit, push, or
+release.
 
 ## Pull And Prepare Ariad Work
 
 When the user asks to change testing/runtime cadence, use:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build set-cadence --method ariad --profile <stepwise|checkpoint|accelerated|autonomous>
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build set-cadence --journey <slug> --method ariad --profile <stepwise|checkpoint|accelerated|autonomous>
 ```
 
 Use `stepwise` for detailed dogfooding: Plan stops for approval unless the Navigator naturally asks the Driver to create and execute the active story Plan without another approval turn. Use `checkpoint` for normal Ariad cadence. Use `accelerated` when the Navigator trusts the Driver to complete the active story Plan and continue directly into local implementation; the runtime automatically records bounded story Plan authority and still stops at Navigator Validation. Use `autonomous` only with explicit Navigator limits, for example:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build set-cadence --method ariad \
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build set-cadence --journey <slug> --method ariad \
   --profile autonomous \
   --limit "stop before push or release" \
   --limit "stop on scope change" \
@@ -559,7 +553,7 @@ Higher-autonomy cadence never grants permission to cross Navigator validation ac
 When the user asks to continue under the active cadence, use:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build continue-lifecycle --method ariad \
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build continue-lifecycle --journey <slug> --method ariad \
   --process "<process alignment evidence>" \
   --project "<project/docs/artifacts alignment evidence>" \
   --product "<product behavior alignment evidence>" \
@@ -574,19 +568,18 @@ When the user asks to pull a roadmap item into active Ariad work, run the
 contained Pull command with explicit item metadata:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build pull-item --method ariad \
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build pull-item --journey <slug> --method ariad \
   --item-code <code> \
   --item-title "<title>" \
   --item-level <delivery_story|user_story|technical_story> \
   --why-now "<why this level now>"
 ```
 
-If the user names a specific journey, pass `--journey <slug>`. Render all emitted
-surfaces visibly. Pull may update runtime cursor active item and automatically
-run Prepare. If the pulled item is a Delivery Story, Pull also expands it into
-implementable child stories and recommends the next User/Technical Story to plan.
-Pull must not create a Plan, approve a checkpoint, implement, validate, review,
-close, commit, push, or release.
+Render all emitted surfaces visibly. Pull may update runtime cursor active item
+and automatically run Prepare. If the pulled item is a Delivery Story, Pull also
+expands it into implementable child stories and recommends the next
+User/Technical Story to plan. Pull must not create a Plan, approve a checkpoint,
+implement, validate, review, close, commit, push, or release.
 
 When the Navigator confirms the recommended child story after an Expand surface,
 pull that child story explicitly with `--item-level user_story` or
@@ -596,13 +589,12 @@ Then plan that implementable story when requested.
 When the user asks to prepare the pulled item, run:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build prepare-item --method ariad
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build prepare-item --journey <slug> --method ariad
 ```
 
-If the user names a specific journey, pass `--journey <slug>`. Render the Prepare
-report visibly. Prepare may update the runtime cursor last delivery event, but
-must not create a Plan, approve a checkpoint, start implementation, change story
-status, commit, push, or release.
+Render the Prepare report visibly. Prepare may update the runtime cursor last
+delivery event, but must not create a Plan, approve a checkpoint, start
+implementation, change story status, commit, push, or release.
 
 ## Delivery Story Candidate Table Authoring Contract
 
@@ -644,13 +636,12 @@ explicitly says the DS is expected to create a release boundary, has no release
 intent, or remains undecided, record only that planning state:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build release-intent --method ariad \
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build release-intent --journey <slug> --method ariad \
   --intent <planned|none|undecided>
 ```
 
-If the Navigator names a specific journey, pass `--journey <slug>`. To inspect
-without changing state, omit `--intent`. Return the `RELEASE_INTENT` surface
-verbatim.
+To inspect without changing state, omit `--intent`. Return the `RELEASE_INTENT`
+surface verbatim.
 
 Map only explicit meaning:
 
@@ -679,14 +670,13 @@ current Delivery Story and says a natural-language equivalent of:
 run:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build set-flow-unit --method ariad --unit delivery_story
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build set-flow-unit --journey <slug> --method ariad --unit delivery_story
 ```
 
-If the user names a specific journey, pass `--journey <slug>`. Return the
-`NAVIGATOR_FLOW_UNIT` surface verbatim. Explain after the surface that child
-User/Technical Stories remain traceable Driver work packages, and that choosing
-Delivery Story flow does not approve a Plan, start implementation, validate,
-push, or release.
+Return the `NAVIGATOR_FLOW_UNIT` surface verbatim. Explain after the surface
+that child User/Technical Stories remain traceable Driver work packages, and
+that choosing Delivery Story flow does not approve a Plan, start implementation,
+validate, push, or release.
 
 When the effective flow unit is `story_by_story`, preserve existing child-story
 Plan behavior. Do not silently use Delivery Story-level Plan unless the
@@ -707,7 +697,7 @@ equivalent of:
 run:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build plan-delivery-story --method ariad \
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build plan-delivery-story --journey <slug> --method ariad \
   --objective "<aggregate Delivery Story objective>" \
   --child <child-work-item-code>
 ```
@@ -734,7 +724,7 @@ User Story and Technical Story preauthorization is handled separately under
 For an explicit matching request, include:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build plan-delivery-story --method ariad \
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build plan-delivery-story --journey <slug> --method ariad \
   --objective "<aggregate Delivery Story objective>" \
   --child <every exact child code> \
   --preauthorize-approval \
@@ -750,7 +740,7 @@ replace an existing non-empty Plan with the runtime scaffold.
 In the same assistant turn, after completing the Plan, consume the receipt with:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build approve-delivery-story-plan --method ariad \
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build approve-delivery-story-plan --journey <slug> --method ariad \
   --use-preauthorization
 ```
 
@@ -763,7 +753,7 @@ presentational, but addition or removal is a mismatch.
 Cancel pending authority when the Navigator withdraws it:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build cancel-delivery-story-plan-preauthorization \
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build cancel-delivery-story-plan-preauthorization --journey <slug> \
   --method ariad
 ```
 
@@ -780,12 +770,12 @@ as `aprovo o plano da DS`, `plano da DS aprovado`, or `approve the Delivery
 Story plan`, run:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build approve-delivery-story-plan --method ariad
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build approve-delivery-story-plan --journey <slug> --method ariad
 ```
 
-If the user names a specific journey, pass `--journey <slug>`. Return every
-emitted Ariad surface verbatim, including `DELIVERY_STORY_PLAN_CHECKPOINT`,
-`ARTIFACTS_MATERIALIZED`, and `IMPLEMENTATION_STARTED` when present.
+Return every emitted Ariad surface verbatim, including
+`DELIVERY_STORY_PLAN_CHECKPOINT`, `ARTIFACTS_MATERIALIZED`, and
+`IMPLEMENTATION_STARTED` when present.
 
 Plan approval authorizes local implementation under the approved DS Plan. After
 rendering the approval surfaces, do **not** stop to ask for a separate
@@ -802,15 +792,14 @@ When the user asks to plan the pulled item, create a plan for the active item, o
 says a natural-language equivalent such as `planeje o item puxado`, run:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build plan-item --method ariad
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build plan-item --journey <slug> --method ariad
 ```
 
-If the user names a specific journey, pass `--journey <slug>`. Render the Plan
-Checkpoint visibly and include the `plan artifact` path from the command output
-in the reply. The response must show the actual plan content in Navigator-facing
-language: scope, non-goals, acceptance behavior, validation route, E2E decision,
-and approval question. Keep runtime cursor fields compact; do not let technical
-metadata replace the plan itself.
+Render the Plan Checkpoint visibly and include the `plan artifact` path from the
+command output in the reply. The response must show the actual plan content in
+Navigator-facing language: scope, non-goals, acceptance behavior, validation
+route, E2E decision, and approval question. Keep runtime cursor fields compact;
+do not let technical metadata replace the plan itself.
 
 Plan may update runtime cursor checkpoint state and may create/update the
 Plan-stage story package (`index.md`, `plan.md`, and `test-guide.md`) only for an
@@ -844,7 +833,7 @@ is itself the explicit cadence decision that authorizes Plan continuation for
 active implementable stories. For natural explicit delegation, run:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build plan-item --method ariad \
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build plan-item --journey <slug> --method ariad \
   --preauthorize-approval \
   --stop-after navigator_validation
 ```
@@ -862,7 +851,7 @@ sections before authority can be consumed.
 In the same assistant turn, after completing the exact story Plan, run:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build approve-plan --method ariad \
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build approve-plan --journey <slug> --method ariad \
   --use-preauthorization
 ```
 
@@ -874,7 +863,7 @@ Plan approval; never repair, reinterpret, or recreate authority silently.
 Cancel pending story authority when the Navigator withdraws it:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build cancel-plan-preauthorization --method ariad
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build cancel-plan-preauthorization --journey <slug> --method ariad
 ```
 
 Cancellation preserves the ordinary Plan gate. Story authority is private,
@@ -885,14 +874,14 @@ purchase, or another irreversible action.
 When the Navigator approves an ordinary Plan checkpoint, run:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build approve-plan --method ariad
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build approve-plan --journey <slug> --method ariad
 ```
 
 If the user asks to implement while the Plan checkpoint is pending, run the guard
 before doing any implementation work:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build check-implementation --method ariad
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build check-implementation --journey <slug> --method ariad
 ```
 
 Render the deterministic `IMPLEMENTATION_GUARD` surface. If the guard reports
@@ -910,7 +899,7 @@ For natural validation requests such as `valide a DS`, `valide a Delivery
 Story`, or `validação da DS aceita`, run:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build validate-delivery-story --method ariad \
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build validate-delivery-story --journey <slug> --method ariad \
   --summary "<aggregate DS validation evidence>" \
   --navigator-accepted
 ```
@@ -918,7 +907,7 @@ NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build va
 For DS-level debt review requests, run:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build review-delivery-story --method ariad \
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build review-delivery-story --journey <slug> --method ariad \
   --decision <no_action|defer|pay_now> \
   --summary "<DS-level debt review summary>"
 ```
@@ -929,7 +918,7 @@ every known child package/candidate row, and every canonical roadmap table row
 for the DS as Done. Then run:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build done-delivery-story --method ariad \
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build done-delivery-story --journey <slug> --method ariad \
   --summary "<DS-level done/history summary>"
 ```
 
@@ -944,12 +933,11 @@ inside Done only after the authored status preflight passes, so the final surfac
 can truthfully state that docs, roadmap, cursor, artifacts, and next-pull readiness
 remain consistent after closure.
 
-If the user names a specific journey, pass `--journey <slug>`. Return every
-`DELIVERY_STORY_CLOSURE_CHECKPOINT` surface verbatim. Explain after the block
-that child User/Technical Stories remain evidence units and that push/release
-remain separate hard gates. Do not use these DS-level closure commands when the
-effective flow unit is `story_by_story`; preserve existing child-story lifecycle
-behavior in that mode.
+Return every `DELIVERY_STORY_CLOSURE_CHECKPOINT` surface verbatim. Explain after
+the block that child User/Technical Stories remain evidence units and that
+push/release remain separate hard gates. Do not use these DS-level closure
+commands when the effective flow unit is `story_by_story`; preserve existing
+child-story lifecycle behavior in that mode.
 
 ## Validate Ariad Work
 
@@ -957,7 +945,7 @@ After implementation is complete and before moving to Debt Review or Done,
 render the Validation checkpoint:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build validate-item --method ariad \
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build validate-item --journey <slug> --method ariad \
   --implementation-complete \
   --check "<automated check command or evidence>" \
   --checks-status <passed|failed|not_run> \
@@ -973,10 +961,9 @@ NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build va
 If the Navigator has already performed and accepted the validation route, also
 pass `--navigator-accepted`. Providing a route is not the same as acceptance.
 
-If the user names a specific journey, pass `--journey <slug>`. Render the
-deterministic `VALIDATION_CHECKPOINT` surface. If required evidence is missing or
-Navigator validation has not been accepted, return the surface and stop; do not
-advance to Debt Review, Done, commit, push, or release.
+Render the deterministic `VALIDATION_CHECKPOINT` surface. If required evidence
+is missing or Navigator validation has not been accepted, return the surface and
+stop; do not advance to Debt Review, Done, commit, push, or release.
 
 ## Review Ariad Debt
 
@@ -984,37 +971,36 @@ After Validation has passed and before moving to Done, render the Debt Review
 checkpoint:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build review-item --method ariad \
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build review-item --journey <slug> --method ariad \
   --debt "<debt finding, or No debt found>" \
   --decision <pending|no_action|defer|pay_now> \
   --defer-reason "<required when decision=defer>" \
   --revisit-trigger "<required when decision=defer>"
 ```
 
-If the user names a specific journey, pass `--journey <slug>`. Render the
-deterministic `DEBT_REVIEW_CHECKPOINT` surface. If the decision is `pending`,
-`defer` without a reason/trigger, or `pay_now`, stop at the debt decision
-checkpoint. `pay_now` must route through a future Refactor loop before Done.
-Do not advance to Done, commit, push, or release while the debt decision is
-unresolved.
+Render the deterministic `DEBT_REVIEW_CHECKPOINT` surface. If the decision is
+`pending`, `defer` without a reason/trigger, or `pay_now`, stop at the debt
+decision checkpoint. `pay_now` must route through a future Refactor loop before
+Done. Do not advance to Done, commit, push, or release while the debt decision
+is unresolved.
 
 ## Check Ariad Coherence
 
 After Debt Review is complete, verify Process, Project, and Product alignment:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build coherence-item --method ariad \
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build coherence-item --journey <slug> --method ariad \
   --process "<process alignment evidence>" \
   --project "<project alignment evidence>" \
   --product "<product alignment evidence>"
 ```
 
-If the user names a specific journey, pass `--journey <slug>`. Render the
-`COHERENCE_CHECKPOINT` surface. If it reports `pending_coherence`, correct the
-missing evidence and rerun the same command. Reentry is valid only for the exact
-`navigator_coherence` / `last_delivery_event=coherence` state. It re-evaluates
-the evidence; it does not bypass Coherence. Unrelated pending confirmations stay
-blocked, and `done-item` never consumes `navigator_coherence`.
+Render the `COHERENCE_CHECKPOINT` surface. If it reports `pending_coherence`,
+correct the missing evidence and rerun the same command. Reentry is valid only
+for the exact `navigator_coherence` / `last_delivery_event=coherence` state. It
+re-evaluates the evidence; it does not bypass Coherence. Unrelated pending
+confirmations stay blocked, and `done-item` never consumes
+`navigator_coherence`.
 
 ## Close Ariad Done
 
@@ -1022,13 +1008,12 @@ After Coherence is complete and the Navigator confirms there is nothing else to
 do in the story, render the Done checkpoint:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build done-item --method ariad \
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build done-item --journey <slug> --method ariad \
   --history-action "<commit/history action taken or proposed>" \
   --roadmap-update "<roadmap/story package update>" \
   --next-recommendation "<next Pull, parent collapse, or release boundary>"
 ```
 
-If the user names a specific journey, pass `--journey <slug>`. Render the
-deterministic `DONE_CHECKPOINT` surface. Done must name the history action,
-roadmap/story package update, and next Ariad movement. Do not push or release
-unless the effective policy explicitly allows it.
+Render the deterministic `DONE_CHECKPOINT` surface. Done must name the history
+action, roadmap/story package update, and next Ariad movement. Do not push or
+release unless the effective policy explicitly allows it.

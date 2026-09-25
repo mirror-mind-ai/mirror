@@ -11,6 +11,9 @@ where nobody was reading. This list is where to read. It is its own file, not
 a section of `index.md`, because Plan materialization can still overwrite an
 authored story index (CR004, CR079).
 
+Items 1–12 are TS5's. Item 13 was added by CR008 on 2026-09-25, because it
+changes the output of the instrument item 10 names.
+
 | # | Item | What US3 decides or does | Recorded in |
 |---|---|---|---|
 | 1 | The docs' bridge to `mirror` | Delete the bridge paragraph in `REFERENCE.md` and `docs/getting-started.md` (the front-door invocation `mirror` stands for, and a shell alias) once the npm `bin` exists | TS5 [D14](../cv22-ds10-ts5-python-core-deletion/plan.md#taken-at-plateau-4-driver-2026-09-24) |
@@ -25,3 +28,4 @@ authored story index (CR004, CR079).
 | 10 | `scripts/ts5/` | `generate_hook_wrappers.sh` is permanent product tooling under a story's name, cited in every wrapper's header. `capture_family_outputs.sh` is the only before/after instrument on a real database, which is what US3 needs to prove "no user-visible change" across packaging. Give both permanent names | TS5 handoff review |
 | 11 | Promotion by rename on Windows | `openLiveWriteDatabase` promotes its snapshot with `renameSync`, which fails on Windows while any process holds the target open, and the write then aborts. Decide whether a failed promotion aborts the write or keeps the verified staging file. No CI job runs the core on Windows | TS5 handoff review, Q2 |
 | 12 | The newer-database remedy | The core says "update this Mirror installation"; the troubleshooting guide adds "(in a clone, `git pull`)". Add the package route | TS5 handoff review, P5 |
+| 13 | A deliberate output change before the "before" capture | `build inspect-method` with no argument no longer names a journey it was not given: it renders the no-journey card unless a named session is in Builder Mode. `scripts/ts5/capture_family_outputs.sh` captures exactly that command, so a before/after pair that straddles CR008 differs there by design. Take the "before" capture after CR008, or expect that one difference | [CR008](../../../../refinement/rs001-ariad-runtime-trust/cr008-bind-lifecycle-commands-to-active-journey.md), added 2026-09-25 |

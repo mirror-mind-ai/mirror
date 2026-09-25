@@ -28,6 +28,7 @@ but no fix yet are also welcome (mark them `Status: mitigated`).
 - [`runtime release-notes latest` says release notes were not found](#runtime-release-notes-latest-says-release-notes-were-not-found)
 - [Portuguese accents appear as mojibake on Windows](#portuguese-accents-appear-as-mojibake-on-windows)
 - [Pi Builder conversations appear without journeys](#pi-builder-conversations-appear-without-journeys)
+- [A Builder command refuses with `requires a journey`](#a-builder-command-refuses-with-requires-a-journey)
 - [Concurrent writes fail with `table conversations already exists` or `disk I/O error`](#concurrent-writes-fail-with-table-conversations-already-exists-or-disk-io-error)
 - [Hooks skip when a runtime cannot find `node`](#hooks-skip-when-a-runtime-cannot-find-node)
 - [Pi logger fails silently when `python3` resolves outside the project venv](#pi-logger-fails-silently-when-python3-resolves-outside-the-project-venv)
@@ -298,6 +299,55 @@ manually.
 Use a version containing the core fix before relying on Workspace as the source
 of truth for recent Pi Builder activity. If Workspace still looks stale after
 updating, run the dry-run repair command and inspect the candidates.
+
+---
+
+## A Builder command refuses with `requires a journey`
+
+**Date:** 2026-09-25
+**Status:** by design ([CR008](../project/refinement/rs001-ariad-runtime-trust/cr008-bind-lifecycle-commands-to-active-journey.md))
+**Affected component:** every `build` lifecycle command, `build inspect-method`
+**Severity:** one refused command; nothing is written
+
+### Symptom
+
+```text
+Error: Builder method pull candidates inspection requires a journey. Pass --journey <slug>, or name a session in Builder Mode with --session-id or MIRROR_SESSION_ID.
+```
+
+`build inspect-method` with no argument renders a card that says
+`No Builder journey was named.`
+
+### Root cause
+
+This is intended. Before 2026-09-25, a Builder command without `--journey`
+used the journey of the most recently updated session in the database, or else
+of the global operating-mode row. Either could belong to another window. The
+guess moved other journeys' delivery cursors and wrote roadmap files into other
+projects, and the surfaces reported success. An agent's shell names no session
+(`MIRROR_SESSION_ID` is unset there), so the runtime now refuses instead of
+guessing.
+
+This is not the same heuristic as the
+[conversation fallback above](#pi-builder-conversations-appear-without-journeys).
+That fallback still attaches a `build load` conversation to the active window.
+Only journey binding stopped guessing.
+
+### Fix
+
+Pass the journey:
+
+```bash
+mirror build pull-candidates --journey <slug> --method ariad
+```
+
+The Builder skill passes it on every command, using the slug `build load`
+activated in the session. A caller that names an active session in Builder Mode,
+with `--session-id` or `MIRROR_SESSION_ID`, can omit `--journey`.
+
+If you do not know which journey the session loaded, ask. Do not take it from
+`mode status` or the status line: they show the last activation in the
+database, which may be another window's.
 
 ---
 

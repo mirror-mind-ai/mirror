@@ -131,6 +131,14 @@ global fallback. Mode activation and deactivation are semantic operations.
 Rendering the Pi status line and clearing stale UI are internal effects of that
 lifecycle.
 
+Operating mode is what the status line and `mode status` show. Builder lifecycle
+commands do not use it to choose a journey. Each takes `--journey <slug>`, or
+binds to the Builder Mode of an active session named with `--session-id` or
+`MIRROR_SESSION_ID`. With neither, it refuses with `requires a journey` before
+reading a cursor or writing a file. An agent shell names no session, so the
+Builder skill passes `--journey` on every command. See
+[Troubleshooting](docs/process/troubleshooting.md#a-builder-command-refuses-with-requires-a-journey).
+
 The user-facing mode skills are `/mm-mirror`, `/mm-build`, `/mm-explore`, and
 `/mm-soul`. The internal lifecycle command exists so Mirror can activate and
 leave explicit lenses through contained operations. Users are never in "no
@@ -600,7 +608,7 @@ to the homes root (`~/.mirror-minds`).
 | Variable | Default | Role |
 |----------|---------|------|
 | `PI_SESSIONS_DIR` | `~/.pi/agent/sessions` | Source directory for `backfill_pi_sessions`. Override for multi-user setups. |
-| `MIRROR_SESSION_ID` | (unset) | Fallback session id for conversation-logger CLIs when neither `--session-id` nor a hook payload is present. Rarely set by humans. |
+| `MIRROR_SESSION_ID` | (unset) | Session id for CLIs called without `--session-id`: the conversation logger's fallback when no hook payload is present, and a named session for Builder lifecycle commands, which otherwise require `--journey` and never guess one. Rarely set by humans. |
 | `MIRROR_WELCOME` | (unset) | Set to `off`, `0`, `false`, or `no` to suppress the welcome card emitted by `mirror welcome`. See `docs/product/specs/welcome/index.md`. |
 | `MIRROR_TS_MCP_GUARDS` | (unset) | Set to `0` to remove the MCP wallet and abuse guards (rate limit, spend ceiling, argument caps). See [Configuration](docs/reference/configuration.md#mcp-wallet-and-abuse-guards-cv22ds9ts1). |
 
