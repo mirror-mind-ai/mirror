@@ -12,6 +12,56 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-09-25 — CV22.DS10.TS5 done: the sole custodian owns the whole open
+
+TS5 closed through the two checkpoints the migration keeps for a single owner.
+Both found what the plateaus had not.
+
+The full panel's handoff review tested its claims by running them, and found a
+blocker in what the deletion had made permanent. Python's `get_connection` ran
+the migrations and then the bootstrap schema, on every open. The TypeScript
+engine had taken over the migrations and not the schema step. Until plateau 1,
+an old database reached TypeScript only after a Python open had run both. A
+database from v0.7.0, recorded from that release's own code, showed the result:
+it migrated to `current (17/17)`, then Mirror Mode died on `no such table:
+_ext_bindings`. The check that would have found it, a real old database
+migrated and compared with a fresh one, had been a Plan-review blocker, marked
+applied and never run. Migrate-on-open now composes both halves as bootstrap
+does, and a committed v0.7.0 fixture holds the whole canonical inventory to a
+fresh database's.
+
+The review's other findings were paid the same day, one commit each.
+- `hooks.log` recorded Gemini prompts and responses, behind a test that could
+  not fail. It now records the command, not its arguments.
+- A hook that found a Node too old to run it failed silently, and wrote its
+  warning to a home nobody reads. Both are recorded now.
+- The Codex wrapper broke on a checkout path with a space.
+- The runtime smokes were not in CI, although one of them had caught F11.
+- The Claude allowlist granted the model something no hook needs.
+- US3's package named nothing of what TS5 leaves it. It now has a list of
+  twelve items.
+
+The Debt Review met a revisit trigger firing live. CR084, a window in which the
+bootstrap lock could admit two holders, turned CI red on both attempts. The
+Navigator chose to pay it rather than re-run CI. The lock's record is now linked
+into place before the lock is visible, and a release or a reclaim removes only
+the lock it judged. 240 of 240 races pass under load, and CI is green on both
+legs. CR088 and CR092 were rejected, CR093 promoted to US3, CR097 to CR099
+captured, and four ledger records corrected.
+
+Two self-inflicted reds taught the tenth lesson, and one of them the ninth.
+- The hook generator produced different wrappers under macOS's bash 3.2 and
+  Ubuntu's bash 5.
+- A records commit went out with a story index empty. It was staged while the
+  file was being written, and every check read the intact working copy
+  instead.
+
+Ninth lesson: taking over a job means taking over all of it. Tenth: the last
+check before a commit is the staged diff, not the working tree.
+
+Next: **US3**, npm distribution, the last story in DS10 and separately
+authorized. CV22 releases once, when it is done.
+
 ### 2026-09-24 — CV22.DS10.TS5, plateaus 0–4: Mirror Mind holds no Python
 
 The strangler ends here, in the repository. Every command already answered from

@@ -2961,3 +2961,49 @@ runs a second time with the interpreters shadowed, failing on a single spawn.
 `installer/` still install and call the Python engine and find their root by
 the deleted `pyproject.toml`; they are re-homed by CV22.DS10.US3, which makes
 that claim for the npm package. TS5's claim is for the repository.
+
+### The sole migration custodian owns the whole open: migrations, then the bootstrap schema, under a lock with one holder
+
+**Date:** 2026-09-25 · **Context:** CV22.DS10.TS5's handoff review (finding B1)
+and its Debt Review (CR084). TS5 made TypeScript the only engine that migrates a
+Mirror database. Both checkpoints found that "the only engine" had inherited
+less than Python did. **Reference:**
+[TS5 handoff review](roadmap/cv22-typescript-core-port/cv22-ds10-python-retirement-npm-distribution/cv22-ds10-ts5-python-core-deletion/handoff-review.md),
+[CR084](refinement/rs010-cv22-oracle-and-port-hygiene/cr084-the-bootstrap-lock-is-not-exclusive-while-it-is-being-written.md)
+
+**The decision: migrate-on-open performs everything Python's `get_connection`
+did when it opened an existing database: the migrations, then the bootstrap
+schema, backup first, under the cross-process bootstrap lock. That lock admits
+exactly one holder.**
+
+Python ran migrations-then-schema on every open. The second half created every
+object the schema has and no migration does: `_ext_migrations`,
+`_ext_bindings` and its index, and `journey_mutation_receipts`. TypeScript took
+the migrations and not the schema step. So a v0.7.0 home migrated to
+`current (17/17)` and then failed in Mirror Mode. The Navigator chose the fix
+that restores Python's contract, `createSchema` after `runMigrations` on the
+slow path, over a new migration `018`. The steady state stays one read of
+`_migrations`. Every Python-era database takes the slow path once, because
+`017` is pending for all of them. And no `17/17` in any golden moves. The
+accepted limit: a database already at every migration but missing those
+objects is not repaired. Only TS5-era development copies can be in that state.
+
+The lock had a window in which two processes could both hold it. It
+serializes exactly this slow path, most often at the moment an update makes
+every opener hit it at once. Its record is now written before the lock
+becomes visible, by linking a private file into place. Unreadable content ages
+out rather than counting as abandonment. And a release or a reclaim removes
+only the lock it judged.
+
+**How it stays true.** `migrateOnOpen.test.ts` migrates a DDL-only recording of
+a v0.7.0 database and requires the whole canonical inventory of a fresh one:
+normalized DDL, column order, indexes, triggers. `bootstrapLock.test.ts` pins
+the lock's two CR084 behaviors, and the eight-process races in
+`migrateOnOpenConcurrency.test.ts` and the bootstrap custody proof run on
+every CI leg.
+
+**The rule that follows.** A new object in the bootstrap schema needs a
+migration too. A database that is already current never takes the slow path,
+so the schema step alone would never reach it. `createSchema` on the slow path
+heals databases from before this decision; migrations carry every schema change
+after it.

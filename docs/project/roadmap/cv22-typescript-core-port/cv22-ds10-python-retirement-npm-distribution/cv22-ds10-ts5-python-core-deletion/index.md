@@ -2,18 +2,16 @@
 
 # CV22.DS10.TS5 — Python core deletion
 
-**Status:** 🟢 In Progress — pulled 2026-09-23; Plan panel-reviewed and
-approved; plateaus 0–4 of 5 landed — **the repository holds no Python, and
-nothing tracked tells anyone to run it**; both halves of the guard are
-enforced. The first Navigator walk (2026-09-25) was not accepted: it found
-F21, fixed since (`118d4a67`); F20 was accepted as a known risk. **The second
-walk was accepted the same day** ([validation.md](validation.md)). **The
-panel's handoff review was held the same day and found one blocker**
-([handoff-review.md](handoff-review.md)). The blocker and every other finding
-were paid the same day, on the Navigator's decisions. **The Debt Review was
-recorded the same day** ([review.md](review.md)): it paid CR084, whose trigger
-had fired on TS5's own CI, and carried the rest with durable homes. Next:
-Done
+**Status:** ✅ Done — 2026-09-25. Pulled 2026-09-23; the Plan panel-reviewed and approved;
+five plateaus landed. **The repository holds no Python, and nothing tracked tells
+anyone to run it**; both halves of the guard are enforced in CI. Navigator
+validation was accepted on the second walk ([validation.md](validation.md)), after
+the first found F21. The full panel's handoff review found one blocker, B1: the
+sole custodian never ran the bootstrap schema on an existing database. It was paid
+with every other finding ([handoff-review.md](handoff-review.md)). The Debt Review
+paid CR084, whose trigger fired on TS5's own CI, and carried the rest with durable
+homes ([review.md](review.md)). What TS5 hands US3 is in US3's
+[inheritance](../cv22-ds10-us3-npm-distribution/inherited.md).
 
 ---
 
@@ -593,8 +591,8 @@ custody proofs, and the five end-to-end smokes pass.
 
 ## Where To Resume
 
-**Plateau 4 has landed; nothing is in flight.** What remains before Done, in
-order:
+**TS5 is done; nothing is in flight.** The list below is the path it took to
+Done, kept as the record:
 
 1. ~~**F19**~~ — done, option (a).
 2. ~~**F20**~~ — accepted as a known risk (Navigator, option b): see
@@ -627,7 +625,7 @@ order:
    bootstrap lock is fixed in `1b947cdd`, and CI is green on both legs.
    CR088 and CR092 were rejected, CR093 promoted to US3, CR099 captured, and
    four ledger records corrected.
-6. **Next:** Done, with the closure preflight: the DS10 candidate
+6. ~~**Done**~~ — **2026-09-25** ([done.md](done.md)), with the closure preflight: the DS10 candidate
    row, the gate table, the ledger rows, and the journey path each opened and
    read. The Debt Review also owes every deferred finding whose revisit
    trigger names DS10 or the Python retirement: DS7.US8's session-start race
