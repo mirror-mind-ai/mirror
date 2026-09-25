@@ -19,6 +19,18 @@
 // `_migrations` table, or a database carrying migrations this core does not
 // know. Those fail loudly.
 //
+// Migrations, THEN the bootstrap schema (TS5 handoff review, finding B1).
+// Python's `get_connection` ran both on every open, and the second half is the
+// only thing that ever created the objects the schema has and no migration
+// does: `_ext_migrations`, `_ext_bindings` and its index (v0.8.0), and
+// `journey_mutation_receipts` (v0.31.12). Taking over the migrations without
+// the schema step left a v0.7.0 home at "current (17/17)" and failing in
+// Mirror Mode on `no such table: _ext_bindings`. So a slow-path open composes
+// the two exactly as `bootstrapDatabase` does for a new file. Every Python-era
+// database arrives with `017` pending and takes this path once. A database
+// already at every migration but missing those objects gets no repair here;
+// only TS5-era development copies can be in that state.
+//
 // Discipline (see this story's plan):
 //   - D2: called before serving on BOTH read and write opens, but the steady
 //     state is a single `_migrations` read -- no lock, no backup -- so the hot
@@ -40,6 +52,7 @@ import {
   snapshotDatabaseTo,
 } from "./database.ts";
 import { runMigrations } from "./migrations.ts";
+import { createSchema } from "./schema.ts";
 import { KNOWN_MIGRATION_IDS } from "./schemaState.ts";
 
 const BACKUP_DIR_NAME = "backups";
@@ -141,11 +154,11 @@ function takeBackup(dbPath: string): string {
 }
 
 /**
- * Apply pending TS-authored forward migrations to an existing `dbPath`, backup
- * first and under the cross-process bootstrap lock. Cheap and side-effect-free
- * unless a TS-authored migration is genuinely pending with no Python migration
- * behind it. Safe to call on every open. See the module header for the full
- * contract.
+ * Bring an existing `dbPath` to this core's schema: apply every pending known
+ * migration, then the bootstrap schema, backup first and under the
+ * cross-process bootstrap lock. Cheap and side-effect-free when nothing is
+ * pending, which is every open after the first. Safe to call on every open.
+ * See the module header for the full contract.
  */
 export function ensureMigratedOnOpen(
   dbPath: string,
@@ -187,6 +200,8 @@ export function ensureMigratedOnOpen(
     const db = openDatabaseForBootstrap(dbPath, options);
     try {
       runMigrations(db);
+      // The half of Python's open that only the schema performed (B1).
+      createSchema(db);
     } finally {
       db.close();
     }

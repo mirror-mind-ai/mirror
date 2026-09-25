@@ -58,6 +58,15 @@ Hand edits after the freeze:
 | `builder-command` | TS5 plateau 4 (D13) | the Plan scaffold's Implementation Contract loses the line that told the Driver to run Python commands and tests through `uv` — three times in the materialized `plan.md`, three times in the rendered `PLAN_CHECKPOINT` surface, and nothing else | The rule stated a Mirror Mind convention that TS5 retired: the repository has no Python, so the line was false for every project, including the one whose convention it was. The two remaining Mirror-local lines are still CR019's. The `pytest` check strings left in this golden and in `builder-lifecycle` are recorded fixture **input** — a caller's own `--check` command — and were deliberately not touched |
 | `runtime-status`, `runtime-diagnose` | TS5 plateau 4 (F19) | `runtime-status`: in 26 of 27 scenarios the core-migration count moves from 16 to 17 (`current (17/17)`, `unknown/17`, `0/17` and `10/17` with `017_journey_parent_column` appended to the missing list, `17/17 applied; unknown 999_from_the_future`); `python_current`, sixteen applied, becomes `attention needed (16/17 applied; missing 017_journey_parent_column)` with verdict `attention needed`. `runtime-diagnose`: `core_migrations_pending` and `database_page_corruption` gain one `core_migration_pending` finding for 017, after 016. Each golden's `meta.hand_edit_ts5_f19` says the same | The grader counted only the sixteen migrations the Python oracle knew, so its recorded answer would still match. With the oracle gone that forgiveness hid a pending migration behind "ready", and `runtime status` disagreed with `assertSchemaState`, which has required all seventeen since plateau 1. The fixtures' current databases now carry 017. `ts_migrated` is **deliberately not edited**: it is the oracle's own recorded false alarm, and the test that proves the DS6 divergence grades against it. Every edit was applied by a script that parsed the golden, changed only these strings and fields, asserted exactly one render line changed per scenario (two for `python_current`), and re-serialized byte-compatibly |
 
+## Recorded after the freeze
+
+One oracle recording was added after the freeze, from a release rather than
+from the deleted generators:
+
+| Fixture | Recorded | From | Why |
+|---|---|---|---|
+| `ts/test/fixtures/migrations/release-v0.7.0-schema.sql` | 2026-09-25, TS5 handoff review | `get_connection` at tag `v0.7.0`, run against a missing file: schema and migration ledger, no rows, `applied_at` normalized to the release date | Finding B1. The migration fixtures each grade one step against that step's own end-state, and none of them held an object the bootstrap schema created with no migration behind it. This one proves the invariant they lacked: a real old database, migrated on open, ends with a fresh database's canonical inventory (`migrateOnOpen.test.ts`). Its header records how it was taken; it is frozen like the rest |
+
 ## Why that one went unseen
 
 The CI determinism gate ("regenerate must be a no-op") listed 58 of the 65
