@@ -343,7 +343,7 @@ the end of the walk `tmp/ts5/nav-shadow.log` must be empty — that file, not a
 | 6 | `node ts/src/frontDoor/cli.ts recall <conversation>` for each session above | every hook-logged turn present | transcript complete | a turn missing |
 | 7 | `node ts/src/frontDoor/cli.ts frobnicate` | `Unknown command: frobnicate` + usage, exit 1, nothing spawned | as stated | spawn attempt or different exit |
 | 8 | `node ts/src/frontDoor/cli.ts week frobnicate` | one-line `week` usage on stderr, exit 2 | as stated | same |
-| 9 | Genuinely pre-`015` copy (old **schema**, not a trimmed ledger), any read command | migrations `015`–`017` applied, backup taken, command answers | `runtime migrate` then says `nothing pending`; schema diff empty | `Deferred`, or `nothing pending` on the first run |
+| 9 | Genuinely pre-`015` copy (old **schema**, not a trimmed ledger), any read command. *Corrected at the [handoff review](handoff-review.md) (P3): both walks used a Python database at `016`, so only `017` was applied. The pre-`015` case ran at the review, on a v0.7.0 database, and found B1* | migrations `015`–`017` applied, backup taken, command answers | `runtime migrate` then says `nothing pending`; schema diff empty | `Deferred`, or `nothing pending` on the first run |
 | 9b | Replay the plateau-0 per-family capture against `nav-copy.db` | the 29 families answer identically | `diff` of the two capture files is empty | any hash, count, or exit-code difference |
 | 10 | `MIRROR_TS_BUILD=0` in a scratch `.env`; `runtime diagnose`; `build load mirror-ts-core` | diagnose names the variable inert since TS5; `build load` answers from TypeScript | as stated | route changes or diagnose silent |
 | 11 | `runtime version`, `runtime status`, `welcome` | `0.31.14` in each | as stated | `null` or `0.0.0` |
@@ -660,7 +660,9 @@ first. The Ariad checkpoint is [validation.md](validation.md).
 
 ## Validation Evidence
 
-Pending implementation.
+Recorded plateau by plateau, as each produced it. The Navigator's walks are in
+[Navigator Validation](#navigator-validation), and the Ariad checkpoint is
+[validation.md](validation.md).
 
 ### Plateau 0 — closing parity record
 
@@ -719,10 +721,17 @@ core, and reports `nothing pending` untouched on a current one. `runtime
 migrate` exits **1** on declined and **0** otherwise, end to end through the
 real CLI, and the updater's migrate stage fails rather than passes.
 
-**Still owed:** the real-shape pre-`015` database case (generate a demo
-database at a pre-015 commit, migrate it forward, diff the schema). The
-fixtures cover every transition structurally; this one covers a database whose
-*schema* — not merely whose ledger — is old.
+**Owed through validation, discharged at the handoff review:** the
+real-shape pre-`015` database case (generate a demo database at a pre-015
+commit, migrate it forward, diff the schema). The fixtures cover every
+transition structurally; this one covers a database whose *schema*, not merely
+whose ledger, is old. It was never run before validation. The
+[handoff review](handoff-review.md) ran it on a database Python v0.7.0
+created, which is older than pre-`015`, and it failed: four objects that only
+the bootstrap schema creates were missing, and Mirror Mode died on
+`no such table: _ext_bindings` (B1). Fixed in `e400d395`. The check is now
+committed as `migrateOnOpen.test.ts`'s migrated-equals-fresh case, over
+`ts/test/fixtures/migrations/release-v0.7.0-schema.sql`.
 
 ### Hook row-diffs (two families × five cases)
 
@@ -1036,4 +1045,6 @@ mirror runtime status | grep "Core migrations"      # current (17/17) on a curre
 
 ### Navigator route
 
-Pending.
+Accepted 2026-09-25 on the second walk. See
+[Navigator Validation](#navigator-validation) and
+[validation.md](validation.md).

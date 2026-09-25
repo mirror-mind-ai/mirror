@@ -830,6 +830,15 @@ plateau order or decisions D1–D9.
    lying ledger; fifty `IF NOT EXISTS` guards make the re-run a no-op that
    reports `applied`. **Replaced with the committed pre-state fixtures plus
    one real pre-`015` database.**
+
+   *(Corrected 2026-09-25 by the [handoff review](handoff-review.md), P3. Only
+   the first half was applied. The fixtures were used; the real pre-`015`
+   database never was. The test guide carried it as "Still owed", and the
+   walk's step 9 migrated a Python database at `016` instead. The handoff
+   review ran the owed check on a database Python v0.7.0 created, older than
+   pre-`015`, and it found B1: migrate-on-open never ran the bootstrap schema,
+   so four objects only that schema creates were missing. Fixed in `e400d395`,
+   whose test is this check, committed.)*
 3. **quality-assurance — nothing compared real output before and after.**
    `real_db_copy_parity` and `route_matrix` die at plateau 3; the Navigator
    route exercised hooks and error shapes but not one of the 29 ported
