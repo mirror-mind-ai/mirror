@@ -616,7 +616,7 @@ caller, and the evidence came from the runtimes' own logs:
   optional dependency; the build failed without Python, npm dropped it, and the
   update succeeded (exit 0) on the prebuilt `@lydell/node-pty`.
 
-### The second walk (Navigator, 2026-09-25, at `ca6f9cba`) — every step passed
+### The second walk (Navigator, 2026-09-25, at `ca6f9cba`) — accepted
 
 | Step | Result |
 |---|---|
@@ -647,6 +647,16 @@ too.
 
 Navigator acceptance is recorded here with the date, the commit, and any
 deviation.
+
+**Accepted by the Navigator on 2026-09-25**, on the second walk: at
+`ca6f9cba`, with step 1 repeated at `c440b4b6` — both documentation-only
+after `118d4a67`, so the code walked is `118d4a67`'s. Deviations, each named:
+step 3 skipped (Gemini CLI retired); step 12 run on a TypeScript-era
+production clone, because the Python-era one is F20, an accepted known risk;
+the Claude session opened with `/mm-mirror`; step 1's first attempt fell
+outside the race window and was repeated; steps 4, 4b, 5, and 7–11 were not
+repeated, by the Navigator's scope for the second walk, and stand on the
+first. The Ariad checkpoint is [validation.md](validation.md).
 
 ## Validation Evidence
 

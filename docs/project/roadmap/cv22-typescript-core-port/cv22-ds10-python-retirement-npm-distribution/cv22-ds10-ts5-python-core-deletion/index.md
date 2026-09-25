@@ -6,8 +6,9 @@
 approved; plateaus 0–4 of 5 landed — **the repository holds no Python, and
 nothing tracked tells anyone to run it**; both halves of the guard are
 enforced. The first Navigator walk (2026-09-25) was not accepted: it found
-F21, fixed since (`118d4a67`); F20 was accepted as a known risk. Next: a
-second walk of the failed steps, then the panel's handoff review
+F21, fixed since (`118d4a67`); F20 was accepted as a known risk. **The second
+walk was accepted the same day** ([validation.md](validation.md)). Next: the
+panel's handoff review, then Debt Review and Done
 
 ---
 
@@ -598,18 +599,17 @@ order:
    staging file, verified, then promoted by atomic rename.
 2c. **Gemini CLI is retired** (Navigator, 2026-09-25): the walk skips step 3.
    Antigravity replaces it, and its adaptation is CV21's, after the migration.
-3. **Navigator validation** — the four-runtime walk in
-   [test-guide.md — Navigator Validation](test-guide.md#navigator-validation),
-   on a real database copy with the interpreter shadowed; the runbook under
-   *The walk, as commands* was dry-run in zsh for every step that needs no
-   runtime session. Both walks' results are recorded there. The second
-   walk (2026-09-25) passed every step — step 1 on its second attempt, the
-   prompt logged 14 ms after maintenance started. What remains is the
-   Navigator's acceptance.
-4. **The panel's handoff review** (D9: engineer, quality-assurance,
+3. ~~**Navigator validation**~~ — **accepted 2026-09-25**, on the second walk
+   ([validation.md](validation.md); both walks in
+   [test-guide.md — Navigator Validation](test-guide.md#navigator-validation)).
+   The Ariad cursor is at Debt Review; no debt decision is recorded.
+4. **Next: the panel's handoff review** (D9: engineer, quality-assurance,
    database-architect, devops-engineer, security-engineer), over plateaus 0–4
    and the validation evidence — after validation, as the collaboration
-   strategy orders the two checkpoints.
+   strategy orders the two checkpoints. Its scope is `cv22-ts5-baseline`
+   (`2adf2951`) to `118d4a67`, the last code change: 49 commits; findings
+   F1–F21; D1–D15; the known risks; and both walks. Its findings feed the
+   Debt Review.
 5. Then Debt Review and Done, with the closure preflight: the DS10 candidate
    row, the gate table, the ledger rows, and the journey path each opened and
    read. The Debt Review also owes every deferred finding whose revisit

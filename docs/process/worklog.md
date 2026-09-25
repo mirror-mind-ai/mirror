@@ -62,8 +62,10 @@ promotes it by atomic rename (F21): seven of eight concurrent writers failed
 before the fix, none after. The walk also confirmed that the clone-role guard
 cannot see a production clone older than the CV22 release, accepted as a known
 risk until that clone takes the release (F20), and Gemini CLI left the walk:
-it is retired, and Antigravity belongs to CV21. What remains of TS5 is a
-second, shorter walk and then the panel's handoff review.
+it is retired, and Antigravity belongs to CV21. The second, shorter
+walk was accepted the same day, once its Pi step had been made to reach the
+race it exists to test; what remains of TS5 is the panel's handoff review,
+Debt Review, and Done.
 
 ### 2026-09-23 — CV22.DS10.TS4: the front door learns to say *removed*
 
