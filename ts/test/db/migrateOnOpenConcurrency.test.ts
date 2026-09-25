@@ -91,7 +91,14 @@ test("N concurrent processes migrate-on-open the same legacy DB: exactly one mig
     );
 
     for (const result of results) {
-      assert.equal(result.code, 0, `worker failed: ${result.stderr}`);
+      // Named for the invariant, not the symptom: when two processes held the
+      // bootstrap lock at once (CR084), the loser died of `disk I/O error` in
+      // takeBackup -- which reads as an environment problem and invites a re-run.
+      assert.equal(
+        result.code,
+        0,
+        `a worker failed: the bootstrap lock admits one holder at a time, so no racer may collide with another's migration or backup (CR084). Its error: ${result.stderr}`,
+      );
     }
     const outcomes = results.map((result) => result.stdout);
     const migratedCount = outcomes.filter((outcome) => outcome === "migrated").length;

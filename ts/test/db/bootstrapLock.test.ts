@@ -1,14 +1,19 @@
 import assert from "node:assert/strict";
 import {
   closeSync,
+  existsSync,
   constants as fsConstants,
   mkdtempSync,
   openSync,
+  readdirSync,
+  readFileSync,
   rmSync,
+  utimesSync,
+  writeFileSync,
   writeSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { test } from "node:test";
 
 import { acquireBootstrapLock, BootstrapLockTimeoutError } from "#db/bootstrapLock.ts";
@@ -70,15 +75,85 @@ test("a lock left by a dead process pid is reclaimed and acquisition proceeds", 
   }
 });
 
-test("a corrupt/unreadable lock record is treated as stale and reclaimed", () => {
+// --- CR084: a lock is never visible without its record ----------------------
+//
+// Until CR084 the lock was created (O_EXCL) and its record written in a second
+// syscall. A contender that read the file in between saw it empty, took
+// "unreadable" as abandonment, removed the live holder's lock, and took its
+// own: two holders, two migrations, two backups racing on one path. It was
+// migrateOnOpenConcurrency's intermittent red, on CI three times.
+//
+// The record is now written to a private file and hard-linked into place, so
+// the lock path never holds an empty lock -- and unreadable content stops being
+// evidence of abandonment. The test below said the opposite until CR084 and is
+// reversed rather than deleted.
+
+function writeUnreadableLock(dbPath: string, ageMs: number): string {
+  const lockPath = `${dbPath}.bootstrap.lock`;
+  writeFileSync(lockPath, "", { mode: 0o600 });
+  const then = (Date.now() - ageMs) / 1000;
+  utimesSync(lockPath, then, then);
+  return lockPath;
+}
+
+test("a young unreadable lock is NOT abandonment: the contender waits, then times out (CR084)", () => {
+  const ws = tmpDbPath();
+  try {
+    writeUnreadableLock(ws.dbPath, 0);
+    assert.throws(
+      () => acquireBootstrapLock(ws.dbPath, { timeoutMs: 200, pollIntervalMs: 20 }),
+      BootstrapLockTimeoutError,
+    );
+  } finally {
+    ws.cleanup();
+  }
+});
+
+test("an unreadable lock older than staleMs is reclaimed by its file's age", () => {
+  // A leftover from before CR084, or corruption, must not block every
+  // bootstrap forever: it ages out like any other lock.
+  const ws = tmpDbPath();
+  try {
+    writeUnreadableLock(ws.dbPath, 10_000);
+    const lock = acquireBootstrapLock(ws.dbPath, {
+      timeoutMs: 1000,
+      staleMs: 500,
+      pollIntervalMs: 10,
+    });
+    lock.release();
+  } finally {
+    ws.cleanup();
+  }
+});
+
+test("release removes only a lock it still owns (CR084)", () => {
   const ws = tmpDbPath();
   try {
     const lockPath = `${ws.dbPath}.bootstrap.lock`;
-    const fd = openSync(lockPath, fsConstants.O_CREAT | fsConstants.O_WRONLY, 0o600);
-    writeSync(fd, "not json");
-    closeSync(fd);
-    const lock = acquireBootstrapLock(ws.dbPath, { timeoutMs: 1000, pollIntervalMs: 10 });
+    const mine = acquireBootstrapLock(ws.dbPath);
+    // Another process reclaimed and re-acquired the path meanwhile.
+    rmSync(lockPath);
+    writeRawLock(ws.dbPath, { pid: process.ppid, createdAt: Date.now() });
+
+    mine.release();
+
+    assert.ok(existsSync(lockPath), "the other process's lock survives my release");
+    assert.equal(JSON.parse(readFileSync(lockPath, "utf8")).pid, process.ppid);
+  } finally {
+    ws.cleanup();
+  }
+});
+
+test("acquiring leaves no private record file behind, won or lost", () => {
+  const ws = tmpDbPath();
+  try {
+    const lock = acquireBootstrapLock(ws.dbPath);
+    assert.throws(
+      () => acquireBootstrapLock(ws.dbPath, { timeoutMs: 100, pollIntervalMs: 20 }),
+      BootstrapLockTimeoutError,
+    );
     lock.release();
+    assert.deepEqual(readdirSync(dirname(ws.dbPath)), []);
   } finally {
     ws.cleanup();
   }

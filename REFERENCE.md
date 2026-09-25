@@ -634,7 +634,9 @@ Relocation is deliberately manual — histories are never merged automatically:
    non-survivor can be archived elsewhere.
 3. `*.bootstrap.lock`, `*.db-wal`, and `*.db-shm` sidecars belong next to
    their database; move them with it (or delete lock files when no process
-   is running).
+   is running). So does a `*.bootstrap.lock.*.tmp` record file, which a lock
+   attempt writes and removes within the same call. It is left behind only if
+   the process was killed mid-attempt.
 4. `mirror-logger.log` in the root can be deleted or archived; new sessions
    write to `<mirror home>/mirror-logger.log`.
 5. Re-run `mirror runtime diagnose` and confirm no
