@@ -3057,7 +3057,8 @@ changes, nine identifiers:
 - Wrong at the decision point: [CR001](refinement/rs001-ariad-runtime-trust/cr001-scope-confirmation-checkpoint.md)
   (already planned);
   [CR019](refinement/rs001-ariad-runtime-trust/cr019-plan-checkpoint-states-untruths-about-the-target-project.md)
-  (after TS5 the `uv run` contract line is false even for Mirror itself);
+  (the Plan checkpoint lists the parent as a sibling, and two Mirror-local
+  contract lines remain; TS5 D13 already removed the `uv run` one);
   [CR067](refinement/rs001-ariad-runtime-trust/cr067-render-the-refused-checkpoint-not-a-hardcoded-implement-stage.md)
   with [CR020](refinement/rs001-ariad-runtime-trust/cr020-no-read-only-way-to-re-render-the-active-checkpoint.md)
   (refusals name the wrong reason and render a hardcoded Implement stage; no

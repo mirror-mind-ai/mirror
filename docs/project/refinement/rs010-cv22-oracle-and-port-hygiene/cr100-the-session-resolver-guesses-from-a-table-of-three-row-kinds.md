@@ -74,6 +74,15 @@ table's overloading and asked for it to be fixed at the model level.
   restarts on the resolved session.
 - `.pi/extensions/mirror-logger.ts`: `log-user` at `before_agent_start`, which
   is why the guess is usually the active window.
+- The heuristic was introduced on purpose on 2026-05-25:
+  [Pi Builder conversations appear without journeys](../../../process/troubleshooting.md#pi-builder-conversations-appear-without-journeys).
+  `build load` ran without a session id, so its conversation stayed
+  journeyless. The guess fixed that, and `log-user` began refreshing
+  `updated_at` to make it land on the active window. A fix here has to keep
+  that attach working without the guess, not just delete the guess.
+- `REFERENCE.md#operating-mode-lifecycle`: per-session operating mode exists so
+  "simultaneous Pi sessions do not overwrite each other's footer state". The
+  guess is how an agent shell's `build load` reaches that per-session row today.
 
 ## Outcome
 
