@@ -35,7 +35,7 @@ Dropped   no longer relevant or replaced by another item
 | D-015 | Production updater blocks on retired experimental migration rows | operations / data | medium | Paid | CV23.DS7 release installation → local repair 2026-08-25 | Paid by verified removal of empty retired schema and rows 017–019 |
 | D-016 | Read-only WAL recovery assumes SQLite fails eagerly during connect | reliability / testing | medium | Paid | CV9.E2.S31 Navigator Validation baseline comparison → runtime WAL fallback maintenance | Paid by the integrated eager schema-probe fallback |
 | D-017 | Injection-resistance probes are averaged into a module score, so an obeyed probe can pass the release gate | eval measurement | medium | **Paid** | CV22.DS8.TS1 validation | Paid 2026-09-22 by CV22.DS10.TS3: six injection probes are `blocking`, so an obeyed probe fails its module at any score and the verdict names it |
-| D-018 | Extension API `VERSION` stays `1.1` after `api.journey_projections` was removed, so the constant advertises a capability that no longer exists | design / contract | low | Carried | CV22.DS10.TS1 Debt Review | CV22.DS10.TS2 plan time, or any story that changes the Extension API surface |
+| D-018 | Extension API `VERSION` stays `1.1` after `api.journey_projections` was removed, so the constant advertises a capability that no longer exists | design / contract | low | **Paid** | CV22.DS10.TS1 Debt Review | Paid 2026-09-21 by CV22.DS10.TS2's decision: `VERSION` frozen at `1.1`; the in-process API ended with the Python core (TS5) |
 | D-019 | The Builder lifecycle corpus records a `projection_requests` field that nothing asserts | testing | low | **Paid** | CV22.DS10.TS1 Debt Review | Paid 2026-09-21: CI's determinism gate forced the regeneration this entry assumed had to wait for TS5 |
 | D-020 | The eval harness records no spend, so a run's cost cannot be reported | observability / cost | low | Carried | CV22.DS10.TS3 Debt Review | The first time a run's cost is questioned, or before any model-pin migration, where cost per run is part of the decision |
 | D-021 | `reception`'s eval reads the catalogue differently from production, and no gate covers routing quality | eval measurement | low | Carried | CV22.DS10.TS3 Debt Review | The next story that touches reception routing or descriptor generation |
@@ -50,7 +50,7 @@ Dropped   no longer relevant or replaced by another item
 
 **Kind:** design  
 **Severity:** medium  
-**Status:** Paid  
+**Status:** Paid
 **Source:** CV9.DS7.US1 / CV9.DS7.TS1 / CV9.DS7.TS2  
 
 ### Carrying reason
@@ -119,7 +119,7 @@ or deliberately documents the empty-on-failure behavior as intended.
 
 **Kind:** observability  
 **Severity:** medium  
-**Status:** Paid  
+**Status:** Paid
 **Source:** CV9.E2.S1 (AI-E1, AI-09 tail) · paid by CV9.E2.S18  
 
 ### Carrying reason
@@ -156,7 +156,7 @@ growth is tracked as a retention radar item.
 
 **Kind:** testing  
 **Severity:** low  
-**Status:** Paid  
+**Status:** Paid
 **Source:** CV9.E2.S1 (Navigator validation) · paid alongside CV9.E2.S18  
 
 ### Carrying reason
@@ -199,7 +199,7 @@ validation-blocking symptom is resolved.
 
 **Kind:** testing  
 **Severity:** low  
-**Status:** Carried  
+**Status:** Dropped
 **Source:** CV9.E2.S19 validation  
 
 ### Carrying reason
@@ -231,6 +231,8 @@ expensive answer. That disposition belongs to **CV22.DS10.TS3**, the harness
 story, which must decide it explicitly.
 
 ### Resolution
+
+*(Status line corrected from Carried by CV22.DS10.TS5's Debt Review, 2026-09-25. The summary table was already right.)*
 
 **Dropped 2026-09-22 by CV22.DS10.TS3**, which decided the disposition the
 trigger demanded: `routing` was retired with the Python harness rather than
@@ -751,7 +753,7 @@ Python/SQLite combination, followed by the complete non-live suite.
 
 **Kind:** eval measurement  
 **Severity:** medium  
-**Status:** Carried  
+**Status:** Paid
 **Source:** CV22.DS8.TS1 validation  
 
 ### Carrying reason
@@ -808,6 +810,8 @@ from reading the probe line, not from the module verdict.
 
 ### Resolution
 
+*(Status line corrected from Carried by CV22.DS10.TS5's Debt Review, 2026-09-25. The summary table was already right.)*
+
 **Paid 2026-09-22 by CV22.DS10.TS3**, as a harness-contract requirement rather
 than a per-module patch, which is what the revisit trigger anticipated.
 `EvalProbe` carries a `blocking` flag; `evalPassed` returns false when any
@@ -837,7 +841,7 @@ probes resist.
 
 **Kind:** design / contract  
 **Severity:** low  
-**Status:** Carried  
+**Status:** Paid
 **Source:** CV22.DS10.TS1 Debt Review  
 
 ### Carrying reason
@@ -871,11 +875,23 @@ CV22.DS10.TS2 plan time, or any story that changes the Extension API surface.
 which capabilities exist, under a version decided by the story that owns the
 extension runtime boundary.
 
+### Resolution
+
+**Paid 2026-09-21 by CV22.DS10.TS2's decision**
+([decisions](decisions.md#the-extension-api-freezes-at-11-rather-than-versioning-its-own-retirement-d-018)):
+`VERSION` stays `1.1` permanently. The in-process Extension API does not
+version forward, and the manifest runtime protocols replace it as the
+contract. That met this entry's closure condition, a version decided by the
+story that owns the extension runtime boundary. The ledger was never updated,
+though, and read Carried until CV22.DS10.TS5's Debt Review corrected it
+(2026-09-25). TS5 had deleted `src/memory/` by then, so the constant itself no
+longer exists.
+
 ## D-019 — The Builder lifecycle corpus records an assertion it no longer makes
 
 **Kind:** testing  
 **Severity:** low  
-**Status:** Carried  
+**Status:** Paid
 **Source:** CV22.DS10.TS1 Debt Review  
 
 ### Carrying reason
@@ -898,6 +914,8 @@ cheaper route for the same data — it asserts the *absence* of requests against
 the oracle's recording, so a re-added spawn is still caught there.
 
 ### Resolution
+
+*(Status line corrected from Carried by CV22.DS10.TS5's Debt Review, 2026-09-25. The summary table was already right.)*
 
 **Paid 2026-09-21, by CI rather than by plan.** The reasoning above was sound and
 the conclusion was wrong: regenerating did not have to wait for TS5, because the

@@ -3,7 +3,7 @@
 # CR092 — The extension shim template resolves `python3` from ambient PATH
 
 **Refinement Story:** RS010 — CV22 Oracle And Port Hygiene
-**Status:** captured
+**Status:** rejected
 **Driver:** —
 **Delivery:** —
 
@@ -102,4 +102,4 @@ ts/src/extensions/dispatch.ts  commandStaysInside(): `if (isAbsolute(argument)) 
 
 ## Outcome
 
-Open.
+**Rejected 2026-09-25**, by the Navigator in [CV22.DS10.TS5's Debt Review](../../roadmap/cv22-typescript-core-port/cv22-ds10-python-retirement-npm-distribution/cv22-ds10-ts5-python-core-deletion/review.md): the subject is gone. The shim template this CR concerned was deleted by TS5's decision D7, at plateau 3, with the Python extension API it served. The extension template now teaches the declared `mirror-cli-v1` and `mirror-context-v1` runtimes, with no entry file (D10).

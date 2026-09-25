@@ -41,6 +41,8 @@ nothing behind rather than see it stated.
 
 ## Plan Or Decision
 
+*Revisit trigger fired 2026-09-25; the Navigator kept this CR captured in [CV22.DS10.TS5's Debt Review](../../roadmap/cv22-typescript-core-port/cv22-ds10-python-retirement-npm-distribution/cv22-ds10-ts5-python-core-deletion/review.md).* TS5 deleted the Python core, so the two-core comparison the trigger waited on is gone, and the fix is TypeScript's alone.
+
 Catch the integrity error at the CLI boundary and render it as a refusal, or
 validate the ids before writing. Prefer whichever keeps the two writes in one
 transaction, and say which rule won in the code.

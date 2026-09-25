@@ -2,7 +2,7 @@
 
 # CR088 — Python embeds attachment-search queries without writing a ledger row
 
-**Status:** captured
+**Status:** rejected
 **Refinement Story:** RS010 — CV22 Oracle And Port Hygiene
 **Driver:** —
 **Delivery:** —
@@ -75,7 +75,7 @@ attachments produces exactly one attributed row after the fix and none before it
 
 ## Outcome
 
-Pending.
+**Rejected 2026-09-25**, by the Navigator in [CV22.DS10.TS5's Debt Review](../../roadmap/cv22-typescript-core-port/cv22-ds10-python-retirement-npm-distribution/cv22-ds10-ts5-python-core-deletion/review.md): the subject is gone. `search_attachments`, the Python code that embedded attachment queries without a ledger row, was deleted with the Python core at TS5 plateau 3. TypeScript has recorded both query embeddings since CV22.DS9.TS1 (`099daf57`), so the gap this CR describes no longer exists in any code Mirror runs.
 
 ## Provenance
 

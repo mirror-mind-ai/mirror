@@ -37,6 +37,8 @@ detachment on the command whose purpose is data repair.
 
 ## Plan Or Decision
 
+*Revisit trigger fired 2026-09-25; the Navigator kept this CR captured in [CV22.DS10.TS5's Debt Review](../../roadmap/cv22-typescript-core-port/cv22-ds10-python-retirement-npm-distribution/cv22-ds10-ts5-python-core-deletion/review.md).* TS5 deleted the Python core, so the two-core comparison the trigger waited on is gone, and the fix is TypeScript's alone. The `repair-encoding` golden was recorded from the oracle and is now frozen. A fix edits it by hand, with a row in `ts/test/goldens/README.md`.
+
 Decide the behavior first (coordinated rename versus report-only); then TS
 first, Python second, golden and oracle baseline in the same commit. Not
 urgent; revisit before DS10 deletes the Python side so the decision is made

@@ -2,10 +2,10 @@
 
 # CR084 — The bootstrap lock is not exclusive during the window between creating it and writing it
 
-**Status:** captured
+**Status:** done
 **RS:** RS010
-**Driver:** —
-**Delivery:** —
+**Driver:** @viniciusteles
+**Delivery:** `mirror-ts-core`
 
 ## Problem
 
@@ -121,7 +121,14 @@ exposure is real, and the fix is small and local to `bootstrapLock.ts`.
 
 ## Outcome
 
-_Pending._
+**Done 2026-09-25, delivered by [CV22.DS10.TS5's Debt Review](../../roadmap/cv22-typescript-core-port/cv22-ds10-python-retirement-npm-distribution/cv22-ds10-ts5-python-core-deletion/review.md)** in `1b947cdd`, in the shape this CR specified. Its revisit trigger fired on TS5's own CI: `migrateOnOpenConcurrency` failed on both attempts for `9a3bf1ef`, and the Navigator chose to pay it rather than re-run CI.
+
+- The record is written to a file only the attempt names, then `link()`ed to the lock path. `EEXIST` keeps exclusivity, and the path never holds an empty lock.
+- Unreadable content is no longer abandonment. It ages out by the file's mtime, so a leftover from before the fix cannot block every bootstrap forever.
+- `release()`, and now also a stale reclaim, removes the lock only while it still holds the record it judged. That closes a second gap this CR did not name: two waiters judge one dead lock stale, and the slower one removes the fresh lock the faster one just linked.
+- The concurrency test's failure message names the invariant.
+
+Evidence: the reversed test (a young unreadable lock makes the contender time out) and the release-ownership test were red first. Under load, 240/240 migrate-on-open races and 40/40 bootstrap races pass. CI is green on both legs at `1b947cdd` (Tests run 36135289775), where the same test had failed twice in a row.
 
 ## Provenance
 

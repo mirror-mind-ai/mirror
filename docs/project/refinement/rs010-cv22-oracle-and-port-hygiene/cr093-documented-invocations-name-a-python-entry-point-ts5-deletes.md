@@ -3,9 +3,9 @@
 # CR093 — Every documented Mirror invocation names a Python entry point that TS5 deletes
 
 **Refinement Story:** RS010 — CV22 Oracle And Port Hygiene
-**Status:** captured
+**Status:** promoted
 **Driver:** —
-**Delivery:** —
+**Delivery:** `CV22.DS10.US3`
 
 ## Problem
 
@@ -120,4 +120,4 @@ change.
 
 ## Outcome
 
-Open.
+**Promoted 2026-09-25 to CV22.DS10.US3**, by the Navigator in [CV22.DS10.TS5's Debt Review](../../roadmap/cv22-typescript-core-port/cv22-ds10-python-retirement-npm-distribution/cv22-ds10-ts5-python-core-deletion/review.md). This repository's half was done at TS5 plateau 4: every documented invocation in Mirror Mind's own docs names `mirror`, `REFERENCE.md`'s 56 Python invocations are 0, and the `python-core-mentions` guard enforces it in CI. The extension repositories' half depends on the npm entry point, which US3 defines. It is item 8 of US3's [inheritance list](../../roadmap/cv22-typescript-core-port/cv22-ds10-python-retirement-npm-distribution/cv22-ds10-us3-npm-distribution/inherited.md).
