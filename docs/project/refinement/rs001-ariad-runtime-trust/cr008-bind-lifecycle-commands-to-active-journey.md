@@ -138,7 +138,7 @@ scenario. It does not meet the Expected Behavior's "never fall back silently".
   known. New text names both real routes, e.g. `Error: Builder method <action>
   requires a journey. Pass --journey <slug>, or run with a known session
   (--session-id or MIRROR_SESSION_ID) that has Builder Mode active.` Parity is
-  gone; the goldens that pin the old sentence are regenerated with intent, not
+  gone; the goldens that pin the old sentence are hand-edited with intent, not
   copied.
 - `ts/src/mode/operatingMode.ts` — a session-only reader
   (`getSessionOperatingMode`) with no global fallback, for the Builder path.
@@ -146,8 +146,8 @@ scenario. It does not meet the Expected Behavior's "never fall back silently".
   this the plan's "no global fallback" would not be true. It keeps that
   fallback for the welcome status line and `mode status`, which are display,
   not binding.
-- `ts/src/builder/load.ts` — **not implemented; open, see Found During
-  Implementation.** As planned: `build load` stamps a known session or the global
+- `ts/src/builder/load.ts` — **not implemented: Navigator decision C
+  (2026-09-25), see Found During Implementation.** As planned: `build load` stamps a known session or the global
   row; never a guessed session. `switchConversation` receives the same resolved
   value it does today for a known session and `null` otherwise (verify what the
   conversation switch does with `null` before relying on it — see Validation).
@@ -208,7 +208,12 @@ Then it renders the no-active-journey card, exit 0
 Every "no cursor row changes" line is asserted over **all** cursor rows in the
 database, not the target's alone — the defect wrote to the wrong one. The
 existing goldens that pass `--session-id` continue to pass unchanged; the
-goldens pinning the old refusal sentence are regenerated.
+goldens pinning the old refusal sentence are hand-edited under the freeze rule.
+
+The two `build load` lines are the write side. The first is withdrawn by
+decision C (see Found During Implementation). The second holds as before:
+`build load` resolves a named session before it guesses. That is by
+construction in `ts/src/builder/load.ts`, and it is not separately tested.
 
 ### Validation Route
 
@@ -319,6 +324,18 @@ Each is recorded here for the Navigator to accept or reject at validation.
    Driver recommendation: **C**. The binding defect in the Evidence is closed
    by the read side, which the real-data smoke below shows. B protects a path
    nothing uses yet, and it belongs to the change that would start using it.
+
+   **Navigator decision (2026-09-25): C.** The write side stays as it is. The
+   precondition is recorded where its trigger would fire:
+
+   - `namedSessionBuilderJourney`'s comment in `ts/src/builder/commands.ts`;
+   - a tripwire, `ts/test/builder/namedSessionPrecondition.test.ts`, that fails
+     the day a runtime integration, hook, script, or skill names its session.
+     It was proven by a probe file that made it fail and name the file;
+   - the `MIRROR_SESSION_ID` warnings in REFERENCE and `.env.example.advanced`.
+     A value in a shared `.env` would name one session for every window, which
+     is the global row under another name;
+   - a constraint on [CR100](../rs010-cv22-oracle-and-port-hygiene/cr100-the-session-resolver-guesses-from-a-table-of-three-row-kinds.md).
 
 ### Authority Boundary
 

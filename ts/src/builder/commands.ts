@@ -187,6 +187,14 @@ function rejectUnknownMethod(method: string): CommandResult | null {
  * another window's journey, and binding to it wrote that journey's cursor and
  * materialized files into its project. A named session that has ended, or that
  * is in another mode, names no journey.
+ *
+ * Decision C (CR008): when no session is named, `build load` still stamps a
+ * GUESSED session, so each window's footer shows its own mode. A named session's
+ * stamp may therefore have been written by another window's load. That cannot
+ * bind today, because no runtime names its session. Before one does, stamps must
+ * record whether they were written under the name, and this function must bind
+ * only those (option B). `namedSessionPrecondition.test.ts` fails the day a
+ * runtime starts naming its session.
  */
 function namedSessionBuilderJourney(
   context: BuilderCommandContext,

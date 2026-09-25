@@ -63,6 +63,12 @@ the Navigator's decision approving
 whose persona-panel review found that the heuristic is a symptom of the
 table's overloading and asked for it to be fixed at the model level.
 
+**Constraint from CR008 decision C (2026-09-25).** If this fix makes a runtime
+name its session, so that `resolveNamedRuntimeSessionId` returns a value in an
+agent shell, CR008's option B must land first or together with it: a Builder
+stamp binds only if it was written under the name. Until then
+`ts/test/builder/namedSessionPrecondition.test.ts` fails.
+
 ## Evidence
 
 - [CR008's characterization](../rs001-ariad-runtime-trust/cr008-bind-lifecycle-commands-to-active-journey.md#characterization-read-only-2026-09-25-typescript-engine):
