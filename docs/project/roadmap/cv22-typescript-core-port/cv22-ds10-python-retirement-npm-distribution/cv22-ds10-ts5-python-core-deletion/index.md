@@ -5,8 +5,9 @@
 **Status:** 🟢 In Progress — pulled 2026-09-23; Plan panel-reviewed and
 approved; plateaus 0–4 of 5 landed — **the repository holds no Python, and
 nothing tracked tells anyone to run it**; both halves of the guard are
-enforced. Next: the Navigator's decision on F20, Navigator validation, then
-the panel's handoff review
+enforced. The first Navigator walk (2026-09-25) was not accepted: it found
+F21. Next: the Navigator's decisions on F20 and F21, the fixes, a second walk
+of the failed steps, then the panel's handoff review
 
 ---
 
@@ -580,11 +581,16 @@ order:
 2. **F20** — the Navigator's call ([inventory](inventory.md#f20--the-clone-role-guard-does-not-recognize-the-production-clone)):
    the clone-role guard does not recognize the production clone, found by
    dry-running the walk. Step 12 of the walk fails until it is decided.
+2b. **F21** — the Navigator's call ([inventory](inventory.md#f21--concurrent-writers-race-on-the-fixed-pre-write-snapshot)):
+   concurrent routed writes collide on the fixed pre-write snapshot, so
+   Claude Code's parallel hooks lose writes and Pi has been losing turns in
+   daily use. Found by the first walk (step 2), reproduced five times in five.
 3. **Navigator validation** — the four-runtime walk in
    [test-guide.md — Navigator Validation](test-guide.md#navigator-validation),
    on a real database copy with the interpreter shadowed; the runbook under
    *The walk, as commands* was dry-run in zsh for every step that needs no
-   runtime session.
+   runtime session. The first walk's results are recorded there; after the
+   fixes, steps 2, 3, 6, and 12 and the verdict are what remain to walk.
 4. **The panel's handoff review** (D9: engineer, quality-assurance,
    database-architect, devops-engineer, security-engineer), over plateaus 0–4
    and the validation evidence — after validation, as the collaboration

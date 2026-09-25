@@ -578,3 +578,63 @@ wrote on purpose.
 - **(b)** Accept it as a known risk until the production clone takes the CV22
   release, and say so in the story's known risks. Until then the guard is off
   for production clones, from this branch.
+
+### F21 — concurrent writers race on the fixed pre-write snapshot
+
+Found by the Navigator walk (2026-09-25, step 2), then reproduced. Every
+routed live write first snapshots the database into one fixed file,
+`<home>/backups/frontdoor-pre-write-backup.db`: `ensureBackup` removes it, then
+`VACUUM INTO` recreates it — with no lock. Two writers at the same moment
+collide. The second `VACUUM INTO` finds the tables the first is still
+creating (`table conversations already exists`), or one writer removes the
+file the other is still writing (`disk I/O error`). The losing write is
+aborted: a user message is not logged, or an injection is not made. The live
+database is never at risk — `VACUUM INTO` only reads it — but the write is
+lost, silently for the user.
+
+Claude Code makes the collision routine: it runs its two `UserPromptSubmit`
+hooks at once, and on a prompt that owes an injection both write — `inject`
+marks the session injected, `log-user-prompt` stores the message.
+
+**Evidence.**
+
+- *The walk.* The copy's `hooks.log` recorded the error on each of the Claude
+  session's three prompts: the user-prompt hook on the first — a `/mm:mirror`
+  prompt the logger skips by design, but the hook failed before it could
+  decide, because the route opens its writable handle, snapshot included,
+  first — and the inject hook on the next two, whose Mirror context was
+  therefore never injected.
+- *Reproduced.* Running the two Claude hooks concurrently against a copy of
+  the walk's database, five pairs out of five failed: four `table conversations
+  already exists`, one `disk I/O error`.
+- *Production, from this branch.* The real home's `mirror-logger.log` shows
+  Pi's `conversation-logger log-user` failing with `disk I/O error` four times
+  since 2026-09-23. Pi turns have been lost in daily use wherever two routed
+  writes overlapped — for example, a prompt's `log-user` starting while the
+  previous turn's detached `log-assistant` was still snapshotting.
+
+**Origin.** The fixed-name snapshot predates TS5 (it is the DS3/DS4 write
+seam). TS5 plateau 1 made the collision routine by moving the Claude hooks
+onto the front door's write path: Python's hooks wrote ungated, so they never
+raced. The Claude half is therefore this story's regression; the Pi half was
+already there.
+
+**Stop: a Navigator decision on the fix**, because it changes the write gate.
+
+- **Recommended:** each writer snapshots into its own staging file beside the
+  fixed one, the gate verifies *that* file — which no other writer can touch —
+  and only then an atomic rename promotes it to the fixed name. One function
+  replaces the seven identical `openDatabaseForWrite(dbPath,
+  ensureBackup(dbPath))` call sites, so the racy pattern cannot be reused.
+  Kept: the fixed name, last-write-undo semantics, a hash-verified snapshot
+  before every write. Improved: the fixed file can no longer be observed
+  half-written. Test first: several processes writing concurrently, every
+  write succeeds, and the fixed backup passes `PRAGMA quick_check`.
+- The alternative, a cross-process lock around snapshot-and-open, serializes
+  writers but must be held across a function boundary and inherits the
+  bootstrap lock's known gap (CR084).
+
+One neighbour, observed and not investigated: the real home's `hooks.log`
+holds a single `claude:session-start: UNIQUE constraint failed: messages.id`
+(2026-09-24). It looks like two transcript backfills overlapping, a different
+mechanism from the snapshot race.

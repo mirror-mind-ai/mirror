@@ -366,7 +366,7 @@ git pull --ff-only && (cd ts && npm ci)
 NAV="$PWD/tmp/ts5/nav"; rm -rf "$NAV"; mkdir -p "$NAV/shadow" "$NAV/home"
 export TS5_SHADOW_LOG="$NAV/shadow.log"
 for bin in python python3 uv; do
-  printf '#!/bin/sh\necho "SPAWN: %s $*" >> "%s"\nexit 66\n' "$bin" "$TS5_SHADOW_LOG" > "$NAV/shadow/$bin"
+  printf '#!/bin/sh\necho "SPAWN: %s $* <- $(ps -o command= -p $PPID)" >> "%s"\nexit 66\n' "$bin" "$TS5_SHADOW_LOG" > "$NAV/shadow/$bin"
   chmod +x "$NAV/shadow/$bin"
 done
 export PATH="$NAV/shadow:$PATH"
@@ -383,7 +383,11 @@ mirror runtime status | grep -E '^(Mirror home|Core migrations):'
 ```
 
 Expect `Mirror home: …/tmp/ts5/nav/home` and `Core migrations: current (17/17)`.
-`mirror` is a function here rather than the documented alias, so that
+Each stub records the command line of the process that called it, so a spawn
+names its caller. The runtimes load third-party integrations of their own —
+the first walk logged Herdr's agent-state hooks and Gemini CLI's self-update —
+and those are not Mirror's: the verdict below is about spawns whose caller is
+Mirror code. `mirror` is a function here rather than the documented alias, so that
 `VAR=value mirror …` works in both shells. The copy's `.env` still carries the
 OpenRouter key: session ends and `build load` make a few live calls, costing
 cents and writing their ledger rows to the copy.
@@ -394,7 +398,9 @@ cents and writing their ledger rows to the copy.
 (approve the front-door command if asked) → one plain follow-up → `/exit`.
 Mirror Mode context must shape the answer — that is the inject hook.
 
-**3 — Gemini CLI.** `gemini` → one prompt → `/quit`.
+**3 — Gemini CLI.** `gemini` → one prompt → `/quit`. Gemini CLI itself (`gemini`,
+reading this repository's `.gemini/settings.json` hooks) — not Antigravity,
+whose sessions no Mirror hook sees.
 
 **4 — Codex.** `./scripts/codex-mirror.sh` → one exchange → exit.
 
@@ -521,7 +527,43 @@ refuse today — see [F20](inventory.md#f20--the-clone-role-guard-does-not-recog
 wc -l < "$TS5_SHADOW_LOG"; cat "$TS5_SHADOW_LOG"
 ```
 
-`0`, and nothing listed: no step reached for an interpreter.
+Nothing listed whose caller (after `<-`) is Mirror code: a hook wrapper under
+`.claude/`, `.gemini/` or `plugins/`, `scripts/codex-mirror.sh`, the MCP
+launcher, or a `node … ts/src/…` process. A spawn by a runtime's own
+integration is recorded and attributed, not failed.
+
+### The first walk (Navigator, 2026-09-25, at `7583384d`) — not accepted
+
+| Step | Result |
+|---|---|
+| 0 | as expected |
+| 1 — Pi | **pass** — the prompt and the answer are in the copy (`9bfc62e9`) |
+| 2 — Claude Code | **fail** — [F21](inventory.md#f21--concurrent-writers-race-on-the-fixed-pre-write-snapshot): every prompt's hooks collided on the pre-write snapshot; the inject hook failed on two of three prompts, so their Mirror context was never injected |
+| 3 — Gemini CLI | **not exercised** — Gemini CLI updated itself on launch and no prompt went through it; the "Hi" was sent to Antigravity CLI, which runs no Mirror hook |
+| 4 — Codex | **pass**, twice (`de377c79`, `500b550b`: prompt and answer each) |
+| 4b — no `node` | **pass** — hook exit 0, `hook_node_unresolvable`, the `hooks.log` line |
+| 5 — MCP | **pass** — `0.31.14`, journeys listed |
+| 6 — read back, isolation | Pi and Codex read back; the isolation query returned no rows. The copy also holds 24 Pi sessions from other projects, backfilled by session start from `~/.pi/agent/sessions` — expected (`PI_SESSIONS_DIR`), and noise for this query |
+| 7–8 | **pass** — exit 1 and exit 2, as specified |
+| 9 — old schema | **pass** — F19's line, 017 applied on open with its backup, then `nothing pending` and `current (17/17)` |
+| 9b — replay | **pass** — identical |
+| 10 — stale gate | **pass** |
+| 11 — version | **pass** — `0.31.14` three times |
+| 12 — clone guard | **fail**, as predicted — [F20](inventory.md#f20--the-clone-role-guard-does-not-recognize-the-production-clone) |
+| verdict | five lines, **none from Mirror** (attributed below) |
+
+The five spawns, attributed after the fact — the stub did not yet record its
+caller, and the evidence came from the runtimes' own logs:
+
+- `python3 -`, three times: Herdr's agent-state `SessionStart` hooks, which
+  Herdr installs for Claude Code (`~/.claude/hooks/herdr-agent-state.sh`) and
+  Codex (`~/.codex/herdr-agent-state.sh`) and which run `python3 - <<'PY'` —
+  one Claude session and two Codex sessions.
+- `python3 -c …sys.executable…`, then `python -c …`: node-gyp's
+  `find-python.js`, during Gemini CLI's self-update (`npm install --global
+  @google/gemini-cli@0.61.0`, 07:36:49Z). It was building `node-pty`, an
+  optional dependency; the build failed without Python, npm dropped it, and the
+  update succeeded (exit 0) on the prebuilt `@lydell/node-pty`.
 
 Navigator acceptance is recorded here with the date, the commit, and any
 deviation.
