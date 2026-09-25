@@ -532,6 +532,8 @@ expected filesystem posture is **owner-only**: directories `0700`, data files
   of its own and promotes it with an atomic rename, so concurrent writes —
   Claude Code's parallel prompt hooks, Pi's session maintenance and its
   opening prompt — never collide, and the fixed file is never half-written.
+  A staging file left by a writer that was killed mid-snapshot is removed by
+  the next write, once its process is gone and it is ten minutes old.
 
 ### Identity (CV4 user home)
 

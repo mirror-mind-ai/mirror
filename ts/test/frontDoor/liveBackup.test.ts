@@ -1,5 +1,15 @@
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, statSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  rmSync,
+  statSync,
+  utimesSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
@@ -117,6 +127,52 @@ test("restoreFromBackup refuses a tampered backup", () => {
     const backup = snapshotViaLiveWrite(ws.dbPath);
     const tampered = { ...backup, sha256: "0".repeat(64) };
     assert.throws(() => restoreFromBackup(tampered, ws.dbPath), /hash does not match/);
+  } finally {
+    ws.cleanup();
+  }
+});
+
+// --- CV22.DS10.TS5 handoff review, finding N4 --------------------------------
+//
+// F21's fix accepted one residue: a process killed between its snapshot and
+// its rename leaves `backups/<fixed>.<pid>-<hex>.staging`, the size of the
+// database, and nothing removed it or reported it. The write gate now sweeps a
+// staging file whose writer is gone -- its process no longer runs AND the file
+// is older than any snapshot takes -- before taking its own.
+
+/** A pid that ran and has exited: spawnSync returns only after the child is reaped. */
+function deadPid(): number {
+  const { pid } = spawnSync(process.execPath, ["-e", ""]);
+  assert.ok(pid, "test setup: a child process ran");
+  return pid as number;
+}
+
+function stagingFile(dbPath: string, pid: number, ageMs: number): string {
+  const path = `${backupPathFor(dbPath)}.${pid}-${"ab".repeat(6)}.staging`;
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, "a snapshot whose writer was killed");
+  const then = (Date.now() - ageMs) / 1000;
+  utimesSync(path, then, then);
+  return path;
+}
+
+test("a write sweeps staging files left by writers that are gone, and nothing else (N4)", () => {
+  const ws = walDb();
+  try {
+    const hour = 60 * 60 * 1000;
+    const abandoned = stagingFile(ws.dbPath, deadPid(), hour);
+    const recent = stagingFile(ws.dbPath, deadPid(), 1000);
+    const ownerAlive = stagingFile(ws.dbPath, process.ppid, hour);
+    const unrelated = join(dirname(backupPathFor(ws.dbPath)), "keep-me.staging");
+    writeFileSync(unrelated, "not the gate's");
+
+    openLiveWriteDatabase(ws.dbPath).close();
+
+    assert.ok(!existsSync(abandoned), "a dead writer's old staging file is swept");
+    assert.ok(existsSync(recent), "a file younger than any snapshot takes is left alone");
+    assert.ok(existsSync(ownerAlive), "a live process's staging file is left alone");
+    assert.ok(existsSync(unrelated), "a file the gate did not name is left alone");
+    assert.ok(existsSync(backupPathFor(ws.dbPath)), "and the write still took its snapshot");
   } finally {
     ws.cleanup();
   }

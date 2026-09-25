@@ -28,9 +28,22 @@
 // meaning (the state before the most recently promoted write) and can no
 // longer be observed half-written. Under true concurrency "the most recent
 // write" is whichever promoted last; nothing stronger was ever true.
+//
+// One residue remains possible: a writer KILLED between its snapshot and its
+// rename leaves its staging file, the size of the database. Each write sweeps
+// those before taking its own -- a staging file whose process no longer runs
+// and which is older than any snapshot takes (TS5 handoff review, finding N4).
 
 import { randomBytes } from "node:crypto";
-import { chmodSync, copyFileSync, mkdirSync, renameSync, rmSync } from "node:fs";
+import {
+  chmodSync,
+  copyFileSync,
+  mkdirSync,
+  readdirSync,
+  renameSync,
+  rmSync,
+  statSync,
+} from "node:fs";
 import { dirname, join } from "node:path";
 import { type BackupRecord, requireBackup, sha256File } from "#db/backupGate.ts";
 import { openDatabaseForWrite, snapshotDatabaseTo, type WritableDatabase } from "#db/database.ts";
@@ -43,6 +56,50 @@ export function backupPathFor(dbPath: string): string {
   return join(dirname(dbPath), BACKUP_DIR_NAME, BACKUP_FILE_NAME);
 }
 
+/** The name a writer gives its staging file: `<fixed name>.<pid>-<12 hex>.staging`. */
+const STAGING_FILE = /^frontdoor-pre-write-backup\.db\.(\d+)-[0-9a-f]{12}\.staging$/;
+
+/** Older than any snapshot takes: `VACUUM INTO` of a real home runs in well under a second. */
+const ABANDONED_AFTER_MS = 10 * 60 * 1000;
+
+function processRuns(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    // EPERM: the process exists and belongs to someone else.
+    return (error as NodeJS.ErrnoException).code === "EPERM";
+  }
+}
+
+/**
+ * Remove staging files whose writer is gone: the process named in the file no
+ * longer runs, AND the file is older than any snapshot takes. Either test
+ * alone could remove a snapshot still being written -- a reused pid, a slow
+ * disk -- so both must hold. Housekeeping never stands between a user and a
+ * write: any error leaves the file where it is.
+ */
+function sweepAbandonedStaging(backupDir: string, now = Date.now()): void {
+  let entries: string[];
+  try {
+    entries = readdirSync(backupDir);
+  } catch {
+    return;
+  }
+  for (const entry of entries) {
+    const match = STAGING_FILE.exec(entry);
+    if (!match) continue;
+    const path = join(backupDir, entry);
+    try {
+      if (now - statSync(path).mtimeMs < ABANDONED_AFTER_MS) continue;
+      if (processRuns(Number(match[1]))) continue;
+      rmSync(path, { force: true });
+    } catch {
+      // Left for the next write.
+    }
+  }
+}
+
 /**
  * Open the live database for ONE routed write, behind a verified pre-write
  * snapshot. The only sanctioned way to open a live `memory.db` for writing.
@@ -53,11 +110,13 @@ export function backupPathFor(dbPath: string): string {
  * 3. The staging file is promoted to the fixed name by an atomic rename.
  *
  * A failure at any step aborts the write and removes the staging file, so a
- * failed snapshot never leaves a half-written file under the fixed name.
+ * failed snapshot never leaves a half-written file under the fixed name. A
+ * staging file a KILLED writer left behind is swept first (finding N4).
  */
 export function openLiveWriteDatabase(dbPath: string): WritableDatabase {
   const backupPath = backupPathFor(dbPath);
   mkdirSync(dirname(backupPath), { recursive: true, mode: 0o700 });
+  sweepAbandonedStaging(dirname(backupPath));
   const staging = `${backupPath}.${process.pid}-${randomBytes(6).toString("hex")}.staging`;
   let db: WritableDatabase | null = null;
   try {
