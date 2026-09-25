@@ -67,6 +67,11 @@ Not planned. Captured without selecting; Current Focus unchanged. Captured by
 the Navigator's decision while closing
 [CR008](../rs001-ariad-runtime-trust/cr008-bind-lifecycle-commands-to-active-journey.md).
 
+**2026-09-25: added to the Ariad trust floor, all of it**, by the Navigator's
+decision ([amendment](../../decisions.md#the-cv22-release-is-gated-on-an-ariad-trust-floor-worked-before-us3)).
+It is last in floor order, because its port carries the Ariad section that the
+other floor changes are still editing.
+
 ## Evidence
 
 - Measured 2026-09-25. `.pi/skills/mm-build/SKILL.md` is 43,778 bytes and 1019

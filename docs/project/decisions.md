@@ -3086,3 +3086,20 @@ assigned per the Collaboration Convention, on the `mirror-ts-core` branch. No
 new Delivery Story; CV22's [release-once](#cv22-releases-once-when-the-migration-is-complete)
 decision stands, with the floor now named among the things the release waits
 for.
+
+**Amended 2026-09-25: CR102 joins the floor, all of it.** Found while closing
+CR008. The Claude Code `mm-build` skill, in a checkout and in the installed
+plugin, is a 108-line variant with no Builder Activation Boundary, no Journey
+Binding, and no Ariad section. Pi, Codex, and Gemini CLI read the 1019-line
+one ([CR102](refinement/rs010-cv22-oracle-and-port-hygiene/cr102-the-claude-code-mm-build-skill-lacks-the-builder-and-ariad-sections.md)). The
+release ships the plugin, so without CR102 a Claude Code user on CV22 gets
+Builder Mode without Ariad, and without the rule that loading a journey is not
+consent to change files.
+
+The Driver offered to take only the safety half. The Navigator added the whole
+CR. The floor is now eight changes and ten identifiers, and CR008 is done.
+CR102 keeps its RS (RS010, beside CR071, whose deliberate differences it
+reopens): the floor is a list of changes, not a story. It sits last in floor
+order because its port carries the Ariad section that the other floor changes
+are still editing. Moving it earlier makes sense only if its plan chooses to
+generate the copies from one source.
