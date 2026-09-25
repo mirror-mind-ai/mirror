@@ -6,8 +6,8 @@
 approved; plateaus 0–4 of 5 landed — **the repository holds no Python, and
 nothing tracked tells anyone to run it**; both halves of the guard are
 enforced. The first Navigator walk (2026-09-25) was not accepted: it found
-F21. Next: the Navigator's decisions on F20 and F21, the fixes, a second walk
-of the failed steps, then the panel's handoff review
+F21, fixed since (`118d4a67`); F20 was accepted as a known risk. Next: a
+second walk of the failed steps, then the panel's handoff review
 
 ---
 
@@ -197,6 +197,19 @@ sites and are fixed together, in US3, because the npm artifact decides what a
 "Mirror root" is for both. The one reader a workflow runs,
 `frame/tests/version-sync.test.js`, reads `ts/package.json` since D11, so no
 workflow turns red in the meantime.
+
+### The clone-role guard does not recognize a production clone older than the CV22 release
+
+Accepted by the Navigator on 2026-09-25 (finding F20, option b). Plateau 1
+moved checkout recognition to the TypeScript package and its front door (D1),
+which every tree this branch produces carries — and no production clone does
+yet, because none has taken a CV22 release. So a Builder session started from
+this branch can open the production clone (`~/dev/workspace/mirror`, a
+Python-era checkout of `main`) without the refusal. The guard still refuses a
+production clone of the TypeScript era; the walk checks that.
+
+The window closes when the production clone takes the CV22 release. Until
+then the refusal is the Navigator's discipline, not the guard's.
 
 ## Decisions This Story Must Take
 
@@ -578,19 +591,19 @@ custody proofs, and the five end-to-end smokes pass.
 order:
 
 1. ~~**F19**~~ — done, option (a).
-2. **F20** — the Navigator's call ([inventory](inventory.md#f20--the-clone-role-guard-does-not-recognize-the-production-clone)):
-   the clone-role guard does not recognize the production clone, found by
-   dry-running the walk. Step 12 of the walk fails until it is decided.
-2b. **F21** — the Navigator's call ([inventory](inventory.md#f21--concurrent-writers-race-on-the-fixed-pre-write-snapshot)):
-   concurrent routed writes collide on the fixed pre-write snapshot, so
-   Claude Code's parallel hooks lose writes and Pi has been losing turns in
-   daily use. Found by the first walk (step 2), reproduced five times in five.
+2. ~~**F20**~~ — accepted as a known risk (Navigator, option b): see
+   [Known Risks](#the-clone-role-guard-does-not-recognize-a-production-clone-older-than-the-cv22-release).
+   The walk's step 12 now checks a TypeScript-era production clone.
+2b. ~~**F21**~~ — fixed (`118d4a67`): each write snapshots into its own
+   staging file, verified, then promoted by atomic rename.
+2c. **Gemini CLI is retired** (Navigator, 2026-09-25): the walk skips step 3.
+   Antigravity replaces it, and its adaptation is CV21's, after the migration.
 3. **Navigator validation** — the four-runtime walk in
    [test-guide.md — Navigator Validation](test-guide.md#navigator-validation),
    on a real database copy with the interpreter shadowed; the runbook under
    *The walk, as commands* was dry-run in zsh for every step that needs no
-   runtime session. The first walk's results are recorded there; after the
-   fixes, steps 2, 3, 6, and 12 and the verdict are what remain to walk.
+   runtime session. The first walk's results are recorded there; what
+   remains to walk is steps 1, 2, 6, and 12 and the verdict.
 4. **The panel's handoff review** (D9: engineer, quality-assurance,
    database-architect, devops-engineer, security-engineer), over plateaus 0–4
    and the validation evidence — after validation, as the collaboration

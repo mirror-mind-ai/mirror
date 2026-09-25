@@ -398,9 +398,10 @@ cents and writing their ledger rows to the copy.
 (approve the front-door command if asked) → one plain follow-up → `/exit`.
 Mirror Mode context must shape the answer — that is the inject hook.
 
-**3 — Gemini CLI.** `gemini` → one prompt → `/quit`. Gemini CLI itself (`gemini`,
-reading this repository's `.gemini/settings.json` hooks) — not Antigravity,
-whose sessions no Mirror hook sees.
+**3 — Gemini CLI: skipped** (Navigator, 2026-09-25). Gemini CLI is retired
+and Antigravity replaces it; adapting Mirror to Antigravity is CV21's, after
+this migration. Mirror's `.gemini/` hooks stay graded by the suite and
+`scripts/smoke_gemini_cli.sh`.
 
 **4 — Codex.** `./scripts/codex-mirror.sh` → one exchange → exit.
 
@@ -510,16 +511,28 @@ mirror runtime version | grep Version; mirror runtime status | grep Version; mir
 
 Expect `0.31.14` in all three.
 
-**12 — the production clone-role guard.**
+**12 — the production clone-role guard, on a TypeScript-era clone.** The
+guard recognizes a Mirror Mind checkout by the TypeScript package and its
+front door, so this stages a production clone of that shape and points the
+copy's `mirror` journey at it:
 
 ```bash
+PROD="$NAV/prod-clone"; mkdir -p "$PROD/ts/src/frontDoor" && git -C "$PROD" init -q
+cp ts/package.json "$PROD/ts/" && : > "$PROD/ts/src/frontDoor/cli.ts"
+echo production > "$PROD/.mirror-clone-role"
+mirror journey set-path mirror "$PROD"          # the copy's journey, not production's
 mirror build load mirror; echo "exit=$?"
 ```
 
-The `mirror` journey's project path is `~/dev/workspace/mirror`, the production
-clone (no role marker, so `production`). Expect a refusal naming the
-production clone, exit 2. **Found while preparing this runbook:** it does not
-refuse today — see [F20](inventory.md#f20--the-clone-role-guard-does-not-recognize-the-production-clone).
+Expect `Builder Mode refused: the journey project clone is marked
+'production'.` and exit 2.
+
+Your real production clone, `~/dev/workspace/mirror`, is a Python-era
+checkout, and the guard does **not** recognize it — an accepted known risk
+until it takes the CV22 release ([F20](inventory.md#f20--the-clone-role-guard-does-not-recognize-the-production-clone),
+Navigator, option b). `mirror journey set-path mirror ~/dev/workspace/mirror`
+followed by `mirror build load mirror` shows the risk: the Builder banner,
+exit 0.
 
 **The verdict.**
 
@@ -551,6 +564,11 @@ integration is recorded and attributed, not failed.
 | 11 — version | **pass** — `0.31.14` three times |
 | 12 — clone guard | **fail**, as predicted — [F20](inventory.md#f20--the-clone-role-guard-does-not-recognize-the-production-clone) |
 | verdict | five lines, **none from Mirror** (attributed below) |
+
+Dispositions (Navigator, 2026-09-25): F21 fixed (`118d4a67`); F20 accepted
+as a known risk, step 12 re-aimed at a TypeScript-era clone; step 3 skipped,
+Gemini CLI being retired. The second walk covers steps 1, 2, 6, and 12 and
+the verdict.
 
 The five spawns, attributed after the fact — the stub did not yet record its
 caller, and the evidence came from the runtimes' own logs:

@@ -50,8 +50,18 @@ promise in a comment is not a task: two modules said their oracle-era code
 "goes at plateau 3", and one of them still shipped the oracle's count in
 `runtime status` (F19) until the Navigator had it finished inside the story. The claim for the shipped
 artifact — the Windows installer and the Frame still call Python — is US3's.
-What remains of TS5 is the Navigator's four-runtime walk and then the
-panel's handoff review.
+The first Navigator walk (2026-09-25) then did what no suite had: it ran two
+real runtimes at once. Claude Code fires its two prompt hooks together, both
+write, and both snapshotted the database into one fixed file — so one of the
+two writes died, and two of three prompts lost their Mirror context. The same
+race had been dropping Pi turns in daily use since before TS5; plateau 1 only
+made it routine. Each write now snapshots into its own staging file and
+promotes it by atomic rename (F21): seven of eight concurrent writers failed
+before the fix, none after. The walk also confirmed that the clone-role guard
+cannot see a production clone older than the CV22 release, accepted as a known
+risk until that clone takes the release (F20), and Gemini CLI left the walk:
+it is retired, and Antigravity belongs to CV21. What remains of TS5 is a
+second, shorter walk and then the panel's handoff review.
 
 ### 2026-09-23 — CV22.DS10.TS4: the front door learns to say *removed*
 

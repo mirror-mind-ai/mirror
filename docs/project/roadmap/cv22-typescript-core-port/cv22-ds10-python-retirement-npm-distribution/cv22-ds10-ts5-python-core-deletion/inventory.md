@@ -579,6 +579,10 @@ wrote on purpose.
   release, and say so in the story's known risks. Until then the guard is off
   for production clones, from this branch.
 
+**Disposition (Navigator, 2026-09-25): (b).** Recorded in the story's known
+risks; the walk's step 12 now checks that the guard still refuses a
+TypeScript-era production clone, which is what plateau 1's rule protects.
+
 ### F21 — concurrent writers race on the fixed pre-write snapshot
 
 Found by the Navigator walk (2026-09-25, step 2), then reproduced. Every
@@ -633,6 +637,17 @@ already there.
 - The alternative, a cross-process lock around snapshot-and-open, serializes
   writers but must be held across a function boundary and inherits the
   bootstrap lock's known gap (CR084).
+
+**Disposition (Navigator, 2026-09-25): fixed as recommended** (`118d4a67`).
+Red first: eight processes released at the same instant against an 8 MB
+database — seven failed with the field's exact error, three runs in three.
+After the fix: eight of eight, five runs in five, the fixed backup passes
+`quick_check`, and no staging file survives. The field reproduction — the two
+real Claude hooks together against a copy of the walk's database — went from
+five failing pairs in five to ten clean pairs in ten, every message logged.
+Accepted residue: a process killed between its snapshot and its rename leaves
+one staging file behind (`backups/*.staging`), the size of the database; a
+thrown error never does.
 
 One neighbour, observed and not investigated: the real home's `hooks.log`
 holds a single `claude:session-start: UNIQUE constraint failed: messages.id`

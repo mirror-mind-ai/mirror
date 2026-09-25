@@ -786,6 +786,21 @@ was this story's own unfinished plateau-3 removal, and it hid a pending
 migration behind "ready". The `runtime-status` and `runtime-diagnose`
 goldens take the hand edit, recorded in `ts/test/goldens/README.md`.
 
+### Taken after the first Navigator walk (Navigator, 2026-09-25)
+
+- **F20 — accepted as a known risk (option b).** The clone-role guard keeps
+  plateau 1's rule: a Mirror Mind checkout is the TypeScript package plus its
+  front door. A production clone older than the CV22 release is therefore not
+  recognized, and `build load` does not refuse it; the window closes when the
+  production clone takes the release. Recorded in the story's known risks.
+- **F21 — fixed as recommended.** Each routed write snapshots into its own
+  staging file, the gate verifies that file, and an atomic rename promotes it
+  to the fixed name; `openLiveWriteDatabase` replaces the seven call sites.
+- **Gemini CLI is retired, replaced by Antigravity.** The walk skips its
+  Gemini step. Mirror's `.gemini/` hooks stay as they are, graded by the suite
+  and `scripts/smoke_gemini_cli.sh`; adapting Mirror to Antigravity is CV21's
+  (it already plans the Gemini lineage's migration), after this migration.
+
 ## Review
 
 **Plan review held 2026-09-23**, before implementation, per the
