@@ -67,7 +67,13 @@ had already happened.
 
 ## Plan Or Decision
 
-Not planned. Two decisions belong to whoever takes it:
+**2026-09-25 — in the Ariad trust floor; CR004 folds into this.** Decided in
+[The CV22 release is gated on an Ariad trust floor, worked before US3](../../decisions.md#the-cv22-release-is-gated-on-an-ariad-trust-floor-worked-before-us3):
+this CR is taken as the general rule, and CR004 closes with its delivery rather
+than as a fourth per-artifact patch. Decision 2 below is therefore answered;
+decision 1 (merge or refuse) is still open and belongs to this CR's plan.
+
+Not yet planned. Two decisions belong to whoever takes it:
 
 1. **Merge or refuse.** Marked regenerable regions preserve the most and cost
    the most; refuse-and-name is cheap and leaves the Driver to merge by hand.
