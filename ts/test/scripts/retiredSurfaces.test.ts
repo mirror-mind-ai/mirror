@@ -376,6 +376,7 @@ describe("the live python-core-mentions row (plateau 4, decision D12)", () => {
       "plugins/mirror-mind/hooks/",
       "plugins/mirror-mind/mcp/launch.sh",
       "scripts/codex-mirror.sh",
+      "scripts/codex-hooks/",
       ".claude/settings.json",
     ]) {
       assert.ok(!messages.includes(hook), `${hook} still reaches for an interpreter`);

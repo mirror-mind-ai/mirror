@@ -34,6 +34,8 @@ plugins/mirror-mind/hooks/session-start.sh|claude:session-start|../../..
 plugins/mirror-mind/hooks/log-user-prompt.sh|claude:user-prompt|../../..
 plugins/mirror-mind/hooks/log-session-end.sh|claude:session-end|../../..
 plugins/mirror-mind/hooks/mirror-inject.sh|claude:inject|../../..
+scripts/codex-hooks/session-start.sh|codex:session-start|../..
+scripts/codex-hooks/session-end.sh|codex:session-end|../..
 EOF
 )
 

@@ -14,12 +14,14 @@ import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
 import {
   copyFileSync,
+  cpSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
   readdirSync,
   readFileSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -384,6 +386,8 @@ describe("the twelve wrappers", () => {
     "plugins/mirror-mind/hooks/log-user-prompt.sh",
     "plugins/mirror-mind/hooks/log-session-end.sh",
     "plugins/mirror-mind/hooks/mirror-inject.sh",
+    "scripts/codex-hooks/session-start.sh",
+    "scripts/codex-hooks/session-end.sh",
   ];
 
   test("differ only in the hook name and the depth to the repository root", () => {
@@ -439,12 +443,108 @@ describe("the twelve wrappers", () => {
     // A wrapper added to a hooks directory and not listed here would escape
     // every assertion above.
     const found: string[] = [];
-    for (const dir of [".claude/hooks", ".gemini/hooks", "plugins/mirror-mind/hooks"]) {
+    for (const dir of [
+      ".claude/hooks",
+      ".gemini/hooks",
+      "plugins/mirror-mind/hooks",
+      "scripts/codex-hooks",
+    ]) {
       for (const entry of readdirSync(join(REPO_ROOT, dir))) {
         if (entry.endsWith(".sh")) found.push(`${dir}/${entry}`);
       }
     }
     assert.deepEqual(found.sort(), [...WRAPPERS].sort());
+  });
+});
+
+describe("the Codex wrapper", () => {
+  // Codex has no hook system, so `scripts/codex-mirror.sh` wraps the `codex`
+  // command itself. It used to build its front-door call as a STRING and expand
+  // it unquoted -- a checkout path with a space split into two arguments -- and
+  // it found `node` on PATH alone, silently, outside D4's contract. It now calls
+  // two generated hook wrappers, which resolve Node and record every failure
+  // (TS5 handoff review, finding N3). So this runs it from a checkout whose
+  // path has a space, with a stand-in `codex` that writes the session JSONL the
+  // real one does.
+  test("logs a whole Codex session from a checkout whose path has a space", () => {
+    const root = tmpHome();
+    const checkout = join(root, "with space", "mirror");
+    const home = join(root, "home");
+    const project = join(root, "project");
+    const bin = join(root, "bin");
+    for (const dir of [checkout, home, project, bin]) mkdirSync(dir, { recursive: true });
+
+    // The parts of a checkout the wrapper and the front door need, and no .env.
+    mkdirSync(join(checkout, "ts"));
+    for (const path of ["scripts/codex-mirror.sh", "ts/package.json"]) {
+      mkdirSync(join(checkout, path, ".."), { recursive: true });
+      copyFileSync(join(REPO_ROOT, path), join(checkout, path));
+    }
+    cpSync(join(REPO_ROOT, "scripts/codex-hooks"), join(checkout, "scripts/codex-hooks"), {
+      recursive: true,
+    });
+    cpSync(join(REPO_ROOT, "ts/src"), join(checkout, "ts/src"), { recursive: true });
+    symlinkSync(join(REPO_ROOT, "ts/node_modules"), join(checkout, "ts/node_modules"));
+
+    const sessionId = "019d3b75-0462-7762-ac7c-4852a85ce725";
+    writeFileSync(
+      join(bin, "codex"),
+      [
+        "#!/bin/sh",
+        'dir="$HOME/.codex/sessions/2026/09/25"',
+        'mkdir -p "$dir"',
+        `cat > "$dir/rollout-2026-09-25T10-00-00-${sessionId}.jsonl" <<EOF`,
+        `{"timestamp":"2026-09-25T10:00:00.000Z","type":"session_meta","payload":{"id":"${sessionId}","timestamp":"2026-09-25T10:00:00.000Z","cwd":"$PWD"}}`,
+        '{"timestamp":"2026-09-25T10:00:01.000Z","type":"event_msg","payload":{"type":"user_message","message":"Hello Codex"}}',
+        '{"timestamp":"2026-09-25T10:00:02.000Z","type":"event_msg","payload":{"type":"agent_message","message":"Hello back"}}',
+        "EOF",
+        "exit 3",
+        "",
+      ].join("\n"),
+      { mode: 0o755 },
+    );
+
+    const result = spawnSync("bash", [join(checkout, "scripts/codex-mirror.sh")], {
+      cwd: project,
+      env: {
+        HOME: home,
+        MIRROR_HOME: home,
+        MIRROR_NODE: process.execPath,
+        OPENROUTER_API_KEY: "",
+        PATH: `${bin}:/usr/bin:/bin`,
+      },
+      encoding: "utf8",
+      timeout: 60_000,
+    });
+
+    assert.equal(result.status, 3, `codex's own exit code is the wrapper's: ${result.stderr}`);
+    const db = openDatabaseReadOnly(join(home, "memory.db"));
+    try {
+      const rows = db
+        .prepare(
+          "SELECT m.role, m.content FROM messages m JOIN conversations c " +
+            "ON c.id = m.conversation_id WHERE c.interface = 'codex' ORDER BY m.created_at",
+        )
+        .all();
+      assert.deepEqual(rows, [
+        { role: "user", content: "Hello Codex" },
+        { role: "assistant", content: "Hello back" },
+      ]);
+    } finally {
+      db.close();
+    }
+  });
+
+  test("calls the front door only through its generated hook wrappers", () => {
+    const body = readFileSync(join(REPO_ROOT, "scripts/codex-mirror.sh"), "utf8")
+      .split("\n")
+      .filter((line) => !line.trimStart().startsWith("#"))
+      .join("\n");
+    assert.doesNotMatch(body, /frontDoor\/cli\.ts/);
+    assert.doesNotMatch(body, /\bnode\b/);
+    assert.match(body, /codex-hooks/);
+    assert.match(body, /\/session-start\.sh"/);
+    assert.match(body, /\/session-end\.sh"/);
   });
 });
 

@@ -1,50 +1,48 @@
 #!/usr/bin/env bash
+# Run Codex with Mirror Mind logging around it.
+#
+# Codex has no hook system, so this wraps the `codex` command: session start
+# before it, and after it the JSONL Codex wrote is imported, the session is
+# closed, and a silent backup is taken.
+#
+# Every Mirror call goes through a generated hook wrapper under
+# scripts/codex-hooks/, the way every other runtime's hooks do (CV22.DS10.TS5
+# handoff review, finding N3). The wrappers resolve Node explicitly, never fail
+# the session, and record anything they could not do in <mirror home>/hooks.log.
+# This script used to call the front door itself, as a command held in a string
+# that a checkout path with a space split in two -- silently.
 set -euo pipefail
 
-# Record marker for JSONL detection
-MARKER=$(mktemp)
+HOOKS="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)/codex-hooks"
+
+# The marker's mtime is how the session this run wrote is told from older ones.
+MARKER="$(mktemp)"
 trap 'rm -f "$MARKER"' EXIT
 
 cd "${CODEX_PROJECT_DIR:-$PWD}"
 
-# 1. Session start
-# We redirect to /dev/null to keep the output clean for Codex if needed,
-# though here it's just a wrapper.
-# Every Mirror call below enters the TypeScript front door (CV22.DS10.TS5):
-# same routing, same front-door log, no interpreter.
-MIRROR="node --no-warnings --env-file-if-exists=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)/.env $(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)/ts/src/frontDoor/cli.ts"
+# 1. Session start.
+bash "$HOOKS/session-start.sh" </dev/null >/dev/null 2>&1 || true
 
-${MIRROR} conversation-logger session-start >/dev/null 2>&1 || true
-
-# 2. Run Codex (blocks until user exits)
-# Temporarily disable `set -e` so Mirror Mind can still run wrapper cleanup
-# when Codex exits non-zero, for example after an MCP startup failure.
+# 2. Codex itself, until the user exits. `set -e` is off around it so the
+# wrap-up below still runs when Codex exits non-zero -- after an MCP startup
+# failure, for example -- and its exit code is still the script's.
 set +e
 codex "$@"
 EXIT_CODE=$?
 set -e
 
-# 3. Find JSONL written after our marker (for this cwd)
-# Codex writes sessions to ~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl
-# We search for files newer than our MARKER that contain our current PWD in session_meta.
-SESSION_JSONL=$(find ~/.codex/sessions -name "*.jsonl" -newer "$MARKER" \
-  -exec grep -l "\"cwd\":\"$PWD\"" {} + 2>/dev/null | sort | tail -1 || true)
-
-# 4. Backfill + session end
+# 3. The JSONL Codex wrote after the marker for this directory, if any:
+# ~/.codex/sessions/YYYY/MM/DD/rollout-<time>-<uuid>.jsonl.
+SESSION_JSONL="$(find ~/.codex/sessions -name "*.jsonl" -newer "$MARKER" \
+  -exec grep -l "\"cwd\":\"$PWD\"" {} + 2>/dev/null | sort | tail -1 || true)"
+SESSION_ID=""
 if [[ -n "$SESSION_JSONL" ]]; then
-  # Extract session ID from filename: rollout-YYYY-MM-DDTHH-mm-ss-<uuid>.jsonl
-  SESSION_ID=$(basename "$SESSION_JSONL" .jsonl | grep -oE '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' | tail -1)
-  
-  if [[ -n "$SESSION_ID" ]]; then
-    ${MIRROR} conversation-logger backfill-codex-session \
-      "$SESSION_JSONL" --interface codex >/dev/null 2>&1 || true
-
-    ${MIRROR} conversation-logger session-end-pi \
-      "${SESSION_ID}" >/dev/null 2>&1 || true
-  fi
+  SESSION_ID="$(basename "$SESSION_JSONL" .jsonl \
+    | grep -oE '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' | tail -1 || true)"
 fi
 
-# 5. Backup (silent)
-${MIRROR} backup --silent >/dev/null 2>&1 || true
+# 4. Import and close the session when there is one, then the silent backup.
+bash "$HOOKS/session-end.sh" "$SESSION_JSONL" "$SESSION_ID" </dev/null >/dev/null 2>&1 || true
 
-exit $EXIT_CODE
+exit "$EXIT_CODE"

@@ -343,8 +343,11 @@ conflicting duplicate skills.
 | Mirror load | `AGENTS.md` + `$mm-mirror` skill | Explicit invocation |
 
 Codex has no hook system. It uses a **wrapper script** (`scripts/codex-mirror.sh`)
-that handles the lifecycle around the `codex` command, calling the front door
-directly for each step. Context is supplied via a
+that handles the lifecycle around the `codex` command. For each step it calls
+one of two generated hook wrappers, `scripts/codex-hooks/session-start.sh` and
+`session-end.sh` (`codex:session-start`, `codex:session-end <transcript>
+<session id>`). So Codex gets the same Node resolution and the same `hooks.log`
+record as every other runtime. Context is supplied via a
 static `AGENTS.md` in the project root, and Mirror Mode is activated through the
 shared native skill surface at `.agents/skills/mm-*/SKILL.md` (symlinked from
 `.pi/skills/mm-*/`). Unlike Pi and Gemini CLI, Codex activates these skills with
