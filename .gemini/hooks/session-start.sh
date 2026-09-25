@@ -20,7 +20,8 @@ HOOK="gemini:session-start"
 env_value() {
   if [ -n "${!1+set}" ]; then printf '%s' "${!1}"; return; fi
   [ -f "$REPO_ROOT/.env" ] || return 0
-  sed -n -E "s/^[[:space:]]*(export[[:space:]]+)?$1[[:space:]]*=[[:space:]]*//p" "$REPO_ROOT/.env"     | tail -n 1 | tr -d "\"'\r"
+  sed -n -E "s/^[[:space:]]*(export[[:space:]]+)?$1[[:space:]]*=[[:space:]]*//p" "$REPO_ROOT/.env" \
+    | tail -n 1 | tr -d "\"'\r"
 }
 note() {
   local home user
@@ -34,7 +35,8 @@ note() {
   else
     return 0
   fi
-  mkdir -p "$home" 2>/dev/null     && printf '%s %s: %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$HOOK" "$1" >> "$home/hooks.log" 2>/dev/null
+  mkdir -p "$home" 2>/dev/null \
+    && printf '%s %s: %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$HOOK" "$1" >> "$home/hooks.log" 2>/dev/null
 }
 
 # Find Node. /usr/bin/python3 exists on every macOS; node usually lives under
@@ -61,7 +63,8 @@ fi
 # means Node itself could not run the hook -- too old for a .ts entry point or
 # for --env-file-if-exists, or it crashed. That used to vanish into a stderr no
 # runtime shows (TS5 handoff review, finding N1).
-"$NODE" --no-warnings --env-file-if-exists="$REPO_ROOT/.env"   "$REPO_ROOT/ts/src/hooks/main.ts" "$HOOK" "$@"
+"$NODE" --no-warnings --env-file-if-exists="$REPO_ROOT/.env" \
+  "$REPO_ROOT/ts/src/hooks/main.ts" "$HOOK" "$@"
 status=$?
 if [ "$status" -ne 0 ]; then
   note "node exited $status before the hook finished ($NODE, $("$NODE" --version 2>/dev/null || echo 'version unknown')); Mirror needs Node 24 or later. Set MIRROR_NODE."
