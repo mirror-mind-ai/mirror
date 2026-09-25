@@ -37,3 +37,8 @@ And unrelated Delivery Story scope remains untouched
 ## Validation
 
 Navigator-visible validation route plus automated checks.
+
+## What US3 Inherits
+
+Twelve items CV22.DS10.TS5 left for this story on purpose, each with where it
+is recorded: [inherited.md](inherited.md). Read it at Pull.
