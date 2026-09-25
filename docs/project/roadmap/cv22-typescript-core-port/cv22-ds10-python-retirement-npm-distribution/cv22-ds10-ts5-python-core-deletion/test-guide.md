@@ -393,18 +393,26 @@ OpenRouter key: session ends and `build load` make a few live calls, costing
 cents and writing their ledger rows to the copy.
 
 **1 — Pi.** `pi "Say hello in one sentence."` → wait for the answer → quit.
+Add `--model <provider/id>` if the default model is not the one to use: do not
+switch it in the TUI.
 
 The prompt goes on the command line on purpose: that is F21's field shape. Pi
 starts its session maintenance in the background at launch and logs a prompt
 given at launch about 40 ms later — before the fix, twenty sessions in twenty
-lost that prompt. Then read Pi's own log:
+lost that prompt. Nothing may happen in the TUI before the prompt is sent: the
+second walk's first attempt switched models three times and sent it 51 seconds
+in, long after maintenance had finished. Then read Pi's own log:
 
 ```bash
-grep -E 'log-user|\[(WARN|ERROR)\]' "$MIRROR_HOME/mirror-logger.log"
+grep -E 'session-maintenance started|log-user|\[(WARN|ERROR)\]' "$MIRROR_HOME/mirror-logger.log"
 ```
 
-Expect exactly one line, `[INFO] log-user: Say hello in one sentence....`, and
-no `[WARN]` or `[ERROR]` line: that is where each lost prompt left its trace.
+Expect two lines, `session-maintenance started …` and `[INFO] log-user: Say
+hello in one sentence....`, about 0.05 s apart, as in the field (0.04 to
+0.12 s) — seconds apart, the step did not test the race and must be
+repeated — and no `[WARN]` or `[ERROR]` line: that is where each lost prompt
+left its trace. On a repeat in the same shell, move the log aside first, or
+the grep reads both attempts.
 
 **2 — Claude Code.** `claude` → `/mm:mirror What should I focus on today?`
 (approve the front-door command if asked) → one plain follow-up → `/exit`.
@@ -604,6 +612,34 @@ caller, and the evidence came from the runtimes' own logs:
   @google/gemini-cli@0.61.0`, 07:36:49Z). It was building `node-pty`, an
   optional dependency; the build failed without Python, npm dropped it, and the
   update succeeded (exit 0) on the prebuilt `@lydell/node-pty`.
+
+### The second walk (Navigator, 2026-09-25, at `ca6f9cba`) — step 1 to repeat
+
+| Step | Result |
+|---|---|
+| 0 | as expected |
+| 1 — Pi | **not in the window** — the prompt was logged (`9fa2a50b`, user and assistant) with no `[WARN]` or `[ERROR]`, but the model was switched three times in the TUI first (09:46:16Z to 09:46:32Z), so `log-user` ran 51 s after `session-maintenance` started and 38 s after it finished. The race could not happen: this shows that Pi logs, not that F21's Pi half is fixed |
+| 2 — Claude Code | **pass** — every hook call answered `exit=0` in `front-door.log`, `hooks.log` stayed empty, and the follow-up was injected and marked (`runtime_sessions.hook_injected = 1`). That is the prompt that owes the injection, on which the logger and the inject hook open writable handles together — the shape that lost two injections in three on the first walk. The session opened with `/mm-mirror` rather than the runbook's `/mm:mirror`; Mirror Mode activated either way |
+| 6 — read back, isolation | **pass** — `pi` (`9fa2a50b`) and `claude_code` (`130565e0`), each with user and assistant messages; the isolation query returned no rows. The Claude conversation starts at the follow-up: the slash command is not logged by design, and its answer predates the conversation, so the transcript backfill leaves it out — Python's rule, ported |
+| 12 — clone guard | **pass** — refused, `exit=2` |
+| verdict | one line, **not from Mirror** (below) |
+
+The one spawn, `python3 - <- bash ~/.claude/hooks/herdr-agent-state.sh
+session`, is Herdr's `SessionStart` hook, which ends in `python3 - <<'PY'`
+under `set -eu`. The stub exits 66 with nothing on stderr, and that is the
+`SessionStart:startup hook error` — *Failed with non-blocking status code: No
+stderr output* — that Claude Code printed at launch. Mirror's own session
+start answered `exit=0` at 09:47:40Z.
+
+All three `mirror load --query` calls logged `reception outcome=empty`: the
+live provider answered from inside the hooks and the parser accepted the
+answer, whose result was empty. Not a failure, and not this story's.
+
+Step 1 is to be repeated with the prompt in the window. The Pi half already
+has field evidence on the real home — the first Pi session after the fix
+kept its opening prompt, given at launch 44 ms after maintenance started
+([F21](inventory.md#f21--concurrent-writers-race-on-the-fixed-pre-write-snapshot)) — but the walk is the Navigator's witness, and a step that
+could not fail proves nothing.
 
 Navigator acceptance is recorded here with the date, the commit, and any
 deviation.
