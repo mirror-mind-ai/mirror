@@ -39,6 +39,7 @@ import { invokeBuilderArgv } from "#helpers/builderInvoke.ts";
 import { normalizePathRows, projectRelative, scrubMessage } from "#helpers/builderSurfacePaths.ts";
 import { createIdentityTable } from "#helpers/identitySchema.ts";
 import { createRuntimeTables } from "#helpers/runtimeSchema.ts";
+import { upsertRuntimeSession } from "#mirror/runtimeSession.ts";
 import { activateOperatingMode } from "#mode/operatingMode.ts";
 
 const PROJECT = fileURLToPath(new URL("../fixtures/builder-command/project", import.meta.url));
@@ -832,7 +833,7 @@ test("only an active Builder Mode journey resolves", () => {
     const entry = cases.find((candidate) => candidate.name === name);
     assert.ok(entry);
     assert.equal(entry.exit_code, 0);
-    assert.match(entry.stdout, /No Builder journey is active yet\./u);
+    assert.match(entry.stdout, /No Builder journey was named\./u);
   }
 });
 
@@ -981,3 +982,257 @@ function walkPaths(root: string): string[] {
   walk(root);
   return found;
 }
+
+// ---------------------------------------------------------------------------
+// CR008: a lifecycle command binds only to the journey it was given.
+//
+// Before CR008, a command without --journey took "the session" to be the most
+// recently updated active runtime_sessions row in the whole database. That row
+// could belong to any window, and a delivery-cursor row counted too. The
+// command then used that row's mode, or else the global mode row. Agent shells
+// carry no MIRROR_SESSION_ID, so every such command guessed, and the guess
+// wrote another journey's cursor and materialized files into another project.
+//
+// These tests plant exactly those decoys: another adopted journey with its own
+// project and cursor, a window touched after this one and in Builder Mode for
+// it, and a global mode row naming it. Every leaf must refuse rather than
+// follow them. A journey comes from --journey or from a session the caller
+// named, never from a guess.
+// ---------------------------------------------------------------------------
+
+const DECOY = "decoy";
+const DECOY_WINDOW = "decoy-window-session";
+const CLOSED_SESSION = "closed-builder-session";
+const MIRROR_WINDOW = "mirror-mode-session";
+const LATER = "2026-06-01T00:00:00Z";
+const NO_BINDING_SOURCE =
+  /^Error: Builder method .+ requires a journey\. Pass --journey <slug>, or name a session in Builder Mode with --session-id or MIRROR_SESSION_ID\.\n$/u;
+
+/** Another adopted journey, with its own project and cursor, for a guess to land on. */
+function addDecoyJourney(db: WritableDatabase): void {
+  db.prepare(
+    `INSERT INTO identity (id, layer, key, content, created_at, updated_at, metadata)
+     VALUES (?, 'journey', ?, ?, ?, ?, ?)`,
+  ).run(
+    `journey:${DECOY}`,
+    DECOY,
+    "# Decoy journey\n",
+    NOW,
+    NOW,
+    JSON.stringify({ project_path: scratchProject(false) }),
+  );
+  setAdoptedMethod(db, DECOY, "ariad", () => NOW);
+  setDeliveryCursor(
+    db,
+    { journey: DECOY, method: "ariad", activeItem: "CV1.US1", lastDeliveryEvent: "pulled" },
+    { nowIso: () => NOW },
+  );
+}
+
+/** Another window: a real runtime session, touched last, in Builder Mode for the decoy. */
+function addDecoyWindow(db: WritableDatabase): void {
+  upsertRuntimeSession(db, DECOY_WINDOW, { interface: "pi", active: true }, LATER);
+  activateOperatingMode(
+    db,
+    { mode: "Builder Mode", journey: DECOY, sessionId: DECOY_WINDOW },
+    LATER,
+  );
+}
+
+/** The global mode row, which a `build load` that knows no session writes. */
+function addDecoyGlobalMode(db: WritableDatabase): void {
+  activateOperatingMode(db, { mode: "Builder Mode", journey: DECOY }, LATER);
+}
+
+/** A session that WAS in Builder Mode for demo and has since ended. */
+function addClosedBuilderSession(db: WritableDatabase): void {
+  activateOperatingMode(
+    db,
+    { mode: "Builder Mode", journey: "demo", sessionId: CLOSED_SESSION },
+    NOW,
+  );
+  upsertRuntimeSession(db, CLOSED_SESSION, { active: false, closedAt: NOW }, NOW);
+}
+
+/** A live session carrying the demo journey in a mode that is not Builder's. */
+function addMirrorModeSession(db: WritableDatabase): void {
+  activateOperatingMode(
+    db,
+    { mode: "Mirror Mode", journey: "demo", sessionId: MIRROR_WINDOW },
+    NOW,
+  );
+}
+
+function withoutOptions(argv: readonly string[], names: readonly string[]): string[] {
+  const kept: string[] = [];
+  for (let index = 0; index < argv.length; index += 1) {
+    if (names.includes(argv[index] ?? "")) {
+      index += 1;
+      continue;
+    }
+    kept.push(argv[index] ?? "");
+  }
+  return kept;
+}
+
+function optionOf(argv: readonly string[], name: string): string | null {
+  const index = argv.indexOf(name);
+  return index === -1 ? null : (argv[index + 1] ?? null);
+}
+
+/** Every row of every table, so "wrote nothing" means nothing. */
+function databaseSnapshot(db: WritableDatabase): string {
+  const tables = db
+    .prepare("SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name")
+    .all()
+    .map((row) => String(row.name));
+  return JSON.stringify(
+    Object.fromEntries(
+      tables.map((table) => [table, db.prepare(`SELECT * FROM "${table}"`).all()]),
+    ),
+  );
+}
+
+/** The rows that belong to the decoy, which a correct binding never touches. */
+function decoyRows(db: WritableDatabase): string {
+  const snapshot = JSON.parse(databaseSnapshot(db)) as Record<string, unknown[]>;
+  return JSON.stringify(
+    Object.fromEntries(
+      Object.entries(snapshot).map(([table, rows]) => [
+        table,
+        rows.filter((row) => JSON.stringify(row).includes(DECOY)),
+      ]),
+    ),
+  );
+}
+
+const UNNAMED_VARIANTS: ReadonlyArray<{
+  name: string;
+  plant: (db: WritableDatabase) => void;
+  environmentSessionId: string | null;
+}> = [
+  { name: "a window touched more recently", plant: addDecoyWindow, environmentSessionId: null },
+  { name: "the global mode row", plant: addDecoyGlobalMode, environmentSessionId: null },
+  {
+    name: "MIRROR_SESSION_ID naming no session",
+    plant: addDecoyGlobalMode,
+    environmentSessionId: "no-such-session",
+  },
+  {
+    name: "MIRROR_SESSION_ID naming a closed Builder session",
+    plant: addClosedBuilderSession,
+    environmentSessionId: CLOSED_SESSION,
+  },
+  {
+    name: "MIRROR_SESSION_ID naming a session in another mode",
+    plant: (db) => {
+      addMirrorModeSession(db);
+      addDecoyGlobalMode(db);
+    },
+    environmentSessionId: MIRROR_WINDOW,
+  },
+];
+
+test("CR008: without --journey or a named Builder session, every leaf refuses and writes nothing", () => {
+  const journeyCases = cases.filter(
+    (entry) =>
+      isPorted(entry) && entry.argv[0] !== "inspect-method" && entry.argv.includes("--journey"),
+  );
+  assert.deepEqual(
+    [...new Set(journeyCases.map((entry) => entry.argv[0]))].sort(),
+    PORTED_LEAVES.filter((leaf) => leaf !== "inspect-method").sort(),
+    "every leaf that resolves a journey is exercised",
+  );
+  for (const variant of UNNAMED_VARIANTS) {
+    for (const entry of journeyCases) {
+      const label = `${entry.name} with ${variant.name}`;
+      // Scratch projects for both journeys: before the fix, a guess binds the
+      // decoy and a writing leaf would write into whatever project it names.
+      const db = seed(entry.scenario, scratchProject(false));
+      try {
+        addDecoyJourney(db);
+        variant.plant(db);
+        const before = databaseSnapshot(db);
+        const actual = invokeBuilderArgv(
+          db,
+          withoutOptions(entry.argv, ["--journey", "--session-id"]),
+          { nowIso: () => NOW, environmentSessionId: variant.environmentSessionId },
+        );
+        assert.equal(actual.exitCode, 1, `${label} exit code`);
+        assert.equal(actual.stdout, "", `${label} stdout`);
+        if (entry.exit_code === 0 || actual.stderr !== entry.stderr) {
+          // A leaf that validates its own input BEFORE the journey guard keeps
+          // that refusal; anything else must be the binding refusal.
+          assert.match(actual.stderr, NO_BINDING_SOURCE, `${label} stderr`);
+        }
+        assert.equal(databaseSnapshot(db), before, `${label} wrote nothing`);
+      } finally {
+        db.close();
+      }
+    }
+  }
+});
+
+test("CR008: a named Builder session binds its own journey, and nothing reaches the decoy", () => {
+  // inspect-method is graded by its own test below: stripping --journey from
+  // `inspect-method ariad --journey demo` leaves a positional method, which
+  // rightly renders the method definition instead.
+  const demoCases = cases.filter(
+    (entry) =>
+      isPorted(entry) &&
+      entry.argv[0] !== "inspect-method" &&
+      entry.project_files === undefined &&
+      optionOf(entry.argv, "--journey") === "demo" &&
+      !["no_active_mode", "other_mode", "mode_without_journey"].includes(entry.scenario),
+  );
+  assert.ok(demoCases.length >= 40, `expected the demo matrix, got ${demoCases.length}`);
+  for (const route of ["--session-id", "MIRROR_SESSION_ID"] as const) {
+    for (const entry of demoCases) {
+      const label = `${entry.name} via ${route}`;
+      // Seeded exactly as the replay seeds it, so the recorded bytes still apply.
+      const db = LIFECYCLE_SCENARIOS.has(entry.scenario)
+        ? seed(entry.scenario, scratchProject(false))
+        : seed(entry.scenario);
+      try {
+        addDecoyJourney(db);
+        addDecoyWindow(db);
+        addDecoyGlobalMode(db);
+        const decoyBefore = decoyRows(db);
+        const stripped = withoutOptions(entry.argv, ["--journey", "--session-id"]);
+        const actual = invokeBuilderArgv(
+          db,
+          route === "--session-id" ? [...stripped, "--session-id", SESSION_ID] : stripped,
+          {
+            nowIso: () => NOW,
+            environmentSessionId: route === "MIRROR_SESSION_ID" ? SESSION_ID : null,
+          },
+        );
+        assert.equal(actual.stdout, entry.stdout, `${label} stdout`);
+        assert.equal(actual.stderr, entry.stderr, `${label} stderr`);
+        assert.equal(actual.exitCode, entry.exit_code, `${label} exit code`);
+        assert.equal(decoyRows(db), decoyBefore, `${label} left the decoy alone`);
+      } finally {
+        db.close();
+      }
+    }
+  }
+});
+
+test("CR008: inspect-method with no argument names no journey it was not given", () => {
+  const card = cases.find((entry) => entry.name === "inspect_method_no_active_mode");
+  const bound = cases.find((entry) => entry.name === "inspect_method_active_builder_journey");
+  assert.ok(card && bound);
+  const db = seed("adopted");
+  try {
+    addDecoyJourney(db);
+    addDecoyWindow(db);
+    addDecoyGlobalMode(db);
+    const unnamed = invoke(db, ["inspect-method"]);
+    assert.equal(unnamed.exitCode, 0);
+    assert.equal(unnamed.stdout, card.stdout, "no named session: the no-journey card");
+    const named = invoke(db, ["inspect-method", "--session-id", SESSION_ID]);
+    assert.equal(named.stdout, bound.stdout, "a named Builder session: that journey's state");
+  } finally {
+    db.close();
+  }
+});

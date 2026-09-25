@@ -114,7 +114,7 @@
       "scenario": "no_active_mode",
       "session_id": "builder-command-session",
       "stderr": "",
-      "stdout": "■ Builder Method\n\nactive journey\nnone\n\nadopted method\nnone\n\navailable methods\nariad\n\nstatus\nNo Builder journey is active yet.\n\nnext action\nActivate Builder Mode for a journey or ask about a specific journey.\n\nexample\nmirror build load <journey>\n\n"
+      "stdout": "■ Builder Method\n\nactive journey\nnone\n\nadopted method\nnone\n\navailable methods\nariad\n\nstatus\nNo Builder journey was named.\n\nnext action\nPass --journey <slug>, or name a session in Builder Mode with --session-id or MIRROR_SESSION_ID.\n\nexample\nmirror build inspect-method --journey <journey>\n\n"
     },
     {
       "argv": [
@@ -127,7 +127,7 @@
       "scenario": "other_mode",
       "session_id": "builder-command-session",
       "stderr": "",
-      "stdout": "■ Builder Method\n\nactive journey\nnone\n\nadopted method\nnone\n\navailable methods\nariad\n\nstatus\nNo Builder journey is active yet.\n\nnext action\nActivate Builder Mode for a journey or ask about a specific journey.\n\nexample\nmirror build load <journey>\n\n"
+      "stdout": "■ Builder Method\n\nactive journey\nnone\n\nadopted method\nnone\n\navailable methods\nariad\n\nstatus\nNo Builder journey was named.\n\nnext action\nPass --journey <slug>, or name a session in Builder Mode with --session-id or MIRROR_SESSION_ID.\n\nexample\nmirror build inspect-method --journey <journey>\n\n"
     },
     {
       "argv": [
@@ -140,7 +140,7 @@
       "scenario": "mode_without_journey",
       "session_id": "builder-command-session",
       "stderr": "",
-      "stdout": "■ Builder Method\n\nactive journey\nnone\n\nadopted method\nnone\n\navailable methods\nariad\n\nstatus\nNo Builder journey is active yet.\n\nnext action\nActivate Builder Mode for a journey or ask about a specific journey.\n\nexample\nmirror build load <journey>\n\n"
+      "stdout": "■ Builder Method\n\nactive journey\nnone\n\nadopted method\nnone\n\navailable methods\nariad\n\nstatus\nNo Builder journey was named.\n\nnext action\nPass --journey <slug>, or name a session in Builder Mode with --session-id or MIRROR_SESSION_ID.\n\nexample\nmirror build inspect-method --journey <journey>\n\n"
     },
     {
       "argv": [
@@ -199,7 +199,7 @@
       "name": "pull_candidates_no_journey",
       "scenario": "no_active_mode",
       "session_id": "builder-command-session",
-      "stderr": "Error: Builder method pull candidates inspection requires a journey. Activate Builder Mode for a journey or pass --journey.\n",
+      "stderr": "Error: Builder method pull candidates inspection requires a journey. Pass --journey <slug>, or name a session in Builder Mode with --session-id or MIRROR_SESSION_ID.\n",
       "stdout": ""
     },
     {
@@ -259,7 +259,7 @@
       "name": "pull_candidates_other_mode",
       "scenario": "other_mode",
       "session_id": "builder-command-session",
-      "stderr": "Error: Builder method pull candidates inspection requires a journey. Activate Builder Mode for a journey or pass --journey.\n",
+      "stderr": "Error: Builder method pull candidates inspection requires a journey. Pass --journey <slug>, or name a session in Builder Mode with --session-id or MIRROR_SESSION_ID.\n",
       "stdout": ""
     },
     {
@@ -364,7 +364,7 @@
       "name": "adopt_no_journey",
       "scenario": "no_active_mode",
       "session_id": "builder-command-session",
-      "stderr": "Error: Builder method adoption requires a journey. Activate Builder Mode for a journey or pass --journey.\n",
+      "stderr": "Error: Builder method adoption requires a journey. Pass --journey <slug>, or name a session in Builder Mode with --session-id or MIRROR_SESSION_ID.\n",
       "stdout": ""
     },
     {
@@ -2388,7 +2388,7 @@
       "name": "set_cadence_valid_profile_reaches_journey_guard",
       "scenario": "mode_without_journey",
       "session_id": "builder-command-session",
-      "stderr": "Error: Builder method cadence profile update requires a journey. Activate Builder Mode for a journey or pass --journey.\n",
+      "stderr": "Error: Builder method cadence profile update requires a journey. Pass --journey <slug>, or name a session in Builder Mode with --session-id or MIRROR_SESSION_ID.\n",
       "stdout": ""
     },
     {

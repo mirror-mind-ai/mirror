@@ -30,8 +30,8 @@ import { dirname, join } from "node:path";
 import type { Database, WritableDatabase } from "#db/database.ts";
 import { getIdentityContent } from "#identity/identityRead.ts";
 import { getProjectPath } from "#journey/journeyStatus.ts";
-import { resolveRuntimeSessionId } from "#mirror/runtimeSession.ts";
-import { getActiveOperatingMode } from "#mode/operatingMode.ts";
+import { getRuntimeSession, resolveNamedRuntimeSessionId } from "#mirror/runtimeSession.ts";
+import { getSessionOperatingMode } from "#mode/operatingMode.ts";
 import { PROGRAM } from "#util/program.ts";
 import { pyRStrip } from "#util/pythonText.ts";
 import { approvePlanCheckpoint, renderPlanApproval } from "./approve.ts";
@@ -98,7 +98,7 @@ import {
   renderAvailableMethod,
   renderJourneyMethodState,
   renderMethodAdoptionReport,
-  renderNoActiveJourney,
+  renderNoJourneyNamed,
 } from "./methodInspection.ts";
 import { planLifecycleItem, renderPlanCheckpoint } from "./plan.ts";
 import { PlanPreauthorizationMismatch } from "./planPreauthorization.ts";
@@ -180,27 +180,44 @@ function rejectUnknownMethod(method: string): CommandResult | null {
 }
 
 /**
- * Python `_resolve_builder_journey`: the explicit `--journey`, else the journey of
- * an ACTIVE BUILDER MODE for the resolved session. A journey attached to any
- * other mode does not count.
+ * The Builder journey of the session the caller NAMED (`--session-id` or
+ * `MIRROR_SESSION_ID`), or null.
+ *
+ * Never a guessed session and never the global mode row (CR008): either can hold
+ * another window's journey, and binding to it wrote that journey's cursor and
+ * materialized files into its project. A named session that has ended, or that
+ * is in another mode, names no journey.
+ */
+function namedSessionBuilderJourney(
+  context: BuilderCommandContext,
+  sessionId: string | null,
+): string | null {
+  const named = resolveNamedRuntimeSessionId(sessionId, context.environmentSessionId ?? null);
+  if (!named || !getRuntimeSession(context.db, named)?.active) return null;
+  const state = getSessionOperatingMode(context.db, named);
+  return state?.mode === "Builder Mode" && state.journey ? state.journey : null;
+}
+
+/**
+ * The journey a Builder leaf acts on: the explicit `--journey`, else the Builder
+ * journey of a named session. Nothing else. With neither, the leaf refuses
+ * before it reads a cursor or writes a file.
+ *
+ * This departs from Python's `_resolve_builder_journey` on purpose (CR008).
+ * Python fell back to the most recently touched session and then the global
+ * mode row, and an agent shell names no session, so every lifecycle command
+ * without `--journey` was bound by a guess.
  */
 function resolveBuilderJourney(
   context: BuilderCommandContext,
   options: { journey: string | null; sessionId: string | null; action: string },
 ): { journey: string } | CommandResult {
   if (options.journey) return { journey: options.journey };
-  const resolvedSessionId = resolveRuntimeSessionId(
-    context.db,
-    options.sessionId,
-    context.environmentSessionId ?? null,
-  );
-  const activeMode = getActiveOperatingMode(context.db, resolvedSessionId);
-  if (activeMode && activeMode.mode === "Builder Mode" && activeMode.journey) {
-    return { journey: activeMode.journey };
-  }
+  const journey = namedSessionBuilderJourney(context, options.sessionId);
+  if (journey) return { journey };
   return refuse(
     `Error: Builder method ${options.action} requires a journey. ` +
-      "Activate Builder Mode for a journey or pass --journey.",
+      "Pass --journey <slug>, or name a session in Builder Mode with --session-id or MIRROR_SESSION_ID.",
   );
 }
 
@@ -232,8 +249,8 @@ function requireAdoptedMethod(db: Database, journey: string, method: string): Co
  *   * `--journey X` given -> that journey's state, after an existence check. The
  *     positional method is IGNORED in this branch, so `inspect-method ariad
  *     --journey j` renders the journey state rather than the method definition.
- *   * no positional method -> the active Builder journey's state if one exists,
- *     else the no-active-journey card. Never an error.
+ *   * no positional method -> the Builder journey of a NAMED session if there is
+ *     one, else the no-journey card. Never an error, and never a guess (CR008).
  *   * a positional method -> the built-in definition, or a Class B refusal.
  */
 export function runInspectMethod(
@@ -254,25 +271,15 @@ export function runInspectMethod(
   }
 
   if (method === null) {
-    const resolvedSessionId = resolveRuntimeSessionId(
-      context.db,
-      options.sessionId ?? null,
-      context.environmentSessionId ?? null,
-    );
-    const activeMode = getActiveOperatingMode(context.db, resolvedSessionId);
-    if (activeMode && activeMode.mode === "Builder Mode" && activeMode.journey) {
+    const named = namedSessionBuilderJourney(context, options.sessionId ?? null);
+    if (named) {
       return {
-        stdout: printed(
-          renderJourneyMethodState(
-            activeMode.journey,
-            getAdoptedMethod(context.db, activeMode.journey),
-          ),
-        ),
+        stdout: printed(renderJourneyMethodState(named, getAdoptedMethod(context.db, named))),
         stderr: "",
         exitCode: 0,
       };
     }
-    return { stdout: printed(renderNoActiveJourney()), stderr: "", exitCode: 0 };
+    return { stdout: printed(renderNoJourneyNamed()), stderr: "", exitCode: 0 };
   }
 
   const unknown = rejectUnknownMethod(method);

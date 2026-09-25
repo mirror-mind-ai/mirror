@@ -35,7 +35,7 @@ import {
   renderJourneyMethodState,
   renderJourneyWithoutAdoptedMethod,
   renderMethodAdoptionReport,
-  renderNoActiveJourney,
+  renderNoJourneyNamed,
 } from "#builder/methodInspection.ts";
 import golden from "#goldens/builder-method.golden.json" with { type: "json" };
 
@@ -445,7 +445,7 @@ function renderSurface(row: SurfaceRow): string {
     case "available_method_empty_sections":
       return renderAvailableMethod(emptyMethodDefinition("empty", "Empty method"));
     case "no_active_journey":
-      return renderNoActiveJourney();
+      return renderNoJourneyNamed();
     case "journey_without_adopted_method":
       return renderJourneyWithoutAdoptedMethod(input.journey as string);
     case "adoption_new_ariad":
@@ -476,7 +476,7 @@ test("renderAvailableMethod strips trailing whitespace, unlike its siblings", ()
   assert.ok(rendered.endsWith("\n"));
   assert.ok(!rendered.endsWith("\n\n"), "the rstrip must leave exactly one trailing newline");
   // A sibling that does NOT strip, for contrast.
-  assert.ok(renderNoActiveJourney().endsWith("build load <journey>\n"));
+  assert.ok(renderNoJourneyNamed().endsWith("build inspect-method --journey <journey>\n"));
 });
 
 test("an empty-string adopted method falls through to the not-adopted surface", () => {

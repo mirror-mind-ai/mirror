@@ -102,7 +102,15 @@ export function renderAvailableMethod(method: MethodDefinition): string {
 }
 
 /** Python `render_no_active_journey`. */
-export function renderNoActiveJourney(): string {
+/**
+ * `inspect-method` with no journey and no named Builder session (CR008).
+ *
+ * It used to say "No Builder journey is active yet" and suggest `build load`.
+ * In an agent shell, which names no session, that was false right after a
+ * load, and loading again would not have changed the answer. The card now says
+ * what is true and what actually works.
+ */
+export function renderNoJourneyNamed(): string {
   return `${[
     "■ Builder Method",
     "",
@@ -116,13 +124,13 @@ export function renderNoActiveJourney(): string {
     AVAILABLE_METHODS.join(", "),
     "",
     "status",
-    "No Builder journey is active yet.",
+    "No Builder journey was named.",
     "",
     "next action",
-    "Activate Builder Mode for a journey or ask about a specific journey.",
+    "Pass --journey <slug>, or name a session in Builder Mode with --session-id or MIRROR_SESSION_ID.",
     "",
     "example",
-    `${PROGRAM} build load <journey>`,
+    `${PROGRAM} build inspect-method --journey <journey>`,
   ].join("\n")}\n`;
 }
 

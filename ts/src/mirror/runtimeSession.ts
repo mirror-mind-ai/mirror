@@ -136,13 +136,42 @@ export function compareAndSwapRuntimeSessionMetadata(
   return Number(result.changes) === 1;
 }
 
-export function resolveRuntimeSessionId(
-  db: Database,
+/**
+ * The session a caller was TOLD about: `--session-id`, else `MIRROR_SESSION_ID`.
+ * `null` means nobody named one. It never guesses, so it is the only resolver a
+ * caller may bind a journey or write project state on (CR008).
+ */
+export function resolveNamedRuntimeSessionId(
   explicitSessionId: string | null,
   environmentSessionId: string | null = null,
 ): string | null {
   if (explicitSessionId?.trim()) return explicitSessionId;
   if (environmentSessionId?.trim()) return environmentSessionId.trim();
+  return null;
+}
+
+/**
+ * A named session if there is one, else a GUESS: the most recently updated active
+ * row that is not a global pseudo-session.
+ *
+ * The guess is usually the active window, because the Pi extension logs each
+ * prompt under its own session id before any tool runs. It is wrong under
+ * interleaving (another window's prompt in between), and delivery-cursor rows
+ * qualify, so a lifecycle write can make a cursor "the session". Builder binding
+ * stopped using it in CR008; the callers that still do are CR100's.
+ */
+export function resolveRuntimeSessionId(
+  db: Database,
+  explicitSessionId: string | null,
+  environmentSessionId: string | null = null,
+): string | null {
+  return (
+    resolveNamedRuntimeSessionId(explicitSessionId, environmentSessionId) ??
+    guessRuntimeSessionId(db)
+  );
+}
+
+function guessRuntimeSessionId(db: Database): string | null {
   const row = db
     .prepare(
       `SELECT session_id FROM runtime_sessions

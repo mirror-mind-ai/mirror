@@ -645,7 +645,7 @@
       "name": "available_method"
     },
     {
-      "expected": "■ Builder Method\n\nactive journey\nnone\n\nadopted method\nnone\n\navailable methods\nariad\n\nstatus\nNo Builder journey is active yet.\n\nnext action\nActivate Builder Mode for a journey or ask about a specific journey.\n\nexample\nmirror build load <journey>\n",
+      "expected": "■ Builder Method\n\nactive journey\nnone\n\nadopted method\nnone\n\navailable methods\nariad\n\nstatus\nNo Builder journey was named.\n\nnext action\nPass --journey <slug>, or name a session in Builder Mode with --session-id or MIRROR_SESSION_ID.\n\nexample\nmirror build inspect-method --journey <journey>\n",
       "name": "no_active_journey"
     },
     {

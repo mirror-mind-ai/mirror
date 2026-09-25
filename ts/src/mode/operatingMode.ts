@@ -95,14 +95,28 @@ export function deactivateOperatingMode(
   );
 }
 
+/**
+ * The mode stamped on ONE session row, with no fallback (CR008).
+ *
+ * A caller that binds on the answer must read this, not `getActiveOperatingMode`:
+ * that one falls back to the global row, which whichever window loaded last
+ * wrote.
+ */
+export function getSessionOperatingMode(
+  db: Database,
+  sessionId: string,
+): OperatingModeState | null {
+  const session = getRuntimeSession(db, sessionId);
+  return stateFromPayload(decodeMetadata(session?.metadata ?? null)[OPERATING_MODE_METADATA_KEY]);
+}
+
+/** The session's own mode, else the global row: what the status line displays. */
 export function getActiveOperatingMode(
   db: Database,
   sessionId: string | null,
 ): OperatingModeState | null {
   if (sessionId) {
-    const session = getRuntimeSession(db, sessionId);
-    const payload = decodeMetadata(session?.metadata ?? null)[OPERATING_MODE_METADATA_KEY];
-    const state = stateFromPayload(payload);
+    const state = getSessionOperatingMode(db, sessionId);
     if (state) return state;
   }
   const global = getRuntimeSession(db, GLOBAL_OPERATING_MODE_SESSION_ID);
