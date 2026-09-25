@@ -246,9 +246,10 @@ Use `/mm:` prefix:
 Claude Code is fully supported but is now the secondary runtime rather than the primary one.
 
 **If a runtime is launched from your desktop rather than a terminal**, it may not
-inherit the `PATH` that holds `node`, and its hooks will skip logging. Each skip
-writes one line to `~/.mirror-minds/your-name/hooks.log`, and `mirror runtime
-diagnose` reports it. Set `MIRROR_NODE=/path/to/node` in the environment the
+inherit the `PATH` that holds `node`, or it may find an older `node` first, and
+its hooks will skip logging. Each skip writes one line to
+`~/.mirror-minds/your-name/hooks.log`, and `mirror runtime diagnose` reports it.
+Set `MIRROR_NODE=/path/to/node` (Node 24 or later) in the environment the
 runtime starts with.
 
 ---

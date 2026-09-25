@@ -521,6 +521,70 @@ export function staleRevertGateFindings(env: NodeJS.ProcessEnv): DriftFinding[] 
 }
 
 /**
+ * Where a hook wrapper looks for Node after `MIRROR_NODE` and `PATH`, in order.
+ * The generated wrappers carry the same list (`for candidate in ...`), and
+ * `hooks.test.ts` fails if the two differ: they had, by `/usr/bin/node`, which
+ * diagnose counted and no wrapper searched (TS5 handoff review, finding N1).
+ */
+export const HOOK_NODE_CANDIDATES: readonly string[] = [
+  "$HOME/.nvm/current/bin/node",
+  "/opt/homebrew/bin/node",
+  "/usr/local/bin/node",
+];
+
+/** How far back `hookFailureFindings` looks. Longer than the front door's day,
+ * because a hook failure is the kind a user notices weeks later. */
+const HOOK_FAILURE_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+
+/**
+ * Hook failures recorded in `<mirror home>/hooks.log` in the last 7 days.
+ *
+ * `hookNodeFindings` can only ask from diagnose's own environment. The hooks
+ * write this file from theirs -- a Node that is missing or cannot run them,
+ * a front-door call that failed -- so it is the evidence of what a runtime
+ * actually met. The finding counts and names the latest hook; the reasons
+ * stay in the file, because a diagnosis gets pasted into issues.
+ */
+export function hookFailureFindings(
+  report: RuntimeStatusReport,
+  now: Date = new Date(),
+): DriftFinding[] {
+  if (report.db_path === null) return [];
+  const logPath = join(dirname(report.db_path), "hooks.log");
+  if (!existsSync(logPath)) return [];
+  let lines: string[];
+  try {
+    lines = readFileSync(logPath, "utf8").split("\n");
+  } catch {
+    return [];
+  }
+  const cutoff = now.getTime() - HOOK_FAILURE_WINDOW_MS;
+  let count = 0;
+  let latest: { stamp: string; hook: string } | null = null;
+  for (const line of lines) {
+    const match = /^(\S+) ([^\s:]+:[^\s:]+): /.exec(line);
+    if (!match) continue;
+    const [, stamp = "", hook = ""] = match;
+    const time = parseLogTimestamp(stamp);
+    if (time === null || time < cutoff) continue;
+    count += 1;
+    latest = { stamp, hook };
+  }
+  if (latest === null) return [];
+  return [
+    {
+      code: "hook_failures_recorded",
+      severity: "warning",
+      subject: "hooks",
+      detail: `${count} hook failure(s) in the last 7 days, latest ${latest.stamp}, ${latest.hook} (${logPath})`,
+      recommendation:
+        "read the log: a missing or too-old Node, or a failing front-door call, each has its own line",
+      repair_route: "review hooks.log",
+    },
+  ];
+}
+
+/**
  * Can a hook find Node?
  *
  * The failure this exists for: `/usr/bin/python3` is on every macOS, so the
@@ -531,6 +595,10 @@ export function staleRevertGateFindings(env: NodeJS.ProcessEnv): DriftFinding[] 
  *
  * The wrappers write to `<mirror-home>/hooks.log` when this happens. This
  * finding is the other half: a place to ASK, before anything is lost.
+ *
+ * It asks from the CALLER's environment, which is a terminal's, not a GUI
+ * runtime's -- so it can say Node is missing, never that a hook found it.
+ * `hookFailureFindings` reads the evidence hooks write from their own context.
  */
 export function hookNodeFindings(
   env: NodeJS.ProcessEnv,
@@ -538,12 +606,9 @@ export function hookNodeFindings(
 ): DriftFinding[] {
   const explicit = env.MIRROR_NODE ?? "";
   if (explicit && isExecutable(explicit)) return [];
-  const candidates = [
-    `${env.HOME ?? ""}/.nvm/current/bin/node`,
-    "/opt/homebrew/bin/node",
-    "/usr/local/bin/node",
-    "/usr/bin/node",
-  ];
+  const candidates = HOOK_NODE_CANDIDATES.map((candidate) =>
+    candidate.replace("$HOME", env.HOME ?? ""),
+  );
   const onPath = (env.PATH ?? "")
     .split(":")
     .filter(Boolean)

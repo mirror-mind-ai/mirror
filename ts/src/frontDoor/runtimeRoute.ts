@@ -22,6 +22,7 @@ import {
 } from "#runtime/backup.ts";
 import {
   diagnoseRuntime,
+  hookFailureFindings,
   hookNodeFindings,
   probeModelPins,
   renderRuntimeDiagnosis,
@@ -230,8 +231,10 @@ export async function runRuntimeReadRoute(
       ...rootStateFindings(homesRoot(env)),
       // CV22.DS10.TS5: the transition's own leftovers. A stale MIRROR_TS_*
       // gate is inert and silently so; an unresolvable Node makes every hook
-      // skip. Both are invisible without being asked for.
+      // skip; and hooks.log holds what the hooks met in their own context.
+      // All three are invisible without being asked for.
       ...staleRevertGateFindings(env),
+      ...hookFailureFindings(report),
       ...hookNodeFindings(env, (path) => {
         try {
           accessSync(path, constants.X_OK);

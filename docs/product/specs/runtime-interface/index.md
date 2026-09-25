@@ -45,12 +45,12 @@ Backup runs at session end immediately after the session-end command.
 Code, Gemini CLI, and the packaged Claude plugin register short shell wrappers
 (`.claude/hooks/`, `.gemini/hooks/`, `plugins/mirror-mind/hooks/`, generated
 by `scripts/ts5/generate_hook_wrappers.sh`). Each wrapper resolves the
-repository from its own path, finds Node, and `exec`s a single entry,
+repository from its own path, finds Node, and runs a single entry,
 `ts/src/hooks/main.ts <runtime>:<event>`, which reads the runtime's JSON
 payload from stdin once and runs the sequence above in-process over the front
 door's own modules. A hook never fails the user's turn: every path exits 0,
-and a failure — including a wrapper that cannot find `node` — is recorded in
-`<mirror home>/hooks.log` instead. See
+and a failure is recorded in `<mirror home>/hooks.log` instead. That includes
+a wrapper that cannot find `node`, and a `node` that cannot run the hook. See
 [Node resolution](#node-resolution-for-hook-runtimes).
 
 Optional runtime hygiene command:
@@ -357,9 +357,16 @@ launched from the desktop often does not have the one that holds `node`. Each
 hook wrapper therefore resolves Node explicitly, in this order: `$MIRROR_NODE`,
 `command -v node`, `~/.nvm/current/bin/node`, `/opt/homebrew/bin/node`,
 `/usr/local/bin/node`. A wrapper that finds none writes one line to
-`<mirror home>/hooks.log` and exits 0 — skipping the hook, never failing the
-turn, never silently. `runtime diagnose` reports when Node is not resolvable
-from its own environment. (The Python hooks could end in `|| true` safely,
+`<mirror home>/hooks.log` and exits 0: it skips the hook, never fails the
+turn, and is never silent. The Node it finds must be 24 or later. An older one
+fails before the hook starts, and the wrapper records that exit the same way.
+The log's home is resolved as the core resolves it: `MIRROR_HOME`, else
+`MIRROR_USER`, each from the environment or else from this checkout's `.env`.
+
+`runtime diagnose` reports when Node is not resolvable from its own
+environment. That environment is a terminal's, not the runtime's, so it also
+reports the failures `hooks.log` recorded in the last seven days
+(`hook_failures_recorded`). (The Python hooks could end in `|| true` safely,
 because `/usr/bin/python3` is on every macOS; the same silence here would hide
 a new failure.)
 

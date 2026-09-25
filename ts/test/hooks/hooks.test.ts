@@ -11,8 +11,17 @@
 // test guide). It died with Python at plateau 3; these cases did not.
 
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { execFileSync, spawnSync } from "node:child_process";
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { after, describe, test } from "node:test";
@@ -22,10 +31,13 @@ import { needsInject } from "#hooks/mirrorState.ts";
 import { parseHookPayload } from "#hooks/payload.ts";
 import { noteHookFailure } from "#hooks/runtime.ts";
 import {
+  HOOK_NODE_CANDIDATES,
+  hookFailureFindings,
   hookNodeFindings,
   RETIRED_REVERT_GATES,
   staleRevertGateFindings,
 } from "#runtime/diagnose.ts";
+import type { RuntimeStatusReport } from "#runtime/status.ts";
 
 const REPO_ROOT = resolve(import.meta.dirname, "..", "..", "..");
 const roots: string[] = [];
@@ -252,6 +264,109 @@ describe("diagnose reports the transition's leftovers", () => {
       ),
       [],
     );
+  });
+});
+
+/** A stand-in for a Node too old to run a hook: it fails as one does, before main.ts starts. */
+function brokenNode(): string {
+  const path = join(tmpHome(), "node");
+  writeFileSync(path, '#!/bin/sh\necho "node: bad option: --env-file-if-exists" >&2\nexit 9\n', {
+    mode: 0o755,
+  });
+  return path;
+}
+
+describe("a hook that cannot run is recorded, never silent (N1)", () => {
+  // The wrappers promised that an UNRESOLVABLE Node is recorded. A Node that is
+  // found and cannot run the hook -- a stale one earlier on a GUI runtime's
+  // PATH -- used to fail before main.ts started, with exit 9 on a stderr no
+  // runtime shows and nothing in hooks.log: "Mirror stopped remembering" (TS5
+  // handoff review, finding N1).
+  test("a Node that is found but cannot run the hook: exit 0 and one hooks.log line", () => {
+    const home = tmpHome();
+    const result = spawnSync("bash", [join(REPO_ROOT, ".claude/hooks/log-user-prompt.sh")], {
+      env: { HOME: home, MIRROR_HOME: home, MIRROR_NODE: brokenNode(), PATH: "/usr/bin:/bin" },
+      input: "{}",
+      encoding: "utf8",
+    });
+
+    assert.equal(result.status, 0, "a hook never fails the user's turn");
+    const log = readFileSync(join(home, "hooks.log"), "utf8");
+    assert.match(log, /claude:user-prompt: node exited 9/);
+    assert.match(log, /Node 24 or later/);
+  });
+
+  test("the line lands in the home the core uses, even when MIRROR_USER is only in .env", () => {
+    // The first wrappers fell back to ~/.mirror-minds/default -- a home the core
+    // never resolves and nobody reads -- whenever the environment lacked
+    // MIRROR_HOME, which is every GUI launch of a checkout configured by .env.
+    const root = tmpHome();
+    const repo = join(root, "checkout");
+    const home = join(root, "home");
+    mkdirSync(join(repo, ".claude/hooks"), { recursive: true });
+    mkdirSync(home);
+    copyFileSync(
+      join(REPO_ROOT, ".claude/hooks/session-start.sh"),
+      join(repo, ".claude/hooks/session-start.sh"),
+    );
+    writeFileSync(join(repo, ".env"), 'OTHER=1\nMIRROR_USER="someone"\n');
+
+    const result = spawnSync("bash", [join(repo, ".claude/hooks/session-start.sh")], {
+      env: { HOME: home, MIRROR_NODE: brokenNode(), PATH: "/usr/bin:/bin" },
+      input: "",
+      encoding: "utf8",
+    });
+
+    assert.equal(result.status, 0);
+    assert.match(
+      readFileSync(join(home, ".mirror-minds/someone/hooks.log"), "utf8"),
+      /claude:session-start: node exited 9/,
+    );
+    assert.ok(!existsSync(join(home, ".mirror-minds/default")), "no invented home");
+  });
+
+  test("the wrappers and diagnose search the same places for Node", () => {
+    // Two copies of one list had already drifted: diagnose counted
+    // /usr/bin/node as resolvable, the wrappers never looked there.
+    const body = readFileSync(join(REPO_ROOT, ".claude/hooks/session-start.sh"), "utf8");
+    const listed = (body.match(/^for candidate in (.*); do$/m)?.[1] ?? "")
+      .split(/\s+/)
+      .map((candidate) => candidate.replace(/^"|"$/g, ""));
+    assert.deepEqual(listed, [...HOOK_NODE_CANDIDATES]);
+  });
+
+  test("diagnose reports recent hook failures from hooks.log, never their reasons", () => {
+    // Diagnose runs in the caller's shell, which is not a GUI runtime's, so its
+    // node check cannot see what a hook sees. hooks.log can: it is written from
+    // hook context. Reasons stay in the file -- a diagnosis gets pasted.
+    const home = tmpHome();
+    writeFileSync(
+      join(home, "hooks.log"),
+      [
+        "2026-09-01T00:00:00Z claude:inject: an old failure, outside the window",
+        "2026-09-24T10:00:00Z claude:user-prompt: node exited 9 SECRET-REASON",
+        "2026-09-25T09:00:00.123Z gemini:log-user: `conversation-logger log-user` exited 2",
+        "not a log line",
+        "",
+      ].join("\n"),
+    );
+    const report = { db_path: join(home, "memory.db") } as RuntimeStatusReport;
+
+    const findings = hookFailureFindings(report, new Date("2026-09-25T12:00:00Z"));
+
+    assert.equal(findings.length, 1);
+    assert.equal(findings[0]?.code, "hook_failures_recorded");
+    assert.match(findings[0]?.detail ?? "", /2 hook failure\(s\) in the last 7 days/);
+    assert.match(findings[0]?.detail ?? "", /latest 2026-09-25T09:00:00\.123Z, gemini:log-user/);
+    assert.doesNotMatch(JSON.stringify(findings), /SECRET|exited|conversation-logger/);
+  });
+
+  test("no hooks.log, or nothing recent in it, is no finding", () => {
+    const home = tmpHome();
+    const report = { db_path: join(home, "memory.db") } as RuntimeStatusReport;
+    assert.deepEqual(hookFailureFindings(report, new Date("2026-09-25T12:00:00Z")), []);
+    writeFileSync(join(home, "hooks.log"), "2026-08-01T00:00:00Z claude:inject: old\n");
+    assert.deepEqual(hookFailureFindings(report, new Date("2026-09-25T12:00:00Z")), []);
   });
 });
 

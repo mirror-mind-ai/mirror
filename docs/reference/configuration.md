@@ -235,9 +235,9 @@ See [MEMORY_RECEPTION](#memory_reception).
 
 **How to change it:** set `MIRROR_NODE=/path/to/node` in the environment the runtime is launched with. Without it a wrapper tries `command -v node`, then the nvm `current` symlink, `/opt/homebrew/bin/node`, and `/usr/local/bin/node`.
 
-**Active in code:** yes. The wrappers read it before Node starts; `runtime diagnose` checks the same order from its own environment.
+**Active in code:** yes. The wrappers read it before Node starts; `runtime diagnose` checks the same order from its own environment, and reports the failures `hooks.log` recorded in the last seven days.
 
-**Effects:** a GUI-launched runtime often does not inherit the `PATH` that holds `node`. A wrapper that cannot find Node skips the hook and writes one line to `<mirror home>/hooks.log` instead of failing the user's turn, so "Mirror stopped remembering" has a place to be diagnosed.
+**Effects:** a GUI-launched runtime often does not inherit the `PATH` that holds `node`, or finds an older one first. A wrapper that cannot find Node, or finds one older than 24 that cannot run the hook, skips the hook and writes one line to `<mirror home>/hooks.log` instead of failing the user's turn, so "Mirror stopped remembering" has a place to be diagnosed.
 
 ## TypeScript live-provider transport (CV22.DS8)
 

@@ -596,7 +596,11 @@ not injected, and conversations never get titles or memories.
 
 ```text
 2026-09-24T10:12:03Z claude:session-start: node not found on PATH; hook skipped. Set MIRROR_NODE.
+2026-09-25T08:40:11Z claude:inject: node exited 9 before the hook finished (/usr/local/bin/node, v18.19.0); Mirror needs Node 24 or later. Set MIRROR_NODE.
 ```
+
+The second line is a Node that was found but is too old to run the hook: an
+older install earlier on the runtime's `PATH` than the one your terminal uses.
 
 ### Root cause
 
@@ -617,12 +621,14 @@ mirror runtime diagnose
 ```
 
 `runtime diagnose` resolves Node the way the wrappers do and reports when it
-cannot.
+cannot. It runs in your terminal's environment, though, not the runtime's, so
+it also counts the lines `hooks.log` recorded in the last seven days
+(`hook_failures_recorded`). The log is the evidence of what the runtime met.
 
 ### Fix
 
-Set `MIRROR_NODE` to the absolute path of `node` in the environment the runtime
-is launched with:
+Set `MIRROR_NODE` to the absolute path of a `node` 24 or later, in the
+environment the runtime is launched with:
 
 ```bash
 which node   # in a terminal where it works
