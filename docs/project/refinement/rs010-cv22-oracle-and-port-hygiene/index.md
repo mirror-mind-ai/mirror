@@ -59,3 +59,4 @@ evidence stays honest as both cores move.
 - [CR097 — New record ids are 32 bits because the oracle's were, and `messages` already collides](cr097-new-ids-are-32-bits-because-the-oracle-s-were.md)
 - [CR098 — The Pi extension logs the first 80 characters of every prompt](cr098-the-pi-extension-logs-the-start-of-every-prompt.md)
 - [CR099 — A `--global` capability binding is not idempotent](cr099-a-global-capability-binding-is-not-idempotent.md)
+- [CR100 — The session resolver guesses "the session" from a table that holds three kinds of row](cr100-the-session-resolver-guesses-from-a-table-of-three-row-kinds.md)

@@ -42,3 +42,4 @@ cannot choose safely.
 - [CR079 — Preserve authored content in every lifecycle artifact, not one at a time](cr079-preserve-authored-content-in-every-lifecycle-artifact.md)
 - [CR082 — Plan and Expand surfaces print absolute filesystem paths where their artifact surface prints project-relative ones](cr082-lifecycle-surfaces-print-absolute-paths.md)
 - [CR090 — The Debt Review surface mixes Portuguese into an English sentence](cr090-debt-review-surface-mixes-portuguese-into-english.md)
+- [CR101 — Explorer and Soul activation stamp their mode onto a guessed session](cr101-explorer-and-soul-activation-stamp-a-guessed-session.md)
