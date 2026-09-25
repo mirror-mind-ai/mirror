@@ -687,3 +687,12 @@ One neighbour, observed and not investigated: the real home's `hooks.log`
 holds a single `claude:session-start: UNIQUE constraint failed: messages.id`
 (2026-09-24). It looks like two transcript backfills overlapping, a different
 mechanism from the snapshot race.
+
+*(Corrected 2026-09-25 by the [handoff review](handoff-review.md#q1--the-messagesid-failure-has-a-different-mechanism-than-recorded-database-architect),
+Q1. Overlapping backfills cannot produce this error. On that path every
+inserted message draws a fresh random id, and the session binding is checked
+inside a transaction, so overlapping writers duplicate rows or do nothing. The
+likely cause is the id itself: `newId()` is 32 bits, Python's width, and with
+33,341 messages a collision is already expected about once per lifetime of
+the table. Captured as
+[CR097](../../../../refinement/rs010-cv22-oracle-and-port-hygiene/cr097-new-ids-are-32-bits-because-the-oracle-s-were.md).)*

@@ -56,3 +56,5 @@ evidence stays honest as both cores move.
 - [CR084 — The bootstrap lock is not exclusive during the window between creating it and writing it](cr084-the-bootstrap-lock-is-not-exclusive-while-it-is-being-written.md)
 - [CR086 — A baseline advance must name the oracle change it absorbs](cr086-baseline-advance-must-name-the-oracle-change.md)
 - [CR091 — `operation_runs` outlived its only consumer](cr091-operation-runs-outlived-its-only-consumer.md)
+- [CR097 — New record ids are 32 bits because the oracle's were, and `messages` already collides](cr097-new-ids-are-32-bits-because-the-oracle-s-were.md)
+- [CR098 — The Pi extension logs the first 80 characters of every prompt](cr098-the-pi-extension-logs-the-start-of-every-prompt.md)
