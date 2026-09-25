@@ -585,8 +585,10 @@ TypeScript-era production clone, which is what plateau 1's rule protects.
 
 ### F21 — concurrent writers race on the fixed pre-write snapshot
 
-Found by the Navigator walk (2026-09-25, step 2), then reproduced. Every
-routed live write first snapshots the database into one fixed file,
+Found by the Navigator walk (2026-09-25, step 2), then reproduced — the
+second time this race was found: DS7.US8 recorded its Pi half on 2026-09-16
+and deferred it (*First found, and lost*, below). Every routed live write
+first snapshots the database into one fixed file,
 `<home>/backups/frontdoor-pre-write-backup.db`: `ensureBackup` removes it, then
 `VACUUM INTO` recreates it — with no lock. Two writers at the same moment
 collide. The second `VACUUM INTO` finds the tables the first is still
@@ -612,16 +614,39 @@ marks the session injected, `log-user-prompt` stores the message.
   the walk's database, five pairs out of five failed: four `table conversations
   already exists`, one `disk I/O error`.
 - *Production, from this branch.* The real home's `mirror-logger.log` shows
-  Pi's `conversation-logger log-user` failing with `disk I/O error` four times
-  since 2026-09-23. Pi turns have been lost in daily use wherever two routed
-  writes overlapped — for example, a prompt's `log-user` starting while the
-  previous turn's detached `log-assistant` was still snapshotting.
+  Pi's `conversation-logger log-user` failing with `disk I/O error` twenty
+  times, from 2026-09-11 to 2026-09-24, and every one is a session's
+  **opening prompt, given at launch**. Pi starts `session-maintenance`
+  detached at session start, and a prompt given at launch reaches `log-user`
+  about 40 ms later, while maintenance is still snapshotting. For that shape
+  the collision was deterministic: twenty prompts given at launch in that
+  window, twenty lost, while the three opening prompts typed some twenty
+  seconds in were all stored. The database agrees: the opening prompt is
+  stored up to 2026-09-10, absent from 2026-09-11 to 2026-09-24, and stored
+  again after the fix. All twenty are the same journey-activation command, so
+  no content was lost. *(Corrected 2026-09-25: this bullet first read four
+  failures since 2026-09-23, from one turn's logging overlapping the next;
+  the whole log shows twenty, all at session start.)*
 
 **Origin.** The fixed-name snapshot predates TS5 (it is the DS3/DS4 write
 seam). TS5 plateau 1 made the collision routine by moving the Claude hooks
 onto the front door's write path: Python's hooks wrote ungated, so they never
 raced. The Claude half is therefore this story's regression; the Pi half was
-already there.
+already there. It began with `dac41598` (DS8.US2, 2026-09-11), which moved
+`session-maintenance` from Python onto the front door's write path: the last
+prompt given at launch before it was stored 38 ms after maintenance started,
+and the first one after it was lost.
+
+**First found, and lost.** DS7.US8's Navigator validation found the Pi half
+on 2026-09-16, with this mechanism exactly — the first prompt of every
+session lost since 2026-09-11, eight sessions verified
+([test-guide](../../cv22-ds7-command-burn-down/cv22-ds7-us8-builder-ariad-tree/test-guide.md)).
+Its Debt Review deferred it with the revisit trigger *"DS10 Python
+retirement; … or the next report of a lost first prompt"*
+([review](../../cv22-ds7-command-burn-down/cv22-ds7-us8-builder-ariad-tree/review.md)).
+The CR its plan called for was never opened and the finding never reached the
+debt ledger, so when DS10 began the trigger fired where nobody was reading,
+and opening prompts kept being lost until the walk found the race again.
 
 **Stop: a Navigator decision on the fix**, because it changes the write gate.
 
@@ -645,7 +670,9 @@ After the fix: eight of eight, five runs in five, the fixed backup passes
 `quick_check`, and no staging file survives. The field reproduction — the two
 real Claude hooks together against a copy of the walk's database — went from
 five failing pairs in five to ten clean pairs in ten, every message logged.
-Accepted residue: a process killed between its snapshot and its rename leaves
+In production, the first Pi session after the fix kept its opening prompt,
+given at launch 44 ms after maintenance started — the shape that had been
+lost twenty times in twenty. Accepted residue: a process killed between its snapshot and its rename leaves
 one staging file behind (`backups/*.staging`), the size of the database; a
 thrown error never does.
 

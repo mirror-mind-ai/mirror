@@ -534,13 +534,14 @@ before writing anything.
 
 **Date:** 2026-09-25
 **Status:** fixed in CV22.DS10.TS5 (finding F21)
-**Affected component:** every routed live write — most visibly Claude Code's prompt hooks and Pi's turn logging
+**Affected component:** every routed live write — most visibly Claude Code's prompt hooks and the logging of Pi's opening prompt
 **Severity:** lost writes (a message not logged, a Mirror Mode injection not made); the database itself is never at risk
 
 ### Symptom
 
-In Claude Code, Mirror Mode context is missing from some answers. In Pi,
-occasional turns never reach `mirror conversations`. The logs name it:
+In Claude Code, Mirror Mode context is missing from some answers. In Pi, a
+session's opening prompt, when given at launch (`pi "…"`), never reaches
+`mirror conversations`. The logs name it:
 
 ```text
 <mirror home>/hooks.log:          claude:inject: table conversations already exists
@@ -557,9 +558,10 @@ at the same instant broke each other: the second `VACUUM INTO` found the tables
 the first was still creating, or one removed the file the other was still
 writing. The losing write was aborted. Claude Code runs its two
 `UserPromptSubmit` hooks at once, and on a prompt that owes an injection both
-write, so the collision was routine; Pi hit it when a prompt's logging
-overlapped the previous turn's detached assistant logging. The `VACUUM INTO`
-only ever read the live database, so no data was damaged — only the write that
+write, so the collision was routine. Pi hit it on every session opened with a
+prompt at launch: that prompt is logged about 40 ms after the session's
+detached maintenance starts, while maintenance is still snapshotting. The
+`VACUUM INTO` only ever read the live database, so no data was damaged — only the write that
 lost was dropped.
 
 ### Fix

@@ -610,4 +610,7 @@ order:
    strategy orders the two checkpoints.
 5. Then Debt Review and Done, with the closure preflight: the DS10 candidate
    row, the gate table, the ledger rows, and the journey path each opened and
-   read.
+   read. The Debt Review also owes every deferred finding whose revisit
+   trigger names DS10 or the Python retirement: DS7.US8's session-start race
+   was one, and it came back as F21 rather than being remembered
+   ([inventory](inventory.md#f21--concurrent-writers-race-on-the-fixed-pre-write-snapshot)).
