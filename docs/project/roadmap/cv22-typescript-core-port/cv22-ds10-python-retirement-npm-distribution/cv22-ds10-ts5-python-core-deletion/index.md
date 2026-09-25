@@ -7,8 +7,10 @@ approved; plateaus 0–4 of 5 landed — **the repository holds no Python, and
 nothing tracked tells anyone to run it**; both halves of the guard are
 enforced. The first Navigator walk (2026-09-25) was not accepted: it found
 F21, fixed since (`118d4a67`); F20 was accepted as a known risk. **The second
-walk was accepted the same day** ([validation.md](validation.md)). Next: the
-panel's handoff review, then Debt Review and Done
+walk was accepted the same day** ([validation.md](validation.md)). **The
+panel's handoff review was held the same day and found one blocker**
+([handoff-review.md](handoff-review.md)). Next: the Navigator's decisions on
+it, then Debt Review and Done
 
 ---
 
@@ -603,13 +605,14 @@ order:
    ([validation.md](validation.md); both walks in
    [test-guide.md — Navigator Validation](test-guide.md#navigator-validation)).
    The Ariad cursor is at Debt Review; no debt decision is recorded.
-4. **Next: the panel's handoff review** (D9: engineer, quality-assurance,
-   database-architect, devops-engineer, security-engineer), over plateaus 0–4
-   and the validation evidence — after validation, as the collaboration
-   strategy orders the two checkpoints. Its scope is `cv22-ts5-baseline`
-   (`2adf2951`) to `118d4a67`, the last code change: 49 commits; findings
-   F1–F21; D1–D15; the known risks; and both walks. Its findings feed the
-   Debt Review.
+4. ~~**The panel's handoff review**~~ — **held 2026-09-25**
+   ([handoff-review.md](handoff-review.md)), the full D9 panel over
+   `2adf2951`..`118d4a67`. **One blocker, B1:** migrate-on-open never runs
+   the bootstrap DDL on an existing database. As a result, a home from v0.7.0
+   or earlier is migrated to `current (17/17)` and then fails in Mirror Mode
+   with `no such table: _ext_bindings`. Also found: five small pay-now items,
+   four deferrable debts, two questions, and the fired triggers the Debt
+   Review owes. **Next: the Navigator's decisions on those findings.**
 5. Then Debt Review and Done, with the closure preflight: the DS10 candidate
    row, the gate table, the ledger rows, and the journey path each opened and
    read. The Debt Review also owes every deferred finding whose revisit
