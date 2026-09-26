@@ -32,7 +32,7 @@ import {
   renderBuilderResumeSurface,
   selectAllowedNextActions,
 } from "#builder/resumeSurface.ts";
-import type { RoadmapPosition } from "#builder/roadmapPosition.ts";
+import { type AuthoredPackage, cvCodeOf, type RoadmapScope } from "#builder/roadmapScope.ts";
 import golden from "#goldens/builder-orientation.golden.json" with { type: "json" };
 
 const FIXTURES = join(fileURLToPath(new URL("../fixtures/builder-refinement/", import.meta.url)));
@@ -52,7 +52,7 @@ const oracle = golden as unknown as {
   resume: {
     name: string;
     state: Record<string, unknown>;
-    roadmap_position: RoadmapPosition | null;
+    roadmap_position: AuthoredPackage | null;
     canonical_refinement_index: string | null;
     expected: string;
   }[];
@@ -158,17 +158,57 @@ test("selectAllowedNextActions ranks pending confirmation over an active item", 
   );
 });
 
-test("BUILDER RESUME renders byte-identically to Python across every state", () => {
+/**
+ * The scope a recorded resume row implies (CR002).
+ *
+ * The oracle recorded a cursor and, separately, the first roadmap file whose
+ * status read "Active". The renderer now takes the scope the CURSOR implies:
+ * no active item is unscoped whatever the oracle scanned; an active item with a
+ * recorded package has that package as its CV's (every such row records CV22 for
+ * a CV22 item, asserted); an active item with nothing recorded has nothing
+ * authored. The golden's `expected` was edited by the same rule — see
+ * `ts/test/goldens/README.md`.
+ */
+function scopeForRecordedRow(row: (typeof oracle.resume)[number]): RoadmapScope {
+  const cursor = row.state.cursor as CursorDump | null;
+  if (cursor === null) return { kind: "unscoped", reason: "no_cursor" };
+  const activeItem = cursor.active_item;
+  if (!activeItem) return { kind: "unscoped", reason: "no_active_item" };
+  const cvCode = cvCodeOf(activeItem);
+  const recorded = row.roadmap_position;
+  if (recorded === null) {
+    return { kind: "active_item", activeItem, cvCode, position: { kind: "no_package" } };
+  }
+  assert.equal(recorded.code, cvCode, `${row.name}: a recorded package stands in only for its CV`);
+  return {
+    kind: "active_item",
+    activeItem,
+    cvCode,
+    position: { kind: "cv_package", package: recorded },
+  };
+}
+
+test("BUILDER RESUME renders every recorded state, with the position its cursor implies", () => {
   // 17 before CV22.DS10.TS4; the four Workbench-populated states collapsed
   // into one "no canonical index" state.
   assert.ok(oracle.resume.length >= 14);
   for (const row of oracle.resume) {
     const actual = renderBuilderResumeSurface(toResumeState(row.state), {
-      roadmapPosition: row.roadmap_position,
+      scope: scopeForRecordedRow(row),
       canonicalRefinementIndex: row.canonical_refinement_index,
     });
     assert.equal(actual, row.expected, row.name);
   }
+});
+
+test("the CR002 symptom row no longer names a scanned package", () => {
+  // The oracle's `cursor_sync_required` row recorded CV22 as the position of a
+  // journey with no cursor at all — the shape that told a CV20 journey it was
+  // at CV9.DS7. Without a cursor there is no position to state.
+  const row = oracle.resume.find((r) => r.name === "cursor_sync_required");
+  assert.ok(row?.roadmap_position, "the oracle recorded a scanned package here");
+  assert.ok(row.expected.includes("no item pulled yet"));
+  assert.ok(!row.expected.includes("cv22-typescript-core-port"));
 });
 
 test("release intent needs both fields, so a half-set cursor shows neither", () => {

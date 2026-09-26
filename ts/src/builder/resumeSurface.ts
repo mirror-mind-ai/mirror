@@ -23,7 +23,8 @@
 
 import { cardPrefixed, cardText, cardWrapped } from "./card.ts";
 import { CANONICAL_REFINEMENT_INDEX } from "./refinementField.ts";
-import type { RoadmapPosition } from "./roadmapPosition.ts";
+import type { RoadmapScope } from "./roadmapScope.ts";
+import { roadmapPositionLines } from "./scopePhrases.ts";
 import { wrapAriadSurface } from "./surfaceProtocol.ts";
 
 const FRAME_TOP = "╭────────────────────────────────────────────────────────╮";
@@ -80,12 +81,6 @@ export function selectAllowedNextActions(cursor: ResumeCursorView): readonly str
   return NO_ACTIVE_ITEM_ACTIONS;
 }
 
-/** Python `_format_roadmap_position`. */
-function formatRoadmapPosition(position: RoadmapPosition | null): string {
-  if (position === null) return "none";
-  return `${position.code} — ${position.title} (${position.status}) [${position.path}]`;
-}
-
 /** Python `_release_intent_lines`: both fields, or no block at all. */
 function releaseIntentLines(cursor: ResumeCursorView | null): string[] {
   const intent = cursor?.releaseIntent ?? null;
@@ -113,15 +108,21 @@ function refinementFieldLines(canonicalRefinementIndex: string | null): string[]
   ];
 }
 
-/** Python `render_builder_resume_surface`. */
+/**
+ * Python `render_builder_resume_surface`, except for the `roadmap position` row.
+ *
+ * Python filled that row with the first roadmap file whose status contained
+ * "Active", whichever journey asked. Since CR002 it states the journey's own
+ * scope, which the caller resolves from the same cursor `state` carries. The
+ * scope is required so that no caller can fall back to a guess by omission.
+ */
 export function renderBuilderResumeSurface(
   state: BuilderResumeState,
   options: {
-    roadmapPosition?: RoadmapPosition | null;
+    scope: RoadmapScope;
     canonicalRefinementIndex?: string | null;
-  } = {},
+  },
 ): string {
-  const roadmapPosition = options.roadmapPosition ?? null;
   const canonicalRefinementIndex = options.canonicalRefinementIndex ?? null;
   const cursor = state.cursor;
   const lines: string[] = [
@@ -145,7 +146,7 @@ export function renderBuilderResumeSurface(
   lines.push(
     FRAME_BLANK,
     cardText("roadmap position"),
-    ...cardWrapped(formatRoadmapPosition(roadmapPosition)),
+    ...roadmapPositionLines(options.scope).flatMap(cardWrapped),
     FRAME_BLANK,
     cardText("active item"),
     cardText(cursor?.activeItem || "none"),

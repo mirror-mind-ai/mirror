@@ -19,6 +19,7 @@ import { join } from "node:path";
 import test from "node:test";
 
 import { inspectPullCandidates, inspectRoadmapSnapshot } from "#builder/pullCandidates.ts";
+import { renderBuilderResumeSurface } from "#builder/resumeSurface.ts";
 import {
   cvCodeOf,
   isInsideCv,
@@ -27,6 +28,7 @@ import {
   scopeFocus,
   scopePullCandidates,
 } from "#builder/roadmapScope.ts";
+import { roadmapPositionLines } from "#builder/scopePhrases.ts";
 
 const roots: string[] = [];
 
@@ -378,4 +380,70 @@ test("the focus is the roadmap index row, then the CV package, then a stated pla
     title: "no project path configured",
     status: "",
   });
+});
+
+test("the resume row states every position in the plan's words", () => {
+  const july = julyTree();
+  const edges = edgesTree();
+  assert.deepEqual(roadmapPositionLines(resolveRoadmapScope(july, null)), ["no item pulled yet"]);
+  assert.deepEqual(roadmapPositionLines(resolveRoadmapScope(july, { activeItem: null })), [
+    "no item pulled yet",
+  ]);
+  assert.deepEqual(roadmapPositionLines(scoped(july, "CV20.DS12.TS1")), [
+    "CV20 — Builder Mode Evolution (🟢 In Progress) [docs/project/roadmap/cv20-builder/index.md]",
+  ]);
+  assert.deepEqual(roadmapPositionLines(scoped(edges, "CV4.DS1")), [
+    "CV4.DS1 — Orphan Story (🟡 Planned) [docs/project/roadmap/stray/cv4-ds1-orphan/index.md]",
+    "no authored package for CV4",
+  ]);
+  assert.deepEqual(roadmapPositionLines(scoped(edges, "CV5.DS1")), [
+    "no authored package for CV5 or CV5.DS1",
+  ]);
+  assert.deepEqual(roadmapPositionLines(scoped(edges, "CV5")), ["no authored package for CV5"]);
+  assert.deepEqual(roadmapPositionLines(scoped(edges, "CV7.DS1")), [
+    "CV7 is claimed by 2 packages: docs/project/roadmap/a/cv7/index.md, docs/project/roadmap/b/cv7/index.md",
+  ]);
+  assert.deepEqual(roadmapPositionLines(resolveRoadmapScope(null, { activeItem: "CV20.DS1" })), [
+    "no project path configured",
+  ]);
+});
+
+test("a package without a status renders without empty parentheses", () => {
+  const root = writeTree("statusless", [{ dir: "cv3", code: "CV3", title: "No Status" }]);
+  assert.deepEqual(roadmapPositionLines(scoped(root, "CV3.DS1")), [
+    "CV3 — No Status [docs/project/roadmap/cv3/index.md]",
+  ]);
+});
+
+test("each position paragraph starts its own card line on the resume surface", () => {
+  // Written independently of card.ts: Python's f"│ {text[:54]:<54} │".
+  const card = (text: string) => `│ ${text}${" ".repeat(54 - [...text].length)} │`;
+  const scope = scoped(edgesTree(), "CV4.DS1");
+  const rendered = renderBuilderResumeSurface(
+    {
+      journey: "orphan-journey",
+      adoptedMethod: "ariad",
+      cursor: {
+        activeItem: "CV4.DS1",
+        activeCheckpoint: null,
+        pendingConfirmation: null,
+        lastDeliveryEvent: "pull",
+        releaseIntent: null,
+        releaseIntentDeliveryStory: null,
+      },
+      resumable: true,
+      reason: null,
+      allowedNextActions: ["prepare_active_item"],
+    },
+    { scope },
+  );
+  const lines = rendered.split("\n");
+  const at = lines.indexOf(card("roadmap position"));
+  assert.ok(at > 0);
+  assert.deepEqual(lines.slice(at + 1, at + 5), [
+    card("CV4.DS1 — Orphan Story (🟡 Planned)"),
+    card("[docs/project/roadmap/stray/cv4-ds1-orphan/index.md]"),
+    card("no authored package for CV4"),
+    card(""),
+  ]);
 });

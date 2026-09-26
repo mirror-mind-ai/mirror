@@ -372,7 +372,26 @@ since TS5.
   expectations over the July and edge trees. A mutation check of the four rules
   that matter (dot in membership, active item excluded, CV not its own candidate,
   ambiguity stated) fails 3, 3, 3, and 2 tests. Plan checkpoint goldens unchanged.
-  `typecheck`, `lint`, `npm test` (2694 pass), `git diff --check` green.
+  `typecheck`, `lint`, `npm test` (2694 pass), `git diff --check` green. CI green on
+  `3efd1601`.
+
+### Plateau 2 handoff (2026-09-26)
+
+- **True now:** `■ BUILDER RESUME` states the journey's own position.
+  `renderBuilderResumeSurface` requires the scope, which `build load` resolves from
+  the cursor it already renders. The row reads `no item pulled yet` without an
+  active item, the CV's package with one, and says which fallback applies
+  otherwise. `resolveRoadmapPosition` is deleted. The four phrases have one owner,
+  `scopePhrases.ts`; the position row and `no item pulled yet` exist so far.
+- **Intentionally undone:** the recommendation surfaces (`PULL_CANDIDATES`,
+  `PROJECT_POSITION`, `ROADMAP SNAPSHOT`, `BUILDER_ORIENTATION`) still recommend
+  project-wide, and `renderBuilderHomeSurface` still exists.
+- **Next:** plateau 3: the recommendation surfaces read the scoped view.
+- **Evidence:** goldens hand-edited with a README row (11 resume renders, 6 load
+  renders, 9 `roadmap_position` scenarios removed), by a script asserting those
+  counts. New hand-written tests for every resume-row variant and for paragraph
+  layout. `typecheck`, `lint`, `npm test` (2697 pass), the Builder lifecycle smoke
+  (54/54), and `git diff --check` green.
 
 ## Outcome
 

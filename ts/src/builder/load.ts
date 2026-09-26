@@ -46,7 +46,7 @@ import { renderProjectPositionReport } from "./pullCandidatesRender.ts";
 import { findCanonicalRefinementIndex, inspectRefinementField } from "./refinementField.ts";
 import { readBuilderResumeState } from "./resumeState.ts";
 import { renderBuilderResumeSurface } from "./resumeSurface.ts";
-import { resolveRoadmapPosition } from "./roadmapPosition.ts";
+import { resolveRoadmapScope } from "./roadmapScope.ts";
 import { extractQuery, renderBuilderModeTransition } from "./transition.ts";
 
 export interface BuildLoadResult {
@@ -136,8 +136,10 @@ function renderEntrySurface(
       refinement: inspectRefinementField(projectPath),
     })}`;
   }
+  // The position is the journey's own (CR002): derived from the cursor this
+  // surface already renders, never from a scan of the whole roadmap.
   return renderBuilderResumeSurface(resumeState, {
-    roadmapPosition: projectPath ? resolveRoadmapPosition(projectPath) : null,
+    scope: resolveRoadmapScope(projectPath || null, cursor),
     canonicalRefinementIndex,
   });
 }

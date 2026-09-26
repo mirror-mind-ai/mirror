@@ -5,7 +5,9 @@
 // `roadmap_position.resolve_roadmap_position`, and
 // `story_paths._group_roadmap_headings`. They are one function here for the same
 // reason `roadmap_grammar.py` exists in Python — three copies of a scan is three
-// chances for the ordering to drift.
+// chances for the ordering to drift. CR002 deleted the position reader: a
+// journey's position now comes from its cursor (`roadmapScope.ts`), not from the
+// first file whose status reads "Active".
 //
 // The ordering is the whole point. `sorted()` over `Path` objects compares
 // COMPONENT LISTS, so `a/b` precedes `a-x/c`; a JavaScript `sort()` over joined

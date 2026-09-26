@@ -92,19 +92,6 @@
       "name": "candidates__main"
     },
     {
-      "expected": {
-        "code": "CV2",
-        "path": "docs/project/roadmap/cv2-second-value/index.md",
-        "status": "🟢 Active",
-        "title": "Second value"
-      },
-      "input": {
-        "project": "main"
-      },
-      "kind": "roadmap_position",
-      "name": "position__main"
-    },
-    {
       "expected": {},
       "input": {
         "project": "main"
@@ -206,14 +193,6 @@
       },
       "kind": "pull_candidates",
       "name": "candidates__ds_grammar"
-    },
-    {
-      "expected": null,
-      "input": {
-        "project": "ds_grammar"
-      },
-      "kind": "roadmap_position",
-      "name": "position__ds_grammar"
     },
     {
       "expected": {},
@@ -323,14 +302,6 @@
       "name": "candidates__heading_grammar"
     },
     {
-      "expected": null,
-      "input": {
-        "project": "heading_grammar"
-      },
-      "kind": "roadmap_position",
-      "name": "position__heading_grammar"
-    },
-    {
       "expected": {},
       "input": {
         "project": "heading_grammar"
@@ -420,14 +391,6 @@
       "name": "candidates__ambiguous"
     },
     {
-      "expected": null,
-      "input": {
-        "project": "ambiguous"
-      },
-      "kind": "roadmap_position",
-      "name": "position__ambiguous"
-    },
-    {
       "expected": {
         "CV5.DS1": [
           "docs/project/roadmap/first-claim",
@@ -499,14 +462,6 @@
       },
       "kind": "pull_candidates",
       "name": "candidates__empty"
-    },
-    {
-      "expected": null,
-      "input": {
-        "project": "empty"
-      },
-      "kind": "roadmap_position",
-      "name": "position__empty"
     },
     {
       "expected": {},
@@ -602,14 +557,6 @@
       },
       "kind": "pull_candidates",
       "name": "candidates__precedence"
-    },
-    {
-      "expected": null,
-      "input": {
-        "project": "precedence"
-      },
-      "kind": "roadmap_position",
-      "name": "position__precedence"
     },
     {
       "expected": {},
@@ -743,14 +690,6 @@
       "name": "candidates__dialect"
     },
     {
-      "expected": null,
-      "input": {
-        "project": "dialect"
-      },
-      "kind": "roadmap_position",
-      "name": "position__dialect"
-    },
-    {
       "expected": {},
       "input": {
         "project": "dialect"
@@ -819,14 +758,6 @@
       "name": "candidates__no_roadmap"
     },
     {
-      "expected": null,
-      "input": {
-        "project": "no_roadmap"
-      },
-      "kind": "roadmap_position",
-      "name": "position__no_roadmap"
-    },
-    {
       "expected": {},
       "input": {
         "project": "no_roadmap"
@@ -893,14 +824,6 @@
       },
       "kind": "pull_candidates",
       "name": "candidates__missing_entirely"
-    },
-    {
-      "expected": null,
-      "input": {
-        "project": "missing_entirely"
-      },
-      "kind": "roadmap_position",
-      "name": "position__missing_entirely"
     },
     {
       "expected": {},

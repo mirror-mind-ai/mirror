@@ -31,7 +31,6 @@ import {
   matchStatus,
   stripMarkdownLink,
 } from "#builder/roadmapGrammar.ts";
-import { resolveRoadmapPosition } from "#builder/roadmapPosition.ts";
 import {
   createStoryDirectory,
   findDuplicateRoadmapHeadings,
@@ -83,7 +82,6 @@ test("every golden kind is exercised here", () => {
       "render_pull_candidates",
       "render_roadmap_snapshot",
       "resolve_story_directory",
-      "roadmap_position",
       "roadmap_snapshot",
       "story_folder_name",
       "strip_markdown_link",
@@ -182,16 +180,6 @@ test("a done.md is inherited by descendants", () => {
     "CV1.DS1 is Planned with no done.md of its own, but an ancestor has one",
   );
   assert.ok(!codes.includes("CV0"), "legacy/ is excluded from the scan");
-});
-
-test("resolveRoadmapPosition matches Python", () => {
-  for (const scenario of byKind("roadmap_position")) {
-    assert.deepEqual(
-      resolveRoadmapPosition(projectRoot(scenario)),
-      scenario.expected ?? null,
-      scenario.name,
-    );
-  }
 });
 
 test("resolveStoryDirectory matches Python, ambiguity included", () => {
