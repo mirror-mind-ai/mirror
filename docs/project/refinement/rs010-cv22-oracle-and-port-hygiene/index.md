@@ -62,3 +62,4 @@ evidence stays honest as both cores move.
 - [CR100 — The session resolver guesses "the session" from a table that holds three kinds of row](cr100-the-session-resolver-guesses-from-a-table-of-three-row-kinds.md)
 - [CR101 — Explorer and Soul activation stamp their mode onto a guessed session](cr101-explorer-and-soul-activation-stamp-a-guessed-session.md)
 - [CR102 — The Claude Code `mm-build` skill carries no activation boundary, journey binding, or Ariad section](cr102-the-claude-code-mm-build-skill-lacks-the-builder-and-ariad-sections.md)
+- [CR106 — A Pi session started against a scratch Mirror home copies the whole Pi history into it](cr106-a-pi-session-in-a-scratch-mirror-home-copies-the-whole-pi-history-into-it.md)
