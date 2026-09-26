@@ -27,7 +27,7 @@ cannot choose safely.
 ## Change Requests
 
 - [CR001 — Make scope confirmation an honest checkpoint](cr001-scope-confirmation-checkpoint.md)
-- [CR002 — Refuse ambiguous roadmap selection during cursor sync](cr002-cursor-sync-roadmap-selection.md)
+- [CR002 — Builder's position and next-pull surfaces ignore the journey](cr002-cursor-sync-roadmap-selection.md)
 - [CR003 — Make artifact materialization surfaces truthful](cr003-surface-materialization-truth.md)
 - [CR004 — Preserve authored story index during Plan materialization](cr004-preserve-authored-story-index.md)
 - [CR008 — Bind lifecycle commands to the active Builder journey](cr008-bind-lifecycle-commands-to-active-journey.md)
