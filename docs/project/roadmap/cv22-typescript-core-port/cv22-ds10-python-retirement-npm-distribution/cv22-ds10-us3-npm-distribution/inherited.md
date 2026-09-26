@@ -8,8 +8,11 @@ Written 2026-09-25 by CV22.DS10.TS5's
 scattered across TS5's index, plan, inventory, and `decisions.md`, which is
 how this journey once lost a deferred finding: its revisit trigger fired
 where nobody was reading. This list is where to read. It is its own file, not
-a section of `index.md`, because Plan materialization can still overwrite an
-authored story index (CR004, CR079).
+a section of `index.md`. The reason once given here, that Plan materialization
+could overwrite an authored story index, was already false: Plan writes each
+package file only when it is absent
+([CR079](../../../../refinement/rs001-ariad-runtime-trust/cr079-preserve-authored-content-in-every-lifecycle-artifact.md),
+which closes CR004).
 
 Items 1–12 are TS5's. Item 13 was added by CR008 on 2026-09-25, because it
 changes the output of the instrument item 10 names.

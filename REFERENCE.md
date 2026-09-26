@@ -431,6 +431,32 @@ each of them with its
 Refinement Work lives in project files, for every journey, with no second
 authority to fall back to.
 
+### Builder lifecycle artifacts
+
+Every file a Builder lifecycle command writes into a project falls under one of
+two rules:
+
+- **Scaffolds are written only where no file exists.** These are the story and
+  Delivery Story Plan packages (`index.md`, `plan.md`, `test-guide.md`),
+  the story indexes Expand creates, and the method templates. From then on they
+  belong to the Driver, and no command rewrites them.
+- **Records carry a seal.** These are `validation.md`, `review.md`,
+  `coherence.md`, and `done.md`, at story and Delivery Story level. Each
+  ends with `<!-- ariad-seal sha256:… -->`, the hash of everything above it.
+  - A closure command rewrites a record only while its seal still matches.
+    That is how a validation recorded as pending and later accepted updates its
+    file.
+  - Any other record is left exactly as it is: one written or edited by hand,
+    one written before seals existed, or one whose seal was removed. The
+    checkpoint surface then says `preserved`, and that checkpoint's fields are
+    in the surface, not in the file.
+  - To let Ariad write such a record again, a person moves their notes
+    elsewhere and deletes the file. The Builder skill never does that on its
+    own.
+
+Every artifact path must resolve inside the journey's project, or nothing is
+written.
+
 ### Clone role
 
 Each Mirror Mind clone declares its role through a `.mirror-clone-role` file at the repository root. Valid values are `production` and `dev`. The file is local to each clone and ignored by git. When the file is missing, unreadable, or contains an unknown value, the role defaults to `production`.

@@ -888,6 +888,22 @@ Render the deterministic `IMPLEMENTATION_GUARD` surface. If the guard reports
 that Navigator approval is required, return the surface and stop. Do not mutate
 files.
 
+## Closure Records
+
+`validation.md`, `review.md`, `coherence.md`, and `done.md` are records
+that Ariad seals: their last line is `<!-- ariad-seal sha256:… -->`. A closure
+command rewrites a record only while its seal still matches. Anything else is
+left exactly as it is, and the checkpoint says `preserved`.
+
+`preserved` is not an error. It means a person wrote or edited the file, and
+their version stands. The checkpoint's fields are in the surface you render, and
+they were not written to the file.
+
+- Never delete, rewrite, or re-seal an authored record to make Ariad write it.
+- Never copy a seal line into a file.
+- If the Navigator wants Ariad's record in the file, ask how they want their
+  own notes kept.
+
 ## Delivery Story Validation And Closure
 
 When the active Ariad work is a Delivery Story with
