@@ -334,6 +334,58 @@ push, or release is granted by any part of it.
   [CR015](cr015-preserve-driver-authored-plan-before-approval.md) — the two
   earlier instances.
 
+**2026-09-25: implementation evidence.** Commits on `mirror-ts-core`:
+`818181bc` (writer, rerouting, tests, and goldens) and `9a180b47` (REFERENCE,
+the `mm-build` skill, and US3's `inherited.md`).
+
+- **Gates.** `npm test` passes 2680/2680 (12 new tests). `npm run
+  typecheck` is clean. `npm run lint` has no errors; its warning and info
+  predate this CR. The Builder Ariad lifecycle smoke passes 54/54, and the
+  retired-surface tripwire, skill parity, doc links, and CR008's session
+  tripwire are all clean.
+- **Written first.** The writer's tests (policies, the seal, CRLF, trailing
+  blanks, confinement) failed on the missing module. The structural guard
+  failed and named exactly the five modules the characterization found, then
+  passed once they were rerouted.
+- **Graded at the CLI.** Every corpus case that writes a record was run with
+  that record authored first. Each file came through byte for byte, and the
+  surface said `preserved`, with the `⊘` mark where
+  ARTIFACTS_MATERIALIZED renders. With the old overwrite restored, the test
+  fails, so it can tell the difference.
+- **CR004 graded directly.** An authored Plan package survives both
+  `plan-item` and `plan-delivery-story`.
+- **Corpus.** It now records the authored-first sequence
+  (`closure_preserves_authored_artifacts`) keeping every authored byte while
+  its cursor advances exactly as before. It also records two Delivery Story
+  revalidations reporting `✎ updated` where they used to say `↻ existing`.
+  See the ledger row in `ts/test/goldens/README.md`.
+
+**Where the build departs from the plan's text.** Each item is recorded here for the Navigator:
+
+1. **A real bug caught during implementation.** The writer first resolved an
+   artifact path against the project root. Every old write site resolved it
+   against the working directory, as `writeFileSync` does, so a relative
+   project path would have been doubled. It is fixed, and a test pins it: the
+   test fails with the bug restored.
+2. **Story-level checkpoints show a state only for `preserved`.** That is the
+   one case a reader cannot assume. `created` and `updated` records hold the
+   checkpoint's fields, as they always have, so their rows stay
+   byte-identical.
+3. **The ARTIFACTS_MATERIALIZED title stays as it is.** It is the surface's
+   identity in the Ariad transport. The row (`⊘ preserved`) and the boundary
+   sentence carry what happened.
+4. **The story Plan package manifest still samples existence before the
+   write.** For `create-only` the sample is the outcome by construction, so
+   the surface stays true. The Delivery Story package, Expand, templates, and
+   every record now report the writer's return value.
+
+**Navigator validation route.**
+
+1. Read the evidence above.
+2. Optionally, the Driver runs the plan's four-step walkthrough on a
+   disposable Mirror home through the front door: authored → preserved,
+   deleted → created, accepted → updated, edited → preserved.
+
 ## Outcome
 
 _Pending._
