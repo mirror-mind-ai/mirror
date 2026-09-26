@@ -86,7 +86,9 @@ Not yet planned. Two decisions belong to whoever takes it:
 ### Plan (approved by the Navigator 2026-09-25)
 
 Approved as drafted (`planned`) and started the same day (`in_progress`; Driver
-`@viniciusteles`, Delivery `mirror-ts-core`).
+`@viniciusteles`, Delivery `mirror-ts-core`). Validated by the Navigator the same
+day on the recorded evidence, with the four departures below accepted with it
+(`validated`).
 
 #### Characterization (read-only, TypeScript engine)
 

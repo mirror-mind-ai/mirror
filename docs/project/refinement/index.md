@@ -32,7 +32,7 @@ Open work is ordered intentionally. Terminal history follows open work.
 
 | Order | ID | RS | Change | Status | Driver | Delivery |
 |------:|----|----|--------|--------|--------|----------|
-| 1 | [CR079](rs001-ariad-runtime-trust/cr079-preserve-authored-content-in-every-lifecycle-artifact.md) | RS001 | Preserve authored content in every lifecycle artifact, not one at a time | in_progress | @viniciusteles | `mirror-ts-core` |
+| 1 | [CR079](rs001-ariad-runtime-trust/cr079-preserve-authored-content-in-every-lifecycle-artifact.md) | RS001 | Preserve authored content in every lifecycle artifact, not one at a time | validated | @viniciusteles | `mirror-ts-core` |
 | 2 | [CR004](rs001-ariad-runtime-trust/cr004-preserve-authored-story-index.md) | RS001 | Preserve authored story index during Plan materialization | captured | — | — |
 | 3 | [CR002](rs001-ariad-runtime-trust/cr002-cursor-sync-roadmap-selection.md) | RS001 | Refuse ambiguous roadmap selection during cursor sync | captured | — | — |
 | 4 | [CR001](rs001-ariad-runtime-trust/cr001-scope-confirmation-checkpoint.md) | RS001 | Make scope confirmation an honest checkpoint | planned | — | — |
