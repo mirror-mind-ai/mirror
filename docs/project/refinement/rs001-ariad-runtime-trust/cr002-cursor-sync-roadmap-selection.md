@@ -515,6 +515,40 @@ status line ([CR103](cr103-candidate-and-position-rows-print-a-package-s-entire-
 new); and the Pull surface names the CV with the item's title (evidence added to
 [CR018](cr018-story-titles-with-slashes-truncated-in-surfaces-and-scaffolds.md)).
 
+### Handoff review (2026-09-26)
+
+After validation, per the collaboration strategy. The baseline panel
+(engineer, quality-assurance, database-architect, devops-engineer,
+security-engineer) plus the three lenses that dissented at plan review
+(prompt-engineer, experience-designer, product-designer) reviewed the delivered
+code, tests, safety posture, operational cost, and resumability.
+
+Synthesis: the change is proportional. One scope replaces two project-wide scans
+and a renderer nothing called, and the plan-review dissents are resolved in the
+delivered code. It introduced one real hazard, in the very line it designed to be
+copied, and left two small cohesion debts of its own making.
+
+| # | Lens | Finding | Class | Recommendation |
+|---|---|---|---|---|
+| 1 | security-engineer | The `pull explicitly:` line prints the journey slug raw, and slugs are not validated: a journey named `x;touch PWNED` is accepted end to end, and its command reads `--journey x;touch PWNED --method ariad …`. CR002 made this the line an agent copies, so it is a path from a slug to the Navigator's shell. Older refusal hints interpolate slugs the same way | Non-blocking debt, introduced here | Pay now: shell-quote the slug when it is not a plain token. Capture slug validation at creation, which predates CR002, as its own CR |
+| 2 | engineer | The fallback phrases have two owners. `scopePhrases.ts` states them on the resume row, and `placeholderTitle` in `roadmapScope.ts` spells three of them again for the focus | Non-blocking debt, introduced here | Pay now: `scopePhrases.ts` owns every phrase |
+| 3 | engineer | `BUILDER_ORIENTATION` renders only unscoped, because `build load` shows it only without an active item. It kept scoped branches anyway (the `▸` marker, the placement child line, the `pull <code>` move), and one of CR002's own tests grades that unreachable move | Non-blocking debt, introduced here | Pay now: remove the unreachable branches and the test that keeps them alive |
+| 4 | quality-assurance | The natural half of the validation route was not walked. Rendered read-only from the real database, the resume row reads `CV22 — TypeScript Core Port …`, derived from `CV22.DS10.TS5` | Closed by evidence | None |
+| 5 | quality-assurance | The conscious exclusion is now due. CV9.DS7 still reads Active in the project-wide list every fresh journey sees, and closing it needs a decision on its two Validated children | Question for the Navigator | Decide separately; not CR002 debt |
+
+Silent lenses: database-architect (reads only; no persistence change) and
+devops-engineer (the extra heading scan costs about 18 ms per command against about
+50 ms for the existing candidate scan on this repository; CI green; rollback is a
+plain `git revert`). Prompt-engineer, experience-designer, and product-designer are
+silent too: their plan-review dissents are resolved, and what still crowds the
+first screen is CR103's.
+
+Accepted scope boundaries, as planned: CR019, CR102, CR018 (with new evidence),
+CR103 (new), and `recommend()`'s fallback. One more predates CR002: the resume row
+takes a CV's status from its package, while `PROJECT_POSITION` takes it from the
+roadmap index row, so CV22 reads Active in one and In Progress in the other. That is
+status rendering, CR103's territory.
+
 ## Outcome
 
 Pending.
