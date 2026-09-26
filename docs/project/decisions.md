@@ -3103,3 +3103,38 @@ reopens): the floor is a list of changes, not a story. It sits last in floor
 order because its port carries the Ariad section that the other floor changes
 are still editing. Moving it earlier makes sense only if its plan chooses to
 generate the copies from one source.
+
+### A Builder journey's position is its cursor's active item, never a roadmap scan
+
+**Date:** 2026-09-26 · **Context:** [CR002](refinement/rs001-ariad-runtime-trust/cr002-cursor-sync-roadmap-selection.md),
+on the [Ariad trust floor](#the-cv22-release-is-gated-on-an-ariad-trust-floor-worked-before-us3).
+Every Builder surface that answers "where are we" or "what next" read the whole
+roadmap for whichever journey asked. The resume row took the first `index.md`
+whose status contained "Active"; the recommendation ranked every candidate in the
+project. A project holding several journeys' work told all of them the same
+answer: `builder-mode-evolution` was told it stood at CV9.DS7 in July, and this
+journey met the same row during CV22.DS6.TS4 and took it for a stale cursor.
+
+**The decision: a journey's roadmap scope comes from its delivery cursor and
+nowhere else. With an active item, the position is the Capability Value the item
+belongs to by heading code, and the next pull is recommended only among that CV's
+strict descendants. Without one, the surfaces say `no item pulled yet`, list the
+project-wide candidates as such, recommend nothing, and give the literal
+`pull-item` command.**
+
+**Why the cursor, not a binding.** The active item is the only roadmap fact a
+journey already owns: Pull sets it, and only `sync-cursor` clears it. A persisted
+journey-to-roadmap binding would be a new piece of data to keep true; the cursor is
+already kept true by the lifecycle. The cost is one explicit Pull per fresh journey,
+which is what the July recovery did anyway.
+
+**Why an honest refusal, not a better guess.** No status scan can be right for two
+journeys at once, and a project-wide ranking recommends another journey's work the
+moment one CV runs out. "No item pulled yet" is always true; a guess is sometimes
+false, and it is false at the point where the Navigator decides.
+
+**The rule that follows.** Identity is the heading code; folders never decide
+membership. Membership is strict descent (`CVx.`), so a CV is never its own
+candidate. A Builder surface that needs a position or a recommendation takes the
+scope from `ts/src/builder/roadmapScope.ts` and its words from
+`ts/src/builder/scopePhrases.ts`; it does not scan.

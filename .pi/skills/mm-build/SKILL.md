@@ -295,29 +295,37 @@ Next step:
 
 ## Ariad Activation Surfaces
 
-For Ariad-adopted journeys with no active item, `build load` can emit:
+For Ariad-adopted journeys whose delivery cursor has no active item,
+`build load` emits:
 
-- `■ Builder Home`
-- `ROADMAP SNAPSHOT`
-- `■ Ariad Pull Candidates`
+- `PROJECT POSITION`
+- `■ BUILDER ORIENTATION`
 
-For Ariad-adopted journeys with an active item or pending confirmation,
-`build load` can emit:
+For Ariad-adopted journeys with no delivery cursor yet, or with an active item
+or a pending confirmation, `build load` emits:
 
 - `■ BUILDER RESUME`
 
+Every position and next pull on these surfaces is the journey's own, derived
+from its delivery cursor. With an active item, the position is the Capability
+Value the item belongs to, and any recommended pull is chosen inside it. Without
+one, the surfaces read `no item pulled yet`, list `project-wide candidates`,
+recommend nothing, and give the literal `pull explicitly:` command. Never present
+a candidate from the project-wide list as this journey's recommendation.
+
 These surfaces are mandatory activation output. The final response to the user
 must include the wrapped Ariad surface blocks verbatim from the command output.
-If the command output contains `<<<ARIAD:BUILDER_HOME>>>`,
-`<<<ARIAD:ROADMAP_SNAPSHOT>>>`, or `<<<ARIAD:PULL_CANDIDATES>>>`, the response
-is invalid unless the visible reply also contains every complete matching
-begin/end block in stdout order.
+If the command output contains `<<<ARIAD:BUILDER_RESUME>>>`,
+`<<<ARIAD:PROJECT_POSITION>>>`, or `<<<ARIAD:BUILDER_ORIENTATION>>>`, the
+response is invalid unless the visible reply also contains every complete
+matching begin/end block in stdout order.
 
 After rendering these surfaces, do not ask a generic question such as "inspeção
 runtime, planejamento de Delivery, ou exploração?" and do not add a third
 runtime-inspection option unless the surface itself recommends it. For an Ariad
-journey with no active item, ask only whether the Navigator wants to pull the
-recommended candidate or inspect the roadmap further after the verbatim blocks.
+journey with no active item, ask only which item the Navigator wants to pull,
+from the project-wide list and without ranking it, or whether to inspect the
+roadmap further, after the verbatim blocks.
 
 ## Compose Refinement Work
 
@@ -526,9 +534,12 @@ NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build pu
 ```
 
 Render the configured Ariad surfaces visibly, currently `ROADMAP SNAPSHOT` and
-`■ Ariad Pull Candidates`. This is read-only: it must not pull an item, update
-the cursor, execute lifecycle work, change story status, commit, push, or
-release.
+`■ Ariad Pull Candidates`. With an active item both are scoped to its Capability
+Value: `candidates in <CV>`, a count of those outside, and a recommendation
+inside the CV (or `no remaining candidates in <CV>`). Without one, the list is
+`project-wide candidates` and no pull is recommended. This is read-only: it must
+not pull an item, update the cursor, execute lifecycle work, change story status,
+commit, push, or release.
 
 ## Pull And Prepare Ariad Work
 

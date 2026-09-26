@@ -350,6 +350,12 @@ marked Done: position `CV9.DS7`, recommended `CV20.DS10`.
 
 CV9.DS7 package: no `done.md` at any level; children 10 × Done, 2 × Validated.
 
+An earlier sighting in this journey, found while writing the decision:
+[CV22.DS6.TS4's plan](../../roadmap/cv22-typescript-core-port/cv22-ds6-schema-custody-transfer/cv22-ds6-ts4-front-door-bootstrap-flip/plan.md)
+scheduled reconciling "the stale `roadmap position: CV9.DS7` cursor pointer". The
+row was never a cursor pointer. It came from the scan, so no bookkeeping could have
+reconciled it.
+
 Readers and consumers: `resolveRoadmapPosition` has one caller (`load.ts`).
 `inspectPullCandidates` has five: `load.ts` (the orientation path), `runPullCandidates`,
 `roadmapPlanContext`, `runDoneDeliveryStory`, `runDoneItem`. `renderBuilderHomeSurface`
