@@ -77,9 +77,12 @@ invocation.
 2026-07-02) through the commit that recorded AF-004 (`26415e3c`, 2026-07-15):
 `cmd_set_flow_unit` printed the scope confirmation, and `cmd_plan_delivery_story`
 printed only the Plan report and its artifacts. No runtime version produced one
-`plan-delivery-story` invocation emitting both surfaces. The observation is consistent
-with an agent running `set-flow-unit` and `plan-delivery-story` in the same turn. That
-is an inference: the ledger does not preserve the original transcript.
+`plan-delivery-story` invocation emitting both surfaces. This was rechecked at closure
+through the Python core's last state (`a6d28b62^`). The only other commits that changed a
+call to that renderer touched a unit test (`f9544175`) and the parity generator
+(`b1f7611d`). The observation is consistent with an agent running `set-flow-unit` and
+`plan-delivery-story` in the same turn. That is an inference: the ledger does not
+preserve the original transcript.
 
 **Existing coverage.** `ts/test/goldens/builder-command.golden.json` pins the byte-exact
 stdout of `set_flow_unit_selects_delivery_story` (scope confirmation only) and
@@ -169,5 +172,11 @@ No finding blocks closure. Navigator decision (2026-09-26): no action.
 
 ## Outcome
 
-Validated 2026-09-26, with debt review decided as no action. Closure waits for green CI
-on the pushed change.
+Done 2026-09-26. The runtime never collapsed the scope confirmation into Plan
+materialization. The Builder skill now makes the confirmation a Navigator stop, and a
+regression test pins the runtime ordering the stop relies on. Delivered on
+`mirror-ts-core` in `f6001715`. CI was green on `eaae9cf6`: the Docs link check, Tests on
+Ubuntu and macOS, and the smoke job. AF-004 in the Ariad dogfooding ledger now points
+here. Captured alongside:
+[CR105](cr105-choosing-delivery-story-flow-leaves-the-story-confirmation-pending.md) and
+[CR106](../rs010-cv22-oracle-and-port-hygiene/cr106-a-pi-session-in-a-scratch-mirror-home-copies-the-whole-pi-history-into-it.md).

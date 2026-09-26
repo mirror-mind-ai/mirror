@@ -32,7 +32,7 @@ migration (that journey's Chapter 7). Sequence exercised: `build adopt` →
 | AF-001 | Major | Expand ignores authored candidate-story table | CV20.DS5 (child expansion) | ✅ Fixed (CV20.DS13) |
 | AF-002 | Major | Surface reports a file it did not write | CV20.DS4.TS3 (deterministic surfaces) | ✅ Fixed |
 | AF-003 | Major | DS plan template thinner than `plan_contract` | CV20.DS5 (DS plan artifact) | ✅ Fixed |
-| AF-004 | Minor | Scope-confirmation checkpoint collapses into plan | CV20.DS5 + cadence | Open |
+| AF-004 | Minor | Scope-confirmation checkpoint collapses into plan | CV20.DS5 + cadence | ✅ Resolved (CR001) |
 | AF-005 | Minor | Self-nested roadmap tree; child == parent | CV20.DS5 (expansion) | ✅ Fixed (CV20.DS13) |
 | AF-006 | Minor | Approve reports "updated story index" but file is unchanged | CV20.DS4.TS3 (deterministic surfaces) | ✅ Fixed |
 | AF-007 | Minor | Next-pull recommendation points at a legacy/archived item, ignoring the active chapter sequence | CV20.DS4/DS5 (roadmap awareness) | ✅ Fixed (CV20.DS13) |
@@ -187,7 +187,14 @@ required outputs — the template should reflect them.
 
 ## AF-004 — Scope-confirmation checkpoint collapses into plan materialization
 
-**Severity:** Minor (cadence integrity) **Status:** Open **Likely owner:** CV20.DS5 + cadence resolution
+**Severity:** Minor (cadence integrity) **Status:** ✅ Resolved (CR001, `f6001715`) **Likely owner:** CV20.DS5 + cadence resolution
+
+**Resolution.** Not a runtime defect. In every runtime version, `set-flow-unit` printed
+the scope confirmation and wrote no Plan, and `plan-delivery-story` wrote the Plan
+without asking again. The collapse came from an agent running both in one turn.
+[CR001](../../refinement/rs001-ariad-runtime-trust/cr001-scope-confirmation-checkpoint.md)
+made the confirmation a Navigator stop in the Builder skill and pinned the runtime
+ordering with a regression test.
 
 **Context.** `set-flow-unit delivery_story` then `plan-delivery-story`, under
 `checkpoint` cadence.

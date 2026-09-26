@@ -12,6 +12,28 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-09-26 — CR001 done: the scope confirmation is a real stop
+
+This is the fourth change of the Ariad trust floor. AF-004 recorded a Delivery Story
+scope question, "Before I create the DS Plan ... is this the right scope?", shown after
+the Plan already existed. The runtime never did that. In every version, Python and
+TypeScript alike, `set-flow-unit` asks the question and writes no Plan, and
+`plan-delivery-story` writes the Plan without asking again. The collapse came from an
+agent running both commands in one turn, which the Builder skill allowed because it
+never said to wait for the answer.
+
+The skill now ends the turn at `DELIVERY_STORY_SCOPE_CONFIRMATION`, under every cadence
+and with or without Plan preauthorization, and names the surface `set-flow-unit`
+actually prints. A regression test pins the runtime ordering the stop relies on, and two
+mutants confirmed it fails when that ordering breaks. The runtime is unchanged. The
+Navigator validated the stop in a real Pi session that asked for the flow and the Plan
+in one message.
+
+Captured: CR105 (choosing Delivery Story flow leaves the story-by-story confirmation
+pending, so the resume surface offers the wrong next action) and CR106 (a Pi session
+started against a scratch Mirror home copies the whole Pi history into it, which this
+validation exposed). Next on the floor: CR019.
+
 ### 2026-09-26 — CR002 done: a Builder journey's position is its own
 
 This is the third change of the Ariad trust floor. Builder answered "where are
