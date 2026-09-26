@@ -35,3 +35,4 @@ substituting a placeholder.
 ## Change Requests
 
 - [CR014 — Resolve the owner's name from one authority](cr014-resolve-owner-name-from-one-authority.md)
+- [CR104 — Journey slugs are not validated, and command hints print them raw](cr104-journey-slugs-are-not-validated-and-command-hints-print-them-raw.md)
