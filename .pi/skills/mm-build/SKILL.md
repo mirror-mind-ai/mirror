@@ -684,10 +684,21 @@ run:
 NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build set-flow-unit --journey <slug> --method ariad --unit delivery_story
 ```
 
-Return the `NAVIGATOR_FLOW_UNIT` surface verbatim. Explain after the surface
-that child User/Technical Stories remain traceable Driver work packages, and
-that choosing Delivery Story flow does not approve a Plan, start implementation,
-validate, push, or release.
+Return the `DELIVERY_STORY_SCOPE_CONFIRMATION` surface verbatim. Explain after
+the surface that child User/Technical Stories remain traceable Driver work
+packages, and that choosing Delivery Story flow does not approve a Plan, start
+implementation, validate, push, or release.
+
+The scope confirmation is a Navigator stop. It asks whether the scope is right
+before any DS Plan exists, and the runtime does not enforce the wait: the
+question stays true only if you wait for the answer. End the turn after the
+surface. Do not run `plan-delivery-story` in the same turn, even when the
+Navigator's request also asked for the Plan. Plan only on a later Navigator turn
+that confirms or corrects the scope. Cadence and Plan preauthorization do not
+remove this stop.
+
+`set-flow-unit` without `--unit` only inspects the current choice and renders
+`NAVIGATOR_FLOW_UNIT`.
 
 When the effective flow unit is `story_by_story`, preserve existing child-story
 Plan behavior. Do not silently use Delivery Story-level Plan unless the
@@ -774,7 +785,10 @@ purchase, or another irreversible boundary.
 
 If the Navigator asks to plan the Delivery Story before selecting
 `delivery_story` flow, first surface or request the flow-unit choice; do not
-silently use DS-level Plan from the default `story_by_story` flow.
+silently use DS-level Plan from the default `story_by_story` flow. Surfacing the
+choice with `set-flow-unit --unit delivery_story` ends the turn at its scope
+confirmation, as described in Delivery Story Navigator Flow; plan on the
+Navigator's next turn.
 
 When the Navigator approves a pending DS-level Plan with natural language such
 as `aprovo o plano da DS`, `plano da DS aprovado`, or `approve the Delivery

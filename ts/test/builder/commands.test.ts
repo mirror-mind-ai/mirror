@@ -1353,3 +1353,58 @@ test("CR079/CR004: an authored Plan package survives plan-item and plan-delivery
     }
   }
 });
+
+/** The ids of the marked Ariad surfaces in one command's stdout, in emission order. */
+function surfaceIds(stdout: string): string[] {
+  return [...stdout.matchAll(/<<<ARIAD:([A-Z_]+)>>>/gu)].map((match) => match[1] ?? "");
+}
+
+test("CR001: the Delivery Story scope question is asked before any Plan exists, and the Plan never re-asks it", () => {
+  // The Builder skill makes the scope confirmation a Navigator stop: the agent ends
+  // its turn at the surface and plans only on a later turn. That stop is honest only
+  // while choosing the flow unit writes no Plan artifact and the Plan command does
+  // not print the scope question again (the AF-004 shape).
+  const project = scratchProject(false);
+  const db = seed("adopted_prepared_ds", project);
+  try {
+    const before = projectSnapshot(project);
+    const flow = invoke(db, [
+      "set-flow-unit",
+      "--method",
+      "ariad",
+      "--journey",
+      "demo",
+      "--unit",
+      "delivery_story",
+    ]);
+    assert.equal(flow.exitCode, 0, flow.stderr);
+    assert.deepEqual(surfaceIds(flow.stdout), ["DELIVERY_STORY_SCOPE_CONFIRMATION"]);
+    assert.match(flow.stdout, /Before I create the DS Plan/u);
+    assert.deepEqual(projectSnapshot(project), before, "choosing the flow unit writes no file");
+
+    const plan = invoke(db, [
+      "plan-delivery-story",
+      "--method",
+      "ariad",
+      "--journey",
+      "demo",
+      "--objective",
+      "Deliver the delivery story as one outcome.",
+      "--child",
+      "CV1.DS1.US1",
+    ]);
+    assert.equal(plan.exitCode, 0, plan.stderr);
+    assert.deepEqual(surfaceIds(plan.stdout), [
+      "DELIVERY_STORY_PLAN_CHECKPOINT",
+      "ARTIFACTS_MATERIALIZED",
+    ]);
+    assert.doesNotMatch(plan.stdout, /Before I create the DS Plan|Is this the right scope/u);
+    const written = Object.keys(projectSnapshot(project)).filter((path) => !(path in before));
+    assert.ok(
+      written.some((path) => path.endsWith("/plan.md")),
+      `the Plan command is the one that writes plan.md; new files: ${written.join(", ")}`,
+    );
+  } finally {
+    db.close();
+  }
+});
