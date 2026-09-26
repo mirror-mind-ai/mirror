@@ -261,6 +261,31 @@ Then on this journey: `build load` → position `CV22`, now by derivation;
 Pass: exactly those outcomes. Fail: any surface names `CV9.DS7` or a CV20 item for
 `mirror-ts-core`. This route is the E2E; no personal data is involved.
 
+The July half, runnable from the repository root. There is no `.env`, so nothing
+reaches the real home:
+
+```bash
+V=$(mktemp -d) && git archive dfd44051 docs/project/roadmap | tar -x -C "$V" && mkdir "$V/home"
+export MIRROR_HOME="$V/home" NODE_OPTIONS=--no-warnings
+mm() { node ts/src/frontDoor/cli.ts "$@"; }
+printf '# BME\n' | mm identity set journey bme
+mm journey set-path bme "$V" && mm build adopt --journey bme --method ariad
+
+mm build load bme 2>/dev/null | sed -n '/ARIAD:BUILDER_RESUME/,/END:BUILDER_RESUME/p'      # step 1
+mm build sync-cursor --journey bme --method ariad
+mm build load bme 2>/dev/null | sed -n '/ARIAD:PROJECT_POSITION/,/END:BUILDER_ORIENTATION/p'  # step 2
+mm build pull-item --journey bme --method ariad --item-code CV20.DS12.TS1 \
+  --item-title "Canonical Refinement Index And Artifact Convention" \
+  --item-level technical_story --why-now "CR002 validation"
+mm build load bme 2>/dev/null | sed -n '/ARIAD:BUILDER_RESUME/,/END:BUILDER_RESUME/p'      # step 3
+mm build pull-candidates --journey bme --method ariad
+unset MIRROR_HOME; rm -rf "$V"
+```
+
+The natural half is `/mm-build mirror-ts-core` in a fresh session: the resume
+surface's `roadmap position` reads `CV22 — TypeScript Core Port …`, now derived
+from the active item `CV22.DS10.TS5`.
+
 ### Conscious exclusions
 
 - CV9.DS7's stale status: docs housekeeping, done separately and only after
@@ -441,6 +466,25 @@ since TS5.
 - **Intentionally undone:** docs (the `mm-build` skill, decisions, process docs),
   Navigator validation, and the handoff review.
 - **Next:** plateau 5.
+
+### Plateau 5: docs and the Driver's walk of the validation route (2026-09-26)
+
+Docs (`251225e0`): the `mm-build` skill names the surfaces `build load` really
+emits and tells the agent to ask which item to pull rather than rank the
+project-wide list; `decisions.md` records the rule. The process docs describe none
+of these rows, so they are unchanged; the worklog entry waits for closure.
+
+The Driver walked the [validation route](#validation-route) in an isolated home.
+This is implementation evidence, not Navigator validation:
+
+| Step | Observed |
+|---|---|
+| July tree, `build load` without a cursor | `roadmap position: no item pulled yet` |
+| `sync-cursor`, `build load` | "Where are we now?" `no item pulled yet`; "What looks next?" `pull explicitly: mirror build pull-item --journey bme …`; no `▸` |
+| `pull-item CV20.DS12.TS1`, `build load` | `roadmap position: CV20 — Builder Mode Evolution (🟢 In Progress)` |
+| `pull-candidates` | `candidates in CV20`, `9 more outside CV20`, recommended `CV20.DS7.US1`; `CV9.DS7` absent |
+| Today's tree with CV22 and US3 marked Done, active item `CV22.DS10.TS5` | `no remaining candidates in CV22` and the command; `CV20.DS10` absent |
+| The real `mirror-ts-core` journey, read-only `pull-candidates` | `candidates in CV22`, `14 more outside CV22`, recommended `CV22.DS10.US3`, snapshot focus `CV22` |
 
 ## Outcome
 
