@@ -12,6 +12,30 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-09-26 — CR002 done: a Builder journey's position is its own
+
+This is the third change of the Ariad trust floor. Builder answered "where are
+we" and "what next" from the whole roadmap, for whichever journey asked. The
+resume row named the first package whose status contained "Active", and the
+recommendation ranked every candidate in the project. A CV20 journey was told it
+stood at CV9.DS7, a package whose work had finished long before, and kept being
+told so beside the CV20 item it had pulled. This journey met the same row during
+DS6.TS4 and took it for a stale cursor.
+
+Every position and next pull now comes from the journey's delivery cursor. With
+an active item, the position is the Capability Value that item belongs to by
+heading code, and the recommendation stays among that CV's strict descendants.
+Without one, the surfaces say "no item pulled yet", list the project-wide
+candidates as such, and give the literal pull command, quoted so that a hostile
+journey slug runs nothing when pasted. The old position resolver, a second status
+scan inside the focus, and a Builder Home renderer that nothing called are gone.
+The end-to-end tests fail at the defect itself on the code before CR002 and pass
+on the fix, and the Navigator validated the July route in an isolated home.
+
+Closed alongside: CV9.DS7, the stale package. Captured: CR103 (rows print a
+package's whole status line) and CR104 (journey slugs are not validated, and older
+hints print them raw), and CR018 gained evidence. Next on the floor: CR001.
+
 ### 2026-09-25 — CR079 done, with CR004: no Ariad command replaces content it did not write
 
 This is the second change of the Ariad trust floor. The closure verbs

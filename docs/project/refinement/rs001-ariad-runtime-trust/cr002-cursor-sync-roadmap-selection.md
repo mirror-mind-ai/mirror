@@ -549,6 +549,49 @@ takes a CV's status from its package, while `PROJECT_POSITION` takes it from the
 roadmap index row, so CV22 reads Active in one and In Progress in the other. That is
 status rendering, CR103's territory.
 
+### Debt paid (2026-09-26)
+
+The Navigator chose to pay findings 1–3 of the handoff review now (`217f50f9`):
+
+1. The `pull explicitly:` command prints the slug as a POSIX shell word, as is
+   when it is a plain token and single-quoted otherwise. A test pastes the rendered
+   command into `sh`, with a stub `mirror`, for five hostile slugs
+   (`x;touch PWNED`, `$(touch PWNED)`, backticks, an embedded quote, a pipe) and
+   proves that nothing runs and each slug arrives as one argument. With the quoting
+   removed, `touch` runs and the test fails.
+2. `scopeFocus` and every fallback phrase live in `scopePhrases.ts`;
+   `roadmapScope.ts` keeps scope, membership, and candidate scoping.
+3. `BUILDER_ORIENTATION` takes the raw project-wide report and the journey, never
+   a scope, so its unreachable branches and the test that kept one alive are gone.
+
+No golden byte changed. `typecheck`, `lint`, `npm test` (2706 pass), and the
+Builder lifecycle smoke (54/54) are green. Finding 5 was decided separately:
+CV9.DS7 is closed (`36216920`), and Ariad's authored-closure check reports it
+ready with no issues. The slug-validation gap predates CR002 and is captured as
+[CR104](../rs004-identity-resolution-fidelity/cr104-journey-slugs-are-not-validated-and-command-hints-print-them-raw.md).
+
 ## Outcome
 
-Pending.
+**Done on 2026-09-26.**
+
+Every Builder surface that answers "where are we" or "what next" now derives its
+answer from the delivery cursor of the journey that asked, or says plainly that it
+cannot. With an active item, the position is the Capability Value that item belongs
+to by heading code, and a recommendation is chosen only among that CV's strict
+descendants, never the CV itself and never the active item. Without one, the surfaces
+read `no item pulled yet`, list `project-wide candidates`, recommend nothing, and
+give the literal Pull command, quoted. `resolveRoadmapPosition`, the status scan
+inside `focusItem`, and `renderBuilderHomeSurface` are deleted. The rule is recorded
+in [decisions.md](../../decisions.md#a-builder-journeys-position-is-its-cursors-active-item-never-a-roadmap-scan),
+and the `mm-build` skill tells agents to ask which item to pull rather than rank the
+project-wide list.
+
+- **Validation:** accepted by the Navigator on the July route.
+- **Debt review:** three debts found and paid now; none remains.
+- **Captured on the way:** [CR103](cr103-candidate-and-position-rows-print-a-package-s-entire-status-line.md)
+  and [CR104](../rs004-identity-resolution-fidelity/cr104-journey-slugs-are-not-validated-and-command-hints-print-them-raw.md),
+  plus new evidence on [CR018](cr018-story-titles-with-slashes-truncated-in-surfaces-and-scaffolds.md).
+- **Closed alongside:** CV9.DS7.
+- **Delivery:** `d987cc71` (plan) through `217f50f9` (debt), on `mirror-ts-core`.
+
+Next on the Ariad trust floor: CR001.
