@@ -262,6 +262,7 @@ function seedAggregate(db: WritableDatabase, project: string, scenario: string):
         objective: "Deliver both children as one coherent outcome.",
         childWorkItems: [...DS_AGGREGATE_CHILDREN],
         planArtifactPath: join(project, "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/plan.md"),
+        projectRoot: project,
       },
       deps,
     );
@@ -547,6 +548,7 @@ function seedLifecycle(db: WritableDatabase, project: string, scenario: string):
       journey: "demo",
       method: getAriadMethod(),
       planArtifactPath: planPath,
+      projectRoot: project,
       preauthorize: scenario === "adopted_preauthorized",
     },
     deps,
@@ -1234,5 +1236,117 @@ test("CR008: inspect-method with no argument names no journey it was not given",
     assert.equal(named.stdout, bound.stdout, "a named Builder session: that journey's state");
   } finally {
     db.close();
+  }
+});
+
+// ---------------------------------------------------------------------------
+// CR079: no Ariad command replaces content it did not write, graded at the CLI.
+//
+// Every corpus case that writes a closure record is run again with that record
+// already authored. The file must come through byte for byte, the command must
+// answer as the corpus recorded it apart from saying so, and the surface must say
+// so. The Plan commands get the same test for their whole package: CR004, which
+// the oracle-recorded sequence `plan_preserves_authored_plan` already proves
+// through the lifecycle, graded here directly.
+// ---------------------------------------------------------------------------
+
+const AUTHORED = "# Written by the Driver\n\nEvidence Ariad did not write and must not replace.\n";
+const isClosureRecord = (path: string): boolean =>
+  /(^|\/)(validation|review|coherence|done)\.md$/u.test(path) && !path.includes("/templates/");
+
+test("CR079: an authored closure record survives its command, and the surface says preserved", () => {
+  const recordCases = cases.filter(
+    (entry) =>
+      isPorted(entry) &&
+      entry.exit_code === 0 &&
+      Object.keys(entry.project_files ?? {}).some(isClosureRecord),
+  );
+  assert.ok(recordCases.length >= 12, `expected the closure matrix, got ${recordCases.length}`);
+  for (const entry of recordCases) {
+    const project = scratchProject(false);
+    const db = seed(entry.scenario, project);
+    try {
+      db.prepare("UPDATE identity SET metadata = ? WHERE layer = 'journey' AND key = 'demo'").run(
+        JSON.stringify({ project_path: project }),
+      );
+      const records = Object.keys(entry.project_files ?? {}).filter(isClosureRecord);
+      for (const record of records) {
+        mkdirSync(dirname(join(project, record)), { recursive: true });
+        writeFileSync(join(project, record), AUTHORED, "utf8");
+      }
+      const actual = invoke(db, entry.argv);
+      assert.equal(actual.exitCode, entry.exit_code, `${entry.name} exit code`);
+      for (const record of records) {
+        assert.equal(
+          readFileSync(join(project, record), "utf8"),
+          AUTHORED,
+          `${entry.name}: ${record}`,
+        );
+      }
+      // Card borders and wrapping removed: the sentence may span card lines.
+      const flat = actual.stdout.replaceAll("│", " ").replace(/\s+/gu, " ");
+      assert.match(
+        flat,
+        /preserved as it is: Ariad did not write/u,
+        `${entry.name}: the surface says the record was preserved; it printed:\n` +
+          actual.stdout
+            .split("\n")
+            .filter((line) => /artifact|preserved|materialized/iu.test(line))
+            .join("\n"),
+      );
+      if (actual.stdout.includes("<<<ARIAD:ARTIFACTS_MATERIALIZED>>>")) {
+        assert.match(
+          actual.stdout,
+          /\u2502 \u2298 preserved /u,
+          `${entry.name}: its own mark, not \u2022`,
+        );
+      }
+    } finally {
+      db.close();
+    }
+  }
+});
+
+test("CR079/CR004: an authored Plan package survives plan-item and plan-delivery-story, byte for byte", () => {
+  const planCases = cases.filter(
+    (entry) =>
+      isPorted(entry) &&
+      entry.exit_code === 0 &&
+      ["plan-item", "plan-delivery-story"].includes(entry.argv[0] ?? "") &&
+      Object.keys(entry.project_files ?? {}).some((path) => path.endsWith("/plan.md")),
+  );
+  assert.deepEqual(
+    [...new Set(planCases.map((entry) => entry.argv[0]))].sort(),
+    ["plan-delivery-story", "plan-item"],
+    "both Plan commands are graded",
+  );
+  for (const entry of planCases) {
+    const project = scratchProject(false);
+    const db = seed(entry.scenario, project);
+    try {
+      db.prepare("UPDATE identity SET metadata = ? WHERE layer = 'journey' AND key = 'demo'").run(
+        JSON.stringify({ project_path: project }),
+      );
+      const plan = Object.keys(entry.project_files ?? {}).find((path) => path.endsWith("/plan.md"));
+      assert.ok(plan);
+      const pkg = dirname(plan);
+      const authored = ["index.md", "plan.md", "test-guide.md"].map((file) =>
+        join(project, pkg, file),
+      );
+      for (const path of authored) {
+        mkdirSync(dirname(path), { recursive: true });
+        writeFileSync(path, AUTHORED, "utf8");
+      }
+      invoke(db, entry.argv);
+      for (const path of authored) {
+        assert.equal(
+          readFileSync(path, "utf8"),
+          AUTHORED,
+          `${entry.name}: ${relative(project, path)}`,
+        );
+      }
+    } finally {
+      db.close();
+    }
   }
 });

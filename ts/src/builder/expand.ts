@@ -22,11 +22,12 @@
 // columns ignored. What it does not accept is a table that fails to declare Code,
 // Story, Type, and Status — which is precisely the refusal above.
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { WritableDatabase } from "#db/database.ts";
 import { pyStrip } from "#util/pythonText.ts";
 import { existingArtifact, type MaterializedArtifact } from "./artifacts/artifactSurfaces.ts";
+import { writeBuilderArtifact } from "./artifacts/artifactWriter.ts";
 import {
   renderDeliveryStoryIndex,
   renderStoryIndex,
@@ -177,6 +178,7 @@ function firstPendingChild(children: readonly CandidateChild[]): CandidateChild 
 function materializeChildPackage(
   dsDirectory: string,
   child: CandidateChild,
+  projectRoot: string,
 ): { path: string; artifact: MaterializedArtifact } {
   // Note: `child.title`, not `titleLeaf(child.title)`. A `/` in a candidate title
   // is slugged into the folder name rather than read as an ancestor chain, which
@@ -184,17 +186,19 @@ function materializeChildPackage(
   // reproduced.
   const childDirectory = join(dsDirectory, storyFolderName(child.code, child.title));
   const childIndex = join(childDirectory, "index.md");
-  const existed = existsSync(childIndex);
-  if (!existed) {
-    mkdirSync(childDirectory, { recursive: true });
-    writeFileSync(childIndex, renderStoryIndex(child.code, child.title, child.level), "utf8");
-  }
+  const outcome = writeBuilderArtifact({
+    path: childIndex,
+    content: renderStoryIndex(child.code, child.title, child.level),
+    policy: "create-only",
+    projectRoot,
+  });
   const label = `${child.code.split(".").at(-1) ?? child.code} package`;
   return {
     path: childIndex,
-    artifact: existed
-      ? existingArtifact(label, childIndex)
-      : { kind: label, path: childIndex, status: "created" },
+    artifact:
+      outcome === "existing"
+        ? existingArtifact(label, childIndex)
+        : { kind: label, path: childIndex, status: "created" },
   };
 }
 
@@ -250,20 +254,19 @@ export function expandDeliveryStory(
     recommendedCode = recommended.code;
     recommendedTitle = recommended.title;
     mkdirSync(dsDirectory, { recursive: true });
-    if (!dsExists) {
-      writeFileSync(
-        dsIndex,
-        renderDeliveryStoryIndex(activeItem, title, recommendedCode, recommendedTitle),
-        "utf8",
-      );
-    }
+    const dsOutcome = writeBuilderArtifact({
+      path: dsIndex,
+      content: renderDeliveryStoryIndex(activeItem, title, recommendedCode, recommendedTitle),
+      policy: "create-only",
+      projectRoot: options.projectPath,
+    });
     materializedArtifacts.push(
-      dsExists
+      dsOutcome === "existing"
         ? existingArtifact("DS package", dsIndex)
         : { kind: "DS package", path: dsIndex, status: "created" },
     );
     for (const child of children) {
-      const materialized = materializeChildPackage(dsDirectory, child);
+      const materialized = materializeChildPackage(dsDirectory, child, options.projectPath);
       materializedPaths.push(materialized.path);
       materializedArtifacts.push(materialized.artifact);
     }
@@ -278,25 +281,26 @@ export function expandDeliveryStory(
     const usIndex = join(usDirectory, "index.md");
     mkdirSync(dsDirectory, { recursive: true });
     mkdirSync(usDirectory, { recursive: true });
-    const usExists = existsSync(usIndex);
-    if (!dsExists) {
-      writeFileSync(
-        dsIndex,
-        renderDeliveryStoryIndex(activeItem, title, recommendedCode, recommendedTitle),
-        "utf8",
-      );
-    }
-    if (!usExists) {
-      writeFileSync(usIndex, renderUserStoryIndex(recommendedCode, recommendedTitle), "utf8");
-    }
+    const dsOutcome = writeBuilderArtifact({
+      path: dsIndex,
+      content: renderDeliveryStoryIndex(activeItem, title, recommendedCode, recommendedTitle),
+      policy: "create-only",
+      projectRoot: options.projectPath,
+    });
+    const usOutcome = writeBuilderArtifact({
+      path: usIndex,
+      content: renderUserStoryIndex(recommendedCode, recommendedTitle),
+      policy: "create-only",
+      projectRoot: options.projectPath,
+    });
     materializedArtifacts.push(
-      dsExists
+      dsOutcome === "existing"
         ? existingArtifact("DS package", dsIndex)
         : { kind: "DS package", path: dsIndex, status: "created" },
     );
     const label = `${recommendedCode.split(".").at(-1) ?? recommendedCode} package`;
     materializedArtifacts.push(
-      usExists
+      usOutcome === "existing"
         ? existingArtifact(label, usIndex)
         : { kind: label, path: usIndex, status: "created" },
     );

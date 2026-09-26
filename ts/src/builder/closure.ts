@@ -26,6 +26,7 @@
 
 import type { WritableDatabase } from "#db/database.ts";
 import { pyStrip, sortByCodePoint } from "#util/pythonText.ts";
+import type { ArtifactOutcome } from "./artifacts/artifactWriter.ts";
 import {
   renderCoherenceArtifact,
   renderDoneArtifact,
@@ -107,6 +108,8 @@ export interface BuilderValidationReport {
   readonly validationContract: ContractDefinition;
   readonly cursor: BuilderDeliveryCursor;
   readonly validationArtifactPath: string | null;
+  /** What the writer did with the record (CR079); absent when there is no artifact path. */
+  readonly validationArtifactOutcome?: ArtifactOutcome | null;
   readonly nextEvent: string;
 }
 
@@ -159,6 +162,8 @@ export interface ValidateOptions {
   readonly failCondition?: string | null;
   readonly implementationComplete?: boolean;
   readonly validationArtifactPath?: string | null;
+  /** The project the artifact must stay inside (CR079). */
+  readonly projectRoot?: string | null;
 }
 
 const PLAN_EVENTS = new Set(["plan_approved", "delivery_story_plan_approved"]);
@@ -266,10 +271,13 @@ export function validateLifecycleItem(
     validationArtifactPath: options.validationArtifactPath ?? null,
     nextEvent: "debt_review",
   };
-  if (report.validationArtifactPath !== null) {
-    writeClosureArtifact(report.validationArtifactPath, renderValidationArtifact(report));
-  }
-  return report;
+  if (report.validationArtifactPath === null) return report;
+  const validationArtifactOutcome = writeClosureArtifact(
+    report.validationArtifactPath,
+    renderValidationArtifact(report),
+    options.projectRoot,
+  );
+  return { ...report, validationArtifactOutcome };
 }
 
 /** Python `render_validation_checkpoint`. */
@@ -328,6 +336,7 @@ export function renderValidationCheckpoint(report: BuilderValidationReport): str
     "│                                                        │",
     cardText("validation artifact"),
     ...cardWrapped(report.validationArtifactPath ?? "not materialized"),
+    ...preservedNote(report.validationArtifactOutcome),
     "│                                                        │",
     cardText("boundary"),
     ...cardWrapped(
@@ -355,6 +364,8 @@ export interface BuilderReviewReport {
   readonly debtReviewContract: ContractDefinition;
   readonly cursor: BuilderDeliveryCursor;
   readonly reviewArtifactPath: string | null;
+  /** What the writer did with the record (CR079); absent when there is no artifact path. */
+  readonly reviewArtifactOutcome?: ArtifactOutcome | null;
   readonly nextEvent: string;
 }
 
@@ -390,6 +401,8 @@ export interface ReviewOptions {
   readonly deferReason?: string | null;
   readonly revisitTrigger?: string | null;
   readonly reviewArtifactPath?: string | null;
+  /** The project the artifact must stay inside (CR079). */
+  readonly projectRoot?: string | null;
 }
 
 /** Python `review_lifecycle_item`. */
@@ -462,10 +475,13 @@ export function reviewLifecycleItem(
     reviewArtifactPath: options.reviewArtifactPath ?? null,
     nextEvent: "coherence",
   };
-  if (report.reviewArtifactPath !== null) {
-    writeClosureArtifact(report.reviewArtifactPath, renderReviewArtifact(report));
-  }
-  return report;
+  if (report.reviewArtifactPath === null) return report;
+  const reviewArtifactOutcome = writeClosureArtifact(
+    report.reviewArtifactPath,
+    renderReviewArtifact(report),
+    options.projectRoot,
+  );
+  return { ...report, reviewArtifactOutcome };
 }
 
 /** Python `render_review_checkpoint`. */
@@ -507,6 +523,7 @@ export function renderReviewCheckpoint(report: BuilderReviewReport): string {
     "│                                                        │",
     cardText("review artifact"),
     ...cardWrapped(report.reviewArtifactPath ?? "not materialized"),
+    ...preservedNote(report.reviewArtifactOutcome),
     "│                                                        │",
     cardText("boundary"),
     ...cardWrapped(
@@ -534,6 +551,8 @@ export interface BuilderCoherenceReport {
   readonly coherenceContract: ContractDefinition;
   readonly cursor: BuilderDeliveryCursor;
   readonly coherenceArtifactPath: string | null;
+  /** What the writer did with the record (CR079); absent when there is no artifact path. */
+  readonly coherenceArtifactOutcome?: ArtifactOutcome | null;
   readonly nextEvent: string;
 }
 
@@ -545,6 +564,8 @@ export interface CoherenceOptions {
   readonly productAlignment?: string | null;
   readonly localDifferences?: readonly string[];
   readonly coherenceArtifactPath?: string | null;
+  /** The project the artifact must stay inside (CR079). */
+  readonly projectRoot?: string | null;
 }
 
 /** Python `coherence_lifecycle_item`. */
@@ -624,10 +645,13 @@ export function coherenceLifecycleItem(
     coherenceArtifactPath: options.coherenceArtifactPath ?? null,
     nextEvent: "done",
   };
-  if (report.coherenceArtifactPath !== null) {
-    writeClosureArtifact(report.coherenceArtifactPath, renderCoherenceArtifact(report));
-  }
-  return report;
+  if (report.coherenceArtifactPath === null) return report;
+  const coherenceArtifactOutcome = writeClosureArtifact(
+    report.coherenceArtifactPath,
+    renderCoherenceArtifact(report),
+    options.projectRoot,
+  );
+  return { ...report, coherenceArtifactOutcome };
 }
 
 /** Python `render_coherence_checkpoint`: note the ribbon says `done`, not `coherence`. */
@@ -666,6 +690,7 @@ export function renderCoherenceCheckpoint(report: BuilderCoherenceReport): strin
     "│                                                        │",
     cardText("coherence artifact"),
     ...cardWrapped(report.coherenceArtifactPath ?? "not materialized"),
+    ...preservedNote(report.coherenceArtifactOutcome),
     "│                                                        │",
     cardText("boundary"),
     ...cardWrapped(
@@ -692,6 +717,8 @@ export interface BuilderDoneReport {
   readonly doneContract: ContractDefinition;
   readonly cursor: BuilderDeliveryCursor;
   readonly doneArtifactPath: string | null;
+  /** What the writer did with the record (CR079); absent when there is no artifact path. */
+  readonly doneArtifactOutcome?: ArtifactOutcome | null;
 }
 
 export interface DoneOptions {
@@ -701,6 +728,8 @@ export interface DoneOptions {
   readonly roadmapUpdate?: string | null;
   readonly nextRecommendation?: string | null;
   readonly doneArtifactPath?: string | null;
+  /** The project the artifact must stay inside (CR079). */
+  readonly projectRoot?: string | null;
 }
 
 /** Python `done_lifecycle_item`. */
@@ -775,10 +804,13 @@ export function doneLifecycleItem(
     cursor,
     doneArtifactPath: options.doneArtifactPath ?? null,
   };
-  if (report.doneArtifactPath !== null) {
-    writeClosureArtifact(report.doneArtifactPath, renderDoneArtifact(report));
-  }
-  return report;
+  if (report.doneArtifactPath === null) return report;
+  const doneArtifactOutcome = writeClosureArtifact(
+    report.doneArtifactPath,
+    renderDoneArtifact(report),
+    options.projectRoot,
+  );
+  return { ...report, doneArtifactOutcome };
 }
 
 /** Python `render_done_checkpoint`. */
@@ -814,6 +846,7 @@ export function renderDoneCheckpoint(report: BuilderDoneReport): string {
     "│                                                        │",
     cardText("done artifact"),
     ...cardWrapped(report.doneArtifactPath ?? "not materialized"),
+    ...preservedNote(report.doneArtifactOutcome),
     "│                                                        │",
     cardText("boundary"),
     ...cardWrapped(
@@ -824,4 +857,18 @@ export function renderDoneCheckpoint(report: BuilderDoneReport): string {
     "╰────────────────────────────────────────────────────────╯",
   ].join("\n")}\n`;
   return wrapAriadSurface("done_checkpoint", body);
+}
+
+/**
+ * CR079: said only when a closure record was preserved rather than written, the
+ * one case a reader cannot assume. Created and updated records hold this
+ * checkpoint's fields, as they always have.
+ */
+function preservedNote(outcome: ArtifactOutcome | null | undefined): string[] {
+  return outcome === "preserved"
+    ? cardWrapped(
+        "preserved as it is: Ariad did not write this file, or it was edited since. " +
+          "This checkpoint's fields are shown here, not written to it.",
+      )
+    : [];
 }

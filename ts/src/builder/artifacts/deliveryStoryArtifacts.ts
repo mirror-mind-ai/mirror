@@ -14,11 +14,12 @@
 //     same defect story closure carries, and it is reproduced rather than repaired:
 //     adding the "obvious" existence guard here fails the corpus on purpose.
 //
-// The manifest each writer returns reports the REAL disk action (`created` vs
-// `existing`), sampled before the write, because the ARTIFACTS_MATERIALIZED surface
-// must match what happened rather than what was intended.
+// The manifest each writer returns reports the REAL disk action, which is what the
+// artifact writer says it did, because the ARTIFACTS_MATERIALIZED surface must match
+// what happened rather than what was intended (CR079). The package is a scaffold,
+// written only where absent; the closure artifact is a sealed record.
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { pySplitLines, pyStrip } from "#util/pythonText.ts";
 import {
@@ -26,6 +27,11 @@ import {
   type MaterializedArtifact,
   materializedArtifact,
 } from "./artifactSurfaces.ts";
+import {
+  type ArtifactOutcome,
+  requireProjectRoot,
+  writeBuilderArtifact,
+} from "./artifactWriter.ts";
 
 /** What the renderers need from a Delivery Story Plan report. */
 export interface DeliveryStoryArtifactInput {
@@ -226,32 +232,27 @@ Pending implementation and validation.
 export function writeDeliveryStoryPackage(
   planPath: string,
   report: DeliveryStoryArtifactInput,
+  projectRoot: string | null | undefined,
 ): readonly MaterializedArtifact[] {
   const parent = dirname(planPath);
-  mkdirSync(parent, { recursive: true });
-  const indexPath = join(parent, "index.md");
-  const testGuidePath = join(parent, "test-guide.md");
-  const existed = {
-    plan: existsSync(planPath),
-    index: existsSync(indexPath),
-    testGuide: existsSync(testGuidePath),
-  };
-  if (!existed.plan) writeFileSync(planPath, renderDeliveryStoryPlanArtifact(report), "utf8");
-  if (!existed.index) {
-    writeFileSync(indexPath, renderDeliveryStoryIndexArtifact(report), "utf8");
-  }
-  if (!existed.testGuide) {
-    writeFileSync(testGuidePath, renderDeliveryStoryTestGuideArtifact(report), "utf8");
-  }
-  const artifact = (kind: string, path: string, before: boolean): MaterializedArtifact =>
-    before
+  const root = requireProjectRoot(projectRoot, planPath);
+  const write = (kind: string, path: string, content: string): MaterializedArtifact =>
+    writeBuilderArtifact({ path, content, policy: "create-only", projectRoot: root }) === "existing"
       ? existingArtifact(kind, path)
       : materializedArtifact(kind, path, { existedBefore: false });
-  return [
-    artifact("story index", indexPath, existed.index),
-    artifact("plan", planPath, existed.plan),
-    artifact("test guide", testGuidePath, existed.testGuide),
-  ];
+  // Written plan first, as before: the plan is the artifact the other two describe.
+  const plan = write("plan", planPath, renderDeliveryStoryPlanArtifact(report));
+  const index = write(
+    "story index",
+    join(parent, "index.md"),
+    renderDeliveryStoryIndexArtifact(report),
+  );
+  const testGuide = write(
+    "test guide",
+    join(parent, "test-guide.md"),
+    renderDeliveryStoryTestGuideArtifact(report),
+  );
+  return [index, plan, testGuide];
 }
 
 /** What the closure artifact renderer needs from a DS closure report. */
@@ -297,15 +298,19 @@ ${report.boundary}
 }
 
 /**
- * Python `_write_artifact`: unconditional, parents created.
- *
- * No existence guard, deliberately — see the module header. CR079.
+ * A Delivery Story closure record: created sealed, rewritten while its seal holds,
+ * and otherwise preserved (CR079). Null when the story has no package to write to.
  */
 export function writeDeliveryStoryClosureArtifact(
   path: string | null,
   report: DeliveryStoryClosureArtifactInput,
-): void {
-  if (path === null) return;
-  mkdirSync(dirname(path), { recursive: true });
-  writeFileSync(path, renderDeliveryStoryClosureArtifact(report), "utf8");
+  projectRoot: string | null | undefined,
+): ArtifactOutcome | null {
+  if (path === null) return null;
+  return writeBuilderArtifact({
+    path,
+    content: renderDeliveryStoryClosureArtifact(report),
+    policy: "sealed-record",
+    projectRoot: requireProjectRoot(projectRoot, path),
+  });
 }

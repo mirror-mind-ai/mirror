@@ -4,20 +4,24 @@
 // `_render_coherence_artifact`, and `_render_done_artifact` from
 // `src/memory/builder/lifecycle.py`.
 //
-// Unlike Plan's story package, these are written UNCONDITIONALLY by their verbs —
-// there is no `if not path.exists()` guard anywhere in the closure path. That is
-// CR079, and it has already destroyed a 235-line authored `validation.md` and a
-// 146-line one a story later. The port reproduces it: `writeClosureArtifact` below
-// overwrites on purpose, and the corpus sequence
-// `closure_overwrites_authored_artifacts` records it happening. Adding a guard here
-// would be a silent product change that makes the CR unfindable, which is worse than
-// the defect.
+// These are RECORDS, not scaffolds: a checkpoint recorded pending and later
+// accepted runs its verb again, and the file has to follow. Python wrote them
+// unconditionally, and the port reproduced that until CR079 settled it, because a
+// guard added during the port would have hidden the CR. The overwrite destroyed a
+// 235-line authored `validation.md`, and a 146-line one a story later.
+// `writeClosureArtifact` now writes through the artifact writer as a sealed
+// record: rewritten only while its seal proves Ariad wrote the file and nobody
+// changed it, and preserved byte for byte otherwise. The corpus sequence
+// `closure_preserves_authored_artifacts` records the authored files surviving.
 //
 // Each body's `## ` headings are also the shape a human reassembles by hand after an
 // overwrite, so they are graded as bytes rather than as structure.
 
-import { mkdirSync, writeFileSync } from "node:fs";
-import { dirname } from "node:path";
+import {
+  type ArtifactOutcome,
+  requireProjectRoot,
+  writeBuilderArtifact,
+} from "./artifactWriter.ts";
 import { markdownList } from "./planArtifacts.ts";
 
 /** Python `_render_validation_artifact`. */
@@ -180,15 +184,16 @@ ${markdownList(report.missingDone.length > 0 ? report.missingDone : ["none"])}
 `;
 }
 
-/**
- * Write a closure artifact the way Python writes it: parents created, content
- * replaced.
- *
- * Deliberately NOT guarded by an existence check. See the module comment: the
- * overwrite is CR079's subject, reproducing it is this port's job, and a guard added
- * here would diverge from the engine being replaced.
- */
-export function writeClosureArtifact(path: string, content: string): void {
-  mkdirSync(dirname(path), { recursive: true });
-  writeFileSync(path, content, "utf8");
+/** A closure record: created sealed, rewritten while its seal holds, otherwise preserved. */
+export function writeClosureArtifact(
+  path: string,
+  content: string,
+  projectRoot: string | null | undefined,
+): ArtifactOutcome {
+  return writeBuilderArtifact({
+    path,
+    content,
+    policy: "sealed-record",
+    projectRoot: requireProjectRoot(projectRoot, path),
+  });
 }

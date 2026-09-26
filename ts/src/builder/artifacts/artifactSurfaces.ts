@@ -49,6 +49,9 @@ function statusIcon(status: string): string {
       return "✎";
     case "existing":
       return "↻";
+    // CR079: a record the runtime did not write, or one edited since, left as it is.
+    case "preserved":
+      return "⊘";
     default:
       return "•";
   }

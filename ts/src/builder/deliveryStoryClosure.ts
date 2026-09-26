@@ -33,11 +33,8 @@
 
 import type { WritableDatabase } from "#db/database.ts";
 import { pyStrip } from "#util/pythonText.ts";
-import {
-  existingArtifact,
-  type MaterializedArtifact,
-  materializedArtifact,
-} from "./artifacts/artifactSurfaces.ts";
+import type { MaterializedArtifact } from "./artifacts/artifactSurfaces.ts";
+import type { ArtifactOutcome } from "./artifacts/artifactWriter.ts";
 import { writeDeliveryStoryClosureArtifact } from "./artifacts/deliveryStoryArtifacts.ts";
 import { cardText, cardWrapped } from "./card.ts";
 import {
@@ -61,6 +58,8 @@ export interface DeliveryStoryClosureReport {
   readonly summary: string;
   readonly cursor: BuilderDeliveryCursor;
   readonly artifactPath: string | null;
+  /** What the writer did with the record (CR079); absent when nothing was written. */
+  readonly artifactOutcome?: ArtifactOutcome | null;
 }
 
 /** Python `_require_delivery_story_cursor`. */
@@ -173,34 +172,36 @@ function buildReport(options: {
   };
 }
 
-function persistArtifact(report: DeliveryStoryClosureReport): void {
-  writeDeliveryStoryClosureArtifact(report.artifactPath, {
-    deliveryStory: report.deliveryStory,
-    childWorkItems: report.childWorkItems,
-    checkpoint: report.checkpoint,
-    status: report.status,
-    summary: report.summary,
-    boundary: boundaryFor(report),
-  });
+function persistArtifact(
+  report: DeliveryStoryClosureReport,
+  projectRoot: string | null | undefined,
+): ArtifactOutcome | null {
+  return writeDeliveryStoryClosureArtifact(
+    report.artifactPath,
+    {
+      deliveryStory: report.deliveryStory,
+      childWorkItems: report.childWorkItems,
+      checkpoint: report.checkpoint,
+      status: report.status,
+      summary: report.summary,
+      boundary: boundaryFor(report),
+    },
+    projectRoot,
+  );
 }
 
 /**
- * The artifact manifest the CLI prints, sampled BEFORE the write.
- *
- * Exported because the leaf needs the same existence reading the surface reports,
- * and sampling it after the write makes `created` and `updated` indistinguishable.
+ * The artifact manifest the CLI prints: what the writer did, never a pre-check
+ * (CR079). A pre-sampled `existing` once announced a file the command had just
+ * replaced.
  */
 export function closureArtifactManifest(
   kind: string,
   path: string | null,
-  existedBefore: boolean,
+  outcome: ArtifactOutcome | null | undefined,
 ): readonly MaterializedArtifact[] {
-  if (path === null) return [];
-  return [
-    existedBefore
-      ? existingArtifact(kind, path)
-      : materializedArtifact(kind, path, { existedBefore: false }),
-  ];
+  if (path === null || outcome === null || outcome === undefined) return [];
+  return [{ kind, path, status: outcome }];
 }
 
 export interface ValidateDeliveryStoryOptions {
@@ -209,6 +210,8 @@ export interface ValidateDeliveryStoryOptions {
   readonly summary: string;
   readonly navigatorAccepted?: boolean;
   readonly artifactPath?: string | null;
+  /** The project the artifact must stay inside (CR079). */
+  readonly projectRoot?: string | null;
 }
 
 /** Python `validate_delivery_story`. */
@@ -245,8 +248,7 @@ export function validateDeliveryStory(
     updated,
     artifactPath: options.artifactPath ?? null,
   });
-  persistArtifact(report);
-  return report;
+  return { ...report, artifactOutcome: persistArtifact(report, options.projectRoot) };
 }
 
 export interface ReviewDeliveryStoryOptions {
@@ -255,6 +257,8 @@ export interface ReviewDeliveryStoryOptions {
   readonly decision: string;
   readonly summary: string;
   readonly artifactPath?: string | null;
+  /** The project the artifact must stay inside (CR079). */
+  readonly projectRoot?: string | null;
 }
 
 /** Python `review_delivery_story`. */
@@ -293,8 +297,7 @@ export function reviewDeliveryStory(
     updated,
     artifactPath: options.artifactPath ?? null,
   });
-  persistArtifact(report);
-  return report;
+  return { ...report, artifactOutcome: persistArtifact(report, options.projectRoot) };
 }
 
 export interface CoherenceDeliveryStoryOptions {
@@ -302,6 +305,8 @@ export interface CoherenceDeliveryStoryOptions {
   readonly method: string;
   readonly summary: string;
   readonly artifactPath?: string | null;
+  /** The project the artifact must stay inside (CR079). */
+  readonly projectRoot?: string | null;
 }
 
 /** Python `coherence_delivery_story`. */
@@ -336,8 +341,7 @@ export function coherenceDeliveryStory(
     updated,
     artifactPath: options.artifactPath ?? null,
   });
-  persistArtifact(report);
-  return report;
+  return { ...report, artifactOutcome: persistArtifact(report, options.projectRoot) };
 }
 
 export interface DoneDeliveryStoryOptions {
@@ -345,6 +349,8 @@ export interface DoneDeliveryStoryOptions {
   readonly method: string;
   readonly summary: string;
   readonly artifactPath?: string | null;
+  /** The project the artifact must stay inside (CR079). */
+  readonly projectRoot?: string | null;
 }
 
 /**
@@ -395,8 +401,7 @@ export function doneDeliveryStory(
     updated,
     artifactPath: options.artifactPath ?? null,
   });
-  persistArtifact(report);
-  return report;
+  return { ...report, artifactOutcome: persistArtifact(report, options.projectRoot) };
 }
 
 // --- surfaces ---------------------------------------------------------------

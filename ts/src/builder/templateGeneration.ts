@@ -17,8 +17,8 @@
 // path or a `..` component — but the guard is the second of the two, and it is the
 // one that survives a DSL edited by hand after DS10.
 
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
-import { dirname, relative, resolve } from "node:path";
+import { relative, resolve } from "node:path";
+import { writeBuilderArtifact } from "./artifacts/artifactWriter.ts";
 import type { MethodDefinition, TemplateDefinition } from "./methodDefinition.ts";
 
 /** Python `PENDING_TEMPLATE_PREPARATION_ITEMS`. */
@@ -77,20 +77,20 @@ export function prepareMethodTemplates(
   for (const template of options.method.templates) {
     const target = targetPath(root, template);
     checked.push(template.path);
-    const exists = existsSync(target);
+    // A template is a scaffold: written where absent, and the Driver's from then on.
+    const outcome = writeBuilderArtifact({
+      path: target,
+      content: template.content,
+      policy: "create-only",
+      projectRoot: root,
+    });
     const result: TemplateWriteResult = {
       id: template.id,
       path: template.path,
-      action: exists ? "preserved" : "created",
+      action: outcome === "existing" ? "preserved" : "created",
       description: template.description ?? null,
     };
-    if (exists) {
-      preserved.push(result);
-      continue;
-    }
-    mkdirSync(dirname(target), { recursive: true });
-    writeFileSync(target, template.content, "utf8");
-    created.push(result);
+    (outcome === "existing" ? preserved : created).push(result);
   }
 
   return {

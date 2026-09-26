@@ -42,6 +42,7 @@ import {
   materializedArtifact,
   renderArtifactsMaterializedSurface,
 } from "./artifacts/artifactSurfaces.ts";
+import type { ArtifactOutcome } from "./artifacts/artifactWriter.ts";
 import { CARD_WIDTH, cardText, wrapPlainText } from "./card.ts";
 import {
   coherenceLifecycleItem,
@@ -630,6 +631,14 @@ function planPackageArtifacts(
   );
 }
 
+/** The surface's last word on a closure record, true to what the writer did (CR079). */
+function closureBoundary(label: string, outcome: ArtifactOutcome | null | undefined): string {
+  return outcome === "preserved"
+    ? `${label} artifact was preserved as it is: Ariad did not write it, or it was edited since. ` +
+        "This checkpoint's fields are above, not in the file."
+    : `${label} artifact was materialized.`;
+}
+
 /** Python `_print_artifacts_materialized`: no artifacts means NO surface, not an empty one. */
 function artifactsSurface(options: {
   context: string;
@@ -886,6 +895,7 @@ export function runPlanItem(
         e2eDecision: planContext.e2eDecision,
         localRules: [...MIRROR_LOCAL_IMPLEMENTATION_RULES],
         planArtifactPath,
+        projectRoot: projectPath,
         preauthorize: options.preauthorizeApproval ?? false,
         stopBoundary: options.stopAfter ?? "navigator_validation",
       },
@@ -1248,6 +1258,7 @@ export function runContinueLifecycle(
       roadmapUpdate: options.roadmapUpdate,
       nextRecommendation: options.nextRecommendation,
       doneArtifactPath: planPath === null ? null : join(dirname(planPath), "done.md"),
+      projectRoot: projectPath,
     },
     context.deps,
   );
@@ -1339,6 +1350,7 @@ export function runPlanDeliveryStory(
         objective: options.objective ?? "",
         childWorkItems: options.children ?? [],
         planArtifactPath: planPath,
+        projectRoot: projectPath,
         preauthorize: options.preauthorizeApproval ?? false,
         stopBoundary: options.stopAfter ?? "navigator_validation",
       },
@@ -1392,6 +1404,7 @@ export function runApproveDeliveryStoryPlan(
         journey,
         method: options.method,
         planArtifactPath: closureArtifactPath(projectPath, cursor, "plan.md"),
+        projectRoot: projectPath,
         usePreauthorization: options.usePreauthorization ?? false,
       },
       context.deps,
@@ -1478,7 +1491,11 @@ function runDeliveryStoryClosure(
     kind: string;
     filename: string;
     label: string;
-    run: (journey: string, artifactPath: string | null) => DeliveryStoryClosureReport;
+    run: (
+      journey: string,
+      artifactPath: string | null,
+      projectRoot: string | null,
+    ) => DeliveryStoryClosureReport;
     preflight?: (journey: string, projectPath: string | null) => CommandResult | null;
     trailer?: (report: DeliveryStoryClosureReport, projectPath: string | null) => string;
   },
@@ -1496,16 +1513,15 @@ function runDeliveryStoryClosure(
     if (refusal !== null) return refusal;
     const cursor = getDeliveryCursor(context.db, journey);
     const artifactPath = closureArtifactPath(projectPath, cursor, spec.filename);
-    const existedBefore = artifactPath !== null && existsSync(artifactPath);
-    const report = spec.run(journey, artifactPath);
+    const report = spec.run(journey, artifactPath, projectPath);
     return {
       stdout:
         printed(renderDeliveryStoryClosureReport(report)) +
         artifactsSurface({
           context: `Delivery Story ${spec.label} — ${report.cursor.activeItem || "active item"}`,
-          artifacts: closureArtifactManifest(spec.kind, artifactPath, existedBefore),
+          artifacts: closureArtifactManifest(spec.kind, artifactPath, report.artifactOutcome),
           projectPath,
-          boundary: `${spec.label} artifact was materialized.`,
+          boundary: closureBoundary(spec.label, report.artifactOutcome),
         }) +
         (spec.trailer?.(report, projectPath) ?? ""),
       stderr: "",
@@ -1532,7 +1548,7 @@ export function runValidateDeliveryStory(
     kind: "validation",
     filename: "validation.md",
     label: "Validation",
-    run: (journey, artifactPath) =>
+    run: (journey, artifactPath, projectRoot) =>
       validateDeliveryStory(
         context.db,
         {
@@ -1541,6 +1557,7 @@ export function runValidateDeliveryStory(
           summary: options.summary ?? "",
           navigatorAccepted: options.navigatorAccepted ?? false,
           artifactPath,
+          projectRoot,
         },
         context.deps,
       ),
@@ -1567,7 +1584,7 @@ export function runReviewDeliveryStory(
     kind: "review",
     filename: "review.md",
     label: "Review",
-    run: (journey, artifactPath) =>
+    run: (journey, artifactPath, projectRoot) =>
       reviewDeliveryStory(
         context.db,
         {
@@ -1576,6 +1593,7 @@ export function runReviewDeliveryStory(
           decision: options.decision ?? "",
           summary: options.summary ?? "",
           artifactPath,
+          projectRoot,
         },
         context.deps,
       ),
@@ -1602,10 +1620,16 @@ export function runCoherenceDeliveryStory(
     kind: "coherence",
     filename: "coherence.md",
     label: "Coherence",
-    run: (journey, artifactPath) =>
+    run: (journey, artifactPath, projectRoot) =>
       coherenceDeliveryStory(
         context.db,
-        { journey, method: options.method, summary: options.summary ?? "", artifactPath },
+        {
+          journey,
+          method: options.method,
+          summary: options.summary ?? "",
+          artifactPath,
+          projectRoot,
+        },
         context.deps,
       ),
   });
@@ -1651,10 +1675,16 @@ export function runDoneDeliveryStory(
       }
       return null;
     },
-    run: (journey, artifactPath) =>
+    run: (journey, artifactPath, projectRoot) =>
       doneDeliveryStory(
         context.db,
-        { journey, method: options.method, summary: options.summary ?? "", artifactPath },
+        {
+          journey,
+          method: options.method,
+          summary: options.summary ?? "",
+          artifactPath,
+          projectRoot,
+        },
         context.deps,
       ),
     // Python `_print_roadmap_snapshot_at_done_end`: the roadmap is read AGAIN, after
@@ -1791,6 +1821,7 @@ export function runValidateItem(
         failCondition: options.failCondition ?? null,
         implementationComplete: options.implementationComplete ?? false,
         validationArtifactPath: closureArtifactPath(projectPath, cursor, "validation.md"),
+        projectRoot: projectPath,
       },
       context.deps,
     );
@@ -1842,6 +1873,7 @@ export function runReviewItem(
         deferReason: options.deferReason ?? null,
         revisitTrigger: options.revisitTrigger ?? null,
         reviewArtifactPath: closureArtifactPath(projectPath, cursor, "review.md"),
+        projectRoot: projectPath,
       },
       context.deps,
     );
@@ -1895,6 +1927,7 @@ export function runCoherenceItem(
         productAlignment: options.productAlignment ?? null,
         localDifferences: options.localDifferences ?? [],
         coherenceArtifactPath: closureArtifactPath(projectPath, cursor, "coherence.md"),
+        projectRoot: projectPath,
       },
       context.deps,
     );
@@ -1932,6 +1965,7 @@ export function runDoneItem(
         roadmapUpdate: options.roadmapUpdate ?? null,
         nextRecommendation: options.nextRecommendation ?? null,
         doneArtifactPath: closureArtifactPath(projectPath, cursor, "done.md"),
+        projectRoot: projectPath,
       },
       context.deps,
     );

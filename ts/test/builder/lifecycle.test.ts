@@ -277,7 +277,7 @@ test("the corpus covers the lifecycle shapes plateaus 3 and 4 have to port", () 
     "review_pending_then_answered",
     "coherence_pending_then_corrected",
     "done_blocks_pending_coherence_confirmation",
-    "closure_overwrites_authored_artifacts",
+    "closure_preserves_authored_artifacts",
   ]) {
     assert.ok(names.has(required), `the corpus lost the ${required} sequence`);
   }
@@ -809,6 +809,7 @@ function replayLifecycleStep(context: ReplayContext, step: Step): ReplayOutcome 
             e2eDecision: input.e2e_decision ?? null,
             localRules: input.local_rules ?? [],
             planArtifactPath: planPath,
+            projectRoot: context.project,
             preauthorize: input.preauthorize ?? false,
             stopBoundary: input.stop_boundary ?? "navigator_validation",
           },
@@ -966,6 +967,7 @@ function replayLifecycleStep(context: ReplayContext, step: Step): ReplayOutcome 
             failCondition: (input.fail_condition as string | null) ?? null,
             implementationComplete: (input.implementation_complete as boolean) ?? false,
             validationArtifactPath: closureArtifactPath(context, input.artifact as string | null),
+            projectRoot: context.project,
           },
           context.deps,
         );
@@ -990,6 +992,7 @@ function replayLifecycleStep(context: ReplayContext, step: Step): ReplayOutcome 
             deferReason: (input.defer_reason as string | null) ?? null,
             revisitTrigger: (input.revisit_trigger as string | null) ?? null,
             reviewArtifactPath: closureArtifactPath(context, input.artifact as string | null),
+            projectRoot: context.project,
           },
           context.deps,
         );
@@ -1014,6 +1017,7 @@ function replayLifecycleStep(context: ReplayContext, step: Step): ReplayOutcome 
             productAlignment: (input.product_alignment as string | null) ?? null,
             localDifferences: (input.local_differences as string[]) ?? [],
             coherenceArtifactPath: closureArtifactPath(context, input.artifact as string | null),
+            projectRoot: context.project,
           },
           context.deps,
         );
@@ -1037,6 +1041,7 @@ function replayLifecycleStep(context: ReplayContext, step: Step): ReplayOutcome 
             roadmapUpdate: (input.roadmap_update as string | null) ?? null,
             nextRecommendation: (input.next_recommendation as string | null) ?? null,
             doneArtifactPath: closureArtifactPath(context, input.artifact as string | null),
+            projectRoot: context.project,
           },
           context.deps,
         );
@@ -1106,6 +1111,7 @@ function replayLifecycleStep(context: ReplayContext, step: Step): ReplayOutcome 
             objective: (input.objective as string) ?? "",
             childWorkItems: (input.child_work_items as string[]) ?? [],
             planArtifactPath: planPath,
+            projectRoot: context.project,
             preauthorize: (input.preauthorize as boolean) ?? false,
             stopBoundary: (input.stop_boundary as string) ?? "navigator_validation",
           },
@@ -1156,6 +1162,7 @@ function replayLifecycleStep(context: ReplayContext, step: Step): ReplayOutcome 
             journey: context.journey,
             method: (input.method as string) ?? "ariad",
             planArtifactPath: canonicalPlanPath(context),
+            projectRoot: context.project,
             usePreauthorization: (input.use_preauthorization as boolean) ?? false,
           },
           context.deps,
@@ -1297,11 +1304,15 @@ function replayDeliveryStoryClosure(context: ReplayContext, step: Step): ReplayO
   const input = step.input as Record<string, unknown>;
   const method = (input.method as string) ?? "ariad";
   const path = closureArtifactPath(context, (input.artifact as string | null) ?? null);
-  const existedBefore = path !== null && existsSync(path);
   const kind = step.op.replace("_delivery_story", "");
   try {
     const report = (() => {
-      const shared = { journey: context.journey, method, artifactPath: path };
+      const shared = {
+        journey: context.journey,
+        method,
+        artifactPath: path,
+        projectRoot: context.project,
+      };
       switch (step.op) {
         case "validate_delivery_story":
           return validateDeliveryStory(
@@ -1343,7 +1354,7 @@ function replayDeliveryStoryClosure(context: ReplayContext, step: Step): ReplayO
         text: renderDeliveryStoryClosureReport(report),
       },
     ];
-    const artifacts = closureArtifactManifest(kind, path, existedBefore);
+    const artifacts = closureArtifactManifest(kind, path, report.artifactOutcome);
     if (path !== null) {
       surfaces.push({
         id: "artifacts_materialized",

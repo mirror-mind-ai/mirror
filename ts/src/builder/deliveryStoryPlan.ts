@@ -97,6 +97,8 @@ export interface PlanDeliveryStoryOptions {
   readonly objective: string;
   readonly childWorkItems?: readonly string[];
   readonly planArtifactPath?: string | null;
+  /** The project the package must stay inside (CR079). */
+  readonly projectRoot?: string | null;
   readonly preauthorize?: boolean;
   readonly stopBoundary?: string;
 }
@@ -184,7 +186,7 @@ export function planDeliveryStoryCheckpoint(
     unfilledSections: [],
     implementationStarted: false,
   };
-  const materialized = materializePackage(report);
+  const materialized = materializePackage(report, options.projectRoot);
   return { ...report, materializedArtifacts: materialized };
 }
 
@@ -192,6 +194,8 @@ export interface ApproveDeliveryStoryPlanOptions {
   readonly journey: string;
   readonly method: string;
   readonly planArtifactPath?: string | null;
+  /** The project the package must stay inside (CR079). */
+  readonly projectRoot?: string | null;
   readonly usePreauthorization?: boolean;
 }
 
@@ -331,7 +335,7 @@ export function approveDeliveryStoryPlan(
     unfilledSections: [],
     implementationStarted: true,
   };
-  const materialized = materializePackage(report);
+  const materialized = materializePackage(report, options.projectRoot);
   return { ...report, materializedArtifacts: materialized, unfilledSections: unfilled };
 }
 
@@ -370,10 +374,13 @@ export function cancelDeliveryStoryPlanPreauthorization(
  * Plan and approval. Python's docstring claims an upsert; the code does not. The
  * writer keeps one branch, and the corpus proves it is the right one.
  */
-function materializePackage(report: DeliveryStoryPlanReport): readonly MaterializedArtifact[] {
+function materializePackage(
+  report: DeliveryStoryPlanReport,
+  projectRoot: string | null | undefined,
+): readonly MaterializedArtifact[] {
   const planPath = report.planArtifactPath;
   if (planPath === null) return [];
-  return writeDeliveryStoryPackage(planPath, report);
+  return writeDeliveryStoryPackage(planPath, report, projectRoot);
 }
 
 // --- surfaces ---------------------------------------------------------------

@@ -100,6 +100,8 @@ export interface PlanOptions {
   readonly e2eDecision?: string | null;
   readonly localRules?: readonly string[];
   readonly planArtifactPath?: string | null;
+  /** The project the package must stay inside (CR079). */
+  readonly projectRoot?: string | null;
   readonly preauthorize?: boolean;
   readonly stopBoundary?: string;
 }
@@ -218,7 +220,7 @@ export function planLifecycleItem(
   };
 
   if (artifactPath !== null) {
-    writeStoryPackage(dirname(artifactPath), {
+    writeStoryPackage(dirname(artifactPath), options.projectRoot, {
       activeItem: report.activeItem,
       activeItemTitle: report.activeItemTitle,
       activeItemLevel: report.activeItemLevel,

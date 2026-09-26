@@ -14,9 +14,10 @@
 // module, not decoration: rename one and a freshly scaffolded Plan reads as
 // incomplete forever.
 
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import type { ContractDefinition } from "../methodDefinition.ts";
+import { requireProjectRoot, writeBuilderArtifact } from "./artifactWriter.ts";
 
 /** Python `_markdown_list`: an empty list renders the literal fallback line. */
 export function markdownList(items: readonly string[]): string {
@@ -180,7 +181,12 @@ Pending implementation and validation.
  * matter: a missing directory would make the whole package fail, while an existing
  * file must survive untouched.
  */
-export function writeStoryPackage(directory: string, report: PlanArtifactInput): void {
+export function writeStoryPackage(
+  directory: string,
+  projectRoot: string | null | undefined,
+  report: PlanArtifactInput,
+): void {
+  const root = requireProjectRoot(projectRoot, directory);
   mkdirSync(directory, { recursive: true });
   const artifacts: [string, string][] = [
     [join(directory, "index.md"), renderStoryIndexArtifact(report)],
@@ -188,6 +194,6 @@ export function writeStoryPackage(directory: string, report: PlanArtifactInput):
     [join(directory, "test-guide.md"), renderTestGuideArtifact(report)],
   ];
   for (const [path, content] of artifacts) {
-    if (!existsSync(path)) writeFileSync(path, content, "utf8");
+    writeBuilderArtifact({ path, content, policy: "create-only", projectRoot: root });
   }
 }
