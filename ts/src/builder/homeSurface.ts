@@ -11,11 +11,13 @@
 //     `if/elif` chain written without the early return appends it.
 //   * `_refinement_orientation_lines` has two shapes since CV22.DS10.TS4: a
 //     canonical index, and none.
-//   * The placement and the candidate list read the journey's SCOPED view
-//     (CR002). Python placed the journey in the CV of a project-wide
-//     recommendation, synthesizing `🟪[CV99] roadmap focus` when that CV was
-//     absent from the snapshot; now an unscoped journey is told no item was
-//     pulled, and the first move is the literal Pull command.
+//   * It renders only without an active item, so since CR002 it takes the raw
+//     project-wide report, never a scope. Python placed the journey in the CV of
+//     a project-wide recommendation, synthesizing `🟪[CV99] roadmap focus` when
+//     that CV was absent from the snapshot. Now the journey is told no item was
+//     pulled, the list is labelled project-wide, and the first move is the
+//     literal Pull command. Its scoped branches were unreachable and went in
+//     CR002's handoff review.
 //
 // `render_builder_home_surface` was ported and never called: `build load`
 // renders `PROJECT_POSITION` and this surface. CR002 deleted it rather than
@@ -23,15 +25,9 @@
 // project-wide "recommended pull".
 
 import { cardPrefixed, cardText, cardWrapped } from "./card.ts";
-import type { PullCandidate, RoadmapSnapshotReport } from "./pullCandidates.ts";
+import type { PullCandidate, PullCandidatesReport } from "./pullCandidates.ts";
 import { CANONICAL_REFINEMENT_INDEX, type RefinementFieldSnapshot } from "./refinementField.ts";
-import { type ScopedPullCandidates, scopeFocus } from "./roadmapScope.ts";
-import {
-  candidateListHeader,
-  NO_ITEM_PULLED_YET,
-  outsideCountLines,
-  pullExplicitly,
-} from "./scopePhrases.ts";
+import { NO_ITEM_PULLED_YET, PROJECT_WIDE_CANDIDATES, pullExplicitly } from "./scopePhrases.ts";
 import { wrapAriadSurface } from "./surfaceProtocol.ts";
 
 const FRAME_TOP = "╭────────────────────────────────────────────────────────╮";
@@ -44,34 +40,17 @@ function candidateShortTitle(candidate: PullCandidate): string {
   return (segments[segments.length - 1] ?? "").trim();
 }
 
-/** Python `_roadmap_placement_lines`, placed by the journey's scope. */
-function roadmapPlacementLines(
-  roadmap: RoadmapSnapshotReport,
-  view: ScopedPullCandidates,
-): string[] {
-  const focus = scopeFocus(roadmap.items, view.scope);
-  if (focus === null) return [cardText(NO_ITEM_PULLED_YET)];
-  const lines = cardWrapped(`🟪[${focus.code}] ${focus.title}`);
-  const recommended = view.recommended;
-  if (recommended !== null) {
-    const childCode = recommended.code.split(".").pop() ?? recommended.code;
-    lines.push(...cardWrapped(`  └─ 🟦[${childCode}] ${candidateShortTitle(recommended)}`));
-  }
-  return lines;
-}
-
 /**
- * Python `_pull_candidate_lines`, under the scope's header: `▸` marks the
- * recommended candidate, `·` the rest, and an unscoped list has no `▸`.
+ * Python `_pull_candidate_lines`, project-wide. Python marked its project-wide
+ * recommendation with `▸`; without a journey scope there is none, so every
+ * candidate is a `·`.
  */
-function pullCandidateLines(view: ScopedPullCandidates): string[] {
-  const lines = [cardText(candidateListHeader(view.scope))];
-  if (view.shown.length === 0) lines.push(cardText("none"));
-  for (const candidate of view.shown) {
-    const marker = view.recommended && candidate.code === view.recommended.code ? "▸" : "·";
-    lines.push(...cardWrapped(`${marker} ${candidate.code} ${candidateShortTitle(candidate)}`));
+function pullCandidateLines(report: PullCandidatesReport): string[] {
+  const lines = [cardText(PROJECT_WIDE_CANDIDATES)];
+  if (report.candidates.length === 0) lines.push(cardText("none"));
+  for (const candidate of report.candidates) {
+    lines.push(...cardWrapped(`· ${candidate.code} ${candidateShortTitle(candidate)}`));
   }
-  lines.push(...outsideCountLines(view).flatMap(cardWrapped));
   return lines;
 }
 
@@ -91,17 +70,14 @@ function refinementOrientationLines(refinement: RefinementFieldSnapshot): string
 
 /**
  * Python `_available_refinement_moves`. The canonical-index path returns after
- * three moves; the legacy path always appends a fourth. The first move pulls the
- * scoped recommendation, or, when there is none, is the literal Pull command.
+ * three moves; the legacy path always appends a fourth. The first move is the
+ * literal Pull command: the surface renders only when no item has been pulled.
  */
 export function availableRefinementMoves(
   refinement: RefinementFieldSnapshot,
-  view: ScopedPullCandidates,
+  journey: string,
 ): string[] {
-  const moves = [
-    view.recommended ? `pull ${view.recommended.code}` : pullExplicitly(view.journey),
-    "inspect roadmap",
-  ];
+  const moves = [pullExplicitly(journey), "inspect roadmap"];
   if (refinement.canonicalIndex) {
     moves.push("inspect canonical Refinement index");
     return moves;
@@ -110,13 +86,15 @@ export function availableRefinementMoves(
   return moves;
 }
 
-/** Python `render_builder_orientation_surface`, over the journey's scoped view. */
+/**
+ * Python `render_builder_orientation_surface`, for a journey with no active item:
+ * `build load`'s only caller. `candidates` is the raw project-wide scan.
+ */
 export function renderBuilderOrientationSurface(options: {
-  roadmap: RoadmapSnapshotReport;
-  view: ScopedPullCandidates;
+  candidates: PullCandidatesReport;
   refinement: RefinementFieldSnapshot;
 }): string {
-  const { roadmap, view, refinement } = options;
+  const { candidates, refinement } = options;
   const lines: string[] = [
     "Builder Orientation",
     "",
@@ -124,16 +102,16 @@ export function renderBuilderOrientationSurface(options: {
     "│        ■  BUILDER ORIENTATION                          │",
     FRAME_BLANK,
     cardText("Where are we in the roadmap?"),
-    ...roadmapPlacementLines(roadmap, view),
+    cardText(NO_ITEM_PULLED_YET),
     FRAME_BLANK,
     cardText("What can be pulled next?"),
-    ...pullCandidateLines(view),
+    ...pullCandidateLines(candidates),
     FRAME_BLANK,
     cardText("What is open for refinement?"),
     ...refinementOrientationLines(refinement),
     FRAME_BLANK,
     cardText("What can we do now?"),
-    ...cardPrefixed(availableRefinementMoves(refinement, view), "-"),
+    ...cardPrefixed(availableRefinementMoves(refinement, candidates.journey), "-"),
     FRAME_BLANK,
     ...cardWrapped("Choose a move when ready."),
     FRAME_BOTTOM,

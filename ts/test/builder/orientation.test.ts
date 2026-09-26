@@ -28,13 +28,7 @@ import {
   renderBuilderResumeSurface,
   selectAllowedNextActions,
 } from "#builder/resumeSurface.ts";
-import {
-  type AuthoredPackage,
-  cvCodeOf,
-  type RoadmapScope,
-  type ScopedPullCandidates,
-  scopePullCandidates,
-} from "#builder/roadmapScope.ts";
+import { type AuthoredPackage, cvCodeOf, type RoadmapScope } from "#builder/roadmapScope.ts";
 import golden from "#goldens/builder-orientation.golden.json" with { type: "json" };
 
 const FIXTURES = join(fileURLToPath(new URL("../fixtures/builder-refinement/", import.meta.url)));
@@ -231,13 +225,12 @@ test("without a canonical index the resume field names the file to create", () =
 });
 
 /**
- * `build load` renders this surface only for a cursor with no active item, so
- * every recorded state renders unscoped. The recorded reports still carry
- * Python's project-wide `recommended`, which the scoped view ignores.
+ * `build load` renders this surface only for a cursor with no active item, so it
+ * takes the raw project-wide report and never a scope (CR002's handoff review
+ * removed the scoped branches it could not reach). The recorded reports still carry
+ * Python's project-wide `recommended`, which the surface ignores.
  */
-const NO_ACTIVE_ITEM: RoadmapScope = { kind: "unscoped", reason: "no_active_item" };
-
-test("BUILDER ORIENTATION renders across refinement x candidate states, unscoped", () => {
+test("BUILDER ORIENTATION renders across refinement x candidate states, project-wide", () => {
   // 28 before CV22.DS10.TS4: the refinement matrix went from seven states to
   // three, since four of them described Workbench rows no read can produce;
   // CV22.DS10.TS5 (D-024) removed the seeded state, leaving two.
@@ -246,8 +239,7 @@ test("BUILDER ORIENTATION renders across refinement x candidate states, unscoped
     const report = oracle.candidate_reports[row.candidates];
     assert.ok(report, `unknown candidate report ${row.candidates}`);
     const actual = renderBuilderOrientationSurface({
-      roadmap: oracle.roadmap_snapshot,
-      view: scopePullCandidates(report, NO_ACTIVE_ITEM),
+      candidates: report,
       refinement: toRefinement(row.refinement),
     });
     assert.equal(actual, row.expected, row.name);
@@ -263,30 +255,10 @@ test("an unscoped orientation recommends nothing, even where Python recommended"
   assert.ok(row.expected.includes("pull explicitly: mirror build pull-item --journey"));
 });
 
-/** A scoped or unscoped view with no candidates, for the moves below. */
-function viewWith(recommended: ScopedPullCandidates["recommended"]): ScopedPullCandidates {
-  return {
-    journey: "demo",
-    method: "ariad",
-    scope:
-      recommended === null
-        ? NO_ACTIVE_ITEM
-        : {
-            kind: "active_item",
-            activeItem: "CV1.DS1.US1",
-            cvCode: "CV1",
-            position: { kind: "no_package" },
-          },
-    shown: recommended === null ? [] : [recommended],
-    outsideCount: 0,
-    recommended,
-  };
-}
-
 const PULL_EXPLICITLY_DEMO =
   'pull explicitly: mirror build pull-item --journey demo --method ariad --item-code <code> --item-title "<title>" --item-level <level> --why-now "<why now>"';
 
-test("the first move pulls the scoped recommendation, or is the literal command", () => {
+test("the first move is always the literal Pull command for the journey", () => {
   const refinement = toRefinement({
     active_refinement_story: null,
     active_change_request: null,
@@ -294,15 +266,7 @@ test("the first move pulls the scoped recommendation, or is the literal command"
     next_move: "inspect canonical Refinement index",
     canonical_index: "docs/project/refinement/index.md",
   });
-  const candidate = {
-    code: "CV1.DS2",
-    title: "Next",
-    level: "delivery_story",
-    status: "\ud83d\udfe1 Planned",
-    path: "docs/project/roadmap/cv1/cv1-ds2/index.md",
-  };
-  assert.equal(availableRefinementMoves(refinement, viewWith(candidate))[0], "pull CV1.DS2");
-  assert.equal(availableRefinementMoves(refinement, viewWith(null))[0], PULL_EXPLICITLY_DEMO);
+  assert.equal(availableRefinementMoves(refinement, "demo")[0], PULL_EXPLICITLY_DEMO);
 });
 
 test("a canonical index returns early, so no create move is offered", () => {
@@ -313,7 +277,7 @@ test("a canonical index returns early, so no create move is offered", () => {
     next_move: "inspect canonical Refinement index",
     canonical_index: "docs/project/refinement/index.md",
   });
-  const moves = availableRefinementMoves(canonical, viewWith(null));
+  const moves = availableRefinementMoves(canonical, "demo");
   assert.deepEqual(moves, [
     PULL_EXPLICITLY_DEMO,
     "inspect roadmap",
@@ -334,7 +298,7 @@ test("without a canonical index the last move is always to create it", () => {
       next_move: "create docs/project/refinement/index.md",
       canonical_index: null,
     }),
-    viewWith(null),
+    "demo",
   );
   assert.deepEqual(moves, [
     PULL_EXPLICITLY_DEMO,

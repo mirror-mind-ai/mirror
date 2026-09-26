@@ -33,12 +33,13 @@ import {
   type RoadmapSnapshotReport,
   statusMarker,
 } from "./pullCandidates.ts";
-import { type ScopedPullCandidates, scopeFocus } from "./roadmapScope.ts";
+import type { ScopedPullCandidates } from "./roadmapScope.ts";
 import {
   candidateListHeader,
   NO_ITEM_PULLED_YET,
   noRecommendationLines,
   outsideCountLines,
+  scopeFocus,
 } from "./scopePhrases.ts";
 import { wrapAriadSurface } from "./surfaceProtocol.ts";
 

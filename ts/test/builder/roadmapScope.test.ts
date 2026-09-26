@@ -13,7 +13,8 @@
 //   * every position fallback a surface must be able to state instead of throw.
 
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -30,10 +31,9 @@ import {
   isInsideCv,
   type RoadmapScope,
   resolveRoadmapScope,
-  scopeFocus,
   scopePullCandidates,
 } from "#builder/roadmapScope.ts";
-import { roadmapPositionLines } from "#builder/scopePhrases.ts";
+import { pullExplicitly, roadmapPositionLines, scopeFocus } from "#builder/scopePhrases.ts";
 
 const roots: string[] = [];
 
@@ -547,4 +547,41 @@ test("the July tree, unscoped, names no position and recommends nothing", () => 
     .filter((text) => text.startsWith("- "))
     .map((text) => text.split(" ")[1]);
   assert.equal(listed.length, 7, "the honest project-wide list, CV9.DS7 included");
+});
+
+// --- The literal command is safe to paste (CR002's handoff review) ----------------
+
+test("the Pull command quotes a journey slug that is not a plain token", () => {
+  assert.ok(pullExplicitly("mirror-ts-core").includes(" --journey mirror-ts-core --method "));
+  assert.ok(pullExplicitly("x;touch PWNED").includes(" --journey 'x;touch PWNED' --method "));
+  assert.ok(pullExplicitly("it's").includes(" --journey 'it'\\''s' --method "));
+});
+
+test("pasted into a shell, the Pull command runs nothing a slug smuggles in", () => {
+  // The command is printed to be copied, so the proof is a paste: fill the
+  // placeholders as a Navigator would, run it under `sh` with a stub `mirror` that
+  // only echoes its arguments, and check that nothing ran and the slug arrived as
+  // one argument, byte for byte. Slugs are not validated at creation (CR104).
+  const cwd = mkdtempSync(join(tmpdir(), "roadmap-scope-paste-"));
+  roots.push(cwd);
+  const hostile = [
+    "x;touch PWNED",
+    "$(touch PWNED)",
+    "`touch PWNED`",
+    "it's; touch PWNED",
+    "a b|touch PWNED",
+  ];
+  for (const slug of hostile) {
+    const command = pullExplicitly(slug)
+      .replace(/^pull explicitly: /u, "")
+      .replace(" <code> ", " CV1.DS1 ")
+      .replace(' "<title>" ', ' "A title" ')
+      .replace(" <level> ", " user_story ")
+      .replace(' "<why now>"', ' "now"');
+    const stub = `mirror() { for a in "$@"; do printf '%s\\n' "$a"; done; }`;
+    const result = spawnSync("sh", ["-c", `${stub}; ${command}`], { cwd, encoding: "utf8" });
+    assert.equal(result.status, 0, `${slug}: ${result.stderr}`);
+    assert.equal(existsSync(join(cwd, "PWNED")), false, `${slug} ran a command`);
+    assert.equal(result.stdout.split("\n")[3], slug, `${slug} did not arrive intact`);
+  }
 });

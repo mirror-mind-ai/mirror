@@ -130,15 +130,12 @@ function renderEntrySurface(
   // the whole roadmap.
   const scope = resolveRoadmapScope(projectPath || null, cursor);
   if (cursor && !cursor.activeItem && !cursor.pendingConfirmation) {
-    const view = scopePullCandidates(
-      inspectPullCandidates(projectPath, { journey: slug, method: "ariad" }),
-      scope,
-    );
+    const candidates = inspectPullCandidates(projectPath, { journey: slug, method: "ariad" });
+    const view = scopePullCandidates(candidates, scope);
     const roadmap = inspectRoadmapSnapshot(projectPath, { journey: slug, method: "ariad" });
     return `${printed(renderProjectPositionReport(roadmap, { view }))}${renderBuilderOrientationSurface(
       {
-        roadmap,
-        view,
+        candidates,
         refinement: inspectRefinementField(projectPath),
       },
     )}`;

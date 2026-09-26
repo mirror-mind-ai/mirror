@@ -24,7 +24,6 @@ import { pyStrip } from "#util/pythonText.ts";
 import {
   type PullCandidate,
   type PullCandidatesReport,
-  type RoadmapSnapshotItem,
   recommend,
   roadmapPaths,
 } from "./pullCandidates.ts";
@@ -188,35 +187,4 @@ export function scopePullCandidates(
     (candidate) => candidate.code !== cvCode && !isInsideCv(candidate.code, cvCode),
   ).length;
   return { journey, method, scope, shown, outsideCount, recommended: recommend(shown) };
-}
-
-/**
- * The roadmap focus a surface shows as "where are we": the roadmap index row for
- * the journey's CV, else the CV package's heading, else a stated placeholder.
- * `null` when unscoped.
- *
- * The index row wins because it is what the focus showed before CR002, for the
- * same CV; the change is WHICH CV, not where its title is read from.
- */
-export function scopeFocus(
-  items: readonly RoadmapSnapshotItem[],
-  scope: RoadmapScope,
-): RoadmapSnapshotItem | null {
-  if (scope.kind === "unscoped") return null;
-  const row = items.find((item) => item.code === scope.cvCode);
-  if (row !== undefined) return row;
-  const position = scope.position;
-  if (position.kind === "cv_package") {
-    const { code, title, status } = position.package;
-    return { code, title, status };
-  }
-  return { code: scope.cvCode, title: placeholderTitle(scope.cvCode, position), status: "" };
-}
-
-function placeholderTitle(cvCode: string, position: ScopePosition): string {
-  if (position.kind === "no_project") return "no project path configured";
-  if (position.kind === "ambiguous" && position.code === cvCode) {
-    return `claimed by ${position.paths.length} packages`;
-  }
-  return "no authored package";
 }
