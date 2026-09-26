@@ -83,7 +83,10 @@ Not yet planned. Two decisions belong to whoever takes it:
    is the thing this CR exists to stop. CV20.DS15's delivered Plan preservation
    is the reference implementation to generalize from, not to duplicate.
 
-### Plan (drafted 2026-09-25, panel-reviewed, awaiting Navigator approval)
+### Plan (approved by the Navigator 2026-09-25)
+
+Approved as drafted (`planned`) and started the same day (`in_progress`; Driver
+`@viniciusteles`, Delivery `mirror-ts-core`).
 
 #### Characterization (read-only, TypeScript engine)
 
