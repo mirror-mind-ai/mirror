@@ -490,6 +490,31 @@ This is implementation evidence, not Navigator validation:
 | Today's tree with CV22 and US3 marked Done, active item `CV22.DS10.TS5` | `no remaining candidates in CV22` and the command; `CV20.DS10` absent |
 | The real `mirror-ts-core` journey, read-only `pull-candidates` | `candidates in CV22`, `14 more outside CV22`, recommended `CV22.DS10.US3`, snapshot focus `CV22` |
 
+### Navigator validation (2026-09-26)
+
+The Navigator walked the July half of the [validation route](#validation-route) in
+an isolated home, in zsh, and pasted the surfaces. Each step met its pass condition:
+
+- step 1: `roadmap position` read `no item pulled yet`;
+- step 2: `no item pulled yet` in `PROJECT_POSITION` and `BUILDER_ORIENTATION`, the
+  `pull explicitly: … --journey bme …` command, a list headed `project-wide
+  candidates`, and no `▸`;
+- step 3: position `CV20 — Builder Mode Evolution (🟢 In Progress)`,
+  `candidates in CV20`, `9 more outside CV20`, and recommended `CV20.DS7.US1`, with
+  `CV9.DS7` absent.
+
+The natural half (`/mm-build mirror-ts-core`) was not walked separately; the
+Driver's read-only check of that journey is recorded above. The route's first
+printing stopped in the Navigator's zsh, where an `mm` alias shadowed the helper;
+`465a6aa7` renamed it and made the step markers `echo`s. **Accepted explicitly by
+the Navigator ("Validation accepted").**
+
+The walk surfaced two defects outside this CR, verified untouched by it and captured
+per the trust-floor rule: every candidate or position row prints a package's whole
+status line ([CR103](cr103-candidate-and-position-rows-print-a-package-s-entire-status-line.md),
+new); and the Pull surface names the CV with the item's title (evidence added to
+[CR018](cr018-story-titles-with-slashes-truncated-in-surfaces-and-scaffolds.md)).
+
 ## Outcome
 
 Pending.

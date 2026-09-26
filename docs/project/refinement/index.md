@@ -32,7 +32,7 @@ Open work is ordered intentionally. Terminal history follows open work.
 
 | Order | ID | RS | Change | Status | Driver | Delivery |
 |------:|----|----|--------|--------|--------|----------|
-| 1 | [CR002](rs001-ariad-runtime-trust/cr002-cursor-sync-roadmap-selection.md) | RS001 | Builder's position and next-pull surfaces ignore the journey | in_progress | @viniciusteles | `mirror-ts-core` |
+| 1 | [CR002](rs001-ariad-runtime-trust/cr002-cursor-sync-roadmap-selection.md) | RS001 | Builder's position and next-pull surfaces ignore the journey | validated | @viniciusteles | `mirror-ts-core` |
 | 2 | [CR001](rs001-ariad-runtime-trust/cr001-scope-confirmation-checkpoint.md) | RS001 | Make scope confirmation an honest checkpoint | planned | — | — |
 | 3 | [CR019](rs001-ariad-runtime-trust/cr019-plan-checkpoint-states-untruths-about-the-target-project.md) | RS001 | The Plan checkpoint states things that are not true for the target project (parent as sibling; Mirror-only contract lines) | captured | — | — |
 | 4 | [CR067](rs001-ariad-runtime-trust/cr067-render-the-refused-checkpoint-not-a-hardcoded-implement-stage.md) | RS001 | Render the refused checkpoint, not a hardcoded Implement stage | captured | — | — |
@@ -77,6 +77,7 @@ Open work is ordered intentionally. Terminal history follows open work.
 | 43 | [CR099](rs010-cv22-oracle-and-port-hygiene/cr099-a-global-capability-binding-is-not-idempotent.md) | RS010 | A `--global` capability binding is not idempotent | captured | — | — |
 | 44 | [CR100](rs010-cv22-oracle-and-port-hygiene/cr100-the-session-resolver-guesses-from-a-table-of-three-row-kinds.md) | RS010 | The session resolver guesses "the session" from a table that holds three kinds of row | captured | — | — |
 | 45 | [CR101](rs010-cv22-oracle-and-port-hygiene/cr101-explorer-and-soul-activation-stamp-a-guessed-session.md) | RS010 | Explorer and Soul activation stamp their mode onto a guessed session | captured | — | — |
+| 46 | [CR103](rs001-ariad-runtime-trust/cr103-candidate-and-position-rows-print-a-package-s-entire-status-line.md) | RS001 | Candidate and position rows print a roadmap package's entire status line | captured | — | — |
 | — | [CR079](rs001-ariad-runtime-trust/cr079-preserve-authored-content-in-every-lifecycle-artifact.md) | RS001 | Preserve authored content in every lifecycle artifact, not one at a time | done | @viniciusteles | `mirror-ts-core` |
 | — | [CR004](rs001-ariad-runtime-trust/cr004-preserve-authored-story-index.md) | RS001 | Preserve authored story index during Plan materialization | done | @viniciusteles | `mirror-ts-core` |
 | — | [CR008](rs001-ariad-runtime-trust/cr008-bind-lifecycle-commands-to-active-journey.md) | RS001 | Bind lifecycle commands to the active Builder journey | done | @viniciusteles | `mirror-ts-core` |

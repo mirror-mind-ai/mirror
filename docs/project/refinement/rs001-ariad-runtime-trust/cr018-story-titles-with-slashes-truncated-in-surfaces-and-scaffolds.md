@@ -78,6 +78,28 @@ them (visible in the kia-desktop history as the scaffold the story commits
 replaced). Depth symptom: kia-desktop CR193 and the five `TD-007` / `CR143`
 link repairs it records.
 
+### Found during CR002's validation (2026-09-26)
+
+The other half of the same convention. The Pull surface's `roadmap placement` row
+names the CV with the pulled item's own title:
+
+```text
+pull-item CV20.DS12.TS1 --item-title "Canonical Refinement Index And Artifact Convention"
+
+roadmap placement
+🟪[CV20] Canonical Refinement Index And Artifact Conven
+  └─ 🟦[TS1] Canonical Refinement Index And Artifact Co
+```
+
+`renderPullReport` (`ts/src/builder/pull.ts`) takes that row's title from
+`cvTitle(item.title)` (`ts/src/builder/cursorTransitions.ts`), the head of a
+`CV title / item title` chain, just as `titleLeaf` takes its tail. A title with
+no `/` has no chain, so its head is the whole item title. The CV code on the row
+is right; only its title is borrowed. Carrying titles as opaque strings, as the
+expected behavior asks, leaves the row with nothing to borrow: the CV's title has
+to come from the CV's own package or roadmap row. Reported by
+[CR002](cr002-cursor-sync-roadmap-selection.md), which did not touch `pull.ts`.
+
 ## Outcome
 
 Pending.
