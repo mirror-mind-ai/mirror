@@ -43,3 +43,4 @@ cannot choose safely.
 - [CR082 — Plan and Expand surfaces print absolute filesystem paths where their artifact surface prints project-relative ones](cr082-lifecycle-surfaces-print-absolute-paths.md)
 - [CR090 — The Debt Review surface mixes Portuguese into an English sentence](cr090-debt-review-surface-mixes-portuguese-into-english.md)
 - [CR103 — Candidate and position rows print a roadmap package's entire status line](cr103-candidate-and-position-rows-print-a-package-s-entire-status-line.md)
+- [CR105 — Choosing Delivery Story flow leaves the story-by-story confirmation pending](cr105-choosing-delivery-story-flow-leaves-the-story-confirmation-pending.md)
