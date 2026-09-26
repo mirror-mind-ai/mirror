@@ -75,4 +75,17 @@ keeping.
 
 ## Outcome
 
-Pending.
+Done 2026-09-25, closed with CR079. The overwrite this CR recorded (Python,
+2026-08-08) had already been fixed before the TypeScript port: Plan writes each
+package file only when it is absent (Python's `_write_story_package`, ported as
+`writeStoryPackage`).
+
+Evidence:
+
+- the oracle-recorded lifecycle sequence `plan_preserves_authored_plan`, in
+  which an authored `index.md` and `plan.md` come through Plan byte for byte;
+- CR079's direct test, in which an authored `index.md`, `plan.md`, and
+  `test-guide.md` survive both `plan-item` and `plan-delivery-story`.
+
+CR079 routed the Plan package through the one writer (`create-only`), and its
+structural guard keeps it there.

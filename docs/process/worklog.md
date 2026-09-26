@@ -12,6 +12,25 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-09-25 — CR079 done, with CR004: no Ariad command replaces content it did not write
+
+This is the second change of the Ariad trust floor. The closure verbs
+(validation, review, coherence, and Done, at story and Delivery Story level)
+replaced their files unconditionally. Two stories lost authored evidence to
+them, and the Delivery Story surface called a replaced file "existing".
+
+Every file the Builder writes now goes through one writer under a declared
+policy. Scaffolds are written only where absent. Closure records carry a seal,
+the SHA-256 of their content, and are rewritten only while it matches, so a
+record that is authored or edited by hand is preserved byte for byte and the
+checkpoint says so. The writer refuses paths outside the project, and a guard
+test forbids any other file write in the Builder tree, so the rule cannot be
+patched one artifact at a time again. One real bug was caught on the way: a
+path resolved against the project instead of the working directory.
+
+CR004, the Plan-stage instance, turned out to be already fixed and is now
+proven directly. Next on the floor: CR002.
+
 ### 2026-09-25 — CR008 done: Builder commands bind only a journey they were given
 
 This is the first change of the Ariad trust floor that gates the CV22

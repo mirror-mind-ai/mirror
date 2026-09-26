@@ -88,7 +88,7 @@ Not yet planned. Two decisions belong to whoever takes it:
 Approved as drafted (`planned`) and started the same day (`in_progress`; Driver
 `@viniciusteles`, Delivery `mirror-ts-core`). Validated by the Navigator the same
 day on the recorded evidence, with the four departures below accepted with it
-(`validated`).
+(`validated`). CI green, reviewed for debt (below), and closed (`done`).
 
 #### Characterization (read-only, TypeScript engine)
 
@@ -381,6 +381,21 @@ the `mm-build` skill, and US3's `inherited.md`).
    the surface stays true. The Delivery Story package, Expand, templates, and
    every record now report the writer's return value.
 
+**Debt Review (2026-09-25).** None of the findings is left undecided:
+
+| Finding | Disposition |
+|---|---|
+| The story Plan package manifest samples existence before the write | No action. For `create-only` the sample is the outcome by construction; accepted with the validation (departure 4) |
+| Closure records written before CR079 carry no seal, so a re-run preserves them | No action. It is conservative by design, and REFERENCE says how a person lets Ariad write one again |
+| The seal is integrity by convention, not authentication | Accepted in the plan. It gates only overwrite permission for eight files |
+| The ARTIFACTS_MATERIALIZED title stays when nothing was written | Accepted with the validation (departure 3). The row and the boundary carry the truth |
+
+Proportionality: `ts/src` changed in 12 files, 395 lines added and 164
+removed. 113 of those lines are the writer, and most of the rest is threading
+one project root and one outcome through existing signatures. It buys the rule
+that two stories paid for, made structural. Nothing was deferred, and nothing
+new was captured.
+
 **Navigator validation route.**
 
 1. Read the evidence above.
@@ -390,7 +405,17 @@ the `mm-build` skill, and US3's `inherited.md`).
 
 ## Outcome
 
-_Pending._
+Done 2026-09-25. No Ariad command replaces content it did not write:
+
+- Scaffolds are written only where absent.
+- Closure records are rewritten only while their seal proves Ariad wrote them
+  and nobody changed them.
+- Anything else is preserved byte for byte, and the surface says so.
+- One writer holds the rule, confines every path to its project, and a
+  structural guard keeps any other Builder module from writing a file.
+
+It was validated by the Navigator, and CI is green at `1fe6a2b9` ([Tests](https://github.com/mirror-mind-ai/mirror/actions/runs/36230782880)).
+CR004 closed with it.
 
 ## Provenance
 
