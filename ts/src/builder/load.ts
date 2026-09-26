@@ -46,7 +46,7 @@ import { renderProjectPositionReport } from "./pullCandidatesRender.ts";
 import { findCanonicalRefinementIndex, inspectRefinementField } from "./refinementField.ts";
 import { readBuilderResumeState } from "./resumeState.ts";
 import { renderBuilderResumeSurface } from "./resumeSurface.ts";
-import { resolveRoadmapScope } from "./roadmapScope.ts";
+import { resolveRoadmapScope, scopePullCandidates } from "./roadmapScope.ts";
 import { extractQuery, renderBuilderModeTransition } from "./transition.ts";
 
 export interface BuildLoadResult {
@@ -125,23 +125,25 @@ function renderEntrySurface(
   const canonicalRefinementIndex = findCanonicalRefinementIndex(projectPath);
   const resumeState = readBuilderResumeState(db, slug);
   const cursor = resumeState.cursor;
+  // Every "where are we" and "what next" below is the journey's own (CR002):
+  // derived from the cursor these surfaces already render, never from a scan of
+  // the whole roadmap.
+  const scope = resolveRoadmapScope(projectPath || null, cursor);
   if (cursor && !cursor.activeItem && !cursor.pendingConfirmation) {
-    const candidates = inspectPullCandidates(projectPath, { journey: slug, method: "ariad" });
+    const view = scopePullCandidates(
+      inspectPullCandidates(projectPath, { journey: slug, method: "ariad" }),
+      scope,
+    );
     const roadmap = inspectRoadmapSnapshot(projectPath, { journey: slug, method: "ariad" });
-    return `${printed(
-      renderProjectPositionReport(roadmap, { candidates: candidates.candidates }),
-    )}${renderBuilderOrientationSurface({
-      roadmap,
-      candidatesReport: candidates,
-      refinement: inspectRefinementField(projectPath),
-    })}`;
+    return `${printed(renderProjectPositionReport(roadmap, { view }))}${renderBuilderOrientationSurface(
+      {
+        roadmap,
+        view,
+        refinement: inspectRefinementField(projectPath),
+      },
+    )}`;
   }
-  // The position is the journey's own (CR002): derived from the cursor this
-  // surface already renders, never from a scan of the whole roadmap.
-  return renderBuilderResumeSurface(resumeState, {
-    scope: resolveRoadmapScope(projectPath || null, cursor),
-    canonicalRefinementIndex,
-  });
+  return renderBuilderResumeSurface(resumeState, { scope, canonicalRefinementIndex });
 }
 
 /**

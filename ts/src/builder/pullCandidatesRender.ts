@@ -10,27 +10,36 @@
 //   ╭…╮ / ╰…╯ and the blank rows   56   (what `cardText` also produces)
 //   `🧭  PROJECT POSITION`         54   (two short)
 //   `🟪■  PULL CANDIDATES`         55   (one short)
-//   `roadmap field … none`         57   (one long)
-//   `  Backlog … none`             58   (two long)
 //
 // That is not a defect to fix here. The author padded them by eye against a
 // terminal, where an astral-plane glyph occupies two columns but one code point,
 // so the literals are visually aligned and numerically inconsistent. A port that
-// normalizes them to 56 produces a prettier card and fails parity on four lines.
-// They are copied verbatim and the golden grades them.
+// normalizes them to 56 produces a prettier card and fails parity. They are
+// copied verbatim and the golden grades them. Two more, the empty `roadmap field`
+// and `Backlog` rows, left with CR002: an unscoped snapshot now states the
+// scope in `cardLine`'s own width instead.
+//
+// CR002: "where are we" and "what next" come from the journey's scoped view
+// (`roadmapScope.ts`), never from the whole project. Unscoped, a surface names no
+// focus and no recommendation, labels its list project-wide, and gives the literal
+// Pull command; the words are `scopePhrases.ts`'s.
 
 import { cardLine, cardPrefixed, cardText, cardWrapped } from "./card.ts";
 import {
   candidateLines,
-  focusItem,
   formatCandidate,
   type PullCandidate,
-  type PullCandidatesReport,
   type RoadmapSnapshotItem,
   type RoadmapSnapshotReport,
-  recommend,
   statusMarker,
 } from "./pullCandidates.ts";
+import { type ScopedPullCandidates, scopeFocus } from "./roadmapScope.ts";
+import {
+  candidateListHeader,
+  NO_ITEM_PULLED_YET,
+  noRecommendationLines,
+  outsideCountLines,
+} from "./scopePhrases.ts";
 import { wrapAriadSurface } from "./surfaceProtocol.ts";
 
 const FRAME_TOP = "╭────────────────────────────────────────────────────────╮";
@@ -43,39 +52,56 @@ function lastTitleSegment(title: string): string {
   return (segments[segments.length - 1] ?? "").trim();
 }
 
-/** Python `_format_project_recommendation`. */
-function formatProjectRecommendation(candidate: PullCandidate | null): string {
-  if (candidate === null) return "No pull candidate is available.";
+/** Python `_format_project_recommendation`, for a recommendation that exists. */
+function formatProjectRecommendation(candidate: PullCandidate): string {
   return `🟦[${candidate.code}] ${lastTitleSegment(candidate.title)} — recommended next pull`;
 }
 
 /**
- * Python `_project_focus_lines`. The progress line strips the marker glyphs from
- * `statusMarker`'s output with three sequential replaces, so a status whose text
- * itself contains `◉ ` would lose it too.
+ * Python `_project_focus_lines`, minus its `available candidates: none` line:
+ * "What looks next?" now says what is left in the scope, so the focus does not
+ * repeat it. The progress line strips the marker glyphs from `statusMarker`'s
+ * output with three sequential replaces, so a status whose text itself contains
+ * `◉ ` would lose it too. A focus with no status (a stated placeholder) has no
+ * progress to show.
  */
-function projectFocusLines(
-  focus: RoadmapSnapshotItem | null,
-  candidates: readonly PullCandidate[],
-): string[] {
-  if (focus === null) return [cardText("no roadmap focus")];
-  const marker = statusMarker(focus.status);
+function projectFocusLines(focus: RoadmapSnapshotItem | null): string[] {
+  if (focus === null) return [cardText(NO_ITEM_PULLED_YET)];
   const lines = cardWrapped(`🟪[${focus.code}] ${focus.title}`);
-  const progress = marker.replace("◉ ", "").replace("○ ", "").replace("✓ ", "");
-  lines.push(...cardWrapped(`progress: ${progress}`));
-  if (candidates.length === 0) lines.push(...cardWrapped("available candidates: none"));
+  if (focus.status) {
+    const marker = statusMarker(focus.status);
+    const progress = marker.replace("◉ ", "").replace("○ ", "").replace("✓ ", "");
+    lines.push(...cardWrapped(`progress: ${progress}`));
+  }
   return lines;
 }
 
-/** Python `render_project_position_report`. */
+/** The scoped candidate list: its header, the candidates, and what it leaves out. */
+function candidateListLines(view: ScopedPullCandidates): string[] {
+  return [
+    cardText(candidateListHeader(view.scope)),
+    ...cardPrefixed(candidateLines(view.shown), "-"),
+    ...outsideCountLines(view).flatMap(cardWrapped),
+  ];
+}
+
+/** The recommendation, formatted by the surface; or what stands in its place. */
+function nextMoveLines(
+  view: ScopedPullCandidates,
+  format: (candidate: PullCandidate) => string,
+): string[] {
+  if (view.recommended !== null) return cardWrapped(format(view.recommended));
+  return noRecommendationLines(view).flatMap(cardWrapped);
+}
+
+/** Python `render_project_position_report`, over the journey's scoped view. */
 export function renderProjectPositionReport(
   report: RoadmapSnapshotReport,
-  options: { candidates?: readonly PullCandidate[]; justMoved?: string | null } = {},
+  options: { view: ScopedPullCandidates; justMoved?: string | null },
 ): string {
-  const candidates = options.candidates ?? [];
+  const { view } = options;
   const justMoved = options.justMoved ?? null;
-  const focus = focusItem(report.items, candidates);
-  const recommended = candidates.length > 0 ? recommend(candidates) : null;
+  const focus = scopeFocus(report.items, view.scope);
   const lines: string[] = [
     "Roadmap",
     "",
@@ -83,7 +109,7 @@ export function renderProjectPositionReport(
     "│        🧭  PROJECT POSITION                           │",
     FRAME_BLANK,
     cardText("Where are we now?"),
-    ...projectFocusLines(focus, candidates),
+    ...projectFocusLines(focus),
     FRAME_BLANK,
   ];
   if (justMoved) {
@@ -91,10 +117,9 @@ export function renderProjectPositionReport(
   }
   lines.push(
     cardText("What looks next?"),
-    ...cardWrapped(formatProjectRecommendation(recommended)),
+    ...nextMoveLines(view, formatProjectRecommendation),
     FRAME_BLANK,
-    cardText("Available path"),
-    ...cardPrefixed(candidateLines(candidates), "-"),
+    ...candidateListLines(view),
     FRAME_BLANK,
     ...cardWrapped("Choose a pull when ready."),
     FRAME_BOTTOM,
@@ -105,19 +130,21 @@ export function renderProjectPositionReport(
 /**
  * Python `render_roadmap_snapshot_report`.
  *
- * The `current` row is chosen by running `_recommend` over only the focus CV's
- * OWN delivery candidates (`code.startswith(f"{focus.code}.")`), which is a
- * different question from the report-level recommendation — so the two rows can
+ * Since CR002 the focus is the journey's CV and the `current` row is the scoped
+ * recommendation: one question, where Python asked two. Python chose `current` by
+ * running `_recommend` over only the focus CV's OWN delivery candidates
+ * (`code.startswith(f"{focus.code}.")`), a different question from the
+ * report-level recommendation — so the two rows can
  * name different stories, and do whenever the recommended pull belongs to
  * another CV.
  */
 export function renderRoadmapSnapshotReport(
   report: RoadmapSnapshotReport,
-  options: { candidates?: readonly PullCandidate[] } = {},
+  options: { view: ScopedPullCandidates },
 ): string {
-  const candidates = options.candidates ?? [];
-  const focus = focusItem(report.items, candidates);
-  const result = candidates.length > 0 ? "ready to pull" : "no pull candidates";
+  const { view } = options;
+  const focus = scopeFocus(report.items, view.scope);
+  const result = view.shown.length > 0 ? "ready to pull" : "no pull candidates";
   const lines: string[] = [
     "ROADMAP SNAPSHOT",
     "Delivery field overview",
@@ -129,21 +156,14 @@ export function renderRoadmapSnapshotReport(
   ];
 
   if (focus === null) {
-    lines.push(
-      "│ roadmap field                                      none │",
-      FRAME_BLANK,
-      "│   Backlog                                           none │",
-    );
+    lines.push(cardLine("roadmap field", NO_ITEM_PULLED_YET));
   } else {
     lines.push(
-      cardLine(`🟪[${focus.code}]  ${focus.title}`, statusMarker(focus.status)),
+      cardLine(`🟪[${focus.code}]  ${focus.title}`, focus.status ? statusMarker(focus.status) : ""),
       cardText(`value: ${focus.title}`),
       FRAME_BLANK,
     );
-    const deliveryCandidates = candidates.filter((candidate) =>
-      candidate.code.startsWith(`${focus.code}.`),
-    );
-    const current = deliveryCandidates.length > 0 ? recommend(deliveryCandidates) : null;
+    const current = view.recommended;
     if (current !== null) {
       const codeTail = current.code.split(".").pop() ?? current.code;
       lines.push(
@@ -153,8 +173,8 @@ export function renderRoadmapSnapshotReport(
       );
     }
     lines.push(cardText("      Backlog"));
-    if (deliveryCandidates.length > 0) {
-      for (const candidate of deliveryCandidates) {
+    if (view.shown.length > 0) {
+      for (const candidate of view.shown) {
         lines.push(cardText(`      ○ 🟦[${candidate.code}] ${lastTitleSegment(candidate.title)}`));
       }
     } else {
@@ -183,8 +203,8 @@ export function renderRoadmapSnapshotReport(
   return wrapAriadSurface("roadmap_snapshot", `${lines.join("\n")}\n`);
 }
 
-/** Python `render_pull_candidates_report`. */
-export function renderPullCandidatesReport(report: PullCandidatesReport): string {
+/** Python `render_pull_candidates_report`, over the journey's scoped view. */
+export function renderPullCandidatesReport(view: ScopedPullCandidates): string {
   const lines: string[] = [
     "Delivery",
     "",
@@ -192,16 +212,15 @@ export function renderPullCandidatesReport(report: PullCandidatesReport): string
     "│        🟪■  PULL CANDIDATES                            │",
     FRAME_BLANK,
     cardText("journey"),
-    cardText(report.journey),
+    cardText(view.journey),
     FRAME_BLANK,
     cardText("method"),
-    cardText(report.method),
+    cardText(view.method),
     FRAME_BLANK,
-    cardText("available candidates"),
-    ...cardPrefixed(candidateLines(report.candidates), "-"),
+    ...candidateListLines(view),
     FRAME_BLANK,
     cardText("recommended pull"),
-    ...cardWrapped(report.recommended ? formatCandidate(report.recommended) : "none"),
+    ...nextMoveLines(view, formatCandidate),
     FRAME_BLANK,
     cardText("boundary"),
     ...cardWrapped("No item was pulled. No lifecycle work was executed."),

@@ -867,11 +867,14 @@ test("an adopted journey with no project path still renders both surfaces", () =
   assert.equal(entry.exit_code, 0);
   assert.equal((entry.stdout.match(/<<<ARIAD:/gu) ?? []).length, 2);
   // With no project path there is no roadmap to read, so the snapshot reports no
-  // source and the empty-state frame rows appear.
+  // source. With no cursor there is no scope either: the snapshot states that no
+  // item was pulled, at card width. CR002 replaced Python's ragged 57-code-point
+  // `none` row with it.
   assert.match(entry.stdout, /source\nnone/u);
-  // The ragged empty-state row, verbatim: 57 inner code points, not the 56 a
-  // card produces.
-  assert.ok(entry.stdout.includes("│ roadmap field                                      none │"));
+  const fieldRow = entry.stdout.split("\n").find((line) => line.includes("roadmap field")) ?? "";
+  assert.ok(fieldRow.endsWith(" no item pulled yet \u2502"), fieldRow);
+  assert.equal([...fieldRow].length - 2, 56, "the unscoped row is card width");
+  assert.ok(!entry.stdout.includes("│ roadmap field                                      none │"));
 });
 
 test("which surfaces appear is decided by the DSL surface route", () => {

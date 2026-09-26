@@ -19,6 +19,7 @@ import {
   inspectRoadmapSnapshot,
   type PullCandidate,
   type RoadmapSnapshotItem,
+  recommend,
 } from "#builder/pullCandidates.ts";
 import {
   renderProjectPositionReport,
@@ -31,6 +32,7 @@ import {
   matchStatus,
   stripMarkdownLink,
 } from "#builder/roadmapGrammar.ts";
+import { resolveRoadmapScope, scopePullCandidates } from "#builder/roadmapScope.ts";
 import {
   createStoryDirectory,
   findDuplicateRoadmapHeadings,
@@ -119,9 +121,17 @@ test("the DS table accumulates across chapters where the CV table would stop", (
 });
 
 test("inspectPullCandidates matches Python, order included", () => {
+  // Python's report carried a project-wide `recommended`; since CR002 the report
+  // carries none (a recommendation exists only for a journey's scope). The
+  // recorded value still grades `recommend()`'s preference order, over the same
+  // candidate pool Python ranked.
   for (const scenario of byKind("pull_candidates")) {
     const actual = inspectPullCandidates(projectRoot(scenario), { journey: "j", method: "ariad" });
-    assert.deepEqual(actual, scenario.expected, scenario.name);
+    assert.deepEqual(
+      { ...actual, recommended: recommend(actual.candidates) },
+      scenario.expected,
+      scenario.name,
+    );
   }
 });
 
@@ -346,39 +356,42 @@ test("stripMarkdownLink matches Python, whole-cell only", () => {
   }
 });
 
-/** The inspection pair every rendered surface is built from. */
+/**
+ * The inspection pair every rendered surface is built from, scoped the way
+ * `pull-candidates` scopes a journey without a cursor: the render scenarios record
+ * none. Scoped rendering has its own hand-written tests (`roadmapScope.test.ts`).
+ */
 function inspectBoth(scenario: Scenario) {
   const root = projectRoot(scenario);
   return {
     snapshot: inspectRoadmapSnapshot(root, { journey: "j", method: "ariad" }),
-    candidates: inspectPullCandidates(root, { journey: "j", method: "ariad" }),
+    view: scopePullCandidates(
+      inspectPullCandidates(root, { journey: "j", method: "ariad" }),
+      resolveRoadmapScope(root, null),
+    ),
   };
 }
 
-test("ROADMAP SNAPSHOT renders byte-identically to Python", () => {
+test("ROADMAP SNAPSHOT renders every recorded tree, unscoped", () => {
   for (const scenario of byKind("render_roadmap_snapshot")) {
-    const { snapshot, candidates } = inspectBoth(scenario);
-    assert.equal(
-      renderRoadmapSnapshotReport(snapshot, { candidates: candidates.candidates }),
-      scenario.expected,
-      scenario.name,
-    );
+    const { snapshot, view } = inspectBoth(scenario);
+    assert.equal(renderRoadmapSnapshotReport(snapshot, { view }), scenario.expected, scenario.name);
   }
 });
 
-test("PULL CANDIDATES renders byte-identically to Python", () => {
+test("PULL CANDIDATES renders every recorded tree, unscoped", () => {
   for (const scenario of byKind("render_pull_candidates")) {
-    const { candidates } = inspectBoth(scenario);
-    assert.equal(renderPullCandidatesReport(candidates), scenario.expected, scenario.name);
+    const { view } = inspectBoth(scenario);
+    assert.equal(renderPullCandidatesReport(view), scenario.expected, scenario.name);
   }
 });
 
-test("PROJECT POSITION renders byte-identically to Python, with and without just-moved", () => {
+test("PROJECT POSITION renders every recorded tree unscoped, with and without just-moved", () => {
   for (const scenario of byKind("render_project_position")) {
-    const { snapshot, candidates } = inspectBoth(scenario);
+    const { snapshot, view } = inspectBoth(scenario);
     assert.equal(
       renderProjectPositionReport(snapshot, {
-        candidates: candidates.candidates,
+        view,
         justMoved: (scenario.input.just_moved as string | null) ?? null,
       }),
       scenario.expected,
@@ -388,11 +401,11 @@ test("PROJECT POSITION renders byte-identically to Python, with and without just
 });
 
 test("Python's ragged frame literals are reproduced, not normalized", () => {
-  // Four hardcoded lines are not 56 inner code points like `cardText`'s output:
-  // the two card titles are short and the two empty-state rows are long, because
-  // they were padded by eye against a terminal where an astral glyph is two
-  // columns wide and one code point. Normalizing them would be prettier and
-  // wrong.
+  // The card titles are not 56 inner code points like `cardText`'s output,
+  // because they were padded by eye against a terminal where an astral glyph is
+  // two columns wide and one code point. Normalizing them would be prettier and
+  // wrong. Python had two more, the long empty `roadmap field` and `Backlog`
+  // rows; CR002 replaced them with a scoped `cardLine` at exactly card width.
   const empty = scenarios.find((s) => s.name === "render_snapshot__empty");
   const rendered = empty?.expected as string;
   const widths = new Map<string, number>();
@@ -402,9 +415,18 @@ test("Python's ragged frame literals are reproduced, not normalized", () => {
     }
   }
   const roadmapField = [...widths.keys()].find((line) => line.includes("roadmap field"));
-  const backlog = [...widths.keys()].find((line) => line.includes("Backlog"));
-  assert.equal(widths.get(roadmapField ?? ""), 57, "the empty roadmap-field row is one long");
-  assert.equal(widths.get(backlog ?? ""), 58, "the empty Backlog row is two long");
+  assert.equal(widths.get(roadmapField ?? ""), 56, "the unscoped roadmap-field row is card width");
+  assert.ok(
+    ![...widths.keys()].some((line) => line.includes("Backlog")),
+    "an unscoped snapshot has no focus, so no Backlog",
+  );
+
+  const positionRendered = scenarios.find((s) => s.name === "render_position__empty")
+    ?.expected as string;
+  const positionTitle = positionRendered
+    .split("\n")
+    .find((line) => line.includes("PROJECT POSITION")) as string;
+  assert.equal([...positionTitle].length - 2, 54, "the PROJECT POSITION title row is two short");
 
   const candidatesRendered = scenarios.find((s) => s.name === "render_candidates__empty")
     ?.expected as string;

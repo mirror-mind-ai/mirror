@@ -116,7 +116,13 @@ import {
   renderReleaseIntentReport,
   setReleaseIntent,
 } from "./releaseIntent.ts";
-import { cvCodeOf, isInsideCv } from "./roadmapScope.ts";
+import {
+  cvCodeOf,
+  isInsideCv,
+  resolveRoadmapScope,
+  type ScopedPullCandidates,
+  scopePullCandidates,
+} from "./roadmapScope.ts";
 import {
   createStoryDirectory,
   resolveStoryDirectory,
@@ -341,17 +347,17 @@ export function runPullCandidates(
   const root = projectPath || null;
   const surfaces = surfacesForTrigger("show_roadmap");
   const rendered: string[] = [];
-  const candidatesReport = inspectPullCandidates(root, { journey, method: options.method });
+  const view = journeyCandidateView(context.db, journey, root, options.method);
   if (surfaces.includes("roadmap_snapshot")) {
     rendered.push(
       renderRoadmapSnapshotReport(
         inspectRoadmapSnapshot(root, { journey, method: options.method }),
-        { candidates: candidatesReport.candidates },
+        { view },
       ),
     );
   }
   if (surfaces.includes("pull_candidates")) {
-    rendered.push(renderPullCandidatesReport(candidatesReport));
+    rendered.push(renderPullCandidatesReport(view));
   }
   return {
     stdout: printed(`${rendered.map((part) => pyRStrip(part)).join("\n")}\n`),
@@ -540,6 +546,21 @@ export function runCheckImplementation(
 // composite `DELIVERY_STORY_READY` surface INSTEAD of the Pull and Prepare
 // surfaces. Emitting all three is a duplicate-surface defect no renderer-level test
 // can see.
+
+/**
+ * The journey's scoped candidate view (CR002), from its persisted cursor. After a
+ * Done write the closure verbs carry the active item forward, so the scope is the
+ * CV of the item that just closed and "what looks next" stays inside it.
+ */
+function journeyCandidateView(
+  db: Database,
+  journey: string,
+  projectPath: string | null,
+  method: string,
+): ScopedPullCandidates {
+  const scope = resolveRoadmapScope(projectPath || null, getDeliveryCursor(db, journey));
+  return scopePullCandidates(inspectPullCandidates(projectPath, { journey, method }), scope);
+}
 
 /** Python `_require_delivery_cursor`. */
 function requireDeliveryCursor(db: Database, journey: string): CommandResult | null {
@@ -1696,10 +1717,7 @@ export function runDoneDeliveryStory(
         renderProjectPositionReport(
           inspectRoadmapSnapshot(projectPath, { journey: report.journey, method: options.method }),
           {
-            candidates: inspectPullCandidates(projectPath, {
-              journey: report.journey,
-              method: options.method,
-            }).candidates,
+            view: journeyCandidateView(context.db, report.journey, projectPath, options.method),
             justMoved: `🟩[${report.deliveryStory}] ${report.deliveryStoryTitle || "Delivery Story"} closed`,
           },
         ),
@@ -1976,8 +1994,7 @@ export function runDoneItem(
     const position = renderProjectPositionReport(
       inspectRoadmapSnapshot(projectPath, { journey, method: options.method }),
       {
-        candidates: inspectPullCandidates(projectPath, { journey, method: options.method })
-          .candidates,
+        view: journeyCandidateView(context.db, journey, projectPath, options.method),
         justMoved: `🟩[${report.activeItem}] ${report.activeItemTitle || "Story"} closed`,
       },
     );

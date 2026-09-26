@@ -391,7 +391,34 @@ since TS5.
   renders, 9 `roadmap_position` scenarios removed), by a script asserting those
   counts. New hand-written tests for every resume-row variant and for paragraph
   layout. `typecheck`, `lint`, `npm test` (2697 pass), the Builder lifecycle smoke
-  (54/54), and `git diff --check` green.
+  (54/54), and `git diff --check` green. CI green on `bf491562`.
+
+### Plateau 3 handoff (2026-09-26)
+
+- **True now:** every recommendation surface reads the journey's scoped view:
+  `PULL_CANDIDATES`, `PROJECT_POSITION` (in `build load`'s orientation path and
+  both Done trailers), `ROADMAP SNAPSHOT`, and `BUILDER_ORIENTATION`. The raw scan
+  carries no `recommended`, so no caller can reach a project-wide ranking.
+  `focusItem`, including its second status scan ("Active", "In Progress"), and
+  `renderBuilderHomeSurface` are deleted. All four phrases live in
+  `scopePhrases.ts`.
+- **Departure from the plan:** plateau 4's wiring (`pull-candidates`, `done-item`,
+  `done-delivery-story` passing the cursor) landed here. Changing the renderers'
+  signatures forced every call site in the same step, and wiring them to the real
+  scope at once spared the `builder-command` goldens a second edit.
+- **Intentionally undone:** the July-shape and two-journey scenarios run only at
+  resolver and renderer level; the skill, decision, and process docs are
+  unchanged.
+- **Next:** plateau 4: the July-shape and two-journey scenarios end to end through
+  the commands.
+- **Evidence:** goldens hand-edited with a README row (36 `builder-roadmap`, 8
+  `orientation` plus 9 `home` removed, 5 `builder-command`), by a script asserting
+  those counts and deriving each line independently of the renderers. Seven new
+  hand-written tests cover the scoped surfaces (CV20 list and count, exhausted CV2,
+  scoped snapshot, the unscoped July tree) and the orientation moves. US3's
+  `inherited.md` item 2 now names the two goldens that newly carry `PROGRAM`.
+  `typecheck`, `lint`, `npm test` (2702 pass), the Builder lifecycle smoke (54/54),
+  and `git diff --check` green.
 
 ## Outcome
 

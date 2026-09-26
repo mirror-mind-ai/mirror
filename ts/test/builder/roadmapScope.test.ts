@@ -19,6 +19,11 @@ import { join } from "node:path";
 import test from "node:test";
 
 import { inspectPullCandidates, inspectRoadmapSnapshot } from "#builder/pullCandidates.ts";
+import {
+  renderProjectPositionReport,
+  renderPullCandidatesReport,
+  renderRoadmapSnapshotReport,
+} from "#builder/pullCandidatesRender.ts";
 import { renderBuilderResumeSurface } from "#builder/resumeSurface.ts";
 import {
   cvCodeOf,
@@ -446,4 +451,100 @@ test("each position paragraph starts its own card line on the resume surface", (
     card("no authored package for CV4"),
     card(""),
   ]);
+});
+
+// --- The recommendation surfaces, scoped -----------------------------------------
+//
+// The goldens grade these renderers unscoped (their scenarios record no cursor)
+// and scoped only where CV1 still had a recommendation. These cover the rest,
+// on the July tree: facts, not bytes, because the formatting beneath them is
+// already graded by the goldens.
+
+/** The card texts between two card rows, trimmed; `until` excluded. */
+function cardTexts(rendered: string, from: string, until: string): string[] {
+  const texts = rendered
+    .split("\n")
+    .filter((line) => line.startsWith("│ ") && line.endsWith(" │"))
+    .map((line) => line.slice(2, -2).trimEnd());
+  const start = texts.indexOf(from);
+  const end = texts.indexOf(until, start + 1);
+  assert.ok(start >= 0 && end > start, `no ${from} … ${until} in:\n${rendered}`);
+  return texts.slice(start + 1, end);
+}
+
+function julyView(root: string, scope: RoadmapScope) {
+  return scopePullCandidates(inspectPullCandidates(root, { journey: "j", method: "ariad" }), scope);
+}
+
+const PULL_J = [
+  "pull explicitly: mirror build pull-item --journey j",
+  "--method ariad --item-code <code> --item-title",
+  '"<title>" --item-level <level> --why-now "<why now>"',
+];
+
+test("scoped PULL CANDIDATES lists the CV's candidates, counts the rest, and recommends inside", () => {
+  const root = julyTree();
+  const rendered = renderPullCandidatesReport(julyView(root, scoped(root, "CV20.DS12.TS1")));
+  const list = cardTexts(rendered, "candidates in CV20", "");
+  const codes = list.filter((text) => text.startsWith("- ")).map((text) => text.split(" ")[1]);
+  assert.deepEqual(codes, ["CV20.DS12", "CV20.DS7.US1", "CV20.DS7", "CV20.DS9"]);
+  assert.equal(list.at(-1), "3 more outside CV20");
+  assert.ok(!rendered.includes("CV9.DS7"), "the stale Active package is not even listed");
+  const recommended = cardTexts(rendered, "recommended pull", "");
+  assert.ok(recommended[0]?.startsWith("CV20.DS7.US1 — Define Release Intent [user_story]"));
+});
+
+test("a CV with nothing left says so, then gives the literal command", () => {
+  const root = julyTree();
+  const report = inspectRoadmapSnapshot(root, { journey: "j", method: "ariad" });
+  const rendered = renderProjectPositionReport(report, {
+    view: julyView(root, scoped(root, "CV2.DS1")),
+  });
+  assert.deepEqual(cardTexts(rendered, "Where are we now?", ""), [
+    "🟪[CV2] Small Things",
+    "progress: planned",
+  ]);
+  assert.deepEqual(cardTexts(rendered, "What looks next?", ""), [
+    "no remaining candidates in CV2",
+    ...PULL_J,
+  ]);
+  assert.deepEqual(cardTexts(rendered, "candidates in CV2", ""), ["none", "5 more outside CV2"]);
+});
+
+test("scoped ROADMAP SNAPSHOT focuses the journey's CV and backlogs only its candidates", () => {
+  const root = julyTree();
+  const report = inspectRoadmapSnapshot(root, { journey: "j", method: "ariad" });
+  const rendered = renderRoadmapSnapshotReport(report, {
+    view: julyView(root, scoped(root, "CV20.DS12.TS1")),
+  });
+  const texts = rendered.split("\n").filter((line) => line.startsWith("│ "));
+  assert.ok(texts[0]?.includes("🟪[CV20]  Builder Mode Evolution"), texts[0]);
+  assert.ok(texts[0]?.endsWith("◉ active │"), texts[0]);
+  assert.ok(rendered.includes("└─ 🟦[US1] Define Release Intent"), "current is the scoped pick");
+  const backlog = cardTexts(rendered, "      Backlog", "").map((text) => text.trim());
+  assert.deepEqual(backlog, [
+    "○ 🟦[CV20.DS12] Document-First Refinement",
+    "○ 🟦[CV20.DS7.US1] Define Release Intent",
+    "○ 🟦[CV20.DS7] Release And Push Policies",
+    "○ 🟦[CV20.DS9] Method Preferences",
+  ]);
+});
+
+test("the July tree, unscoped, names no position and recommends nothing", () => {
+  const root = julyTree();
+  const report = inspectRoadmapSnapshot(root, { journey: "j", method: "ariad" });
+  const view = julyView(root, resolveRoadmapScope(root, { activeItem: null }));
+  const position = renderProjectPositionReport(report, { view });
+  assert.deepEqual(cardTexts(position, "Where are we now?", ""), ["no item pulled yet"]);
+  assert.deepEqual(cardTexts(position, "What looks next?", ""), PULL_J);
+  assert.ok(!position.includes("recommended next pull"));
+  const snapshot = renderRoadmapSnapshotReport(report, { view });
+  assert.ok(snapshot.includes("roadmap field"));
+  assert.ok(!snapshot.includes("🟪["), "no CV is focused");
+  const candidates = renderPullCandidatesReport(view);
+  assert.deepEqual(cardTexts(candidates, "recommended pull", ""), PULL_J);
+  const listed = cardTexts(candidates, "project-wide candidates", "")
+    .filter((text) => text.startsWith("- "))
+    .map((text) => text.split(" ")[1]);
+  assert.equal(listed.length, 7, "the honest project-wide list, CV9.DS7 included");
 });

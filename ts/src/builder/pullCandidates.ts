@@ -75,11 +75,15 @@ export interface PullCandidate {
   path: string;
 }
 
+/**
+ * The raw project scan. It carries no recommendation: since CR002 a
+ * recommendation exists only for a journey's scope (`scopePullCandidates` in
+ * `roadmapScope.ts`), never for the project as a whole.
+ */
 export interface PullCandidatesReport {
   journey: string;
   method: string;
   candidates: PullCandidate[];
-  recommended: PullCandidate | null;
 }
 
 export interface ProjectPaths {
@@ -244,7 +248,7 @@ export function inspectPullCandidates(
   options: { journey: string; method: string },
 ): PullCandidatesReport {
   if (root === null) {
-    return { journey: options.journey, method: options.method, candidates: [], recommended: null };
+    return { journey: options.journey, method: options.method, candidates: [] };
   }
   const { roadmapRoot } = roadmapPaths(root);
   const files = scanRoadmapIndexFiles(roadmapRoot);
@@ -266,12 +270,7 @@ export function inspectPullCandidates(
   const candidates = raw.filter(
     (candidate) => !candidateHasDoneArtifact(root, candidate, files, contents),
   );
-  return {
-    journey: options.journey,
-    method: options.method,
-    candidates,
-    recommended: recommend(candidates),
-  };
+  return { journey: options.journey, method: options.method, candidates };
 }
 
 function candidateFromIndexContent(
@@ -440,29 +439,6 @@ export function recommend(candidates: readonly PullCandidate[]): PullCandidate |
     }
   }
   return candidates[0] ?? null;
-}
-
-/**
- * Python `_focus_item`: prefer the CV that owns the recommended candidate, then
- * the first item matching a status preference, then the first item at all.
- */
-export function focusItem(
-  items: readonly RoadmapSnapshotItem[],
-  candidates: readonly PullCandidate[] = [],
-): RoadmapSnapshotItem | null {
-  const recommended = candidates.length > 0 ? recommend(candidates) : null;
-  if (recommended !== null) {
-    const recommendedCv = recommended.code.split(".", 1)[0];
-    for (const item of items) {
-      if (item.code === recommendedCv) return item;
-    }
-  }
-  for (const preferredStatus of ["Active", "In Progress", "Candidate", "Planned", "Future"]) {
-    for (const item of items) {
-      if (item.status.includes(preferredStatus)) return item;
-    }
-  }
-  return items[0] ?? null;
 }
 
 /** Python `_status_marker`. Order matters: Active is tested before Candidate. */
