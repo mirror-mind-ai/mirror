@@ -116,6 +116,7 @@ import {
   renderReleaseIntentReport,
   setReleaseIntent,
 } from "./releaseIntent.ts";
+import { cvCodeOf, isInsideCv } from "./roadmapScope.ts";
 import {
   createStoryDirectory,
   resolveStoryDirectory,
@@ -707,11 +708,12 @@ function roadmapPlanContext(
         .split("/")
         .map((part) => part.trim())
         .filter((part) => part !== "");
-      const prefix = String(activeItem).split(".")[0] ?? "";
+      // The CV-membership rule every Builder surface shares (CR002). Its output
+      // here is unchanged: this filter already used strict descent. Listing the
+      // PARENT as a sibling is CR019's defect, not this rule's.
+      const cvCode = cvCodeOf(activeItem);
       siblings = candidates
-        .filter(
-          (candidate) => candidate.code !== activeItem && candidate.code.startsWith(`${prefix}.`),
-        )
+        .filter((candidate) => candidate.code !== activeItem && isInsideCv(candidate.code, cvCode))
         .map((candidate) => (candidate.title.split("/").at(-1) ?? "").trim());
     }
   }

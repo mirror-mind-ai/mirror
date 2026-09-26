@@ -357,6 +357,23 @@ has no production caller. Pinned by `test/builder/roadmap.test.ts` and
 `test/builder/orientation.test.ts` against goldens recorded from Python and frozen
 since TS5.
 
+### Plateau 1 handoff (2026-09-26)
+
+- **True now:** `ts/src/builder/roadmapScope.ts` resolves a journey's scope from its
+  cursor (`resolveRoadmapScope`), owns the membership rule (`cvCodeOf`, `isInsideCv`),
+  scopes the candidate list (`scopePullCandidates`), and picks the focus
+  (`scopeFocus`). `storyPaths.ts` exposes the heading-claim map
+  (`roadmapHeadingDirectories`) so ambiguity is stated, not thrown.
+  `roadmapPlanContext` uses the shared rule; its output is unchanged.
+- **Intentionally undone:** no surface reads the scope yet; `resolveRoadmapPosition`,
+  the project-wide `recommended` field, and `renderBuilderHomeSurface` still exist.
+- **Next:** plateau 2: `■ BUILDER RESUME` reads the scope.
+- **Evidence:** `test/builder/roadmapScope.test.ts`, 14 tests with hand-derived
+  expectations over the July and edge trees. A mutation check of the four rules
+  that matter (dot in membership, active item excluded, CV not its own candidate,
+  ambiguity stated) fails 3, 3, 3, and 2 tests. Plan checkpoint goldens unchanged.
+  `typecheck`, `lint`, `npm test` (2694 pass), `git diff --check` green.
+
 ## Outcome
 
 Pending.

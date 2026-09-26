@@ -113,6 +113,19 @@ export function resolveStoryDirectory(projectRoot: string, code: string): string
   return only ? `${roadmapRoot}${sep}${only.split("/").join(sep)}` : roadmapRoot;
 }
 
+/**
+ * Every heading code in the roadmap, mapped to the directories that claim it —
+ * relative to the roadmap root, POSIX, in scan order.
+ *
+ * One code, one directory is the healthy case. `resolveStoryDirectory` refuses to
+ * choose among several; CR002's roadmap scope reads the map directly because a
+ * surface must be able to SAY that a package is claimed twice, and to name the
+ * claimants project-relatively, rather than throw from inside `build load`.
+ */
+export function roadmapHeadingDirectories(projectRoot: string): Map<string, string[]> {
+  return groupRoadmapHeadings(resolve(roadmapPaths(projectRoot).roadmapRoot));
+}
+
 /** Python `find_duplicate_roadmap_headings`: the CI-facing whole-tree counterpart. */
 export function findDuplicateRoadmapHeadings(projectRoot: string): Map<string, string[]> {
   const { roadmapRoot } = roadmapPaths(projectRoot);
