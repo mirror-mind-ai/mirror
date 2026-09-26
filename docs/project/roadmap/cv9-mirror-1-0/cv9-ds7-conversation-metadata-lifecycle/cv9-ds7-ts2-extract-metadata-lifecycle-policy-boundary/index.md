@@ -3,7 +3,7 @@
 # CV9.DS7.TS2 — Extract Metadata Lifecycle Policy Boundary
 
 **Type:** Technical Story  
-**Status:** Validated  
+**Status:** Done  
 **Parent:** [CV9.DS7 Conversation Metadata Lifecycle](../index.md)
 
 ---

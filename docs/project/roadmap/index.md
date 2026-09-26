@@ -58,8 +58,8 @@ home containment (CV9.E2.S6): the runtime directory is the resolved mirror
 home for every environment, unconfigured resolution fails loudly instead of
 writing to the homes root, and `runtime diagnose` reports legacy root
 artifacts. Conversation
-metadata lifecycle has entered Delivery as CV9.DS7; its dry-run decision path
-and evidence-based policy are done, with apply behavior still remaining.
+metadata lifecycle was delivered as CV9.DS7, done on 2026-09-26 and since ported
+to TypeScript by CV22.DS7.US10.
 Boundary Hardening and the remaining stabilization stories are still open before
 the full CV9 done condition is met.
 
