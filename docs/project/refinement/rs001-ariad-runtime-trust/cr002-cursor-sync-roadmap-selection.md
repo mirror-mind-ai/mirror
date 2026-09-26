@@ -261,24 +261,28 @@ Then on this journey: `build load` → position `CV22`, now by derivation;
 Pass: exactly those outcomes. Fail: any surface names `CV9.DS7` or a CV20 item for
 `mirror-ts-core`. This route is the E2E; no personal data is involved.
 
-The July half, runnable from the repository root. There is no `.env`, so nothing
-reaches the real home:
+The July half, runnable from the repository root in bash or zsh. There is no `.env`,
+so nothing reaches the real home. The helper is `cr002`, not `mm`, because an `mm`
+alias wins over any function of that name, and the step markers are `echo`s because
+an interactive zsh does not treat `#` as a comment by default:
 
 ```bash
 V=$(mktemp -d) && git archive dfd44051 docs/project/roadmap | tar -x -C "$V" && mkdir "$V/home"
 export MIRROR_HOME="$V/home" NODE_OPTIONS=--no-warnings
-mm() { node ts/src/frontDoor/cli.ts "$@"; }
-printf '# BME\n' | mm identity set journey bme
-mm journey set-path bme "$V" && mm build adopt --journey bme --method ariad
-
-mm build load bme 2>/dev/null | sed -n '/ARIAD:BUILDER_RESUME/,/END:BUILDER_RESUME/p'      # step 1
-mm build sync-cursor --journey bme --method ariad
-mm build load bme 2>/dev/null | sed -n '/ARIAD:PROJECT_POSITION/,/END:BUILDER_ORIENTATION/p'  # step 2
-mm build pull-item --journey bme --method ariad --item-code CV20.DS12.TS1 \
+cr002() { node ts/src/frontDoor/cli.ts "$@"; }
+printf '# BME\n' | cr002 identity set journey bme
+cr002 journey set-path bme "$V" && cr002 build adopt --journey bme --method ariad
+echo '--- step 1'
+cr002 build load bme 2>/dev/null | sed -n '/ARIAD:BUILDER_RESUME/,/END:BUILDER_RESUME/p'
+cr002 build sync-cursor --journey bme --method ariad
+echo '--- step 2'
+cr002 build load bme 2>/dev/null | sed -n '/ARIAD:PROJECT_POSITION/,/END:BUILDER_ORIENTATION/p'
+cr002 build pull-item --journey bme --method ariad --item-code CV20.DS12.TS1 \
   --item-title "Canonical Refinement Index And Artifact Convention" \
   --item-level technical_story --why-now "CR002 validation"
-mm build load bme 2>/dev/null | sed -n '/ARIAD:BUILDER_RESUME/,/END:BUILDER_RESUME/p'      # step 3
-mm build pull-candidates --journey bme --method ariad
+echo '--- step 3'
+cr002 build load bme 2>/dev/null | sed -n '/ARIAD:BUILDER_RESUME/,/END:BUILDER_RESUME/p'
+cr002 build pull-candidates --journey bme --method ariad
 unset MIRROR_HOME; rm -rf "$V"
 ```
 
