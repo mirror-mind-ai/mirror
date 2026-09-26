@@ -418,7 +418,23 @@ since TS5.
   scoped snapshot, the unscoped July tree) and the orientation moves. US3's
   `inherited.md` item 2 now names the two goldens that newly carry `PROGRAM`.
   `typecheck`, `lint`, `npm test` (2702 pass), the Builder lifecycle smoke (54/54),
-  and `git diff --check` green.
+  and `git diff --check` green. CI green on `76f0ebb3`.
+
+### Plateau 4 handoff (2026-09-26)
+
+- **True now:** `ts/test/frontDoor/builderScopeCli.test.ts` replays the
+  characterization through the real `cli.ts` in an isolated home, on a July-shaped
+  project: `build load` with no cursor, `sync-cursor` then `build load`, an
+  explicit `pull-item` then two loads, and `pull-candidates`. A second journey on
+  the same project pulls in another CV and gets its own position and next pull.
+- **Evidence the test bites:** run against `d987cc71` (the code before CR002),
+  both tests fail on the defect itself. The position with no cursor is `CV9.DS7 —
+  Conversation Metadata Lifecycle …`, and a journey that pulled `CV20.DS12.TS1`
+  is told `CV9.DS7`. On the fix both pass. `typecheck`, `lint`, `npm test` (2704
+  pass), and `git diff --check` green.
+- **Intentionally undone:** docs (the `mm-build` skill, decisions, process docs),
+  Navigator validation, and the handoff review.
+- **Next:** plateau 5.
 
 ## Outcome
 
