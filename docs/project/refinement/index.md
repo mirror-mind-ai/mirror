@@ -8,8 +8,8 @@ If a linked document and this index disagree, this index wins.
 
 ## Current Focus
 
-- Refinement Story: RS001
-- Change Request: none
+- Refinement Story: RS010
+- Change Request: CR102
 
 Selecting a focus is an explicit project decision. Reading this file never selects or
 executes work.
@@ -32,7 +32,7 @@ Open work is ordered intentionally. Terminal history follows open work.
 
 | Order | ID | RS | Change | Status | Driver | Delivery |
 |------:|----|----|--------|--------|--------|----------|
-| 1 | [CR102](rs010-cv22-oracle-and-port-hygiene/cr102-the-claude-code-mm-build-skill-lacks-the-builder-and-ariad-sections.md) | RS010 | The Claude Code `mm-build` skill carries no activation boundary, journey binding, or Ariad section | captured | — | — |
+| 1 | [CR102](rs010-cv22-oracle-and-port-hygiene/cr102-the-claude-code-mm-build-skill-lacks-the-builder-and-ariad-sections.md) | RS010 | The Claude Code `mm-build` skill carries no activation boundary, journey binding, or Ariad section | in_progress | @viniciusteles | `mirror-ts-core` |
 | 2 | [CR009](rs001-ariad-runtime-trust/cr009-name-the-target-project-in-artifact-surfaces.md) | RS001 | Name the target project in artifact materialization surfaces | captured | — | — |
 | 3 | [CR010](rs003-revisable-refinement-lifecycle/cr010-replan-with-plan-history.md) | RS003 | Re-plan a reviewed Change Request without destroying plan history | captured | — | — |
 | 4 | [CR012](rs003-revisable-refinement-lifecycle/cr012-supersede-change-request.md) | RS003 | Close a Change Request superseded by another | captured | — | — |
