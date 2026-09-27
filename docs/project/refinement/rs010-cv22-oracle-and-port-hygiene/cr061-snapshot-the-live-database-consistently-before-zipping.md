@@ -2,7 +2,7 @@
 
 # CR061 — Snapshot the live database consistently before zipping
 
-**Status:** validated
+**Status:** done
 **RS:** RS010
 **Driver:** @viniciusteles
 **Delivery:** `mirror-ts-core`
@@ -643,9 +643,41 @@ Accepted scope boundaries, as planned: a restore command, re-verifying older
 archives with their sidecars, `restoreFromBackup`, restoring WAL on open, the
 pre-write snapshot's location, Windows ACLs, encryption, and off-machine copies.
 
+### Debt paid (2026-09-27)
+
+The Navigator decided to pay the first three findings now and to take no action
+on the fourth.
+
+1. `/mm-backup` reports a failed backup as a failure (`b0640460`). The Claude
+   Code copy, in the checkout and the plugin, describes the snapshot rather than
+   "WAL/SHM sidecars for consistency". Both copies count a backup as done only on
+   exit 0 with a `Backup created:` line, and report and quote a
+   `no archive was written` line. The plugin was regenerated.
+2. One pattern names a Mirror archive (`fceb4b27`): `ARCHIVE_NAME`, which both
+   the retention sweep and the tightening read.
+3. The temp space a backup needs is documented (`4fc32ac6`): REFERENCE.md says
+   the snapshot needs free temp space about the size of the database, that
+   `TMPDIR` moves it, and which line a backup prints when it cannot stage it.
+
 ## Outcome
 
-_Pending._
+Done 2026-09-27, with [CR062](cr062-write-backup-archives-owner-only.md) and
+[CR060](cr060-fail-loudly-when-a-silent-backup-fails.md), one delivery. A dated
+archive is the database as committed: one `memory.db`, snapshotted with
+`VACUUM INTO` in a private temp directory, switched to WAL, checked, and
+published owner-only. The race that could restore 0 of 500 committed rows with
+`quick_check` still reporting `ok` is gone, and so is the `memory.db` member
+that lacked every row in the WAL while the updater's verifier called it valid.
+Mirror's older archives are tightened to 0600, and the directory is never
+touched. A backup that wrote nothing exits 1 with one line, under `--silent`
+too, and the front-door log records why.
+
+Delivered on `mirror-ts-core` in `64b4a164` (the snapshot), `2747a9ae`
+(owner-only), `37df8c4b` (the loud failure), and `b0640460`, `fceb4b27`, and
+`4fc32ac6` (debt). CI was green on each push. The Navigator validated the
+[route](#validation-route) on a scratch home and on the real one, whose Dropbox
+backups folder now holds 61 owner-only files. Windows was not exercised; that
+belongs to US3.
 
 ## Provenance
 

@@ -12,6 +12,36 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-09-27 — CR061 done, with CR062 and CR060: a backup is the database as committed, owner-only, and loud when it fails
+
+This is the first change of the amended release gate. It reaches past Ariad to
+the one archive a user has. The dated backup copied the main database file and
+then its WAL, with nothing in between. A checkpoint in that gap restored 0 of
+500 committed rows, and `quick_check` still said `ok`. Even without the race,
+the archive's `memory.db` alone lacked every row still in the WAL, while the
+updater's verifier checked exactly that file and called it valid. Archives were
+written 0644. A silent backup that wrote nothing exited 0, which is how every
+runtime's session-end backup runs.
+
+Now an archive holds one `memory.db`, a `VACUUM INTO` snapshot taken in a
+private temp directory, never in the backups folder, which on this install is a
+Dropbox folder. The snapshot is switched to WAL, because Mirror sets WAL only
+when it creates a database, so a restore runs as the original did. It is checked
+before it is published, and published owner-only. Each backup tightens Mirror's
+older archives and never touches the directory. A backup that wrote nothing
+exits 1 with one line, and the front-door log records why. Stranded staging is
+swept by `liveBackup.ts`'s dead-writer rule, now one shared module.
+
+Along the way, a mutant showed that the tightening masked a window in which an
+archive in a 0755 folder was readable. The golden's fake fixture could not be
+vacuumed, so the tests now grade what a restored database holds. The Navigator
+validated on a scratch home and on the real one: 61 owner-only files, and the
+folder untouched. The handoff review's three debts were paid, among them a
+`/mm-backup` skill that still described sidecars and would have announced a
+failed backup as a success.
+
+Next on the gate: CR104, then CR105 with CR090; then US3.
+
 ### 2026-09-27 — CR102 done: Builder Mode reads the same instructions in every runtime
 
 This is the eighth and last change of the Ariad trust floor. Claude Code's `mm-build`

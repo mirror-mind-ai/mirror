@@ -2,7 +2,7 @@
 
 # CR060 — Fail loudly when a silent backup fails
 
-**Status:** validated
+**Status:** done
 **RS:** RS010
 **Driver:** @viniciusteles
 **Delivery:** `mirror-ts-core`
@@ -52,7 +52,12 @@ _Pending._
 
 ## Outcome
 
-_Pending._
+Done 2026-09-27 with
+[CR061](cr061-snapshot-the-live-database-consistently-before-zipping.md#outcome),
+which carries its record. A backup that wrote no archive exits 1 with one line,
+`backup: no archive was written: <why>`, under `--silent` too, and the
+front-door log records a content-free category. `/mm-backup` reports that line
+as a failure.
 
 ## Provenance
 

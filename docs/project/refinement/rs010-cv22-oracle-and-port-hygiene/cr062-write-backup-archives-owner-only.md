@@ -2,7 +2,7 @@
 
 # CR062 — Write backup archives owner-only
 
-**Status:** validated
+**Status:** done
 **RS:** RS010
 **Driver:** @viniciusteles
 **Delivery:** `mirror-ts-core`
@@ -50,7 +50,11 @@ _Pending._
 
 ## Outcome
 
-_Pending._
+Done 2026-09-27 with
+[CR061](cr061-snapshot-the-live-database-consistently-before-zipping.md#outcome),
+which carries its record. Every archive is owner-only from its first byte, a
+backups directory the backup creates is 0700, and each backup tightens Mirror's
+older archives to 0600 without touching the directory (D2a).
 
 ## Provenance
 
