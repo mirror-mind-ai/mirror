@@ -1640,7 +1640,8 @@ async function dispatchTs(argv: readonly string[]): Promise<number | DispatchOut
   // database; `repair-encoding --apply` rides the live-write seam.
   if (argv[0] === "backup") {
     return runBackupRoute(argv, {
-      resolveDbPath: resolveDbPathForCli,
+      // CR060: the backup reports an unresolved home itself, in one line.
+      resolveDbPath: (args) => resolveDbPath(args),
       withLiveWriteDb: (dbPath, write) => withLiveWriteDbAt(dbPath, "backup", write),
     });
   }

@@ -4,8 +4,11 @@
 // behavior itself lives in `#backup/zipBackup.ts` and
 // `#repair/encodingRepair.ts`, graded by their goldens.
 //
-// `backup` never opens the database and never bootstraps one: a missing file
-// is "Database not found", exit 1 (0 under --silent), exactly like Python.
+// `backup` never opens the database through the front door and never
+// bootstraps one; its snapshot uses a read-only connection of its own. Since
+// CR060, a backup that wrote no archive exits 1 whatever --silent says, with
+// one stderr line that leads with the consequence -- Python exited 0 under
+// --silent, which hid every failed session-end backup.
 // `repair-encoding` reads through a plain read-only handle for the dry run
 // (Python does not check the schema either — the scan is tolerant of old
 // databases by design) and goes through the caller-supplied live-write seam
@@ -14,7 +17,8 @@
 
 import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { createZipBackup } from "#backup/zipBackup.ts";
+import { BackupSnapshotError, createZipBackup } from "#backup/zipBackup.ts";
+import { Zip64RequiredError } from "#backup/zipWriter.ts";
 import { type Database, openDatabaseReadOnly, type WritableDatabase } from "#db/database.ts";
 import {
   applyRepairs,
@@ -23,6 +27,7 @@ import {
   scanDatabase,
 } from "#repair/encodingRepair.ts";
 import { expandHome } from "#util/paths.ts";
+import { MirrorHomeNotConfiguredError } from "./dbPath.ts";
 
 const BACKUP_USAGE =
   "usage: backup [-h] [--silent] [--mirror-home MIRROR_HOME] [--backup-dir BACKUP_DIR]";
@@ -70,7 +75,12 @@ function usageError(usage: string, program: string, message: string): number {
 }
 
 export interface SafetyToolsIo {
-  /** Resolve the database path from argv (`--db-path`, `--mirror-home`, env); null when unconfigured (already reported). */
+  /**
+   * Resolve the database path from argv (`--db-path`, `--mirror-home`, env);
+   * null when unconfigured and already reported. `backup` is handed a resolver
+   * that throws `MirrorHomeNotConfiguredError` instead, so that failure is
+   * reported once, in the backup's own words.
+   */
   resolveDbPath: (args: readonly string[]) => string | null;
   /** The live-write seam for a resolved path: pre-write snapshot, schema guard, always-close. */
   withLiveWriteDb: (dbPath: string, write: (db: WritableDatabase) => number) => number;
@@ -80,34 +90,75 @@ export interface SafetyToolsIo {
   env?: Readonly<Record<string, string | undefined>>;
 }
 
+/** What `backup` answered, for the caller and the front-door log. */
+export interface BackupOutcome {
+  exitCode: number;
+  /** `backup=<why>` when no archive was written: content-free, never a path or an argument. */
+  detail?: string;
+}
+
+type BackupFailure = "home_unresolved" | "database_missing" | "snapshot_failed" | "write_failed";
+
+/** An operating-system refusal (no space, no permission, a file in the way) rather than a bug. */
+function isSystemError(error: unknown): error is NodeJS.ErrnoException {
+  return error instanceof Error && typeof (error as NodeJS.ErrnoException).code === "string";
+}
+
 /** `backup [--silent] [--mirror-home PATH] [--backup-dir PATH] [--db-path PATH]`. */
-export function runBackupRoute(argv: readonly string[], io: SafetyToolsIo): number {
+export function runBackupRoute(argv: readonly string[], io: SafetyToolsIo): BackupOutcome {
   const args = argv.slice(1);
   const parsed = parseArgs(args, {
     flags: ["--silent"],
     valued: ["--mirror-home", "--backup-dir", "--db-path"],
   });
-  if (parsed.error) return usageError(BACKUP_USAGE, "backup", parsed.error);
+  if (parsed.error) return { exitCode: usageError(BACKUP_USAGE, "backup", parsed.error) };
   const silent = parsed.flags.has("--silent");
+  const err = io.stderr ?? ((line: string) => process.stderr.write(`${line}\n`));
+  // CR060: --silent suppresses progress, never failure.
+  const fail = (why: BackupFailure, reason: string): BackupOutcome => {
+    err(`backup: no archive was written: ${reason}`);
+    return { exitCode: 1, detail: `backup=${why}` };
+  };
 
-  const dbPath = io.resolveDbPath(args);
-  if (dbPath === null) return silent ? 0 : 1;
+  let dbPath: string | null;
+  try {
+    dbPath = io.resolveDbPath(args);
+  } catch (error) {
+    if (error instanceof MirrorHomeNotConfiguredError)
+      return fail("home_unresolved", error.message);
+    throw error;
+  }
+  // A resolver that returns null has reported the failure itself.
+  if (dbPath === null) return { exitCode: 1, detail: "backup=home_unresolved" };
 
   const explicitHome = parsed.values.get("--mirror-home");
   const explicitDir = parsed.values.get("--backup-dir");
-  const archive = createZipBackup({
-    dbPath,
-    mirrorHome: explicitHome === undefined ? dirname(dbPath) : expandHome(explicitHome),
-    backupDir: explicitDir === undefined ? null : expandHome(explicitDir),
-    silent,
-    env: io.env ?? process.env,
-    ...(io.now ? { now: io.now } : {}),
-    ...(io.stdout ? { stdout: io.stdout } : {}),
-    ...(io.stderr ? { stderr: io.stderr } : {}),
-  });
-  // Python: `if result is None and not args.silent: sys.exit(1)` -- a silent
-  // failure exits 0. Reproduced; recorded as a CR, not fixed here.
-  return archive === null && !silent ? 1 : 0;
+  let archive: string | null;
+  try {
+    archive = createZipBackup({
+      dbPath,
+      mirrorHome: explicitHome === undefined ? dirname(dbPath) : expandHome(explicitHome),
+      backupDir: explicitDir === undefined ? null : expandHome(explicitDir),
+      silent,
+      env: io.env ?? process.env,
+      ...(io.now ? { now: io.now } : {}),
+      ...(io.stdout ? { stdout: io.stdout } : {}),
+      ...(io.stderr ? { stderr: io.stderr } : {}),
+    });
+  } catch (error) {
+    // Expected failures are one line; anything else is a bug and keeps its stack.
+    if (error instanceof BackupSnapshotError) return fail("snapshot_failed", error.message);
+    if (isSystemError(error) || error instanceof Zip64RequiredError) {
+      return fail("write_failed", error.message);
+    }
+    throw error;
+  }
+  if (archive === null) {
+    // Without --silent, createZipBackup already said "Database not found" on stdout.
+    if (!silent) return { exitCode: 1, detail: "backup=database_missing" };
+    return fail("database_missing", `database not found: ${dbPath}`);
+  }
+  return { exitCode: 0 };
 }
 
 /** `repair-encoding [--mirror-home PATH] [--apply] [--no-backup] [--limit N] [--db-path PATH]`. */

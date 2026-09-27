@@ -149,7 +149,7 @@ test("backup: dated archive beside the database, staging gone, log redacted", ()
   }
 });
 
-test("backup --silent: nothing printed, archive created; a missing database exits 1 (0 when silent)", () => {
+test("backup --silent: nothing printed, archive created; a missing database exits 1, silent or not (CR060)", () => {
   const ws = makeHome("backup-silent", (db) => db.exec("CREATE TABLE t (x)"));
   try {
     const silent = spawnFrontDoor(["backup", "--silent", "--db-path", ws.dbPath], BACKUP_ON);
@@ -161,9 +161,14 @@ test("backup --silent: nothing printed, archive created; a missing database exit
     const loud = spawnFrontDoor(["backup", "--db-path", missing], BACKUP_ON);
     assert.equal(loud.status, 1);
     assert.match(loud.stdout, /Database not found: .*nope\.db\n$/);
+    // CR060: --silent hides progress, never failure. Python exited 0 here.
     const quiet = spawnFrontDoor(["backup", "--silent", "--db-path", missing], BACKUP_ON);
-    assert.equal(quiet.status, 0);
+    assert.equal(quiet.status, 1);
     assert.equal(quiet.stdout, "");
+    assert.match(
+      quiet.stderr,
+      /^backup: no archive was written: database not found: .*nope\.db\n$/,
+    );
     assert.equal(archives(ws.home).length, 1, "no archive for a missing database");
   } finally {
     ws.cleanup();

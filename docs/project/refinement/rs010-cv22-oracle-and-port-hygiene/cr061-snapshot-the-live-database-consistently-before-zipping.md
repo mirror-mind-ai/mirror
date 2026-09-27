@@ -533,6 +533,45 @@ now passes step 3 (`-rw-------`), and step 4 still exits 0.
 
 Remaining: the loud failure. Next: plateau 3.
 
+### Plateau 3 handoff (2026-09-27)
+
+Now true: a backup that wrote no archive says so, silent or not. `runBackupRoute`
+returns an outcome whose content-free category reaches the front-door log:
+`backup=home_unresolved`, `backup=database_missing`, `backup=snapshot_failed`,
+or `backup=write_failed`. Each of those paths exits 1 with one stderr line,
+`backup: no archive was written: <why>`. The one exception is a missing
+database without `--silent`, which keeps the stdout line it always printed and
+now also exits 1. An expected failure (a snapshot the database refused, an
+operating-system refusal, an archive too large for the writer) becomes that one
+line, and anything else is a bug and keeps its stack trace. The CLI gives
+`backup` a resolver that throws, so an unresolved home is reported once, in the
+backup's own words. The Pi extension, the hooks, and `hooks.log` needed no
+change.
+
+Evidence, red first. All ten new route tests failed on the old route. They
+cover the two golden missing-database scenarios, three failure categories each
+silent and not, success, and one run through the real front door that checks a
+single line, no stack trace, and a log line without the path. The golden's
+`missing_db_silent` changed by script (exit 0 to 1, and its line), with a row in
+the goldens README. The full suite then found `dbSafetyToolsCli.test.ts`
+pinning the old behavior ("a missing database exits 1 (0 when silent)"). My
+search for callers had missed it because it drives the CLI as a subprocess. It
+now asserts the new behavior. Four mutants each fail a test:
+
+- the old silent exit 0;
+- the line printed without `--silent` too;
+- the category dropped;
+- a bug swallowed into a failure line, which the last test added.
+
+The full suite passes (2,781 tests), with typecheck and lint (the same warning
+and info note), the four repository checks, the custody proofs, the five
+end-to-end smokes, the four runtime smokes, and the runtime updater smoke.
+Part A of the route passes every step. The route recorded above is byte for
+byte the script that was run.
+
+Remaining: the Navigator's validation (Parts A and B), the handoff review, the
+Debt Review, and Done.
+
 ## Outcome
 
 _Pending._

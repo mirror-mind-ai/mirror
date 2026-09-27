@@ -165,8 +165,8 @@
         "--silent"
       ],
       "backups_after": [],
-      "exit_code": 0,
-      "stderr": "",
+      "exit_code": 1,
+      "stderr": "backup: no archive was written: database not found: <home>/memory.db\n",
       "stdout": ""
     },
     "silent": {

@@ -28,8 +28,9 @@
 //     always was, and `memory_*.zip` archives older than 30 days by the stamp in
 //     their NAME are deleted (unparseable names are left alone);
 //   - stdout lines, the deprecated `BACKUP_DIR` warning, and `--silent`
-//     printing nothing are Python's; `--silent` also hides failure (the CLI
-//     exits 0 then -- CR060, delivered with this CR).
+//     printing nothing on success are Python's. `--silent` no longer hides
+//     failure: the CLI exits 1 with one line when no archive was written
+//     (CR060, `dbSafetyToolsRoute.ts`).
 
 import {
   chmodSync,

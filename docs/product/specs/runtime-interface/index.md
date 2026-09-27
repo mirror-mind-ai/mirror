@@ -40,6 +40,11 @@ required command, and any arguments the runtime must supply.
 | Backup | `mirror backup --silent` | none |
 
 Backup runs at session end immediately after the session-end command.
+`--silent` hides progress, never failure (CR060): a backup that wrote no
+archive exits 1 with one stderr line, `backup: no archive was written: <why>`.
+The Pi extension logs that line as a WARN in `mirror-logger.log`, the hook
+wrappers record the exit in `hooks.log`, and the front-door log records why,
+as a content-free category such as `backup=database_missing`.
 
 **The in-repo hook runtimes do all of this in one process per event.** Claude
 Code, Gemini CLI, and the packaged Claude plugin register short shell wrappers
