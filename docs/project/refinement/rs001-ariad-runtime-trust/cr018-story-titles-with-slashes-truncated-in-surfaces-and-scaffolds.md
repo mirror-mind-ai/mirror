@@ -780,6 +780,56 @@ stack lines: 0
 Error: 2 roadmap packages claim code 'CV1.DS1.TS2': cv1/ds1/ts2, cv1/ds1/ts2-copy
 ```
 
+### Navigator validation (2026-09-27)
+
+The Navigator ran the [validation route](#validation-route) and accepted it. CI was green
+on every plateau at its last push: plateau 1 (`175db105`), plateau 2 (`97d54de3`),
+plateau 3 (`c31f9b87`), plateau 4 after its formatting fix (`7a69fb38`), plateau 5
+(`247c7dbe`), and the recorded route (`2f31da97`).
+
+### Handoff review (2026-09-27)
+
+After validation, per the collaboration strategy. The baseline panel (engineer,
+quality-assurance, database-architect, devops-engineer, security-engineer), with the
+lenses that reviewed the plan (ai-engineer, prompt-engineer, experience-designer,
+product-designer), reviewed the delivered code, tests, safety posture, operational cost,
+and resumability. Two findings were checked against the code before they were written
+down: the first by one mutant per reader, the second by rendering the surface.
+
+Synthesis: the cause is gone, not patched. No reader cuts a title, the prefix that made
+cutting necessary is gone, and the Expand defect the Navigator folded in is closed at
+its root, with the fourteen crashing commands behind one dispatcher rule. The delivery
+is proportional for what it absorbed: 248 source lines added and 138 removed, across a
+CR that grew to five plateaus. Its weak points are its own newest parts: a rule applied at eight entry
+points of which only one is guarded, a new refusal whose fixed advice does not fit it,
+and a cut that can land inside a code.
+
+| # | Lens | Finding | Class | Recommendation |
+|---|---|---|---|---|
+| 1 | quality-assurance | Of the five readers that bring a roadmap title into Ariad, only Expand's candidate table is guarded. Removing `linkFreeTitle` from the scope's package reader, the CV-heading reader, the two index-table readers, or the bullet reader leaves the whole suite green, one mutant each | Non-blocking debt, introduced here | Pay now: one test over a roadmap that puts an inline link at each entry and asserts that its label arrives |
+| 2 | prompt-engineer | The new refusal, a Delivery Story with no package whose invented story another package already claims, renders `EXPAND_BLOCKED` with its fixed action: add a candidate table "to the resolved package's index.md". In that case there is no resolved package. The `mm-build` skill names only the two older causes, a table that does not parse and a duplicate heading, and tells the agent to explain those fixes | Non-blocking debt, introduced here | Pay now: the action names the Delivery Story's own `index.md`, to be created when it has none, and the skill's paragraph names the third cause. Three `EXPAND_BLOCKED` renders in the goldens take the new sentence |
+| 3 | experience-designer | A one-line row is cut at a code point, so a cut can land inside a token: the Snapshot's current row reads `(per D1…` for `(per D12)`. A code cut short reads as another code, and roadmaps are full of codes | Non-blocking debt, introduced here | Pay now: cut at the last space when that keeps at least half the row, and inside the word only when it would not. No golden records a cut title row |
+| 4 | ai-engineer | Where a copy-source row wraps, `cardWrapped` chunks a word longer than the card into 54-point slices, and an agent rejoining the lines cannot tell a chunk break from a space. Links no longer reach surfaces, so the likely long token is gone; a single token over 54 points remains possible | Accepted scope boundary | No action; the `mm-build` skill's copy instruction is the place to revisit it if a cursor ever stores a broken title |
+
+The other lenses were silent:
+
+- database-architect: cursors written before the change keep their stored titles until
+  their items are pulled again, as the plan accepted; no reader depends on the shape.
+- devops-engineer: plateau 4's red CI was a process slip, a lint of `src/builder` alone,
+  and the development guide's pre-push set already names the whole-tree lint. Rollback is
+  a plain revert per plateau. Pull reads the roadmap once more, to name the CV.
+- security-engineer: folder names still pass through `kebabSlug` and the confinement
+  guard, and the traversal scenarios still pass. The two new patterns can backtrack
+  quadratically on a pathological title, which is local, authored content.
+- engineer: the one owner per rule held. `storyDirectoryResolver` serves Expand and
+  `resolveStoryDirectory`, `placementCvTitle` serves Pull, Ready, and the replay, and
+  `refusingDoubleClaims` serves both dispatchers.
+- product-designer: nothing to add.
+
+Accepted scope boundaries, as planned: link rewriting; escaped pipes (CR107); the Pull
+card's label; absolute paths (CR082); stored titles; generated files already in
+repositories; reference links.
+
 ## Outcome
 
 Pending.
