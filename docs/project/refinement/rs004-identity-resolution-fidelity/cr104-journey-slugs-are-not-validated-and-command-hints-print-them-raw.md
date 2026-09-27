@@ -557,6 +557,55 @@ Evidence:
 Remaining: plateau 4, meaning the route's output recorded, Navigator validation, the
 handoff review, Debt Review, and Done.
 
+### The route after the change (2026-09-27)
+
+The same route at `53bdcb4b`, with CI green on it, in bash and zsh alike. Every pass
+condition holds, and no fail marker appears. Step 3's two `-` lines are `seed`'s error
+summary repeating its `✗` lines. Part B printed `0`.
+
+```text
+--- step 1: identity set, for slugs a shell would split and for two it would not
+Error: no journey was created: 'x;touch PWNED' is not a journey slug. Use lowercase letters, digits, and single hyphens, up to 80 characters, for example 'x-touch-pwned'.
+  exit 1
+Error: no journey was created: '$(touch PWNED)' is not a journey slug. Use lowercase letters, digits, and single hyphens, up to 80 characters, for example 'touch-pwned'.
+  exit 1
+Error: no journey was created: '-x' is not a journey slug. Use lowercase letters, digits, and single hyphens, up to 80 characters, for example 'x'.
+  exit 1
+Error: no journey was created: 'a b' is not a journey slug. Use lowercase letters, digits, and single hyphens, up to 80 characters, for example 'a-b'.
+  exit 1
+Error: no journey was created: 'Mixed_Case' is not a journey slug. Use lowercase letters, digits, and single hyphens, up to 80 characters, for example 'mixed-case'.
+  exit 1
+✓ journey/ai created
+  exit 0
+✓ journey/mixed-case created
+  exit 0
+--- step 2: identity edit, for a new journey outside the grammar
+Error: no journey was created: 'Bad Slug' is not a journey slug. Use lowercase letters, digits, and single hyphens, up to 80 characters, for example 'bad-slug'.
+  exit 1
+  the editor did not run
+--- step 3: seed, for a journey file and a shared persona file whose ids are outside the grammar
+  ✗ persona/p: no persona was created: 'p;touch PWNED' is not a persona id. Use lowercase letters, digits, and single hyphens, up to 80 characters, for example 'p-touch-pwned'.
+  ✗ journey/y: no journey was created: 'y;touch PWNED' is not a journey slug. Use lowercase letters, digits, and single hyphens, up to 80 characters, for example 'y-touch-pwned'.
+  - persona/p: no persona was created: 'p;touch PWNED' is not a persona id. Use lowercase letters, digits, and single hyphens, up to 80 characters, for example 'p-touch-pwned'.
+  - journey/y: no journey was created: 'y;touch PWNED' is not a journey slug. Use lowercase letters, digits, and single hyphens, up to 80 characters, for example 'y-touch-pwned'.
+query: zanzibar
+  (no persona match)
+--- step 4: a journey that predates the grammar still works, and every hint quotes it
+  set-path exit 0
+  adopt exit 0
+  mirror build adopt --journey 'x;touch PWNED' --method ariad
+  mirror build adopt --journey 'x;touch PWNED' --method ariad
+  mirror journey set-path 'x;touch PWNED' /path/to/project
+  mirror build sync-cursor --journey 'x;touch PWNED' --method ariad
+--- step 5: the four hints, run as printed, with mirror stubbed out
+  files created: []
+--- step 6: runtime diagnose
+[attention] identity_key_outside_grammar: 'x;touch PWNED'
+Subject: journey
+Recommendation: an agent may put this key into a shell command unquoted; recreate it under a kebab-case key (lowercase letters, digits, and single hyphens)
+Repair route: manual review
+```
+
 ## Outcome
 
 Pending.
