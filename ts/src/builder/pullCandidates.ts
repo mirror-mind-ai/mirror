@@ -17,7 +17,13 @@
 // gives the DS table the CV table's termination rule, reads a different roadmap.
 
 import { PYTHON_WHITESPACE_CLASS, pySplitLines, pyStrip } from "#util/pythonText.ts";
-import { matchHeading, matchStatus, matchType, stripMarkdownLink } from "./roadmapGrammar.ts";
+import {
+  linkFreeTitle,
+  matchHeading,
+  matchStatus,
+  matchType,
+  stripMarkdownLink,
+} from "./roadmapGrammar.ts";
 import { readRoadmapFile, scanRoadmapIndexFiles } from "./roadmapScan.ts";
 
 // Every line walk below is Python `content.splitlines()` via `pySplitLines`, not
@@ -167,7 +173,7 @@ function cvTableItems(content: string): RoadmapSnapshotItem[] {
       if (parts.length >= 3) {
         items.push({
           code: stripMarkdownLink(parts[0] ?? ""),
-          title: stripMarkdownLink(parts[1] ?? ""),
+          title: linkFreeTitle(parts[1] ?? ""),
           status: parts[2] ?? "",
         });
       }
@@ -199,7 +205,7 @@ function dsTableItems(content: string): RoadmapSnapshotItem[] {
       if (parts.length >= 3) {
         items.push({
           code: stripMarkdownLink(parts[0] ?? ""),
-          title: stripMarkdownLink(parts[1] ?? ""),
+          title: linkFreeTitle(parts[1] ?? ""),
           status: parts[2] ?? "",
         });
       }
@@ -222,7 +228,7 @@ function cvHeadingItems(content: string): RoadmapSnapshotItem[] {
     const line = pyStrip(rawLine);
     const cvMatch = CV_HEADING_RE.exec(line);
     if (cvMatch) {
-      currentCv = { code: cvMatch[1] ?? "", title: pyStrip(cvMatch[2] ?? "") };
+      currentCv = { code: cvMatch[1] ?? "", title: linkFreeTitle(pyStrip(cvMatch[2] ?? "")) };
       continue;
     }
     const statusMatch = LINE_STATUS_RE.exec(line);
@@ -285,7 +291,7 @@ function candidateFromIndexContent(
   const code = pyStrip(heading.code);
   return {
     code,
-    title: pyStrip(heading.title),
+    title: linkFreeTitle(pyStrip(heading.title)),
     level: levelFor(code, content),
     status: statusText,
     path: projectRelativePath,
@@ -336,7 +342,7 @@ function candidateDeliveryStoriesFromContent(
       if (!hasCandidateStatus(status)) continue;
       candidates.push({
         code: `${currentCv}.${dsMatch[1]}`,
-        title: pyStrip(dsMatch[2] ?? ""),
+        title: linkFreeTitle(pyStrip(dsMatch[2] ?? "")),
         level: "delivery_story",
         status,
         path: projectRelativePath,

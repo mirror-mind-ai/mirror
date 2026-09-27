@@ -106,3 +106,33 @@ export function parseMarkdownLink(value: string): MarkdownLink | null {
 export function stripMarkdownLink(value: string): string {
   return parseMarkdownLink(value)?.label ?? pyStrip(value);
 }
+
+/** A code span: a run of backticks up to the next run of the same length. */
+const CODE_SPAN_RE = /(?<!`)(`+)(?!`)[\s\S]*?(?<!`)\1(?!`)/gu;
+
+/** An inline link or image with a label, not escaped. The target may carry a quoted title. */
+const INLINE_LINK_RE = /(?<!\\)!?\[([^\]\n]+)\]\([^)\n]*\)/gu;
+
+/**
+ * A title with every inline Markdown link or image reduced to its label (CR018).
+ *
+ * A relative link is true only in the file it was written in, and Ariad carries a title
+ * into terminal cards, into files at other depths, and into folder names. So a title
+ * enters Ariad this way, from the roadmap and from `--item-title` alike. What
+ * `stripMarkdownLink` does for a cell that is one whole link is a case of this rule;
+ * that function stays for codes.
+ *
+ * A link inside a code span is code and stays as written, as does a link with an empty
+ * label, which has nothing to keep. Reference links (`[label][ref]`) and labels with
+ * nested brackets are left alone.
+ */
+export function linkFreeTitle(title: string): string {
+  let result = "";
+  let last = 0;
+  for (const span of title.matchAll(CODE_SPAN_RE)) {
+    result += title.slice(last, span.index).replace(INLINE_LINK_RE, "$1");
+    result += span[0];
+    last = span.index + span[0].length;
+  }
+  return result + title.slice(last).replace(INLINE_LINK_RE, "$1");
+}

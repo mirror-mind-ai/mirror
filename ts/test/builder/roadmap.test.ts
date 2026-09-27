@@ -29,6 +29,7 @@ import {
 } from "#builder/pullCandidatesRender.ts";
 import {
   HEADING_RE,
+  linkFreeTitle,
   matchHeading,
   matchStatus,
   stripMarkdownLink,
@@ -452,4 +453,34 @@ test("Python's ragged frame literals are reproduced, not normalized", () => {
     .split("\n")
     .find((line) => line.includes("PULL CANDIDATES")) as string;
   assert.equal([...title].length - 2, 55, "the PULL CANDIDATES title row is one short");
+});
+
+test("CR018: linkFreeTitle keeps a link's label and drops its target", () => {
+  const cases: readonly (readonly [string, string, string])[] = [
+    [
+      "an inline link among code spans",
+      "Remove the dormant pair (`executeToolCallsWeb` + route `/v1/mcp/execute`) (see [CV1.DS2](../../ds2/index.md)): the dead path goes",
+      "Remove the dormant pair (`executeToolCallsWeb` + route `/v1/mcp/execute`) (see CV1.DS2): the dead path goes",
+    ],
+    [
+      "a link inside parentheses",
+      "Retire it (per [D12](../../../decisions/d12.md)) now",
+      "Retire it (per D12) now",
+    ],
+    ["a title that is one link", "[Linked title](../index.md)", "Linked title"],
+    ["two links", "[A](a.md) and [B](https://example.com/b)", "A and B"],
+    ["a link with a quoted title", '[A](a.md "the A") after', "A after"],
+    ["an image", "![Logo](logo.png) Mirror", "Logo Mirror"],
+    ["a link inside a code span is code", "Write `[a](b)` for a link", "Write `[a](b)` for a link"],
+    [
+      "a longer code span",
+      "Use ``[a](b) and ` here`` then [c](d)",
+      "Use ``[a](b) and ` here`` then c",
+    ],
+    ["an empty label has nothing to keep", "[](empty.md) stays", "[](empty.md) stays"],
+    ["an escaped bracket is not a link", "\\[not](a link)", "\\[not](a link)"],
+    ["a reference link is left alone", "[label][ref] stays", "[label][ref] stays"],
+    ["no link at all", "Builder/Ariad tree", "Builder/Ariad tree"],
+  ];
+  for (const [name, title, expected] of cases) assert.equal(linkFreeTitle(title), expected, name);
 });

@@ -45,7 +45,7 @@ import {
   setDeliveryCursor,
 } from "./deliveryCursor.ts";
 import { renderLifecycleRibbon } from "./lifecycleRibbon.ts";
-import { stripMarkdownLink } from "./roadmapGrammar.ts";
+import { linkFreeTitle, stripMarkdownLink } from "./roadmapGrammar.ts";
 import { createStoryDirectory, storyDirectoryResolver, storyFolderName } from "./storyPaths.ts";
 import { wrapAriadSurface } from "./surfaceProtocol.ts";
 
@@ -141,7 +141,7 @@ function parseCandidateStories(content: string): CandidateChild[] {
     const typeText = (cells[columns.get("type") ?? 0] ?? "").toLowerCase();
     children.push({
       code,
-      title: stripMarkdownLink(cells[columns.get("story") ?? 0] ?? ""),
+      title: linkFreeTitle(cells[columns.get("story") ?? 0] ?? ""),
       level: typeText.includes("technical") ? "technical_story" : "user_story",
       status: cells[columns.get("status") ?? 0] ?? "",
     });

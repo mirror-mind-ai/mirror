@@ -37,6 +37,7 @@ import {
 } from "./deliveryCursor.ts";
 import { renderLifecycleRibbon } from "./lifecycleRibbon.ts";
 import { inspectRoadmapSnapshot } from "./pullCandidates.ts";
+import { linkFreeTitle } from "./roadmapGrammar.ts";
 import { resolveRoadmapScope, type ScopeCursor } from "./roadmapScope.ts";
 import { scopeFocus } from "./scopePhrases.ts";
 import { wrapAriadSurface } from "./surfaceProtocol.ts";
@@ -67,7 +68,8 @@ export interface BuilderPullReport {
  */
 function normalizeItem(item: BuilderLifecycleItem): BuilderLifecycleItem {
   const code = normalizeRequired(item.code, "item code");
-  const title = normalizeRequired(item.title, "item title");
+  // Link-free from here on, as every roadmap reader delivers a title (CR018).
+  const title = linkFreeTitle(normalizeRequired(item.title, "item title"));
   const level = normalizeRequired(item.level, "item level");
   const whyNow = normalizeRequired(item.whyNow, "why now");
   if (!(ALLOWED_PULL_LEVELS as readonly string[]).includes(level)) {

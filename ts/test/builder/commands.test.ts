@@ -2514,3 +2514,107 @@ test("CR018: a title is whole where it is read, and a one-line restatement ends 
     db.close();
   }
 });
+
+// CR018 plateau 5 — links (B1): a title enters Ariad with each link reduced to its
+// label, from the roadmap and from `--item-title` alike, so no surface, file, or folder
+// name carries a target written for another file.
+
+const LINKED = {
+  ts1:
+    "Remove the dormant pair (`executeToolCallsWeb` + route `/v1/mcp/execute`) " +
+    "(see [CV1.DS2](../../ds2/index.md)): the dead path goes",
+  ts1Plain:
+    "Remove the dormant pair (`executeToolCallsWeb` + route `/v1/mcp/execute`) " +
+    "(see CV1.DS2): the dead path goes",
+  us1: "Retire the web surface (per [D12](../../../decisions/d12.md)) and its and/or fallbacks",
+  us1Plain: "Retire the web surface (per D12) and its and/or fallbacks",
+} as const;
+
+/** The route's roadmap: TS1's own heading and DS2's candidate table carry links. */
+function linkedProject(): string {
+  const project = slashedProject();
+  const roadmap = join(project, "docs/project/roadmap");
+  writeFileSync(
+    join(roadmap, "cv1/ds1/ts1/index.md"),
+    `# CV1.DS1.TS1 — ${LINKED.ts1}\n\n**Status:** 🟡 Planned\n**Type:** Technical Story\n`,
+    "utf8",
+  );
+  writeFileSync(
+    join(roadmap, "cv1/ds2/index.md"),
+    `# CV1.DS2 — ${SLASHED.ds2}\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n\n` +
+      "## Candidate Stories\n\n| Code | Story | Type | Status |\n|------|-------|------|--------|\n" +
+      `| CV1.DS2.US1 | ${LINKED.us1} | User Story | 🟡 Planned |\n`,
+    "utf8",
+  );
+  return project;
+}
+
+test("CR018: a title's links become their labels where the title enters Ariad", () => {
+  const project = linkedProject();
+  const db = seed("adopted", project);
+  const run = (argv: readonly string[]) =>
+    invoke(db, [argv[0] ?? "", "--method", "ariad", "--journey", "demo", ...argv.slice(1)]);
+  const pull = (code: string, title: string, level: string) =>
+    run([
+      "pull-item",
+      "--item-code",
+      code,
+      "--item-title",
+      title,
+      "--item-level",
+      level,
+      "--why-now",
+      "CR018",
+    ]);
+  try {
+    assert.equal(run(["sync-cursor"]).exitCode, 0);
+
+    // `--item-title` as an agent copies it from the roadmap, link and all.
+    const pulled = pull("CV1.DS1.TS1", LINKED.ts1, "technical_story");
+    assert.equal(pulled.exitCode, 0, pulled.stderr);
+    assert.equal(getDeliveryCursor(db, "demo")?.activeItemTitle, LINKED.ts1Plain, "the cursor");
+    const pullRows = allCardRows(pulled.stdout);
+    const header = pullRows.findIndex((row) => row.includes("DELIVERY STORY ACTIVATED"));
+    assert.equal(
+      wrappedFrom(pullRows.slice(header + 2), () => true),
+      LINKED.ts1Plain,
+      "Pull header",
+    );
+
+    assert.equal(run(["prepare-item"]).exitCode, 0);
+    const planned = run(["plan-item"]);
+    assert.equal(planned.exitCode, 0, planned.stderr);
+    const ts1 = join(project, "docs/project/roadmap/cv1/ds1/ts1");
+    assert.equal(
+      planSection(readFileSync(join(ts1, "plan.md"), "utf8"), "Objective"),
+      `Plan the smallest coherent, testable slice for ${LINKED.ts1Plain}.`,
+      "the roadmap's own heading enters link-free too",
+    );
+    assert.doesNotMatch(planned.stdout, /\]\(/u, "the Plan card");
+
+    const ready = pull("CV1.DS2", SLASHED.ds2, "delivery_story");
+    assert.equal(ready.exitCode, 0, ready.stderr);
+    assert.equal(
+      wrappedFrom(allCardRows(ready.stdout), (row) => row.startsWith("🟩[US1]")),
+      `🟩[US1] ${LINKED.us1Plain}`,
+      "Ready's recommendation",
+    );
+    assert.doesNotMatch(ready.stdout, /\]\(/u, "no surface of the Pull");
+    const folder = "cv1/ds2/cv1-ds2-us1-retire-the-web-surface-per-d12-and-its-and-or-fallbacks";
+    assert.deepEqual(claimants(project, "CV1.DS2.US1"), [folder], "named from the label");
+    const child = readFileSync(join(project, "docs/project/roadmap", folder, "index.md"), "utf8");
+    assert.doesNotMatch(child, /\]\(\.\.\/\.\.\/\.\./u, "no link one level short");
+    assert.equal(child.split(LINKED.us1Plain).length - 1, 5, "the label, five times");
+
+    const listed = invokeReadOnlyBuilderArgv(db, [
+      "pull-candidates",
+      "--method",
+      "ariad",
+      "--journey",
+      "demo",
+    ]);
+    assert.doesNotMatch(listed.stdout, /\]\(/u, "Snapshot and Pull Candidates");
+  } finally {
+    db.close();
+  }
+});

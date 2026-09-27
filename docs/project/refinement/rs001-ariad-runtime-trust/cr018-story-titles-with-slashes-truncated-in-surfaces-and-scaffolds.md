@@ -659,6 +659,36 @@ plateau 3.
 
 Remaining: links. Next: plateau 5.
 
+Plateau 4's first push failed CI's Biome step: the new card test was pushed unformatted,
+after a lint of `src/builder` alone. `7a69fb38` formats it and changes nothing else. The
+whole-tree `npm run lint` is back in the pre-push set.
+
+### Plateau 5 handoff (2026-09-27)
+
+Now true: a title enters Ariad with each Markdown link reduced to its label.
+`linkFreeTitle` in `roadmapGrammar.ts` does it, beside `stripMarkdownLink`, and runs
+where a title enters: the package-heading and CV-heading readers, the index-table and
+bullet readers, Expand's candidate table, the package reader behind the scope, and
+Pull's `--item-title`. So every surface, every generated file, and every new folder name
+carries the label, never a target written for another file. A link inside a code span
+stays as written, as does a link with an empty label. The cursor stores the link-free
+title.
+
+Evidence: unit tests for twelve cases of `linkFreeTitle`, and an end-to-end test over the
+route's linked roadmap, red first on the cursor. It asserts Pull's header, the stored
+title, the Plan's objective and card, Ready's recommendation, the child folder named
+from the label, the child scaffold holding the label five times with no link one level
+short, and the Snapshot and Pull Candidates. A mutant that drops the rule from the
+package-heading reader fails the end-to-end test; one that ignores code spans fails the
+unit test. Golden edits, by script with a README row: the `dialect` fixture's package,
+whose heading's title is one whole link (one title, three renders). The validation route
+now prints every pass condition, in bash and zsh alike. The full suite passes (2,739
+tests), along with typecheck, the whole-tree lint, the repository checks, and the Builder
+lifecycle smoke.
+
+Remaining: plateau 6, meaning the route's output recorded, Navigator validation, and the
+handoff review.
+
 ## Outcome
 
 Pending.

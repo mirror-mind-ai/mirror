@@ -27,7 +27,7 @@ import {
   recommend,
   roadmapPaths,
 } from "./pullCandidates.ts";
-import { matchHeading, matchStatus } from "./roadmapGrammar.ts";
+import { linkFreeTitle, matchHeading, matchStatus } from "./roadmapGrammar.ts";
 import { readRoadmapFile } from "./roadmapScan.ts";
 import { roadmapHeadingDirectories } from "./storyPaths.ts";
 
@@ -180,7 +180,7 @@ function readPackage(projectRoot: string, directory: string): AuthoredPackage | 
   const status = matchStatus(content);
   return {
     code: pyStrip(heading.code),
-    title: pyStrip(heading.title),
+    title: linkFreeTitle(pyStrip(heading.title)),
     status: status === null ? "" : pyStrip(status),
     path: indexPath(directory),
   };
