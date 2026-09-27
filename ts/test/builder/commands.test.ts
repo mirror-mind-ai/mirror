@@ -1583,3 +1583,23 @@ test("CR019: the contract carries Ariad's method rules, and a project's own only
     assert.doesNotMatch(plan.card + plan.planMd, /English|None declared/u, label);
   }
 });
+
+test("CR019: an active story the candidates no longer list gets the fallback non-goal", () => {
+  const project = mkdtempSync("/tmp/builder-command-cr019-");
+  temporaryDirectories.push(project);
+  writeSiblingTree(project, { guide: false });
+  const folder = "cv1-first/cv1-ds1-alpha/cv1-ds1-ts1-first";
+  // A done.md takes the story out of the pull candidates, siblings or not.
+  writeFileSync(join(project, "docs/project/roadmap", folder, "done.md"), "# Done\n", "utf8");
+
+  const plan = planStoryIn(project, {
+    code: "CV1.DS1.TS1",
+    title: "First slice",
+    level: "technical_story",
+    folder,
+  });
+  assert.equal(
+    planSection(plan.planMd, "Non-Goals"),
+    "- Do not silently absorb adjacent roadmap work.",
+  );
+});

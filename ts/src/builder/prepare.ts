@@ -68,13 +68,6 @@ function nextEventRule(level: string | null): string {
     : "Expand or explicit single-story approval is required before implementation.";
 }
 
-/**
- * Python `_context_summary`.
- *
- * Three fixed paths, in Python's order, each reported present or missing. With no
- * project path the whole block collapses to one line — the shape a journey with no
- * configured project renders.
- */
 /** The development guide Prepare reports on, and the one a Plan points to (CR019). */
 export const DEVELOPMENT_GUIDE_PATH = "docs/process/development-guide.md";
 
@@ -91,6 +84,13 @@ export function projectContractRules(projectPath: string | null): string[] {
   return [`Follow the project's development guide: ${DEVELOPMENT_GUIDE_PATH}.`];
 }
 
+/**
+ * Python `_context_summary`.
+ *
+ * Three fixed paths, in Python's order, each reported present or missing. With no
+ * project path the whole block collapses to one line — the shape a journey with no
+ * configured project renders.
+ */
 function contextSummary(projectPath: string | null): string[] {
   if (projectPath === null) {
     return ["No project path is configured; Prepare used runtime journey state only."];

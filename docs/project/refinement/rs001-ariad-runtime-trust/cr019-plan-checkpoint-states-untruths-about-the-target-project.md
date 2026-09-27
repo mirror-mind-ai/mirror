@@ -404,7 +404,17 @@ Accepted scope boundaries, as planned: CR018's title truncation in the same func
 the next item at the parent's level; parsing the guide; and the different wording of the
 two older method lines in the card and the scaffold.
 
-The Navigator's debt decision is pending.
+Navigator decision (2026-09-26): pay both now.
+
+### Debt paid (2026-09-26)
+
+1. `prepare.ts`: the new constant and `projectContractRules` now sit above
+   `contextSummary`'s doc comment, which documents its own function again. The change
+   is a move, with no change in behavior.
+2. Acceptance criterion 5 is pinned by an end-to-end case. It gives the active story a
+   `done.md`, which drops it from the candidates, and `plan-item` exits 0 with the
+   fallback non-goal. A mutant that computes siblings even without the active candidate
+   fails it.
 
 ## Outcome
 
