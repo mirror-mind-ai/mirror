@@ -1,4 +1,5 @@
-// Generate the canonical Mirror Mind Claude plugin (manifest + skills).
+// Generate the canonical Mirror Mind Claude plugin (manifest + skills), and the
+// Claude Code copies of Pi-sourced skills.
 //
 // The Node port of `src/memory/plugins/claude.py` and its wrapper
 // `scripts/build_claude_plugin.py` (CV22.DS10.TS5, slice B).
@@ -11,9 +12,13 @@
 // npm entry point becomes real.
 //
 // The plugin skills are generated from `.claude/skills/` (the Claude-tuned
-// source). Hooks under `plugins/mirror-mind/hooks/` are hand-authored plugin
-// source and are NOT managed by this module -- which is precisely why TS5's
-// inventory had to find their interpreter spawns by reading them.
+// source), with one exception since CR102. A Pi-sourced skill
+// (`piSourcedSkills.ts`) has one body in every runtime, so this module also
+// generates its `.claude/skills/` copy from `.pi/skills/`, and takes its plugin
+// copy from that generated content rather than from the file on disk. Hooks
+// under `plugins/mirror-mind/hooks/` are hand-authored plugin source and are
+// NOT managed by this module -- which is precisely why TS5's inventory had to
+// find their interpreter spawns by reading them.
 
 import {
   existsSync,
@@ -27,6 +32,7 @@ import {
 import { dirname, join, relative } from "node:path";
 
 import { packageVersion } from "#runtime/version.ts";
+import { claudeVariant, PI_SKILLS_DIR, PI_SOURCED_SKILLS } from "./piSourcedSkills.ts";
 
 export const PLUGIN_NAME = "mirror-mind";
 export const PLUGIN_DESCRIPTION =
@@ -41,6 +47,8 @@ export const SKILL_FILENAME = "SKILL.md";
 export interface GeneratedFile {
   readonly relativePath: string;
   readonly content: string;
+  /** The authored file it derives from, when a person could mistake it for one. */
+  readonly source?: string;
 }
 
 /**
@@ -122,22 +130,68 @@ export function discoverSkillSources(repoRoot: string): [string, string][] {
   return sources;
 }
 
+/**
+ * The `.claude/skills/` copy of each Pi-sourced skill, generated from its Pi
+ * copy. Refuses, before anything is written, when a listed skill has no Pi
+ * copy: generation would otherwise stop without a word, and the old Claude copy
+ * would pass for an authored one again.
+ */
+function planPiSourcedClaudeCopies(repoRoot: string): Map<string, GeneratedFile> {
+  const copies = new Map<string, GeneratedFile>();
+  for (const skill of PI_SOURCED_SKILLS) {
+    const source = join(PI_SKILLS_DIR, skill, SKILL_FILENAME);
+    const path = join(repoRoot, source);
+    if (!existsSync(path)) {
+      throw new Error(
+        `${source}: missing, but ${skill} is listed as Pi-sourced in ts/src/guards/piSourcedSkills.ts`,
+      );
+    }
+    copies.set(skill, {
+      relativePath: join(SKILLS_SOURCE_DIR, skill, SKILL_FILENAME),
+      content: claudeVariant(skill, readFileSync(path, "utf8"), source),
+      source,
+    });
+  }
+  return copies;
+}
+
 /** Every file the generator owns, without touching the filesystem. */
 export function planGeneratedFiles(repoRoot: string): GeneratedFile[] {
   const version = readVersion(repoRoot);
-  const files: GeneratedFile[] = [
-    {
-      relativePath: join(PLUGIN_DIR, ".claude-plugin", "plugin.json"),
-      content: manifestJson(version),
-    },
-  ];
+  const claudeCopies = planPiSourcedClaudeCopies(repoRoot);
+
+  const pluginSkills = new Map<string, GeneratedFile>();
   for (const [name, markdown] of discoverSkillSources(repoRoot)) {
-    files.push({
+    if (claudeCopies.has(name)) continue;
+    pluginSkills.set(name, {
       relativePath: join(PLUGIN_DIR, "skills", name, SKILL_FILENAME),
       content: readFileSync(markdown, "utf8"),
     });
   }
-  return files;
+  for (const [name, claudeCopy] of claudeCopies) {
+    pluginSkills.set(name, {
+      relativePath: join(PLUGIN_DIR, "skills", name, SKILL_FILENAME),
+      content: claudeCopy.content,
+      source: claudeCopy.source,
+    });
+  }
+
+  return [
+    {
+      relativePath: join(PLUGIN_DIR, ".claude-plugin", "plugin.json"),
+      content: manifestJson(version),
+    },
+    ...claudeCopies.values(),
+    ...[...pluginSkills].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)).map(([, file]) => file),
+  ];
+}
+
+/** One drift line; a derived file also names the source a person should edit. */
+function driftLine(kind: "missing" | "out of date", file: GeneratedFile): string {
+  const from = file.source
+    ? ` (generated from ${file.source}: edit the source, then regenerate)`
+    : "";
+  return `${kind}: ${file.relativePath}${from}`;
 }
 
 function generatedSkillFiles(repoRoot: string): string[] {
@@ -170,9 +224,9 @@ export function materialize(repoRoot: string, options: { write: boolean }): stri
       mkdirSync(dirname(target), { recursive: true });
       writeFileSync(target, generated.content, "utf8");
     } else if (!existsSync(target)) {
-      problems.push(`missing: ${generated.relativePath}`);
+      problems.push(driftLine("missing", generated));
     } else if (readFileSync(target, "utf8") !== generated.content) {
-      problems.push(`out of date: ${generated.relativePath}`);
+      problems.push(driftLine("out of date", generated));
     }
   }
 

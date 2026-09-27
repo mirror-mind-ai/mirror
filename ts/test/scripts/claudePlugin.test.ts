@@ -21,15 +21,29 @@ import {
   planGeneratedFiles,
   readVersion,
 } from "#guards/claudePlugin.ts";
+import { claudeSkillName, PI_SKILLS_DIR, PI_SOURCED_SKILLS } from "#guards/piSourcedSkills.ts";
 import { stageMirrorPackage } from "../support/mirrorTree.ts";
 
 const REPO_ROOT = resolve(import.meta.dirname, "..", "..", "..");
 const roots: string[] = [];
 
-function fixture(files: Record<string, string>): string {
+/** A Pi copy of a Pi-sourced skill, as a Mirror tree carries one. */
+function piCopy(skill: string, body = `# ${skill}\n\nOne body for every runtime.\n`): string {
+  return `---\nname: "${skill}"\ndescription: fixture\nuser-invocable: true\n---\n\n${body}`;
+}
+
+/** A repository tree. `null` leaves out a file the tree would otherwise carry. */
+function fixture(files: Record<string, string | null>): string {
   const root = mkdtempSync(join(tmpdir(), "mirror-claude-plugin-"));
   roots.push(root);
-  for (const [relPath, content] of Object.entries(files)) {
+  // CR102: a Mirror tree carries the Pi copy of every Pi-sourced skill, and the
+  // builder refuses to run without one.
+  const staged: Record<string, string | null> = {};
+  for (const skill of PI_SOURCED_SKILLS) {
+    staged[join(PI_SKILLS_DIR, skill, "SKILL.md")] = piCopy(skill);
+  }
+  for (const [relPath, content] of Object.entries({ ...staged, ...files })) {
+    if (content === null) continue;
     const full = join(root, relPath);
     mkdirSync(dirname(full), { recursive: true });
     writeFileSync(full, content, "utf8");
@@ -182,11 +196,127 @@ describe("materialize", () => {
   });
 });
 
+// CR102: `mm-build` has one body in every runtime. Its Pi copy is the only one
+// anyone edits, and both Claude Code copies are generated from it.
+describe("Pi-sourced skills", () => {
+  const PI_BUILD = join(PI_SKILLS_DIR, "mm-build", "SKILL.md");
+  const CLAUDE_BUILD = join(".claude", "skills", "mm-build", "SKILL.md");
+  const PLUGIN_BUILD = join(PLUGIN_DIR, "skills", "mm-build", "SKILL.md");
+  const FROM_PI = `(generated from ${PI_BUILD}: edit the source, then regenerate)`;
+  // A Claude-authored skill beside the Pi-sourced one: a tree always has one.
+  const AUTHORED = { ".claude/skills/one/SKILL.md": "# one\n" };
+
+  function planned(root: string, relativePath: string): string | undefined {
+    return planGeneratedFiles(root).find((file) => file.relativePath === relativePath)?.content;
+  }
+
+  test("plan the Claude copy from the Pi copy, with only the name changed", () => {
+    const pi = piCopy("mm-build", "# Builder Mode\n\nPi: `/mm-build`. Claude Code: `/mm:build`.\n");
+    const root = fixture({ ...AUTHORED, [PI_BUILD]: pi });
+
+    assert.equal(planned(root, CLAUDE_BUILD), pi.replace('name: "mm-build"', 'name: "mm:build"'));
+  });
+
+  test("plan the plugin copy from that content, never from the file on disk", () => {
+    // One write must not carry a stale Claude copy into the plugin.
+    const root = fixture({ [CLAUDE_BUILD]: "# the old 108-line copy\n" });
+
+    assert.equal(planned(root, PLUGIN_BUILD), planned(root, CLAUDE_BUILD));
+    assert.match(planned(root, PLUGIN_BUILD) ?? "", /^name: "mm:build"$/m);
+  });
+
+  test("report a missing Claude copy with the source it comes from", () => {
+    const root = fixture(AUTHORED);
+
+    assert.ok(materialize(root, { write: false }).includes(`missing: ${CLAUDE_BUILD} ${FROM_PI}`));
+  });
+
+  test("an edit to the Pi copy alone is drift in both Claude copies", () => {
+    // The case neither guard could see before CR102: a rule reworded inside
+    // an existing section, with no heading and no command changed.
+    const root = fixture(AUTHORED);
+    materialize(root, { write: true });
+    writeFileSync(
+      join(root, PI_BUILD),
+      piCopy("mm-build", "# mm-build\n\nA rule, reworded.\n"),
+      "utf8",
+    );
+
+    assert.deepEqual(materialize(root, { write: false }), [
+      `out of date: ${CLAUDE_BUILD} ${FROM_PI}`,
+      `out of date: ${PLUGIN_BUILD} ${FROM_PI}`,
+    ]);
+  });
+
+  test("a hand edit to the Claude copy is drift, naming the source to edit instead", () => {
+    const root = fixture(AUTHORED);
+    materialize(root, { write: true });
+    writeFileSync(join(root, CLAUDE_BUILD), "# edited by hand\n", "utf8");
+
+    assert.deepEqual(materialize(root, { write: false }), [
+      `out of date: ${CLAUDE_BUILD} ${FROM_PI}`,
+    ]);
+  });
+
+  test("writing regenerates both copies, and writing again changes nothing", () => {
+    const root = fixture({ [CLAUDE_BUILD]: "# the old 108-line copy\n" });
+
+    materialize(root, { write: true });
+    const first = readFileSync(join(root, CLAUDE_BUILD), "utf8");
+    materialize(root, { write: true });
+
+    assert.equal(first, piCopy("mm-build").replace('name: "mm-build"', 'name: "mm:build"'));
+    assert.equal(readFileSync(join(root, PLUGIN_BUILD), "utf8"), first);
+    assert.deepEqual(materialize(root, { write: false }), []);
+  });
+
+  const refusals: [string, string | null, RegExp][] = [
+    ["has no Pi copy", null, /mm-build is listed as Pi-sourced/],
+    ["has a Pi copy naming another skill", piCopy("mm-explore"), /found `name: "mm-explore"`/],
+  ];
+  for (const [label, pi, finding] of refusals) {
+    test(`refuse, writing nothing, when a listed skill ${label}`, () => {
+      const root = fixture({ [PI_BUILD]: pi, ".claude/skills/one/SKILL.md": "# one\n" });
+
+      assert.throws(
+        () => materialize(root, { write: true }),
+        (error: Error) => {
+          assert.ok(error.message.startsWith(`${PI_BUILD}: `), error.message);
+          assert.match(error.message, finding);
+          return true;
+        },
+      );
+      assert.ok(!existsSync(join(root, PLUGIN_DIR)));
+      assert.ok(!existsSync(join(root, CLAUDE_BUILD)));
+    });
+  }
+});
+
 describe("this repository", () => {
-  test("the committed plugin tree is in sync with .claude/skills/", () => {
+  test("every generated copy is in sync with its source", () => {
     // The same assertion `--check` makes in the release flow, run on every
-    // suite so a skill edit that forgets to regenerate fails here first.
+    // suite so a skill edit that forgets to regenerate fails here first: the
+    // plugin against .claude/skills/, and since CR102 the Claude copies of a
+    // Pi-sourced skill against .pi/skills/.
     assert.deepEqual(materialize(REPO_ROOT, { write: false }), []);
+  });
+
+  test("the Claude copies of a Pi-sourced skill differ from Pi in the name line alone", () => {
+    for (const skill of PI_SOURCED_SKILLS) {
+      const pi = readFileSync(join(REPO_ROOT, PI_SKILLS_DIR, skill, "SKILL.md"), "utf8").split(
+        "\n",
+      );
+      for (const copy of [
+        join(".claude", "skills", skill, "SKILL.md"),
+        join(PLUGIN_DIR, "skills", skill, "SKILL.md"),
+      ]) {
+        const lines = readFileSync(join(REPO_ROOT, copy), "utf8").split("\n");
+        const differing = lines.filter((line, index) => line !== pi[index]);
+
+        assert.equal(lines.length, pi.length, copy);
+        assert.deepEqual(differing, [`name: "${claudeSkillName(skill)}"`], copy);
+      }
+    }
   });
 
   test("every generated skill matches its Claude source byte for byte", () => {
