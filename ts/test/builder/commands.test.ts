@@ -2298,7 +2298,11 @@ test("CR018: a title reaches Pull, Plan, Ready, and the Snapshot whole", () => {
     ] as const) {
       const row = `○ 🟦[${code}] ${title}`;
       assert.ok(
-        backlog.some((line) => row.startsWith(line) && line.length > `○ 🟦[${code}] `.length + 8),
+        backlog.some((line) => {
+          // Plateau 4 marks the cut with `…`; the rest must be the start of the title.
+          const kept = line.replace(/…$/u, "").trimEnd();
+          return row.startsWith(kept) && kept.length > `○ 🟦[${code}] `.length + 8;
+        }),
         `${code} is listed from the start of its title`,
       );
     }
@@ -2378,6 +2382,134 @@ test("CR018: with no roadmap row or package for the CV, the row says so instead 
     const rows = allCardRows(pulled.stdout);
     const cvRow = rows.find((row) => row.startsWith("🟪[CV1]"));
     assert.equal(cvRow?.trimEnd(), "🟪[CV1] no authored package");
+  } finally {
+    db.close();
+  }
+});
+
+// CR018 plateau 4 — width (C1): a title is whole where it is read, and a row that
+// restates it on one line says `…` when it is cut.
+
+const LONG = {
+  cv: "Builder/Ariad trust across every surface the Navigator reads before deciding",
+  ts1: SLASHED.ts1,
+  ts2: SLASHED.ts2,
+  ds2: "Web retirement: split the client/server seam and delete the dead console",
+  us1: "Retire the web surface and every and/or fallback the console still carries",
+} as const;
+
+function longProject(): string {
+  const project = slashedProject();
+  const roadmap = join(project, "docs/project/roadmap");
+  writeFileSync(
+    join(roadmap, "cv1/index.md"),
+    `# CV1 — ${LONG.cv}\n\n**Status:** 🟢 Active\n`,
+    "utf8",
+  );
+  writeFileSync(
+    join(roadmap, "cv1/ds2/index.md"),
+    `# CV1.DS2 — ${LONG.ds2}\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n\n` +
+      "## Candidate Stories\n\n| Code | Story | Type | Status |\n|------|-------|------|--------|\n" +
+      `| CV1.DS2.US1 | ${LONG.us1} | User Story | 🟡 Planned |\n`,
+    "utf8",
+  );
+  return project;
+}
+
+/** The rows from the first one `starts` matches, up to a blank row or one `stops` matches, joined. */
+function wrappedFrom(
+  rows: readonly string[],
+  starts: (row: string) => boolean,
+  stops: (row: string) => boolean = () => false,
+): string {
+  const first = rows.findIndex(starts);
+  assert.ok(first !== -1, "the block is there");
+  const block: string[] = [];
+  for (const row of rows.slice(first)) {
+    if (row.trim() === "" || (block.length > 0 && stops(row))) break;
+    block.push(row.trim());
+  }
+  return block.join(" ");
+}
+
+/** The one row `starts` matches: 54 code points, ending in `…`, and a prefix of `whole`. */
+function assertClipped(rows: readonly string[], starts: string, whole: string): void {
+  const matching = rows.filter((row) => row.startsWith(starts));
+  assert.equal(matching.length, 1, `one ${starts} row`);
+  const row = matching[0] ?? "";
+  assert.equal([...row].length, 54, `${starts} fills the card`);
+  assert.ok(row.endsWith("…"), `${starts} says it was cut: ${row}`);
+  assert.ok(whole.startsWith(row.slice(0, -1).trimEnd()), `${starts} is the start of the title`);
+}
+
+test("CR018: a title is whole where it is read, and a one-line restatement ends in …", () => {
+  const project = longProject();
+  const db = seed("adopted", project);
+  const run = (argv: readonly string[]) =>
+    invoke(db, [argv[0] ?? "", "--method", "ariad", "--journey", "demo", ...argv.slice(1)]);
+  const pull = (code: string, title: string, level: string) =>
+    run([
+      "pull-item",
+      "--item-code",
+      code,
+      "--item-title",
+      title,
+      "--item-level",
+      level,
+      "--why-now",
+      "CR018",
+    ]);
+  const isTree = (row: string) => row.startsWith("  └─");
+  try {
+    assert.equal(run(["sync-cursor"]).exitCode, 0);
+
+    const pullRows = allCardRows(pull("CV1.DS1.TS1", LONG.ts1, "technical_story").stdout);
+    const header = pullRows.findIndex((row) => row.includes("DELIVERY STORY ACTIVATED"));
+    assert.equal(
+      wrappedFrom(pullRows.slice(header + 2), () => true),
+      LONG.ts1,
+      "Pull header",
+    );
+    assert.equal(
+      wrappedFrom(pullRows, (row) => row.startsWith("🟪[CV1]"), isTree),
+      `🟪[CV1] ${LONG.cv}`,
+      "Pull CV row",
+    );
+    assertClipped(pullRows, "  └─ 🟦[TS1] ", `  └─ 🟦[TS1] ${LONG.ts1}`);
+
+    const readyRows = allCardRows(pull("CV1.DS2", LONG.ds2, "delivery_story").stdout);
+    assert.equal(
+      wrappedFrom(readyRows, (row) => row.startsWith("🟪[CV1]"), isTree),
+      `🟪[CV1] ${LONG.cv}`,
+      "Ready CV row",
+    );
+    assertClipped(readyRows, "  └─ 🟦[DS2] ", `  └─ 🟦[DS2] ${LONG.ds2}`);
+    assert.equal(
+      wrappedFrom(readyRows, (row) => row.startsWith("🟩[US1]")),
+      `🟩[US1] ${LONG.us1}`,
+      "Ready's recommendation, which the skill copies",
+    );
+
+    const snapshot = invokeReadOnlyBuilderArgv(db, [
+      "pull-candidates",
+      "--method",
+      "ariad",
+      "--journey",
+      "demo",
+    ]);
+    const snapshotRows = allCardRows(snapshot.stdout.split("<<<END:ROADMAP_SNAPSHOT>>>")[0] ?? "");
+    const focus = snapshotRows.find((row) => row.startsWith("🟪[CV1]"));
+    assert.ok(focus?.endsWith(" ◉ active"), `the status stays whole: ${focus}`);
+    assert.ok(
+      focus?.replace(/ +◉ active$/u, "").endsWith("…"),
+      `the CV title says it was cut: ${focus}`,
+    );
+    assert.equal(
+      wrappedFrom(snapshotRows, (row) => row.startsWith("value: ")),
+      `value: ${LONG.cv}`,
+      "the value row",
+    );
+    assertClipped(snapshotRows, "      ○ 🟦[CV1.DS2.US1] ", `      ○ 🟦[CV1.DS2.US1] ${LONG.us1}`);
   } finally {
     db.close();
   }

@@ -14,7 +14,7 @@
 
 import { basename, dirname } from "node:path";
 import { kebabSlug } from "#util/slug.ts";
-import { cardPrefixed, cardText, cardWrapped } from "./card.ts";
+import { cardClipped, cardPrefixed, cardText, cardWrapped } from "./card.ts";
 import type { BuilderExpandReport } from "./expand.ts";
 import type { BuilderPrepareReport } from "./prepare.ts";
 import type { BuilderPullReport } from "./pull.ts";
@@ -127,8 +127,8 @@ export function renderDeliveryStoryReadyReport(reports: {
     ...cardWrapped(title),
     "│                                                        │",
     cardText("Where are we in the roadmap?"),
-    cardText(`🟪[${cvCode}] ${cvTitle}`),
-    cardText(`  └─ 🟦[${dsCode}] ${title}`),
+    ...cardWrapped(`🟪[${cvCode}] ${cvTitle}`),
+    cardClipped(`  └─ 🟦[${dsCode}] ${title}`),
     "│                                                        │",
     cardText("What did Prepare find?"),
     ...cardWrapped(prepareFinding(prepare)),
@@ -137,7 +137,8 @@ export function renderDeliveryStoryReadyReport(reports: {
     ...cardPrefixed(materializedSummary(expand), "✓"),
     "│                                                        │",
     cardText("What is recommended next?"),
-    cardText(`🟩[${recommendedLeaf}] ${expand.recommendedStoryTitle}`),
+    // Whole: the skill tells the agent to pull the confirmed child by this title (CR018).
+    ...cardWrapped(`🟩[${recommendedLeaf}] ${expand.recommendedStoryTitle}`),
     "│                                                        │",
     cardText("Recommended flow unit"),
     ...cardWrapped(flowUnitRecommendation(expand)),

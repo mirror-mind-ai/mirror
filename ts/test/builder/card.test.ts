@@ -13,6 +13,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  cardClipped,
   cardContextItems,
   cardLine,
   cardPrefixed,
@@ -230,4 +231,27 @@ test("cardContextItems matches Python's substring glyph rule", () => {
   assert.deepEqual(cardContextItems(["represent.md: missing"]), [
     cardText("✓ represent.md: missing"),
   ]);
+});
+
+// CR018 plateau 4 — a title row that must stay on one line says so when it is cut.
+// New behavior, so hand-written: the oracle never marked a cut.
+
+test("CR018: cardClipped is cardText when the text fits, and ends in … when it does not", () => {
+  const fits = "x".repeat(54);
+  assert.equal(cardClipped(fits), cardText(fits), "exactly the width is not a cut");
+  assert.equal(cardClipped("short"), cardText("short"));
+  assert.equal(cardClipped("x".repeat(55)), `│ ${"x".repeat(53)}… │`);
+  // Code points, like every width in the card: an astral glyph is one.
+  assert.equal(cardClipped(`🟦${"y".repeat(54)}`), `│ 🟦${"y".repeat(52)}… │`);
+  // A cut that lands after a space does not leave the space before the mark.
+  assert.equal(cardClipped(`${"a".repeat(52)} bcd`), `│ ${"a".repeat(52)}…  │`);
+});
+
+test("CR018: cardLine can mark a cut in its left side, and keeps its right side whole", () => {
+  const right = "◉ current";
+  const leftWidth = 54 - [...right].length - 1;
+  const long = "z".repeat(leftWidth + 5);
+  assert.equal(cardLine(long, right, { clip: true }), `│ ${"z".repeat(leftWidth - 1)}… ${right} │`);
+  assert.equal(cardLine(long, right), `│ ${"z".repeat(leftWidth)} ${right} │`, "unmarked by default");
+  assert.equal(cardLine("fits", right, { clip: true }), cardLine("fits", right));
 });

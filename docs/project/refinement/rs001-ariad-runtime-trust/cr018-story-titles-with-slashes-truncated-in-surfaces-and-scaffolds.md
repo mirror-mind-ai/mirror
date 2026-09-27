@@ -640,6 +640,25 @@ checks, and the Builder lifecycle smoke. CI was green on plateau 2.
 
 Remaining: width and links. Next: plateau 4.
 
+### Plateau 4 handoff (2026-09-27)
+
+Now true: every row in the [Surface rows](#surface-rows) table behaves as the table says.
+Pull's header, the CV rows of Pull and Ready, Ready's recommendation, and the Snapshot's
+`value:` row wrap in full. The tree rows of Pull and Ready, and the Snapshot's focus,
+current, and backlog rows, stay on one line and end in `…` when cut, and the Snapshot
+keeps its status marker whole. `card.ts` gains `cardClipped` and a `clip` option on
+`cardLine`. `cardText` still cuts silently, for every row that carries no title.
+
+Evidence: unit tests for the two primitives, and an end-to-end test over a roadmap whose
+CV, Delivery Story, and story titles all exceed the card; both were red first. A row
+that fits is unchanged, which the goldens prove across the board: no golden changed,
+because every title row they record fits the card. The plateau 2 test's backlog check
+now reads a row without its `…`. The full suite passes (2,737 tests), along with
+typecheck, lint, the repository checks, and the Builder lifecycle smoke. CI was green on
+plateau 3.
+
+Remaining: links. Next: plateau 5.
+
 ## Outcome
 
 Pending.

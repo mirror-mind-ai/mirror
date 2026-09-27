@@ -21,7 +21,7 @@
 
 import type { WritableDatabase } from "#db/database.ts";
 import { pyTitle } from "#util/pythonText.ts";
-import { cardText, cardWrapped } from "./card.ts";
+import { cardClipped, cardText, cardWrapped } from "./card.ts";
 import {
   ALLOWED_PULL_LEVELS,
   carriedForward,
@@ -153,14 +153,15 @@ export function renderPullReport(report: BuilderPullReport, cvTitle: string): st
     "╭────────────────────────────────────────────────────────╮",
     "│        🟪■  DELIVERY STORY ACTIVATED                   │",
     "│                                                        │",
-    cardText(title),
+    // Whole where the title is read; the tree row below restates it on one line (CR018).
+    ...cardWrapped(title),
     "│                                                        │",
     cardText("source"),
     cardText("roadmap candidate"),
     "│                                                        │",
     cardText("roadmap placement"),
-    cardText(`🟪[${cvCode}] ${cvTitle}`),
-    cardText(`  └─ 🟦[${dsCode}] ${title}`),
+    ...cardWrapped(`🟪[${cvCode}] ${cvTitle}`),
+    cardClipped(`  └─ 🟦[${dsCode}] ${title}`),
     "│                                                        │",
     cardText("intent"),
     ...cardWrapped(report.item.whyNow),

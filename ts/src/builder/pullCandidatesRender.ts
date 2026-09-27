@@ -24,7 +24,7 @@
 // focus and no recommendation, labels its list project-wide, and gives the literal
 // Pull command; the words are `scopePhrases.ts`'s.
 
-import { cardLine, cardPrefixed, cardText, cardWrapped } from "./card.ts";
+import { cardClipped, cardLine, cardPrefixed, cardText, cardWrapped } from "./card.ts";
 import {
   candidateLines,
   formatCandidate,
@@ -154,15 +154,22 @@ export function renderRoadmapSnapshotReport(
     lines.push(cardLine("roadmap field", NO_ITEM_PULLED_YET));
   } else {
     lines.push(
-      cardLine(`🟪[${focus.code}]  ${focus.title}`, focus.status ? statusMarker(focus.status) : ""),
-      cardText(`value: ${focus.title}`),
+      // The value row says the CV's title whole, so the focus row may cut it (CR018).
+      cardLine(
+        `🟪[${focus.code}]  ${focus.title}`,
+        focus.status ? statusMarker(focus.status) : "",
+        {
+          clip: true,
+        },
+      ),
+      ...cardWrapped(`value: ${focus.title}`),
       FRAME_BLANK,
     );
     const current = view.recommended;
     if (current !== null) {
       const codeTail = current.code.split(".").pop() ?? current.code;
       lines.push(
-        cardLine(`   └─ 🟦[${codeTail}] ${current.title}`, "◉ current"),
+        cardLine(`   └─ 🟦[${codeTail}] ${current.title}`, "◉ current", { clip: true }),
         cardText("      progress: not started"),
         FRAME_BLANK,
       );
@@ -170,7 +177,8 @@ export function renderRoadmapSnapshotReport(
     lines.push(cardText("      Backlog"));
     if (view.shown.length > 0) {
       for (const candidate of view.shown) {
-        lines.push(cardText(`      ○ 🟦[${candidate.code}] ${candidate.title}`));
+        // Pull Candidates, rendered with this surface, lists each title whole (CR018).
+        lines.push(cardClipped(`      ○ 🟦[${candidate.code}] ${candidate.title}`));
       }
     } else {
       lines.push(cardText("      none"));

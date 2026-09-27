@@ -101,6 +101,25 @@ export function cardText(text: string): string {
   return `│ ${truncated}${padding} │`;
 }
 
+/**
+ * `text` cut to `width` code points, with `…` in the last kept place when anything
+ * was cut. A space the cut leaves at the end goes, so the mark sits on the word.
+ */
+function clipped(text: string, width: number): string {
+  if (codePointLength(text) <= width) return text;
+  return `${sliceCodePoints(text, width - 1).trimEnd()}…`;
+}
+
+/**
+ * A row that restates a title on one line (CR018): `cardText`, except that a cut says
+ * so. `cardText` cuts silently, as Python's `_card_text` did, and a Navigator reading
+ * `Canonical Refinement Index And Artifact Conven` has no way to know a title goes on.
+ * Where a title is read rather than restated, it wraps instead (`cardWrapped`).
+ */
+export function cardClipped(text: string): string {
+  return cardText(clipped(text, CARD_WIDTH));
+}
+
 /** Python `_card_wrapped(text)`: wrap at 54, then one card line per wrapped line. */
 export function cardWrapped(text: string): string[] {
   return wrapPlainText(text, { width: CARD_WIDTH, chunkLongWords: true }).map(cardText);
@@ -114,10 +133,13 @@ export function cardWrapped(text: string): string[] {
  * wider than the card still leaves one column for `left`; and the content is
  * padded to `width` AFTER the inner `left` padding, so a short pair is padded
  * twice and the result is still exactly 54 code points.
+ *
+ * `clip` marks a cut in `left` with `…`, for a left side that restates a title
+ * (CR018); the right side is never cut.
  */
-export function cardLine(left: string, right: string): string {
+export function cardLine(left: string, right: string, options: { clip?: boolean } = {}): string {
   const leftWidth = Math.max(1, CARD_WIDTH - codePointLength(right) - 1);
-  const trimmedLeft = sliceCodePoints(left, leftWidth);
+  const trimmedLeft = options.clip ? clipped(left, leftWidth) : sliceCodePoints(left, leftWidth);
   const leftPadding = " ".repeat(Math.max(0, leftWidth - codePointLength(trimmedLeft)));
   const content = `${trimmedLeft}${leftPadding} ${right}`;
   const contentPadding = " ".repeat(Math.max(0, CARD_WIDTH - codePointLength(content)));
