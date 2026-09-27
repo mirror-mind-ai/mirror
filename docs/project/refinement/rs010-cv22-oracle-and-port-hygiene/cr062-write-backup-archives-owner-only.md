@@ -2,7 +2,7 @@
 
 # CR062 — Write backup archives owner-only
 
-**Status:** in_progress
+**Status:** validated
 **RS:** RS010
 **Driver:** @viniciusteles
 **Delivery:** `mirror-ts-core`

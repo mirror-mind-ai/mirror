@@ -2,7 +2,7 @@
 
 # CR061 — Snapshot the live database consistently before zipping
 
-**Status:** in_progress
+**Status:** validated
 **RS:** RS010
 **Driver:** @viniciusteles
 **Delivery:** `mirror-ts-core`
@@ -291,8 +291,9 @@ One reason per golden diff.
 
 Part A runs in a scratch home, CLI only, with no Pi session (CR106). Its output
 before the change is recorded under [Evidence](#the-route-before-the-change).
-Run it from the repository root in bash or zsh; it deletes its temporary
-directory:
+Run it from the repository root as a script, with `bash <file>`, so that no
+interactive alias applies (an `ls` aliased to `eza`, for one, reads `-L` as a tree
+depth). It deletes its temporary directory:
 
 ```bash
 V=$(mktemp -d) && mkdir -p "$V/home" "$V/empty" && export MIRROR_HOME="$V/home" MIRROR_USER= NODE_OPTIONS=--no-warnings
@@ -333,13 +334,14 @@ Pass for Part A:
 - Step 5: `Verification result: valid` and `Entries: memory.db`.
 
 Part B runs one ordinary backup on the real home and lists its directory before
-and after it. Nothing else changes:
+and after it. Nothing else changes. `command` keeps an interactive alias from
+shadowing `ls` or `stat`:
 
 ```bash
 B="$HOME/.mirror-minds/vinicius-ts/backups"
-ls -lL "$B/" | awk 'NR>1 {print $1}' | sort | uniq -c; stat -Lf '%Sp' "$B"
+command ls -lL "$B/" | awk 'NR>1 {print $1}' | sort | uniq -c; command stat -Lf '%Sp' "$B"
 NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts backup
-ls -lL "$B/" | awk 'NR>1 {print $1}' | sort | uniq -c; stat -Lf '%Sp' "$B"
+command ls -lL "$B/" | awk 'NR>1 {print $1}' | sort | uniq -c; command stat -Lf '%Sp' "$B"
 ```
 
 Pass for Part B, under D2a: a `Backup created:` line, and afterwards every file
@@ -571,6 +573,75 @@ byte the script that was run.
 
 Remaining: the Navigator's validation (Parts A and B), the handoff review, the
 Debt Review, and Done.
+
+### Navigator validation (2026-09-27)
+
+The Navigator walked the [validation route](#validation-route) and accepted it.
+
+- **Part A**, run as `bash tmp/cr061-route.sh`, passed every step:
+  1. exit 0, nothing printed;
+  2. one member, `memory.db`, then `rows: 500`, `wal`, `ok`;
+  3. the archive `-rw-------`;
+  4. one line, `backup: no archive was written: database not found: …`, then
+     `exit 1`;
+  5. `Verification result: valid`, `Entries: memory.db`.
+- **Part B** ran one backup on the real home:
+  `Backup created: memory_20260927_215247.zip (17925 KB)`, and the Dropbox
+  folder stayed `drwxr-xr-x`. The route's own listing did not show the files,
+  because the Navigator's interactive `ls` is aliased to `eza`, which reads `-L`
+  as a tree depth, and it listed the repository instead. The route now uses
+  `command ls` and `command stat`, and Part A says to run it as a script. The
+  Navigator then listed the folder himself: all 61 files are `-rw-------` (the
+  58 older archives, the new one, and the two front-door snapshots), and no
+  staging was left behind.
+- The new archive is 18 MB, where the raw copies taken earlier that day were 20
+  MB, as expected of a vacuumed database with no WAL member.
+
+CI was green on each plateau's last push: plateau 1 (`64b4a164`), plateau 2
+(`2747a9ae`), and plateau 3 (`37df8c4b`), Tests and Docs.
+
+### Handoff review (2026-09-27)
+
+This review came after validation, per the collaboration strategy. The baseline
+panel (engineer, quality-assurance, database-architect, devops-engineer,
+security-engineer) and the lenses that reviewed the plan (ai-engineer,
+prompt-engineer, experience-designer, product-designer) reviewed the delivered
+code, tests, safety posture, operational cost, and resumability. Two claims
+were checked before they were written down. `entryFromFile`, no longer used by
+the backup, still builds fixture archives in the runtime-backup tests, so it is
+not dead code. And the sweep of a shared temp directory unlinks a symlink
+planted under a matching name without touching its target, which was checked
+with a dead writer's pid and an old mtime.
+
+Synthesis: the delivery closes all three defects at their root, and the
+Navigator's walk showed them closed on the real install. The source changed by
+309 lines added and 118 removed, and the tests grew by 508. Most of that is the
+shared staging rule and the tests that grade what a restore gets. Its weak
+points are the text around it: a skill that still describes the old archive, a
+pattern written twice, and a new requirement that nobody documented.
+
+| # | Lens | Finding | Class | Recommendation |
+|---|---|---|---|---|
+| 1 | prompt-engineer | The Claude Code `/mm:backup`, in the checkout and in the plugin, still says the backup "Zips the database including WAL/SHM sidecars for consistency": the defect, described as a virtue. Neither copy says what to do when a backup fails. The Pi copy tells the agent to answer "Memory database backed up." unconditionally, so a failed backup can be announced as a success | Non-blocking debt. The false line comes from this CR's change; the unconditional success predates it | Pay now: both copies describe the snapshot and tell the agent to report the failure line as a failure, and the plugin is regenerated |
+| 2 | engineer | `tightenArchives` added a second copy of the pattern that says what a Mirror archive is called, beside the retention sweep's | Non-blocking debt, introduced here | Pay now: one named constant used by both |
+| 3 | devops-engineer | The snapshot is staged under the OS temp dir, so a backup now needs free temp space about the size of the database. Where `/tmp` is a small tmpfs, every backup would fail. The failure would be loud, with the reason in the line, but nothing documents the requirement, or that `TMPDIR` moves it | Non-blocking debt, introduced here | Pay now: one sentence in REFERENCE.md |
+| 4 | quality-assurance | No Windows run exercised the new path. The TypeScript CI matrix is Linux and macOS, and the mode tests skip on Windows. `VACUUM INTO`, `mkdtemp`, and the dead-process check are portable in principle, but that has not been observed | Accepted scope boundary | No action here. Windows promotion belongs to US3 |
+
+The other lenses were silent:
+
+- database-architect: `VACUUM INTO` carries the schema, `_migrations`, and the
+  header's user version. The restored image reopens in WAL mode. The runtime
+  updater smoke created and verified an archive through the updater's own path
+  on every plateau.
+- security-engineer: the snapshot never exists outside a 0700 directory, and
+  its file is 0600 from creation. A killed backup leaves at most a private
+  directory, which the next backup removes once its writer is gone.
+- ai-engineer, experience-designer, product-designer: no model in the loop,
+  output unchanged on success, and nothing to add.
+
+Accepted scope boundaries, as planned: a restore command, re-verifying older
+archives with their sidecars, `restoreFromBackup`, restoring WAL on open, the
+pre-write snapshot's location, Windows ACLs, encryption, and off-machine copies.
 
 ## Outcome
 

@@ -32,9 +32,9 @@ Open work is ordered intentionally. Terminal history follows open work.
 
 | Order | ID | RS | Change | Status | Driver | Delivery |
 |------:|----|----|--------|--------|--------|----------|
-| 1 | [CR061](rs010-cv22-oracle-and-port-hygiene/cr061-snapshot-the-live-database-consistently-before-zipping.md) | RS010 | Snapshot the live database consistently before zipping | in_progress | @viniciusteles | `mirror-ts-core` |
-| 2 | [CR062](rs010-cv22-oracle-and-port-hygiene/cr062-write-backup-archives-owner-only.md) | RS010 | Write backup archives owner-only | in_progress | @viniciusteles | `mirror-ts-core` |
-| 3 | [CR060](rs010-cv22-oracle-and-port-hygiene/cr060-fail-loudly-when-a-silent-backup-fails.md) | RS010 | Fail loudly when a silent backup fails | in_progress | @viniciusteles | `mirror-ts-core` |
+| 1 | [CR061](rs010-cv22-oracle-and-port-hygiene/cr061-snapshot-the-live-database-consistently-before-zipping.md) | RS010 | Snapshot the live database consistently before zipping | validated | @viniciusteles | `mirror-ts-core` |
+| 2 | [CR062](rs010-cv22-oracle-and-port-hygiene/cr062-write-backup-archives-owner-only.md) | RS010 | Write backup archives owner-only | validated | @viniciusteles | `mirror-ts-core` |
+| 3 | [CR060](rs010-cv22-oracle-and-port-hygiene/cr060-fail-loudly-when-a-silent-backup-fails.md) | RS010 | Fail loudly when a silent backup fails | validated | @viniciusteles | `mirror-ts-core` |
 | 4 | [CR104](rs004-identity-resolution-fidelity/cr104-journey-slugs-are-not-validated-and-command-hints-print-them-raw.md) | RS004 | Journey slugs are not validated, and command hints print them raw | captured | — | — |
 | 5 | [CR105](rs001-ariad-runtime-trust/cr105-choosing-delivery-story-flow-leaves-the-story-confirmation-pending.md) | RS001 | Choosing Delivery Story flow leaves the story-by-story confirmation pending | captured | — | — |
 | 6 | [CR090](rs001-ariad-runtime-trust/cr090-debt-review-surface-mixes-portuguese-into-english.md) | RS001 | The Debt Review surface mixes Portuguese into an English sentence | captured | — | — |

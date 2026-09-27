@@ -2,7 +2,7 @@
 
 # CR060 — Fail loudly when a silent backup fails
 
-**Status:** in_progress
+**Status:** validated
 **RS:** RS010
 **Driver:** @viniciusteles
 **Delivery:** `mirror-ts-core`
