@@ -180,7 +180,8 @@ const TS4_INSPECT_TARGETS = new Set([
 export const TS4_EXT_TOP_LEVEL_VERBS = new Set(["list", "--help", "-h", "help"]);
 export const TS4_EXT_BUILTIN_VERBS = new Set(["bind", "unbind", "bindings", "migrate"]);
 
-// CV22.DS7.US8 plateau 8: the 27 Builder leaves ported in plateaus 1–7.
+// CV22.DS7.US8 plateau 8: the 27 Builder leaves ported in plateaus 1–7, plus `show`
+// (CR067 with CR020), the one leaf written new in TypeScript rather than ported.
 // Exported so the route tests can prove that the allowlist and its audited
 // denominator stay the same. The two legacy Workbench groups are deliberately
 // absent: their twenty leaves retire unported in DS10.
@@ -197,6 +198,7 @@ export const TS_BUILD_SUBCOMMANDS = new Set([
   "approve-plan",
   "cancel-plan-preauthorization",
   "check-implementation",
+  "show",
   "validate-item",
   "review-item",
   "coherence-item",

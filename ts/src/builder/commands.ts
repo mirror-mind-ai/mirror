@@ -34,9 +34,11 @@ import { getRuntimeSession, resolveNamedRuntimeSessionId } from "#mirror/runtime
 import { getSessionOperatingMode } from "#mode/operatingMode.ts";
 import { PROGRAM } from "#util/program.ts";
 import { pyRStrip } from "#util/pythonText.ts";
+import { renderActiveCheckpoint, STORY_RECORDS } from "./activeCheckpoint.ts";
 import { approvePlanCheckpoint, renderPlanApproval } from "./approve.ts";
 import { getAriadMethod } from "./ariadMethod.ts";
 import {
+  displayPath,
   existingArtifact,
   type MaterializedArtifact,
   materializedArtifact,
@@ -528,6 +530,48 @@ export function runCheckImplementation(
       exitCode: 1,
     };
   }
+}
+
+/**
+ * CR067 with CR020: the journey's active checkpoint, shown again. Read-only by
+ * construction: it takes the read context, and the front door runs it on a read-only
+ * database handle like every leaf in `READ_ONLY_BUILDER_SUBCOMMANDS`.
+ */
+export function runShowCheckpoint(
+  context: BuilderCommandContext,
+  options: { method: string; journey?: string | null; sessionId?: string | null },
+): CommandResult {
+  const unknown = rejectUnknownMethod(options.method);
+  if (unknown) return unknown;
+
+  const resolved = resolveBuilderJourney(context, {
+    journey: options.journey ?? null,
+    sessionId: options.sessionId ?? null,
+    action: "checkpoint display",
+  });
+  if (isCommandResult(resolved)) return resolved;
+  const journey = resolved.journey;
+
+  const missing = requireJourney(context.db, journey);
+  if (missing) return missing;
+  const notAdopted = requireAdoptedMethod(context.db, journey, options.method);
+  if (notAdopted) return notAdopted;
+
+  const cursor = getDeliveryCursor(context.db, journey);
+  const projectPath = getProjectPath(context.db, journey);
+  const plan = cursor?.activeItem ? closureArtifactPath(projectPath, cursor, "plan.md") : null;
+  const records =
+    plan === null
+      ? null
+      : {
+          folder: displayPath(dirname(plan), projectPath),
+          present: new Set(STORY_RECORDS.filter((name) => existsSync(join(dirname(plan), name)))),
+        };
+  return {
+    stdout: printed(renderActiveCheckpoint({ journey, cursor, records })),
+    stderr: "",
+    exitCode: 0,
+  };
 }
 
 // --- plateau 3: the story-lifecycle leaves ---------------------------------

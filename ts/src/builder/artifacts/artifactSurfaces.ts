@@ -64,7 +64,7 @@ function statusIcon(status: string): string {
  * the project prints as the caller wrote it. Reproduced deliberately: resolving in
  * the fallback would print a different string than Python for the same input.
  */
-function displayPath(path: string, projectPath: string | null): string {
+export function displayPath(path: string, projectPath: string | null): string {
   if (projectPath !== null) {
     const relation = relative(resolve(projectPath), resolve(path));
     // `Path.relative_to` raises only when the path is not under the root, and

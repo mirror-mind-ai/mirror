@@ -422,6 +422,39 @@ green on plateau 1.
 
 Next: plateau 3, `build show`.
 
+### Plateau 3 handoff (2026-09-26)
+
+Now true: `mirror build show --journey <slug> --method ariad` renders `ACTIVE_CHECKPOINT`
+(`ts/src/builder/activeCheckpoint.ts`). It shows the ribbon at the cursor's stage, the
+active item, the last event, the pending confirmation, the active checkpoint, and the
+story package's records, then "Read-only: the cursor and the project files were not
+changed." The records are the package path once, then `plan.md`, `validation.md`,
+`review.md`, `coherence.md`, and `done.md`, each marked present or missing. With no item
+pulled it says so and gives the literal pull command, and an event outside the stage
+table gets no marker. The leaf is registered in `READ_ONLY_BUILDER_SUBCOMMANDS`, so the
+front door runs it on a read-only database handle, and read-only is a property of the
+handle, not only of the code. It checks the journey binding and the adopted method as
+every build leaf does. `displayPath` is now exported from `artifactSurfaces.ts` and makes
+the package path project-relative.
+
+One deviation from the plan's surface strings: the records print the package path once,
+then each record by file name, instead of five full paths. A record path is longer than
+a card line and has no spaces, so five full paths would each break mid-word across two or
+three lines. This repository's package paths run past 100 characters.
+
+Evidence: the tests were red first on the unknown leaf. A walk plans and validates one
+story and calls `build show` after each step. Stage, position, and records match the
+disk, two calls print the same, and the read-only dispatcher prints the same. The cursor
+row, the count of runtime rows, and the project files stay unchanged. Other tests cover
+no item pulled, an event outside the table, no journey, and a journey with no adopted
+method. Through the real front door, `build show` logs `leaf=show`, exits 0, and leaves
+the cursor unchanged. The route test's count of Builder leaves goes from 27 to 28 and now
+says `show` was written new, not ported. The full suite passes (2,726 tests), along with
+typecheck, lint, the repository checks, and the smoke.
+
+Next: plateau 4, meaning the skill, the pasteable validation route, Navigator validation,
+and the handoff review.
+
 ## Outcome
 
 Pending.

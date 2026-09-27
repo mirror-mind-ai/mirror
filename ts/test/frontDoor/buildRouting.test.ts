@@ -13,8 +13,9 @@ import {
 
 const ON = {};
 
-test("the shipped default routes every one of the 27 ported leaves to TS", () => {
-  assert.equal(TS_BUILD_SUBCOMMANDS.size, 27);
+test("the shipped default routes every one of the 28 Builder leaves to TS", () => {
+  // 27 ported from Python, plus `show`, written new for CR067 with CR020.
+  assert.equal(TS_BUILD_SUBCOMMANDS.size, 28);
   for (const subcommand of TS_BUILD_SUBCOMMANDS) {
     const argv = subcommand === "load" ? ["build", "load", "demo"] : ["build", subcommand];
     assert.equal(routeMemoryCommand(argv, ON).engine, "ts", subcommand);

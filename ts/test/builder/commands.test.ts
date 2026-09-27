@@ -26,6 +26,7 @@ import {
 import { dirname, join, relative, sep } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
+import { invokeReadOnlyBuilderArgv } from "#builder/argv.ts";
 import { getAriadMethod } from "#builder/ariadMethod.ts";
 import { cardText } from "#builder/card.ts";
 import { surfacesForTrigger } from "#builder/commands.ts";
@@ -1746,5 +1747,190 @@ test("CR067: check-implementation still renders the Implement guard it was writt
     assert.deepEqual(surfaceIds(result.stdout), ["IMPLEMENTATION_GUARD"]);
   } finally {
     db.close();
+  }
+});
+
+/** The trimmed card lines between two labels, one entry per rendered line. */
+function cardLines(card: string, from: string, to: string): string[] {
+  return cardRows(card, from, to) === ""
+    ? []
+    : (card.match(new RegExp(`│ ${from} [\\s\\S]*?\\n([\\s\\S]*?)│ +│\\n│ ${to} `, "u"))?.[1] ?? "")
+        .split("\n")
+        .map((line) => line.replace(/^│ ?/u, "").replace(/ *│$/u, "").trim())
+        .filter((line) => line !== "");
+}
+
+test("CR020: build show renders the stage, position, and records, and changes nothing", () => {
+  const project = mkdtempSync("/tmp/builder-command-cr020-");
+  temporaryDirectories.push(project);
+  writeSiblingTree(project, { guide: false });
+  const db = seed("adopted", project);
+  const run = (argv: readonly string[]) =>
+    invoke(db, [argv[0] ?? "", "--method", "ariad", "--journey", "demo", ...argv.slice(1)]);
+  const state = () => ({
+    rows: (db.prepare("SELECT COUNT(*) AS n FROM runtime_sessions").get() as { n: number }).n,
+    cursor: (
+      db
+        .prepare("SELECT metadata FROM runtime_sessions WHERE session_id = ?")
+        .get("__builder_delivery_cursor__:demo") as { metadata: string } | undefined
+    )?.metadata,
+    files: projectSnapshot(project),
+  });
+  const show = (stage: string): string => {
+    const before = state();
+    const first = run(["show"]);
+    const again = run(["show"]);
+    const readOnly = invokeReadOnlyBuilderArgv(db, [
+      "show",
+      "--method",
+      "ariad",
+      "--journey",
+      "demo",
+    ]);
+    assert.equal(first.exitCode, 0, first.stderr);
+    assert.deepEqual(surfaceIds(first.stdout), ["ACTIVE_CHECKPOINT"]);
+    assert.match(first.stdout, new RegExp(`◉ ${stage}( →|\\n)`, "u"), `ribbon at ${stage}`);
+    assert.equal(again.stdout, first.stdout, "two calls print the same");
+    assert.equal(readOnly.stdout, first.stdout, "the read-only dispatch prints the same");
+    assert.deepEqual(state(), before, "nothing changed");
+    return first.stdout;
+  };
+  const folder = "docs/project/roadmap/cv1-first/cv1-ds1-alpha/cv1-ds1-ts1-first";
+  const records = (card: string) => {
+    const lines = cardLines(card, "records", "boundary");
+    return { folder: lines.slice(0, -5).join(""), files: lines.slice(-5) };
+  };
+  try {
+    setDeliveryCursor(
+      db,
+      {
+        journey: "demo",
+        method: "ariad",
+        activeItem: "CV1.DS1.TS1",
+        activeItemTitle: "First slice",
+        activeItemLevel: "technical_story",
+        lastDeliveryEvent: "prepare",
+        navigatorFlowUnit: "story_by_story",
+      },
+      { nowIso: () => NOW },
+    );
+    assert.equal(run(["plan-item"]).exitCode, 0);
+    const planned = show("Plan");
+    assert.equal(cardRows(planned, "active item", "last event"), "CV1.DS1.TS1 — First slice");
+    assert.equal(cardRows(planned, "last event", "pending confirmation"), "plan");
+    assert.equal(
+      cardRows(planned, "pending confirmation", "active checkpoint"),
+      "navigator_approval",
+    );
+    assert.equal(cardRows(planned, "active checkpoint", "records"), "after_plan");
+    assert.deepEqual(records(planned), {
+      folder,
+      files: ["✓ plan.md", "○ validation.md", "○ review.md", "○ coherence.md", "○ done.md"],
+    });
+    assert.match(
+      planned.replace(/[│╭╮╰╯─]/gu, " ").replace(/\s+/gu, " "),
+      /boundary Read-only: the cursor and the project files were not changed\. <<<END/u,
+    );
+
+    assert.equal(run(["approve-plan"]).exitCode, 0);
+    assert.equal(
+      run([
+        "validate-item",
+        "--implementation-complete",
+        "--check",
+        "npm test",
+        "--checks-status",
+        "passed",
+        "--e2e-decision",
+        "not_required",
+        "--e2e-evidence",
+        "unit-level change",
+        "--navigator-route",
+        "walk the route",
+        "--navigator-accepted",
+        "--expected-observation",
+        "it shows",
+        "--pass-condition",
+        "it does",
+        "--fail-condition",
+        "it does not",
+      ]).exitCode,
+      0,
+    );
+    const validated = show("Debt Review");
+    assert.equal(cardRows(validated, "last event", "pending confirmation"), "validation_passed");
+    assert.deepEqual(records(validated).files, [
+      "✓ plan.md",
+      "✓ validation.md",
+      "○ review.md",
+      "○ coherence.md",
+      "○ done.md",
+    ]);
+  } finally {
+    db.close();
+  }
+});
+
+test("CR020: build show with no item pulled says so and gives the pull command", () => {
+  const db = seed("adopted", scratchProject(false));
+  try {
+    const result = invoke(db, ["show", "--method", "ariad", "--journey", "demo"]);
+    assert.equal(result.exitCode, 0, result.stderr);
+    assert.deepEqual(surfaceIds(result.stdout), ["ACTIVE_CHECKPOINT"]);
+    assert.doesNotMatch(result.stdout, /Delivery Flow/u);
+    assert.match(
+      cardRows(result.stdout, "active item", "boundary"),
+      /^no item pulled yet pull explicitly: mirror build pull-item --journey demo --method ariad/u,
+    );
+  } finally {
+    db.close();
+  }
+});
+
+test("CR020: build show marks no stage for an event outside the table", () => {
+  const db = seed("adopted", scratchProject(false));
+  try {
+    setDeliveryCursor(
+      db,
+      {
+        journey: "demo",
+        method: "ariad",
+        activeItem: "CV1.DS3",
+        activeItemTitle: "Aggregate delivery",
+        activeItemLevel: "delivery_story",
+        lastDeliveryEvent: "delivery_story_plan",
+        pendingConfirmation: "navigator_delivery_story_plan_approval",
+        navigatorFlowUnit: "delivery_story",
+      },
+      { nowIso: () => NOW },
+    );
+    const result = invoke(db, ["show", "--method", "ariad", "--journey", "demo"]);
+    assert.equal(result.exitCode, 0, result.stderr);
+    assert.doesNotMatch(result.stdout, /◉/u);
+    assert.equal(
+      cardRows(result.stdout, "last event", "pending confirmation"),
+      "delivery_story_plan",
+    );
+  } finally {
+    db.close();
+  }
+});
+
+test("CR020: build show refuses without a journey, and for a journey that adopted no method", () => {
+  const adopted = seed("adopted", scratchProject(false));
+  try {
+    const result = invoke(adopted, ["show", "--method", "ariad"]);
+    assert.notEqual(result.exitCode, 0);
+    assert.match(result.stdout + result.stderr, /requires a journey/u);
+  } finally {
+    adopted.close();
+  }
+  const bare = seed("no_active_mode", scratchProject(false));
+  try {
+    const result = invoke(bare, ["show", "--method", "ariad", "--journey", "demo"]);
+    assert.notEqual(result.exitCode, 0);
+    assert.doesNotMatch(result.stdout, /ACTIVE_CHECKPOINT/u);
+  } finally {
+    bare.close();
   }
 });

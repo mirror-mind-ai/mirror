@@ -36,6 +36,7 @@ import {
   runReviewItem,
   runSetCadence,
   runSetFlowUnit,
+  runShowCheckpoint,
   runSyncCursor,
   runValidateDeliveryStory,
   runValidateItem,
@@ -52,11 +53,12 @@ export interface BuilderInvokeDeps {
 /** Raised for an argv this mapping does not carry, so a gap cannot pass silently. */
 export class UnsupportedBuilderArgvError extends Error {}
 
-/** The three Builder leaves that never write and therefore need no live backup. */
+/** The Builder leaves that never write and therefore need no live backup. */
 export const READ_ONLY_BUILDER_SUBCOMMANDS = new Set([
   "inspect-method",
   "pull-candidates",
   "check-implementation",
+  "show",
 ]);
 
 export function invokeReadOnlyBuilderArgv(
@@ -86,6 +88,7 @@ export function invokeReadOnlyBuilderArgv(
   }
   if (argv[0] === "pull-candidates") return runPullCandidates(context, shared);
   if (argv[0] === "check-implementation") return runCheckImplementation(context, shared);
+  if (argv[0] === "show") return runShowCheckpoint(context, shared);
   throw new UnsupportedBuilderArgvError(`unsupported read-only argv: ${argv.join(" ")}`);
 }
 
@@ -134,6 +137,8 @@ export function invokeBuilderArgv(
       return runSyncCursor(writeContext, shared);
     case "check-implementation":
       return runCheckImplementation(context, shared);
+    case "show":
+      return runShowCheckpoint(context, shared);
     case "pull-item":
       return runPullItem(writeContext, {
         ...shared,

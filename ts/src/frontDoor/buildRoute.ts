@@ -60,6 +60,10 @@ const COMMAND_SPECS: Readonly<Record<string, CommandSpec>> = {
     values: [...COMMON, "--mirror-home", "--db-path"],
     required: COMMON_REQUIRED,
   },
+  show: {
+    values: [...COMMON, "--mirror-home", "--db-path"],
+    required: COMMON_REQUIRED,
+  },
   "pull-item": {
     values: [
       ...COMMON,
