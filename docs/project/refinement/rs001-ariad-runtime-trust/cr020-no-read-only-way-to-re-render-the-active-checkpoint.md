@@ -58,6 +58,15 @@ entry point that dispatches on the cursor's current checkpoint and confirmation
 fields, and precise refusal text in `plan-item` / `validate-item` when the
 cursor is past the requested step. Capture does not authorize implementation.
 
+Carried by [CR067](cr067-render-the-refused-checkpoint-not-a-hardcoded-implement-stage.md)
+by the Navigator's decision of 2026-09-26: one plan for both,
+[written there](cr067-render-the-refused-checkpoint-not-a-hardcoded-implement-stage.md#plan-or-decision),
+with this CR's reproduction in its
+[characterization](cr067-render-the-refused-checkpoint-not-a-hardcoded-implement-stage.md#characterization-2026-09-26-typescript-runtime-isolated-home).
+That plan corrects one premise above. A checkpoint surface cannot be re-rendered from
+the cursor, because the cursor stores no checkpoint evidence, and that is why what
+`build show` shows is decided there. CR020 closes with CR067.
+
 ## Evidence
 
 Session of 2026-09-07, journey `kia-desktop`:
