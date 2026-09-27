@@ -170,6 +170,16 @@ present. The real Mirror home has no `cr001-validate` journey or conversation.
 
 No finding blocks closure. Navigator decision (2026-09-26): no action.
 
+### Handoff review (skipped, recorded 2026-09-26)
+
+The CV22 collaboration strategy calls for a panel handoff review after validation, and
+skipping it must be a recorded decision rather than a default. CR001 closed without the
+review and without recording that choice. The omission was noticed after closure, and
+the Navigator accepted the recommendation to record the skip rather than run the review
+retroactively. The delivered change is one skill paragraph and one characterization
+test, with no runtime code, so the review's main lenses had no shipped code to examine.
+The validation itself surfaced the one operational risk the change touched, now CR106.
+
 ## Outcome
 
 Done 2026-09-26. The runtime never collapsed the scope confirmation into Plan
