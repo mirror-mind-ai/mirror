@@ -12,6 +12,26 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-09-27 — CR067 done, with CR020: a refusal says where the cursor stands
+
+This is the sixth change of the Ariad trust floor. Every refusal of the story closure
+commands rendered the Implement guard, whatever stage the cursor held, and ended by
+saying implementation was blocked, which is false after Plan approval. A step already
+done was refused with a precondition that held, such as "Prepare must be completed
+before Plan" for a second `plan-item`. Nothing could show a lost checkpoint again, so
+agents substituted `check-implementation` as circumstantial evidence.
+
+One module now states the story lifecycle's order and the cursor's stage, checked
+against the real guards at all 65 step-and-event combinations. A refusal renders
+`CHECKPOINT_REFUSED` at the cursor's real stage with its true reason, says it changed
+nothing, and names `build show`. That new leaf runs on a read-only database handle and
+shows the stage, the position, and the story's records. The handoff review caught one
+claim of the change's own making: a failure after the cursor write would have read as a
+refusal that changed nothing. Only a real refusal gets the surface now. The Navigator
+validated a pasteable route from Plan to Done.
+
+Next on the floor: CR018, then CR102.
+
 ### 2026-09-26 — CR019 done: a Plan states only what is true for its project
 
 This is the fifth change of the Ariad trust floor. A story's Plan listed every pullable

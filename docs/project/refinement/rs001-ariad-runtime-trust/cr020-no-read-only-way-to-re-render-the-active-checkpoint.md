@@ -88,6 +88,7 @@ reached by a command meant for something else.
 
 ## Outcome
 
-Validated 2026-09-27 with
-[CR067](cr067-render-the-refused-checkpoint-not-a-hardcoded-implement-stage.md#navigator-validation-2026-09-27),
-which carries its record.
+Done 2026-09-27 with
+[CR067](cr067-render-the-refused-checkpoint-not-a-hardcoded-implement-stage.md#outcome),
+which carries its record. `build show` displays the active checkpoint read-only, and
+a refusal names the state that failed rather than a precondition that holds.

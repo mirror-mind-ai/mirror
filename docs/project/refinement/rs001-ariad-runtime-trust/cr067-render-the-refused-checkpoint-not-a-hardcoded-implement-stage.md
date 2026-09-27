@@ -565,8 +565,12 @@ Navigator decision (2026-09-27): pay both now.
 
 ## Outcome
 
-Validated 2026-09-27, for CR067 and CR020 together. The debt decision and closure are
-pending.
+Done 2026-09-27, with CR020. A refused lifecycle command now shows the stage the cursor
+actually holds and the true reason, says it changed nothing, and names the read-only
+`build show` that displays the active checkpoint and where its records live. A step
+already done is refused as already complete. Delivered on `mirror-ts-core` in
+`b2967407` (refusal identity), `a4327dfc` (refusal surface), `3fcc1d90` (`build show`),
+`b97f6be1` (skill and route), and `618d49f9` (debt), with CI green on each.
 
 ## Provenance
 
