@@ -93,6 +93,26 @@ export function isInsideCv(code: string, cvCode: string): boolean {
   return code.startsWith(`${cvCode}.`);
 }
 
+/** The code one level up: everything before the last `.`. A CV has no parent. */
+export function parentCodeOf(code: string): string | null {
+  const cut = code.lastIndexOf(".");
+  return cut === -1 ? null : code.slice(0, cut);
+}
+
+/**
+ * The active item's siblings: the other items with the same parent, in the order
+ * given. Its ancestors, its cousins, and its parent's own siblings never qualify,
+ * and exact comparison keeps `CV1.DS1` from claiming `CV1.DS10`'s children (CR019).
+ */
+export function siblingsOf<T extends { readonly code: string }>(
+  items: readonly T[],
+  activeItem: string,
+): T[] {
+  const parent = parentCodeOf(activeItem);
+  if (parent === null) return [];
+  return items.filter((item) => item.code !== activeItem && parentCodeOf(item.code) === parent);
+}
+
 /** The scope a journey's cursor implies. Never throws for a roadmap defect. */
 export function resolveRoadmapScope(
   projectRoot: string | null,

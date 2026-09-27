@@ -1408,3 +1408,139 @@ test("CR001: the Delivery Story scope question is asked before any Plan exists, 
     db.close();
   }
 });
+
+/**
+ * CR019's tree: CV1 holds DS1 (three Technical Stories), DS10 (which DS1 prefixes),
+ * and DS2 (one User Story); CV2 sits outside. `guide` adds the development guide
+ * Prepare already looks for.
+ */
+function writeSiblingTree(root: string, options: { guide: boolean }): void {
+  const packages: readonly (readonly [string, string, string, string | null])[] = [
+    ["cv1-first", "CV1", "First capability", null],
+    ["cv1-first/cv1-ds1-alpha", "CV1.DS1", "Alpha delivery", "Delivery Story"],
+    ["cv1-first/cv1-ds1-alpha/cv1-ds1-ts1-first", "CV1.DS1.TS1", "First slice", "Technical Story"],
+    [
+      "cv1-first/cv1-ds1-alpha/cv1-ds1-ts2-second",
+      "CV1.DS1.TS2",
+      "Second slice",
+      "Technical Story",
+    ],
+    ["cv1-first/cv1-ds1-alpha/cv1-ds1-ts3-third", "CV1.DS1.TS3", "Third slice", "Technical Story"],
+    ["cv1-first/cv1-ds10-tenth", "CV1.DS10", "Tenth delivery", "Delivery Story"],
+    [
+      "cv1-first/cv1-ds10-tenth/cv1-ds10-ts1-tenth",
+      "CV1.DS10.TS1",
+      "Tenth slice",
+      "Technical Story",
+    ],
+    ["cv1-first/cv1-ds2-beta", "CV1.DS2", "Beta delivery", "Delivery Story"],
+    ["cv1-first/cv1-ds2-beta/cv1-ds2-us1-beta", "CV1.DS2.US1", "Beta story", "User Story"],
+    ["cv2-second", "CV2", "Second capability", null],
+    ["cv2-second/cv2-ds1-gamma", "CV2.DS1", "Gamma delivery", "Delivery Story"],
+  ];
+  const roadmap = join(root, "docs/project/roadmap");
+  mkdirSync(roadmap, { recursive: true });
+  writeFileSync(join(roadmap, "index.md"), "# Roadmap\n", "utf8");
+  for (const [folder, code, title, type] of packages) {
+    mkdirSync(join(roadmap, folder), { recursive: true });
+    const typeLine = type === null ? "" : `**Type:** ${type}\n`;
+    writeFileSync(
+      join(roadmap, folder, "index.md"),
+      `# ${code} — ${title}\n\n**Status:** 🟡 Planned\n${typeLine}`,
+      "utf8",
+    );
+  }
+  if (options.guide) {
+    mkdirSync(join(root, "docs/process"), { recursive: true });
+    writeFileSync(
+      join(root, "docs/process/development-guide.md"),
+      "# Development Guide\n\n- Run `npm test` before every commit.\n",
+      "utf8",
+    );
+  }
+}
+
+/** Run `plan-item` for one prepared story of a CR019 tree; return the card and plan.md. */
+function planStoryIn(
+  project: string,
+  story: { code: string; title: string; level: string; folder: string },
+): { card: string; planMd: string } {
+  const db = seed("adopted", project);
+  try {
+    setDeliveryCursor(
+      db,
+      {
+        journey: "demo",
+        method: "ariad",
+        activeItem: story.code,
+        activeItemTitle: story.title,
+        activeItemLevel: story.level,
+        lastDeliveryEvent: "prepare",
+        navigatorFlowUnit: "story_by_story",
+      },
+      { nowIso: () => NOW },
+    );
+    const result = invoke(db, ["plan-item", "--method", "ariad", "--journey", "demo"]);
+    assert.equal(result.exitCode, 0, result.stderr);
+    const planMd = readFileSync(
+      join(project, "docs/project/roadmap", story.folder, "plan.md"),
+      "utf8",
+    );
+    return { card: result.stdout, planMd };
+  } finally {
+    db.close();
+  }
+}
+
+/** One `## Heading` section of a plan.md, without its heading. */
+function planSection(planMd: string, heading: string): string {
+  const match = planMd.match(new RegExp(`## ${heading}\\n\\n([\\s\\S]*?)\\n\\n## `, "u"));
+  assert.ok(match, `plan.md has a ${heading} section`);
+  return match[1] ?? "";
+}
+
+/** The card rows between two labels, box drawing removed, lines joined. */
+function cardRows(card: string, from: string, to: string): string {
+  const match = card.match(new RegExp(`│ ${from} [\\s\\S]*?\\n([\\s\\S]*?)│ ${to} `, "u"));
+  assert.ok(match, `the card has a ${from} block`);
+  return (match[1] ?? "")
+    .split("\n")
+    .map((line) => line.replace(/^│ ?/u, "").replace(/ *│$/u, "").trim())
+    .filter((line) => line !== "")
+    .join(" ");
+}
+
+test("CR019: a story's Plan names only its own parent's other children as non-goals", () => {
+  const project = mkdtempSync("/tmp/builder-command-cr019-");
+  temporaryDirectories.push(project);
+  writeSiblingTree(project, { guide: false });
+
+  const first = planStoryIn(project, {
+    code: "CV1.DS1.TS1",
+    title: "First slice",
+    level: "technical_story",
+    folder: "cv1-first/cv1-ds1-alpha/cv1-ds1-ts1-first",
+  });
+  assert.equal(
+    planSection(first.planMd, "Non-Goals"),
+    "- Do not implement sibling roadmap item: Second slice.\n" +
+      "- Do not implement sibling roadmap item: Third slice.",
+  );
+  assert.equal(
+    cardRows(first.card, "non-goals", "acceptance"),
+    "○ Do not implement sibling roadmap item: Second slice. " +
+      "○ Do not implement sibling roadmap item: Third slice.",
+    "not the parent, the DS10 child, the cousin, the other Delivery Story, or CV2",
+  );
+
+  const onlyChild = planStoryIn(project, {
+    code: "CV1.DS2.US1",
+    title: "Beta story",
+    level: "user_story",
+    folder: "cv1-first/cv1-ds2-beta/cv1-ds2-us1-beta",
+  });
+  assert.equal(
+    planSection(onlyChild.planMd, "Non-Goals"),
+    "- Do not silently absorb adjacent roadmap work.",
+  );
+});

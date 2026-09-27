@@ -117,11 +117,10 @@ import {
   setReleaseIntent,
 } from "./releaseIntent.ts";
 import {
-  cvCodeOf,
-  isInsideCv,
   resolveRoadmapScope,
   type ScopedPullCandidates,
   scopePullCandidates,
+  siblingsOf,
 } from "./roadmapScope.ts";
 import {
   createStoryDirectory,
@@ -700,9 +699,8 @@ const MIRROR_LOCAL_IMPLEMENTATION_RULES = [
  * Python `_roadmap_plan_context`.
  *
  * Derives the Plan's default prose from the roadmap: the active candidate's own
- * title leaf, and SIBLING titles as explicit non-goals. The sibling query is
- * prefix-based on the code's first segment, which is why a Delivery Story's own
- * parent can appear among them (CR019).
+ * title leaf, and its SIBLINGS' titles as explicit non-goals. Siblings are the other
+ * children of the same parent, never an ancestor or a cousin (CR019).
  */
 function roadmapPlanContext(
   projectPath: string | null,
@@ -729,13 +727,9 @@ function roadmapPlanContext(
         .split("/")
         .map((part) => part.trim())
         .filter((part) => part !== "");
-      // The CV-membership rule every Builder surface shares (CR002). Its output
-      // here is unchanged: this filter already used strict descent. Listing the
-      // PARENT as a sibling is CR019's defect, not this rule's.
-      const cvCode = cvCodeOf(activeItem);
-      siblings = candidates
-        .filter((candidate) => candidate.code !== activeItem && isInsideCv(candidate.code, cvCode))
-        .map((candidate) => (candidate.title.split("/").at(-1) ?? "").trim());
+      siblings = siblingsOf(candidates, activeItem).map((candidate) =>
+        (candidate.title.split("/").at(-1) ?? "").trim(),
+      );
     }
   }
   const title = titleParts.at(-1) ?? String(activeItem ?? "the active item");

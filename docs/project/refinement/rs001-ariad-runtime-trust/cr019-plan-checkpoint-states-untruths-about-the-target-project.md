@@ -287,6 +287,23 @@ Identical in both runs, card and `plan.md` alike:
 With the guide present, Prepare reported it `present`, and none of its rules reached the
 plan.
 
+### Plateau 1 handoff (2026-09-26)
+
+Now true: a story's Plan non-goals list only the other children of its own parent.
+`siblingsOf` and `parentCodeOf` sit in `roadmapScope.ts` beside the membership rules,
+and `roadmapPlanContext` only calls `siblingsOf`. The parent, other ancestors, cousins,
+the parent's own siblings, and anything in another CV no longer appear, and `CV1.DS1` no
+longer claims `CV1.DS10`'s children. An only child gets the fallback line.
+
+Evidence: the end-to-end test was red first, listing the parent, both `CV1.DS10` items,
+the cousin, and the other Delivery Story after the two true siblings. It is green now. A
+mutant of `siblingsOf` that compares by prefix fails both the unit and the end-to-end
+test. The three `plan_item_*` goldens trade the parent line for the fallback line, with
+a README row. The full suite passes (2,710 tests), along with typecheck, lint, the three
+repository checks, and the Builder lifecycle smoke (54/54).
+
+Remaining: the contract lines. Next: plateau 2.
+
 ## Outcome
 
 Pending.

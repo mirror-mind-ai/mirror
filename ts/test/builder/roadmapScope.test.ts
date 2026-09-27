@@ -29,9 +29,11 @@ import { renderBuilderResumeSurface } from "#builder/resumeSurface.ts";
 import {
   cvCodeOf,
   isInsideCv,
+  parentCodeOf,
   type RoadmapScope,
   resolveRoadmapScope,
   scopePullCandidates,
+  siblingsOf,
 } from "#builder/roadmapScope.ts";
 import { pullExplicitly, roadmapPositionLines, scopeFocus } from "#builder/scopePhrases.ts";
 
@@ -197,6 +199,33 @@ test("membership is strict descent by code, and the dot keeps CV2 out of CV20", 
   assert.equal(isInsideCv("DS-35.US-1", "DS-35"), true);
   assert.equal(isInsideCv("CV20.DS7", "CV2"), false);
   assert.equal(isInsideCv("CV2", "CV2"), false, "a CV is its own position, never its candidate");
+});
+
+test("CR019: a code's parent is everything before its last dot, and a CV has none", () => {
+  assert.equal(parentCodeOf("CV22.DS10.TS5"), "CV22.DS10");
+  assert.equal(parentCodeOf("CV22.DS10"), "CV22");
+  assert.equal(parentCodeOf("DS-35.US-1"), "DS-35");
+  assert.equal(parentCodeOf("CV21.E2.S1b"), "CV21.E2");
+  assert.equal(parentCodeOf("CV22"), null);
+});
+
+test("CR019: siblings are the other children of the same parent, in roadmap order", () => {
+  const candidates = [
+    "CV1.DS1", // the parent
+    "CV1.DS1.TS1", // the active item
+    "CV1.DS1.TS2",
+    "CV1.DS10.TS1", // a child of DS10, which DS1 prefixes
+    "CV1.DS1.TS3",
+    "CV1.DS2", // another Delivery Story
+    "CV1.DS2.US1", // a cousin
+    "CV2.DS1.TS2", // another CV
+  ].map((code) => ({ code }));
+  const codes = (active: string) => siblingsOf(candidates, active).map((item) => item.code);
+
+  assert.deepEqual(codes("CV1.DS1.TS1"), ["CV1.DS1.TS2", "CV1.DS1.TS3"]);
+  assert.deepEqual(codes("CV1.DS2.US1"), [], "an only child has no siblings");
+  assert.deepEqual(codes("CV1.DS1"), ["CV1.DS2"], "the rule holds at every level");
+  assert.deepEqual(codes("CV1"), [], "a CV has no parent, so no siblings");
 });
 
 test("no cursor and no active item are unscoped, whatever the tree holds", () => {
