@@ -830,6 +830,37 @@ Accepted scope boundaries, as planned: link rewriting; escaped pipes (CR107); th
 card's label; absolute paths (CR082); stored titles; generated files already in
 repositories; reference links.
 
+### Debt paid (2026-09-27)
+
+The Navigator decided to pay the three findings now and take no action on the fourth.
+
+1. Every reader is under test (`e278c556`). One test puts an inline link at each reader
+   that brings a roadmap title into Ariad, one roadmap per grammar, and asserts that only
+   the label arrives. Each of the six mutants from the review fails it, the two table
+   readers taken separately included.
+2. `EXPAND_BLOCKED` advises what fits (`0710f8c3`). Its action names the blocked
+   Delivery Story's own `index.md`, to be created when it has none, which is right for
+   all three causes, and the `mm-build` skill names the third cause and its fix. The
+   three recorded renders took the new sentence by script, and the script had to
+   reproduce each old paragraph byte for byte before replacing it.
+3. A one-line cut lands between words (`2e71378b`). A cut that would split a word backs
+   up to its start while at least half the row remains. On the validation route four rows
+   changed and nothing else: the Snapshot's current row reads `(per…` where it read
+   `(per D1…`, and Pull's tree row ends at `Remove the dormant pair…`.
+
+CI was green on `2e71378b`, which carries all three.
+
 ## Outcome
 
-Pending.
+Done 2026-09-27. A title is one string from the roadmap or `--item-title` to every
+surface, file, and folder name: no reader cuts it at a `/`, its links enter Ariad as
+their labels, and a row that restates it on one line ends in `…`, between words. The CV
+row names the CV by its own title. By the Navigator's decision, CR018 also closed the
+defect its characterization found: Expand finds a child by its heading, never writes a
+second package for it, and refuses before any write when a code is claimed twice, and
+the fourteen Builder commands that crashed on a doubly claimed code now refuse with one
+`Error:` line. Delivered on `mirror-ts-core` in `175db105` (Expand), `97d54de3` (whole
+titles), `c31f9b87` (the CV's own title), `020d5e1f` and `7a69fb38` (width),
+`247c7dbe` (links), and `e278c556`, `0710f8c3`, and `2e71378b` (debt), with CI green on
+each plateau's last push. The Navigator validated the [route](#validation-route). The
+escaped pipe it found beside it is CR107.

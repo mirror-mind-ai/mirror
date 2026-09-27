@@ -12,6 +12,28 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-09-27 — CR018 done: a title is one string, whole or visibly cut
+
+This is the seventh change of the Ariad trust floor. Python named a bullet-list Delivery
+Story `"<CV title> / <DS title>"`, and five readers cut every title at a slash to undo
+it, so a title with a slash of its own reached Pull, Ready, the Snapshot, and the Plan
+as a fragment. kia-desktop's checkpoints read `index.md)): o caminho morto sai sem
+ressalva`. The CV row borrowed the pulled item's title in every Pull. Expand repeated a
+title's links one folder too deep, and one-line rows were cut with no mark.
+
+No reader cuts a title now. The CV row names the CV as Project Position does. A title's
+links enter Ariad as their labels, wherever the title comes from. A row that restates a
+title on one line ends in `…`, between words, and a title's first appearance, or one an
+agent copies, wraps in full. Characterizing CR018 also found that Expand wrote a second
+package for a child filed in a human-named folder, after which fourteen commands crashed
+on the doubly claimed code. The Navigator had that fixed inside CR018: Expand now finds
+children by heading and refuses before any write, and the commands refuse with one
+`Error:` line. The handoff review found three debts of the change's own making, a link
+rule untested at four of its five readers, advice that did not fit the new refusal, and
+cuts inside codes. All three were paid. CR107 was captured.
+
+Next on the floor: CR102, the last change before US3.
+
 ### 2026-09-27 — CR067 done, with CR020: a refusal says where the cursor stands
 
 This is the sixth change of the Ariad trust floor. Every refusal of the story closure
