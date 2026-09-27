@@ -3170,6 +3170,21 @@ captured, as
 and
 [CR110](refinement/rs010-cv22-oracle-and-port-hygiene/cr110-the-doc-link-checker-reads-a-link-inside-inline-code-as-a-real-link.md).
 
+**Amended 2026-09-27: CR104 guards persona ids too, and fixes seed's three
+stale hints.** Characterizing
+[CR104](refinement/rs004-identity-resolution-fidelity/cr104-journey-slugs-are-not-validated-and-command-hints-print-them-raw.md)
+found persona ids open the same way as journey slugs, with a stranger at the
+first step. `seed` takes a persona's key from its file, `ext-persona-export`
+writes seed-compatible bundles to be shared, and `detect-persona` prints the id
+an agent puts into `mirror load --persona`. The rule above would have captured
+it. The Navigator had it fixed inside CR104 instead, for the reason CR018's
+Expand defect was: it is the floor's own class, the security class that put
+CR104 on the floor. Fixing the local journey case alone would ship the
+cross-user persona case. The same characterization found `seed`'s three skip
+hints naming `memory`, the Python program TS5 deleted. CR104 changes those lines
+to quote their key, and fixes the name with them. The floor stays eleven
+changes and thirteen identifiers.
+
 ### A Builder journey's position is its cursor's active item, never a roadmap scan
 
 **Date:** 2026-09-26 · **Context:** [CR002](refinement/rs001-ariad-runtime-trust/cr002-cursor-sync-roadmap-selection.md),
