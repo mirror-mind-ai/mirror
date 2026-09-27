@@ -13,6 +13,7 @@
 // (see `roadmapScope.ts`). `none` stays only in fields that are genuinely empty.
 
 import { PROGRAM } from "#util/program.ts";
+import { shellWord } from "#util/shellWord.ts";
 import type { RoadmapSnapshotItem } from "./pullCandidates.ts";
 import type {
   AuthoredPackage,
@@ -32,21 +33,10 @@ const NO_PROJECT_PATH = "no project path configured";
 const claimedBy = (count: number) => `claimed by ${count} packages`;
 
 /**
- * A POSIX shell word for `value`: as is when it is a plain token, single-quoted
- * otherwise. The Pull command below is printed to be copied into a shell, and a
- * journey slug is not validated at creation (CR104), so a slug like
- * `x;touch PWNED` must arrive as one argument and run nothing.
- */
-function shellWord(value: string): string {
-  if (/^[A-Za-z0-9._-]+$/u.test(value)) return value;
-  return `'${value.replaceAll("'", `'\\''`)}'`;
-}
-
-/**
  * What stands where a recommendation would when there is none: the literal Pull
  * command, carrying the journey's real slug and placeholders the Navigator fills
  * from the item they name. The command itself, not a description of one, because
- * the agent copies it.
+ * the agent copies it, so the slug goes through `shellWord` (CR104).
  */
 export function pullExplicitly(journey: string): string {
   return (

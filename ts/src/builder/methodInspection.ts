@@ -23,6 +23,7 @@
 // now reads `PROGRAM`.
 
 import { PROGRAM } from "#util/program.ts";
+import { shellWord } from "#util/shellWord.ts";
 import type {
   CadenceProfileDefinition,
   CheckpointDefinition,
@@ -185,7 +186,7 @@ export function renderJourneyWithoutAdoptedMethod(journey: string): string {
     "pending confirmations",
     "",
     "next action",
-    `${PROGRAM} build adopt --journey ${journey} --method ariad`,
+    `${PROGRAM} build adopt --journey ${shellWord(journey)} --method ariad`,
   ].join("\n")}\n`;
 }
 

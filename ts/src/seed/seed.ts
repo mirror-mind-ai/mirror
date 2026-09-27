@@ -12,7 +12,9 @@ import { join } from "node:path";
 import type { WritableDatabase } from "#db/database.ts";
 import { identityRowExists } from "#identity/identityRead.ts";
 import { setIdentity } from "#identity/setIdentity.ts";
+import { PROGRAM } from "#util/program.ts";
 import { newId, nowIso } from "#util/pyGenerators.ts";
+import { shellWord } from "#util/shellWord.ts";
 import {
   loadJourneyContent,
   loadPersonaContent,
@@ -68,6 +70,15 @@ export interface SeedResult {
   lines: string[];
 }
 
+/**
+ * The command that edits an entry seed skipped. It is printed to be run as is, and
+ * a key from before CR104's grammar can hold shell syntax, so every value in it
+ * is one shell word. It named `memory`, the Python program, until CR104 (D1).
+ */
+function editCommand(layer: string, key: string): string {
+  return `${PROGRAM} identity edit ${shellWord(layer)} ${shellWord(key)}`;
+}
+
 function record(
   result: SeedResult,
   existing: boolean,
@@ -77,7 +88,7 @@ function record(
 ): boolean {
   if (existing && !force) {
     result.skipped += 1;
-    result.lines.push(`  \u2192 ${label} (skipped \u2014 use '${editHint}' to update)`);
+    result.lines.push(`  \u2192 ${label} (skipped \u2014 to update, run: ${editHint})`);
     return false;
   }
   return true;
@@ -103,15 +114,7 @@ function seedCoreIdentity(
         continue;
       }
       const existing = identityRowExists(db, mapping.layer, mapping.key);
-      if (
-        !record(
-          result,
-          existing,
-          force,
-          label,
-          `memory identity edit ${mapping.layer} ${mapping.key}`,
-        )
-      ) {
+      if (!record(result, existing, force, label, editCommand(mapping.layer, mapping.key))) {
         continue;
       }
       setIdentity(
@@ -169,7 +172,7 @@ function seedPersonas(
       if (!content) continue;
       const label = `persona/${personaId}`;
       const existing = identityRowExists(db, "persona", personaId);
-      if (!record(result, existing, force, label, `memory identity edit persona ${personaId}`)) {
+      if (!record(result, existing, force, label, editCommand("persona", personaId))) {
         continue;
       }
       setIdentity(
@@ -210,7 +213,7 @@ function seedJourneys(
       if (!content) continue;
       const label = `journey/${journeyId}`;
       const existing = identityRowExists(db, "journey", journeyId);
-      if (!record(result, existing, force, label, `memory identity edit journey ${journeyId}`)) {
+      if (!record(result, existing, force, label, editCommand("journey", journeyId))) {
         continue;
       }
       setIdentity(

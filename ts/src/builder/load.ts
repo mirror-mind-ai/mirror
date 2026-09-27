@@ -39,6 +39,7 @@ import { ProviderConfigError } from "#providers/config.ts";
 import type { EmbeddingProvider } from "#providers/embedding.ts";
 import { searchMemoriesWithStatus } from "#search/memorySearch.ts";
 import { PROGRAM } from "#util/program.ts";
+import { shellWord } from "#util/shellWord.ts";
 import { renderBuilderOrientationSurface } from "./homeSurface.ts";
 import { getAdoptedMethod } from "./methodAdoption.ts";
 import { inspectPullCandidates, inspectRoadmapSnapshot } from "./pullCandidates.ts";
@@ -301,7 +302,7 @@ export async function runBuildLoad(
   stdout += projectPath
     ? `\nproject_path=${projectPath}\n`
     : `\n[Journey '${slug}' has no project_path configured. ` +
-      `Run: ${PROGRAM} journey set-path ${slug} /path/to/project]\n`;
+      `Run: ${PROGRAM} journey set-path ${shellWord(slug)} /path/to/project]\n`;
 
   return {
     stdout,

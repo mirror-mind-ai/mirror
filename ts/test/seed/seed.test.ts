@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
@@ -209,6 +210,64 @@ test("runSeed records a persona-scan error against that persona only, without ab
     assert.equal(result.created, 4 + 1); // fine.yaml still creates
     assert.equal(result.errors.length, 1);
     assert.ok(result.errors[0].startsWith("persona/broken:"));
+  } finally {
+    db.close();
+    cleanup();
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+// --- CR104: the skip line's command runs as printed (decision D1) -----------------
+
+/** Run `command` under `sh` with `mirror` echoing its arguments; return them. */
+function pastedArguments(command: string): string[] {
+  const cwd = mkdtempSync(join(tmpdir(), "mirror-core-seed-paste-"));
+  try {
+    const stub = `mirror() { for a in "$@"; do printf '%s\\n' "$a"; done; }`;
+    const result = spawnSync("sh", ["-c", `${stub}; ${command}`], { cwd, encoding: "utf8" });
+    assert.equal(result.status, 0, `${command}\n${result.stderr}`);
+    assert.equal(existsSync(join(cwd, "PWNED")), false, `${command} ran a command`);
+    return result.stdout.split("\n").slice(0, -1);
+  } finally {
+    rmSync(cwd, { recursive: true, force: true });
+  }
+}
+
+test("CR104: a skipped entry's hint names mirror and carries its key as one shell word", () => {
+  const { db, cleanup } = tempDb();
+  const root = mkdtempSync(join(tmpdir(), "mirror-core-seedroot-cr104-"));
+  try {
+    buildIdentityRoot(root);
+    mkdirSync(join(root, "personas"), { recursive: true });
+    mkdirSync(join(root, "journeys"), { recursive: true });
+    writeFileSync(join(root, "personas", "p.yaml"), "persona_id: engineer\nsystem_prompt: E.\n");
+    writeFileSync(join(root, "journeys", "y.yaml"), 'journey_id: "y;touch PWNED"\nname: Y\n');
+    runSeed(db, root); // creates the core entries and the persona
+    // A journey key from before the grammar: the skip path is the one that meets it.
+    // OR IGNORE, because until the grammar exists the first pass creates it too.
+    db.prepare(
+      "INSERT OR IGNORE INTO identity (id, layer, key, content, version, created_at, updated_at) " +
+        "VALUES ('planted', 'journey', 'y;touch PWNED', '# Y', '1.0.0', 't', 't')",
+    ).run();
+
+    const lines = runSeed(db, root).lines;
+    const hints = new Map(
+      lines.map((line) => {
+        const match = /^ {2}→ (\S+?)\/(.+) \(skipped — to update, run: (.+)\)$/u.exec(line);
+        assert.ok(match, `not a skip line: ${JSON.stringify(line)}`);
+        return [`${match[1]}/${match[2]}`, match[3] as string];
+      }),
+    );
+    assert.equal(hints.get("self/soul"), "mirror identity edit self soul");
+    assert.equal(hints.get("persona/engineer"), "mirror identity edit persona engineer");
+    const journeyHint = hints.get("journey/y;touch PWNED");
+    assert.ok(journeyHint, [...hints.keys()].join(", "));
+    assert.deepEqual(pastedArguments(journeyHint), [
+      "identity",
+      "edit",
+      "journey",
+      "y;touch PWNED",
+    ]);
   } finally {
     db.close();
     cleanup();

@@ -468,6 +468,36 @@ Every step fails as characterized. In step 4 the journey already exists, because
 1 created it, so the planted row is ignored. After the change, step 1 refuses it and
 the planted row is what step 4 works with.
 
+### Plateau 1 handoff (2026-09-27)
+
+Now true: every command Mirror prints for its reader to run carries each value it
+interpolates as one shell word. `shellWord` lives in `ts/src/util/shellWord.ts`. The
+four Builder hints use it: inspect-method's next action, the not-adopted and no-cursor
+refusals, and `build load`'s set-path trailer. So do CR002's Pull command, CR067's
+`build show` command, and `seed`'s three skip hints, which now name `mirror` and read
+`(skipped — to update, run: mirror identity edit journey demo)`. A plain slug prints
+byte for byte as before.
+
+Evidence:
+
+- Five hostile slugs went through each of the four hints, pasted into `sh` with a
+  `mirror` that echoes its arguments. Red first: each paste ran `touch` or failed to
+  parse. Each now runs nothing and delivers the slug as one argument.
+- The same paste covers `seed`'s journey hint, over a key planted from before the
+  grammar. Red first, on the old wording.
+- `shellWord`'s round trip through `sh` covers fifteen values, among them a newline, a
+  lone quote, a backslash, and the empty string.
+- The source guard reads every line of `ts/src` that prints a `${PROGRAM}` command,
+  and fails on a raw interpolation not listed with its reason. A mutant that drops the
+  helper from `methodInspection.ts` fails it. One that drops it from `load.ts` fails
+  both it and the paste test.
+- One golden edit, by script with an asserted count and a README row:
+  `builder-method`'s `journey_empty`. No other golden moved.
+- The full suite passes (2,792 tests), along with typecheck, lint, the repository
+  checks, and the Builder lifecycle smoke.
+
+Remaining: the grammar and the report. Next: plateau 2.
+
 ## Outcome
 
 Pending.

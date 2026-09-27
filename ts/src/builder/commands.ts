@@ -34,6 +34,7 @@ import { getRuntimeSession, resolveNamedRuntimeSessionId } from "#mirror/runtime
 import { getSessionOperatingMode } from "#mode/operatingMode.ts";
 import { PROGRAM } from "#util/program.ts";
 import { pyRStrip } from "#util/pythonText.ts";
+import { shellWord } from "#util/shellWord.ts";
 import { renderActiveCheckpoint, STORY_RECORDS } from "./activeCheckpoint.ts";
 import { approvePlanCheckpoint, renderPlanApproval } from "./approve.ts";
 import { getAriadMethod } from "./ariadMethod.ts";
@@ -256,7 +257,7 @@ function requireAdoptedMethod(db: Database, journey: string, method: string): Co
   if (getAdoptedMethod(db, journey) === method) return null;
   return refuse(
     `Error: journey '${journey}' has not adopted Ariad yet. ` +
-      `Run: ${PROGRAM} build adopt --journey ${journey} --method ariad`,
+      `Run: ${PROGRAM} build adopt --journey ${shellWord(journey)} --method ariad`,
   );
 }
 
@@ -612,7 +613,7 @@ function requireDeliveryCursor(db: Database, journey: string): CommandResult | n
   if (getDeliveryCursor(db, journey) !== null) return null;
   return refuse(
     `Error: journey '${journey}' has no Builder delivery cursor. ` +
-      `Run: ${PROGRAM} build sync-cursor --journey ${journey} --method ariad`,
+      `Run: ${PROGRAM} build sync-cursor --journey ${shellWord(journey)} --method ariad`,
   );
 }
 

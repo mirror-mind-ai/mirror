@@ -724,7 +724,7 @@
       "name": "journey_unicode"
     },
     {
-      "expected": "■ Builder Method\n\njourney\n\n\nadopted method\nnone\n\navailable methods\nariad\n\nstatus\nThis journey has not adopted a Builder method yet.\n\nwhat can be inspected\nbuilt-in method defaults\n\nwhat cannot be inspected yet\neffective journey configuration\nruntime delivery cursor\nactive checkpoint\npending confirmations\n\nnext action\nmirror build adopt --journey  --method ariad\n",
+      "expected": "■ Builder Method\n\njourney\n\n\nadopted method\nnone\n\navailable methods\nariad\n\nstatus\nThis journey has not adopted a Builder method yet.\n\nwhat can be inspected\nbuilt-in method defaults\n\nwhat cannot be inspected yet\neffective journey configuration\nruntime delivery cursor\nactive checkpoint\npending confirmations\n\nnext action\nmirror build adopt --journey '' --method ariad\n",
       "input": {
         "adopted_method": null,
         "journey": ""
