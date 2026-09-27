@@ -32,7 +32,7 @@ Open work is ordered intentionally. Terminal history follows open work.
 
 | Order | ID | RS | Change | Status | Driver | Delivery |
 |------:|----|----|--------|--------|--------|----------|
-| 1 | [CR104](rs004-identity-resolution-fidelity/cr104-journey-slugs-are-not-validated-and-command-hints-print-them-raw.md) | RS004 | Journey slugs are not validated, and command hints print them raw | in_progress | @viniciusteles | `mirror-ts-core` |
+| 1 | [CR104](rs004-identity-resolution-fidelity/cr104-journey-slugs-are-not-validated-and-command-hints-print-them-raw.md) | RS004 | Journey slugs are not validated, and command hints print them raw | validated | @viniciusteles | `mirror-ts-core` |
 | 2 | [CR105](rs001-ariad-runtime-trust/cr105-choosing-delivery-story-flow-leaves-the-story-confirmation-pending.md) | RS001 | Choosing Delivery Story flow leaves the story-by-story confirmation pending | captured | — | — |
 | 3 | [CR090](rs001-ariad-runtime-trust/cr090-debt-review-surface-mixes-portuguese-into-english.md) | RS001 | The Debt Review surface mixes Portuguese into an English sentence | captured | — | — |
 | 4 | [CR009](rs001-ariad-runtime-trust/cr009-name-the-target-project-in-artifact-surfaces.md) | RS001 | Name the target project in artifact materialization surfaces | captured | — | — |

@@ -606,6 +606,64 @@ Recommendation: an agent may put this key into a shell command unquoted; recreat
 Repair route: manual review
 ```
 
+### Navigator validation (2026-09-27)
+
+The Navigator walked the [validation route](#validation-route) and accepted it.
+
+- **Part A** was extracted from this document and run as `bash /tmp/cr104-route.sh`.
+  It printed the [recorded output](#the-route-after-the-change-2026-09-27) line for
+  line:
+  1. the five hostile keys refused, each with a key that would work, and `exit 1`;
+     `ai` and `mixed-case` created;
+  2. `identity edit` refused, and `the editor did not run`;
+  3. `✗ persona/p` and `✗ journey/y`, and `(no persona match)`;
+  4. the planted journey still took `set-path` and `adopt`, and all four hints
+     carried `'x;touch PWNED'`;
+  5. `files created: []`;
+  6. one `identity_key_outside_grammar` finding for `'x;touch PWNED'`, subject
+     `journey`.
+- **Part B** printed `0` on the dev home.
+
+CI was green on each plateau's last push: plateau 1 (`1037b89e`), plateau 2
+(`8ac6496f`), and plateau 3 (`53bdcb4b`), Tests and Docs.
+
+### Handoff review (2026-09-27)
+
+This review came after validation, per the collaboration strategy. The baseline
+panel (engineer, quality-assurance, database-architect, devops-engineer,
+security-engineer) and the lenses that reviewed the plan (ai-engineer,
+prompt-engineer, experience-designer, product-designer) reviewed the delivered
+code, tests, safety posture, operational cost, and resumability. Each finding was
+checked before it was written down: the first two by a mutant, the third by
+rendering keys that carry each character in question.
+
+Synthesis: the delivery does what the plan said, at the size it said. The source
+grew by 244 lines and lost 31, most of the new lines comments on the rule, and the
+tests grew by 795. One golden moved. Its weak points are its own newest parts: a
+report whose wiring no test holds, a backstop that crashes where it is reached
+unguarded, and an escape narrower than the one the design advertised.
+
+| # | Lens | Finding | Class | Recommendation |
+|---|---|---|---|---|
+| 1 | quality-assurance | No test holds `runtime diagnose`'s call to `identityKeyFindings`. Deleting that one line leaves all 2,811 tests green, and only the manual route shows the finding | Non-blocking debt, introduced here | Pay now: one test that runs `runtime diagnose` over a home with a planted key |
+| 2 | engineer | The store's refusal is the backstop for any path that skips the early check, and there it is a 10-line stack trace. No route reaches it today: `set` and `edit` check first, and `seed` catches per file. The next route that creates a key would crash | Non-blocking debt, introduced here | Pay now: the front door answers `InvalidIdentityKeyError` with one `Error:` line and exit 1, as it answers a half replay fixture |
+| 3 | security-engineer | The escape covers C0 controls and DEL only. A C1 control (U+0085, a line break; U+009B, the 8-bit CSI), a bidi override (U+202E), and a zero-width space (U+200B) print raw, in the refusal and in the finding. `pyRepr` claims Python's `repr`, which escapes every one of them | Non-blocking debt, introduced here: the design claimed the escape | Pay now, in `pyRepr`: escape what Python's `repr` escapes. That covers `pyRepr`'s two other callers too, the ledger inspector and the extension manifest errors |
+
+The other lenses were silent:
+
+- database-architect: the guard adds no query to an INSERT, and the diagnose read is
+  one SELECT on the `(layer, key)` unique index, over a read-only connection.
+- devops-engineer: nothing runs diagnose on its own, so its exit 1 on a key from
+  before the grammar gates nothing. `runtime status` and the updater's gate are
+  unchanged.
+- ai-engineer, prompt-engineer, experience-designer, product-designer: the refusal
+  leads with the consequence, the skill states the rule, and every plain slug prints
+  as it did.
+
+One sentence was found wrong along the way. REFERENCE.md said that `identity set`,
+`identity edit`, and `seed` refuse a key "before anything is written", which misreads
+for `seed`, since it still writes every other file. It is corrected with the debt.
+
 ## Outcome
 
 Pending.
