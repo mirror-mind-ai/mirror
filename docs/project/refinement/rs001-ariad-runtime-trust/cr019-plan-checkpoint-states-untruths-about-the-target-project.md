@@ -209,8 +209,43 @@ the characterization's: Delivery Stories `CV1.DS1` (Technical Stories 1 to 3) an
    pointer line, in the card and in `plan.md`.
 
 Pass: exactly those outcomes. Fail: `Alpha delivery`, `Beta story`, `Beta delivery`,
-or the English-commit line appears anywhere. Plateau 3 turns this into a pasteable
-script.
+`Gamma delivery`, the English-commit line, `none`, or `None declared.` appears.
+
+Runnable from the repository root in bash or zsh. There is no `.env`, so nothing reaches
+the real home, and the script deletes its temporary directory. The helpers carry a
+`cr019` prefix so that no shell alias can shadow them, and the step markers are `echo`s,
+because an interactive zsh does not treat `#` as a comment by default:
+
+```bash
+V=$(mktemp -d) && mkdir -p "$V/home" && export MIRROR_HOME="$V/home" NODE_OPTIONS=--no-warnings
+cr019() { node ts/src/frontDoor/cli.ts "$@"; }
+cr019_cv() { mkdir -p "$V/plain/docs/project/roadmap/$1" && printf '# %s — %s\n\n**Status:** 🟡 Planned\n' "$2" "$3" > "$V/plain/docs/project/roadmap/$1/index.md"; }
+cr019_pkg() { mkdir -p "$V/plain/docs/project/roadmap/$1" && printf '# %s — %s\n\n**Status:** 🟡 Planned\n**Type:** %s\n' "$2" "$3" "$4" > "$V/plain/docs/project/roadmap/$1/index.md"; }
+cr019_cv cv1 CV1 "First capability" && cr019_pkg cv1/ds1 CV1.DS1 "Alpha delivery" "Delivery Story"
+cr019_pkg cv1/ds1/ts1 CV1.DS1.TS1 "First slice" "Technical Story" && cr019_pkg cv1/ds1/ts2 CV1.DS1.TS2 "Second slice" "Technical Story"
+cr019_pkg cv1/ds1/ts3 CV1.DS1.TS3 "Third slice" "Technical Story" && cr019_pkg cv1/ds2 CV1.DS2 "Beta delivery" "Delivery Story"
+cr019_pkg cv1/ds2/us1 CV1.DS2.US1 "Beta story" "User Story" && cr019_cv cv2 CV2 "Second capability"
+cr019_pkg cv2/ds1 CV2.DS1 "Gamma delivery" "Delivery Story" && printf '# Roadmap\n' > "$V/plain/docs/project/roadmap/index.md"
+git -C "$V/plain" init -q && cp -R "$V/plain" "$V/guided" && mkdir -p "$V/guided/docs/process"
+printf '# Development Guide\n\n- Run npm test before every commit.\n' > "$V/guided/docs/process/development-guide.md"
+cr019_walk() {
+  printf '# %s\n' "$1" | cr019 identity set journey "$1" > /dev/null && cr019 journey set-path "$1" "$V/$1" > /dev/null 2>&1
+  cr019 build adopt --journey "$1" --method ariad > /dev/null && cr019 build sync-cursor --journey "$1" --method ariad > /dev/null
+  cr019 build pull-item --journey "$1" --method ariad --item-code CV1.DS1.TS1 --item-title "First slice" --item-level technical_story --why-now "CR019 validation" > /dev/null
+  cr019 build prepare-item --journey "$1" --method ariad > /dev/null
+  cr019 build plan-item --journey "$1" --method ariad | sed -n '/│ non-goals/,/│ acceptance/p;/│ implementation contract/,/│ approval gate/p'
+  sed -n '/^## Non-Goals/,/^## Acceptance/p;/^## Implementation Contract/,/^## Stop/p' "$V/$1/docs/project/roadmap/cv1/ds1/ts1/plan.md"
+}
+echo '--- step 1: no development guide'
+cr019_walk plain
+echo '--- step 2: with a development guide'
+cr019_walk guided
+unset MIRROR_HOME; rm -rf "$V"
+```
+
+Each step prints the card's non-goals and contract rows, then the same two sections of
+`plan.md`. The Driver walked it in bash and zsh on 2026-09-26: both shells printed
+identical output, matching the pass condition exactly.
 
 ### Conscious exclusions
 
