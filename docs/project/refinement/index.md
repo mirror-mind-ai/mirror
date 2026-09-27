@@ -32,7 +32,7 @@ Open work is ordered intentionally. Terminal history follows open work.
 
 | Order | ID | RS | Change | Status | Driver | Delivery |
 |------:|----|----|--------|--------|--------|----------|
-| 1 | [CR019](rs001-ariad-runtime-trust/cr019-plan-checkpoint-states-untruths-about-the-target-project.md) | RS001 | The Plan checkpoint states things that are not true for the target project (parent as sibling; Mirror-only contract lines) | in_progress | @viniciusteles | `mirror-ts-core` |
+| 1 | [CR019](rs001-ariad-runtime-trust/cr019-plan-checkpoint-states-untruths-about-the-target-project.md) | RS001 | The Plan checkpoint states things that are not true for the target project (parent as sibling; Mirror-only contract lines) | validated | @viniciusteles | `mirror-ts-core` |
 | 2 | [CR067](rs001-ariad-runtime-trust/cr067-render-the-refused-checkpoint-not-a-hardcoded-implement-stage.md) | RS001 | Render the refused checkpoint, not a hardcoded Implement stage | captured | — | — |
 | 3 | [CR020](rs001-ariad-runtime-trust/cr020-no-read-only-way-to-re-render-the-active-checkpoint.md) | RS001 | No read-only way to re-render the active checkpoint, and the refusals name the wrong reason | captured | — | — |
 | 4 | [CR018](rs001-ariad-runtime-trust/cr018-story-titles-with-slashes-truncated-in-surfaces-and-scaffolds.md) | RS001 | Story titles containing `/` are truncated to the text after the last slash in surfaces and scaffolds | captured | — | — |

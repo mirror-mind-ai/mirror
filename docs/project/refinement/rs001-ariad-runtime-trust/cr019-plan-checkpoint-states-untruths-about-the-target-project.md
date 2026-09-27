@@ -361,6 +361,51 @@ lint, the repository checks, and the smoke (54/54). CI was green on plateau 1.
 Remaining: plateau 3, meaning the runnable validation route, Navigator validation, and
 the handoff review.
 
+### Navigator validation (2026-09-26)
+
+The Navigator ran the [validation route](#validation-route) and accepted it. CI was green
+on every push: plateau 1 (`4c11e0fc`) and plateau 2 (`52619f06`) passed Docs and Tests,
+including Tests on Ubuntu and macOS plus the smoke job, and the route (`bbdaa848`)
+passed Docs.
+
+### Handoff review (2026-09-26)
+
+After validation, per the collaboration strategy. The baseline panel (engineer,
+quality-assurance, database-architect, devops-engineer, security-engineer), plus the
+lenses that reviewed the plan (ai-engineer, prompt-engineer, experience-designer,
+product-designer), reviewed the delivered code, tests, safety posture, operational cost,
+and resumability.
+
+Synthesis: proportional. Two pure functions and a constant replace a filter over the
+whole Capability Value and a hard-coded Mirror list. Both plan-review dissents are
+resolved in the delivered code, and the Navigator's run matched the pass condition. The
+change left two small defects of its own making: a doc comment now sits on the wrong
+declaration, and one acceptance criterion holds by reading rather than by a test.
+
+| # | Lens | Finding | Class | Recommendation |
+|---|---|---|---|---|
+| 1 | engineer | In `prepare.ts`, the new constant and `projectContractRules` were inserted between `contextSummary`'s doc comment and the function, so that comment now documents `DEVELOPMENT_GUIDE_PATH` | Non-blocking debt, introduced here | Pay now: move the new block above the comment |
+| 2 | quality-assurance | Acceptance criterion 5 says an active item absent from the candidates, such as one a `done.md` covers, gets the fallback line and no error. It holds by reading the unchanged guard in `roadmapPlanContext`, but no test pins it | Non-blocking debt, introduced here | Pay now: one end-to-end case with a `done.md` in the active story's package |
+
+The other lenses were silent:
+
+- database-architect: nothing persisted changes.
+- devops-engineer: CI is green, rollback is a plain `git revert`, and the only new
+  runtime cost is one file-existence check per `plan-item`.
+- security-engineer: the guide is checked for existence at a constant path and never
+  read, so no project-controlled text enters the checkpoint.
+- ai-engineer, prompt-engineer, experience-designer: nothing to add; the prompt
+  engineer's plan dissent is resolved.
+- product-designer: silent too. The pointer's trigger is visible only in Prepare's
+  local-docs line, but no user-facing document describes a Plan's contract at all, and
+  that gap is older than CR019.
+
+Accepted scope boundaries, as planned: CR018's title truncation in the same function;
+the next item at the parent's level; parsing the guide; and the different wording of the
+two older method lines in the card and the scaffold.
+
+The Navigator's debt decision is pending.
+
 ## Outcome
 
-Pending.
+Validated 2026-09-26. The debt decision and closure are pending.
