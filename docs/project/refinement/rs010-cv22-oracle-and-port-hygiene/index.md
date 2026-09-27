@@ -63,3 +63,4 @@ evidence stays honest as both cores move.
 - [CR101 — Explorer and Soul activation stamp their mode onto a guessed session](cr101-explorer-and-soul-activation-stamp-a-guessed-session.md)
 - [CR102 — The Claude Code `mm-build` skill carries no activation boundary, journey binding, or Ariad section](cr102-the-claude-code-mm-build-skill-lacks-the-builder-and-ariad-sections.md)
 - [CR106 — A Pi session started against a scratch Mirror home copies the whole Pi history into it](cr106-a-pi-session-in-a-scratch-mirror-home-copies-the-whole-pi-history-into-it.md)
+- [CR108 — The Claude Code copies of other skills drift from Pi in behavior, and no guard compares them](cr108-the-claude-code-copies-of-other-skills-drift-from-pi-in-behavior.md)

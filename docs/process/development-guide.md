@@ -271,6 +271,9 @@ It builds a scratch origin, clone, mirror home, and env-file, and shadows `pytho
 node ts/scripts/checkRetiredSurfaces.ts
 node ts/scripts/checkDocLinks.ts
 node ts/scripts/checkSkillCommandParity.ts
+# The plugin is generated from .claude/skills/, and both Claude copies of
+# mm-build from .pi/skills/mm-build (CR102). Edit the Pi copy, never a Claude
+# one, then regenerate with `node ts/scripts/buildClaudePlugin.ts`.
 node ts/scripts/buildClaudePlugin.ts --check
 
 # The migration custody proofs: every migration step against its committed

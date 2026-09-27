@@ -29,6 +29,12 @@
 //   * NOT CHECKED -- argument spellings, frontmatter names, per-runtime Usage
 //     sections, or the Portuguese/English examples. Those differences are
 //     deliberate (CR071).
+//   * NOT CHECKED HERE -- the whole body of a Pi-sourced skill (`mm-build`).
+//     Its Claude copies are generated from `.pi/skills/`, and
+//     `buildClaudePlugin.ts --check` and `npm test` compare them byte for byte
+//     (CR102). They catch what this check cannot: a rule reworded inside a
+//     section, or a `build` subcommand one copy lacks. This check reads every
+//     `build ...` line as the one command `build`.
 //
 // Usage:  node ts/scripts/checkSkillCommandParity.ts
 

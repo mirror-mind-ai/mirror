@@ -278,7 +278,11 @@ end, no per-turn hooks.
 
 Skills (`SKILL.md` files) are the primary way users invoke Mirror Mind
 capabilities. Pi and Gemini CLI/Codex share the same skill files via symlinks:
-`.pi/skills/` is the source; `.agents/skills/` symlinks to it.
+`.pi/skills/` is the source; `.agents/skills/` symlinks to it. Claude Code
+reads `.claude/skills/`, which the plugin generator copies into
+`plugins/mirror-mind/`. The generator writes the Claude copy of `mm-build` from
+`.pi/skills/` as well, because the Builder skill has one body in every runtime
+([decision](../project/decisions.md#builder-modes-skill-has-one-body-in-every-runtime)).
 
 For the full runtime lifecycle contract, including hook payload shapes and
 injection models, see:

@@ -684,6 +684,17 @@ CLI can read `.agents/skills/`, and a second surface creates duplicate/conflicti
 skills. The discovery format can be shared even when invocation syntax differs:
 Gemini CLI uses `/mm-*`, while Codex uses `$mm-*`.
 
+Claude Code does not read the links. It reads `.claude/skills/mm-*/` in a
+checkout, and the same files inside the packaged plugin:
+`node ts/scripts/buildClaudePlugin.ts` copies `.claude/skills/` into
+`plugins/mirror-mind/skills/`, and `npm test` fails when that copy is out of
+date. Most Claude copies are written separately from Pi's, because they carry
+Claude Code's own Usage and session lines. A Pi-sourced skill has one body
+instead. The same command generates its Claude copy from `.pi/skills/`, and
+only the frontmatter `name` changes, to the Claude Code form (`mm:build`). The
+list lives in `ts/src/guards/piSourcedSkills.ts`, and today it holds `mm-build`
+([decision](../../../project/decisions.md#builder-modes-skill-has-one-body-in-every-runtime)).
+
 ---
 
 ### Interface label

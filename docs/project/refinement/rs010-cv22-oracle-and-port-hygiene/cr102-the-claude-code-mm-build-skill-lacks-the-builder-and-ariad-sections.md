@@ -388,6 +388,57 @@ On `1c8e684b`:
 - `diff .pi/skills/mm-mirror/SKILL.md .claude/skills/mm-mirror/SKILL.md` and
   the same for `mm-release-notes`: the drift named under Decision B.
 
+### Plateau 1 handoff (2026-09-27)
+
+Now true: `.pi/skills/mm-build/SKILL.md` is the only copy of the Builder skill
+anyone edits. `node ts/scripts/buildClaudePlugin.ts` generates both Claude
+copies from it and changes only the frontmatter `name`. It takes the plugin
+copy from the generated content, never from the file on disk.
+`ts/src/guards/piSourcedSkills.ts` holds the list, `mm-build`, and the
+transform. `npm test` and `--check` fail when either copy is out of date, and
+name the Pi copy as the source to edit. Generation refuses, in one line and
+before any write, when a listed skill has no Pi copy or its frontmatter does
+not name it exactly once. The Claude copies are 1093 lines; `diff` against Pi
+shows line 2 alone, and every heading is present.
+
+Evidence, red first. The transform's 11 cases failed on the missing module. On
+the generator's side, 9 new cases failed before the planner changed. On this
+tree, the repository test and `--check` named both copies out of date. A mutant
+that took the plugin copy from disk failed three cases that were green without
+it. The plateau's commit message says four, but the two repository tests were
+red already. Exercised on the real tree:
+
+- Rewording one sentence inside section 3 of the Pi copy, to `Context
+  activation is never execution consent.`, failed `--check` and both
+  repository tests, naming both copies.
+- A Pi frontmatter naming `mm-other` made write mode refuse in one line with
+  exit 1, and `--check` afterwards still found everything in sync, so nothing
+  was written.
+
+The full suite passes (2,762 tests), along with typecheck and lint. Lint shows
+one warning and one info note, which HEAD has too. The four repository checks,
+the two custody proofs, the five end-to-end smokes, and the Claude plugin smoke
+all pass. CI is green on `82ac4503`, Tests and Docs.
+
+Remaining: the records. Next: plateau 2.
+
+### Plateau 2 handoff (2026-09-27)
+
+Now true: the decision
+[Builder Mode's skill has one body in every runtime](../../decisions.md#builder-modes-skill-has-one-body-in-every-runtime)
+records why, what Claude Code users now read, the context cost, and how a skill
+joins the list. The runtime interface spec's Skill sharing section and
+architecture section 6 say where Claude Code's skills come from. The development guide
+says to edit the Pi copy and regenerate. The parity checker's header points to
+the generator for what it cannot see.
+[CR108](cr108-the-claude-code-copies-of-other-skills-drift-from-pi-in-behavior.md)
+is captured, unassigned, outside the floor, with `mm-mirror` and
+`mm-release-notes` verified and the rest unaudited. Current Focus is
+unchanged.
+
+Remaining: whether CR108 gates the release is still the Navigator's open
+question. Next: the validation route, walked by the Navigator in Claude Code.
+
 ## Outcome
 
 Open.

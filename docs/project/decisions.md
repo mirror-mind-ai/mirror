@@ -3154,3 +3154,43 @@ membership. Membership is strict descent (`CVx.`), so a CV is never its own
 candidate. A Builder surface that needs a position or a recommendation takes the
 scope from `ts/src/builder/roadmapScope.ts` and its words from
 `ts/src/builder/scopePhrases.ts`; it does not scan.
+
+### Builder Mode's skill has one body in every runtime
+
+**Date:** 2026-09-27 · **Context:** [CR102](refinement/rs010-cv22-oracle-and-port-hygiene/cr102-the-claude-code-mm-build-skill-lacks-the-builder-and-ariad-sections.md),
+the last change on the [Ariad trust floor](#the-cv22-release-is-gated-on-an-ariad-trust-floor-worked-before-us3).
+Claude Code's `mm-build` was 108 lines, against 1093 for Pi, Codex, and Gemini
+CLI. It had no activation boundary, no journey binding, and no Ariad section.
+Each Builder rule had to be written in two places, and six floor changes in
+three days wrote it in one.
+
+**The decision: `.pi/skills/mm-build/SKILL.md` is the only copy of the Builder
+skill anyone edits. Both Claude Code copies, `.claude/skills/mm-build` and the
+plugin's, are generated from it by `node ts/scripts/buildClaudePlugin.ts`. They
+differ from it only in the frontmatter `name` (`mm:build`), and `npm test`
+fails when they fall out of date.**
+
+**Why this reverses CR071 for one skill.** [CR071](refinement/rs010-cv22-oracle-and-port-hygiene/cr071-collapse-the-triplicated-skill-command-references.md)
+rejected generating the copies because the generator would have to model
+per-runtime differences: Usage sections, example language, and lines that hold
+for one runtime only. `mm-build` has no line of the third kind, and its Usage
+section already documents all three invocations. That leaves one frontmatter
+line to model. The plugin copy had been generated from `.claude/skills/` all
+along, so the new step is one more derived file, not a new machine.
+
+**What Claude Code users now read.** They read the Pi Usage section, which names
+the Pi, Gemini CLI, and Codex invocations beside `/mm:build`. They also read the
+Pi trigger examples, which pair Portuguese phrases with English ones. Pi,
+Codex, and Gemini CLI users already read both. For this skill, that ends the
+English-only convention for Claude copies set in the
+[worklog of 2026-06-21](../process/worklog.md). The cost is context: a Builder
+activation on Claude Code loads about 12k tokens of skill instead of about
+0.9k, as the other runtimes already did.
+
+**The rule that follows.** A skill joins the list in
+`ts/src/guards/piSourcedSkills.ts` only when its Pi body holds in every
+runtime, and joining is recorded here. `mm-soul` and `mm-mirror` do not
+qualify: each carries lines that hold for one runtime only. The other skills
+keep two bodies under CR071's guards. Their drift is captured as
+[CR108](refinement/rs010-cv22-oracle-and-port-hygiene/cr108-the-claude-code-copies-of-other-skills-drift-from-pi-in-behavior.md),
+outside the floor.
