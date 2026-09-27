@@ -102,12 +102,22 @@ export function cardText(text: string): string {
 }
 
 /**
- * `text` cut to `width` code points, with `…` in the last kept place when anything
- * was cut. A space the cut leaves at the end goes, so the mark sits on the word.
+ * `text` cut to fit `width` code points, with `…` in the last place when anything was
+ * cut. A cut that would split a word backs up to the word's start, because a code cut
+ * short reads as another code: `(per D12)` must not become `(per D1…` (CR018). It
+ * backs up only while at least half the width stays; past that, the word is cut. A
+ * space the cut leaves at the end goes, so the mark sits on the word.
  */
 function clipped(text: string, width: number): string {
-  if (codePointLength(text) <= width) return text;
-  return `${sliceCodePoints(text, width - 1).trimEnd()}…`;
+  const points = Array.from(text);
+  if (points.length <= width) return text;
+  let kept = points.slice(0, width - 1);
+  const next = points[width - 1] ?? "";
+  if (!/\s/u.test(next)) {
+    const wordStart = kept.lastIndexOf(" ");
+    if (wordStart >= Math.ceil(width / 2)) kept = kept.slice(0, wordStart);
+  }
+  return `${kept.join("").trimEnd()}…`;
 }
 
 /**

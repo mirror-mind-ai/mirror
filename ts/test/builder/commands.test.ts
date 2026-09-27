@@ -2432,14 +2432,20 @@ function wrappedFrom(
   return block.join(" ");
 }
 
-/** The one row `starts` matches: 54 code points, ending in `…`, and a prefix of `whole`. */
+/**
+ * The one row `starts` matches: the start of `whole`, ending in `…`, cut between two
+ * words unless that would keep less than half the card (CR018 debt 3).
+ */
 function assertClipped(rows: readonly string[], starts: string, whole: string): void {
   const matching = rows.filter((row) => row.startsWith(starts));
   assert.equal(matching.length, 1, `one ${starts} row`);
   const row = matching[0] ?? "";
-  assert.equal([...row].length, 54, `${starts} fills the card`);
   assert.ok(row.endsWith("…"), `${starts} says it was cut: ${row}`);
-  assert.ok(whole.startsWith(row.slice(0, -1).trimEnd()), `${starts} is the start of the title`);
+  const kept = row.slice(0, -1).trimEnd();
+  assert.ok(whole.startsWith(kept), `${starts} is the start of the title`);
+  assert.ok([...kept].length >= 27, `${starts} keeps at least half the card`);
+  const next = whole.slice(kept.length, kept.length + 1);
+  assert.ok(next === " " || [...row].length === 54, `${starts} is cut between words: ${row}`);
 }
 
 test("CR018: a title is whole where it is read, and a one-line restatement ends in …", () => {

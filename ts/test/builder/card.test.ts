@@ -259,3 +259,32 @@ test("CR018: cardLine can mark a cut in its left side, and keeps its right side 
   );
   assert.equal(cardLine("fits", right, { clip: true }), cardLine("fits", right));
 });
+
+test("CR018: a cut backs up to the start of the word it would split", () => {
+  // Handoff review, finding 3: `(per D12)` was cut to `(per D1…`, and a code cut short
+  // reads as another code.
+  assert.equal(
+    cardClipped("Retire the web surface and every fallback the consoles still carry"),
+    cardText("Retire the web surface and every fallback the…"),
+  );
+  assert.equal(
+    cardClipped("Retire the web surface and every fallback the console still carries"),
+    cardText("Retire the web surface and every fallback the console…"),
+    "a cut that already falls between words loses nothing",
+  );
+  assert.equal(
+    cardClipped(`Short ${"x".repeat(60)}`),
+    cardText(`Short ${"x".repeat(47)}…`),
+    "backing up past half the row would say too little, so the word is cut",
+  );
+  assert.equal(
+    cardLine(
+      "   └─ 🟦[US1] Retire the web surface (per D12) and its and/or fallbacks",
+      "◉ current",
+      {
+        clip: true,
+      },
+    ),
+    cardLine("   └─ 🟦[US1] Retire the web surface (per…", "◉ current"),
+  );
+});
