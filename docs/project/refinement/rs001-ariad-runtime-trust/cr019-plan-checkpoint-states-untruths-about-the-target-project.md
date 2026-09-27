@@ -418,4 +418,9 @@ Navigator decision (2026-09-26): pay both now.
 
 ## Outcome
 
-Validated 2026-09-26. The debt decision and closure are pending.
+Done 2026-09-26. A story's Plan names only its own siblings as non-goals. Its contract
+carries Ariad's method rules, including `Do not use git add .; commit only story-scoped
+files.`, plus a pointer to the project's development guide when one exists. Delivered
+on `mirror-ts-core` in `4c11e0fc` (siblings), `52619f06` (contract), and `c34f5677`
+(debt), with CI green on each. The Navigator validated the
+[route](#validation-route) with and without a guide.

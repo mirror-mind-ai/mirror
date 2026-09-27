@@ -12,6 +12,25 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-09-26 — CR019 done: a Plan states only what is true for its project
+
+This is the fifth change of the Ariad trust floor. A story's Plan listed every pullable
+item in its Capability Value as a non-goal, its own parent Delivery Story among them. It
+also carried two Mirror Mind conventions into every project's Implementation Contract
+as if the project had declared them, while ignoring the development guide Prepare had
+just reported present.
+
+Non-goals now name only the other children of the story's own parent, decided by one
+pure function beside the roadmap membership rules. The contract carries Ariad's method
+rules, including "commit only story-scoped files" by the Navigator's decision. A
+project's own rules arrive only as a pointer to `docs/process/development-guide.md`
+when that file exists, and a missing guide adds nothing, not even a `none`. Tests were
+red first on each defect, mutants confirm they bite, and the Navigator validated a
+pasteable CLI route with and without a guide. The handoff review's two findings, a
+misplaced doc comment and an untested acceptance criterion, were paid before closing.
+
+Next on the floor: CR067 with CR020.
+
 ### 2026-09-26 — CR001 done: the scope confirmation is a real stop
 
 This is the fourth change of the Ariad trust floor. AF-004 recorded a Delivery Story
