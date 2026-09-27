@@ -13,6 +13,15 @@ NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts backup
 ```
 
 This command:
-- Zips the database including WAL/SHM sidecars for consistency
+- Archives a consistent snapshot of the database, one `memory.db` in WAL mode,
+  readable only by its owner
 - Removes backups older than 30 days
 - Also runs automatically at session end through the `SessionEnd` hook
+
+The backup succeeded only when the command exits 0 and prints a
+`Backup created:` line. Then tell the user: "Memory database backed up." and show
+that line.
+
+If the command exits non-zero, or prints a line starting with
+`backup: no archive was written:`, the backup failed. Tell the user so, quote
+that line, and never say the database was backed up.
