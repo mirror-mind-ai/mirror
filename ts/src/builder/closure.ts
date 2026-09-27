@@ -42,6 +42,7 @@ import {
   getDeliveryCursor,
   setDeliveryCursor,
 } from "./deliveryCursor.ts";
+import { LifecycleRefusal, refuseIfAlreadyComplete } from "./lifecycleRefusal.ts";
 import { renderLifecycleRibbon } from "./lifecycleRibbon.ts";
 import type { ContractDefinition, MethodDefinition } from "./methodDefinition.ts";
 import { wrapAriadSurface } from "./surfaceProtocol.ts";
@@ -178,12 +179,21 @@ export function validateLifecycleItem(
   const existing = getDeliveryCursor(db, journey);
   if (existing === null) throw new Error("delivery cursor is required before validation");
   if (!existing.activeItem) throw new Error("active item is required before validation");
+  refuseIfAlreadyComplete("validate", existing);
   if (existing.pendingConfirmation && existing.pendingConfirmation !== "navigator_validation") {
-    throw new Error(`Validation is blocked: pending confirmation ${existing.pendingConfirmation}.`);
+    throw new LifecycleRefusal(
+      "validate",
+      "pending_confirmation",
+      `Validation is blocked: pending confirmation ${existing.pendingConfirmation}.`,
+    );
   }
   const navigatorAccepted = options.navigatorAccepted ?? false;
   if (existing.pendingConfirmation === "navigator_validation" && !navigatorAccepted) {
-    throw new Error("Validation is blocked: pending Navigator validation acceptance.");
+    throw new LifecycleRefusal(
+      "validate",
+      "pending_confirmation",
+      "Validation is blocked: pending Navigator validation acceptance.",
+    );
   }
   const lastEvent = existing.lastDeliveryEvent ?? "";
   if (
@@ -193,10 +203,18 @@ export function validateLifecycleItem(
       lastEvent === "validate"
     )
   ) {
-    throw new Error("Validation requires an approved Plan and completed implementation");
+    throw new LifecycleRefusal(
+      "validate",
+      "not_reached",
+      "Validation requires an approved Plan and completed implementation",
+    );
   }
   if (PLAN_EVENTS.has(lastEvent) && !(options.implementationComplete ?? false)) {
-    throw new Error("Validation requires implementation completion evidence");
+    throw new LifecycleRefusal(
+      "validate",
+      "missing_evidence",
+      "Validation requires implementation completion evidence",
+    );
   }
 
   const checks = normalizedList(options.automatedChecks ?? []);
@@ -415,15 +433,24 @@ export function reviewLifecycleItem(
   const existing = getDeliveryCursor(db, journey);
   if (existing === null) throw new Error("delivery cursor is required before review");
   if (!existing.activeItem) throw new Error("active item is required before review");
+  refuseIfAlreadyComplete("debt_review", existing);
 
   const reentering =
     existing.pendingConfirmation === "navigator_debt_decision" &&
     existing.lastDeliveryEvent === "review";
   if (existing.pendingConfirmation && !reentering) {
-    throw new Error(`Review is blocked: pending confirmation ${existing.pendingConfirmation}.`);
+    throw new LifecycleRefusal(
+      "debt_review",
+      "pending_confirmation",
+      `Review is blocked: pending confirmation ${existing.pendingConfirmation}.`,
+    );
   }
   if (existing.lastDeliveryEvent !== "validation_passed" && !reentering) {
-    throw new Error("Debt Review requires passed Validation");
+    throw new LifecycleRefusal(
+      "debt_review",
+      "not_reached",
+      "Debt Review requires passed Validation",
+    );
   }
 
   const decision = normalizeChoice(options.debtDecision ?? "pending", "debt_decision", [
@@ -578,15 +605,24 @@ export function coherenceLifecycleItem(
   const existing = getDeliveryCursor(db, journey);
   if (existing === null) throw new Error("delivery cursor is required before coherence");
   if (!existing.activeItem) throw new Error("active item is required before coherence");
+  refuseIfAlreadyComplete("coherence", existing);
 
   const reentering =
     existing.pendingConfirmation === "navigator_coherence" &&
     existing.lastDeliveryEvent === "coherence";
   if (existing.pendingConfirmation && !reentering) {
-    throw new Error(`Coherence is blocked: pending confirmation ${existing.pendingConfirmation}.`);
+    throw new LifecycleRefusal(
+      "coherence",
+      "pending_confirmation",
+      `Coherence is blocked: pending confirmation ${existing.pendingConfirmation}.`,
+    );
   }
   if (existing.lastDeliveryEvent !== "review_complete" && !reentering) {
-    throw new Error("Coherence requires completed Debt Review");
+    throw new LifecycleRefusal(
+      "coherence",
+      "not_reached",
+      "Coherence requires completed Debt Review",
+    );
   }
 
   const process = textOr(
@@ -742,10 +778,15 @@ export function doneLifecycleItem(
   const existing = getDeliveryCursor(db, journey);
   if (existing === null) throw new Error("delivery cursor is required before done");
   if (!existing.activeItem) throw new Error("active item is required before done");
+  refuseIfAlreadyComplete("done", existing);
   // No re-entry: Done refuses every pending confirmation, including the ones its own
   // predecessors left behind.
   if (existing.pendingConfirmation) {
-    throw new Error(`Done is blocked: pending confirmation ${existing.pendingConfirmation}.`);
+    throw new LifecycleRefusal(
+      "done",
+      "pending_confirmation",
+      `Done is blocked: pending confirmation ${existing.pendingConfirmation}.`,
+    );
   }
   // `review_complete` is accepted DIRECTLY: Coherence is an option, not a
   // precondition. A port that requires `coherence_complete` blocks a legal closure.
@@ -753,7 +794,7 @@ export function doneLifecycleItem(
     existing.lastDeliveryEvent !== "review_complete" &&
     existing.lastDeliveryEvent !== "coherence_complete"
   ) {
-    throw new Error("Done requires completed Debt Review");
+    throw new LifecycleRefusal("done", "not_reached", "Done requires completed Debt Review");
   }
 
   const history = textOr(

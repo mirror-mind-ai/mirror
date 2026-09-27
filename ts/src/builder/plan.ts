@@ -30,6 +30,7 @@ import {
   setTo,
 } from "./deliveryCursor.ts";
 import { effectiveNavigatorFlowUnit, FLOW_UNIT_STORY_BY_STORY } from "./flowUnit.ts";
+import { LifecycleRefusal, refuseIfAlreadyComplete } from "./lifecycleRefusal.ts";
 import { renderLifecycleRibbon } from "./lifecycleRibbon.ts";
 import type { ContractDefinition, MethodDefinition } from "./methodDefinition.ts";
 import {
@@ -118,13 +119,16 @@ export function planLifecycleItem(
   const existing = getDeliveryCursor(db, journey);
   if (existing === null) throw new Error("delivery cursor is required before plan");
   if (!existing.activeItem) throw new Error("active item is required before plan");
+  refuseIfAlreadyComplete("plan", existing);
   if (existing.lastDeliveryEvent !== "prepare") {
-    throw new Error("Prepare must be completed before Plan");
+    throw new LifecycleRefusal("plan", "not_reached", "Prepare must be completed before Plan");
   }
 
   const implementable = isImplementableByDefault(existing.activeItemLevel);
   if (!implementable) {
-    throw new Error(
+    throw new LifecycleRefusal(
+      "plan",
+      "not_reached",
       "Plan requires a User Story or Technical Story; expand the Delivery Story first",
     );
   }

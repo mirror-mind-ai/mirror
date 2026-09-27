@@ -375,6 +375,26 @@ Every attempt exited 1 and left the stored cursor byte-identical. Every guard re
 ended with "No implementation files may be mutated until the guard allows Implement.",
 which is false after Plan approval, where implementation is allowed.
 
+### Plateau 1 handoff (2026-09-26)
+
+Now true: `ts/src/builder/lifecycleRefusal.ts` states the story lifecycle's event order
+once, maps a cursor to its ribbon stage, and decides when a step is already complete.
+`plan.ts` and `closure.ts` check that first and throw `LifecycleRefusal`, whose kind is
+already complete, pending confirmation, not reached, or missing evidence. Every existing
+reason keeps its text. A finished step now says so: a second `plan-item` reads
+`Plan is already complete for CV1.DS1.TS1: the cursor is at plan, pending
+navigator_approval.` The error carries the step and the kind. The command reads the
+cursor it renders, so the error does not duplicate it. Surfaces are unchanged.
+
+Evidence: the agreement test runs the five real lifecycle functions at all thirteen
+events, 65 combinations, and requires "already complete" exactly when the table says
+the step is done. It was red first on the plain `Error` the guards threw. A mutant that
+drops Done's check fails it at `done_complete`. No golden changed, because no frozen case
+re-runs a finished step. The full suite passes (2,718 tests), along with typecheck,
+lint, the repository checks, and the smoke.
+
+Next: plateau 2, the `CHECKPOINT_REFUSED` surface.
+
 ## Outcome
 
 Pending.
