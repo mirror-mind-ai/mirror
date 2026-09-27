@@ -114,7 +114,12 @@ function findSkillMarkdown(skillDir: string): string | null {
   return null;
 }
 
-/** `[skillDirName, sourceMarkdownPath]` for each Claude skill. */
+/**
+ * `[skillDirName, markdownPath]` for each skill under `.claude/skills/`. Most
+ * are authored there. A Pi-sourced skill's file is generated instead
+ * (`piSourcedSkills.ts`), and `planGeneratedFiles` takes that one from its Pi
+ * copy, never from this path.
+ */
 export function discoverSkillSources(repoRoot: string): [string, string][] {
   const base = join(repoRoot, SKILLS_SOURCE_DIR);
   const sources: [string, string][] = [];
@@ -207,7 +212,8 @@ function generatedSkillFiles(repoRoot: string): string[] {
 }
 
 /**
- * Write the generated plugin files, or report drift when `write` is false.
+ * Write every generated file, the plugin and the `.claude/skills/` copies of
+ * Pi-sourced skills, or report drift when `write` is false.
  *
  * Returns human-readable drift descriptions. In check mode the list is the
  * assertion target (empty == in sync). In write mode it is empty and the files
