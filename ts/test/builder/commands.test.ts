@@ -2310,3 +2310,75 @@ test("CR018: a title reaches Pull, Plan, Ready, and the Snapshot whole", () => {
     db.close();
   }
 });
+
+// CR018 plateau 3 — the CV row names the CV by its own title: the focus Project Position
+// shows for the same cursor. Python borrowed the pulled item's title for it.
+
+test("CR018: Pull and Ready name the CV by its own title, never the item's", () => {
+  const project = slashedProject();
+  const db = seed("adopted", project);
+  const run = (argv: readonly string[]) =>
+    invoke(db, [argv[0] ?? "", "--method", "ariad", "--journey", "demo", ...argv.slice(1)]);
+  const pull = (code: string, title: string, level: string) =>
+    run([
+      "pull-item",
+      "--item-code",
+      code,
+      "--item-title",
+      title,
+      "--item-level",
+      level,
+      "--why-now",
+      "CR018",
+    ]);
+  try {
+    assert.equal(run(["sync-cursor"]).exitCode, 0);
+    const pulled = pull("CV1.DS1.TS1", SLASHED.ts1, "technical_story");
+    assert.ok(allCardRows(pulled.stdout).includes(`🟪[CV1] ${SLASHED.cv}`), "Pull");
+    const ready = pull("CV1.DS2", SLASHED.ds2, "delivery_story");
+    assert.ok(allCardRows(ready.stdout).includes(`🟪[CV1] ${SLASHED.cv}`), "Ready");
+    const position = invokeReadOnlyBuilderArgv(db, [
+      "pull-candidates",
+      "--method",
+      "ariad",
+      "--journey",
+      "demo",
+    ]);
+    assert.ok(
+      allCardRows(position.stdout).some((row) => row.startsWith(`🟪[CV1]  ${SLASHED.cv}`)),
+      "the Snapshot names the same CV the same way",
+    );
+  } finally {
+    db.close();
+  }
+});
+
+test("CR018: with no roadmap row or package for the CV, the row says so instead of borrowing", () => {
+  const project = slashedProject();
+  rmSync(join(project, "docs/project/roadmap/cv1/index.md"));
+  const db = seed("adopted", project);
+  try {
+    assert.equal(invoke(db, ["sync-cursor", "--method", "ariad", "--journey", "demo"]).exitCode, 0);
+    const pulled = invoke(db, [
+      "pull-item",
+      "--method",
+      "ariad",
+      "--journey",
+      "demo",
+      "--item-code",
+      "CV1.DS1.TS2",
+      "--item-title",
+      SLASHED.ts2,
+      "--item-level",
+      "technical_story",
+      "--why-now",
+      "CR018",
+    ]);
+    assert.equal(pulled.exitCode, 0, pulled.stderr);
+    const rows = allCardRows(pulled.stdout);
+    const cvRow = rows.find((row) => row.startsWith("🟪[CV1]"));
+    assert.equal(cvRow?.trimEnd(), "🟪[CV1] no authored package");
+  } finally {
+    db.close();
+  }
+});

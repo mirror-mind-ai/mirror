@@ -618,6 +618,28 @@ lifecycle smoke. CI was green on plateau 1.
 
 Remaining: the CV's own title, width, and links. Next: plateau 3.
 
+### Plateau 3 handoff (2026-09-27)
+
+Now true: Pull and Ready name the CV by its own title. `placementCvTitle` in `pull.ts`
+composes CR002's `resolveRoadmapScope` and `scopeFocus`, so the row is the focus Project
+Position shows for the same cursor: the roadmap index row, else the CV package's
+heading, else `no authored package` or `no project path`. The renderers take the title
+as an input. The command layer and the lifecycle replay both call the one helper, and
+`cvTitle` is deleted.
+
+Evidence: two end-to-end tests, red first. On the route's roadmap, Pull and Ready read
+`🟪[CV1] Builder/Ariad trust`, the Snapshot's own name for it, where they read
+`Remove the dormant pair …`. With the CV's package removed, Pull reads
+`🟪[CV1] no authored package`, where it read ``Audit `pub` ``. Golden edits, by script
+with a README row: ten CV rows, three in `builder-command` and seven in
+`builder-lifecycle`, and nothing else in any surface. Each new value was checked against
+the files its sequence's project holds at that step: five of those projects hold no row
+or package for their CV, so their Pulls had named a CV with nothing but the item's own
+title. The full suite passes (2,734 tests), along with typecheck, lint, the repository
+checks, and the Builder lifecycle smoke. CI was green on plateau 2.
+
+Remaining: width and links. Next: plateau 4.
+
 ## Outcome
 
 Pending.

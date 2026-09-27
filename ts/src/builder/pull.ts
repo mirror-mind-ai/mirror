@@ -25,7 +25,6 @@ import { cardText, cardWrapped } from "./card.ts";
 import {
   ALLOWED_PULL_LEVELS,
   carriedForward,
-  cvTitle,
   deliveryStoryCodeForItem,
   normalizeRequired,
 } from "./cursorTransitions.ts";
@@ -37,6 +36,9 @@ import {
   setTo,
 } from "./deliveryCursor.ts";
 import { renderLifecycleRibbon } from "./lifecycleRibbon.ts";
+import { inspectRoadmapSnapshot } from "./pullCandidates.ts";
+import { resolveRoadmapScope, type ScopeCursor } from "./roadmapScope.ts";
+import { scopeFocus } from "./scopePhrases.ts";
 import { wrapAriadSurface } from "./surfaceProtocol.ts";
 
 /** Python `BuilderLifecycleItem`. */
@@ -127,8 +129,19 @@ export function pullLifecycleItem(
   return { journey, method, item, cursor, nextEvent: "prepare" };
 }
 
-/** Python `render_pull_report`. */
-export function renderPullReport(report: BuilderPullReport): string {
+/**
+ * The title of the CV a pulled item sits under, as the roadmap names it (CR018): the
+ * focus Project Position shows for the same cursor, so the two surfaces cannot
+ * disagree. Python borrowed the head of the item's own title instead. Pull and Ready
+ * both render it, and neither computes it: the caller passes this in.
+ */
+export function placementCvTitle(projectRoot: string | null, cursor: ScopeCursor): string {
+  const items = inspectRoadmapSnapshot(projectRoot, { journey: "", method: "ariad" }).items;
+  return scopeFocus(items, resolveRoadmapScope(projectRoot, cursor))?.title ?? "";
+}
+
+/** Python `render_pull_report`, with the CV named by `placementCvTitle`. */
+export function renderPullReport(report: BuilderPullReport, cvTitle: string): string {
   const codeParts = report.item.code.split(".");
   const cvCode = codeParts[0] ?? report.item.code;
   const dsCode = codeParts.length > 1 ? (codeParts[codeParts.length - 1] ?? "") : report.item.code;
@@ -146,7 +159,7 @@ export function renderPullReport(report: BuilderPullReport): string {
     cardText("roadmap candidate"),
     "│                                                        │",
     cardText("roadmap placement"),
-    cardText(`🟪[${cvCode}] ${cvTitle(report.item.title)}`),
+    cardText(`🟪[${cvCode}] ${cvTitle}`),
     cardText(`  └─ 🟦[${dsCode}] ${title}`),
     "│                                                        │",
     cardText("intent"),

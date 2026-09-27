@@ -75,7 +75,7 @@ import {
 import { planLifecycleItem, renderPlanCheckpoint } from "#builder/plan.ts";
 import { PlanPreauthorizationMismatch } from "#builder/planPreauthorization.ts";
 import { prepareLifecycleItem, renderPrepareReport } from "#builder/prepare.ts";
-import { pullLifecycleItem, renderPullReport } from "#builder/pull.ts";
+import { placementCvTitle, pullLifecycleItem, renderPullReport } from "#builder/pull.ts";
 import {
   inspectReleaseIntent,
   renderReleaseIntentReport,
@@ -667,7 +667,10 @@ function replayLifecycleStep(context: ReplayContext, step: Step): ReplayOutcome 
           context.deps,
         );
         context.reports.pull = report;
-        return { surfaces: [{ id: "delivery_story_identified", text: renderPullReport(report) }] };
+        const cvTitle = placementCvTitle(context.project, report.cursor);
+        return {
+          surfaces: [{ id: "delivery_story_identified", text: renderPullReport(report, cvTitle) }],
+        };
       } catch (error) {
         return { surfaces: [], error: pythonError(error, context.projectAbsolute) };
       }
@@ -694,6 +697,7 @@ function replayLifecycleStep(context: ReplayContext, step: Step): ReplayOutcome 
                     pull: context.reports.pull,
                     prepare: context.reports.prepare,
                     expand: report,
+                    cvTitle: placementCvTitle(context.project, context.reports.pull.cursor),
                   }),
                 },
               ]

@@ -108,7 +108,7 @@ import {
 import { planLifecycleItem, renderPlanCheckpoint } from "./plan.ts";
 import { PlanPreauthorizationMismatch } from "./planPreauthorization.ts";
 import { prepareLifecycleItem, projectContractRules, renderPrepareReport } from "./prepare.ts";
-import { pullLifecycleItem, renderPullReport } from "./pull.ts";
+import { placementCvTitle, pullLifecycleItem, renderPullReport } from "./pull.ts";
 import { inspectPullCandidates, inspectRoadmapSnapshot } from "./pullCandidates.ts";
 import {
   renderProjectPositionReport,
@@ -864,6 +864,7 @@ export function runPullItem(
           pull: pullReport,
           prepare: prepareReport,
           expand: expandReport,
+          cvTitle: placementCvTitle(projectPath, pullReport.cursor),
         }),
       ) +
       artifactsSurface({
@@ -876,7 +877,9 @@ export function runPullItem(
   }
 
   return {
-    stdout: printed(renderPullReport(pullReport)) + printed(renderPrepareReport(prepareReport)),
+    stdout:
+      printed(renderPullReport(pullReport, placementCvTitle(projectPath, pullReport.cursor))) +
+      printed(renderPrepareReport(prepareReport)),
     stderr: "",
     exitCode: 0,
   };

@@ -15,7 +15,6 @@
 import { basename, dirname } from "node:path";
 import { kebabSlug } from "#util/slug.ts";
 import { cardPrefixed, cardText, cardWrapped } from "./card.ts";
-import { cvTitle } from "./cursorTransitions.ts";
 import type { BuilderExpandReport } from "./expand.ts";
 import type { BuilderPrepareReport } from "./prepare.ts";
 import type { BuilderPullReport } from "./pull.ts";
@@ -104,13 +103,14 @@ function flowUnitRecommendationRationale(report: BuilderExpandReport): string {
     : "The child work packages appear to support one Delivery Story outcome. Use story_by_story only if each child needs separate Navigator checkpoints.";
 }
 
-/** Python `render_delivery_story_ready_report`. */
+/** Python `render_delivery_story_ready_report`, with the CV named by `placementCvTitle`. */
 export function renderDeliveryStoryReadyReport(reports: {
   pull: BuilderPullReport;
   prepare: BuilderPrepareReport;
   expand: BuilderExpandReport;
+  cvTitle: string;
 }): string {
-  const { pull, prepare, expand } = reports;
+  const { pull, prepare, expand, cvTitle } = reports;
   const codeParts = pull.item.code.split(".");
   const cvCode = codeParts[0] ?? pull.item.code;
   const dsCode = codeParts.length > 1 ? (codeParts.at(-1) ?? "") : pull.item.code;
@@ -127,7 +127,7 @@ export function renderDeliveryStoryReadyReport(reports: {
     ...cardWrapped(title),
     "│                                                        │",
     cardText("Where are we in the roadmap?"),
-    cardText(`🟪[${cvCode}] ${cvTitle(pull.item.title)}`),
+    cardText(`🟪[${cvCode}] ${cvTitle}`),
     cardText(`  └─ 🟦[${dsCode}] ${title}`),
     "│                                                        │",
     cardText("What did Prepare find?"),
