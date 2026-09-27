@@ -44,3 +44,21 @@ export function kebabSlug(text: string, maxLength = 80): string {
   }
   return slug;
 }
+
+const KEBAB_SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
+
+/**
+ * Whether `value` is a kebab-case slug: lowercase ASCII letters and digits, in runs
+ * joined by single hyphens, at most `maxLength` characters. Those are exactly the
+ * non-empty strings `kebabSlug` returns unchanged, so a slug is what this module
+ * would have made, and `kebabSlug` of anything else is the slug to suggest in its
+ * place (CR104).
+ *
+ * A shell carries such a slug as one plain word, and it can never begin with the
+ * hyphen that would make it read as an option. That is why journey slugs and
+ * persona ids, which agents put into commands, must be one
+ * (`#identity/identityKey.ts`).
+ */
+export function isKebabSlug(value: string, maxLength = 80): boolean {
+  return value.length <= maxLength && KEBAB_SLUG.test(value);
+}

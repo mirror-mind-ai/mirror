@@ -63,6 +63,11 @@ NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts identity
 
 If `--content` is omitted, content is read from stdin.
 
+A new `journey` or `persona` key must be kebab-case: lowercase letters, digits,
+and single hyphens, up to 80 characters, such as `product-launch`. Agents put
+these keys into commands, so `set` and `edit` refuse any other new key and name
+one that would work. A key created before this rule keeps working.
+
 **Examples:**
 - `NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts identity set ego behavior --content "Be direct."`
 - `cat new-soul.md | NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts identity set self soul`

@@ -40,7 +40,8 @@ import { type Database, openDatabaseReadOnly, type WritableDatabase } from "#db/
 import { ensureDatabaseReady } from "#db/readyOnOpen.ts";
 import { assertSchemaState, SchemaStateError } from "#db/schemaState.ts";
 import { allDescriptors, descriptorsByLayer } from "#descriptor/descriptorRead.ts";
-import { listIdentityByLayer } from "#identity/identityRead.ts";
+import { newIdentityKeyProblem } from "#identity/identityKey.ts";
+import { identityRowExists, listIdentityByLayer } from "#identity/identityRead.ts";
 import { listJourneysForListCommand } from "#identity/journeyListing.ts";
 import { listPersonas } from "#identity/personaListing.ts";
 import { setIdentity } from "#identity/setIdentity.ts";
@@ -718,6 +719,11 @@ async function runIdentityEditRoute(argv: readonly string[]): Promise<number> {
     console.error("identity edit requires <layer> <key>");
     return 2;
   }
+  const refused = refusedNewIdentityKey(argv.slice(1), layer, key);
+  if (refused !== null) {
+    console.error(`Error: ${refused}`);
+    return 1;
+  }
   return withMirrorWriteDb(argv, (db) => {
     const result = runIdentityEdit(db, layer, key, {
       editor: process.env.EDITOR,
@@ -754,9 +760,45 @@ async function runExtensionCatalog(argv: readonly string[]): Promise<DispatchOut
 }
 
 /**
+ * CR104: why `identity set` or `identity edit` must refuse to create `key` in
+ * `layer`, decided before the write seam opens, or null to go ahead.
+ *
+ * The store refuses such a create on its own (`upsertIdentity`), but only after
+ * the seam has taken its pre-write snapshot, and after `identity edit` has had the
+ * user type into an editor. Asked here first, a refusal costs neither.
+ *
+ * A key outside the grammar may still name a row that predates the grammar, and
+ * that row stays writable, so only for such a key is the row looked up, read-only.
+ * When the database cannot be resolved or read, the answer is left to the write
+ * path, which reports the resolution error and where the store still refuses.
+ */
+function refusedNewIdentityKey(args: readonly string[], layer: string, key: string): string | null {
+  const problem = newIdentityKeyProblem(layer, key);
+  if (problem === null) return null;
+  let dbPath: string;
+  try {
+    dbPath = resolveDbPath(args);
+  } catch {
+    return null;
+  }
+  if (!existsSync(dbPath)) return problem;
+  try {
+    const db = openDatabaseReadOnly(dbPath);
+    try {
+      return identityRowExists(db, layer, key) ? null : problem;
+    } finally {
+      db.close();
+    }
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Route `identity set <layer> <key> --content ... | stdin` to the TS core. Mirrors
  * the Python `identity set` interface and output, but writes through the sanctioned
- * live-write seam after a backup, reusing the ported `setIdentity`.
+ * live-write seam after a backup, reusing the ported `setIdentity`. A new journey
+ * slug or persona id outside the grammar is refused first (CR104).
  */
 function runIdentityWrite(argv: readonly string[]): number {
   const args = argv.slice(2);
@@ -769,6 +811,11 @@ function runIdentityWrite(argv: readonly string[]): number {
   if (!layer || !key) {
     console.error("identity set requires <layer> <key>");
     return 2;
+  }
+  const refused = refusedNewIdentityKey(args, layer, key);
+  if (refused !== null) {
+    console.error(`Error: ${refused}`);
+    return 1;
   }
   const content = optionValue(args, "--content") ?? readStdinContent();
   if (!content.trim()) {

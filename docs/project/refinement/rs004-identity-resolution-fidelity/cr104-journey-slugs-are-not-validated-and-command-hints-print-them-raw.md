@@ -498,6 +498,40 @@ Evidence:
 
 Remaining: the grammar and the report. Next: plateau 2.
 
+### Plateau 2 handoff (2026-09-27)
+
+Now true: a new journey slug or persona id must be kebab-case. `isKebabSlug` in
+`ts/src/util/slug.ts` is the grammar. `ts/src/identity/identityKey.ts` names the two
+layers and writes the refusal. `upsertIdentity`'s INSERT branch refuses a new key that
+breaks the grammar, so `identity set`, `identity edit`, `seed`, and `createJourney`
+refuse too, and a key that already exists stays writable. `identity set` and
+`identity edit` ask first, before the write seam opens, so a refusal takes no snapshot
+and opens no editor. Only a key outside the grammar costs the read-only lookup, since
+a row that predates the grammar stays writable. `seed` reports a refusal as its `✗`
+line and seeds the rest. The `mm-identity` skill and REFERENCE.md state the rule.
+
+Evidence:
+
+- Red first:
+  - the unit tests for the grammar and the rule;
+  - the store refusing an INSERT and writing nothing;
+  - `createJourney` leaving no row;
+  - `seed` creating a crafted journey and a crafted persona;
+  - `identity set` and `identity edit` creating them through the front door, with a
+    snapshot taken and the editor run.
+- Green now: the same tests. `isKebabSlug` agrees with `kebabSlug` over the slug
+  golden's inputs and outputs, and the refusal escapes a newline and a terminal
+  escape.
+- A key planted from before the grammar is updated by the store, by `identity set`,
+  and by `identity edit`.
+- No fixture or golden changed: every key the suite creates already fits.
+- Route steps 1 to 5 now print their pass conditions. Step 6 is plateau 3's.
+- The full suite passes (2,809 tests), along with typecheck, lint, the repository
+  checks, every smoke under `ts/smoke/`, and the four runtime smokes under
+  `scripts/`. CI was green on plateau 1.
+
+Remaining: the report. Next: plateau 3.
+
 ## Outcome
 
 Pending.

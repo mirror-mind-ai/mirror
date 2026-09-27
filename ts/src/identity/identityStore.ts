@@ -5,6 +5,7 @@
 // now).
 
 import type { WritableDatabase } from "#db/database.ts";
+import { assertNewIdentityKey } from "./identityKey.ts";
 
 /** The writable columns of an identity row (version is TEXT, e.g. "1.0.0"). */
 export interface IdentityRow {
@@ -22,6 +23,11 @@ export interface IdentityRow {
  * now; on UPDATE only updated_at changes and the existing id and created_at are
  * preserved (the WHERE is on the unique (layer, key), so the injected id is
  * ignored for an update, exactly as Python reuses existing.id).
+ *
+ * This is the only INSERT into `identity`, so it is where a new journey slug or
+ * persona id is held to its grammar (CR104): an INSERT whose key breaks it throws
+ * `InvalidIdentityKeyError` and writes nothing. An UPDATE never checks, because a
+ * key that already exists predates the grammar and must stay writable.
  */
 export function upsertIdentity(db: WritableDatabase, identity: IdentityRow, nowIso: string): void {
   const existing = db
@@ -40,6 +46,7 @@ export function upsertIdentity(db: WritableDatabase, identity: IdentityRow, nowI
       identity.key,
     );
   } else {
+    assertNewIdentityKey(identity.layer, identity.key);
     db.prepare(
       "INSERT INTO identity (id, layer, key, content, version, created_at, updated_at, metadata) " +
         "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",

@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
-import { kebabSlug, stripAccents } from "#util/slug.ts";
+import { isKebabSlug, kebabSlug, stripAccents } from "#util/slug.ts";
 
 interface GoldenCase {
   input: string;
@@ -74,4 +74,49 @@ test("kebabSlug hard-caps at 80 chars by default and re-trims a hyphen the cut e
 
 test("kebabSlug accepts a custom maxLength", () => {
   assert.equal(kebabSlug("abcdefghij", 5), "abcde");
+});
+
+// --- CR104: the grammar a journey slug and a persona id must fit ---------------
+
+test("CR104: isKebabSlug accepts and refuses by the grammar, case by case", () => {
+  for (const slug of ["a", "ai", "j1", "mirror-ts-core", "2026-trip", "cv22", "a".repeat(80)]) {
+    assert.equal(isKebabSlug(slug), true, slug);
+  }
+  const refused = [
+    "",
+    "-x",
+    "x-",
+    "a--b",
+    "a b",
+    "Mixed",
+    "a_b",
+    "a.b",
+    "..",
+    "a/b",
+    "ação",
+    "a\nb",
+    "x;touch PWNED",
+    "$(touch PWNED)",
+    "a".repeat(81),
+  ];
+  for (const value of refused) assert.equal(isKebabSlug(value), false, JSON.stringify(value));
+});
+
+test("CR104: a kebab slug is exactly a non-empty string kebabSlug leaves unchanged", () => {
+  const corpus = [
+    ...golden.cases.flatMap((c) => [c.input, c.slug]),
+    "a--b",
+    "-x",
+    "x-",
+    "Mixed_Case",
+    "a".repeat(80),
+    "a".repeat(81),
+  ];
+  for (const value of corpus) {
+    assert.equal(
+      isKebabSlug(value),
+      value !== "" && kebabSlug(value) === value,
+      JSON.stringify(value),
+    );
+  }
 });

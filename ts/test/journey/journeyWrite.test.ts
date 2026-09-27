@@ -5,6 +5,7 @@ import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
 import { createIdentityTable } from "#helpers/identitySchema.ts";
+import { InvalidIdentityKeyError } from "#identity/identityKey.ts";
 import { listJourneyOptions } from "#journey/journeyOptions.ts";
 import {
   createJourney,
@@ -630,6 +631,22 @@ test("createJourney rolls back the WHOLE write when the column statement fails m
     );
     const row = db.prepare("SELECT COUNT(*) AS c FROM identity WHERE key = ?").get("demo");
     assert.equal(row?.c, 0, "the INSERT from statement 1 must not survive the rollback");
+  } finally {
+    db.close();
+    cleanup();
+  }
+});
+
+test("CR104: createJourney refuses a slug outside the grammar and leaves no row", () => {
+  const { dbPath, cleanup } = tempCopy();
+  const db = openDatabaseCopyForWrite(dbPath);
+  try {
+    seedIdentity(db);
+    assert.throws(
+      () => createJourney(db, { id: "j-1", slug: "x;touch PWNED", content: "# X" }, NOW),
+      (error: unknown) => error instanceof InvalidIdentityKeyError && error.layer === "journey",
+    );
+    assert.equal(db.prepare("SELECT COUNT(*) AS count FROM identity").get()?.count, 0);
   } finally {
     db.close();
     cleanup();

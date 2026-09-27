@@ -73,6 +73,25 @@ Codex uses the `$mm-` prefix. All runtimes call the same core.
 | `mirror conversation-logger` | — | — | Runtime conversation logging and repair utilities | `discard-current [--interface pi] [--session-id ID]`, `repair-journeys [--limit N] [--apply]` |
 | `ext-review-copy` | — | `ext:review-copy` | External multi-LLM copy review skill; install and expose it before use | skill-driven workflow |
 
+### Journey slugs and persona ids
+
+A new journey slug or persona id must be kebab-case: lowercase letters, digits,
+and single hyphens, up to 80 characters, such as `product-launch`. Agents put
+these keys into shell commands (`--journey <slug>`, `--persona <id>`), and a
+kebab-case key is one plain word that a shell cannot split, substitute, or read
+as an option. `identity set`, `identity edit`, and `seed` refuse any other new
+key before anything is written, and name one that would work:
+
+```text
+Error: no journey was created: 'My Trip' is not a journey slug. Use lowercase letters, digits, and single hyphens, up to 80 characters, for example 'my-trip'.
+```
+
+Nothing is renamed for you: a key stored differently from how it was typed would
+miss the next command that uses it. A key created before this rule keeps working
+and is never rewritten. Every command Mirror prints for you to run quotes the key
+it carries, so such a key still arrives as one argument
+([CR104](docs/project/refinement/rs004-identity-resolution-fidelity/cr104-journey-slugs-are-not-validated-and-command-hints-print-them-raw.md)).
+
 ## Explicit Conversation Append
 
 ```bash

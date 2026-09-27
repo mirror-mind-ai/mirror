@@ -274,3 +274,39 @@ test("CR104: a skipped entry's hint names mirror and carries its key as one shel
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test("CR104: seed refuses a journey or persona file whose key breaks the grammar, and seeds the rest", () => {
+  const { db, cleanup } = tempDb();
+  const root = mkdtempSync(join(tmpdir(), "mirror-core-seedroot-cr104-grammar-"));
+  try {
+    buildIdentityRoot(root);
+    mkdirSync(join(root, "personas"), { recursive: true });
+    mkdirSync(join(root, "journeys"), { recursive: true });
+    writeFileSync(join(root, "personas", "fine.yaml"), "persona_id: fine\nsystem_prompt: OK.\n");
+    writeFileSync(
+      join(root, "personas", "p.yaml"),
+      'persona_id: "p;touch PWNED"\nsystem_prompt: A shared persona.\n',
+    );
+    writeFileSync(join(root, "journeys", "y.yaml"), 'journey_id: "y;touch PWNED"\nname: Y\n');
+    const result = runSeed(db, root);
+    assert.equal(result.created, 4 + 1, "the core entries and the fine persona");
+    assert.deepEqual(
+      result.errors.map((error) => error.split(": ").slice(0, 2).join(": ")),
+      ["persona/p: no persona was created", "journey/y: no journey was created"],
+    );
+    assert.ok(
+      result.lines.includes(
+        "  ✗ journey/y: no journey was created: 'y;touch PWNED' is not a journey slug. " +
+          "Use lowercase letters, digits, and single hyphens, up to 80 characters, " +
+          "for example 'y-touch-pwned'.",
+      ),
+      result.lines.join("\n"),
+    );
+    assert.equal(rowContent(db, "persona", "p;touch PWNED"), undefined);
+    assert.equal(rowContent(db, "journey", "y;touch PWNED"), undefined);
+  } finally {
+    db.close();
+    cleanup();
+    rmSync(root, { recursive: true, force: true });
+  }
+});
