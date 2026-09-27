@@ -257,7 +257,7 @@ mirror runtime backup [--mirror-home PATH]
 mirror runtime backup --verify PATH_TO_BACKUP.zip
 ```
 
-A backup archive holds one member, `memory.db`: a consistent snapshot of the database as committed, in WAL mode, taken with `VACUUM INTO` and checked before it is written. Archives written before CR061 may also carry `memory.db-wal` and `memory.db-shm`. Verification checks that the zip is readable, holds `memory.db` and nothing but SQLite's own files, and has no unsafe archive paths, then extracts `memory.db` and runs `PRAGMA quick_check` on it. Recovery is manual in this version: stop active runtime sessions, move current database files aside, extract the backup into the Mirror home, and rerun `runtime status`.
+A backup archive holds one member, `memory.db`: a consistent snapshot of the database as committed, in WAL mode, taken with `VACUUM INTO` and checked before it is written. The snapshot is staged in a private directory under the OS temp dir, never in the backups directory, so a backup needs free temp space about the size of the database; `TMPDIR` moves it, and a backup that cannot stage it fails with `backup: no archive was written:` and the reason. Archives written before CR061 may also carry `memory.db-wal` and `memory.db-shm`. Verification checks that the zip is readable, holds `memory.db` and nothing but SQLite's own files, and has no unsafe archive paths, then extracts `memory.db` and runs `PRAGMA quick_check` on it. Recovery is manual in this version: stop active runtime sessions, move current database files aside, extract the backup into the Mirror home, and rerun `runtime status`.
 
 ### Update planning
 
