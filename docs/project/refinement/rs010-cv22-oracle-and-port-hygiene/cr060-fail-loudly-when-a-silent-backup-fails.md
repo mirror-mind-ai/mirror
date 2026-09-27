@@ -2,10 +2,10 @@
 
 # CR060 — Fail loudly when a silent backup fails
 
-**Status:** captured
+**Status:** in_progress
 **RS:** RS010
-**Driver:** —
-**Delivery:** —
+**Driver:** @viniciusteles
+**Delivery:** `mirror-ts-core`
 
 ## Problem
 
@@ -43,6 +43,8 @@ check that a shutdown with a missing database leaves a WARN in
 `mirror-logger.log`.
 
 **2026-09-27: added to the CV22 release gate** by the Navigator's decision after the Workbench inspection that followed the Ariad trust floor ([amendment](../../decisions.md#the-cv22-release-is-gated-on-an-ariad-trust-floor-worked-before-us3)). It is not Ariad, so US3 does not validate it, and the release waits for it. The plan above is single-engine now. TS5 deleted the Python core and the parity harness, so its Python half and the baseline advance fall away.
+
+**2026-09-27: carried by [CR061](cr061-snapshot-the-live-database-consistently-before-zipping.md#plan-or-decision)**, one delivery with one plan and one validation route, by the Navigator's decision. The plan lives there, where design 5 covers this CR. This CR closes with CR061.
 
 ## Evidence
 
