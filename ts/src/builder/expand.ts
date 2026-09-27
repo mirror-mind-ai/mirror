@@ -382,10 +382,13 @@ export function renderExpandBlocked(activeItem: string, reason: string): string 
     ...cardWrapped(reason),
     "│                                                        │",
     cardText("required Navigator action"),
+    // Names the Delivery Story rather than "the resolved package": the refusal CR018
+    // added is for a Delivery Story that has no package to resolve.
     ...cardWrapped(
       "Add a canonical candidate-stories table (Markdown table header including " +
-        "Code, Story, Type, and Status columns) to the resolved package's index.md, " +
-        "or resolve the duplicate heading, then Expand again.",
+        `Code, Story, Type, and Status columns) to ${activeItem}'s index.md, ` +
+        "creating it if the Delivery Story has none, or resolve the duplicate heading, " +
+        "then Expand again.",
     ),
     "│                                                        │",
     cardText("boundary"),

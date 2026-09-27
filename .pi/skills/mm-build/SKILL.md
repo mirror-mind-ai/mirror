@@ -663,9 +663,12 @@ Risk |`), flag the mismatch before Pull/Expand runs so the table is
 Expand-compatible by construction.
 
 If Expand renders `<<<ARIAD:EXPAND_BLOCKED>>>` (the resolved package's table
-does not parse, or two packages claim the same code), return the surface
-verbatim per the transport protocol, then explain what to fix: correct the
-table header to the canonical grammar, or resolve the duplicate heading. Do not
+does not parse, two packages claim the same code, or a Delivery Story with no
+package would need a story that an authored package already claims), return the
+surface verbatim per the transport protocol, then explain what to fix: correct
+the table header to the canonical grammar, resolve the duplicate heading, or
+author the Delivery Story's `index.md` with a canonical candidate table that
+lists the story already authored. Do not
 hand-edit the package's materialized children to work around a blocked Expand,
 and do not re-run Pull/Expand until the Navigator has fixed the authored
 content.

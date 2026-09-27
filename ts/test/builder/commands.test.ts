@@ -2618,3 +2618,34 @@ test("CR018: a title's links become their labels where the title enters Ariad", 
     db.close();
   }
 });
+
+test("CR018: EXPAND_BLOCKED's action names the Delivery Story whose index.md needs the table", () => {
+  // Handoff review, finding 2: the fixed action pointed at "the resolved package's
+  // index.md", and a Delivery Story with no package has none.
+  const project = claimsProject({ duplicate: false });
+  const orphan = join(project, "docs/project/roadmap/cv1/orphan-us1");
+  mkdirSync(orphan, { recursive: true });
+  writeFileSync(
+    join(orphan, "index.md"),
+    "# CV1.DS9.US1 — Orphan story\n\n**Status:** 🟡 Planned\n**Type:** User Story\n",
+    "utf8",
+  );
+  const db = seed("adopted", project);
+  try {
+    assert.equal(invoke(db, ["sync-cursor", "--method", "ariad", "--journey", "demo"]).exitCode, 0);
+    const pulled = invoke(db, [...PULL_HYGIENE.slice(0, 6), "CV1.DS9", ...PULL_HYGIENE.slice(7)]);
+    const rows = allCardRows(pulled.stdout);
+    const action = wrappedFrom(
+      rows.slice(rows.indexOf("required Navigator action") + 1),
+      () => true,
+    );
+    assert.equal(
+      action,
+      "Add a canonical candidate-stories table (Markdown table header including Code, " +
+        "Story, Type, and Status columns) to CV1.DS9's index.md, creating it if the " +
+        "Delivery Story has none, or resolve the duplicate heading, then Expand again.",
+    );
+  } finally {
+    db.close();
+  }
+});
