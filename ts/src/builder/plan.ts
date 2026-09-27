@@ -18,7 +18,7 @@
 
 import { dirname } from "node:path";
 import type { WritableDatabase } from "#db/database.ts";
-import { writeStoryPackage } from "./artifacts/planArtifacts.ts";
+import { STORY_SCOPED_COMMIT_RULE, writeStoryPackage } from "./artifacts/planArtifacts.ts";
 import { cardPrefixed, cardText, cardWrapped } from "./card.ts";
 import { isImplementableByDefault, normalizeRequired } from "./cursorTransitions.ts";
 import {
@@ -317,7 +317,9 @@ export function renderPlanCheckpoint(report: BuilderPlanReport): string {
     cardText("implementation contract"),
     ...cardWrapped("TDD/characterization tests when behavior is testable."),
     ...cardWrapped("Keep changes scoped to the active story."),
-    ...cardPrefixed(report.localRules, "✓"),
+    ...cardWrapped(STORY_SCOPED_COMMIT_RULE),
+    // A project without a guide adds nothing, not the card's usual `none` (CR019).
+    ...(report.localRules.length > 0 ? cardPrefixed(report.localRules, "✓") : []),
     "│                                                        │",
     cardText("approval gate"),
     cardText(`checkpoint: ${report.cursor.activeCheckpoint}`),

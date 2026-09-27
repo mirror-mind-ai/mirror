@@ -75,12 +75,28 @@ function nextEventRule(level: string | null): string {
  * project path the whole block collapses to one line — the shape a journey with no
  * configured project renders.
  */
+/** The development guide Prepare reports on, and the one a Plan points to (CR019). */
+export const DEVELOPMENT_GUIDE_PATH = "docs/process/development-guide.md";
+
+/**
+ * A project's own rules for a Plan's Implementation Contract: one pointer to its
+ * development guide when the guide exists, otherwise nothing. The guide is never
+ * parsed, and a missing guide says nothing about the project, whose rules may live
+ * where its agents already read them (CR019).
+ */
+export function projectContractRules(projectPath: string | null): string[] {
+  if (projectPath === null || !existsSync(join(resolve(projectPath), DEVELOPMENT_GUIDE_PATH))) {
+    return [];
+  }
+  return [`Follow the project's development guide: ${DEVELOPMENT_GUIDE_PATH}.`];
+}
+
 function contextSummary(projectPath: string | null): string[] {
   if (projectPath === null) {
     return ["No project path is configured; Prepare used runtime journey state only."];
   }
   const root = resolve(projectPath);
-  return ["README.md", "docs/project/roadmap/index.md", "docs/process/development-guide.md"].map(
+  return ["README.md", "docs/project/roadmap/index.md", DEVELOPMENT_GUIDE_PATH].map(
     (relativePath) =>
       `${relativePath}: ${existsSync(join(root, relativePath)) ? "present" : "missing"}`,
   );

@@ -103,7 +103,7 @@ import {
 } from "./methodInspection.ts";
 import { planLifecycleItem, renderPlanCheckpoint } from "./plan.ts";
 import { PlanPreauthorizationMismatch } from "./planPreauthorization.ts";
-import { prepareLifecycleItem, renderPrepareReport } from "./prepare.ts";
+import { prepareLifecycleItem, projectContractRules, renderPrepareReport } from "./prepare.ts";
 import { pullLifecycleItem, renderPullReport } from "./pull.ts";
 import { inspectPullCandidates, inspectRoadmapSnapshot } from "./pullCandidates.ts";
 import {
@@ -679,23 +679,6 @@ function artifactsSurface(options: {
 }
 
 /**
- * Python `_MIRROR_LOCAL_IMPLEMENTATION_RULES`.
- *
- * Mirror Mind's own conventions, injected into every generated Plan — including
- * plans for other projects, where they may be false. CR019 owns that.
- *
- * There were three. The first told the Driver to run Python commands and tests
- * through `uv`, which became false for every project once CV22.DS10.TS5 left
- * Mirror Mind with no Python -- including the one whose convention it stated.
- * TS5 removed it (decision D13) rather than keep printing an instruction to run
- * a tool the repository no longer has. The two that remain are still CR019's.
- */
-const MIRROR_LOCAL_IMPLEMENTATION_RULES = [
-  "Do not use git add .; commit only story-scoped files.",
-  "Use descriptive English commit messages explaining why.",
-] as const;
-
-/**
  * Python `_roadmap_plan_context`.
  *
  * Derives the Plan's default prose from the roadmap: the active candidate's own
@@ -910,7 +893,7 @@ export function runPlanItem(
         acceptanceBehavior: planContext.acceptanceBehavior,
         validationRoute: planContext.validationRoute,
         e2eDecision: planContext.e2eDecision,
-        localRules: [...MIRROR_LOCAL_IMPLEMENTATION_RULES],
+        localRules: projectContractRules(projectPath),
         planArtifactPath,
         projectRoot: projectPath,
         preauthorize: options.preauthorizeApproval ?? false,

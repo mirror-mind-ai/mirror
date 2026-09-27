@@ -304,6 +304,28 @@ repository checks, and the Builder lifecycle smoke (54/54).
 
 Remaining: the contract lines. Next: plateau 2.
 
+### Plateau 2 handoff (2026-09-26)
+
+Now true: every story Plan's contract carries Ariad's three method lines. They are TDD or
+characterization tests, changes scoped to the active story, and, by decision C,
+`Do not use git add .; commit only story-scoped files.`, which the card and the scaffold
+print from one constant. The English-commit rule is gone from the default. A project's
+own rules reach the Plan only as one pointer to `docs/process/development-guide.md`, when
+that file exists. `projectContractRules` builds it in `prepare.ts`, beside the path
+Prepare already reports. Without a guide neither surface adds a line: `plan.md` loses
+`- None declared.`, and the card no longer shows the list's usual `none`.
+
+Evidence: the end-to-end contract test was red first on the English line. It then went
+red on the card's `none`, which no earlier Plan could show, since the Mirror lines never
+left the list empty. Both are green. Unit tests cover `projectContractRules` with the
+guide present, missing, and with no project path. The golden edits are `builder-command`
+(the three `plan_item_*` cases) and `builder-lifecycle` (15 card renders, two `plan.md`
+files), with a README row. The full suite passes (2,713 tests), along with typecheck,
+lint, the repository checks, and the smoke (54/54). CI was green on plateau 1.
+
+Remaining: plateau 3, meaning the runnable validation route, Navigator validation, and
+the handoff review.
+
 ## Outcome
 
 Pending.

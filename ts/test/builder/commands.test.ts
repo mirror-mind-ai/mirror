@@ -1544,3 +1544,42 @@ test("CR019: a story's Plan names only its own parent's other children as non-go
     "- Do not silently absorb adjacent roadmap work.",
   );
 });
+
+test("CR019: the contract carries Ariad's method rules, and a project's own only through its guide", () => {
+  const first = {
+    code: "CV1.DS1.TS1",
+    title: "First slice",
+    level: "technical_story",
+    folder: "cv1-first/cv1-ds1-alpha/cv1-ds1-ts1-first",
+  };
+  const method = [
+    "- Use TDD or characterization tests for behavior changes when testable.",
+    "- Keep changes scoped to `CV1.DS1.TS1`.",
+    "- Do not use git add .; commit only story-scoped files.",
+  ];
+  const cardMethod =
+    "TDD/characterization tests when behavior is testable. " +
+    "Keep changes scoped to the active story. " +
+    "Do not use git add .; commit only story-scoped files.";
+  const pointer = "Follow the project's development guide: docs/process/development-guide.md.";
+
+  for (const guide of [false, true]) {
+    const project = mkdtempSync("/tmp/builder-command-cr019-");
+    temporaryDirectories.push(project);
+    writeSiblingTree(project, { guide });
+    const plan = planStoryIn(project, first);
+    const label = guide ? "with a guide" : "without a guide";
+
+    assert.equal(
+      planSection(plan.planMd, "Implementation Contract"),
+      [...method, ...(guide ? [`- ${pointer}`] : [])].join("\n"),
+      `plan.md ${label}`,
+    );
+    assert.equal(
+      cardRows(plan.card, "implementation contract", "approval gate"),
+      guide ? `${cardMethod} ✓ ${pointer}` : cardMethod,
+      `card ${label}`,
+    );
+    assert.doesNotMatch(plan.card + plan.planMd, /English|None declared/u, label);
+  }
+});

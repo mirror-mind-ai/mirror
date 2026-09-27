@@ -100,9 +100,21 @@ ${markdownList(report.validationRoute)}
 `;
 }
 
+/**
+ * Ariad's own rule for staging, a method line in every Plan: the card and the
+ * scaffold both print it from here (CR019).
+ */
+export const STORY_SCOPED_COMMIT_RULE = "Do not use git add .; commit only story-scoped files.";
+
 /** Python `_render_plan_artifact`. */
 export function renderPlanArtifact(report: PlanArtifactInput): string {
-  const localRules = report.localRules.map((rule) => `- ${rule}`).join("\n") || "- None declared.";
+  // The project's own rules follow the method lines; none is an honest empty (CR019).
+  const contract = [
+    "- Use TDD or characterization tests for behavior changes when testable.",
+    `- Keep changes scoped to \`${report.activeItem}\`.`,
+    `- ${STORY_SCOPED_COMMIT_RULE}`,
+    ...report.localRules.map((rule) => `- ${rule}`),
+  ].join("\n");
   const stopConditions = report.implementContract.stopConditions
     .map((condition) => `- ${condition}`)
     .join("\n");
@@ -134,9 +146,7 @@ E2E decision: ${report.e2eDecision}
 
 ## Implementation Contract
 
-- Use TDD or characterization tests for behavior changes when testable.
-- Keep changes scoped to \`${report.activeItem}\`.
-${localRules}
+${contract}
 
 ## Stop Conditions
 
