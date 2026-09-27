@@ -507,9 +507,53 @@ typecheck, lint, the repository checks, and the smoke.
 Next: plateau 4, meaning the skill, the pasteable validation route, Navigator validation,
 and the handoff review.
 
+### Navigator validation (2026-09-27)
+
+The Navigator ran the [validation route](#validation-route) and accepted it, for CR067
+and CR020 together. CI was green on every push: plateau 1 (`b2967407`), plateau 2
+(`a4327dfc`), plateau 3 (`3fcc1d90`), and plateau 4 (`b97f6be1`), each on Docs and on
+Tests across Ubuntu, macOS, and the smoke job.
+
+### Handoff review (2026-09-27)
+
+After validation, per the collaboration strategy. The baseline panel (engineer,
+quality-assurance, database-architect, devops-engineer, security-engineer), plus the
+lenses that reviewed the plan (ai-engineer, prompt-engineer, experience-designer,
+product-designer), reviewed the delivered code, tests, safety posture, operational cost,
+and resumability.
+
+Synthesis: proportional, and true on every path the tests walk. One owner states the
+lifecycle order, the new surfaces reuse the card, ribbon, quoting, and path helpers, and
+`build show` is read-only down to the database handle. The change also introduced one
+claim that is false on a path nobody walked: a failure after the cursor write is
+rendered as a refusal that changed nothing.
+
+| # | Lens | Finding | Class | Recommendation |
+|---|---|---|---|---|
+| 1 | engineer | The four closure commands send every error to `CHECKPOINT_REFUSED`, whose boundary says the refusal came before any change. Each closure function writes the cursor before its record, and the record writer can throw after that: `ArtifactOutsideProjectError`, a missing project root, or any I/O failure. Such an error renders as a clean refusal while the cursor has already moved, and the ribbon shows the new stage. Before CR067 the same path printed the Implement guard, which was wrong but made no such claim | Non-blocking debt, introduced here | Pay now: only a `LifecycleRefusal` gets the surface; any other error keeps the plain `Error:` line, as in `plan-item` and `approve-plan`. Test first: a record write that fails after the cursor write |
+| 2 | prompt-engineer | The skill tells the agent how to act on three kinds of refusal, and the runtime has four: missing evidence is left for the agent to infer | Non-blocking debt, introduced here | Pay now: one clause, "missing evidence needs the evidence the reason names" |
+
+The other lenses were silent:
+
+- database-architect: no schema or stored state changes.
+- devops-engineer: `build show` runs on a read-only handle, CI is green, and rollback is
+  a plain `git revert`.
+- security-engineer: the copyable command reuses the quoting that makes a hostile slug
+  inert.
+- ai-engineer and product-designer: nothing to add.
+- experience-designer: silent too. A long package path breaks mid-word, which is the
+  card's convention for every surface and not this change's.
+
+Accepted boundary, and older than CR067: `continue-lifecycle` calls into Done with no
+catch around it. Its own refusals are all checked before that call, but an error inside
+Done is rendered by neither surface.
+
+The Navigator's debt decision is pending.
+
 ## Outcome
 
-Pending.
+Validated 2026-09-27, for CR067 and CR020 together. The debt decision and closure are
+pending.
 
 ## Provenance
 
