@@ -9,7 +9,8 @@
 // disagree with their JavaScript spelling.
 
 import assert from "node:assert/strict";
-import { readdirSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join, relative, sep } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
@@ -39,7 +40,6 @@ import {
   resolveStoryDirectory,
   StoryPackageAmbiguityError,
   storyFolderName,
-  titleLeaf,
 } from "#builder/storyPaths.ts";
 import golden from "#goldens/builder-roadmap.golden.json" with { type: "json" };
 
@@ -87,7 +87,6 @@ test("every golden kind is exercised here", () => {
       "roadmap_snapshot",
       "story_folder_name",
       "strip_markdown_link",
-      "title_leaf",
     ],
     "a new golden kind needs a case here, not a silent skip",
   );
@@ -280,10 +279,7 @@ test("no created story directory escapes the roadmap root", () => {
   }
 });
 
-test("titleLeaf and storyFolderName match Python", () => {
-  for (const scenario of byKind("title_leaf")) {
-    assert.equal(titleLeaf(scenario.input.title as string), scenario.expected, scenario.name);
-  }
+test("storyFolderName matches Python", () => {
   for (const scenario of byKind("story_folder_name")) {
     assert.equal(
       storyFolderName(scenario.input.code as string, scenario.input.title as string),
@@ -293,10 +289,32 @@ test("titleLeaf and storyFolderName match Python", () => {
   }
 });
 
-test("titleLeaf splits a slash-bearing real title, as Python does", () => {
-  // The defect this story's own Pull surface displays. Pinned so the port does
-  // not quietly "fix" it and diverge from the oracle.
-  assert.equal(titleLeaf("Builder/Ariad tree"), "Ariad tree");
+test("CR018: no reader cuts a title at a slash", () => {
+  // Python named a bullet-list Delivery Story "<CV title> / <DS title>" and cut every
+  // title at its last `/` to undo that, so a title with a slash of its own lost its
+  // head. Each Delivery Story now carries its own title, whole.
+  const root = mkdtempSync(join(tmpdir(), "roadmap-cr018-"));
+  try {
+    const roadmap = join(root, "docs/project/roadmap");
+    mkdirSync(roadmap, { recursive: true });
+    writeFileSync(
+      join(roadmap, "index.md"),
+      "# Roadmap\n\n## CV1: Builder/Ariad value\n\n**Status:** 🟢 Active\n\n" +
+        "Candidate Delivery Stories:\n\n- DS1 Read/write paths\n",
+      "utf8",
+    );
+    const titles = inspectPullCandidates(root, { journey: "j", method: "ariad" }).candidates.map(
+      (candidate) => [candidate.code, candidate.title],
+    );
+    assert.deepEqual(titles, [["CV1.DS1", "Read/write paths"]]);
+    assert.equal(
+      relative(roadmap, createStoryDirectory(root, "CV1.DS2", "Builder/Ariad tree")),
+      join("cv1-builder-ariad-value", "cv1-ds2-builder-ariad-tree"),
+      "a new package's folder is named from the whole title",
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 });
 
 test("matchHeading matches Python on every dialect trap", () => {

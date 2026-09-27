@@ -2171,3 +2171,142 @@ test("CR018: a code two packages claim is one Error line in every command that r
     }
   }
 });
+
+// CR018 plateau 2 — a title is one string. Slashes in prose, inside code spans, and
+// between them are part of it; no reader cuts at them.
+
+const SLASHED = {
+  cv: "Builder/Ariad trust",
+  ds1: "Dead code / hygiene",
+  ts1: "Remove the dormant pair (`executeToolCallsWeb` + route `/v1/mcp/execute`): the dead path goes",
+  ts2: "Audit `pub`/`allow(dead_code)` items and read/write paths",
+  ds2: "Web retirement: client/server split",
+  us1: "Retire the web and/or fallbacks",
+} as const;
+
+/** The validation route's roadmap, without its links: slashes are this plateau's reason. */
+function slashedProject(): string {
+  const project = mkdtempSync("/tmp/builder-command-cr018-");
+  temporaryDirectories.push(project);
+  const roadmap = join(project, "docs/project/roadmap");
+  const write = (path: string, content: string) => {
+    mkdirSync(dirname(join(roadmap, path)), { recursive: true });
+    writeFileSync(join(roadmap, path), content, "utf8");
+  };
+  const story = (code: string, title: string, type: string) =>
+    `# ${code} — ${title}\n\n**Status:** 🟡 Planned\n**Type:** ${type}\n`;
+  write("index.md", "# Roadmap\n");
+  write("cv1/index.md", `# CV1 — ${SLASHED.cv}\n\n**Status:** 🟢 Active\n`);
+  write("cv1/ds1/index.md", story("CV1.DS1", SLASHED.ds1, "Delivery Story"));
+  write("cv1/ds1/ts1/index.md", story("CV1.DS1.TS1", SLASHED.ts1, "Technical Story"));
+  write("cv1/ds1/ts2/index.md", story("CV1.DS1.TS2", SLASHED.ts2, "Technical Story"));
+  write(
+    "cv1/ds2/index.md",
+    `${story("CV1.DS2", SLASHED.ds2, "Delivery Story")}\n## Candidate Stories\n\n` +
+      "| Code | Story | Type | Status |\n|------|-------|------|--------|\n" +
+      `| CV1.DS2.US1 | ${SLASHED.us1} | User Story | 🟡 Planned |\n`,
+  );
+  return project;
+}
+
+/** The card's rows as plain text, one per line, box drawing removed. */
+function allCardRows(stdout: string): string[] {
+  return stdout
+    .split("\n")
+    .filter((line) => line.startsWith("│"))
+    .map((line) => line.replace(/^│ ?/u, "").replace(/ *│$/u, ""));
+}
+
+test("CR018: a title reaches Pull, Plan, Ready, and the Snapshot whole", () => {
+  const project = slashedProject();
+  const db = seed("adopted", project);
+  const run = (argv: readonly string[]) =>
+    invoke(db, [argv[0] ?? "", "--method", "ariad", "--journey", "demo", ...argv.slice(1)]);
+  const pull = (code: string, title: string, level: string) =>
+    run([
+      "pull-item",
+      "--item-code",
+      code,
+      "--item-title",
+      title,
+      "--item-level",
+      level,
+      "--why-now",
+      "CR018",
+    ]);
+  try {
+    assert.equal(run(["sync-cursor"]).exitCode, 0);
+
+    const pulled = pull("CV1.DS1.TS1", SLASHED.ts1, "technical_story");
+    assert.equal(pulled.exitCode, 0, pulled.stderr);
+    const pullRows = allCardRows(pulled.stdout);
+    assert.ok(
+      pullRows.some((row) => row.startsWith("Remove the dormant pair (`execute")),
+      "header",
+    );
+    assert.ok(
+      pullRows.some((row) => row.startsWith("  └─ 🟦[TS1] Remove the dormant pair")),
+      "tree",
+    );
+
+    assert.equal(run(["prepare-item"]).exitCode, 0);
+    const planned = run(["plan-item"]);
+    assert.equal(planned.exitCode, 0, planned.stderr);
+    const planMd = readFileSync(join(project, "docs/project/roadmap/cv1/ds1/ts1/plan.md"), "utf8");
+    assert.equal(
+      planSection(planMd, "Objective"),
+      `Plan the smallest coherent, testable slice for ${SLASHED.ts1}.`,
+    );
+    assert.equal(
+      planSection(planMd, "Scope").split("\n")[0],
+      `- Deliver ${SLASHED.ts1} as an observable slice.`,
+    );
+    assert.equal(
+      planSection(planMd, "Non-Goals"),
+      `- Do not implement sibling roadmap item: ${SLASHED.ts2}.`,
+    );
+    assert.equal(
+      cardRows(planned.stdout, "non-goals", "acceptance"),
+      `○ Do not implement sibling roadmap item: ${SLASHED.ts2}.`,
+    );
+
+    const ready = pull("CV1.DS2", SLASHED.ds2, "delivery_story");
+    assert.equal(ready.exitCode, 0, ready.stderr);
+    const readyRows = allCardRows(ready.stdout);
+    const pulledAt = readyRows.indexOf("What was pulled?");
+    assert.equal(readyRows[pulledAt + 1]?.trim(), SLASHED.ds2);
+    assert.ok(
+      readyRows.some((row) => row.startsWith(`  └─ 🟦[DS2] ${SLASHED.ds2}`)),
+      "tree",
+    );
+    assert.ok(
+      readyRows.some((row) => row.startsWith(`🟩[US1] ${SLASHED.us1}`)),
+      "recommendation",
+    );
+
+    const snapshot = invokeReadOnlyBuilderArgv(db, [
+      "pull-candidates",
+      "--method",
+      "ariad",
+      "--journey",
+      "demo",
+    ]);
+    const backlog = allCardRows(snapshot.stdout).map((row) => row.trim());
+    for (const [code, title] of [
+      ["CV1.DS1", SLASHED.ds1],
+      ["CV1.DS1.TS2", SLASHED.ts2],
+    ] as const) {
+      const row = `○ 🟦[${code}] ${title}`;
+      assert.ok(
+        backlog.some((line) => row.startsWith(line) && line.length > `○ 🟦[${code}] `.length + 8),
+        `${code} is listed from the start of its title`,
+      );
+    }
+    assert.ok(
+      backlog.some((line) => line.startsWith(`└─ 🟦[US1] ${SLASHED.us1}`)),
+      "the current row",
+    );
+  } finally {
+    db.close();
+  }
+});

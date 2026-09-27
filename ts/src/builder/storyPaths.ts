@@ -34,20 +34,6 @@ export class StoryPackageAmbiguityError extends Error {
 }
 
 /**
- * Python `title_leaf`: the final `/`-separated segment, stripped.
- *
- * Roadmap titles are sometimes authored as an ancestor chain
- * (`"CV title / DS title"`), so this takes the item's own segment. The cost is
- * that a title legitimately containing a slash — `"Builder/Ariad tree"` — is
- * read as a chain and loses its head. That is Python's behavior and this story's
- * own Pull surface shows it; reproduced here, recorded as a CR.
- */
-export function titleLeaf(title: string): string {
-  const segments = title.split("/");
-  return (segments[segments.length - 1] ?? "").trim();
-}
-
-/**
  * Python `_sanitize_code_segment`: dots are the code's own level separator, so
  * they become hyphens FIRST (preserving `cv2-ds1` folder naming for well-formed
  * codes), and everything else goes through the same slug sanitizer titles use.
@@ -182,20 +168,20 @@ function parentDirectory(projectRoot: string, code: string): string {
 
 /**
  * Python `create_story_directory`: the canonical directory for a NEW package,
- * nested under its best-available parent coordinate, with only the story's own
- * leaf title slugging its own folder.
+ * nested under its best-available parent coordinate, with the story's whole title
+ * slugging its own folder: the rule Expand applies to a child (CR018).
  *
  * Throws when the resolved target escapes the roadmap root. That guard is the
  * reason a `../` code or an absolute-looking title cannot write outside
  * `docs/project/roadmap/`, and it is checked AFTER resolution so a symlink or a
  * `..` surviving sanitization is still caught.
  */
-export function createStoryDirectory(projectRoot: string, code: string, leafTitle: string): string {
+export function createStoryDirectory(projectRoot: string, code: string, title: string): string {
   const { roadmapRoot } = roadmapPaths(projectRoot);
   const resolvedRoadmapRoot = resolve(roadmapRoot);
   const parent = parentCode(code);
   const base = parent === null ? resolvedRoadmapRoot : parentDirectory(projectRoot, parent);
-  const target = resolve(base, storyFolderName(code, titleLeaf(leafTitle)));
+  const target = resolve(base, storyFolderName(code, title));
   const relation = relative(resolvedRoadmapRoot, target);
   const escapes =
     relation.startsWith("..") || relation.startsWith(`${sep}`) || resolve(relation) === relation;

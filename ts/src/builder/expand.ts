@@ -46,12 +46,7 @@ import {
 } from "./deliveryCursor.ts";
 import { renderLifecycleRibbon } from "./lifecycleRibbon.ts";
 import { stripMarkdownLink } from "./roadmapGrammar.ts";
-import {
-  createStoryDirectory,
-  storyDirectoryResolver,
-  storyFolderName,
-  titleLeaf,
-} from "./storyPaths.ts";
+import { createStoryDirectory, storyDirectoryResolver, storyFolderName } from "./storyPaths.ts";
 import { wrapAriadSurface } from "./surfaceProtocol.ts";
 
 /**
@@ -194,10 +189,7 @@ function materializeChildPackage(
     const authoredIndex = join(authored, "index.md");
     return { path: authoredIndex, artifact: existingArtifact(label, authoredIndex) };
   }
-  // Note: `child.title`, not `titleLeaf(child.title)`. A `/` in a candidate title
-  // is slugged into the folder name rather than read as an ancestor chain, which
-  // is the opposite of what the cursor's own title does. Python's asymmetry,
-  // reproduced.
+  // The whole title slugs the folder, as it does for any new package (CR018).
   const childDirectory = join(dsDirectory, storyFolderName(child.code, child.title));
   const childIndex = join(childDirectory, "index.md");
   const outcome = writeBuilderArtifact({
@@ -299,7 +291,7 @@ export function expandDeliveryStory(
     // something implementable. This is not fabrication on top of authored content
     // — the refusal above already covers that case — it is the empty-field case.
     recommendedCode = `${activeItem}.US1`;
-    recommendedTitle = titleLeaf(title);
+    recommendedTitle = title;
     const claimed = packageOf(recommendedCode);
     if (claimed !== null) {
       throw new ExpandBlockedError(

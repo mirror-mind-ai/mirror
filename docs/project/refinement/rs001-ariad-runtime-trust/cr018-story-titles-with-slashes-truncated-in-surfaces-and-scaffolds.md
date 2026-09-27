@@ -592,6 +592,32 @@ repository checks, and the Builder lifecycle smoke.
 
 Remaining: every title change. Next: plateau 2, whole titles.
 
+### Plateau 2 handoff (2026-09-27)
+
+Now true: no reader cuts a title at a `/`. A Delivery Story from a CV's bullet list
+carries its own title, and `titleLeaf`, `lastTitleSegment`, `candidateShortTitle`, and
+the split in `roadmapPlanContext` are gone. Pull, Ready, the Snapshot, Project Position,
+Builder Orientation, and the Plan's prose name titles whole. A new package's folder is
+named from the whole title, as Expand already named a child's, and the story Expand
+invents for a Delivery Story with no package takes the whole title too. `cvTitle`
+remains, and the CV row still borrows the item's title: that is plateau 3's.
+
+Evidence: the end-to-end test over the route's roadmap, without its links, was red first
+on Pull's header. It is green now for Pull's header and tree rows, the Plan's objective,
+scope, and sibling non-goal on the card and in `plan.md`, Ready's pulled, tree, and
+recommended rows, and the Snapshot's current and backlog rows. A roadmap test pins the
+bullet-list title and the whole-title folder; a mutant that restores the prefix and one
+that restores the cut in folder names each fail it. Golden edits, by script with asserted
+counts and a README row: `builder-roadmap` (the `title_leaf` kind, two folders, the
+`heading_grammar` titles and renders), `builder-orientation`, which the plan did not
+name, for the one real slash-bearing title in the goldens (`Builder/Ariad tree`, two
+scenarios), and `builder-lifecycle` (a Pull and a Ready, and the sequence that pinned the
+old rule, renamed `expand_fallback_uses_the_whole_delivery_story_title`). The full suite
+passes (2,732 tests), along with typecheck, lint, the repository checks, and the Builder
+lifecycle smoke. CI was green on plateau 1.
+
+Remaining: the CV's own title, width, and links. Next: plateau 3.
+
 ## Outcome
 
 Pending.

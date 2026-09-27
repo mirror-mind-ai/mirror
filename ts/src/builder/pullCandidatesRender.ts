@@ -47,15 +47,9 @@ const FRAME_TOP = "╭───────────────────�
 const FRAME_BOTTOM = "╰────────────────────────────────────────────────────────╯";
 const FRAME_BLANK = "│                                                        │";
 
-/** Python `_title_leaf`-by-hand: every renderer does `title.split("/")[-1].strip()`. */
-function lastTitleSegment(title: string): string {
-  const segments = title.split("/");
-  return (segments[segments.length - 1] ?? "").trim();
-}
-
 /** Python `_format_project_recommendation`, for a recommendation that exists. */
 function formatProjectRecommendation(candidate: PullCandidate): string {
-  return `🟦[${candidate.code}] ${lastTitleSegment(candidate.title)} — recommended next pull`;
+  return `🟦[${candidate.code}] ${candidate.title} — recommended next pull`;
 }
 
 /**
@@ -168,7 +162,7 @@ export function renderRoadmapSnapshotReport(
     if (current !== null) {
       const codeTail = current.code.split(".").pop() ?? current.code;
       lines.push(
-        cardLine(`   └─ 🟦[${codeTail}] ${lastTitleSegment(current.title)}`, "◉ current"),
+        cardLine(`   └─ 🟦[${codeTail}] ${current.title}`, "◉ current"),
         cardText("      progress: not started"),
         FRAME_BLANK,
       );
@@ -176,7 +170,7 @@ export function renderRoadmapSnapshotReport(
     lines.push(cardText("      Backlog"));
     if (view.shown.length > 0) {
       for (const candidate of view.shown) {
-        lines.push(cardText(`      ○ 🟦[${candidate.code}] ${lastTitleSegment(candidate.title)}`));
+        lines.push(cardText(`      ○ 🟦[${candidate.code}] ${candidate.title}`));
       }
     } else {
       lines.push(cardText("      none"));

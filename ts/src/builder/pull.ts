@@ -37,7 +37,6 @@ import {
   setTo,
 } from "./deliveryCursor.ts";
 import { renderLifecycleRibbon } from "./lifecycleRibbon.ts";
-import { titleLeaf } from "./storyPaths.ts";
 import { wrapAriadSurface } from "./surfaceProtocol.ts";
 
 /** Python `BuilderLifecycleItem`. */
@@ -133,7 +132,7 @@ export function renderPullReport(report: BuilderPullReport): string {
   const codeParts = report.item.code.split(".");
   const cvCode = codeParts[0] ?? report.item.code;
   const dsCode = codeParts.length > 1 ? (codeParts[codeParts.length - 1] ?? "") : report.item.code;
-  const title = titleLeaf(report.item.title);
+  const title = report.item.title;
   const body = `${[
     "Delivery",
     renderLifecycleRibbon("pull"),

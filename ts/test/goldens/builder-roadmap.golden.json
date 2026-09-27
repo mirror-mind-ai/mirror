@@ -268,21 +268,21 @@
             "level": "delivery_story",
             "path": "docs/project/roadmap/index.md",
             "status": "🟢 Active",
-            "title": "Heading grammar value / First candidate from a bullet"
+            "title": "First candidate from a bullet"
           },
           {
             "code": "CV1.DS2",
             "level": "delivery_story",
             "path": "docs/project/roadmap/index.md",
             "status": "🟢 Active",
-            "title": "Heading grammar value / Second candidate with a trailing period"
+            "title": "Second candidate with a trailing period"
           },
           {
             "code": "CV1.DS3",
             "level": "delivery_story",
             "path": "docs/project/roadmap/index.md",
             "status": "🟢 Active",
-            "title": "Heading grammar value / Third candidate"
+            "title": "Third candidate"
           }
         ],
         "journey": "j",
@@ -292,7 +292,7 @@
           "level": "delivery_story",
           "path": "docs/project/roadmap/index.md",
           "status": "🟢 Active",
-          "title": "Heading grammar value / First candidate from a bullet"
+          "title": "First candidate from a bullet"
         }
       },
       "input": {
@@ -318,7 +318,7 @@
       "name": "render_snapshot__heading_grammar"
     },
     {
-      "expected": "<<<ARIAD:PULL_CANDIDATES>>>\nDelivery\n\n╭────────────────────────────────────────────────────────╮\n│        🟪■  PULL CANDIDATES                            │\n│                                                        │\n│ journey                                                │\n│ j                                                      │\n│                                                        │\n│ method                                                 │\n│ ariad                                                  │\n│                                                        │\n│ project-wide candidates                                │\n│ - CV1.DS1 — Heading grammar value / First candidate    │\n│   from a bullet [delivery_story] 🟢 Active              │\n│   (docs/project/roadmap/index.md)                      │\n│ - CV1.DS2 — Heading grammar value / Second candidate   │\n│   with a trailing period [delivery_story] 🟢 Active     │\n│   (docs/project/roadmap/index.md)                      │\n│ - CV1.DS3 — Heading grammar value / Third candidate    │\n│   [delivery_story] 🟢 Active                            │\n│   (docs/project/roadmap/index.md)                      │\n│                                                        │\n│ recommended pull                                       │\n│ pull explicitly: mirror build pull-item --journey j    │\n│ --method ariad --item-code <code> --item-title         │\n│ \"<title>\" --item-level <level> --why-now \"<why now>\"   │\n│                                                        │\n│ boundary                                               │\n│ No item was pulled. No lifecycle work was executed.    │\n╰────────────────────────────────────────────────────────╯\n<<<END:PULL_CANDIDATES>>>\n",
+      "expected": "<<<ARIAD:PULL_CANDIDATES>>>\nDelivery\n\n╭────────────────────────────────────────────────────────╮\n│        🟪■  PULL CANDIDATES                            │\n│                                                        │\n│ journey                                                │\n│ j                                                      │\n│                                                        │\n│ method                                                 │\n│ ariad                                                  │\n│                                                        │\n│ project-wide candidates                                │\n│ - CV1.DS1 — First candidate from a bullet              │\n│   [delivery_story] 🟢 Active                            │\n│   (docs/project/roadmap/index.md)                      │\n│ - CV1.DS2 — Second candidate with a trailing period    │\n│   [delivery_story] 🟢 Active                            │\n│   (docs/project/roadmap/index.md)                      │\n│ - CV1.DS3 — Third candidate [delivery_story] 🟢 Active  │\n│   (docs/project/roadmap/index.md)                      │\n│                                                        │\n│ recommended pull                                       │\n│ pull explicitly: mirror build pull-item --journey j    │\n│ --method ariad --item-code <code> --item-title         │\n│ \"<title>\" --item-level <level> --why-now \"<why now>\"   │\n│                                                        │\n│ boundary                                               │\n│ No item was pulled. No lifecycle work was executed.    │\n╰────────────────────────────────────────────────────────╯\n<<<END:PULL_CANDIDATES>>>\n",
       "input": {
         "project": "heading_grammar"
       },
@@ -326,7 +326,7 @@
       "name": "render_candidates__heading_grammar"
     },
     {
-      "expected": "<<<ARIAD:PROJECT_POSITION>>>\nRoadmap\n\n╭────────────────────────────────────────────────────────╮\n│        🧭  PROJECT POSITION                           │\n│                                                        │\n│ Where are we now?                                      │\n│ no item pulled yet                                     │\n│                                                        │\n│ What looks next?                                       │\n│ pull explicitly: mirror build pull-item --journey j    │\n│ --method ariad --item-code <code> --item-title         │\n│ \"<title>\" --item-level <level> --why-now \"<why now>\"   │\n│                                                        │\n│ project-wide candidates                                │\n│ - CV1.DS1 — Heading grammar value / First candidate    │\n│   from a bullet [delivery_story] 🟢 Active              │\n│   (docs/project/roadmap/index.md)                      │\n│ - CV1.DS2 — Heading grammar value / Second candidate   │\n│   with a trailing period [delivery_story] 🟢 Active     │\n│   (docs/project/roadmap/index.md)                      │\n│ - CV1.DS3 — Heading grammar value / Third candidate    │\n│   [delivery_story] 🟢 Active                            │\n│   (docs/project/roadmap/index.md)                      │\n│                                                        │\n│ Choose a pull when ready.                              │\n╰────────────────────────────────────────────────────────╯\n<<<END:PROJECT_POSITION>>>\n",
+      "expected": "<<<ARIAD:PROJECT_POSITION>>>\nRoadmap\n\n╭────────────────────────────────────────────────────────╮\n│        🧭  PROJECT POSITION                           │\n│                                                        │\n│ Where are we now?                                      │\n│ no item pulled yet                                     │\n│                                                        │\n│ What looks next?                                       │\n│ pull explicitly: mirror build pull-item --journey j    │\n│ --method ariad --item-code <code> --item-title         │\n│ \"<title>\" --item-level <level> --why-now \"<why now>\"   │\n│                                                        │\n│ project-wide candidates                                │\n│ - CV1.DS1 — First candidate from a bullet              │\n│   [delivery_story] 🟢 Active                            │\n│   (docs/project/roadmap/index.md)                      │\n│ - CV1.DS2 — Second candidate with a trailing period    │\n│   [delivery_story] 🟢 Active                            │\n│   (docs/project/roadmap/index.md)                      │\n│ - CV1.DS3 — Third candidate [delivery_story] 🟢 Active  │\n│   (docs/project/roadmap/index.md)                      │\n│                                                        │\n│ Choose a pull when ready.                              │\n╰────────────────────────────────────────────────────────╯\n<<<END:PROJECT_POSITION>>>\n",
       "input": {
         "just_moved": null,
         "project": "heading_grammar"
@@ -335,7 +335,7 @@
       "name": "render_position__heading_grammar"
     },
     {
-      "expected": "<<<ARIAD:PROJECT_POSITION>>>\nRoadmap\n\n╭────────────────────────────────────────────────────────╮\n│        🧭  PROJECT POSITION                           │\n│                                                        │\n│ Where are we now?                                      │\n│ no item pulled yet                                     │\n│                                                        │\n│ What just moved?                                       │\n│ CV2.DS1 reached Done                                   │\n│                                                        │\n│ What looks next?                                       │\n│ pull explicitly: mirror build pull-item --journey j    │\n│ --method ariad --item-code <code> --item-title         │\n│ \"<title>\" --item-level <level> --why-now \"<why now>\"   │\n│                                                        │\n│ project-wide candidates                                │\n│ - CV1.DS1 — Heading grammar value / First candidate    │\n│   from a bullet [delivery_story] 🟢 Active              │\n│   (docs/project/roadmap/index.md)                      │\n│ - CV1.DS2 — Heading grammar value / Second candidate   │\n│   with a trailing period [delivery_story] 🟢 Active     │\n│   (docs/project/roadmap/index.md)                      │\n│ - CV1.DS3 — Heading grammar value / Third candidate    │\n│   [delivery_story] 🟢 Active                            │\n│   (docs/project/roadmap/index.md)                      │\n│                                                        │\n│ Choose a pull when ready.                              │\n╰────────────────────────────────────────────────────────╯\n<<<END:PROJECT_POSITION>>>\n",
+      "expected": "<<<ARIAD:PROJECT_POSITION>>>\nRoadmap\n\n╭────────────────────────────────────────────────────────╮\n│        🧭  PROJECT POSITION                           │\n│                                                        │\n│ Where are we now?                                      │\n│ no item pulled yet                                     │\n│                                                        │\n│ What just moved?                                       │\n│ CV2.DS1 reached Done                                   │\n│                                                        │\n│ What looks next?                                       │\n│ pull explicitly: mirror build pull-item --journey j    │\n│ --method ariad --item-code <code> --item-title         │\n│ \"<title>\" --item-level <level> --why-now \"<why now>\"   │\n│                                                        │\n│ project-wide candidates                                │\n│ - CV1.DS1 — First candidate from a bullet              │\n│   [delivery_story] 🟢 Active                            │\n│   (docs/project/roadmap/index.md)                      │\n│ - CV1.DS2 — Second candidate with a trailing period    │\n│   [delivery_story] 🟢 Active                            │\n│   (docs/project/roadmap/index.md)                      │\n│ - CV1.DS3 — Third candidate [delivery_story] 🟢 Active  │\n│   (docs/project/roadmap/index.md)                      │\n│                                                        │\n│ Choose a pull when ready.                              │\n╰────────────────────────────────────────────────────────╯\n<<<END:PROJECT_POSITION>>>\n",
       "input": {
         "just_moved": "CV2.DS1 reached Done",
         "project": "heading_grammar"
@@ -970,7 +970,7 @@
       "name": "create__main__CV4.DS1__Parent CV has no package at all"
     },
     {
-      "expected": "docs/project/roadmap/cv2-second-value/cv2-ds1-alpha/cv2-ds1-us3-with-a-leaf-segment",
+      "expected": "docs/project/roadmap/cv2-second-value/cv2-ds1-alpha/cv2-ds1-us3-chained-title-with-a-leaf-segment",
       "input": {
         "code": "CV2.DS1.US3",
         "leaf_title": "Chained title / with a leaf segment",
@@ -1020,7 +1020,7 @@
       "name": "create__main__CV2.DS1.US6__../../escape"
     },
     {
-      "expected": "docs/project/roadmap/cv2-second-value/cv2-ds1-alpha/cv2-ds1-us7-passwd",
+      "expected": "docs/project/roadmap/cv2-second-value/cv2-ds1-alpha/cv2-ds1-us7-etc-passwd",
       "input": {
         "code": "CV2.DS1.US7",
         "leaf_title": "/etc/passwd",
@@ -1374,78 +1374,6 @@
       },
       "kind": "strip_markdown_link",
       "name": "link__﻿[bom padded](t.md)﻿"
-    },
-    {
-      "expected": "plain title",
-      "input": {
-        "title": "plain title"
-      },
-      "kind": "title_leaf",
-      "name": "title_leaf__plain title"
-    },
-    {
-      "expected": "DS title",
-      "input": {
-        "title": "CV title / DS title"
-      },
-      "kind": "title_leaf",
-      "name": "title_leaf__CV title / DS title"
-    },
-    {
-      "expected": "Ariad tree",
-      "input": {
-        "title": "Builder/Ariad tree"
-      },
-      "kind": "title_leaf",
-      "name": "title_leaf__Builder/Ariad tree"
-    },
-    {
-      "expected": "c",
-      "input": {
-        "title": "a / b / c"
-      },
-      "kind": "title_leaf",
-      "name": "title_leaf__a / b / c"
-    },
-    {
-      "expected": "padded",
-      "input": {
-        "title": "  padded  "
-      },
-      "kind": "title_leaf",
-      "name": "title_leaf__padded"
-    },
-    {
-      "expected": "",
-      "input": {
-        "title": "/"
-      },
-      "kind": "title_leaf",
-      "name": "title_leaf__/"
-    },
-    {
-      "expected": "",
-      "input": {
-        "title": ""
-      },
-      "kind": "title_leaf",
-      "name": "title_leaf__blank"
-    },
-    {
-      "expected": "",
-      "input": {
-        "title": "trailing/"
-      },
-      "kind": "title_leaf",
-      "name": "title_leaf__trailing/"
-    },
-    {
-      "expected": "leading",
-      "input": {
-        "title": "/leading"
-      },
-      "kind": "title_leaf",
-      "name": "title_leaf__/leading"
     },
     {
       "expected": "cv2-ds1-us1-a-user-story",

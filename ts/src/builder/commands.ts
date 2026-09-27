@@ -733,8 +733,8 @@ function artifactsSurface(options: {
 /**
  * Python `_roadmap_plan_context`.
  *
- * Derives the Plan's default prose from the roadmap: the active candidate's own
- * title leaf, and its SIBLINGS' titles as explicit non-goals. Siblings are the other
+ * Derives the Plan's default prose from the roadmap: the active candidate's whole
+ * title (CR018), and its SIBLINGS' titles as explicit non-goals. Siblings are the other
  * children of the same parent, never an ancestor or a cousin (CR019).
  */
 function roadmapPlanContext(
@@ -749,7 +749,7 @@ function roadmapPlanContext(
   e2eDecision: string;
 } {
   const activeItem = cursor?.activeItem ?? null;
-  let titleParts: string[] = [];
+  let title = String(activeItem ?? "the active item");
   let siblings: string[] = [];
   if (projectPath && activeItem) {
     const candidates = inspectPullCandidates(projectPath, {
@@ -758,16 +758,10 @@ function roadmapPlanContext(
     }).candidates;
     const active = candidates.find((candidate) => candidate.code === activeItem);
     if (active) {
-      titleParts = active.title
-        .split("/")
-        .map((part) => part.trim())
-        .filter((part) => part !== "");
-      siblings = siblingsOf(candidates, activeItem).map((candidate) =>
-        (candidate.title.split("/").at(-1) ?? "").trim(),
-      );
+      if (active.title) title = active.title;
+      siblings = siblingsOf(candidates, activeItem).map((candidate) => candidate.title);
     }
   }
-  const title = titleParts.at(-1) ?? String(activeItem ?? "the active item");
   const siblingNonGoals = siblings.map(
     (sibling) => `Do not implement sibling roadmap item: ${sibling}.`,
   );

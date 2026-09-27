@@ -25,7 +25,7 @@
 // project-wide "recommended pull".
 
 import { cardPrefixed, cardText, cardWrapped } from "./card.ts";
-import type { PullCandidate, PullCandidatesReport } from "./pullCandidates.ts";
+import type { PullCandidatesReport } from "./pullCandidates.ts";
 import { CANONICAL_REFINEMENT_INDEX, type RefinementFieldSnapshot } from "./refinementField.ts";
 import { NO_ITEM_PULLED_YET, PROJECT_WIDE_CANDIDATES, pullExplicitly } from "./scopePhrases.ts";
 import { wrapAriadSurface } from "./surfaceProtocol.ts";
@@ -33,12 +33,6 @@ import { wrapAriadSurface } from "./surfaceProtocol.ts";
 const FRAME_TOP = "╭────────────────────────────────────────────────────────╮";
 const FRAME_BOTTOM = "╰────────────────────────────────────────────────────────╯";
 const FRAME_BLANK = "│                                                        │";
-
-/** Python `_candidate_short_title`: the last `/` segment, stripped. */
-function candidateShortTitle(candidate: PullCandidate): string {
-  const segments = candidate.title.split("/");
-  return (segments[segments.length - 1] ?? "").trim();
-}
 
 /**
  * Python `_pull_candidate_lines`, project-wide. Python marked its project-wide
@@ -49,7 +43,7 @@ function pullCandidateLines(report: PullCandidatesReport): string[] {
   const lines = [cardText(PROJECT_WIDE_CANDIDATES)];
   if (report.candidates.length === 0) lines.push(cardText("none"));
   for (const candidate of report.candidates) {
-    lines.push(...cardWrapped(`· ${candidate.code} ${candidateShortTitle(candidate)}`));
+    lines.push(...cardWrapped(`· ${candidate.code} ${candidate.title}`));
   }
   return lines;
 }

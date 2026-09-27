@@ -19,7 +19,6 @@ import { cvTitle } from "./cursorTransitions.ts";
 import type { BuilderExpandReport } from "./expand.ts";
 import type { BuilderPrepareReport } from "./prepare.ts";
 import type { BuilderPullReport } from "./pull.ts";
-import { titleLeaf } from "./storyPaths.ts";
 import { wrapAriadSurface } from "./surfaceProtocol.ts";
 
 /** Python `_delivery_story_flow_ribbon`: the Delivery-Story-level stage labels. */
@@ -115,7 +114,7 @@ export function renderDeliveryStoryReadyReport(reports: {
   const codeParts = pull.item.code.split(".");
   const cvCode = codeParts[0] ?? pull.item.code;
   const dsCode = codeParts.length > 1 ? (codeParts.at(-1) ?? "") : pull.item.code;
-  const title = titleLeaf(pull.item.title);
+  const title = pull.item.title;
   const recommendedLeaf = expand.recommendedStory.split(".").at(-1) ?? expand.recommendedStory;
   const body = `${[
     "Delivery",

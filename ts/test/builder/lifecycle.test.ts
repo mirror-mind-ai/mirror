@@ -260,10 +260,10 @@ test("the corpus covers the lifecycle shapes plateaus 3 and 4 have to port", () 
     "expand_resolves_by_heading_not_folder_name",
     // The only US8 surface with a traversal shape.
     "expand_sanitizes_path_bearing_code_cell",
-    // The two sides of Expand's title asymmetry: a child slugs its FULL title, the
-    // Delivery Story's own title keeps only its `/`-separated tail.
+    // Expand's title rule, the same on both sides since CR018: a child slugs its whole
+    // title, and so does the story Expand invents for a Delivery Story with no package.
     "expand_slugs_the_full_child_title",
-    "expand_fallback_uses_the_delivery_story_title_leaf",
+    "expand_fallback_uses_the_whole_delivery_story_title",
     // Bounded story authority: recorded, consumed once, refused, cancelled.
     "story_authority_recorded_user_story",
     "authority_blocks_incomplete_plan_0",

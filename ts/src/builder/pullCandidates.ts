@@ -296,10 +296,11 @@ function candidateFromIndexContent(
  * Python `_candidate_delivery_stories_from_content`: the `Candidate Delivery
  * Stories:` bullet list under a `## CV<n>:` heading.
  *
- * This is where the `/` title chain comes from: the CV's own title is prefixed
- * as `"<CV title> / <DS title>"`, which is why every downstream renderer calls
- * `title.split("/")[-1]` and why a story whose real title contains a slash gets
- * split. Reproduced, not fixed.
+ * Each Delivery Story carries its own title. Python prefixed the CV's as
+ * `"<CV title> / <DS title>"`, and five readers cut every title at a `/` to undo
+ * it, so any title with a slash of its own reached the Navigator as a fragment.
+ * CR018 removed the prefix and the cuts together; a surface that needs the CV's
+ * title reads the CV's own row.
  */
 function candidateDeliveryStoriesFromContent(
   projectRelativePath: string,
@@ -307,7 +308,6 @@ function candidateDeliveryStoriesFromContent(
 ): PullCandidate[] {
   const candidates: PullCandidate[] = [];
   let currentCv: string | null = null;
-  let currentCvTitle: string | null = null;
   let currentStatus: string | null = null;
   let inCandidateDeliveryStories = false;
 
@@ -316,7 +316,6 @@ function candidateDeliveryStoriesFromContent(
     const cvMatch = CV_HEADING_RE.exec(line);
     if (cvMatch) {
       currentCv = cvMatch[1] ?? null;
-      currentCvTitle = pyStrip(cvMatch[2] ?? "");
       currentStatus = null;
       inCandidateDeliveryStories = false;
       continue;
@@ -335,11 +334,9 @@ function candidateDeliveryStoriesFromContent(
       if (!dsMatch) continue;
       const status = currentStatus || "Candidate";
       if (!hasCandidateStatus(status)) continue;
-      let title = pyStrip(dsMatch[2] ?? "");
-      if (currentCvTitle) title = `${currentCvTitle} / ${title}`;
       candidates.push({
         code: `${currentCv}.${dsMatch[1]}`,
-        title,
+        title: pyStrip(dsMatch[2] ?? ""),
         level: "delivery_story",
         status,
         path: projectRelativePath,
