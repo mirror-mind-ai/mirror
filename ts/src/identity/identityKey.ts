@@ -53,7 +53,11 @@ export function newIdentityKeyProblem(layer: string, key: string): string | null
   );
 }
 
-/** Thrown when a new identity row's key breaks its layer's grammar. Nothing was written. */
+/**
+ * Thrown when a new identity row's key breaks its layer's grammar. Nothing was written.
+ * A route that did not ask first lets it through, and the front door answers it as
+ * one `Error:` line (`#frontDoor/namedRefusal.ts`).
+ */
 export class InvalidIdentityKeyError extends Error {
   readonly layer: string;
   readonly key: string;

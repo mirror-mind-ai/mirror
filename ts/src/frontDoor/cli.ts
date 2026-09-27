@@ -63,7 +63,6 @@ import {
   CULTIVATION_SCAN_TRANSPORT,
   DESCRIPTOR_TRANSPORT,
   JOURNAL_TRANSPORT,
-  ReplayFixtureIncompleteError,
   WEEK_PLAN_TRANSPORT,
 } from "#providers/transport.ts";
 import { runSeed } from "#seed/seed.ts";
@@ -106,6 +105,7 @@ import {
   runModeRead,
   runModeWriteRoute,
 } from "./mirrorModeRoute.ts";
+import { namedRefusal } from "./namedRefusal.ts";
 import { nodeVersionError } from "./nodeSupport.ts";
 import {
   renderConsolidateApply,
@@ -1771,19 +1771,18 @@ export async function main(rawArgv = process.argv.slice(2)): Promise<number> {
   } catch (error) {
     // Metadata-only: the error's name/category, never argument values.
     const detail = error instanceof Error ? error.name : "unknown error";
-    // Half a replay fixture is a refusal by name, not a crash: one line, the
-    // missing variables named, nothing spent. Until CV22.DS10.TS5 a plain
-    // family sent this case to the Python fallback instead -- which had no
-    // replay transport, and would have called the live provider.
-    if (error instanceof ReplayFixtureIncompleteError) {
-      console.error(`Mirror TS front door: ${error.message}`);
+    // A refusal no route answered is still a refusal: one line, by name, and
+    // never a stack trace (`namedRefusal.ts`).
+    const refusal = namedRefusal(error);
+    if (refusal !== null) {
+      console.error(refusal.line);
       logFrontDoor(logPath, {
         command: decision.command,
         route: decision.engine,
-        exitCode: 2,
+        exitCode: refusal.exitCode,
         detail,
       });
-      return 2;
+      return refusal.exitCode;
     }
     logFrontDoor(logPath, {
       command: decision.command,
