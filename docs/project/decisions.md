@@ -3120,6 +3120,56 @@ as [CR107](refinement/rs001-ariad-runtime-trust/cr107-an-escaped-pipe-in-a-candi
 outside the floor. The floor stays eight changes and ten identifiers: CR018
 grows by one defect, not by one identifier.
 
+**Amended 2026-09-27, after CR102: the floor grows by three changes, and the
+release gate reaches past Ariad.** With the eight floor changes done, the
+Navigator asked for another inspection of the Refinement Workbench before
+pulling US3. It found no Ariad defect left of the silent-damage class. The
+Navigator added three changes to the floor:
+
+- [CR104](refinement/rs004-identity-resolution-fidelity/cr104-journey-slugs-are-not-validated-and-command-hints-print-them-raw.md):
+  four Builder command hints print a journey slug unquoted inside commands the
+  reader is told to run, and nothing validates a slug. It is the one
+  security-class item left. Agents follow hints, so a crafted slug is two steps
+  away from a shell command on the user's machine.
+- [CR105](refinement/rs001-ariad-runtime-trust/cr105-choosing-delivery-story-flow-leaves-the-story-confirmation-pending.md):
+  choosing Delivery Story flow leaves the story-by-story confirmation pending.
+  The resume surface a new session reads first then contradicts the scope
+  confirmation. CR001 made that state routine.
+- [CR090](refinement/rs001-ariad-runtime-trust/cr090-debt-review-surface-mixes-portuguese-into-english.md)
+  rides along, as this decision already allowed: one Portuguese phrase in an
+  English surface that is transported verbatim.
+
+The Navigator also extended the release gate past Ariad, to the only archive a
+user has. The first is
+[CR061](refinement/rs010-cv22-oracle-and-port-hygiene/cr061-snapshot-the-live-database-consistently-before-zipping.md):
+the silent backup reads the live database and its WAL without a snapshot, so an
+archive taken during a write can be inconsistent, and nobody learns it until a
+restore. The second is
+[CR062](refinement/rs010-cv22-oracle-and-port-hygiene/cr062-write-backup-archives-owner-only.md):
+the archive and its directory are created with default permissions. The third is
+[CR060](refinement/rs010-cv22-oracle-and-port-hygiene/cr060-fail-loudly-when-a-silent-backup-fails.md):
+a failing silent backup stays silent. These are not Ariad, so US3 does not
+validate them, and they gate the release, which is what this decision is about.
+Their plans say to fix TypeScript first and Python second, and they are now
+single-engine.
+
+The order follows the floor's rule of what breaks first. The backups come first,
+because their failure is a silent loss of the user's only archive. CR104 comes
+next, as an injection path. CR105 comes last, with CR090, as a wrong surface at
+the decision point. All of it is worked before US3, so US3 stays the last change
+before the release. The floor is now eleven changes and thirteen identifiers,
+eight of them done. US3 remains separately authorized.
+
+The same inspection closed what the floor had marked for a look. CR017 was
+rejected as overtaken, because DS10.TS1 retired the projection subsystem that
+printed its warning. CR010, CR012, and CR013 were rejected too, because
+DS10.TS4 deleted the SQLite Workbench whose state machine they described, and
+RS003 closed with them. Two findings recorded only in the journey path were
+captured, as
+[CR109](refinement/rs009-cv22-front-door-routing-correctness/cr109-mirror-log-help-records-help-and-renames-the-conversation.md)
+and
+[CR110](refinement/rs010-cv22-oracle-and-port-hygiene/cr110-the-doc-link-checker-reads-a-link-inside-inline-code-as-a-real-link.md).
+
 ### A Builder journey's position is its cursor's active item, never a roadmap scan
 
 **Date:** 2026-09-26 · **Context:** [CR002](refinement/rs001-ariad-runtime-trust/cr002-cursor-sync-roadmap-selection.md),

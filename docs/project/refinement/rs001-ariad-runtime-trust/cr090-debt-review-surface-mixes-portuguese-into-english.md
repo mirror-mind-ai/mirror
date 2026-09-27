@@ -67,6 +67,8 @@ which must change both engines together or the proof breaks. Cheapest honest
 option is probably both, since the Python string is four words and dies at
 CV22.DS10.TS5 anyway.
 
+**2026-09-27: added to the Ariad trust floor**, riding along with CR105, by the Navigator's decision after the Workbench inspection that followed the Ariad trust floor ([amendment](../../decisions.md#the-cv22-release-is-gated-on-an-ariad-trust-floor-worked-before-us3)). The two-engine question above is moot. TS5 deleted the Python core and the parity harness, so the fix is the TypeScript string and the goldens that record it.
+
 ## Evidence
 
 ```text

@@ -40,6 +40,8 @@ Pending. Captured on the Navigator's decision during CR002's handoff review. Dec
 the grammar, and what happens to existing slugs outside it: report them, rename
 them, or refuse to operate on them.
 
+**2026-09-27: added to the Ariad trust floor** by the Navigator's decision after the Workbench inspection that followed the Ariad trust floor ([amendment](../../decisions.md#the-cv22-release-is-gated-on-an-ariad-trust-floor-worked-before-us3)). It is the one security-class item the inspection found: agents follow hints, so a crafted slug is two steps away from a shell command. The plan still has to decide the grammar and what happens to existing slugs outside it.
+
 ## Evidence
 
 In an isolated home on 2026-09-26, `identity set journey 'x;touch PWNED'` printed

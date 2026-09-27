@@ -46,6 +46,8 @@ CR001 declined runtime enforcement of the scope stop, so the second would be a n
 decision, not a follow-through. The reverse switch, from Delivery Story flow back to
 story by story, was not exercised and should be checked while planning.
 
+**2026-09-27: added to the Ariad trust floor** by the Navigator's decision after the Workbench inspection that followed the Ariad trust floor ([amendment](../../decisions.md#the-cv22-release-is-gated-on-an-ariad-trust-floor-worked-before-us3)). The statement above that this CR is not on the floor no longer holds. CR090 rides along with it.
+
 ## Evidence
 
 Reproduced 2026-09-26 on `mirror-ts-core` at `724938a1` with the real front door, an

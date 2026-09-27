@@ -40,6 +40,8 @@ TS first, Python second, one commit: `writeFileSync(staging, bytes, { mode:
 test on each side. No oracle behavior graded by the goldens changes, but the
 Python file changes, so the baseline advances.
 
+**2026-09-27: added to the CV22 release gate** by the Navigator's decision after the Workbench inspection that followed the Ariad trust floor ([amendment](../../decisions.md#the-cv22-release-is-gated-on-an-ariad-trust-floor-worked-before-us3)). It is not Ariad, so US3 does not validate it, and the release waits for it. The plan above is single-engine now. TS5 deleted the Python core and the parity harness, so its Python half and the baseline advance fall away.
+
 ## Evidence
 
 _Pending._

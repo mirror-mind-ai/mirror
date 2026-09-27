@@ -49,6 +49,8 @@ and its own `repair-journeys --apply` — changes too (it should: same restore
 image from both engines) or is left as compatibility-only with a documented
 difference.
 
+**2026-09-27: added to the CV22 release gate**, first in its order, by the Navigator's decision after the Workbench inspection that followed the Ariad trust floor ([amendment](../../decisions.md#the-cv22-release-is-gated-on-an-ariad-trust-floor-worked-before-us3)). It is not Ariad, so US3 does not validate it, and the release waits for it. The plan above is single-engine now. TS5 deleted the Python core and the parity harness, so its Python half and the baseline advance fall away.
+
 ## Evidence
 
 _Pending._
