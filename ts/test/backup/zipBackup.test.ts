@@ -23,7 +23,13 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import test, { after } from "node:test";
-import { BackupSnapshotError, createZipBackup, formatKilobytes } from "#backup/zipBackup.ts";
+import {
+  BackupSnapshotError,
+  createZipBackup,
+  formatKilobytes,
+  publishArchive,
+  snapshotEntry,
+} from "#backup/zipBackup.ts";
 import { readZipEntry } from "#backup/zipReader.ts";
 import { inspectZip } from "#helpers/zipInspect.ts";
 
@@ -386,3 +392,80 @@ test("CR061: a database that cannot be snapshotted publishes nothing and keeps t
   assert.deepEqual(listing(join(home, "backups")), ["memory_20260906_120000.zip"]);
   assert.deepEqual(listing(temp), []);
 });
+
+// --- CR062: owner-only from the first byte (POSIX; Windows has no mode bits) ---
+
+const posixOnly = { skip: process.platform === "win32" ? "no POSIX mode bits on Windows" : false };
+
+function modeOf(path: string): string {
+  return (statSync(path).mode & 0o777).toString(8).padStart(4, "0");
+}
+
+/** Run under umask 022, as most installs do: owner-only must not be an accident of the umask. */
+function underUmask022<T>(body: () => T): T {
+  const previous = process.umask(0o022);
+  try {
+    return body();
+  } finally {
+    process.umask(previous);
+  }
+}
+
+test("CR062: a created backups directory is 0700, and the archive 0600", posixOnly, () => {
+  const home = makeHome("modes-new", ["memory.db"]);
+
+  const result = underUmask022(() => run(home, { silent: true }));
+
+  assert.equal(modeOf(join(home, "backups")), "0700");
+  assert.equal(modeOf(result.path as string), "0600");
+});
+
+test(
+  "CR062: Mirror's older archives are tightened; a directory and a file that is not Mirror's keep their modes (D2a)",
+  posixOnly,
+  () => {
+    const home = makeHome("modes-existing", ["memory.db"]);
+    const dest = join(mkdtempSync("/tmp/backup-chosen-"), "chosen");
+    mkdirSync(dest, { mode: 0o755 });
+    const older = join(dest, "memory_20260906_120000.zip");
+    const notMirrors = join(dest, "other.zip");
+    underUmask022(() => {
+      writeFileSync(older, "an older archive", { mode: 0o644 });
+      writeFileSync(notMirrors, "not Mirror's", { mode: 0o644 });
+    });
+
+    const result = underUmask022(() => run(home, { silent: true, backupDir: dest }));
+
+    assert.equal(modeOf(result.path as string), "0600");
+    assert.equal(modeOf(older), "0600");
+    assert.equal(modeOf(notMirrors), "0644");
+    assert.equal(modeOf(dest), "0755", "a pre-existing directory is never mutated");
+  },
+);
+
+test(
+  "CR062: the snapshot is owner-only, which is also the mode a restore extracts it with",
+  posixOnly,
+  () => {
+    const home = makeHome("modes-snapshot", ["memory.db"]);
+    const temp = mkdtempSync(join(tmpdir(), "backup-temp-"));
+
+    const member = underUmask022(() => snapshotEntry(join(home, "memory.db"), temp, frozenNow));
+
+    assert.equal((member.mode & 0o777).toString(8), "600");
+  },
+);
+
+test(
+  "CR062: an archive is owner-only the moment it is published, before any tightening",
+  posixOnly,
+  () => {
+    const dir = mkdtempSync(join(tmpdir(), "backup-publish-"));
+    const archive = join(dir, "memory_20260907_140305.zip");
+
+    underUmask022(() => publishArchive(archive, Buffer.from("archive bytes")));
+
+    assert.equal(modeOf(archive), "0600");
+    assert.deepEqual(listing(dir), ["memory_20260907_140305.zip"]);
+  },
+);

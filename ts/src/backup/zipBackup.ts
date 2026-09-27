@@ -16,6 +16,10 @@
 //     `memory_<stamp>.zip.<pid>-<12 hex>.partial` and renamed into place, so a
 //     process killed mid-write never leaves a plausible archive, and two
 //     backups in the same second never write into one file;
+//   - owner-only (CR062): the archive is written 0600 from its first byte, a
+//     directory the backup creates is 0700, and every `memory_*.zip` in the
+//     directory is tightened to 0600. The directory itself keeps its mode:
+//     REFERENCE.md's posture never mutates a pre-existing directory;
 //   - the member is always named `memory.db` whatever the on-disk file is
 //     called (the restore contract reads that name), and its DOS time is the
 //     moment of capture;
@@ -28,6 +32,7 @@
 //     exits 0 then -- CR060, delivered with this CR).
 
 import {
+  chmodSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -121,9 +126,10 @@ export class BackupSnapshotError extends Error {
  * The archive's one member: a snapshot of the database as committed, taken in
  * a private directory under `tempDir` and removed whatever happens. The file is
  * created empty with mode 0600 before `VACUUM INTO` writes into it, so the copy
- * is owner-only from its first byte.
+ * is owner-only from its first byte, and the member carries that mode, which is
+ * the mode `unzip` restores it with.
  */
-function snapshotEntry(dbPath: string, tempDir: string, capturedAt: Date): ZipEntryInput {
+export function snapshotEntry(dbPath: string, tempDir: string, capturedAt: Date): ZipEntryInput {
   const dir = mkdtempSync(join(tempDir, `${SNAPSHOT_DIR_PREFIX}${process.pid}-`));
   try {
     const path = join(dir, ARCHIVE_MEMBER);
@@ -143,6 +149,41 @@ function snapshotEntry(dbPath: string, tempDir: string, capturedAt: Date): ZipEn
     };
   } finally {
     rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+/**
+ * Write an archive through a staging file unique to this process and owner-only
+ * from its first byte (CR062), then rename it into place. A process killed
+ * mid-write never leaves a plausible archive, two writers never share a file,
+ * and a failure removes the staging file before it propagates.
+ */
+export function publishArchive(archivePath: string, bytes: Uint8Array): void {
+  const stagingPath = `${archivePath}.${stagingToken()}.partial`;
+  try {
+    writeFileSync(stagingPath, bytes, { mode: 0o600 });
+    renameSync(stagingPath, archivePath);
+  } catch (error) {
+    rmSync(stagingPath, { force: true });
+    throw error;
+  }
+}
+
+/**
+ * CR062, decision D2a: every archive Mirror named in this directory becomes
+ * owner-only, including those written before this CR. The directory keeps its
+ * mode: REFERENCE.md's posture never mutates a pre-existing directory, and on
+ * the Navigator's install this one is a Dropbox folder. Best-effort: an
+ * archive that cannot be tightened is not this backup's failure.
+ */
+function tightenArchives(backupDir: string): void {
+  for (const name of readdirSync(backupDir)) {
+    if (!/^memory_.*\.zip$/.test(name)) continue;
+    try {
+      chmodSync(join(backupDir, name), 0o600);
+    } catch {
+      // Left as it is; `runtime diagnose` reports loose permissions.
+    }
   }
 }
 
@@ -202,26 +243,20 @@ export function createZipBackup(options: ZipBackupOptions): string | null {
     return null;
   }
 
-  mkdirSync(backupDir, { recursive: true });
+  mkdirSync(backupDir, { recursive: true, mode: 0o700 });
   const capturedAt = now();
   const archiveName = `memory_${archiveStamp(capturedAt)}.zip`;
   const archivePath = join(backupDir, archiveName);
   const tempDir = options.tempDir ?? tmpdir();
   const member = snapshotEntry(options.dbPath, tempDir, capturedAt);
-  const stagingPath = join(backupDir, `${archiveName}.${stagingToken()}.partial`);
-  try {
-    writeFileSync(stagingPath, writeZipArchive([member]));
-    renameSync(stagingPath, archivePath);
-  } catch (error) {
-    rmSync(stagingPath, { force: true });
-    throw error;
-  }
+  publishArchive(archivePath, writeZipArchive([member]));
 
   if (!silent)
     out(`Backup created: ${archiveName} (${formatKilobytes(statSync(archivePath).size)} KB)`);
 
   sweepStaging(backupDir, tempDir);
   const removed = sweepRetention(backupDir, archiveName, now());
+  tightenArchives(backupDir);
   if (!silent && removed > 0)
     out(`Removed ${removed} backup(s) older than ${RETENTION_DAYS} days.`);
 

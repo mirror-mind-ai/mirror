@@ -499,6 +499,40 @@ still shows a 0644 archive and step 4 still exits 0.
 
 Remaining: the modes and the loud failure. Next: plateau 2, owner-only.
 
+### Plateau 2 handoff (2026-09-27)
+
+Now true: every archive is owner-only from its first byte. `publishArchive`
+writes the staging file 0600 and renames it into place, and the rename keeps
+the mode. A backups directory the backup creates is 0700. Under D2a, each
+backup tightens every `memory_*.zip` in its directory to 0600, including those
+written before this CR, and leaves the directory and any file that isn't
+Mirror's as they are. The snapshot was already owner-only from plateau 1, and
+the member carries its 0600, which is the mode `unzip` restores `memory.db`
+with.
+
+Evidence, red first. Under umask 022, a created directory came out 0755 and the
+new and older archives 0644. Four tests pin the modes now. Five mutants were
+run:
+
+- a snapshot file created with the default mode fails the snapshot test;
+- no tightening fails the D2a test;
+- a tightened directory fails the D2a test;
+- a directory created with the default mode fails the created-directory test;
+- a staging file written with the default mode failed nothing at first, because
+  the tightening that follows the rename chmods the new archive too. That masked
+  a real window: in a pre-existing 0755 folder the archive was readable from its
+  first byte until the tightening, or for good if the process died in between.
+  Publishing became its own function, `publishArchive`, with its own test, and
+  that mutant now fails it.
+
+The full suite passes (2,770 tests), with typecheck and lint (the same warning
+and info note), the four repository checks, the conversation lifecycle smoke,
+the runtime updater smoke, and the Claude plugin smoke. REFERENCE.md's security
+posture lists the dated archive among the creation points. Part A of the route
+now passes step 3 (`-rw-------`), and step 4 still exits 0.
+
+Remaining: the loud failure. Next: plateau 3.
+
 ## Outcome
 
 _Pending._

@@ -552,8 +552,10 @@ expected filesystem posture is **owner-only**: directories `0700`, data files
 - **Enforced at creation points:** the database bootstrap
   (`ts/src/db/bootstrap.ts`) applies the posture to a directory it creates and
   to the database file and its `-wal`/`-shm` sidecars; the front door creates
-  `backups/` at `0700` and its snapshot at `0600`. Pre-existing directories
-  are never mutated — a
+  `backups/` at `0700` and its snapshot at `0600`; `mirror backup` writes each
+  dated archive `0600` from its first byte and tightens Mirror's older
+  `memory_*.zip` archives to `0600`, since they are its own files. Pre-existing
+  directories are never mutated — a
   user-chosen location like `~/Documents` stays as the user set it.
 - **Reported on drift:** `mirror runtime diagnose` emits a
   `loose_permissions` finding (severity: attention) when the mirror home or
