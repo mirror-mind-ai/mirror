@@ -484,3 +484,65 @@ test("CR018: linkFreeTitle keeps a link's label and drops its target", () => {
   ];
   for (const [name, title, expected] of cases) assert.equal(linkFreeTitle(title), expected, name);
 });
+
+test("CR018: every reader that brings a roadmap title into Ariad keeps a link's label only", () => {
+  // Handoff review, finding 1: Expand's table was the only reader a test guarded. One
+  // roadmap per grammar, since the snapshot reads the first grammar that yields rows.
+  const roots: string[] = [];
+  const roadmap = (files: Record<string, string>): string => {
+    const root = mkdtempSync(join(tmpdir(), "roadmap-cr018-links-"));
+    roots.push(root);
+    for (const [path, content] of Object.entries(files)) {
+      const target = join(root, "docs/project/roadmap", path);
+      mkdirSync(dirname(target), { recursive: true });
+      writeFileSync(target, content, "utf8");
+    }
+    return root;
+  };
+  const options = { journey: "j", method: "ariad" };
+  try {
+    const cvTable = roadmap({
+      "index.md":
+        "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------|------|\n" +
+        "| CV1 | Table value, see [notes](notes.md) | 🟢 Active |\n",
+      "cv1/index.md": "# CV1 — Package [value](../notes.md)\n\n**Status:** 🟢 Active\n",
+    });
+    assert.equal(
+      inspectRoadmapSnapshot(cvTable, options).items[0]?.title,
+      "Table value, see notes",
+      "the CV table reader",
+    );
+    const scope = resolveRoadmapScope(cvTable, { activeItem: "CV1" });
+    assert.ok(scope.kind === "active_item" && scope.position.kind === "cv_package");
+    assert.equal(scope.position.package.title, "Package value", "the scope's package reader");
+
+    const headings = roadmap({
+      "index.md":
+        "# Roadmap\n\n## CV2: Heading [value](v.md)\n\n**Status:** 🟢 Active\n\n" +
+        "Candidate Delivery Stories:\n\n- DS1 Bullet [story](s.md)\n",
+    });
+    assert.equal(
+      inspectRoadmapSnapshot(headings, options).items[0]?.title,
+      "Heading value",
+      "the CV heading reader",
+    );
+    assert.deepEqual(
+      inspectPullCandidates(headings, options).candidates.map((candidate) => candidate.title),
+      ["Bullet story"],
+      "the bullet reader",
+    );
+
+    const dsTable = roadmap({
+      "index.md":
+        "# Roadmap\n\n| Code | Delivery Story | Status |\n|------|------|------|\n" +
+        "| DS-1 | Table [story](ds-1/index.md) row | 🟢 Active |\n",
+    });
+    assert.equal(
+      inspectRoadmapSnapshot(dsTable, options).items[0]?.title,
+      "Table story row",
+      "the Delivery Story table reader",
+    );
+  } finally {
+    for (const root of roots) rmSync(root, { recursive: true, force: true });
+  }
+});
