@@ -83,4 +83,4 @@ reproduced it. Code: `src/memory/journey_projections/refresh.py` (`refresh`,
 
 ## Outcome
 
-Pending.
+**Rejected 2026-09-27**, by the Navigator's decision after the Workbench inspection that followed the Ariad trust floor: overtaken, not declined. The warning came from `journey_projections/refresh.py`, which recompiled the Operational projection after every mutating Builder command. CV22.DS10.TS1 retired the projection subsystem instead of porting it, and TS5 deleted the Python core. Nothing in `ts/src` emits the warning now: a search for `Operational projection` finds nothing. The [floor decision](../../decisions.md#the-cv22-release-is-gated-on-an-ariad-trust-floor-worked-before-us3) named this outcome in advance: to be verified and rejected as overtaken, not fixed.
