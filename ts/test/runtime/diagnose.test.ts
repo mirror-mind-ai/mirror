@@ -434,6 +434,7 @@ test("CR104: each journey or persona key outside the grammar is one finding", ()
     ["persona", "Mixed_Case"],
     ["persona", "engineer"],
     ["journey", "a\n\u001b[31mb"],
+    ["journey", "a\u202eb"],
     ["ego", "Anything Goes"],
   ]);
   try {
@@ -442,6 +443,7 @@ test("CR104: each journey or persona key outside the grammar is one finding", ()
       findings.map((finding) => [finding.subject, finding.detail]),
       [
         ["journey", "'a\\n\\x1b[31mb'"],
+        ["journey", "'a\\u202eb'"],
         ["journey", "'x;touch PWNED'"],
         ["persona", "'Mixed_Case'"],
       ],

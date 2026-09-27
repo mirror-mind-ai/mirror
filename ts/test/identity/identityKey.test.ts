@@ -34,10 +34,12 @@ test("the refusal suggests nothing when no slug can be made of the key", () => {
   );
 });
 
-test("the rejected key is printed escaped, so it cannot forge a line or a colour", () => {
-  const problem = newIdentityKeyProblem("journey", "a\n\u001b[31mb") ?? "";
-  assert.ok(!problem.includes("\n") && !problem.includes("\u001b"), JSON.stringify(problem));
-  assert.ok(problem.includes("'a\\n\\x1b[31mb'"), problem);
+test("the rejected key is printed escaped, so it cannot forge a line, a colour, or an order", () => {
+  // A C0 escape, a C1 line break and CSI, a bidi override, and a zero-width space.
+  const problem =
+    newIdentityKeyProblem("journey", "a\n\u001b[31mb\u0085c\u009b31md\u202ee\u200bf") ?? "";
+  assert.ok(![...problem].some((c) => /[\p{C}\p{Zl}\p{Zp}]/u.test(c)), JSON.stringify(problem));
+  assert.ok(problem.includes("'a\\n\\x1b[31mb\\x85c\\x9b31md\\u202ee\\u200bf'"), problem);
 });
 
 test("a key the grammar accepts, and a key in any other layer, is no problem", () => {

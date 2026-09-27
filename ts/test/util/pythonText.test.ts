@@ -5,6 +5,7 @@ import {
   compareByCodePoint,
   comparePathComponents,
   pyFormat,
+  pyRepr,
   pyRStrip,
   pySplitLines,
   pySplitWhitespace,
@@ -129,4 +130,50 @@ test("pyFormat rejects malformed braces", () => {
 
 test("pyFormat leaves non-field text untouched, including non-BMP characters", () => {
   assert.equal(pyFormat("\u{1F30D} {a} \u2615", { a: "b" }), "\u{1F30D} b \u2615");
+});
+
+// --- pyRepr: Python's repr, including what it will not print ---------------------
+//
+// Expectations recorded from CPython 3.14.3's `repr()` on 2026-09-27 (CR104's
+// handoff review). Python escapes every character it does not consider printable,
+// meaning Unicode's Other and Separator categories except the ASCII space. The
+// port escaped only C0 controls and DEL, so a C1 control, a bidi override, or a
+// zero-width space reached a terminal raw, through the identity-key refusal and
+// `runtime diagnose` among others.
+
+test("pyRepr quotes and escapes ASCII as Python does", () => {
+  const cases: Array<[string, string]> = [
+    ["it's", `"it's"`],
+    ["both ' and \"", `'both \\' and "'`],
+    ["tab\there", "'tab\\there'"],
+    ["a\u001bb", "'a\\x1bb'"],
+    ["a\u007fb", "'a\\x7fb'"],
+  ];
+  for (const [value, expected] of cases)
+    assert.equal(pyRepr(value), expected, JSON.stringify(value));
+});
+
+test("pyRepr escapes every non-printable non-ASCII character as Python does", () => {
+  const cases: Array<[string, string]> = [
+    ["a\u009b31mb", "'a\\x9b31mb'"], // C1: the 8-bit CSI
+    ["a\u0085b", "'a\\x85b'"], // C1: NEL, a line break
+    ["a\u00a0b", "'a\\xa0b'"], // a space separator
+    ["a\u00adb", "'a\\xadb'"], // a format character: the soft hyphen
+    ["a\u202eb", "'a\\u202eb'"], // a bidi override
+    ["a\u200bb", "'a\\u200bb'"], // a zero-width space
+    ["a\u2028b", "'a\\u2028b'"], // the line separator
+    ["a\u3000b", "'a\\u3000b'"], // the ideographic space
+    ["a\ufeffb", "'a\\ufeffb'"], // the byte order mark
+    ["a\ue000b", "'a\\ue000b'"], // private use
+    ["a\u{e0001}b", "'a\\U000e0001b'"], // an astral format character
+    ["\u0378", "'\\u0378'"], // unassigned
+    ["\u{1f468}\u200d\u{1f469}", "'\u{1f468}\\u200d\u{1f469}'"], // a joiner between printables
+  ];
+  for (const [value, expected] of cases)
+    assert.equal(pyRepr(value), expected, JSON.stringify(value));
+});
+
+test("pyRepr leaves printable non-ASCII alone, as Python does", () => {
+  assert.equal(pyRepr("descrição"), "'descrição'");
+  assert.equal(pyRepr("\u{1f600}"), "'\u{1f600}'");
 });

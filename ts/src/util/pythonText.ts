@@ -177,10 +177,37 @@ export function pyTitle(text: string): string {
  *   * `\n`, `\r`, `\t` get their short escapes; every other C0 control and
  *     DEL get `\xNN`;
  *   * printable non-ASCII is left ALONE (Python 3 repr is not ASCII-safe),
- *     so `descrição` stays itself.
+ *     so `descrição` stays itself;
+ *   * non-printable non-ASCII is escaped by width: `\xNN`, `\uNNNN`, or
+ *     `\UNNNNNNNN`. Python's printable excludes Unicode's Other and Separator
+ *     categories, so a C1 control (U+009B, the 8-bit CSI), a bidi override, a
+ *     zero-width space, and a line separator are all escaped. Until CR104 the
+ *     port left them raw, so they reached a terminal through every caller.
+ *
+ * The categories come from the Unicode tables V8 carries, which can differ from
+ * the running Python's for code points assigned between their versions.
  */
 export function pyRepr(value: unknown): string {
-  if (typeof value !== "string") return pyStr(value);
+  return typeof value === "string" ? pyReprString(value) : pyStr(value);
+}
+
+/** Unicode's Other and Separator categories: what Python's `str.isprintable` refuses. */
+const OTHER_OR_SEPARATOR = /^[\p{C}\p{Z}]$/u;
+
+/** Whether Python's repr prints `character` as itself. The ASCII space is the one printable separator. */
+function pyPrintable(character: string, code: number): boolean {
+  if (code < 0x80) return code >= 0x20 && code !== 0x7f;
+  return !OTHER_OR_SEPARATOR.test(character);
+}
+
+/** Python's escape for a character it will not print, by width. */
+function pyEscape(code: number): string {
+  if (code <= 0xff) return `\\x${code.toString(16).padStart(2, "0")}`;
+  if (code <= 0xffff) return `\\u${code.toString(16).padStart(4, "0")}`;
+  return `\\U${code.toString(16).padStart(8, "0")}`;
+}
+
+function pyReprString(value: string): string {
   const quote = value.includes("'") && !value.includes('"') ? '"' : "'";
   let out = "";
   for (const character of value) {
@@ -196,7 +223,7 @@ export function pyRepr(value: unknown): string {
       out += "\\t";
     } else {
       const code = character.codePointAt(0) ?? 0;
-      out += code < 0x20 || code === 0x7f ? `\\x${code.toString(16).padStart(2, "0")}` : character;
+      out += pyPrintable(character, code) ? character : pyEscape(code);
     }
   }
   return `${quote}${out}${quote}`;
