@@ -52,10 +52,11 @@ ships the plugin with these copies.
 Not planned. Captured without selecting; Current Focus unchanged. Captured on
 2026-09-27 by the Navigator's decision B1 on
 [CR102](cr102-the-claude-code-mm-build-skill-lacks-the-builder-and-ariad-sections.md#decision-b-the-same-drift-in-other-skills),
-outside the Ariad trust floor. Whether CR108 gates the CV22 release is the
-question B1 left open. Until the Navigator answers it, the
+outside the Ariad trust floor. B1 left open whether CR108 gates the CV22
+release, and the Navigator answered the same day: it does not. The release
+waits only on what the
 [floor decision](../../decisions.md#the-cv22-release-is-gated-on-an-ariad-trust-floor-worked-before-us3)
-applies, and CR108 does not gate the release.
+names.
 
 Routes for whoever plans it. Audit each pair of copies. When a skill's Pi body
 holds in every runtime, move it onto CR102's list with a recorded decision; the

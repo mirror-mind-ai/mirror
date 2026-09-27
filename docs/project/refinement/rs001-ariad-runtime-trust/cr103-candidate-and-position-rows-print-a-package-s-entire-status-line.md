@@ -52,6 +52,11 @@ both.
   `docs/project/roadmap/cv22-typescript-core-port/index.md` prints `967`.
 - The `■ BUILDER RESUME` rendered when CR002's session activated Builder Mode on
   2026-09-26 carries CV22's full status in its `roadmap position` row.
+- CR102's Navigator validation, 2026-09-27, in Claude Code: the terminal renders
+  the reply as Markdown, so the `**` in CV22's status line disappears from that
+  row and shifts its right border. The agent's reply carried the row verbatim
+  (the session transcript), so the damage is the status line's Markdown inside
+  a fixed-width card, not the transport.
 
 ## Outcome
 

@@ -141,10 +141,9 @@ the technical panel reviewed it the same day
 ([record below](#panel-review-2026-09-27)). The panel's changes are folded in.
 Navigator decisions, 2026-09-27: [A1](#decision-a-how-the-variants-stay-in-step)
 and [B1](#decision-b-the-same-drift-in-other-skills). Plan approved, Driver
-`@viniciusteles`, Delivery `mirror-ts-core`. B1 also asks whether CR108 gates
-the CV22 release, and that question is still open. Until the Navigator answers
-it, CR108 sits outside the floor and, per the floor decision, does not gate the
-release.
+`@viniciusteles`, Delivery `mirror-ts-core`. B1 also asked whether CR108 gates
+the CV22 release. The Navigator answered at validation, the same day: it does
+not.
 
 ### Objective
 
@@ -438,6 +437,82 @@ unchanged.
 
 Remaining: whether CR108 gates the release is still the Navigator's open
 question. Next: the validation route, walked by the Navigator in Claude Code.
+
+### Navigator validation (2026-09-27)
+
+The Navigator walked the [validation route](#validation-route) in Claude Code
+and accepted it. Each pass condition was checked against the session's own
+records, not only against the pasted screen:
+
+- Steps 2 and 3: the Claude Code transcript holds exactly
+  `build show --journey mirror-ts-core --method ariad` and
+  `build pull-candidates --journey mirror-ts-core --method ariad`, and
+  `front-door.log` shows each one succeeding on its first call. Without
+  `--journey`, `build show` exits 1 and logs an `ERROR` line, which was checked
+  in a scratch home.
+- The transcript also shows which skill the session loaded. Every command the
+  Ariad section documents is in it, and the 108-line copy documented none of
+  them.
+- Steps 1 to 3: the agent's replies carry every block byte for byte, markers
+  included. The pasted screen showed `<<ARIAD:X>>` and lost the `**` in the
+  resume row. That is Claude Code's terminal rendering the reply as Markdown,
+  where `<ARIAD:X>` is an autolink and `**text**` is bold.
+- Step 4: the working tree was clean.
+
+In steps 1 and 2 the agent reported five finished floor changes as open. It
+had read them in the collaboration strategy's stale Remaining Sequence, and it
+corrected itself in step 3 from the Refinement index (finding 2 below).
+
+CI was green on each plateau's last push: plateau 1 (`82ac4503`) and plateau 2
+(`807aa622`), Tests and Docs.
+
+### Handoff review (2026-09-27)
+
+This review came after validation, per the collaboration strategy. The baseline
+panel (engineer, quality-assurance, database-architect, devops-engineer,
+security-engineer) and the lenses that reviewed the plan (ai-engineer,
+prompt-engineer, experience-designer, product-designer) reviewed the delivered
+code, tests, safety posture, operational cost, and resumability. One candidate
+was checked against the code and dropped. The skill says `project_path=` is the
+last line `build load` prints, yet on screen the Builder banner came after it.
+The banner goes to stderr, so on stdout the skill is right.
+
+Synthesis: the change is small for what it closes. The source adds 161 lines
+and removes 18, most of it the transform, its list, and the planning around
+them, and the tests add 219. It closes a 985-line gap and adds a guard that
+neither existing check could provide. For this skill the drift can no longer
+return in silence: the only copy anyone edits generates the other two, and CI
+compares them byte for byte. Its weak points are the text around it: two
+comments in the generator that this CR made untrue, and a required-reading
+document whose floor status had drifted.
+
+| # | Lens | Finding | Class | Recommendation |
+|---|---|---|---|---|
+| 1 | engineer | Two comments in `claudePlugin.ts` became untrue in this CR. `materialize` says it writes the generated plugin files, but it now also writes `.claude/skills/mm-build/SKILL.md`. `discoverSkillSources` calls every `.claude` skill a source, and one of them is now generated, so a caller who took it at its word would treat a generated file as authored | Non-blocking debt, introduced here | Pay now: both comments say what the code does |
+| 2 | ai-engineer | The journey's required reading, `collaboration-strategy.md`, listed five finished floor changes as open. The Claude Code agent repeated that as fact in steps 1 and 2 and corrected itself only when it read the Refinement index in step 3. A status list copied into narrative drifts, and an agent that loads it on every activation believes it | Pre-existing, surfaced by validation | Pay now, in the close: the floor completes with CR102, so the list is marked complete and stops changing |
+| 3 | experience-designer | Claude Code's terminal renders the surfaces as Markdown. Each marker loses a bracket, and the `**` in CV22's status line disappears from the resume row, shifting its right border. The reply itself is verbatim, so the transport rule holds | Accepted scope boundary | No action here. The row is CR103's (CV22's status line printed whole), and the observation is now in its evidence |
+| 4 | quality-assurance | The script's one-line refusal is new, and no test covers it. `buildClaudePlugin.ts` has no test of its own, and its repository root is fixed. The refusal it catches is tested in the module, and the one-line output was exercised on the real tree | Accepted scope boundary | No action |
+
+The other lenses were silent:
+
+- database-architect: no data changed. The route's `build load` wrote what every
+  Builder activation writes.
+- devops-engineer: an edit to the Pi copy alone runs the Tests workflow, which
+  fails until the copies are regenerated, and rollback is a plain revert of
+  `82ac4503`. Every edit to the Builder skill now changes three files in a
+  diff, which is accepted.
+- security-engineer: the generator writes fixed paths from a constant list, and
+  no input reaches a path.
+- prompt-engineer: the walk shows the Claude Code agent following the Ariad text
+  as written. It passed the journey to every command, passed the blocks through,
+  and kept the boundary.
+- product-designer: the agent flagged in step 3 that Pull Candidates recommends
+  US3 while the floor is open. That is right and by design: the floor is a
+  project sequencing decision, not a roadmap item, and it ends with this CR.
+
+Accepted scope boundaries, as planned: the other 24 skills (CR108, which does
+not gate the release), progressive disclosure of the skill, the Portuguese
+examples, and plugin invocations outside a checkout (US3).
 
 ## Outcome
 
