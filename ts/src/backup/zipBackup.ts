@@ -52,6 +52,8 @@ import { writeZipArchive, type ZipEntryInput } from "./zipWriter.ts";
 
 export const RETENTION_DAYS = 30;
 const ARCHIVE_MEMBER = "memory.db";
+/** What Mirror calls an archive; the retention sweep and the tightening both read it. */
+const ARCHIVE_NAME = /^memory_.*\.zip$/;
 /** A zip staged beside its final name: `<archive>.<pid>-<12 hex>.partial`. */
 const ZIP_STAGING = /^memory_\d{8}_\d{6}\.zip\.(\d+)-[0-9a-f]{12}\.partial$/;
 /** A zip staged before CR061 carried no process id, and is swept as it always was. */
@@ -179,7 +181,7 @@ export function publishArchive(archivePath: string, bytes: Uint8Array): void {
  */
 function tightenArchives(backupDir: string): void {
   for (const name of readdirSync(backupDir)) {
-    if (!/^memory_.*\.zip$/.test(name)) continue;
+    if (!ARCHIVE_NAME.test(name)) continue;
     try {
       chmodSync(join(backupDir, name), 0o600);
     } catch {
@@ -206,7 +208,7 @@ function sweepRetention(backupDir: string, keep: string, now: Date): number {
   const cutoff = new Date(now.getTime() - RETENTION_DAYS * 24 * 60 * 60 * 1000);
   let removed = 0;
   for (const name of readdirSync(backupDir)) {
-    if (name === keep || !/^memory_.*\.zip$/.test(name)) continue;
+    if (name === keep || !ARCHIVE_NAME.test(name)) continue;
     const stamp = parseArchiveStamp(name);
     if (stamp === null || stamp.getTime() >= cutoff.getTime()) continue;
     try {
