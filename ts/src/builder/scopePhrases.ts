@@ -55,6 +55,14 @@ export function pullExplicitly(journey: string): string {
   );
 }
 
+/**
+ * The read-only command that shows a journey's active checkpoint (CR067 with CR020).
+ * A refusal prints it to be copied, so it is quoted exactly as the Pull command is.
+ */
+export function showCheckpoint(journey: string): string {
+  return `${PROGRAM} build show --journey ${shellWord(journey)} --method ariad`;
+}
+
 /** The header of every candidate list: whose candidates these are. */
 export function candidateListHeader(scope: RoadmapScope): string {
   return scope.kind === "unscoped" ? PROJECT_WIDE_CANDIDATES : `candidates in ${scope.cvCode}`;

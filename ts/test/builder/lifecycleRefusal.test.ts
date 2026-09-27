@@ -11,6 +11,7 @@ import { join } from "node:path";
 import test from "node:test";
 
 import { getAriadMethod } from "#builder/ariadMethod.ts";
+import { renderCheckpointRefused } from "#builder/checkpointRefused.ts";
 import {
   coherenceLifecycleItem,
   doneLifecycleItem,
@@ -217,4 +218,26 @@ test("CR067: an already-complete refusal names the step, the item, and where the
   } finally {
     db.close();
   }
+});
+
+test("CR067: the refusal surface quotes a slug that is not a plain token", () => {
+  const surface = renderCheckpointRefused({
+    request: "validate-item",
+    reason: "Validation is blocked: pending confirmation navigator_approval.",
+    journey: "x;touch PWNED",
+    cursor: null,
+  });
+  assert.match(surface, /^<<<ARIAD:CHECKPOINT_REFUSED>>>\n/u);
+  assert.ok(surface.includes("--journey 'x;touch PWNED'"), surface);
+});
+
+test("CR067: with no cursor the refusal has no ribbon and says no item was pulled", () => {
+  const surface = renderCheckpointRefused({
+    request: "plan-item",
+    reason: "delivery cursor is required before plan",
+    journey: "demo",
+    cursor: null,
+  });
+  assert.doesNotMatch(surface, /Delivery Flow/u);
+  assert.match(surface, /no item pulled yet/u);
 });

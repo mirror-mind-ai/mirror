@@ -395,6 +395,33 @@ lint, the repository checks, and the smoke.
 
 Next: plateau 2, the `CHECKPOINT_REFUSED` surface.
 
+### Plateau 2 handoff (2026-09-26)
+
+Now true: every refusal of `plan-item`, `validate-item`, `review-item`, `coherence-item`,
+`done-item`, and `continue-lifecycle` renders `CHECKPOINT_REFUSED`
+(`ts/src/builder/checkpointRefused.ts`). It shows the ribbon at the cursor's stage, the
+request, its true reason, and the cursor on one line. It also prints the literal
+`mirror build show` command, quoted through `showCheckpoint` in `scopePhrases.ts`, and
+says the refusal came before any change. `blockedSurface` is gone, and
+`check-implementation` keeps `IMPLEMENTATION_GUARD`. `plan-item` sends only lifecycle
+refusals to the surface; its configuration errors keep their `Error:` line. Until
+plateau 3, the command the refusals name does not exist yet.
+
+Evidence: an end-to-end walk takes one story from Plan to Done through the real front
+door and refuses nine times. Each refusal renders only `CHECKPOINT_REFUSED`, marks the
+expected stage, gives the exact reason, and names `build show`, and none changes the
+cursor row or the project files. The walk was red first, at its first refusal. Unit
+tests cover a slug that is not a plain token, which is quoted, and a missing cursor,
+which gets no ribbon. Twelve `builder-command` goldens changed, one more than planned:
+`plan_item_refuses_delivery_story` now refuses at `◉ Expand`. Each keeps its exit code,
+its exact reason, and its files, checked case by case, with a README row. One of these
+tests first seeded the committed fixture project, which gained a Plan package. The two
+stray files were deleted, and the test now seeds a scratch copy. The full suite passes
+(2,722 tests), along with typecheck, lint, the repository checks, and the smoke. CI was
+green on plateau 1.
+
+Next: plateau 3, `build show`.
+
 ## Outcome
 
 Pending.

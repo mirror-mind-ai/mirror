@@ -44,6 +44,7 @@ import {
 } from "./artifacts/artifactSurfaces.ts";
 import type { ArtifactOutcome } from "./artifacts/artifactWriter.ts";
 import { CARD_WIDTH, cardText, wrapPlainText } from "./card.ts";
+import { renderCheckpointRefused } from "./checkpointRefused.ts";
 import {
   coherenceLifecycleItem,
   doneLifecycleItem,
@@ -93,6 +94,7 @@ import {
   renderImplementationGuardAllowed,
   renderImplementationGuardBlocked,
 } from "./implementationGuard.ts";
+import { LifecycleRefusal } from "./lifecycleRefusal.ts";
 import { getAdoptedMethod, setAdoptedMethod } from "./methodAdoption.ts";
 import {
   AVAILABLE_METHODS,
@@ -916,6 +918,9 @@ export function runPlanItem(
       });
     return { stdout, stderr: "", exitCode: 0 };
   } catch (error) {
+    if (error instanceof LifecycleRefusal) {
+      return refusedSurface(context.db, journey, "plan-item", error);
+    }
     return refuseValueError(error);
   }
 }
@@ -1225,7 +1230,9 @@ export function runContinueLifecycle(
     return refuse("Error: delivery cursor is required before continuation");
   }
   const blocked = (reason: string): CommandResult => ({
-    stdout: printed(renderImplementationGuardBlocked(reason)),
+    stdout: printed(
+      renderCheckpointRefused({ request: "continue-lifecycle", reason, journey, cursor }),
+    ),
     stderr: "",
     exitCode: 1,
   });
@@ -1753,10 +1760,20 @@ function renderDoneClosureConfirmation(activeItem: string | null): string {
   return wrapAriadSurface("done_closure_confirmation", body);
 }
 
-/** Python's `except ValueError: print(render_implementation_guard_blocked(...)); sys.exit(1)`. */
-function blockedSurface(error: unknown): CommandResult {
+/**
+ * A refused lifecycle request, rendered where the cursor stands (CR067). It replaces
+ * the Implement guard these commands used to print for every refusal.
+ */
+function refusedSurface(
+  db: Database,
+  journey: string,
+  request: string,
+  error: unknown,
+): CommandResult {
+  const cursor = getDeliveryCursor(db, journey);
+  const reason = (error as Error).message;
   return {
-    stdout: printed(renderImplementationGuardBlocked((error as Error).message)),
+    stdout: printed(renderCheckpointRefused({ request, reason, journey, cursor })),
     stderr: "",
     exitCode: 1,
   };
@@ -1832,7 +1849,7 @@ export function runValidateItem(
       exitCode: 0,
     };
   } catch (error) {
-    return blockedSurface(error);
+    return refusedSurface(context.db, journey, "validate-item", error);
   }
 }
 
@@ -1886,7 +1903,7 @@ export function runReviewItem(
       exitCode: 0,
     };
   } catch (error) {
-    return blockedSurface(error);
+    return refusedSurface(context.db, journey, "review-item", error);
   }
 }
 
@@ -1930,7 +1947,7 @@ export function runCoherenceItem(
     );
     return { stdout: printed(renderCoherenceCheckpoint(report)), stderr: "", exitCode: 0 };
   } catch (error) {
-    return blockedSurface(error);
+    return refusedSurface(context.db, journey, "coherence-item", error);
   }
 }
 
@@ -1981,6 +1998,6 @@ export function runDoneItem(
       exitCode: 0,
     };
   } catch (error) {
-    return blockedSurface(error);
+    return refusedSurface(context.db, journey, "done-item", error);
   }
 }

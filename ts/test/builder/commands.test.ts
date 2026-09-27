@@ -1499,9 +1499,13 @@ function planSection(planMd: string, heading: string): string {
   return match[1] ?? "";
 }
 
-/** The card rows between two labels, box drawing removed, lines joined. */
+/**
+ * The card rows between two labels, box drawing removed, lines joined. A label row
+ * always follows a blank row, which keeps wrapped text that happens to begin with a
+ * label's word, such as "cursor is at ...", from ending the block early.
+ */
 function cardRows(card: string, from: string, to: string): string {
-  const match = card.match(new RegExp(`│ ${from} [\\s\\S]*?\\n([\\s\\S]*?)│ ${to} `, "u"));
+  const match = card.match(new RegExp(`│ ${from} [\\s\\S]*?\\n([\\s\\S]*?)│ +│\\n│ ${to} `, "u"));
   assert.ok(match, `the card has a ${from} block`);
   return (match[1] ?? "")
     .split("\n")
@@ -1602,4 +1606,145 @@ test("CR019: an active story the candidates no longer list gets the fallback non
     planSection(plan.planMd, "Non-Goals"),
     "- Do not silently absorb adjacent roadmap work.",
   );
+});
+
+test("CR067: every refusal renders where the cursor stands, says why, and changes nothing", () => {
+  const project = mkdtempSync("/tmp/builder-command-cr067-");
+  temporaryDirectories.push(project);
+  writeSiblingTree(project, { guide: false });
+  const db = seed("adopted", project);
+  const cursorRow = () =>
+    (
+      db
+        .prepare("SELECT metadata FROM runtime_sessions WHERE session_id = ?")
+        .get("__builder_delivery_cursor__:demo") as { metadata: string }
+    ).metadata;
+  const run = (argv: readonly string[]) =>
+    invoke(db, [argv[0] ?? "", "--method", "ariad", "--journey", "demo", ...argv.slice(1)]);
+  const proceed = (argv: readonly string[]) => {
+    const result = run(argv);
+    assert.equal(result.exitCode, 0, `${argv[0]}: ${result.stdout}${result.stderr}`);
+  };
+  const refuse = (argv: readonly string[], stage: string, reason: string) => {
+    const before = { cursor: cursorRow(), files: projectSnapshot(project) };
+    const result = run(argv);
+    const label = `${argv[0]} at ${stage}`;
+    assert.equal(result.exitCode, 1, label);
+    assert.equal(result.stderr, "", label);
+    assert.deepEqual(surfaceIds(result.stdout), ["CHECKPOINT_REFUSED"], label);
+    assert.match(result.stdout, new RegExp(`◉ ${stage}( →|\\n)`, "u"), `${label}: ribbon`);
+    assert.equal(cardRows(result.stdout, "reason", "cursor"), reason, `${label}: reason`);
+    assert.equal(
+      cardRows(result.stdout, "to see the checkpoint", "boundary"),
+      "mirror build show --journey demo --method ariad",
+      label,
+    );
+    assert.equal(cursorRow(), before.cursor, `${label}: the cursor is unchanged`);
+    assert.deepEqual(projectSnapshot(project), before.files, `${label}: no file changed`);
+  };
+  const validate = [
+    "validate-item",
+    "--implementation-complete",
+    "--check",
+    "npm test",
+    "--checks-status",
+    "passed",
+    "--e2e-decision",
+    "not_required",
+    "--e2e-evidence",
+    "unit-level change",
+    "--navigator-route",
+    "walk the route",
+    "--navigator-accepted",
+    "--expected-observation",
+    "the change is visible",
+    "--pass-condition",
+    "it is",
+    "--fail-condition",
+    "it is not",
+  ];
+  const review = ["review-item", "--debt", "No debt found", "--decision", "no_action"];
+  const coherence = ["coherence-item", "--process", "p", "--project", "p", "--product", "p"];
+  const done = [
+    "done-item",
+    "--history-action",
+    "h",
+    "--roadmap-update",
+    "r",
+    "--next-recommendation",
+    "n",
+  ];
+  try {
+    setDeliveryCursor(
+      db,
+      {
+        journey: "demo",
+        method: "ariad",
+        activeItem: "CV1.DS1.TS1",
+        activeItemTitle: "First slice",
+        activeItemLevel: "technical_story",
+        lastDeliveryEvent: "prepare",
+        navigatorFlowUnit: "story_by_story",
+      },
+      { nowIso: () => NOW },
+    );
+    proceed(["plan-item"]);
+    refuse(
+      ["plan-item"],
+      "Plan",
+      "Plan is already complete for CV1.DS1.TS1: the cursor is at plan, pending navigator_approval.",
+    );
+    refuse(validate, "Plan", "Validation is blocked: pending confirmation navigator_approval.");
+    proceed(["approve-plan"]);
+    proceed(["set-cadence", "--profile", "stepwise"]);
+    refuse(
+      ["continue-lifecycle", "--process", "p", "--project", "p", "--product", "p"],
+      "Implement",
+      "Stepwise cadence does not continue automatically.",
+    );
+    proceed(["set-cadence", "--profile", "checkpoint"]);
+    proceed(validate);
+    refuse(
+      validate,
+      "Debt Review",
+      "Validation is already complete for CV1.DS1.TS1: the cursor is at validation_passed.",
+    );
+    proceed(review);
+    refuse(
+      review,
+      "Done",
+      "Debt Review is already complete for CV1.DS1.TS1: the cursor is at review_complete.",
+    );
+    proceed(coherence);
+    refuse(
+      coherence,
+      "Done",
+      "Coherence is already complete for CV1.DS1.TS1: the cursor is at coherence_complete.",
+    );
+    refuse(
+      validate,
+      "Done",
+      "Validation is already complete for CV1.DS1.TS1: the cursor is at coherence_complete.",
+    );
+    proceed(done);
+    refuse(
+      done,
+      "Done",
+      "Done is already complete for CV1.DS1.TS1: the cursor is at done_complete.",
+    );
+  } finally {
+    db.close();
+  }
+});
+
+test("CR067: check-implementation still renders the Implement guard it was written for", () => {
+  // A scratch copy: this scenario materializes a Plan package, and the committed
+  // fixture project must never receive one.
+  const db = seed("adopted_plan_pending", scratchProject(false));
+  try {
+    const result = invoke(db, ["check-implementation", "--method", "ariad", "--journey", "demo"]);
+    assert.deepEqual(surfaceIds(result.stdout), ["IMPLEMENTATION_GUARD"]);
+  } finally {
+    db.close();
+  }
 });
