@@ -119,10 +119,17 @@ drift as a build failure.
 
 Every plateau leaves commands and expected observations that another session,
 another Mirror, or a future collaborator can run without reconstructing intent.
-The redacted real-DB-copy harness (`ts/parity/real_db_copy_parity.py`), the
-portable demo database (`ts/parity/generate_demo_memory_db.py`), the CI
-determinism gate, and each story's `test-guide.md` are the vehicles. Real
-database artifacts are never committed.
+The portable demo database (`ts/smoke/generate_demo_memory_db.ts`), the CI
+determinism gate, and each story's `test-guide.md` or each CR's validation route
+are the vehicles. The Python-era harness that compared against a copy of the
+real database went with `ts/parity/` in TS5. Real database artifacts are never
+committed.
+
+A route runs in the Navigator's interactive shell, and aliases apply there. On
+this install `ls` is `eza`, which reads `-L` as a tree depth, so CR061's
+Part B listed the repository instead of the backups folder. Write a route as a
+script run with `bash`, or prefix `command` to anything an alias could
+shadow, and prove it by running it the way the Navigator will.
 
 ### Record decisions near the roadmap
 
