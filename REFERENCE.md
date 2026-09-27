@@ -257,7 +257,7 @@ mirror runtime backup [--mirror-home PATH]
 mirror runtime backup --verify PATH_TO_BACKUP.zip
 ```
 
-Runtime backup archives contain `memory.db` and SQLite sidecars (`memory.db-wal`, `memory.db-shm`) when present. Verification is structural: the zip must be readable, contain `memory.db`, and avoid unsafe archive paths. Recovery is manual in this version: stop active runtime sessions, move current database files aside, extract the backup into the Mirror home, and rerun `runtime status`.
+A backup archive holds one member, `memory.db`: a consistent snapshot of the database as committed, in WAL mode, taken with `VACUUM INTO` and checked before it is written. Archives written before CR061 may also carry `memory.db-wal` and `memory.db-shm`. Verification checks that the zip is readable, holds `memory.db` and nothing but SQLite's own files, and has no unsafe archive paths, then extracts `memory.db` and runs `PRAGMA quick_check` on it. Recovery is manual in this version: stop active runtime sessions, move current database files aside, extract the backup into the Mirror home, and rerun `runtime status`.
 
 ### Update planning
 

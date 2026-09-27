@@ -456,6 +456,49 @@ in this route only the archive's mode tells old from new. Step 5 runs after the
 writer has closed and checkpointed, so it passes today. It is there to show
 that the updater's path still works.
 
+### Plateau 1 handoff (2026-09-27)
+
+Now true: `createZipBackup` archives one member, `memory.db`. It is a snapshot
+of the database as committed, taken with `snapshotDatabaseTo` into a file
+created empty at 0600 inside a private directory under the OS temp dir.
+`prepareArchiveSnapshot` (`ts/src/db/database.ts`) then switches the snapshot
+to WAL and checks it, and a snapshot that fails the check is not published.
+The zip is staged beside its final name as
+`memory_<stamp>.zip.<pid>-<12 hex>.partial`. Stranded staging, in the backups
+directory or the temp dir, is swept only when its writer is gone and it is ten
+minutes old. That rule lives in `ts/src/backup/staging.ts` and `liveBackup.ts`
+now uses it too, instead of its own copy. A pre-CR061 `.zip.partial` is removed
+as it always was. The member's DOS time is the moment of capture. A database
+that cannot be snapshotted throws `BackupSnapshotError`, publishes nothing, and
+keeps the older archives.
+
+Evidence, red first. The new test with rows held in the WAL by an open writer
+failed on three members. It passes now with one member, all 150 rows, `wal`,
+and `ok`. The fixtures are real databases, and the golden's two member-grading
+scenarios, the fixture bytes, and the member CRCs were edited by a script that
+asserted every count, after proving that its serializer reproduces the file
+byte for byte. The edit has a row in the goldens README. Three mutants each fail
+a test that names what they broke:
+
+- no WAL switch fails the WAL-rows test and `full`;
+- a sweep that ignores the writer fails the sweep test;
+- a snapshot staged in the backups directory fails the "taken privately" test.
+  That test first passed the mutant, because the snapshot was removed before
+  the listing was taken. It now asserts that the temp dir was used.
+
+`createZipBackup` end to end on a snapshot of the real 57.6 MB database took
+1,801, 1,812, and 1,811 ms, for an 18.4 MB archive. The deflate that existed
+before accounts for about 1.5 s of that.
+
+The full suite passes (2,766 tests), with typecheck and lint (the same warning
+and info note as HEAD), the four repository checks, the custody proofs, the
+five end-to-end smokes, the four runtime smokes, and the runtime updater smoke,
+which creates and verifies an archive through the updater's own path. Part A
+of the route now passes step 2 (one member, `rows: 500`, `wal`, `ok`). Step 3
+still shows a 0644 archive and step 4 still exits 0.
+
+Remaining: the modes and the loud failure. Next: plateau 2, owner-only.
+
 ## Outcome
 
 _Pending._

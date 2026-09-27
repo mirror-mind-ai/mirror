@@ -80,6 +80,13 @@ export function openDatabaseReadOnly(path: string, options: OpenOptions = {}): D
   };
 }
 
+/** `PRAGMA quick_check`'s first verdict: `ok`, or the first problem it reports. */
+function quickCheckVerdict(driver: DatabaseSync): string {
+  const rows = driver.prepare("PRAGMA quick_check").all() as Record<string, SqlValue>[];
+  const first = rows[0];
+  return first === undefined ? "no result" : String(Object.values(first)[0] ?? "");
+}
+
 /**
  * `PRAGMA quick_check` against a standalone database FILE (CV22.DS10.US2).
  *
@@ -107,9 +114,7 @@ export function quickCheckDatabaseFile(path: string): { ok: boolean; verdict: st
     return { ok: false, verdict: sqliteMessage(error) };
   }
   try {
-    const rows = driver.prepare("PRAGMA quick_check").all() as Record<string, SqlValue>[];
-    const first = rows[0];
-    const verdict = first === undefined ? "no result" : String(Object.values(first)[0] ?? "");
+    const verdict = quickCheckVerdict(driver);
     return { ok: verdict === "ok", verdict };
   } catch (error) {
     return { ok: false, verdict: sqliteMessage(error) };
@@ -358,6 +363,34 @@ export function snapshotDatabaseTo(
   applyConnectionPragmas(driver, options);
   try {
     driver.prepare("VACUUM INTO ?").run(targetPath);
+  } finally {
+    driver.close();
+  }
+}
+
+/**
+ * Make a `VACUUM INTO` snapshot restorable as the database it was taken from
+ * (CR061), then check it. A snapshot comes out in rollback-journal mode, and
+ * Mirror sets WAL only when bootstrap creates a missing file, so a restored
+ * snapshot would otherwise run in a mode the original never ran in. Switching
+ * it to WAL and closing leaves one self-contained file whose header records
+ * WAL, with no sidecars. The snapshot is a private copy nothing else holds
+ * open, which is why this connection may write to it.
+ *
+ * Returns `PRAGMA quick_check`'s verdict; the caller publishes the snapshot
+ * only when it is `ok` -- a backup that has never been opened is a belief.
+ */
+export function prepareArchiveSnapshot(path: string): { ok: boolean; verdict: string } {
+  const driver = new DatabaseSync(path);
+  try {
+    const mode = driver.prepare("PRAGMA journal_mode=WAL").get() as { journal_mode?: string };
+    if (mode.journal_mode !== "wal") {
+      return { ok: false, verdict: `journal_mode is ${mode.journal_mode ?? "unknown"}, not wal` };
+    }
+    const verdict = quickCheckVerdict(driver);
+    return { ok: verdict === "ok", verdict };
+  } catch (error) {
+    return { ok: false, verdict: sqliteMessage(error) };
   } finally {
     driver.close();
   }

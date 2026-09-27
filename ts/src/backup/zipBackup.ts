@@ -3,23 +3,34 @@
 // `repair-journeys --apply` gate on; the front door's own fixed-name pre-write
 // snapshot (`liveBackup.ts`) is a different, weaker property and stays as is.
 //
-// Behavior reproduced exactly, including what a later CR may change:
-//   - the archive is a RAW copy of `memory.db` plus its `-wal`/`-shm` sidecars
-//     when present, taken without a read lock (Python does the same);
-//   - it is staged as `memory_<stamp>.zip.partial` and renamed into place, so
-//     a process killed mid-write never leaves a plausible 0-byte archive;
+// What the archive is (CR061, which replaced the raw copy DS7.TS1 reproduced):
+//   - one member, `memory.db`: a consistent snapshot of the database as
+//     committed at one instant, taken with `VACUUM INTO` from a read-only
+//     connection, switched to WAL so a restore runs as the original did, and
+//     checked with `PRAGMA quick_check` before it is published. The old raw
+//     copy of `memory.db` plus its `-wal`/`-shm` could restore a torn pair,
+//     and its `memory.db` alone lacked every row still in the WAL;
+//   - the snapshot is taken in a private directory under the OS temp dir, never
+//     in the backups directory, which may be a synced folder;
+//   - the zip is staged beside its final name as
+//     `memory_<stamp>.zip.<pid>-<12 hex>.partial` and renamed into place, so a
+//     process killed mid-write never leaves a plausible archive, and two
+//     backups in the same second never write into one file;
 //   - the member is always named `memory.db` whatever the on-disk file is
-//     called (the restore contract reads that name);
-//   - after writing, stranded `.partial` files are swept and `memory_*.zip`
-//     archives older than 30 days by the stamp in their NAME are deleted
-//     (unparseable names are left alone);
+//     called (the restore contract reads that name), and its DOS time is the
+//     moment of capture;
+//   - after writing, stranded staging whose process is gone is swept (the
+//     shared rule in `staging.ts`), a pre-CR061 `.zip.partial` is removed as it
+//     always was, and `memory_*.zip` archives older than 30 days by the stamp in
+//     their NAME are deleted (unparseable names are left alone);
 //   - stdout lines, the deprecated `BACKUP_DIR` warning, and `--silent`
-//     printing nothing are all Python's; `--silent` also hides failure (the
-//     CLI exits 0 then — recorded as a CR, not fixed here).
+//     printing nothing are Python's; `--silent` also hides failure (the CLI
+//     exits 0 then -- CR060, delivered with this CR).
 
 import {
   existsSync,
   mkdirSync,
+  mkdtempSync,
   readdirSync,
   readFileSync,
   renameSync,
@@ -27,12 +38,21 @@ import {
   statSync,
   writeFileSync,
 } from "node:fs";
-import { basename, dirname, join } from "node:path";
-import { entryFromFile, writeZipArchive, type ZipEntryInput } from "./zipWriter.ts";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
+import { prepareArchiveSnapshot, snapshotDatabaseTo } from "#db/database.ts";
+import { stagingToken, sweepAbandoned } from "./staging.ts";
+import { writeZipArchive, type ZipEntryInput } from "./zipWriter.ts";
 
 export const RETENTION_DAYS = 30;
 const ARCHIVE_MEMBER = "memory.db";
-const SIDECAR_SUFFIXES = ["-wal", "-shm"] as const;
+/** A zip staged beside its final name: `<archive>.<pid>-<12 hex>.partial`. */
+const ZIP_STAGING = /^memory_\d{8}_\d{6}\.zip\.(\d+)-[0-9a-f]{12}\.partial$/;
+/** A zip staged before CR061 carried no process id, and is swept as it always was. */
+const LEGACY_ZIP_STAGING = /^memory_.*\.zip\.partial$/;
+/** A snapshot's private directory under the temp dir: `mirror-backup-<pid>-XXXXXX`. */
+const SNAPSHOT_DIR_PREFIX = "mirror-backup-";
+const SNAPSHOT_DIR = /^mirror-backup-(\d+)-[A-Za-z0-9]{6}$/;
 const BACKUP_DIR_NAME = "backups";
 
 export const DEPRECATED_BACKUP_DIR_WARNING =
@@ -51,6 +71,8 @@ export interface ZipBackupOptions {
   /** Process environment view, for the deprecated `BACKUP_DIR` warning. */
   env?: Readonly<Record<string, string | undefined>>;
   now?: () => Date;
+  /** Where the snapshot's private directory is made; the OS temp dir by default. */
+  tempDir?: string;
   stdout?: (line: string) => void;
   stderr?: (line: string) => void;
 }
@@ -87,29 +109,60 @@ export function parseArchiveStamp(fileName: string): Date | null {
   return archiveStamp(date) === fileName.slice("memory_".length, -".zip".length) ? date : null;
 }
 
-function collectEntries(dbPath: string): ZipEntryInput[] {
-  const entries = [entryFromFile(dbPath, ARCHIVE_MEMBER, readFileSync(dbPath))];
-  for (const suffix of SIDECAR_SUFFIXES) {
-    const sidecar = join(dirname(dbPath), `${basename(dbPath)}${suffix}`);
-    if (existsSync(sidecar)) {
-      entries.push(entryFromFile(sidecar, `${ARCHIVE_MEMBER}${suffix}`, readFileSync(sidecar)));
+/** The snapshot could not be taken, or failed its check: nothing is published. */
+export class BackupSnapshotError extends Error {
+  constructor(detail: string) {
+    super(`could not snapshot the database: ${detail}`);
+    this.name = "BackupSnapshotError";
+  }
+}
+
+/**
+ * The archive's one member: a snapshot of the database as committed, taken in
+ * a private directory under `tempDir` and removed whatever happens. The file is
+ * created empty with mode 0600 before `VACUUM INTO` writes into it, so the copy
+ * is owner-only from its first byte.
+ */
+function snapshotEntry(dbPath: string, tempDir: string, capturedAt: Date): ZipEntryInput {
+  const dir = mkdtempSync(join(tempDir, `${SNAPSHOT_DIR_PREFIX}${process.pid}-`));
+  try {
+    const path = join(dir, ARCHIVE_MEMBER);
+    writeFileSync(path, "", { mode: 0o600, flag: "wx" });
+    try {
+      snapshotDatabaseTo(dbPath, path);
+    } catch (error) {
+      throw new BackupSnapshotError(error instanceof Error ? error.message : String(error));
+    }
+    const check = prepareArchiveSnapshot(path);
+    if (!check.ok) throw new BackupSnapshotError(`quick_check: ${check.verdict}`);
+    return {
+      name: ARCHIVE_MEMBER,
+      data: readFileSync(path),
+      mtime: capturedAt,
+      mode: statSync(path).mode,
+    };
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+/** Staging left behind: pre-CR061 partials as always, the rest only when their writer is gone. */
+function sweepStaging(backupDir: string, tempDir: string): void {
+  for (const name of readdirSync(backupDir)) {
+    if (!LEGACY_ZIP_STAGING.test(name)) continue;
+    try {
+      rmSync(join(backupDir, name));
+    } catch {
+      // A stranded file we cannot remove is not this run's failure.
     }
   }
-  return entries;
+  sweepAbandoned(backupDir, ZIP_STAGING);
+  sweepAbandoned(tempDir, SNAPSHOT_DIR);
 }
 
 function sweepRetention(backupDir: string, keep: string, now: Date): number {
   const cutoff = new Date(now.getTime() - RETENTION_DAYS * 24 * 60 * 60 * 1000);
   let removed = 0;
-  for (const name of readdirSync(backupDir)) {
-    if (/^memory_.*\.zip\.partial$/.test(name)) {
-      try {
-        rmSync(join(backupDir, name));
-      } catch {
-        // A stranded file we cannot remove is not this run's failure.
-      }
-    }
-  }
   for (const name of readdirSync(backupDir)) {
     if (name === keep || !/^memory_.*\.zip$/.test(name)) continue;
     const stamp = parseArchiveStamp(name);
@@ -150,11 +203,14 @@ export function createZipBackup(options: ZipBackupOptions): string | null {
   }
 
   mkdirSync(backupDir, { recursive: true });
-  const archiveName = `memory_${archiveStamp(now())}.zip`;
+  const capturedAt = now();
+  const archiveName = `memory_${archiveStamp(capturedAt)}.zip`;
   const archivePath = join(backupDir, archiveName);
-  const stagingPath = join(backupDir, `${archiveName}.partial`);
+  const tempDir = options.tempDir ?? tmpdir();
+  const member = snapshotEntry(options.dbPath, tempDir, capturedAt);
+  const stagingPath = join(backupDir, `${archiveName}.${stagingToken()}.partial`);
   try {
-    writeFileSync(stagingPath, writeZipArchive(collectEntries(options.dbPath)));
+    writeFileSync(stagingPath, writeZipArchive([member]));
     renameSync(stagingPath, archivePath);
   } catch (error) {
     rmSync(stagingPath, { force: true });
@@ -164,6 +220,7 @@ export function createZipBackup(options: ZipBackupOptions): string | null {
   if (!silent)
     out(`Backup created: ${archiveName} (${formatKilobytes(statSync(archivePath).size)} KB)`);
 
+  sweepStaging(backupDir, tempDir);
   const removed = sweepRetention(backupDir, archiveName, now());
   if (!silent && removed > 0)
     out(`Removed ${removed} backup(s) older than ${RETENTION_DAYS} days.`);
