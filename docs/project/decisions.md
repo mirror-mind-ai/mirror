@@ -3104,6 +3104,22 @@ order because its port carries the Ariad section that the other floor changes
 are still editing. Moving it earlier makes sense only if its plan chooses to
 generate the copies from one source.
 
+**Amended 2026-09-27: CR018 fixes the Expand defect its characterization
+found.** Expand finds an existing child package by the folder name it would
+give it, not by the child's heading. When an authored child lives in another
+folder, Expand writes a second package claiming the same code, and every
+Builder command that then resolves that code crashes with an uncaught
+`StoryPackageAmbiguityError`. The rule above would have captured it. The
+Navigator had it fixed inside
+[CR018](refinement/rs001-ariad-runtime-trust/cr018-story-titles-with-slashes-truncated-in-surfaces-and-scaffolds.md)
+instead, for two reasons. It is the floor's first class, silent damage. And
+CR018's link-free titles rename the folders Expand derives for children whose
+titles carry links, so without the fix every such child already expanded would
+be written a second time. The escaped-pipe defect found beside it is captured
+as [CR107](refinement/rs001-ariad-runtime-trust/cr107-an-escaped-pipe-in-a-candidate-table-title-is-read-as-a-cell-border.md),
+outside the floor. The floor stays eight changes and ten identifiers: CR018
+grows by one defect, not by one identifier.
+
 ### A Builder journey's position is its cursor's active item, never a roadmap scan
 
 **Date:** 2026-09-26 · **Context:** [CR002](refinement/rs001-ariad-runtime-trust/cr002-cursor-sync-roadmap-selection.md),
