@@ -566,6 +566,32 @@ The escaped pipe was reproduced on its own scratch project: an authored table ce
 ``Read `a \| b` input`` gave Expand's recommendation and the child's heading
 ``Read `a \``.
 
+### Plateau 1 handoff (2026-09-27)
+
+Now true: Expand settles a Delivery Story and every child against one reading of the
+roadmap before it writes anything. A child an authored package claims is reported
+`existing` where it lives and never written again. A child two packages claim blocks
+Expand with `EXPAND_BLOCKED` while nothing is yet on disk. A Delivery Story with no
+package refuses to invent a `US1` that an authored package already claims.
+`storyDirectoryResolver` in `storyPaths.ts` is that one reading, and
+`resolveStoryDirectory` asks it about one code, so the two cannot drift. Both Builder
+dispatchers answer `StoryPackageAmbiguityError` with one `Error:` line naming the
+claimants, exit 1.
+
+Evidence: four tests, red first. The human-named child was written a second time; a
+doubly claimed child let Expand exit 0 and write its sibling; a package-less Delivery
+Story invented a duplicate `US1`; and `show` threw. They are green now. A mutant that
+settles each child only in its turn fails the double-claim test, because the table lists
+TS2 before the doubly claimed TS1. The walk over all fourteen commands asserts, for each,
+one `Error:` line naming both claimants, an empty stdout, and the database and project
+tree unchanged. Every one of them crashed before the change. On the real front door,
+route steps 3 and 5 now print `existing US2 package` at `us2-kept-by-a-human`, one file
+claiming `CV1.DS2.US2`, and `exit 1`, `stack lines: 0`, and one `Error:` line. No golden
+changed. The full suite passes (2,731 tests), along with typecheck, lint, the four
+repository checks, and the Builder lifecycle smoke.
+
+Remaining: every title change. Next: plateau 2, whole titles.
+
 ## Outcome
 
 Pending.

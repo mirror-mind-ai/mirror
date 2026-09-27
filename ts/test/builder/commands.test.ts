@@ -1979,3 +1979,195 @@ test("CR067: a failure after the cursor moved is an error, never a refusal that 
     db.close();
   }
 });
+
+// CR018 plateau 1 — Expand finds a child by its heading, and a code two packages claim
+// is a refusal, never a crash. Hand-written expectations: before CR018 Expand found a
+// child by the folder name it would give it, and wrote a second package whenever the
+// authored one lived anywhere else.
+
+/**
+ * CV1 with one Delivery Story whose candidate table lists TS2 first, with no package,
+ * and TS1, authored under a folder name Expand would never derive. `duplicate` copies
+ * TS1's package, so two packages claim its code.
+ */
+function claimsProject(options: { duplicate: boolean }): string {
+  const project = mkdtempSync("/tmp/builder-command-cr018-");
+  temporaryDirectories.push(project);
+  const roadmap = join(project, "docs/project/roadmap");
+  const write = (path: string, content: string) => {
+    mkdirSync(dirname(join(roadmap, path)), { recursive: true });
+    writeFileSync(join(roadmap, path), content, "utf8");
+  };
+  write("index.md", "# Roadmap\n");
+  write("cv1/index.md", "# CV1 — First capability\n\n**Status:** 🟢 Active\n");
+  write(
+    "cv1/ds1/index.md",
+    "# CV1.DS1 — Hygiene\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n\n" +
+      "## Candidate Stories\n\n| Code | Story | Type | Status |\n|------|-------|------|--------|\n" +
+      "| CV1.DS1.TS2 | Second slice | Technical Story | 🟡 Planned |\n" +
+      "| [CV1.DS1.TS1](ts1-named-by-a-human/index.md) | First slice | Technical Story | 🟡 Planned |\n",
+  );
+  const authored =
+    "# CV1.DS1.TS1 — First slice\n\n**Status:** 🟡 Planned\n**Type:** Technical Story\n";
+  write("cv1/ds1/ts1-named-by-a-human/index.md", authored);
+  if (options.duplicate) write("cv1/ds1/ts1-copy/index.md", authored);
+  return project;
+}
+
+/** The roadmap-relative folders of every `index.md` whose heading claims `code`. */
+function claimants(project: string, code: string): string[] {
+  const heading = new RegExp(`^# ${code.replaceAll(".", "\\.")} [—-] `, "mu");
+  const prefix = "docs/project/roadmap/";
+  return Object.entries(projectSnapshot(project))
+    .filter(([path, content]) => path.endsWith("/index.md") && heading.test(content))
+    .map(([path]) => path.slice(prefix.length, -"/index.md".length));
+}
+
+const PULL_HYGIENE = [
+  "pull-item",
+  "--method",
+  "ariad",
+  "--journey",
+  "demo",
+  "--item-code",
+  "CV1.DS1",
+  "--item-title",
+  "Hygiene",
+  "--item-level",
+  "delivery_story",
+  "--why-now",
+  "CR018",
+];
+
+test("CR018: Expand reports an authored child existing wherever its heading lives", () => {
+  const project = claimsProject({ duplicate: false });
+  const db = seed("adopted", project);
+  try {
+    assert.equal(invoke(db, ["sync-cursor", "--method", "ariad", "--journey", "demo"]).exitCode, 0);
+    const pulled = invoke(db, PULL_HYGIENE);
+    assert.equal(pulled.exitCode, 0, pulled.stderr);
+    assert.deepEqual(claimants(project, "CV1.DS1.TS1"), ["cv1/ds1/ts1-named-by-a-human"]);
+    assert.deepEqual(claimants(project, "CV1.DS1.TS2"), ["cv1/ds1/cv1-ds1-ts2-second-slice"]);
+    assert.match(pulled.stdout, /↻ existing TS1 package/u);
+    assert.match(pulled.stdout, /✓ created TS2 package/u);
+    assert.deepEqual(getDeliveryCursor(db, "demo")?.childWorkItems, ["CV1.DS1.TS2", "CV1.DS1.TS1"]);
+  } finally {
+    db.close();
+  }
+});
+
+test("CR018: a child two packages claim blocks Expand before any file is written", () => {
+  const project = claimsProject({ duplicate: true });
+  const db = seed("adopted", project);
+  try {
+    assert.equal(invoke(db, ["sync-cursor", "--method", "ariad", "--journey", "demo"]).exitCode, 0);
+    const before = projectSnapshot(project);
+    const pulled = invoke(db, PULL_HYGIENE);
+    assert.equal(pulled.exitCode, 1);
+    assert.deepEqual(surfaceIds(pulled.stdout), ["EXPAND_BLOCKED"]);
+    assert.match(pulled.stdout, /No files were materialized/u);
+    // TS2 comes first in the table, so a child settled only when its turn came would
+    // already be on disk when TS1's double claim stopped Expand.
+    assert.deepEqual(projectSnapshot(project), before, "nothing written, TS2 included");
+  } finally {
+    db.close();
+  }
+});
+
+test("CR018: a Delivery Story with no package refuses to invent a child another package claims", () => {
+  const project = claimsProject({ duplicate: false });
+  // CV1.DS9 has no package, so Expand would invent CV1.DS9.US1 for it; one already exists.
+  const orphan = join(project, "docs/project/roadmap/cv1/orphan-us1");
+  mkdirSync(orphan, { recursive: true });
+  writeFileSync(
+    join(orphan, "index.md"),
+    "# CV1.DS9.US1 — Orphan story\n\n**Status:** 🟡 Planned\n**Type:** User Story\n",
+    "utf8",
+  );
+  const db = seed("adopted", project);
+  try {
+    assert.equal(invoke(db, ["sync-cursor", "--method", "ariad", "--journey", "demo"]).exitCode, 0);
+    const before = projectSnapshot(project);
+    const pulled = invoke(db, [...PULL_HYGIENE.slice(0, 6), "CV1.DS9", ...PULL_HYGIENE.slice(7)]);
+    assert.equal(pulled.exitCode, 1);
+    assert.deepEqual(surfaceIds(pulled.stdout), ["EXPAND_BLOCKED"]);
+    assert.deepEqual(projectSnapshot(project), before);
+    assert.deepEqual(claimants(project, "CV1.DS9.US1"), ["cv1/orphan-us1"]);
+  } finally {
+    db.close();
+  }
+});
+
+/** Every Builder command that resolves the active item's package, with the flags it needs. */
+const PACKAGE_RESOLVING_COMMANDS: readonly (readonly string[])[] = [
+  ["show"],
+  ["plan-item"],
+  ["approve-plan", "--use-preauthorization"],
+  [
+    "continue-lifecycle",
+    "--history-action",
+    "commit",
+    "--roadmap-update",
+    "done",
+    "--next-recommendation",
+    "next",
+  ],
+  ["validate-item", ...CR067_VALIDATE.slice(1)],
+  ["review-item", "--debt", "No debt found", "--decision", "no_action"],
+  ["coherence-item", "--process", "aligned", "--project", "aligned", "--product", "aligned"],
+  [
+    "done-item",
+    "--history-action",
+    "commit",
+    "--roadmap-update",
+    "done",
+    "--next-recommendation",
+    "next",
+  ],
+  ["plan-delivery-story", "--objective", "One outcome", "--child", "CV1.DS1.TS1"],
+  ["approve-delivery-story-plan"],
+  ["validate-delivery-story", "--summary", "validated", "--navigator-accepted"],
+  ["review-delivery-story", "--decision", "no_action", "--summary", "no debt"],
+  ["coherence-delivery-story", "--summary", "coherent"],
+  ["done-delivery-story", "--summary", "done"],
+];
+
+test("CR018: a code two packages claim is one Error line in every command that resolves it", () => {
+  const project = claimsProject({ duplicate: true });
+  const claimed =
+    /^Error: 2 roadmap packages claim code 'CV1\.DS1\.TS1': \S+\/cv1\/ds1\/ts1-copy, \S+\/cv1\/ds1\/ts1-named-by-a-human\n$/u;
+  for (const command of PACKAGE_RESOLVING_COMMANDS) {
+    const name = command[0] ?? "";
+    const db = seed("adopted", project);
+    try {
+      setDeliveryCursor(
+        db,
+        {
+          journey: "demo",
+          method: "ariad",
+          activeItem: "CV1.DS1.TS1",
+          activeItemTitle: "First slice",
+          activeItemLevel: "technical_story",
+          lastDeliveryEvent: "review_complete",
+          cadenceProfile: "checkpoint",
+          navigatorFlowUnit: "story_by_story",
+        },
+        { nowIso: () => NOW },
+      );
+      const database = databaseSnapshot(db);
+      const tree = projectSnapshot(project);
+      const argv = [name, "--method", "ariad", "--journey", "demo", ...command.slice(1)];
+      let result: ReturnType<typeof invoke> | undefined;
+      assert.doesNotThrow(() => {
+        result = name === "show" ? invokeReadOnlyBuilderArgv(db, argv) : invoke(db, argv);
+      }, name);
+      assert.equal(result?.exitCode, 1, name);
+      assert.equal(result?.stdout, "", name);
+      assert.match(result?.stderr ?? "", claimed, name);
+      assert.equal(databaseSnapshot(db), database, `${name} wrote nothing to the database`);
+      assert.deepEqual(projectSnapshot(project), tree, `${name} wrote nothing to the project`);
+    } finally {
+      db.close();
+    }
+  }
+});

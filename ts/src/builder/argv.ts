@@ -41,6 +41,7 @@ import {
   runValidateDeliveryStory,
   runValidateItem,
 } from "#builder/commands.ts";
+import { StoryPackageAmbiguityError } from "#builder/storyPaths.ts";
 import type { Database, WritableDatabase } from "#db/database.ts";
 
 export interface BuilderInvokeDeps {
@@ -61,7 +62,39 @@ export const READ_ONLY_BUILDER_SUBCOMMANDS = new Set([
   "show",
 ]);
 
+/**
+ * Two packages claiming one code is a roadmap defect for the Navigator to settle,
+ * not a crash (CR018). Every leaf that resolves the active item's package does so
+ * before its first write, so the answer is one `Error:` line, which, like every
+ * `Error:` line, claims nothing about what changed. Pull answers the same defect
+ * with `EXPAND_BLOCKED` before it gets here.
+ */
+function refusingDoubleClaims(leaf: () => CommandResult): CommandResult {
+  try {
+    return leaf();
+  } catch (error) {
+    if (!(error instanceof StoryPackageAmbiguityError)) throw error;
+    return { stdout: "", stderr: `Error: ${error.message}\n`, exitCode: 1 };
+  }
+}
+
 export function invokeReadOnlyBuilderArgv(
+  db: Database,
+  argv: readonly string[],
+  environmentSessionId?: string | null,
+): CommandResult {
+  return refusingDoubleClaims(() => readOnlyBuilderLeaf(db, argv, environmentSessionId));
+}
+
+export function invokeBuilderArgv(
+  db: WritableDatabase,
+  argv: readonly string[],
+  invokeDeps: BuilderInvokeDeps,
+): CommandResult {
+  return refusingDoubleClaims(() => builderLeaf(db, argv, invokeDeps));
+}
+
+function readOnlyBuilderLeaf(
   db: Database,
   argv: readonly string[],
   environmentSessionId?: string | null,
@@ -92,7 +125,7 @@ export function invokeReadOnlyBuilderArgv(
   throw new UnsupportedBuilderArgvError(`unsupported read-only argv: ${argv.join(" ")}`);
 }
 
-export function invokeBuilderArgv(
+function builderLeaf(
   db: WritableDatabase,
   argv: readonly string[],
   invokeDeps: BuilderInvokeDeps,

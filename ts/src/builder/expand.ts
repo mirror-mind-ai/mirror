@@ -16,6 +16,9 @@
 //     and it is worse than failing because the fabrication looks like work.
 //   * **It never overwrites.** Every write is guarded by "does this exist", so
 //     re-expanding an authored package reports `existing` and changes nothing.
+//     "Exists" means a package whose heading claims the child's code, wherever it
+//     lives, not a file at the folder Expand would have named. Until CR018 it meant
+//     the folder, so a child a human had filed elsewhere was written a second time.
 //
 // The candidate-table parser is header-driven on purpose: it accepts the 4-column
 // authored shape and the 5-column generated one, in any column order, with extra
@@ -45,7 +48,7 @@ import { renderLifecycleRibbon } from "./lifecycleRibbon.ts";
 import { stripMarkdownLink } from "./roadmapGrammar.ts";
 import {
   createStoryDirectory,
-  resolveStoryDirectory,
+  storyDirectoryResolver,
   storyFolderName,
   titleLeaf,
 } from "./storyPaths.ts";
@@ -174,12 +177,23 @@ function firstPendingChild(children: readonly CandidateChild[]): CandidateChild 
   return children[0] as CandidateChild;
 }
 
-/** Python `_materialize_child_package`: the child's FULL title slugs its folder. */
+/**
+ * Python `_materialize_child_package`: the child's FULL title slugs its folder.
+ *
+ * `authored` is the package that already claims the child's code, found by heading
+ * before Expand wrote anything. It is reported where it lives and never written.
+ */
 function materializeChildPackage(
   dsDirectory: string,
   child: CandidateChild,
+  authored: string | null,
   projectRoot: string,
 ): { path: string; artifact: MaterializedArtifact } {
+  const label = `${child.code.split(".").at(-1) ?? child.code} package`;
+  if (authored !== null) {
+    const authoredIndex = join(authored, "index.md");
+    return { path: authoredIndex, artifact: existingArtifact(label, authoredIndex) };
+  }
   // Note: `child.title`, not `titleLeaf(child.title)`. A `/` in a candidate title
   // is slugged into the folder name rather than read as an ancestor chain, which
   // is the opposite of what the cursor's own title does. Python's asymmetry,
@@ -192,7 +206,6 @@ function materializeChildPackage(
     policy: "create-only",
     projectRoot,
   });
-  const label = `${child.code.split(".").at(-1) ?? child.code} package`;
   return {
     path: childIndex,
     artifact:
@@ -228,9 +241,11 @@ export function expandDeliveryStory(
 
   const activeItem = existing.activeItem;
   const title = existing.activeItemTitle || activeItem;
+  // One reading of the roadmap answers for the Delivery Story and for every child, so
+  // each is settled before the first write (CR018).
+  const packageOf = storyDirectoryResolver(options.projectPath);
   const dsDirectory =
-    resolveStoryDirectory(options.projectPath, activeItem) ??
-    createStoryDirectory(options.projectPath, activeItem, title);
+    packageOf(activeItem) ?? createStoryDirectory(options.projectPath, activeItem, title);
   const dsIndex = join(dsDirectory, "index.md");
   const dsExists = existsSync(dsIndex);
   const children = dsExists ? parseCandidateStories(readFileSync(dsIndex, "utf8")) : [];
@@ -253,6 +268,9 @@ export function expandDeliveryStory(
     const recommended = firstPendingChild(children);
     recommendedCode = recommended.code;
     recommendedTitle = recommended.title;
+    // Before any write: a child two packages claim throws here, while EXPAND_BLOCKED's
+    // "No files were materialized" is still true.
+    const placements = children.map((child) => ({ child, authored: packageOf(child.code) }));
     mkdirSync(dsDirectory, { recursive: true });
     const dsOutcome = writeBuilderArtifact({
       path: dsIndex,
@@ -265,8 +283,13 @@ export function expandDeliveryStory(
         ? existingArtifact("DS package", dsIndex)
         : { kind: "DS package", path: dsIndex, status: "created" },
     );
-    for (const child of children) {
-      const materialized = materializeChildPackage(dsDirectory, child, options.projectPath);
+    for (const { child, authored } of placements) {
+      const materialized = materializeChildPackage(
+        dsDirectory,
+        child,
+        authored,
+        options.projectPath,
+      );
       materializedPaths.push(materialized.path);
       materializedArtifacts.push(materialized.artifact);
     }
@@ -277,6 +300,13 @@ export function expandDeliveryStory(
     // — the refusal above already covers that case — it is the empty-field case.
     recommendedCode = `${activeItem}.US1`;
     recommendedTitle = titleLeaf(title);
+    const claimed = packageOf(recommendedCode);
+    if (claimed !== null) {
+      throw new ExpandBlockedError(
+        `${activeItem} has no package, and an authored package already claims ` +
+          `${recommendedCode} at ${claimed}; refusing to invent a story over it`,
+      );
+    }
     const usDirectory = join(dsDirectory, storyFolderName(recommendedCode, recommendedTitle));
     const usIndex = join(usDirectory, "index.md");
     mkdirSync(dsDirectory, { recursive: true });

@@ -82,14 +82,15 @@ function groupRoadmapHeadings(roadmapRoot: string): Map<string, string[]> {
 }
 
 /**
- * Python `resolve_story_directory`: the directory of the authored package whose
- * heading code equals `code`, `null` when none does, and a throw when more than
- * one does.
+ * The package resolver over one reading of the roadmap: for a code, the absolute
+ * directory of the authored package whose heading claims it, `null` when none does,
+ * and a throw when more than one does.
  *
- * Returns a path relative to the roadmap root's parent chain as components
- * joined with `/`; callers that need an absolute path join it to the root.
+ * `resolveStoryDirectory` asks it about one code. Expand asks it about every child of
+ * a Delivery Story, and must settle them all before it writes anything, so it reads
+ * the roadmap once and keeps this function (CR018). Both go through the one rule.
  */
-export function resolveStoryDirectory(projectRoot: string, code: string): string | null {
+export function storyDirectoryResolver(projectRoot: string): (code: string) => string | null {
   // ABSOLUTE, like Python's `(project_path / … ).resolve()`. This was relative until
   // CV22.DS7.US8 plateau 3, and the divergence was invisible because every test and
   // every real caller passed an absolute project path: the front door reads it from
@@ -99,18 +100,28 @@ export function resolveStoryDirectory(projectRoot: string, code: string): string
   // relative candidate against a resolved root inside `createStoryDirectory`'s
   // confinement guard.
   const roadmapRoot = resolve(roadmapPaths(projectRoot).roadmapRoot);
-  const matches = groupRoadmapHeadings(roadmapRoot).get(code) ?? [];
-  if (matches.length === 0) return null;
-  if (matches.length > 1) {
-    const paths = matches.map((directory) =>
-      directory ? `${roadmapRoot}${sep}${directory.split("/").join(sep)}` : roadmapRoot,
-    );
-    throw new StoryPackageAmbiguityError(
-      `${matches.length} roadmap packages claim code '${code}': ${paths.join(", ")}`,
-    );
-  }
-  const only = matches[0] ?? "";
-  return only ? `${roadmapRoot}${sep}${only.split("/").join(sep)}` : roadmapRoot;
+  const claims = groupRoadmapHeadings(roadmapRoot);
+  const absolute = (directory: string): string =>
+    directory ? `${roadmapRoot}${sep}${directory.split("/").join(sep)}` : roadmapRoot;
+  return (code) => {
+    const matches = claims.get(code) ?? [];
+    if (matches.length === 0) return null;
+    if (matches.length > 1) {
+      throw new StoryPackageAmbiguityError(
+        `${matches.length} roadmap packages claim code '${code}': ${matches.map(absolute).join(", ")}`,
+      );
+    }
+    return absolute(matches[0] ?? "");
+  };
+}
+
+/**
+ * Python `resolve_story_directory`: the directory of the authored package whose
+ * heading code equals `code`, `null` when none does, and a throw when more than
+ * one does.
+ */
+export function resolveStoryDirectory(projectRoot: string, code: string): string | null {
+  return storyDirectoryResolver(projectRoot)(code);
 }
 
 /**

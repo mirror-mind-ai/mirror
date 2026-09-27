@@ -649,7 +649,13 @@ function lifecycleGuards(
   return { journey };
 }
 
-/** Python's `except ValueError as exc: print(f"Error: {exc}", file=sys.stderr)`. */
+/**
+ * Python's `except ValueError as exc: print(f"Error: {exc}", file=sys.stderr)`.
+ *
+ * The two roadmap errors pass through: Pull renders both as `EXPAND_BLOCKED`, and
+ * anywhere else the dispatcher answers a double claim with its own `Error:` line
+ * (CR018).
+ */
 function refuseValueError(error: unknown): CommandResult {
   if (error instanceof StoryPackageAmbiguityError || error instanceof ExpandBlockedError)
     throw error;
