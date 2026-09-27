@@ -689,6 +689,97 @@ lifecycle smoke.
 Remaining: plateau 6, meaning the route's output recorded, Navigator validation, and the
 handoff review.
 
+### The route after the change (2026-09-27)
+
+The same route at `247c7dbe`, with CI green on it, in bash and zsh alike. Every pass
+condition holds, and no fail marker appears:
+
+```text
+--- step 1: pull a Technical Story whose title has a link and slashes inside code
+│        🟪■  DELIVERY STORY ACTIVATED                   │
+│                                                        │
+│ Remove the dormant pair (`executeToolCallsWeb` + route │
+│ `/v1/mcp/execute`) (see CV1.DS2): the dead path goes   │
+│                                                        │
+│ source                                                 │
+│ roadmap candidate                                      │
+│                                                        │
+│ roadmap placement                                      │
+│ 🟪[CV1] Builder/Ariad trust                             │
+│   └─ 🟦[TS1] Remove the dormant pair (`executeToolCall… │
+│                                                        │
+│ intent                                                 │
+--- step 2: plan it; the card, then plan.md
+│ plan                                                   │
+│ Plan the smallest coherent, testable slice for Remove  │
+│ the dormant pair (`executeToolCallsWeb` + route        │
+│ `/v1/mcp/execute`) (see CV1.DS2): the dead path goes.  │
+│                                                        │
+│ scope                                                  │
+│ ✓ Deliver Remove the dormant pair                      │
+│   (`executeToolCallsWeb` + route `/v1/mcp/execute`)    │
+│   (see CV1.DS2): the dead path goes as an observable   │
+│   slice.                                               │
+│ ✓ Keep the implementation narrow enough to validate at │
+│   the Plan-defined checkpoint.                         │
+│                                                        │
+│ non-goals                                              │
+│ ○ Do not implement sibling roadmap item: Audit         │
+│   `pub`/`allow(dead_code)` items and read/write paths. │
+│                                                        │
+│ acceptance                                             │
+## Objective
+
+Plan the smallest coherent, testable slice for Remove the dormant pair (`executeToolCallsWeb` + route `/v1/mcp/execute`) (see CV1.DS2): the dead path goes.
+
+## Scope
+
+- Deliver Remove the dormant pair (`executeToolCallsWeb` + route `/v1/mcp/execute`) (see CV1.DS2): the dead path goes as an observable slice.
+- Keep the implementation narrow enough to validate at the Plan-defined checkpoint.
+
+## Non-Goals
+
+- Do not implement sibling roadmap item: Audit `pub`/`allow(dead_code)` items and read/write paths.
+
+## Acceptance Behavior
+--- step 3: pull a Delivery Story; Expand writes one child and finds the other
+│ What was pulled?                                       │
+│ Web retirement: client/server split                    │
+│                                                        │
+│ Where are we in the roadmap?                           │
+│ 🟪[CV1] Builder/Ariad trust                             │
+│   └─ 🟦[DS2] Web retirement: client/server split        │
+│                                                        │
+│ What did Prepare find?                                 │
+│ What is recommended next?                              │
+│ 🟩[US1] Retire the web surface (per D12) and its and/or │
+│ fallbacks                                              │
+│                                                        │
+│ Recommended flow unit                                  │
+│ ✓ created US1 package                                  │
+│ docs/project/roadmap/cv1/ds2/cv1-ds2-us1-retire-the-we │
+│ ↻ existing US2 package                                 │
+│ docs/project/roadmap/cv1/ds2/us2-kept-by-a-human/index │
+# CV1.DS2.US1 — Retire the web surface (per D12) and its and/or fallbacks
+I want to Retire the web surface (per D12) and its and/or fallbacks,
+Navigator can validate Retire the web surface (per D12) and its and/or fallbacks as an observable behavior.
+Given the user is ready for Retire the web surface (per D12) and its and/or fallbacks
+- Retire the web surface (per D12) and its and/or fallbacks
+cv1/ds2/us2-kept-by-a-human/index.md
+--- step 4: the roadmap snapshot
+│ 🟪[CV1]  Builder/Ariad trust                   ◉ active │
+│    └─ 🟦[US1] Retire the web surface (per D1… ◉ current │
+│       ○ 🟦[CV1.DS1] Dead code / hygiene                 │
+│       ○ 🟦[CV1.DS1.TS1] Remove the dormant pair (`exec… │
+│       ○ 🟦[CV1.DS1.TS2] Audit `pub`/`allow(dead_code)`… │
+│       ○ 🟦[CV1.DS2.US1] Retire the web surface (per D1… │
+│       ○ 🟦[CV1.DS2.US2] Keep the export                 │
+--- step 5: two packages claim one code, then Plan
+exit 1
+stack lines: 0
+Error: 2 roadmap packages claim code 'CV1.DS1.TS2': cv1/ds1/ts2, cv1/ds1/ts2-copy
+```
+
 ## Outcome
 
 Pending.
