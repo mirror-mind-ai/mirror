@@ -273,8 +273,60 @@ passed is attempted again and `build show` runs.
 Pass: every refusal shows the cursor's stage and a true reason and names `build show`,
 and every `build show` matches the stage table and the records on disk. Fail: `◉
 Implement` anywhere after Plan approval unless the cursor is there, a precondition that
-holds, or any change to the cursor or files. Plateau 4 turns this into a pasteable
-script.
+holds, or any change to the cursor or files.
+
+Runnable from the repository root in bash or zsh. There is no `.env`, so nothing reaches
+the real home, and the script deletes its temporary directory. A helper passes the
+journey options, because zsh does not split an unquoted variable into words. Each step
+prints only the rows the pass condition reads:
+
+```bash
+V=$(mktemp -d) && mkdir -p "$V/home" && export MIRROR_HOME="$V/home" NODE_OPTIONS=--no-warnings
+cr067() { node ts/src/frontDoor/cli.ts "$@"; }
+cr067b() { cr067_leaf=$1; shift; node ts/src/frontDoor/cli.ts build "$cr067_leaf" --journey cr067 --method ariad "$@"; }
+cr067_cv() { mkdir -p "$V/p/docs/project/roadmap/$1" && printf '# %s — %s\n\n**Status:** 🟡 Planned\n' "$2" "$3" > "$V/p/docs/project/roadmap/$1/index.md"; }
+cr067_pkg() { mkdir -p "$V/p/docs/project/roadmap/$1" && printf '# %s — %s\n\n**Status:** 🟡 Planned\n**Type:** %s\n' "$2" "$3" "$4" > "$V/p/docs/project/roadmap/$1/index.md"; }
+cr067_refusal() { sed -n '/Delivery Flow/p;/<<<ARIAD:/p;/│ reason /,/│ mirror build show/p'; }
+cr067_show() { cr067b show | sed -n '/Delivery Flow/p;/│ last event/,/│ changed\./p'; }
+cr067_validate() { cr067b validate-item --implementation-complete --check "npm test" --checks-status passed --e2e-decision not_required --e2e-evidence "unit-level" --navigator-route "the route" --navigator-accepted --expected-observation "shown" --pass-condition "shown" --fail-condition "not shown"; }
+cr067_cv cv1 CV1 "First capability" && cr067_pkg cv1/ds1 CV1.DS1 "Alpha delivery" "Delivery Story" && cr067_pkg cv1/ds1/ts1 CV1.DS1.TS1 "First slice" "Technical Story"
+printf '# Roadmap\n' > "$V/p/docs/project/roadmap/index.md" && git -C "$V/p" init -q
+printf '# CR067\n' | cr067 identity set journey cr067 > /dev/null && cr067 journey set-path cr067 "$V/p" > /dev/null 2>&1
+cr067b adopt > /dev/null && cr067b sync-cursor > /dev/null
+cr067b pull-item --item-code CV1.DS1.TS1 --item-title "First slice" --item-level technical_story --why-now "CR067 validation" > /dev/null
+cr067b plan-item > /dev/null
+echo '--- 1: plan-item again, awaiting Plan approval'
+cr067b plan-item | cr067_refusal
+echo '--- 2: build show'
+cr067_show
+cr067b approve-plan > /dev/null && cr067_validate > /dev/null
+echo '--- 3: validate-item again'
+cr067_validate | cr067_refusal
+echo '--- 4: build show'
+cr067_show
+cr067b review-item --debt "No debt found" --decision no_action > /dev/null && cr067b coherence-item --process p --project p --product p > /dev/null
+echo '--- 5: validate-item at coherence_complete, CR067 as captured'
+cr067_validate | cr067_refusal
+cr067b done-item --history-action h --roadmap-update r --next-recommendation n > /dev/null
+echo '--- 6: done-item again'
+cr067b done-item --history-action h --roadmap-update r --next-recommendation n | cr067_refusal
+echo '--- 7: build show'
+cr067_show
+unset MIRROR_HOME; rm -rf "$V"
+```
+
+| Step | Ribbon | Expected |
+|---|---|---|
+| 1 | `◉ Plan` | `Plan is already complete for CV1.DS1.TS1: the cursor is at plan, pending navigator_approval.`, then `mirror build show --journey cr067 --method ariad` |
+| 2 | `◉ Plan` | `plan`, `navigator_approval`, `after_plan`; `✓ plan.md`, the other four `○` |
+| 3 | `◉ Debt Review` | `Validation is already complete for CV1.DS1.TS1: the cursor is at validation_passed.` |
+| 4 | `◉ Debt Review` | `validation_passed`; `✓ plan.md`, `✓ validation.md` |
+| 5 | `◉ Done` | `Validation is already complete for CV1.DS1.TS1: the cursor is at coherence_complete.` |
+| 6 | `◉ Done` | `Done is already complete for CV1.DS1.TS1: the cursor is at done_complete.` |
+| 7 | `◉ Done` | `done_complete`; all five records `✓` |
+
+The Driver walked it in bash and zsh on 2026-09-27: both shells printed identical output,
+matching every row.
 
 ### Conscious exclusions
 

@@ -293,6 +293,18 @@ Next step:
 ...
 ```
 
+A refused lifecycle command renders `CHECKPOINT_REFUSED`. Return it verbatim like
+any other surface. It shows the stage the cursor actually holds and the true reason,
+and nothing changed: the refusal comes before any write. Read the reason before
+acting. An already-complete step needs no rerun, a pending confirmation needs the
+Navigator's answer, and a step not reached needs the step before it.
+
+If a marked block was lost before it reached the Navigator (output filtered,
+truncated, or never rendered), say which surface was lost and run `build show`, as
+described in **Show The Active Checkpoint**. Return its `ACTIVE_CHECKPOINT` block
+verbatim. Never substitute another command's surface, such as `check-implementation`,
+as evidence of where the cursor stands.
+
 ## Ariad Activation Surfaces
 
 For Ariad-adopted journeys whose delivery cursor has no active item,
@@ -540,6 +552,21 @@ inside the CV (or `no remaining candidates in <CV>`). Without one, the list is
 `project-wide candidates` and no pull is recommended. This is read-only: it must
 not pull an item, update the cursor, execute lifecycle work, change story status,
 commit, push, or release.
+
+## Show The Active Checkpoint
+
+When the user asks where the active item stands or asks to see the current checkpoint
+again, or when a surface was lost, run:
+
+```bash
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build show --journey <slug> --method ariad
+```
+
+Return the `ACTIVE_CHECKPOINT` surface verbatim. It shows the stage, the cursor's
+position, and the story package's Plan and closure records, each marked present or
+missing. It does not replay the original checkpoint surface: that evidence lives in
+those records, so read the one the Navigator needs, such as `plan.md` before Plan
+approval. It is read-only and changes neither the cursor nor any file.
 
 ## Pull And Prepare Ariad Work
 
