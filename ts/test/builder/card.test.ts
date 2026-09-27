@@ -252,6 +252,10 @@ test("CR018: cardLine can mark a cut in its left side, and keeps its right side 
   const leftWidth = 54 - [...right].length - 1;
   const long = "z".repeat(leftWidth + 5);
   assert.equal(cardLine(long, right, { clip: true }), `│ ${"z".repeat(leftWidth - 1)}… ${right} │`);
-  assert.equal(cardLine(long, right), `│ ${"z".repeat(leftWidth)} ${right} │`, "unmarked by default");
+  assert.equal(
+    cardLine(long, right),
+    `│ ${"z".repeat(leftWidth)} ${right} │`,
+    "unmarked by default",
+  );
   assert.equal(cardLine("fits", right, { clip: true }), cardLine("fits", right));
 });
