@@ -548,7 +548,20 @@ Accepted boundary, and older than CR067: `continue-lifecycle` calls into Done wi
 catch around it. Its own refusals are all checked before that call, but an error inside
 Done is rendered by neither surface.
 
-The Navigator's debt decision is pending.
+Navigator decision (2026-09-27): pay both now.
+
+### Debt paid (2026-09-27)
+
+1. Only a `LifecycleRefusal` reaches `CHECKPOINT_REFUSED`, and `refusedSurface` now takes
+   nothing else. Any other error in the four closure commands keeps the plain `Error:`
+   line and makes no claim about what changed. A new test puts a directory where
+   `validation.md` belongs, so `validate-item` moves the cursor to `validation_passed`
+   and then fails reading the record. The test was red on the refusal surface, and it
+   now gets exit 1 and an `Error:` line with no surface. No golden changed, since all
+   twelve golden refusals are lifecycle refusals.
+2. The skill names all four refusal kinds. It also says a plain `Error:` line makes no
+   claim about what changed, and that `build show` shows where the cursor stands before
+   a retry.
 
 ## Outcome
 

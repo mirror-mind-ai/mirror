@@ -30,7 +30,7 @@ import { invokeReadOnlyBuilderArgv } from "#builder/argv.ts";
 import { getAriadMethod } from "#builder/ariadMethod.ts";
 import { cardText } from "#builder/card.ts";
 import { surfacesForTrigger } from "#builder/commands.ts";
-import { setDeliveryCursor } from "#builder/deliveryCursor.ts";
+import { getDeliveryCursor, setDeliveryCursor } from "#builder/deliveryCursor.ts";
 import { planDeliveryStoryCheckpoint } from "#builder/deliveryStoryPlan.ts";
 import { setAdoptedMethod } from "#builder/methodAdoption.ts";
 import { planLifecycleItem } from "#builder/plan.ts";
@@ -1609,6 +1609,29 @@ test("CR019: an active story the candidates no longer list gets the fallback non
   );
 });
 
+/** A complete, accepted `validate-item` for the CR067 tests. */
+const CR067_VALIDATE = [
+  "validate-item",
+  "--implementation-complete",
+  "--check",
+  "npm test",
+  "--checks-status",
+  "passed",
+  "--e2e-decision",
+  "not_required",
+  "--e2e-evidence",
+  "unit-level change",
+  "--navigator-route",
+  "walk the route",
+  "--navigator-accepted",
+  "--expected-observation",
+  "the change is visible",
+  "--pass-condition",
+  "it is",
+  "--fail-condition",
+  "it is not",
+] as const;
+
 test("CR067: every refusal renders where the cursor stands, says why, and changes nothing", () => {
   const project = mkdtempSync("/tmp/builder-command-cr067-");
   temporaryDirectories.push(project);
@@ -1643,27 +1666,7 @@ test("CR067: every refusal renders where the cursor stands, says why, and change
     assert.equal(cursorRow(), before.cursor, `${label}: the cursor is unchanged`);
     assert.deepEqual(projectSnapshot(project), before.files, `${label}: no file changed`);
   };
-  const validate = [
-    "validate-item",
-    "--implementation-complete",
-    "--check",
-    "npm test",
-    "--checks-status",
-    "passed",
-    "--e2e-decision",
-    "not_required",
-    "--e2e-evidence",
-    "unit-level change",
-    "--navigator-route",
-    "walk the route",
-    "--navigator-accepted",
-    "--expected-observation",
-    "the change is visible",
-    "--pass-condition",
-    "it is",
-    "--fail-condition",
-    "it is not",
-  ];
+  const validate = CR067_VALIDATE;
   const review = ["review-item", "--debt", "No debt found", "--decision", "no_action"];
   const coherence = ["coherence-item", "--process", "p", "--project", "p", "--product", "p"];
   const done = [
@@ -1932,5 +1935,47 @@ test("CR020: build show refuses without a journey, and for a journey that adopte
     assert.doesNotMatch(result.stdout, /ACTIVE_CHECKPOINT/u);
   } finally {
     bare.close();
+  }
+});
+
+test("CR067: a failure after the cursor moved is an error, never a refusal that changed nothing", () => {
+  const project = mkdtempSync("/tmp/builder-command-cr067-");
+  temporaryDirectories.push(project);
+  writeSiblingTree(project, { guide: false });
+  const db = seed("adopted", project);
+  const run = (argv: readonly string[]) =>
+    invoke(db, [argv[0] ?? "", "--method", "ariad", "--journey", "demo", ...argv.slice(1)]);
+  try {
+    setDeliveryCursor(
+      db,
+      {
+        journey: "demo",
+        method: "ariad",
+        activeItem: "CV1.DS1.TS1",
+        activeItemTitle: "First slice",
+        activeItemLevel: "technical_story",
+        lastDeliveryEvent: "prepare",
+        navigatorFlowUnit: "story_by_story",
+      },
+      { nowIso: () => NOW },
+    );
+    assert.equal(run(["plan-item"]).exitCode, 0);
+    assert.equal(run(["approve-plan"]).exitCode, 0);
+    // A directory where the record belongs: the closure writes the cursor, then fails
+    // reading the record it was about to seal.
+    mkdirSync(
+      join(project, "docs/project/roadmap/cv1-first/cv1-ds1-alpha/cv1-ds1-ts1-first/validation.md"),
+    );
+    const result = run(CR067_VALIDATE);
+    assert.equal(
+      getDeliveryCursor(db, "demo")?.lastDeliveryEvent,
+      "validation_passed",
+      "the cursor moved, so this is the failure after the write",
+    );
+    assert.equal(result.exitCode, 1);
+    assert.deepEqual(surfaceIds(result.stdout), [], "no surface claims nothing changed");
+    assert.match(result.stderr, /^Error: /u);
+  } finally {
+    db.close();
   }
 });

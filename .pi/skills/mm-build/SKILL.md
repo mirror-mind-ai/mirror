@@ -297,7 +297,10 @@ A refused lifecycle command renders `CHECKPOINT_REFUSED`. Return it verbatim lik
 any other surface. It shows the stage the cursor actually holds and the true reason,
 and nothing changed: the refusal comes before any write. Read the reason before
 acting. An already-complete step needs no rerun, a pending confirmation needs the
-Navigator's answer, and a step not reached needs the step before it.
+Navigator's answer, a step not reached needs the step before it, and missing
+evidence needs the evidence the reason names. A failure that is not a refusal
+prints a plain `Error:` line instead and makes no claim about what changed: run
+`build show` to see where the cursor stands before trying again.
 
 If a marked block was lost before it reached the Navigator (output filtered,
 truncated, or never rendered), say which surface was lost and run `build show`, as

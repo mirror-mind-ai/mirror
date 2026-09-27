@@ -1805,17 +1805,19 @@ function renderDoneClosureConfirmation(activeItem: string | null): string {
 }
 
 /**
- * A refused lifecycle request, rendered where the cursor stands (CR067). It replaces
- * the Implement guard these commands used to print for every refusal.
+ * A refused lifecycle request, rendered where the cursor stands (CR067). Only a
+ * `LifecycleRefusal` qualifies: it is raised before any write, which is what the
+ * surface's boundary promises. A failure after the cursor write, such as a record the
+ * artifact writer refuses or cannot write, keeps the plain `Error:` line instead.
  */
 function refusedSurface(
   db: Database,
   journey: string,
   request: string,
-  error: unknown,
+  refusal: LifecycleRefusal,
 ): CommandResult {
   const cursor = getDeliveryCursor(db, journey);
-  const reason = (error as Error).message;
+  const reason = refusal.message;
   return {
     stdout: printed(renderCheckpointRefused({ request, reason, journey, cursor })),
     stderr: "",
@@ -1893,7 +1895,10 @@ export function runValidateItem(
       exitCode: 0,
     };
   } catch (error) {
-    return refusedSurface(context.db, journey, "validate-item", error);
+    if (error instanceof LifecycleRefusal) {
+      return refusedSurface(context.db, journey, "validate-item", error);
+    }
+    return refuseValueError(error);
   }
 }
 
@@ -1947,7 +1952,10 @@ export function runReviewItem(
       exitCode: 0,
     };
   } catch (error) {
-    return refusedSurface(context.db, journey, "review-item", error);
+    if (error instanceof LifecycleRefusal) {
+      return refusedSurface(context.db, journey, "review-item", error);
+    }
+    return refuseValueError(error);
   }
 }
 
@@ -1991,7 +1999,10 @@ export function runCoherenceItem(
     );
     return { stdout: printed(renderCoherenceCheckpoint(report)), stderr: "", exitCode: 0 };
   } catch (error) {
-    return refusedSurface(context.db, journey, "coherence-item", error);
+    if (error instanceof LifecycleRefusal) {
+      return refusedSurface(context.db, journey, "coherence-item", error);
+    }
+    return refuseValueError(error);
   }
 }
 
@@ -2042,6 +2053,9 @@ export function runDoneItem(
       exitCode: 0,
     };
   } catch (error) {
-    return refusedSurface(context.db, journey, "done-item", error);
+    if (error instanceof LifecycleRefusal) {
+      return refusedSurface(context.db, journey, "done-item", error);
+    }
+    return refuseValueError(error);
   }
 }
