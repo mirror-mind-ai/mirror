@@ -473,3 +473,40 @@ test("runtime migrate exits non-zero when the engine declines, and zero when it 
     f.cleanup();
   }
 });
+
+test("CR104: runtime diagnose reports each journey or persona key from before the grammar", () => {
+  // The unit tests grade identityKeyFindings; this grades that diagnose calls it.
+  // Deleting that call once left every test green (CR104's handoff review).
+  const f = fixture();
+  try {
+    const clean = runCli(f, ["runtime", "diagnose", "--mirror-home", f.home]);
+    assert.doesNotMatch(clean.stdout, /identity_key_outside_grammar/u);
+
+    const db = openDatabaseForBootstrap(join(f.home, "memory.db"));
+    try {
+      const plant = db.prepare(
+        "INSERT INTO identity (id, layer, key, content, version, created_at, updated_at) " +
+          "VALUES (?, ?, ?, '# Planted', '1.0.0', 't', 't')",
+      );
+      plant.run("planted-journey", "journey", "x;touch PWNED");
+      plant.run("planted-persona", "persona", "Mixed_Case");
+      plant.run("fitting-journey", "journey", "mirror-ts-core");
+    } finally {
+      db.close();
+    }
+
+    const reported = runCli(f, ["runtime", "diagnose", "--mirror-home", f.home]);
+    assert.equal(reported.status, 1, reported.stderr);
+    assert.match(
+      reported.stdout,
+      /^\[attention\] identity_key_outside_grammar: 'x;touch PWNED'\nSubject: journey\n/mu,
+    );
+    assert.match(
+      reported.stdout,
+      /^\[attention\] identity_key_outside_grammar: 'Mixed_Case'\nSubject: persona\n/mu,
+    );
+    assert.equal(reported.stdout.match(/identity_key_outside_grammar/gu)?.length, 2);
+  } finally {
+    f.cleanup();
+  }
+});
