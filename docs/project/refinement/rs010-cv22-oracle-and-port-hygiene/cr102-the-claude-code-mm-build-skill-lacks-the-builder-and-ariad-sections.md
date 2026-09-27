@@ -514,6 +514,38 @@ Accepted scope boundaries, as planned: the other 24 skills (CR108, which does
 not gate the release), progressive disclosure of the skill, the Portuguese
 examples, and plugin invocations outside a checkout (US3).
 
+### Debt paid (2026-09-27)
+
+The Navigator's instruction to close covered both findings. The first was a
+comment this CR itself made untrue. The second was part of the close scope the
+Navigator approved.
+
+1. The generator's comments say what it writes (`f140813d`). `materialize`
+   names the plugin and the `.claude/skills/` copies of Pi-sourced skills.
+   `discoverSkillSources` says that a Pi-sourced skill's `.claude` file is
+   generated, and that the planner takes it from the Pi copy. Only comments
+   changed.
+2. The collaboration strategy marks the floor complete, with all eight changes
+   ticked and US3 next, in the commit that closes this CR.
+
 ## Outcome
 
-Open.
+Done 2026-09-27. Builder Mode reads the same instructions in every runtime.
+`.pi/skills/mm-build/SKILL.md` is the only copy anyone edits.
+`node ts/scripts/buildClaudePlugin.ts` generates both Claude Code copies from
+it, changing only the frontmatter `name`. `npm test` fails when either copy is
+out of date, even when the only change is a rule reworded inside a section,
+which no guard could see before. Claude Code users now get the activation
+boundary, Journey Binding, and the whole Ariad section, and the Navigator
+validated that in a real Claude Code session on this journey.
+
+Characterizing the problem corrected this CR's own Impact: in a checkout,
+`CLAUDE.md` already carried the boundary. It also found the same drift in other
+skills, captured as CR108, which does not gate the release.
+
+Delivered on `mirror-ts-core` in `82ac4503` (the generator and the copies),
+`807aa622` (the records and CR108), and `f140813d` (debt). CI was green on each
+push.
+
+With CR102 done, the Ariad trust floor is complete: eight changes and ten
+identifiers, worked from 2026-09-25 to 2026-09-27. Next: US3.

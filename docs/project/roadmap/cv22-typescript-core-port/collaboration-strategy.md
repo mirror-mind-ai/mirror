@@ -156,11 +156,11 @@ and green CI on every push.
          host, the eval harness, the updater, the unported cutoffs, Python
          deletion (TS5 done 2026-09-25), npm. Mirror Desktop is outside the
          migration.
-→ Ariad trust floor (eight changes)              ← current, before US3
-         ✓ CR008, ✓ CR079+CR004, CR002, CR001, CR019, CR067+CR020, CR018,
-         CR102 (added 2026-09-25)
-  DS10.US3 — npm distribution                      after the floor
-  release — once, when both are done
+✓ Ariad trust floor (eight changes)              (done 2026-09-27)
+         ✓ CR008, ✓ CR079+CR004, ✓ CR002, ✓ CR001, ✓ CR019,
+         ✓ CR067+CR020, ✓ CR018, ✓ CR102 (added 2026-09-25)
+→ DS10.US3 — npm distribution                      ← next, the floor is done
+  release — once, when US3 is done
 ```
 
 Re-sequenced 2026-09-25 — see

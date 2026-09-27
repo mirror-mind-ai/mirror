@@ -12,6 +12,28 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-09-27 — CR102 done: Builder Mode reads the same instructions in every runtime
+
+This is the eighth and last change of the Ariad trust floor. Claude Code's `mm-build`
+was a 108-line copy with no activation boundary, no journey binding, and no Ariad
+section, while Pi, Codex, and Gemini CLI read 1093 lines. Six floor changes in three
+days had edited only the Pi copy, and no guard could see the difference: the parity
+check keys every `build` subcommand as `build`.
+
+The Pi body holds in every runtime, so it is now the only one. `buildClaudePlugin.ts`
+generates both Claude Code copies from it, changing only the frontmatter name, and
+`npm test` fails when either falls out of date. The Navigator validated it in a Claude
+Code session on this journey. `build show` and `pull-candidates` ran with `--journey`,
+and every surface passed through verbatim, which the session transcript confirms byte
+for byte. Characterizing the problem corrected the CR's own Impact: in a checkout,
+`CLAUDE.md` already carried the boundary. It also found the same drift in other
+skills, captured as CR108, which does not gate the release. The handoff review found
+two comments the change had made untrue, and a required-reading document whose floor
+status had drifted until the Claude Code agent repeated it as fact. Both were paid.
+
+The Ariad trust floor is complete: eight changes and ten identifiers, worked from
+2026-09-25 to 2026-09-27. Next: US3, npm distribution, then the CV22 release.
+
 ### 2026-09-27 — CR018 done: a title is one string, whole or visibly cut
 
 This is the seventh change of the Ariad trust floor. Python named a bullet-list Delivery

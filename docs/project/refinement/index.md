@@ -9,7 +9,7 @@ If a linked document and this index disagree, this index wins.
 ## Current Focus
 
 - Refinement Story: RS010
-- Change Request: CR102
+- Change Request: none
 
 Selecting a focus is an explicit project decision. Reading this file never selects or
 executes work.
@@ -32,51 +32,51 @@ Open work is ordered intentionally. Terminal history follows open work.
 
 | Order | ID | RS | Change | Status | Driver | Delivery |
 |------:|----|----|--------|--------|--------|----------|
-| 1 | [CR102](rs010-cv22-oracle-and-port-hygiene/cr102-the-claude-code-mm-build-skill-lacks-the-builder-and-ariad-sections.md) | RS010 | The Claude Code `mm-build` skill carries no activation boundary, journey binding, or Ariad section | validated | @viniciusteles | `mirror-ts-core` |
-| 2 | [CR009](rs001-ariad-runtime-trust/cr009-name-the-target-project-in-artifact-surfaces.md) | RS001 | Name the target project in artifact materialization surfaces | captured | — | — |
-| 3 | [CR010](rs003-revisable-refinement-lifecycle/cr010-replan-with-plan-history.md) | RS003 | Re-plan a reviewed Change Request without destroying plan history | captured | — | — |
-| 4 | [CR012](rs003-revisable-refinement-lifecycle/cr012-supersede-change-request.md) | RS003 | Close a Change Request superseded by another | captured | — | — |
-| 5 | [CR013](rs003-revisable-refinement-lifecycle/cr013-amend-story-and-request-text.md) | RS003 | Amend Refinement Story and Change Request text during refinement | captured | — | — |
-| 6 | [CR014](rs004-identity-resolution-fidelity/cr014-resolve-owner-name-from-one-authority.md) | RS004 | Resolve the owner's name from one authority | captured | — | — |
-| 7 | [CR017](rs001-ariad-runtime-trust/cr017-projection-refresh-warning-on-every-command.md) | RS001 | Every mutating Ariad command warns that the Operational projection failed, and names no consequence | captured | — | — |
-| 8 | [CR055](rs009-cv22-front-door-routing-correctness/cr055-audit-subcommand-inheritance-in-claimed-families.md) | RS009 | Audit subcommand inheritance across claimed command families | captured | — | — |
-| 9 | [CR056](rs010-cv22-oracle-and-port-hygiene/cr056-measure-title-length-by-code-point.md) | RS010 | Measure title length by code point in titleNeedsImprovement | captured | — | — |
-| 10 | [CR057](rs010-cv22-oracle-and-port-hygiene/cr057-stop-paying-for-the-discarded-summary-in-the-close-tail.md) | RS010 | Stop paying for the discarded summary in the close tail | captured | — | — |
-| 11 | [CR058](rs010-cv22-oracle-and-port-hygiene/cr058-wait-for-completion-in-the-runtime-diagnose-web-test.md) | RS010 | Wait for completion, not a wall-clock budget, in the runtime-diagnose web test | captured | — | — |
-| 12 | [CR060](rs010-cv22-oracle-and-port-hygiene/cr060-fail-loudly-when-a-silent-backup-fails.md) | RS010 | Fail loudly when a silent backup fails | captured | — | — |
-| 13 | [CR061](rs010-cv22-oracle-and-port-hygiene/cr061-snapshot-the-live-database-consistently-before-zipping.md) | RS010 | Snapshot the live database consistently before zipping | captured | — | — |
-| 14 | [CR062](rs010-cv22-oracle-and-port-hygiene/cr062-write-backup-archives-owner-only.md) | RS010 | Write backup archives owner-only | captured | — | — |
-| 15 | [CR063](rs010-cv22-oracle-and-port-hygiene/cr063-keep-journey-slugs-consistent-across-tables-in-repair-encoding.md) | RS010 | Keep journey slugs consistent across tables in repair-encoding | captured | — | — |
-| 16 | [CR065](rs010-cv22-oracle-and-port-hygiene/cr065-make-parity-fixture-generators-hermetic-by-construction.md) | RS010 | Make parity fixture generators hermetic by construction | captured | — | — |
-| 17 | [CR066](rs010-cv22-oracle-and-port-hygiene/cr066-skip-a-naive-timestamp-instead-of-crashing-the-diagnosis.md) | RS010 | Skip a naive timestamp instead of crashing the diagnosis | captured | — | — |
-| 18 | [CR069](rs010-cv22-oracle-and-port-hygiene/cr069-fail-cleanly-when-soul-apply-is-given-an-unknown-id.md) | RS010 | Fail cleanly when `soul apply` is given an unknown id | captured | — | — |
-| 19 | [CR070](rs010-cv22-oracle-and-port-hygiene/cr070-render-or-remove-the-inert-listening-for-argument.md) | RS010 | Render or remove the inert `--listening-for` argument | captured | — | — |
-| 20 | [CR074](rs010-cv22-oracle-and-port-hygiene/cr074-harden-the-week-plan-pending-file.md) | RS010 | Harden the `week plan` pending file | captured | — | — |
-| 21 | [CR076](rs010-cv22-oracle-and-port-hygiene/cr076-collapse-the-three-close-tail-metadata-calls.md) | RS010 | Collapse the three close-tail metadata calls into one | captured | — | — |
-| 22 | [CR078](rs010-cv22-oracle-and-port-hygiene/cr078-stop-spending-thirteen-seconds-polling-for-a-consult-cost.md) | RS010 | Stop spending thirteen seconds polling for a `consult` cost | captured | — | — |
-| 23 | [CR080](rs010-cv22-oracle-and-port-hygiene/cr080-give-the-consolidation-prompt-an-identity-context-it-can-act-on.md) | RS010 | Give the consolidation prompt an identity context it can act on | captured | — | — |
-| 24 | [CR081](rs010-cv22-oracle-and-port-hygiene/cr081-typecheck-the-parity-tools.md) | RS010 | Typecheck the parity tools | captured | — | — |
-| 25 | [CR082](rs001-ariad-runtime-trust/cr082-lifecycle-surfaces-print-absolute-paths.md) | RS001 | Plan and Expand surfaces print absolute filesystem paths where their artifact surface prints project-relative ones | captured | — | — |
-| 26 | [CR083](rs010-cv22-oracle-and-port-hygiene/cr083-path-normalization-assumptions-are-untested-in-the-port.md) | RS010 | Path-normalization assumptions in the ported tree are untested, and one shipped wrong for two plateaus | captured | — | — |
-| 27 | [CR085](rs009-cv22-front-door-routing-correctness/cr085-the-ts-front-door-does-not-read-the-env-python-reads.md) | RS009 | The TypeScript front door does not read the `.env` Python reads | captured | — | — |
-| 28 | [CR086](rs010-cv22-oracle-and-port-hygiene/cr086-baseline-advance-must-name-the-oracle-change.md) | RS010 | A baseline advance must name the oracle change it absorbs | captured | — | — |
-| 29 | [CR087](rs010-cv22-oracle-and-port-hygiene/cr087-journey-status-returns-every-journeys-full-document.md) | RS010 | `journey_status` without a slug returns every journey's full document | captured | — | — |
-| 30 | [CR090](rs001-ariad-runtime-trust/cr090-debt-review-surface-mixes-portuguese-into-english.md) | RS001 | The Debt Review surface mixes Portuguese into an English sentence | captured | — | — |
-| 31 | [CR091](rs010-cv22-oracle-and-port-hygiene/cr091-operation-runs-outlived-its-only-consumer.md) | RS010 | `operation_runs` outlived its only consumer: dead service, two live tables, real rows | captured | — | — |
-| 32 | [CR094](rs004-identity-resolution-fidelity/cr094-two-journey-identity-layers-drift-with-no-consistency-mechanism.md) | RS004 | Two journey identity layers hold the same document, and the one Mirror Mode reads is the one that drifts | captured | — | — |
-| 33 | [CR095](rs009-cv22-front-door-routing-correctness/cr095-journey-status-renders-an-empty-document-for-an-unknown-slug.md) | RS009 | `journey <slug>` renders an empty status document, exit 0, for a journey that does not exist — on both engines | captured | — | — |
-| 34 | [CR096](rs009-cv22-front-door-routing-correctness/cr096-conversations-lists-instead-of-appending-when-options-come-first.md) | RS009 | `conversations <options> append` renders the listing, exit 0, and drops the payload on stdin | captured | — | — |
-| 35 | [CR097](rs010-cv22-oracle-and-port-hygiene/cr097-new-ids-are-32-bits-because-the-oracle-s-were.md) | RS010 | New record ids are 32 bits because the oracle's were, and `messages` already collides | captured | — | — |
-| 36 | [CR098](rs010-cv22-oracle-and-port-hygiene/cr098-the-pi-extension-logs-the-start-of-every-prompt.md) | RS010 | The Pi extension logs the first 80 characters of every prompt | captured | — | — |
-| 37 | [CR099](rs010-cv22-oracle-and-port-hygiene/cr099-a-global-capability-binding-is-not-idempotent.md) | RS010 | A `--global` capability binding is not idempotent | captured | — | — |
-| 38 | [CR100](rs010-cv22-oracle-and-port-hygiene/cr100-the-session-resolver-guesses-from-a-table-of-three-row-kinds.md) | RS010 | The session resolver guesses "the session" from a table that holds three kinds of row | captured | — | — |
-| 39 | [CR101](rs010-cv22-oracle-and-port-hygiene/cr101-explorer-and-soul-activation-stamp-a-guessed-session.md) | RS010 | Explorer and Soul activation stamp their mode onto a guessed session | captured | — | — |
-| 40 | [CR103](rs001-ariad-runtime-trust/cr103-candidate-and-position-rows-print-a-package-s-entire-status-line.md) | RS001 | Candidate and position rows print a roadmap package's entire status line | captured | — | — |
-| 41 | [CR104](rs004-identity-resolution-fidelity/cr104-journey-slugs-are-not-validated-and-command-hints-print-them-raw.md) | RS004 | Journey slugs are not validated, and command hints print them raw | captured | — | — |
-| 42 | [CR105](rs001-ariad-runtime-trust/cr105-choosing-delivery-story-flow-leaves-the-story-confirmation-pending.md) | RS001 | Choosing Delivery Story flow leaves the story-by-story confirmation pending | captured | — | — |
-| 43 | [CR106](rs010-cv22-oracle-and-port-hygiene/cr106-a-pi-session-in-a-scratch-mirror-home-copies-the-whole-pi-history-into-it.md) | RS010 | A Pi session started against a scratch Mirror home copies the whole Pi history into it | captured | — | — |
-| 44 | [CR107](rs001-ariad-runtime-trust/cr107-an-escaped-pipe-in-a-candidate-table-title-is-read-as-a-cell-border.md) | RS001 | An escaped pipe in a candidate-table title is read as a cell border | captured | — | — |
-| 45 | [CR108](rs010-cv22-oracle-and-port-hygiene/cr108-the-claude-code-copies-of-other-skills-drift-from-pi-in-behavior.md) | RS010 | The Claude Code copies of other skills drift from Pi in behavior, and no guard compares them | captured | — | — |
+| 1 | [CR009](rs001-ariad-runtime-trust/cr009-name-the-target-project-in-artifact-surfaces.md) | RS001 | Name the target project in artifact materialization surfaces | captured | — | — |
+| 2 | [CR010](rs003-revisable-refinement-lifecycle/cr010-replan-with-plan-history.md) | RS003 | Re-plan a reviewed Change Request without destroying plan history | captured | — | — |
+| 3 | [CR012](rs003-revisable-refinement-lifecycle/cr012-supersede-change-request.md) | RS003 | Close a Change Request superseded by another | captured | — | — |
+| 4 | [CR013](rs003-revisable-refinement-lifecycle/cr013-amend-story-and-request-text.md) | RS003 | Amend Refinement Story and Change Request text during refinement | captured | — | — |
+| 5 | [CR014](rs004-identity-resolution-fidelity/cr014-resolve-owner-name-from-one-authority.md) | RS004 | Resolve the owner's name from one authority | captured | — | — |
+| 6 | [CR017](rs001-ariad-runtime-trust/cr017-projection-refresh-warning-on-every-command.md) | RS001 | Every mutating Ariad command warns that the Operational projection failed, and names no consequence | captured | — | — |
+| 7 | [CR055](rs009-cv22-front-door-routing-correctness/cr055-audit-subcommand-inheritance-in-claimed-families.md) | RS009 | Audit subcommand inheritance across claimed command families | captured | — | — |
+| 8 | [CR056](rs010-cv22-oracle-and-port-hygiene/cr056-measure-title-length-by-code-point.md) | RS010 | Measure title length by code point in titleNeedsImprovement | captured | — | — |
+| 9 | [CR057](rs010-cv22-oracle-and-port-hygiene/cr057-stop-paying-for-the-discarded-summary-in-the-close-tail.md) | RS010 | Stop paying for the discarded summary in the close tail | captured | — | — |
+| 10 | [CR058](rs010-cv22-oracle-and-port-hygiene/cr058-wait-for-completion-in-the-runtime-diagnose-web-test.md) | RS010 | Wait for completion, not a wall-clock budget, in the runtime-diagnose web test | captured | — | — |
+| 11 | [CR060](rs010-cv22-oracle-and-port-hygiene/cr060-fail-loudly-when-a-silent-backup-fails.md) | RS010 | Fail loudly when a silent backup fails | captured | — | — |
+| 12 | [CR061](rs010-cv22-oracle-and-port-hygiene/cr061-snapshot-the-live-database-consistently-before-zipping.md) | RS010 | Snapshot the live database consistently before zipping | captured | — | — |
+| 13 | [CR062](rs010-cv22-oracle-and-port-hygiene/cr062-write-backup-archives-owner-only.md) | RS010 | Write backup archives owner-only | captured | — | — |
+| 14 | [CR063](rs010-cv22-oracle-and-port-hygiene/cr063-keep-journey-slugs-consistent-across-tables-in-repair-encoding.md) | RS010 | Keep journey slugs consistent across tables in repair-encoding | captured | — | — |
+| 15 | [CR065](rs010-cv22-oracle-and-port-hygiene/cr065-make-parity-fixture-generators-hermetic-by-construction.md) | RS010 | Make parity fixture generators hermetic by construction | captured | — | — |
+| 16 | [CR066](rs010-cv22-oracle-and-port-hygiene/cr066-skip-a-naive-timestamp-instead-of-crashing-the-diagnosis.md) | RS010 | Skip a naive timestamp instead of crashing the diagnosis | captured | — | — |
+| 17 | [CR069](rs010-cv22-oracle-and-port-hygiene/cr069-fail-cleanly-when-soul-apply-is-given-an-unknown-id.md) | RS010 | Fail cleanly when `soul apply` is given an unknown id | captured | — | — |
+| 18 | [CR070](rs010-cv22-oracle-and-port-hygiene/cr070-render-or-remove-the-inert-listening-for-argument.md) | RS010 | Render or remove the inert `--listening-for` argument | captured | — | — |
+| 19 | [CR074](rs010-cv22-oracle-and-port-hygiene/cr074-harden-the-week-plan-pending-file.md) | RS010 | Harden the `week plan` pending file | captured | — | — |
+| 20 | [CR076](rs010-cv22-oracle-and-port-hygiene/cr076-collapse-the-three-close-tail-metadata-calls.md) | RS010 | Collapse the three close-tail metadata calls into one | captured | — | — |
+| 21 | [CR078](rs010-cv22-oracle-and-port-hygiene/cr078-stop-spending-thirteen-seconds-polling-for-a-consult-cost.md) | RS010 | Stop spending thirteen seconds polling for a `consult` cost | captured | — | — |
+| 22 | [CR080](rs010-cv22-oracle-and-port-hygiene/cr080-give-the-consolidation-prompt-an-identity-context-it-can-act-on.md) | RS010 | Give the consolidation prompt an identity context it can act on | captured | — | — |
+| 23 | [CR081](rs010-cv22-oracle-and-port-hygiene/cr081-typecheck-the-parity-tools.md) | RS010 | Typecheck the parity tools | captured | — | — |
+| 24 | [CR082](rs001-ariad-runtime-trust/cr082-lifecycle-surfaces-print-absolute-paths.md) | RS001 | Plan and Expand surfaces print absolute filesystem paths where their artifact surface prints project-relative ones | captured | — | — |
+| 25 | [CR083](rs010-cv22-oracle-and-port-hygiene/cr083-path-normalization-assumptions-are-untested-in-the-port.md) | RS010 | Path-normalization assumptions in the ported tree are untested, and one shipped wrong for two plateaus | captured | — | — |
+| 26 | [CR085](rs009-cv22-front-door-routing-correctness/cr085-the-ts-front-door-does-not-read-the-env-python-reads.md) | RS009 | The TypeScript front door does not read the `.env` Python reads | captured | — | — |
+| 27 | [CR086](rs010-cv22-oracle-and-port-hygiene/cr086-baseline-advance-must-name-the-oracle-change.md) | RS010 | A baseline advance must name the oracle change it absorbs | captured | — | — |
+| 28 | [CR087](rs010-cv22-oracle-and-port-hygiene/cr087-journey-status-returns-every-journeys-full-document.md) | RS010 | `journey_status` without a slug returns every journey's full document | captured | — | — |
+| 29 | [CR090](rs001-ariad-runtime-trust/cr090-debt-review-surface-mixes-portuguese-into-english.md) | RS001 | The Debt Review surface mixes Portuguese into an English sentence | captured | — | — |
+| 30 | [CR091](rs010-cv22-oracle-and-port-hygiene/cr091-operation-runs-outlived-its-only-consumer.md) | RS010 | `operation_runs` outlived its only consumer: dead service, two live tables, real rows | captured | — | — |
+| 31 | [CR094](rs004-identity-resolution-fidelity/cr094-two-journey-identity-layers-drift-with-no-consistency-mechanism.md) | RS004 | Two journey identity layers hold the same document, and the one Mirror Mode reads is the one that drifts | captured | — | — |
+| 32 | [CR095](rs009-cv22-front-door-routing-correctness/cr095-journey-status-renders-an-empty-document-for-an-unknown-slug.md) | RS009 | `journey <slug>` renders an empty status document, exit 0, for a journey that does not exist — on both engines | captured | — | — |
+| 33 | [CR096](rs009-cv22-front-door-routing-correctness/cr096-conversations-lists-instead-of-appending-when-options-come-first.md) | RS009 | `conversations <options> append` renders the listing, exit 0, and drops the payload on stdin | captured | — | — |
+| 34 | [CR097](rs010-cv22-oracle-and-port-hygiene/cr097-new-ids-are-32-bits-because-the-oracle-s-were.md) | RS010 | New record ids are 32 bits because the oracle's were, and `messages` already collides | captured | — | — |
+| 35 | [CR098](rs010-cv22-oracle-and-port-hygiene/cr098-the-pi-extension-logs-the-start-of-every-prompt.md) | RS010 | The Pi extension logs the first 80 characters of every prompt | captured | — | — |
+| 36 | [CR099](rs010-cv22-oracle-and-port-hygiene/cr099-a-global-capability-binding-is-not-idempotent.md) | RS010 | A `--global` capability binding is not idempotent | captured | — | — |
+| 37 | [CR100](rs010-cv22-oracle-and-port-hygiene/cr100-the-session-resolver-guesses-from-a-table-of-three-row-kinds.md) | RS010 | The session resolver guesses "the session" from a table that holds three kinds of row | captured | — | — |
+| 38 | [CR101](rs010-cv22-oracle-and-port-hygiene/cr101-explorer-and-soul-activation-stamp-a-guessed-session.md) | RS010 | Explorer and Soul activation stamp their mode onto a guessed session | captured | — | — |
+| 39 | [CR103](rs001-ariad-runtime-trust/cr103-candidate-and-position-rows-print-a-package-s-entire-status-line.md) | RS001 | Candidate and position rows print a roadmap package's entire status line | captured | — | — |
+| 40 | [CR104](rs004-identity-resolution-fidelity/cr104-journey-slugs-are-not-validated-and-command-hints-print-them-raw.md) | RS004 | Journey slugs are not validated, and command hints print them raw | captured | — | — |
+| 41 | [CR105](rs001-ariad-runtime-trust/cr105-choosing-delivery-story-flow-leaves-the-story-confirmation-pending.md) | RS001 | Choosing Delivery Story flow leaves the story-by-story confirmation pending | captured | — | — |
+| 42 | [CR106](rs010-cv22-oracle-and-port-hygiene/cr106-a-pi-session-in-a-scratch-mirror-home-copies-the-whole-pi-history-into-it.md) | RS010 | A Pi session started against a scratch Mirror home copies the whole Pi history into it | captured | — | — |
+| 43 | [CR107](rs001-ariad-runtime-trust/cr107-an-escaped-pipe-in-a-candidate-table-title-is-read-as-a-cell-border.md) | RS001 | An escaped pipe in a candidate-table title is read as a cell border | captured | — | — |
+| 44 | [CR108](rs010-cv22-oracle-and-port-hygiene/cr108-the-claude-code-copies-of-other-skills-drift-from-pi-in-behavior.md) | RS010 | The Claude Code copies of other skills drift from Pi in behavior, and no guard compares them | captured | — | — |
+| — | [CR102](rs010-cv22-oracle-and-port-hygiene/cr102-the-claude-code-mm-build-skill-lacks-the-builder-and-ariad-sections.md) | RS010 | The Claude Code `mm-build` skill carries no activation boundary, journey binding, or Ariad section | done | @viniciusteles | `mirror-ts-core` |
 | — | [CR018](rs001-ariad-runtime-trust/cr018-story-titles-with-slashes-truncated-in-surfaces-and-scaffolds.md) | RS001 | Story titles containing `/` are truncated to the text after the last slash in surfaces and scaffolds | done | @viniciusteles | `mirror-ts-core` |
 | — | [CR067](rs001-ariad-runtime-trust/cr067-render-the-refused-checkpoint-not-a-hardcoded-implement-stage.md) | RS001 | Render the refused checkpoint, not a hardcoded Implement stage | done | @viniciusteles | `mirror-ts-core` |
 | — | [CR020](rs001-ariad-runtime-trust/cr020-no-read-only-way-to-re-render-the-active-checkpoint.md) | RS001 | No read-only way to re-render the active checkpoint, and the refusals name the wrong reason | done | @viniciusteles | `mirror-ts-core` |
