@@ -3259,3 +3259,50 @@ qualify: each carries lines that hold for one runtime only. The other skills
 keep two bodies under CR071's guards. Their drift is captured as
 [CR108](refinement/rs010-cv22-oracle-and-port-hygiene/cr108-the-claude-code-copies-of-other-skills-drift-from-pi-in-behavior.md),
 outside the floor.
+
+### A journey slug and a persona id are kebab-case, checked where they are created
+
+**Date:** 2026-09-27 · **Context:** [CR104](refinement/rs004-identity-resolution-fidelity/cr104-journey-slugs-are-not-validated-and-command-hints-print-them-raw.md),
+on the [Ariad trust floor](#the-cv22-release-is-gated-on-an-ariad-trust-floor-worked-before-us3).
+Nothing constrained a journey slug or a persona id. `identity set`,
+`identity edit`, and `seed` accepted `x;touch PWNED`, and four Builder hints
+printed the slug raw inside commands an agent runs. Pasted as printed, they ran
+`touch`. Persona ids could arrive from a stranger, in a persona bundle made to be
+seeded. Python's `create_journey` had enforced a slug grammar, but only the web
+console called it, and the grammar left with the console.
+
+**The decision: a new journey slug or persona id is kebab-case, meaning
+lowercase letters and digits in runs joined by single hyphens, up to 80
+characters, exactly what `kebabSlug` leaves unchanged. It is refused where every
+creation passes, in `upsertIdentity`'s INSERT branch. A key that predates the
+rule keeps working, is never rewritten, and is reported by `runtime diagnose`.
+Separately, every command Mirror prints for its reader to run quotes each value
+it carries through `shellWord`.**
+
+**Why at the store, not at each command.** `upsertIdentity` holds the only
+INSERT into `identity`. A guard there covers `identity set`, `identity edit`,
+`seed`, the exported `createJourney`, and the next writer nobody has written
+yet. `identity set` and `identity edit` ask the same function first, so a
+refusal costs no pre-write snapshot and discards nothing typed into an editor.
+Wherever else the store's refusal surfaces, the front door answers it as one
+line (`ts/src/frontDoor/namedRefusal.ts`).
+
+**Why report, not rename.** A slug is a natural key copied, with no foreign key,
+into fourteen columns across thirteen tables, two of them extension-owned.
+Renaming one is the largest write this change could have made, for keys that no
+known install holds: the production and dev homes held none. And a key stored
+differently from how it was typed would miss the next command that uses it, so
+the refusal names a key that would work rather than normalizing silently.
+
+**Why quote as well.** The grammar keeps new keys plain, and quoting protects the
+keys that predate it. Neither covers an agent that composes a command of its own
+from a key it read. That is the risk `runtime diagnose` names, and the reason the
+grammar applies to the layers whose keys agents type.
+
+**The rule that follows.** A command Mirror prints for its reader to run names
+the program through `PROGRAM` and passes every value through `shellWord`. The
+exception is a value listed in the guard (`ts/test/util/shellWord.test.ts`),
+with the reason it cannot carry shell syntax. A new identity layer whose keys
+agents put into commands joins `ts/src/identity/identityKey.ts`, and joining is
+recorded here. A key that is printed goes through `pyRepr`, which escapes what
+Python's `repr` escapes.

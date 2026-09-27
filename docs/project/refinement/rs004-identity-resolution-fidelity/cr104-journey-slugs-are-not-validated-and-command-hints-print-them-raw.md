@@ -664,6 +664,47 @@ One sentence was found wrong along the way. REFERENCE.md said that `identity set
 `identity edit`, and `seed` refuse a key "before anything is written", which misreads
 for `seed`, since it still writes every other file. It is corrected with the debt.
 
+### Debt paid (2026-09-27)
+
+The Navigator decided to pay all three findings now.
+
+1. A test holds `runtime diagnose`'s call to the check (`a537d90e`). It runs the
+   real command in a child process over a home with a journey and a persona key
+   planted from before the grammar, beside one that fits. It sees two findings with
+   their layers and exit 1, and none before the keys were planted. The mutant that
+   deletes the call now fails it.
+2. The store's refusal is one line wherever it surfaces (`2ac70e38`).
+   `ts/src/frontDoor/namedRefusal.ts` holds the two refusals the front door answers
+   when no route did: a half replay fixture, as before, and
+   `InvalidIdentityKeyError`, now one `Error:` line and exit 1, logged by its name
+   and never by the key. With `identity set`'s early check removed, the command
+   prints that line and no stack trace. Removing the branch fails the new unit test,
+   and removing `main`'s call fails the replay refusal's CLI test.
+3. `pyRepr` escapes what Python's `repr` escapes (`91f40d19`): every character in
+   Unicode's Other and Separator categories except the ASCII space, by width. The
+   expectations were recorded from CPython 3.14.3. The refusal and the diagnose
+   finding now escape a C1 control, a bidi override, and a zero-width space, and so
+   do `pyRepr`'s two other callers, `inspect llm-calls` and the extension manifest
+   errors. No golden moved. The C0-only behavior fails three tests.
+
+REFERENCE.md now says that nothing is written for a refused key, where it said
+"before anything is written".
+
 ## Outcome
 
-Pending.
+Done 2026-09-27. A new journey slug or persona id is kebab-case: lowercase letters
+and digits in runs joined by single hyphens, up to 80 characters. The rule is checked
+in `upsertIdentity`'s INSERT branch, the one place every creation passes through.
+`identity set` and `identity edit` ask first, so a refusal takes no snapshot and
+opens no editor. `seed` refuses a crafted journey or shared persona file and seeds
+the rest. The refusal names a key that would work. A key from before the rule keeps
+working, is never rewritten, and `runtime diagnose` reports it. Every command Mirror
+prints for its reader to run quotes each value it carries through one `shellWord`,
+and a source guard fails on the next one that does not. `seed`'s skip hints name
+`mirror` rather than the deleted Python program.
+
+Delivered on `mirror-ts-core` in `1037b89e` (quoting), `8ac6496f` (the grammar),
+`53bdcb4b` (the report), and `a537d90e`, `2ac70e38`, and `91f40d19` (debt). CI was
+green on each push. The Navigator validated the [route](#validation-route) in a
+scratch home, and the dev home holds no key outside the grammar. Neither does
+production, whose keys were checked read-only while characterizing.

@@ -12,6 +12,39 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-09-27 — CR104 done: a journey slug and a persona id are one plain shell word, and every printed command quotes what it carries
+
+This is the ninth of the trust floor's eleven changes, and its one security
+item. Nothing constrained a journey slug. `identity set`, `identity edit`, and
+`seed` accepted `x;touch PWNED`, and four Builder hints printed the slug raw
+inside commands an agent runs. Pasted as printed, with `mirror` stubbed out,
+they ran `touch`. Characterizing found persona ids open the same way, with a
+stranger at the first step: `seed` takes a persona's key from its file, and
+`ext-persona-export` writes such files to be shared. By the Navigator's decision
+CR104 covered them too.
+
+Now a new journey slug or persona id must be kebab-case, up to 80 characters,
+exactly what `kebabSlug` leaves unchanged. The rule is checked in
+`upsertIdentity`'s INSERT branch, the only INSERT into `identity`.
+`identity set` and `identity edit` ask first, so a refusal takes no pre-write
+snapshot and opens no editor. The refusal leads with "no journey was created" and
+names a key that would work. A key from before the rule keeps working, is never
+rewritten, and `runtime diagnose` reports it. Every printed command quotes what
+it carries through one `shellWord`, and a source guard fails on the next one that
+does not. `seed`'s skip hints named `memory`, the Python program TS5 deleted, and
+now name `mirror`.
+
+The Navigator validated the route in a scratch home. The handoff review's three
+debts were paid:
+
+- a test now holds diagnose's call to the check, which a mutant had deleted with
+  every test green;
+- the store's refusal is one line wherever it surfaces;
+- `pyRepr` escapes what Python's `repr` escapes, where it had let a C1 control, a
+  bidi override, or a zero-width space through to the terminal.
+
+Next on the gate: CR105 with CR090; then US3.
+
 ### 2026-09-27 — CR061 done, with CR062 and CR060: a backup is the database as committed, owner-only, and loud when it fails
 
 This is the first change of the amended release gate. It reaches past Ariad to

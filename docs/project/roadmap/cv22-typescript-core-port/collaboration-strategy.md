@@ -167,8 +167,8 @@ and green CI on every push.
          ✓ backups: CR061 with CR062 and CR060 (done 2026-09-27)
          Ariad trust floor, eleven changes: ✓ CR008, ✓ CR079+CR004,
          ✓ CR002, ✓ CR001, ✓ CR019, ✓ CR067+CR020, ✓ CR018,
-         ✓ CR102 (added 2026-09-25); then CR104, CR105 with CR090
-         (added 2026-09-27)
+         ✓ CR102 (added 2026-09-25); ✓ CR104 (added and done
+         2026-09-27); then CR105 with CR090 (added 2026-09-27)
   DS10.US3 — npm distribution                      after the gate
   release — once, when US3 is done
 ```
