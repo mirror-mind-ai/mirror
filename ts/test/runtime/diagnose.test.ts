@@ -28,6 +28,7 @@ import {
   type DriftFinding,
   diagnoseRuntime,
   frontDoorErrorFindings,
+  identityKeyFindings,
   probeModelPins,
   ReplayModelCatalogProvider,
   renderRuntimeDiagnosis,
@@ -407,5 +408,74 @@ test("the homes root tolerates user homes and dotfiles, and only those", () => {
     );
   } finally {
     f.cleanup();
+  }
+});
+
+// --- CR104: keys that predate the grammar are reported, never rewritten -----------
+
+function homeWithIdentity(rows: readonly (readonly [string, string])[]): {
+  dbPath: string;
+  cleanup: () => void;
+} {
+  const root = mkdtempSync(join(realpathSync("/tmp"), "diagnose-identity-keys-"));
+  const dbPath = join(root, "memory.db");
+  const db = new DatabaseSync(dbPath);
+  db.exec("CREATE TABLE identity (layer TEXT NOT NULL, key TEXT NOT NULL, UNIQUE(layer, key))");
+  const insert = db.prepare("INSERT INTO identity (layer, key) VALUES (?, ?)");
+  for (const [layer, key] of rows) insert.run(layer, key);
+  db.close();
+  return { dbPath, cleanup: () => rmSync(root, { recursive: true, force: true }) };
+}
+
+test("CR104: each journey or persona key outside the grammar is one finding", () => {
+  const home = homeWithIdentity([
+    ["journey", "mirror-ts-core"],
+    ["journey", "x;touch PWNED"],
+    ["persona", "Mixed_Case"],
+    ["persona", "engineer"],
+    ["journey", "a\n\u001b[31mb"],
+    ["ego", "Anything Goes"],
+  ]);
+  try {
+    const findings = identityKeyFindings({ db_path: home.dbPath, db_exists: true });
+    assert.deepEqual(
+      findings.map((finding) => [finding.subject, finding.detail]),
+      [
+        ["journey", "'a\\n\\x1b[31mb'"],
+        ["journey", "'x;touch PWNED'"],
+        ["persona", "'Mixed_Case'"],
+      ],
+    );
+    for (const finding of findings) {
+      assert.equal(finding.code, "identity_key_outside_grammar");
+      assert.equal(finding.severity, "attention");
+      assert.equal(finding.repair_route, "manual review");
+      assert.match(finding.recommendation, /shell command/u);
+    }
+    const render = renderRuntimeDiagnosis(findings);
+    assert.ok(
+      render.includes(
+        "[attention] identity_key_outside_grammar: 'x;touch PWNED'\nSubject: journey\n",
+      ),
+      render,
+    );
+  } finally {
+    home.cleanup();
+  }
+});
+
+test("CR104: a database without such a key, or without an identity table, reports nothing", () => {
+  const clean = homeWithIdentity([
+    ["journey", "mirror-ts-core"],
+    ["persona", "engineer"],
+  ]);
+  try {
+    assert.deepEqual(identityKeyFindings({ db_path: clean.dbPath, db_exists: true }), []);
+    assert.deepEqual(identityKeyFindings({ db_path: null, db_exists: false }), []);
+    const bare = join(clean.dbPath, "..", "bare.db");
+    new DatabaseSync(bare).close();
+    assert.deepEqual(identityKeyFindings({ db_path: bare, db_exists: true }), []);
+  } finally {
+    clean.cleanup();
   }
 });

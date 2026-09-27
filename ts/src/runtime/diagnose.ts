@@ -27,7 +27,8 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { openDatabaseReadOnly } from "#db/database.ts";
-import { sortByCodePoint } from "#util/pythonText.ts";
+import { identityKeyBreaksGrammar, SLUG_KEYED_LAYERS } from "#identity/identityKey.ts";
+import { pyRepr, sortByCodePoint } from "#util/pythonText.ts";
 import type { GitWorktreeEntry } from "./git.ts";
 import type { RuntimeStatusReport } from "./status.ts";
 
@@ -221,6 +222,51 @@ export function frontDoorErrorFindings(
 }
 
 /**
+ * CR104: one finding per journey slug or persona id outside the grammar
+ * (`#identity/identityKey.ts`). A new key cannot break it any more, so each one
+ * found here predates the rule. It keeps working, and nothing rewrites it: renaming
+ * a key that other tables copy is not a repair to make silently. What quoting
+ * cannot cover is named instead. Mirror quotes the key in every command it prints,
+ * but an agent may put it into a command of its own.
+ *
+ * The key is printed escaped, so a newline or a terminal escape in it cannot forge
+ * the report. A database that cannot be read, or has no identity table, reports
+ * nothing; other findings say why it cannot be read.
+ */
+export function identityKeyFindings(
+  report: Pick<RuntimeStatusReport, "db_path" | "db_exists">,
+): DriftFinding[] {
+  if (report.db_path === null || !report.db_exists) return [];
+  const layers = SLUG_KEYED_LAYERS.map(() => "?").join(", ");
+  let rows: { layer: string; key: string }[];
+  try {
+    const db = openDatabaseReadOnly(report.db_path);
+    try {
+      rows = db
+        .prepare(`SELECT layer, key FROM identity WHERE layer IN (${layers}) ORDER BY layer, key`)
+        .all(...SLUG_KEYED_LAYERS)
+        .map((row) => ({ layer: String(row.layer), key: String(row.key) }));
+    } finally {
+      db.close();
+    }
+  } catch {
+    return [];
+  }
+  return rows
+    .filter((row) => identityKeyBreaksGrammar(row.layer, row.key))
+    .map((row) => ({
+      code: "identity_key_outside_grammar",
+      severity: "attention",
+      subject: row.layer,
+      detail: pyRepr(row.key),
+      recommendation:
+        "an agent may put this key into a shell command unquoted; recreate it under a " +
+        "kebab-case key (lowercase letters, digits, and single hyphens)",
+      repair_route: "manual review",
+    }));
+}
+
+/**
  * Port of `_fts_consistency_findings` (CR021). `memories_fts` is an
  * external-content FTS5 index kept in sync by triggers, so a row-count
  * comparison cannot detect desync -- the count always mirrors the content
@@ -283,6 +329,7 @@ export function diagnoseRuntime(
   findings.push(...loosePermissionFindings(report));
   findings.push(...frontDoorErrorFindings(report, options.now));
   findings.push(...ftsConsistencyFindings(report));
+  findings.push(...identityKeyFindings(report));
 
   if (report.mirror_home_error) {
     findings.push({

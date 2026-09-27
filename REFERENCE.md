@@ -89,7 +89,9 @@ Error: no journey was created: 'My Trip' is not a journey slug. Use lowercase le
 Nothing is renamed for you: a key stored differently from how it was typed would
 miss the next command that uses it. A key created before this rule keeps working
 and is never rewritten. Every command Mirror prints for you to run quotes the key
-it carries, so such a key still arrives as one argument
+it carries, so such a key still arrives as one argument. An agent writing a
+command of its own may not quote it, so `mirror runtime diagnose` reports each
+such key as `identity_key_outside_grammar`
 ([CR104](docs/project/refinement/rs004-identity-resolution-fidelity/cr104-journey-slugs-are-not-validated-and-command-hints-print-them-raw.md)).
 
 ## Explicit Conversation Append
@@ -267,7 +269,7 @@ Reports the installed version, repository, branch, commit, clone role, and updat
 mirror runtime diagnose [--mirror-home PATH]
 ```
 
-Classifies attention-needed drift into stable finding codes (`git_dirty`, `core_migration_pending`, `core_migration_unknown`, `extension_migration_pending`, `extension_migration_unknown`, `extension_migration_checksum_drift`, `extension_manifest_invalid`, `database_missing`, `mirror_home_missing`). Each finding carries severity, subject, recommendation, and a repair route. Read-only.
+Classifies attention-needed drift into stable finding codes (`git_dirty`, `core_migration_pending`, `core_migration_unknown`, `extension_migration_pending`, `extension_migration_unknown`, `extension_migration_checksum_drift`, `extension_manifest_invalid`, `database_missing`, `mirror_home_missing`, `identity_key_outside_grammar`). Each finding carries severity, subject, recommendation, and a repair route. Read-only.
 
 ### Backup
 

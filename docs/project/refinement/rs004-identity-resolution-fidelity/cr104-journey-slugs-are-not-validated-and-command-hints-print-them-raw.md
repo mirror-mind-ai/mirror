@@ -532,6 +532,31 @@ Evidence:
 
 Remaining: the report. Next: plateau 3.
 
+### Plateau 3 handoff (2026-09-27)
+
+Now true: `runtime diagnose` reports each journey slug or persona id outside the
+grammar as `identity_key_outside_grammar` (attention). The finding's subject is the
+layer, and its detail is the key, escaped. Its recommendation names what quoting
+leaves open, an agent writing a command of its own, and the only remedy there is,
+recreating the key. `identityKeyFindings` in `ts/src/runtime/diagnose.ts` reads the
+keys read-only. It reports nothing for a database it cannot read or that has no
+identity table. REFERENCE.md lists the code.
+
+Evidence:
+
+- Red first: a database holding `x;touch PWNED`, `Mixed_Case`, and a key with a
+  newline and a terminal escape, with diagnose silent about all three.
+- Green now: three findings, in layer and key order, each escaped, and none for the
+  kebab-case keys or the `ego` key beside them. A clean database, a missing one, and
+  one without an identity table report nothing.
+- No golden changed: the diagnose scenarios hold no such key.
+- Route step 6 now prints the finding, and Part B counts 0 on the dev home.
+- The full suite passes (2,811 tests), along with typecheck, lint, and the repository
+  checks. CI was green on plateau 2.
+
+Remaining: plateau 4, meaning the route's output recorded, Navigator validation, the
+handoff review, Debt Review, and Done.
+
 ## Outcome
 
 Pending.
