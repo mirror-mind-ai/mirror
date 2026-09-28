@@ -44,6 +44,7 @@ import {
   getDeliveryCursor,
   setDeliveryCursor,
 } from "./deliveryCursor.ts";
+import { FLOW_STOPS } from "./flowUnit.ts";
 import { renderLifecycleRibbon } from "./lifecycleRibbon.ts";
 import { linkFreeTitle, stripMarkdownLink } from "./roadmapGrammar.ts";
 import { createStoryDirectory, storyDirectoryResolver, storyFolderName } from "./storyPaths.ts";
@@ -338,8 +339,10 @@ export function expandDeliveryStory(
       activeItem: existing.activeItem,
       activeItemTitle: existing.activeItemTitle,
       activeItemLevel: existing.activeItemLevel,
-      activeCheckpoint: "next_story_confirmation",
-      pendingConfirmation: "navigator_story_confirmation",
+      // The default flow's question, the one DELIVERY_STORY_READY recommends answering
+      // or replacing with a choice of Delivery Story flow (CR105).
+      activeCheckpoint: FLOW_STOPS.story_by_story.checkpoint,
+      pendingConfirmation: FLOW_STOPS.story_by_story.confirmation,
       lastDeliveryEvent: "expand",
       cadenceProfile: existing.cadenceProfile,
       cadenceLimits: existing.cadenceLimits,

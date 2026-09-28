@@ -12,9 +12,16 @@
 // renders NEXT_STORY_CONFIRMATION over the first child as the recommended story.
 // One function, two surface ids — a port that hard-codes either one fails the
 // corpus guard that compares each recorded id against its own wrapped marker.
+//
+// CR105: choosing also RECORDS the question its surface asks, as the cursor's
+// checkpoint and pending confirmation, and only at a Delivery Story's flow
+// decision: after Prepare or Expand, before its Plan. Until then, Expand's
+// story-by-story stop survived a choice of Delivery Story flow, and every surface
+// that reads the cursor reported a question that flow never asks.
 
 import type { WritableDatabase } from "#db/database.ts";
 import { pyStrip } from "#util/pythonText.ts";
+import { hasDeliveryStoryPlan } from "./aggregateStatus.ts";
 import { cardPrefixed, cardText, cardWrapped } from "./card.ts";
 import {
   type BuilderDeliveryCursor,
@@ -27,6 +34,48 @@ import { wrapAriadSurface } from "./surfaceProtocol.ts";
 export const FLOW_UNIT_STORY_BY_STORY = "story_by_story";
 export const FLOW_UNIT_DELIVERY_STORY = "delivery_story";
 export const ALLOWED_FLOW_UNITS = [FLOW_UNIT_STORY_BY_STORY, FLOW_UNIT_DELIVERY_STORY] as const;
+
+/** A Navigator stop as the cursor records it: the checkpoint, and what the Navigator owes. */
+export interface FlowStop {
+  readonly checkpoint: string;
+  readonly confirmation: string;
+}
+
+/**
+ * CR105: the question each flow unit's surface asks, as the cursor records it. The
+ * checkpoint is the surface's own id. Expand records the story-by-story stop, since
+ * its next-story question is the default flow's; choosing a flow unit records its
+ * own. The Delivery Story Plan replaces the scope stop, and nothing enforces it:
+ * CR001 declined a runtime-enforced scope stop, and this is recorded, not enforced.
+ */
+export const FLOW_STOPS: Readonly<Record<(typeof ALLOWED_FLOW_UNITS)[number], FlowStop>> = {
+  story_by_story: {
+    checkpoint: "next_story_confirmation",
+    confirmation: "navigator_story_confirmation",
+  },
+  delivery_story: {
+    checkpoint: "delivery_story_scope_confirmation",
+    confirmation: "navigator_scope_confirmation",
+  },
+};
+
+const FLOW_CONFIRMATIONS: ReadonlySet<string> = new Set(
+  Object.values(FLOW_STOPS).map((stop) => stop.confirmation),
+);
+
+/**
+ * CR105: whether the cursor stands at a Delivery Story's flow decision, after
+ * Prepare or Expand and before its Plan. The active item is a Delivery Story, its
+ * Plan is not recorded, and nothing is pending but a flow stop, or nothing at all.
+ */
+export function atFlowDecision(cursor: BuilderDeliveryCursor): boolean {
+  return (
+    Boolean(cursor.activeItem) &&
+    cursor.activeItemLevel === "delivery_story" &&
+    !hasDeliveryStoryPlan(cursor.aggregateCheckpointStatus) &&
+    (cursor.pendingConfirmation === null || FLOW_CONFIRMATIONS.has(cursor.pendingConfirmation))
+  );
+}
 
 /**
  * Python `effective_navigator_flow_unit`.
@@ -63,9 +112,9 @@ export interface NavigatorFlowUnitReport {
  * Python `set_navigator_flow_unit`.
  *
  * Validation BEFORE the cursor read, so an unknown unit reports the allowed values
- * even when no cursor exists. Everything else on the cursor carries forward
- * untouched: choosing a flow unit is not a lifecycle transition, and the only
- * fields it writes are the unit itself and `last_delivery_event`.
+ * even when no cursor exists. Choosing a flow unit is not a lifecycle transition: it
+ * writes the unit and `last_delivery_event`, and at the flow decision the stop its
+ * surface asks (CR105). Everything else on the cursor carries forward untouched.
  */
 export function setNavigatorFlowUnit(
   db: WritableDatabase,
@@ -79,6 +128,8 @@ export function setNavigatorFlowUnit(
   if (existing === null) {
     throw new Error("delivery cursor is required before choosing navigator flow unit");
   }
+  const flowUnit = options.flowUnit as (typeof ALLOWED_FLOW_UNITS)[number];
+  const stop = atFlowDecision(existing) ? FLOW_STOPS[flowUnit] : null;
   const updated = setDeliveryCursor(
     db,
     {
@@ -87,8 +138,8 @@ export function setNavigatorFlowUnit(
       activeItem: existing.activeItem,
       activeItemTitle: existing.activeItemTitle,
       activeItemLevel: existing.activeItemLevel,
-      activeCheckpoint: existing.activeCheckpoint,
-      pendingConfirmation: existing.pendingConfirmation,
+      activeCheckpoint: stop?.checkpoint ?? existing.activeCheckpoint,
+      pendingConfirmation: stop?.confirmation ?? existing.pendingConfirmation,
       lastDeliveryEvent: "navigator_flow_unit_selected",
       cadenceProfile: existing.cadenceProfile,
       cadenceLimits: existing.cadenceLimits,

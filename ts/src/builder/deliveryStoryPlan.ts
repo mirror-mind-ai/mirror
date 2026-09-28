@@ -31,6 +31,7 @@
 
 import type { WritableDatabase } from "#db/database.ts";
 import { pyStrip } from "#util/pythonText.ts";
+import { replaceStatus } from "./aggregateStatus.ts";
 import type { MaterializedArtifact } from "./artifacts/artifactSurfaces.ts";
 import {
   unfilledDeliveryStoryPlanSections,
@@ -69,21 +70,6 @@ export interface DeliveryStoryPlanReport {
   readonly materializedArtifacts: readonly MaterializedArtifact[];
   readonly unfilledSections: readonly string[];
   readonly implementationStarted: boolean;
-}
-
-/**
- * Python `_replace_status`.
- *
- * Keep every entry whose prefix differs, then APPEND. Shared with
- * `deliveryStoryClosure.ts`, which needs the identical rule.
- */
-export function replaceStatus(
-  existing: readonly string[],
-  checkpoint: string,
-  status: string,
-): string[] {
-  const prefix = `${checkpoint}:`;
-  return [...existing.filter((item) => !item.startsWith(prefix)), `${checkpoint}:${status}`];
 }
 
 /** Python `_normalize_items`: strip, drop empties, preserve order. */

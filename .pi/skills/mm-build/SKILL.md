@@ -723,12 +723,18 @@ packages, and that choosing Delivery Story flow does not approve a Plan, start
 implementation, validate, push, or release.
 
 The scope confirmation is a Navigator stop. It asks whether the scope is right
-before any DS Plan exists, and the runtime does not enforce the wait: the
-question stays true only if you wait for the answer. End the turn after the
-surface. Do not run `plan-delivery-story` in the same turn, even when the
-Navigator's request also asked for the Plan. Plan only on a later Navigator turn
-that confirms or corrects the scope. Cadence and Plan preauthorization do not
-remove this stop.
+before any DS Plan exists. The runtime records the stop without enforcing it: the
+cursor holds `navigator_scope_confirmation` until the Plan replaces it, and
+`plan-delivery-story` does not refuse while it is pending, so the question stays
+true only if you wait for the answer. End the turn after the surface. Do not run
+`plan-delivery-story` in the same turn, even when the Navigator's request also
+asked for the Plan. Plan only on a later Navigator turn that confirms or corrects
+the scope. Cadence and Plan preauthorization do not remove this stop.
+
+A Builder resume that shows `pending confirmation: navigator_scope_confirmation`
+is this same question, still open. Ask it again, or render it again with the
+`set-flow-unit --unit delivery_story` command above, and plan only on the
+Navigator's answer.
 
 `set-flow-unit` without `--unit` only inspects the current choice and renders
 `NAVIGATOR_FLOW_UNIT`.

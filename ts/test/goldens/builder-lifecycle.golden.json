@@ -12107,7 +12107,7 @@
         },
         {
           "cursor": {
-            "active_checkpoint": null,
+            "active_checkpoint": "delivery_story_scope_confirmation",
             "active_item": "CV1.DS1",
             "active_item_level": "delivery_story",
             "active_item_title": "Aggregate delivery",
@@ -12124,7 +12124,7 @@
             "last_delivery_event": "navigator_flow_unit_selected",
             "method": "ariad",
             "navigator_flow_unit": "delivery_story",
-            "pending_confirmation": null,
+            "pending_confirmation": "navigator_scope_confirmation",
             "plan_preauthorization": null,
             "release_intent": null,
             "release_intent_delivery_story": null
@@ -12142,7 +12142,7 @@
             "flow_unit": "delivery_story",
             "method": "ariad"
           },
-          "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV1.DS1\", \"active_item_title\": \"Aggregate delivery\", \"active_item_level\": \"delivery_story\", \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": \"navigator_flow_unit_selected\", \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": \"delivery_story\", \"child_work_items\": [\"CV1.DS1.US1\", \"CV1.DS1.TS1\"], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+          "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV1.DS1\", \"active_item_title\": \"Aggregate delivery\", \"active_item_level\": \"delivery_story\", \"active_checkpoint\": \"delivery_story_scope_confirmation\", \"pending_confirmation\": \"navigator_scope_confirmation\", \"last_delivery_event\": \"navigator_flow_unit_selected\", \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": \"delivery_story\", \"child_work_items\": [\"CV1.DS1.US1\", \"CV1.DS1.TS1\"], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": null, \"release_intent\": null}",
           "op": "set_flow_unit",
           "projection_requests": [],
           "source": "cursor",
@@ -12846,7 +12846,7 @@
         },
         {
           "cursor": {
-            "active_checkpoint": null,
+            "active_checkpoint": "delivery_story_scope_confirmation",
             "active_item": "CV1.DS1",
             "active_item_level": "delivery_story",
             "active_item_title": "Aggregate delivery",
@@ -12863,7 +12863,7 @@
             "last_delivery_event": "navigator_flow_unit_selected",
             "method": "ariad",
             "navigator_flow_unit": "delivery_story",
-            "pending_confirmation": null,
+            "pending_confirmation": "navigator_scope_confirmation",
             "plan_preauthorization": null,
             "release_intent": null,
             "release_intent_delivery_story": null
@@ -12881,7 +12881,7 @@
             "flow_unit": "delivery_story",
             "method": "ariad"
           },
-          "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV1.DS1\", \"active_item_title\": \"Aggregate delivery\", \"active_item_level\": \"delivery_story\", \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": \"navigator_flow_unit_selected\", \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": \"delivery_story\", \"child_work_items\": [\"CV1.DS1.US1\", \"CV1.DS1.TS1\"], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+          "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV1.DS1\", \"active_item_title\": \"Aggregate delivery\", \"active_item_level\": \"delivery_story\", \"active_checkpoint\": \"delivery_story_scope_confirmation\", \"pending_confirmation\": \"navigator_scope_confirmation\", \"last_delivery_event\": \"navigator_flow_unit_selected\", \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": \"delivery_story\", \"child_work_items\": [\"CV1.DS1.US1\", \"CV1.DS1.TS1\"], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": null, \"release_intent\": null}",
           "op": "set_flow_unit",
           "projection_requests": [],
           "source": "cursor",
@@ -12894,7 +12894,7 @@
         },
         {
           "cursor": {
-            "active_checkpoint": null,
+            "active_checkpoint": "delivery_story_scope_confirmation",
             "active_item": "CV1.DS1",
             "active_item_level": "delivery_story",
             "active_item_title": "Aggregate delivery",
@@ -12911,7 +12911,7 @@
             "last_delivery_event": "navigator_flow_unit_selected",
             "method": "ariad",
             "navigator_flow_unit": "delivery_story",
-            "pending_confirmation": null,
+            "pending_confirmation": "navigator_scope_confirmation",
             "plan_preauthorization": null,
             "release_intent": null,
             "release_intent_delivery_story": null
@@ -12928,7 +12928,7 @@
           "input": {
             "method": "ariad"
           },
-          "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV1.DS1\", \"active_item_title\": \"Aggregate delivery\", \"active_item_level\": \"delivery_story\", \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": \"navigator_flow_unit_selected\", \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": \"delivery_story\", \"child_work_items\": [\"CV1.DS1.US1\", \"CV1.DS1.TS1\"], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+          "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV1.DS1\", \"active_item_title\": \"Aggregate delivery\", \"active_item_level\": \"delivery_story\", \"active_checkpoint\": \"delivery_story_scope_confirmation\", \"pending_confirmation\": \"navigator_scope_confirmation\", \"last_delivery_event\": \"navigator_flow_unit_selected\", \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": \"delivery_story\", \"child_work_items\": [\"CV1.DS1.US1\", \"CV1.DS1.TS1\"], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": null, \"release_intent\": null}",
           "op": "inspect_flow_unit",
           "projection_requests": [],
           "source": "cursor",
@@ -12941,7 +12941,7 @@
         },
         {
           "cursor": {
-            "active_checkpoint": null,
+            "active_checkpoint": "next_story_confirmation",
             "active_item": "CV1.DS1",
             "active_item_level": "delivery_story",
             "active_item_title": "Aggregate delivery",
@@ -12958,7 +12958,7 @@
             "last_delivery_event": "navigator_flow_unit_selected",
             "method": "ariad",
             "navigator_flow_unit": "story_by_story",
-            "pending_confirmation": null,
+            "pending_confirmation": "navigator_story_confirmation",
             "plan_preauthorization": null,
             "release_intent": null,
             "release_intent_delivery_story": null
@@ -12976,7 +12976,7 @@
             "flow_unit": "story_by_story",
             "method": "ariad"
           },
-          "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV1.DS1\", \"active_item_title\": \"Aggregate delivery\", \"active_item_level\": \"delivery_story\", \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": \"navigator_flow_unit_selected\", \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": \"story_by_story\", \"child_work_items\": [\"CV1.DS1.US1\", \"CV1.DS1.TS1\"], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+          "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV1.DS1\", \"active_item_title\": \"Aggregate delivery\", \"active_item_level\": \"delivery_story\", \"active_checkpoint\": \"next_story_confirmation\", \"pending_confirmation\": \"navigator_story_confirmation\", \"last_delivery_event\": \"navigator_flow_unit_selected\", \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": \"story_by_story\", \"child_work_items\": [\"CV1.DS1.US1\", \"CV1.DS1.TS1\"], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": null, \"release_intent\": null}",
           "op": "set_flow_unit",
           "projection_requests": [],
           "source": "cursor",
@@ -12989,7 +12989,7 @@
         },
         {
           "cursor": {
-            "active_checkpoint": null,
+            "active_checkpoint": "next_story_confirmation",
             "active_item": "CV1.DS1",
             "active_item_level": "delivery_story",
             "active_item_title": "Aggregate delivery",
@@ -13006,7 +13006,7 @@
             "last_delivery_event": "navigator_flow_unit_selected",
             "method": "ariad",
             "navigator_flow_unit": "story_by_story",
-            "pending_confirmation": null,
+            "pending_confirmation": "navigator_story_confirmation",
             "plan_preauthorization": null,
             "release_intent": null,
             "release_intent_delivery_story": null
@@ -13024,7 +13024,7 @@
             "flow_unit": "epic",
             "method": "ariad"
           },
-          "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV1.DS1\", \"active_item_title\": \"Aggregate delivery\", \"active_item_level\": \"delivery_story\", \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": \"navigator_flow_unit_selected\", \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": \"story_by_story\", \"child_work_items\": [\"CV1.DS1.US1\", \"CV1.DS1.TS1\"], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+          "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV1.DS1\", \"active_item_title\": \"Aggregate delivery\", \"active_item_level\": \"delivery_story\", \"active_checkpoint\": \"next_story_confirmation\", \"pending_confirmation\": \"navigator_story_confirmation\", \"last_delivery_event\": \"navigator_flow_unit_selected\", \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": \"story_by_story\", \"child_work_items\": [\"CV1.DS1.US1\", \"CV1.DS1.TS1\"], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": null, \"release_intent\": null}",
           "op": "set_flow_unit",
           "projection_requests": []
         }

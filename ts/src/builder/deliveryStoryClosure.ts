@@ -33,6 +33,7 @@
 
 import type { WritableDatabase } from "#db/database.ts";
 import { pyStrip } from "#util/pythonText.ts";
+import { replaceStatus } from "./aggregateStatus.ts";
 import type { MaterializedArtifact } from "./artifacts/artifactSurfaces.ts";
 import type { ArtifactOutcome } from "./artifacts/artifactWriter.ts";
 import { writeDeliveryStoryClosureArtifact } from "./artifacts/deliveryStoryArtifacts.ts";
@@ -43,7 +44,6 @@ import {
   getDeliveryCursor,
   setDeliveryCursor,
 } from "./deliveryCursor.ts";
-import { replaceStatus } from "./deliveryStoryPlan.ts";
 import { FLOW_UNIT_DELIVERY_STORY } from "./flowUnit.ts";
 import { wrapAriadSurface } from "./surfaceProtocol.ts";
 

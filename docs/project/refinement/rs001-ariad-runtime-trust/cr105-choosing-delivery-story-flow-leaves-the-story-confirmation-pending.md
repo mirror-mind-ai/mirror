@@ -437,6 +437,40 @@ lifecycle
 Steps 2, 5, 6, and 7 fail as characterized. Step 3 passes only because nothing cleared
 Expand's stop.
 
+### Plateau 1 handoff (2026-09-28)
+
+Now true: choosing a flow unit records the question its surface asks, at a Delivery
+Story's flow decision. `FLOW_STOPS` in `ts/src/builder/flowUnit.ts` names each flow
+unit's stop, and Expand takes its own from it. `atFlowDecision` states the decision
+point once: the active item is a Delivery Story, its Plan is not recorded, and nothing
+is pending but a flow stop. Whether the Plan is recorded is answered by
+`hasDeliveryStoryPlan`, which moved with `replaceStatus`, its writer, into
+`ts/src/builder/aggregateStatus.ts`. That module keeps `flowUnit.ts` free of an import
+cycle with `deliveryStoryPlan.ts`. Outside the decision point, choosing still leaves the
+stops as they were, which is plateau 2's to refuse. The `mm-build` skill says the scope
+stop is recorded and not enforced, and how to ask it again at a resume. The Claude Code
+copies were regenerated.
+
+Evidence:
+
+- Red first, through the real commands over a scratch project:
+  - after Expand, choosing Delivery Story flow left the story stop;
+  - on a Delivery Story seeded at `prepare`, choosing left no stop;
+  - the Builder resume at that moment named `navigator_story_confirmation`.
+- Green now:
+  - both shapes record each flow unit's stop, in both directions;
+  - the resume names only the scope question, with `answer_pending_confirmation` and
+    `inspect_method` as its next actions;
+  - `plan-delivery-story` replaces the scope stop, and plans without it, since the
+    stop is recorded and not enforced.
+- One golden edit, by script with an asserted count and a README row:
+  `builder-lifecycle`, five cursors in the two flow-unit sequences.
+- Route steps 2 and 3 now print their pass conditions.
+- The full suite passes (2,822 tests), along with typecheck, lint, the repository
+  checks, and the Builder lifecycle smoke. CI was green on the plan commit.
+
+Remaining: the refusal outside the decision point, and CR090. Next: plateau 2.
+
 ## Outcome
 
 Pending.
