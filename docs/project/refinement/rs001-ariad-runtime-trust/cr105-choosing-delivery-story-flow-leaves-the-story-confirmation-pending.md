@@ -645,6 +645,35 @@ The other lenses were silent:
 - experience-designer, product-designer: every surface now asks the question the cursor
   is at, and the one capability removed, choosing after a Plan, is an accepted boundary.
 
+### Debt paid (2026-09-28)
+
+The Navigator decided to pay the finding now.
+
+1. `aggregateStatus.ts` claims only what it holds (`5c0cba65`). Its header names the
+   writer and the flow unit's reader, kept together so they agree on the Plan's prefix,
+   and names the readers that still test entries by hand.
+
+The same commit corrected this review's account of the delivery's size. It was first
+recorded as 99 source lines added and 24 removed. The true figures are above: 130 and
+35 across seven files, with 443 lines of tests in two new files.
+
 ## Outcome
 
-Pending.
+Done 2026-09-28, with
+[CR090](cr090-debt-review-surface-mixes-portuguese-into-english.md), one delivery. A
+flow unit is chosen at a Delivery Story's flow decision, after Prepare or Expand and
+before its Plan, and choosing records the question its surface asks. Delivery Story flow
+records `navigator_scope_confirmation`, and story by story records
+`navigator_story_confirmation`, which Expand records first. So `build show` and the
+Builder resume name the question the Navigator was just asked. The resume's next action,
+answering the pending confirmation, is what the flow waits for. The runtime records the
+scope stop without enforcing it, as CR001 decided: the Delivery Story Plan replaces it,
+and plans without it. Anywhere else, choosing refuses in one line and changes nothing,
+which removes the stranding the reverse switch showed: a Plan approved under
+story-by-story flow that its Delivery Story's closure then refused. The `mm-build` skill
+states the stop, how to ask it again, and to relay a refusal rather than force a choice.
+
+Delivered on `mirror-ts-core` in `1f9e1dfa` (the recorded stop), `9ef16c41` (the
+refusal), `be66a102` (CR090), and `5c0cba65` (debt). CI was green on each push. The
+Navigator validated the [route](#validation-route) in a scratch home. This closes the
+Ariad trust floor at eleven of eleven changes, and with the backups, the release gate.

@@ -3185,6 +3185,12 @@ hints naming `memory`, the Python program TS5 deleted. CR104 changes those lines
 to quote their key, and fixes the name with them. The floor stays eleven
 changes and thirteen identifiers.
 
+**2026-09-28: the floor is complete.** CR104 closed on 2026-09-27, and
+[CR105](refinement/rs001-ariad-runtime-trust/cr105-choosing-delivery-story-flow-leaves-the-story-confirmation-pending.md)
+with [CR090](refinement/rs001-ariad-runtime-trust/cr090-debt-review-surface-mixes-portuguese-into-english.md)
+on 2026-09-28. With the backups, every change the release gate names is done.
+US3 is next, and remains separately authorized.
+
 ### A Builder journey's position is its cursor's active item, never a roadmap scan
 
 **Date:** 2026-09-26 · **Context:** [CR002](refinement/rs001-ariad-runtime-trust/cr002-cursor-sync-roadmap-selection.md),
@@ -3306,3 +3312,41 @@ with the reason it cannot carry shell syntax. A new identity layer whose keys
 agents put into commands joins `ts/src/identity/identityKey.ts`, and joining is
 recorded here. A key that is printed goes through `pyRepr`, which escapes what
 Python's `repr` escapes.
+
+### A flow unit is chosen at a Delivery Story's flow decision, and choosing records the question it asks
+
+**Date:** 2026-09-28 · **Context:** [CR105](refinement/rs001-ariad-runtime-trust/cr105-choosing-delivery-story-flow-leaves-the-story-confirmation-pending.md),
+the last change on the [Ariad trust floor](#the-cv22-release-is-gated-on-an-ariad-trust-floor-worked-before-us3).
+After Expand, choosing Delivery Story flow printed the scope question and left
+Expand's story-by-story stop on the cursor, so every surface that reads the
+cursor reported a question that flow never asks. CR001 had made that state
+routine, because the Builder skill ends the agent's turn at the scope question.
+Switching back to story by story after a Delivery Story Plan asked about a next
+story. The Plan's approval then started implementation under the wrong flow, and
+the Delivery Story could not close.
+
+**The decision: a flow unit is chosen only at a Delivery Story's flow decision,
+after Prepare or Expand and before its Plan. Choosing records the question its
+surface asks: `navigator_scope_confirmation` for Delivery Story flow, and
+`navigator_story_confirmation` for story by story, which Expand records first.
+Anywhere else, choosing refuses and changes nothing. The recorded stop is not
+enforced: `plan-delivery-story` replaces it, and plans without it, as CR001
+decided.**
+
+**Why record rather than clear.** Cleared, the resume would say nothing is
+pending while the Navigator owes an answer, and a new session could not know the
+scope question is open. Recorded, the resume names it, and its next action,
+answering the pending confirmation, is what the flow waits for. Listing the Plan
+as a next action instead would invite planning before the answer, the shape
+CR001 closed.
+
+**Why refuse rather than switch.** A flow unit changed after the Plan describes
+work planned under the other one. No choice at that point is honest without
+planning again, and planning again is the Navigator's decision, not the
+runtime's. When a Navigator first needs it, that route is designed then.
+
+**The rule that follows.** A Builder surface that asks the Navigator a question
+records it as the cursor's pending confirmation, so a resume can say it is open,
+and no stop stays on the cursor that no surface is asking. `FLOW_STOPS` in
+`ts/src/builder/flowUnit.ts` names the flow stops, and Expand takes its own
+from it.

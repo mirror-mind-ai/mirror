@@ -3,7 +3,7 @@
 # CR090 — The Debt Review surface mixes Portuguese into an English sentence
 
 **Refinement Story:** RS001 — Ariad Runtime Trust
-**Status:** validated
+**Status:** done
 **Driver:** @viniciusteles
 **Delivery:** `mirror-ts-core`
 
@@ -94,4 +94,11 @@ $ node --env-file=.env ts/src/frontDoor/cli.ts build validate-item ... --navigat
 
 ## Outcome
 
-Open.
+Done 2026-09-28, with [CR105](cr105-choosing-delivery-story-flow-leaves-the-story-confirmation-pending.md),
+one delivery. `DEBT_REVIEW_STARTED` offers to "record this as no action needed", the
+runtime's own words for `no_action`. The audit this CR asked for found the Ariad
+method's nine lifecycle glosses in Portuguese in `build inspect-method ariad`, and they
+read in English too. A guard fails on a Portuguese letter in any line of Builder source
+that is not a comment, unless the line names a listed input, of which there is one:
+`QUERY_SECTIONS`, which reads section names from project documents. Delivered in
+`be66a102`, validated by the Navigator on CR105's route, and reviewed with it.

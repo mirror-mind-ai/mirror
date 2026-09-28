@@ -12,6 +12,34 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-09-28 — CR105 done, with CR090: every Builder surface asks the question the cursor is at, in English
+
+This closes the Ariad trust floor at eleven of eleven changes, and with the backups,
+the release gate. After Expand, choosing Delivery Story flow printed the scope question
+but left Expand's story-by-story stop on the cursor. So `build show` and the Builder
+resume, the first surface a new session reads, named a question that flow never asks.
+CR001 had made that state routine: the skill ends the agent's turn at the scope
+question. Checking the reverse switch, as the CR asked, found worse. Switching to story
+by story with the Delivery Story Plan awaiting approval asked about a next story. The
+approval then started Delivery Story implementation under story flow, and the Delivery
+Story could not close.
+
+Now a flow unit is chosen only at the Delivery Story's flow decision, after Prepare or
+Expand and before its Plan. Choosing records the question its surface asks:
+`navigator_scope_confirmation` or `navigator_story_confirmation`, from one table that
+Expand also reads. The runtime records the scope stop without enforcing it, and the
+Plan replaces it, as CR001 decided. Anywhere else, choosing refuses in one line and
+changes nothing. CR090 rode along: the Debt Review surface records "no action needed"
+rather than "sem ação necessária". The audit it asked for found the Ariad method's
+nine lifecycle glosses in Portuguese, and they read in English too. A guard now keeps
+Portuguese letters out of Builder output.
+
+The Navigator validated the route in a scratch home. The handoff review's one debt was
+paid: a module comment that claimed more than the module holds. The same commit
+corrected the review's own account of the delivery's size.
+
+Next: DS10.US3, npm distribution, separately authorized. Then the CV22 release.
+
 ### 2026-09-27 — CR104 done: a journey slug and a persona id are one plain shell word, and every printed command quotes what it carries
 
 This is the ninth of the trust floor's eleven changes, and its one security
