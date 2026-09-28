@@ -3,9 +3,9 @@
 # CR090 — The Debt Review surface mixes Portuguese into an English sentence
 
 **Refinement Story:** RS001 — Ariad Runtime Trust
-**Status:** captured
-**Driver:** —
-**Delivery:** —
+**Status:** in_progress
+**Driver:** @viniciusteles
+**Delivery:** `mirror-ts-core`
 
 ## Problem
 
@@ -68,6 +68,14 @@ option is probably both, since the Python string is four words and dies at
 CV22.DS10.TS5 anyway.
 
 **2026-09-27: added to the Ariad trust floor**, riding along with CR105, by the Navigator's decision after the Workbench inspection that followed the Ariad trust floor ([amendment](../../decisions.md#the-cv22-release-is-gated-on-an-ariad-trust-floor-worked-before-us3)). The two-engine question above is moot. TS5 deleted the Python core and the parity harness, so the fix is the TypeScript string and the goldens that record it.
+
+**Planned and assigned 2026-09-28, one delivery with CR105.** The plan, the Navigator's
+decisions, and the validation route live in
+[CR105](cr105-choosing-delivery-story-flow-leaves-the-story-confirmation-pending.md#plan-or-decision).
+The sentence becomes "no action needed". The audit this CR asked for found the Ariad
+method's nine lifecycle glosses in Portuguese, printed by `build inspect-method ariad`,
+and by the Navigator's decision C2 they are translated with it. Driver `@viniciusteles`,
+Delivery `mirror-ts-core`.
 
 ## Evidence
 
