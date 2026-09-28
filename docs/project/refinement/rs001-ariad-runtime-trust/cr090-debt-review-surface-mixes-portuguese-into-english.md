@@ -3,7 +3,7 @@
 # CR090 — The Debt Review surface mixes Portuguese into an English sentence
 
 **Refinement Story:** RS001 — Ariad Runtime Trust
-**Status:** in_progress
+**Status:** validated
 **Driver:** @viniciusteles
 **Delivery:** `mirror-ts-core`
 

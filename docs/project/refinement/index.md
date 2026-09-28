@@ -32,8 +32,8 @@ Open work is ordered intentionally. Terminal history follows open work.
 
 | Order | ID | RS | Change | Status | Driver | Delivery |
 |------:|----|----|--------|--------|--------|----------|
-| 1 | [CR105](rs001-ariad-runtime-trust/cr105-choosing-delivery-story-flow-leaves-the-story-confirmation-pending.md) | RS001 | Choosing Delivery Story flow leaves the story-by-story confirmation pending | in_progress | @viniciusteles | `mirror-ts-core` |
-| 2 | [CR090](rs001-ariad-runtime-trust/cr090-debt-review-surface-mixes-portuguese-into-english.md) | RS001 | The Debt Review surface mixes Portuguese into an English sentence | in_progress | @viniciusteles | `mirror-ts-core` |
+| 1 | [CR105](rs001-ariad-runtime-trust/cr105-choosing-delivery-story-flow-leaves-the-story-confirmation-pending.md) | RS001 | Choosing Delivery Story flow leaves the story-by-story confirmation pending | validated | @viniciusteles | `mirror-ts-core` |
+| 2 | [CR090](rs001-ariad-runtime-trust/cr090-debt-review-surface-mixes-portuguese-into-english.md) | RS001 | The Debt Review surface mixes Portuguese into an English sentence | validated | @viniciusteles | `mirror-ts-core` |
 | 3 | [CR009](rs001-ariad-runtime-trust/cr009-name-the-target-project-in-artifact-surfaces.md) | RS001 | Name the target project in artifact materialization surfaces | captured | — | — |
 | 4 | [CR014](rs004-identity-resolution-fidelity/cr014-resolve-owner-name-from-one-authority.md) | RS004 | Resolve the owner's name from one authority | captured | — | — |
 | 5 | [CR055](rs009-cv22-front-door-routing-correctness/cr055-audit-subcommand-inheritance-in-claimed-families.md) | RS009 | Audit subcommand inheritance across claimed command families | captured | — | — |

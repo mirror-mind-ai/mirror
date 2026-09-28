@@ -585,6 +585,65 @@ lifecycle
 - Done records and closes
 ```
 
+### Navigator validation (2026-09-28)
+
+The Navigator walked the [validation route](#validation-route) and accepted it, for
+CR105 and CR090.
+
+- The route was extracted from this document and run as `bash /tmp/cr105-route.sh`. It
+  printed the [recorded output](#the-route-after-the-change-2026-09-28) line for line:
+  1. Expand's stop, `navigator_story_confirmation`;
+  2. `DELIVERY_STORY_SCOPE_CONFIRMATION`, then `navigator_scope_confirmation` and
+     `delivery_story_scope_confirmation`, with `answer_pending_confirmation` and
+     `inspect_method` as the next actions;
+  3. `NEXT_STORY_CONFIRMATION`, then `navigator_story_confirmation` and
+     `next_story_confirmation`;
+  4. the Plan checkpoint, with `navigator_delivery_story_plan_approval` pending;
+  5. `Error: no flow unit was chosen: CV1.DS1's Delivery Story Plan is already
+     recorded, …`, and the cursor exactly as step 4 left it;
+  6. "record this as no action needed and continue toward closure.";
+  7. the nine lifecycle glosses in English.
+
+CI was green on each plateau's last push: plateau 1 (`1f9e1dfa`), plateau 2
+(`9ef16c41`), and plateau 3 (`be66a102`), Tests and Docs.
+
+### Handoff review (2026-09-28)
+
+This review came after validation, per the collaboration strategy. The baseline panel
+(engineer, quality-assurance, database-architect, devops-engineer, security-engineer)
+and the lenses that reviewed the plan (ai-engineer, prompt-engineer,
+experience-designer, product-designer) reviewed the delivered code, tests, safety
+posture, operational cost, and resumability. The one finding was checked against the
+code before it was written down, by a search for every reader of the aggregate status.
+
+Synthesis: the delivery does what the plan said. The source grew by 99 lines and lost
+24, the tests grew by 355, and three goldens were edited by script. The refusal sits
+where it belongs, before any write, and the stranding the characterization found
+cannot happen any more. The weak point is a sentence, not code: the new module claims
+more than it holds.
+
+| # | Lens | Finding | Class | Recommendation |
+|---|---|---|---|---|
+| 1 | engineer | `aggregateStatus.ts` says the aggregate status's entry format "has one home" there. It does not: `implementationGuard.ts` and `deliveryStoryPlan.ts` still test `plan:approved` by hand, and `deliveryStoryClosure.ts` tests its expected entries and their prefixes | Non-blocking debt, introduced here | Pay now: the comment says what the module holds, the writer and the flow unit's reader, and no more |
+
+Checked and dropped: a refusal that names a `maintenance` item would read "is a
+maintenance". It cannot be reached, because `pull-item` accepts only the Delivery Story,
+user story, and technical story levels.
+
+Accepted as a limitation: the one-language guard finds Portuguese letters, not
+Portuguese words. Six of the nine glosses carried no accented letter, and the test
+that pins the `inspect-method` lines is what caught them. A word list would be brittle.
+
+The other lenses were silent:
+
+- database-architect: the new stop needs no migration, and a cursor stored in the old
+  mid-decision state recovers on the next choice, since its story stop is a flow stop.
+- devops-engineer, security-engineer: no new operation, input, or secret.
+- ai-engineer, prompt-engineer: the skill states the stop, how to ask it again, and to
+  relay a refusal rather than force a choice.
+- experience-designer, product-designer: every surface now asks the question the cursor
+  is at, and the one capability removed, choosing after a Plan, is an accepted boundary.
+
 ## Outcome
 
 Pending.
