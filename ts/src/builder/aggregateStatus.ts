@@ -1,11 +1,13 @@
-// A Delivery Story's aggregate checkpoint status: how it is written, and what it says.
+// A Delivery Story's aggregate checkpoint status: its writer, and one of its readers.
 //
 // `aggregate_checkpoint_status` is an ordered list cell on the delivery cursor,
 // one `<checkpoint>:<status>` entry per Delivery Story checkpoint reached: the Plan
 // (`plan:pending`, `plan:approved`), then validation, the debt review, coherence,
-// and done. The Plan and closure modules write it; the flow unit reads it to know
-// whether the Delivery Story's Plan is recorded (CR105). Both live here so the
-// entry format has one home.
+// and done. `replaceStatus` writes every entry, for the Plan and closure modules.
+// `hasDeliveryStoryPlan` is the flow unit's reader (CR105), kept beside the writer
+// so the two agree on the Plan's prefix. The other readers still test entries by
+// hand: `implementationGuard.ts` and the Plan approval test `plan:approved`, and
+// `deliveryStoryClosure.ts` tests the entry each closure step expects.
 
 /**
  * Python `_replace_status`.

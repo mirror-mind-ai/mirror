@@ -616,8 +616,9 @@ experience-designer, product-designer) reviewed the delivered code, tests, safet
 posture, operational cost, and resumability. The one finding was checked against the
 code before it was written down, by a search for every reader of the aggregate status.
 
-Synthesis: the delivery does what the plan said. The source grew by 99 lines and lost
-24, the tests grew by 355, and three goldens were edited by script. The refusal sits
+Synthesis: the delivery does what the plan said. The source grew by 130 lines and lost
+35 across seven files, the tests grew by 443 in two new files, and three goldens were
+edited by script. The refusal sits
 where it belongs, before any write, and the stranding the characterization found
 cannot happen any more. The weak point is a sentence, not code: the new module claims
 more than it holds.
