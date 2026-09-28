@@ -736,6 +736,11 @@ is this same question, still open. Ask it again, or render it again with the
 `set-flow-unit --unit delivery_story` command above, and plan only on the
 Navigator's answer.
 
+A flow unit is chosen only at the Delivery Story's flow decision, after Prepare or
+Expand and before its Plan. Anywhere else `set-flow-unit --unit` refuses with one
+`Error: no flow unit was chosen: ...` line and changes nothing. Relay that reason to
+the Navigator. Do not reset or re-pull to force the choice without their decision.
+
 `set-flow-unit` without `--unit` only inspects the current choice and renders
 `NAVIGATOR_FLOW_UNIT`.
 

@@ -9,9 +9,9 @@
 // Navigator reaches it, and one seeded at `prepare`, as the recorded sequences reach it.
 
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, relative } from "node:path";
 import test from "node:test";
 import { invokeBuilderArgv } from "#builder/argv.ts";
 import { getDeliveryCursor, setDeliveryCursor } from "#builder/deliveryCursor.ts";
@@ -199,5 +199,120 @@ test("the Delivery Story Plan replaces the scope stop, and does not require it",
     ]);
   } finally {
     bare.close();
+  }
+});
+
+// --- Outside the flow decision, choosing refuses and changes nothing (decision S1) ---
+
+function filesUnder(root: string): Record<string, string> {
+  const files: Record<string, string> = {};
+  const walk = (directory: string): void => {
+    for (const entry of readdirSync(directory, { withFileTypes: true })) {
+      const path = join(directory, entry.name);
+      if (entry.isDirectory()) walk(path);
+      else files[relative(root, path)] = readFileSync(path, "utf8");
+    }
+  };
+  walk(root);
+  return files;
+}
+
+/** Choose `unit` where the flow decision is past: one Error line, exit 1, nothing changed. */
+function assertRefused(w: World, unit: string, reason: RegExp): void {
+  const cursor = getDeliveryCursor(w.db, JOURNEY);
+  const files = filesUnder(w.project);
+  const refused = w.run("set-flow-unit", "--unit", unit);
+  assert.equal(refused.exitCode, 1, refused.stdout);
+  assert.equal(refused.stdout, "");
+  assert.match(refused.stderr, /^Error: no flow unit was chosen: [^\n]+\n$/u);
+  assert.match(refused.stderr, reason);
+  assert.deepEqual(getDeliveryCursor(w.db, JOURNEY), cursor, "the cursor is unchanged");
+  assert.deepEqual(filesUnder(w.project), files, "the project is unchanged");
+}
+
+test("with no item pulled, choosing a flow unit refuses", () => {
+  const w = world();
+  try {
+    assertRefused(w, "delivery_story", /no item has been pulled yet/u);
+  } finally {
+    w.close();
+  }
+});
+
+test("with a child story active, choosing a flow unit refuses and names its Delivery Story", () => {
+  const w = world();
+  try {
+    pullDeliveryStory(w);
+    const child = w.run(
+      "pull-item",
+      "--item-code",
+      "CV1.DS1.US1",
+      "--item-level",
+      "user_story",
+      "--item-title",
+      "Enter an address",
+      "--why-now",
+      "now",
+    );
+    assert.equal(child.exitCode, 0, child.stderr);
+    assertRefused(w, "delivery_story", /CV1\.DS1\.US1, is a user story\..*CV1\.DS1,/u);
+  } finally {
+    w.close();
+  }
+});
+
+test("once the Delivery Story Plan is recorded, choosing refuses, both ways and after approval", () => {
+  const w = world();
+  try {
+    pullDeliveryStory(w);
+    choose(w, "delivery_story");
+    assert.equal(w.run("plan-delivery-story", "--objective", "Checkout").exitCode, 0);
+    assertRefused(w, "story_by_story", /CV1\.DS1's Delivery Story Plan is already recorded/u);
+    assertRefused(w, "delivery_story", /CV1\.DS1's Delivery Story Plan is already recorded/u);
+    assert.equal(w.run("approve-delivery-story-plan").exitCode, 0);
+    assertRefused(w, "story_by_story", /CV1\.DS1's Delivery Story Plan is already recorded/u);
+  } finally {
+    w.close();
+  }
+});
+
+test("a Delivery Story waiting for another confirmation refuses a flow unit", () => {
+  const w = world();
+  try {
+    seedPreparedDeliveryStory(w);
+    const cursor = getDeliveryCursor(w.db, JOURNEY);
+    assert.ok(cursor);
+    setDeliveryCursor(
+      w.db,
+      {
+        journey: JOURNEY,
+        method: "ariad",
+        activeItem: cursor.activeItem,
+        activeItemTitle: cursor.activeItemTitle,
+        activeItemLevel: cursor.activeItemLevel,
+        activeCheckpoint: "after_plan",
+        pendingConfirmation: "navigator_approval",
+        lastDeliveryEvent: "plan",
+        childWorkItems: cursor.childWorkItems,
+      },
+      { nowIso: () => NOW },
+    );
+    assertRefused(w, "delivery_story", /CV1\.DS1 is waiting for navigator_approval/u);
+  } finally {
+    w.close();
+  }
+});
+
+test("inspecting the flow unit still answers anywhere", () => {
+  const w = world();
+  try {
+    pullDeliveryStory(w);
+    choose(w, "delivery_story");
+    assert.equal(w.run("plan-delivery-story", "--objective", "Checkout").exitCode, 0);
+    const inspected = w.run("set-flow-unit");
+    assert.equal(inspected.exitCode, 0, inspected.stderr);
+    assert.match(inspected.stdout, /FLOW UNIT SELECTED/u);
+  } finally {
+    w.close();
   }
 });

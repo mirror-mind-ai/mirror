@@ -471,6 +471,37 @@ Evidence:
 
 Remaining: the refusal outside the decision point, and CR090. Next: plateau 2.
 
+### Plateau 2 handoff (2026-09-28)
+
+Now true: a flow unit is chosen only at the Delivery Story's flow decision. Anywhere
+else, `set-flow-unit --unit` refuses with one `Error: no flow unit was chosen: …` line,
+exits 1, and changes neither the cursor nor the project. `flowDecisionRefusal` in
+`ts/src/builder/flowUnit.ts` replaces plateau 1's predicate. It gives four reasons, in
+this order:
+
+1. no item pulled;
+2. a story as the active item, naming its Delivery Story;
+3. the Delivery Story Plan already recorded;
+4. a confirmation other than a flow stop pending.
+
+Inspection without `--unit` still answers anywhere. The `mm-build` skill says where the
+choice is made, and tells the agent to relay a refusal rather than reset or re-pull to
+force it.
+
+Evidence:
+
+- Red first: each of the four cases accepted the choice. After the Plan, the stranding
+  sequence from the characterization ran to completion.
+- Green now: each refuses with its reason, the cursor and project files byte-identical.
+  The refusal holds in both directions after the Plan, and after its approval too.
+  Inspection answers after the Plan.
+- No golden moved: every recorded choice is made at the decision point.
+- Route step 5 now prints the refusal, and the cursor stays as step 4 left it.
+- The full suite passes (2,827 tests), along with typecheck, lint, the repository
+  checks, and the Builder lifecycle smoke. CI was green on plateau 1.
+
+Remaining: CR090. Next: plateau 3.
+
 ## Outcome
 
 Pending.

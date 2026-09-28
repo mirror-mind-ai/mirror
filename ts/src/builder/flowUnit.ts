@@ -23,6 +23,7 @@ import type { WritableDatabase } from "#db/database.ts";
 import { pyStrip } from "#util/pythonText.ts";
 import { hasDeliveryStoryPlan } from "./aggregateStatus.ts";
 import { cardPrefixed, cardText, cardWrapped } from "./card.ts";
+import { deliveryStoryCodeForItem } from "./cursorTransitions.ts";
 import {
   type BuilderDeliveryCursor,
   type CursorWriteDeps,
@@ -64,17 +65,37 @@ const FLOW_CONFIRMATIONS: ReadonlySet<string> = new Set(
 );
 
 /**
- * CR105: whether the cursor stands at a Delivery Story's flow decision, after
- * Prepare or Expand and before its Plan. The active item is a Delivery Story, its
- * Plan is not recorded, and nothing is pending but a flow stop, or nothing at all.
+ * CR105: why a flow unit cannot be chosen on this cursor, or null at a Delivery
+ * Story's flow decision: after Prepare or Expand, before its Plan. The active item is
+ * a Delivery Story, its Plan is not recorded, and nothing is pending but a flow stop,
+ * or nothing at all. Anywhere else the choice would print a question the cursor is not
+ * at, and after a Delivery Story Plan it stranded the Delivery Story: approval started
+ * its implementation under story-by-story flow, and its closure then refused.
+ *
+ * The sentence leads with the consequence, for the agent reading it.
  */
-export function atFlowDecision(cursor: BuilderDeliveryCursor): boolean {
-  return (
-    Boolean(cursor.activeItem) &&
-    cursor.activeItemLevel === "delivery_story" &&
-    !hasDeliveryStoryPlan(cursor.aggregateCheckpointStatus) &&
-    (cursor.pendingConfirmation === null || FLOW_CONFIRMATIONS.has(cursor.pendingConfirmation))
-  );
+export function flowDecisionRefusal(cursor: BuilderDeliveryCursor): string | null {
+  const refused = "no flow unit was chosen";
+  const item = cursor.activeItem;
+  if (!item) {
+    return `${refused}: no item has been pulled yet, and a flow unit is chosen for an active Delivery Story.`;
+  }
+  if (cursor.activeItemLevel !== "delivery_story") {
+    const level = cursor.activeItemLevel
+      ? `is a ${cursor.activeItemLevel.replaceAll("_", " ")}`
+      : "is not a Delivery Story";
+    const deliveryStory = deliveryStoryCodeForItem(item);
+    const whose = deliveryStory ? `its Delivery Story, ${deliveryStory},` : "its Delivery Story";
+    return `${refused}: the active item, ${item}, ${level}. The flow unit is chosen for ${whose} before that Delivery Story's Plan.`;
+  }
+  if (hasDeliveryStoryPlan(cursor.aggregateCheckpointStatus)) {
+    return `${refused}: ${item}'s Delivery Story Plan is already recorded, and the flow unit is chosen before it.`;
+  }
+  const pending = cursor.pendingConfirmation;
+  if (pending !== null && !FLOW_CONFIRMATIONS.has(pending)) {
+    return `${refused}: ${item} is waiting for ${pending}, and the flow unit is chosen before its Plan.`;
+  }
+  return null;
 }
 
 /**
@@ -112,9 +133,10 @@ export interface NavigatorFlowUnitReport {
  * Python `set_navigator_flow_unit`.
  *
  * Validation BEFORE the cursor read, so an unknown unit reports the allowed values
- * even when no cursor exists. Choosing a flow unit is not a lifecycle transition: it
- * writes the unit and `last_delivery_event`, and at the flow decision the stop its
- * surface asks (CR105). Everything else on the cursor carries forward untouched.
+ * even when no cursor exists. The choice is made only at the Delivery Story's flow
+ * decision, and anywhere else it refuses before writing (`flowDecisionRefusal`). It
+ * is not a lifecycle transition: it writes the unit, `last_delivery_event`, and the
+ * stop its surface asks (CR105). Everything else on the cursor carries forward.
  */
 export function setNavigatorFlowUnit(
   db: WritableDatabase,
@@ -128,8 +150,9 @@ export function setNavigatorFlowUnit(
   if (existing === null) {
     throw new Error("delivery cursor is required before choosing navigator flow unit");
   }
-  const flowUnit = options.flowUnit as (typeof ALLOWED_FLOW_UNITS)[number];
-  const stop = atFlowDecision(existing) ? FLOW_STOPS[flowUnit] : null;
+  const refusal = flowDecisionRefusal(existing);
+  if (refusal !== null) throw new Error(refusal);
+  const stop = FLOW_STOPS[options.flowUnit as (typeof ALLOWED_FLOW_UNITS)[number]];
   const updated = setDeliveryCursor(
     db,
     {
@@ -138,8 +161,8 @@ export function setNavigatorFlowUnit(
       activeItem: existing.activeItem,
       activeItemTitle: existing.activeItemTitle,
       activeItemLevel: existing.activeItemLevel,
-      activeCheckpoint: stop?.checkpoint ?? existing.activeCheckpoint,
-      pendingConfirmation: stop?.confirmation ?? existing.pendingConfirmation,
+      activeCheckpoint: stop.checkpoint,
+      pendingConfirmation: stop.confirmation,
       lastDeliveryEvent: "navigator_flow_unit_selected",
       cadenceProfile: existing.cadenceProfile,
       cadenceLimits: existing.cadenceLimits,
