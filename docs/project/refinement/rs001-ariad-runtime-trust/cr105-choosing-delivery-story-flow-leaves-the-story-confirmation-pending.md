@@ -533,6 +533,58 @@ Evidence:
 Remaining: plateau 4, meaning the route's output recorded, Navigator validation, the
 handoff review, Debt Review, and Done.
 
+### The route after the change (2026-09-28)
+
+The same route at `be66a102`, with CI green on it, in bash and zsh alike. Every pass
+condition holds, and no fail marker appears:
+
+```text
+--- step 1: pull the Delivery Story; Expand stops for the next story
+  answer: <<<ARIAD:DELIVERY_STORY_READY>>> <<<ARIAD:ARTIFACTS_MATERIALIZED>>>
+  last event: expand
+  pending confirmation: navigator_story_confirmation
+  active checkpoint: next_story_confirmation
+  allowed next actions: - answer_pending_confirmation - inspect_method
+--- step 2: choose Delivery Story flow; the scope question is asked
+  answer: <<<ARIAD:DELIVERY_STORY_SCOPE_CONFIRMATION>>>
+  last event: navigator_flow_unit_selected
+  pending confirmation: navigator_scope_confirmation
+  active checkpoint: delivery_story_scope_confirmation
+  allowed next actions: - answer_pending_confirmation - inspect_method
+--- step 3: switch back to story by story
+  answer: <<<ARIAD:NEXT_STORY_CONFIRMATION>>>
+  last event: navigator_flow_unit_selected
+  pending confirmation: navigator_story_confirmation
+  active checkpoint: next_story_confirmation
+  allowed next actions: - answer_pending_confirmation - inspect_method
+--- step 4: Delivery Story flow again, then its Plan
+  answer: <<<ARIAD:DELIVERY_STORY_PLAN_CHECKPOINT>>> <<<ARIAD:ARTIFACTS_MATERIALIZED>>>
+  last event: delivery_story_plan
+  pending confirmation: navigator_delivery_story_plan_approval
+  active checkpoint: after_delivery_story_plan
+--- step 5: switch to story by story with the Delivery Story Plan awaiting approval
+  answer: Error: no flow unit was chosen: CV1.DS1's Delivery Story Plan is already recorded, and the flow unit is chosen before it.
+  last event: delivery_story_plan
+  pending confirmation: navigator_delivery_story_plan_approval
+  active checkpoint: after_delivery_story_plan
+--- step 6: a story at its Debt Review (CR090)
+│ Navigator check                                        │
+│ If there is no relevant debt to address now, I can     │
+│ record this as no action needed and continue toward    │
+│ closure.                                               │
+--- step 7: the method Ariad describes (CR090 audit)
+lifecycle
+- Pull chooses the focus
+- Prepare reads the terrain
+- Expand unfolds the granularity
+- Plan firms the contract
+- Implement changes the system
+- Validation proves behavior
+- Review faces the debt
+- Coherence integrates the traces
+- Done records and closes
+```
+
 ## Outcome
 
 Pending.
