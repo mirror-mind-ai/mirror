@@ -502,6 +502,37 @@ Evidence:
 
 Remaining: CR090. Next: plateau 3.
 
+### Plateau 3 handoff (2026-09-28)
+
+Now true: Ariad's output reads in one language (CR090). `DEBT_REVIEW_STARTED` offers to
+"record this as no action needed", the runtime's own words for `no_action`, where it
+said "sem ação necessária". `build inspect-method ariad` lists the nine lifecycle
+glosses in English, from the method definition in `ts/src/builder/ariadMethod.ts`
+(decision C2). A guard in `ts/test/builder/oneLanguage.test.ts` fails on a Portuguese
+letter in any line of Builder source that is not a comment, unless that line names a
+listed input. The one listed input is `QUERY_SECTIONS`, which reads section names from
+project documents.
+
+Evidence:
+
+- Red first:
+  - the Debt Review surface, reached through the real commands over a scratch
+    project, still read "sem ação necessária";
+  - `inspect-method` listed the Portuguese glosses;
+  - the guard found both.
+- Golden edits, by script with asserted counts and a README row:
+  - `builder-command`: the three Debt Review cards and the `inspect-method` render;
+  - `builder-method`: the nine meanings in the method definition, and the one
+    inspection surface.
+  The script re-implemented the card's wrap and padding, and required the old
+  paragraph's wrap to match every recorded card before it replaced any.
+- Route steps 6 and 7 now print their pass conditions.
+- The full suite passes (2,830 tests), along with typecheck, lint, the repository
+  checks, and the Builder lifecycle smoke. CI was green on plateau 2.
+
+Remaining: plateau 4, meaning the route's output recorded, Navigator validation, the
+handoff review, Debt Review, and Done.
+
 ## Outcome
 
 Pending.

@@ -97,39 +97,39 @@ export const ARIAD_METHOD: MethodDefinition = {
   lifecycle: [
     {
       id: "pull",
-      meaning: "escolhe o foco",
+      meaning: "chooses the focus",
     },
     {
       id: "prepare",
-      meaning: "lê o terreno",
+      meaning: "reads the terrain",
     },
     {
       id: "expand",
-      meaning: "desdobra granularidade",
+      meaning: "unfolds the granularity",
     },
     {
       id: "plan",
-      meaning: "firma o contrato",
+      meaning: "firms the contract",
     },
     {
       id: "implement",
-      meaning: "muda o sistema",
+      meaning: "changes the system",
     },
     {
       id: "validation",
-      meaning: "prova comportamento",
+      meaning: "proves behavior",
     },
     {
       id: "review",
-      meaning: "encara a dívida",
+      meaning: "faces the debt",
     },
     {
       id: "coherence",
-      meaning: "integra os rastros",
+      meaning: "integrates the traces",
     },
     {
       id: "done",
-      meaning: "registra e fecha",
+      meaning: "records and closes",
     },
   ],
   workItemLevels: [

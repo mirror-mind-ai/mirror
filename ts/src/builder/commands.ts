@@ -1774,10 +1774,10 @@ function renderDebtReviewHandoff(activeItem: string | null): string {
     miniCardText(activeItem || "active item"),
     "│                                                        │",
     miniCardText("Navigator check"),
-    // The Portuguese fragment is Python's, in an otherwise English surface.
-    // Reproduced, not corrected: changing it is a product change.
+    // "no action needed" is the runtime's own word for `no_action`. The oracle had a
+    // Portuguese phrase here, in an English sentence (CR090).
     ...miniCardWrapped(
-      "If there is no relevant debt to address now, I can record this as sem ação necessária and continue toward closure.",
+      "If there is no relevant debt to address now, I can record this as no action needed and continue toward closure.",
     ),
     "╰────────────────────────────────────────────────────────╯",
   ].join("\n")}\n`;
