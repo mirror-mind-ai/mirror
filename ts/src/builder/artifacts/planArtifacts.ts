@@ -9,10 +9,10 @@
 // destroys authored work silently, in someone else's git history — the worst defect
 // available in this story, and the subject of CR004/CR015/CR079.
 //
-// The generated `plan.md` is also read back by
-// `unfilledPlanSectionsFor`, so its `## ` headings are a contract with the authority
-// module, not decoration: rename one and a freshly scaffolded Plan reads as
-// incomplete forever.
+// The generated `plan.md` is also read back by `planSectionsToAuthor`
+// (`scaffoldState.ts`), the rule both approval routes apply, so its `## ` headings
+// are a contract with the approval rule, not decoration: rename one and a freshly
+// scaffolded Plan reads as incomplete forever.
 
 import { mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";

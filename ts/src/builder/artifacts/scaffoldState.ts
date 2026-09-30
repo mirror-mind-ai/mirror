@@ -12,7 +12,7 @@
 //   * `missing`   -- the file, or the `## ` heading, is not there;
 //   * `unfilled`  -- empty, or holding a line that starts with `pending`, is a
 //                    throwaway token, or matches the placeholder pattern: the rule
-//                    `unfilledPlanSectionsFor` has always applied;
+//                    Python's `unfilled_plan_sections_for` applied;
 //   * `scaffold`  -- every non-blank line is one the scaffold would write under this
 //                    heading, with the `{title}` slot wildcarded;
 //   * `authored`  -- anything else. One real line under a heading is authored.
@@ -117,7 +117,7 @@ export function levelTwoSections(text: string): Map<string, string> {
   return joined;
 }
 
-/** The rule `unfilledPlanSectionsFor` has always applied to a section's body. */
+/** The unfilled rule, Python's `unfilled_plan_sections_for`, for one section's body. */
 export function isUnfilledBody(body: string): boolean {
   const stripped = pyStrip(body);
   if (!stripped) return true;
@@ -213,25 +213,6 @@ export function judgeArtifact(name: ArtifactName, text: string | null): Artifact
 export function artifactState(name: ArtifactName, path: string): ArtifactVerdict {
   if (!existsSync(path)) return judgeArtifact(name, null);
   return judgeArtifact(name, readFileSync(path, "utf8"));
-}
-
-/**
- * Python `unfilled_plan_sections_for`: structure only, never prose judgement.
- *
- * An absent file means EVERY section is unfilled, which is what makes a receipt
- * unusable before the Driver writes the Plan. A section counts as unfilled when it
- * is empty, or when any of its non-blank lines starts with `pending`, is exactly
- * one of the throwaway tokens, or matches the placeholder pattern at line start.
- * A section still holding the scaffold's own sentences is NOT unfilled by this
- * rule; `unauthoredPlanSectionsFor` is the rule that counts it.
- */
-export function unfilledPlanSectionsFor(
-  planPath: string | null,
-  requiredSections: readonly string[],
-): string[] {
-  if (planPath === null || !existsSync(planPath)) return [...requiredSections];
-  const sections = levelTwoSections(readFileSync(planPath, "utf8"));
-  return requiredSections.filter((header) => isUnfilledBody(sections.get(header) ?? ""));
 }
 
 /**

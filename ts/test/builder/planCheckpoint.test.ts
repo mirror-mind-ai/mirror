@@ -157,9 +157,27 @@ test("CR111: the card says what each file is, and what it still needs", () => {
   const noProject = storyWorld();
   const unwritten = planStory(noProject, { withoutProject: true });
   assert.equal(unwritten.storyFiles, null);
-  assert.deepEqual(block(renderPlanCheckpoint(unwritten), "story files"), [
-    "not written: the journey has no project path",
+  const unwrittenCard = renderPlanCheckpoint(unwritten);
+  // The handoff review (finding 2): one reason, stated once, on the package row.
+  assert.deepEqual(block(unwrittenCard, "story package"), [
+    "none: the journey has no project path",
   ]);
+  assert.deepEqual(block(unwrittenCard, "story files"), ["none written"]);
+});
+
+test("CR111 review: with no project, an --objective given is said to be recorded nowhere", () => {
+  const w = storyWorld();
+  const report = planStory(w, {
+    withoutProject: true,
+    objective: "Take an address at checkout.",
+  });
+  const card = renderPlanCheckpoint(report);
+  assert.equal(
+    block(card, "story files").join(" "),
+    "none written, so the --objective given was recorded nowhere",
+  );
+  // Not echoed as plan content: the card still prints no section of the plan.
+  assert.ok(!prose(card).includes("Take an address at checkout."));
 });
 
 test("CR111: the next action follows the file and the route", () => {

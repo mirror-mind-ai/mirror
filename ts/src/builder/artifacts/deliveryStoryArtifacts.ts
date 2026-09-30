@@ -77,8 +77,8 @@ export function placeholderLine(guidance: string): string {
 /**
  * Python `_unfilled_plan_sections_for` in `delivery_story_plan.py`.
  *
- * NOT `planPreauthorization.unfilledPlanSectionsFor`, and the difference is an
- * authority boundary rather than a detail. The Delivery Story check carries two
+ * NOT the story-level rule (`planSectionsToAuthor` in `scaffoldState.ts`), and the
+ * difference is an authority boundary rather than a detail. The Delivery Story check carries two
  * conditions the story-level one does not:
  *
  *   * the section body CONTAINS this section's exact scaffold line

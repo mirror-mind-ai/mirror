@@ -24,14 +24,12 @@ import {
   PRODUCT_PLAN,
   SIBLING_NON_GOAL,
   STORY_INDEX_SECTIONS,
-  STORY_PLAN_REQUIRED_SECTIONS,
   TEST_GUIDE_SECTIONS,
 } from "#builder/artifacts/scaffoldSections.ts";
 import {
   artifactState,
   judgeArtifact,
   planSectionsToAuthor,
-  unfilledPlanSectionsFor,
 } from "#builder/artifacts/scaffoldState.ts";
 import { toAuthorLines } from "#builder/artifacts/storyFiles.ts";
 import { renderTechnicalStoryIndex, renderUserStoryIndex } from "#builder/artifacts/storyIndex.ts";
@@ -317,27 +315,6 @@ describe("reading from disk, and the two plan-section rules", () => {
   it("a missing file is missing", () => {
     directory = mkdtempSync(join(tmpdir(), "cr112-"));
     assert.equal(artifactState("plan.md", join(directory, "plan.md")).state, "missing");
-    assert.deepEqual(
-      unfilledPlanSectionsFor(join(directory, "plan.md"), STORY_PLAN_REQUIRED_SECTIONS),
-      [...STORY_PLAN_REQUIRED_SECTIONS],
-    );
-    assert.deepEqual(unfilledPlanSectionsFor(null, ["Scope"]), ["Scope"]);
-  });
-
-  it("unfilledPlanSectionsFor keeps its rule: a scaffold is filled, an emptied section is not", () => {
-    directory = mkdtempSync(join(tmpdir(), "cr112-"));
-    const path = join(directory, "plan.md");
-    writeFileSync(path, renderPlanArtifact(productReport()), "utf8");
-    assert.deepEqual(unfilledPlanSectionsFor(path, STORY_PLAN_REQUIRED_SECTIONS), []);
-    writeFileSync(
-      path,
-      renderPlanArtifact(productReport()).replace(
-        `- Deliver ${TITLE} as an observable slice.\n- Keep the implementation narrow enough to validate at the Plan-defined checkpoint.\n`,
-        "",
-      ),
-      "utf8",
-    );
-    assert.deepEqual(unfilledPlanSectionsFor(path, STORY_PLAN_REQUIRED_SECTIONS), ["Scope"]);
   });
 
   it("planSectionsToAuthor counts the scaffold's own sentences, and holds a default section to the unfilled rule only", () => {

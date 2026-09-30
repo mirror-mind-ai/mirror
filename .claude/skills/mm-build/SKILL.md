@@ -886,13 +886,15 @@ pasted in. It is not a plan. The Objective, Scope, Acceptance Behavior, and
 Validation Route are what the Navigator approves from: write them for this
 story, in Navigator-facing language. The Non-Goals, Implementation Contract,
 Stop Conditions, and Approval Gate may stand as written when they are true. Unless
-`build show` names `index.md` authored, write its story statement, Outcome, and
-Acceptance Behavior too: it may say scaffold, partly authored, or incomplete.
+the Plan checkpoint or `build show` names `index.md` authored, write its story
+statement, Outcome, and Acceptance Behavior too: it may say scaffold, partly
+authored, or incomplete.
 
 The sequence:
 
 1. `plan-item`.
-2. Author `plan.md`, and `index.md` unless `build show` names it authored.
+2. Author `plan.md`, and `index.md` unless the Plan checkpoint or `build show`
+   names it authored.
 3. Run `build show` and return its `ACTIVE_CHECKPOINT` block. It must read
    `✓ plan.md — authored`; if it does not, author what it names and run it again.
 4. Present the plan from `plan.md`, section by section: the Objective, Scope,

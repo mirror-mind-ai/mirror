@@ -1075,6 +1075,31 @@ The other lenses were silent:
 - product-designer: D1 and D2 held against the corpus. In 13 recorded cards the plan was
   authored before Plan, and the card now says so and hands it to the Navigator to read.
 
+### Debt paid (2026-09-30)
+
+The Navigator decided to pay all three findings before Done.
+
+1. **The dead rule is gone.** `unfilledPlanSectionsFor` and its two tests were
+   deleted. The rule it applied, `isUnfilledBody`, stays: it is used and tested
+   through the section states. The comments in `planArtifacts.ts`,
+   `deliveryStoryArtifacts.ts`, and `scaffoldState.ts` now name `planSectionsToAuthor`,
+   or Python's `unfilled_plan_sections_for` where they describe where the rule came
+   from. No reference to a removed name remains in `ts/src` or `ts/test`.
+2. **A no-project Plan says what it could not record.** The package row gives the
+   reason once: `none: the journey has no project path`, where it said `not
+   materialized yet`. The story files row says `none written`, and, when an
+   `--objective` was given, `none written, so the --objective given was recorded
+   nowhere`. The card still prints no section of the plan: the objective is not
+   echoed, and a test pins both. Through the CLI, the reproduction from the review
+   now prints that row. No recorded card lacks a project, so no golden moved.
+3. **The skill points at the surface the agent already has.** "Unless the Plan
+   checkpoint or `build show` names it authored", in the authoring paragraph and in
+   step 2. The Claude copies were regenerated, and skill parity is clean.
+
+2886 tests pass, and the Builder smoke reached its end. The validation route, rerun,
+printed the validated output byte for byte: the debt touched no path the Navigator
+accepted.
+
 ## Outcome
 
 Pending.

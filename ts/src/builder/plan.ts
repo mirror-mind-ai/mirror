@@ -79,6 +79,12 @@ export interface BuilderPlanReport {
    * was written.
    */
   readonly storyFiles: readonly ArtifactVerdict[] | null;
+  /**
+   * An `--objective` given where nothing is written: with no project there is no
+   * plan.md to hold it, and the card says so rather than drop it silently (CR111's
+   * handoff review, finding 2).
+   */
+  readonly unrecordedObjective: boolean;
   readonly preauthorizationRecorded: boolean;
   readonly nextEvent: string;
 }
@@ -224,7 +230,7 @@ export function planLifecycleItem(
     deps,
   );
 
-  const report: Omit<BuilderPlanReport, "storyFiles"> = {
+  const report: Omit<BuilderPlanReport, "storyFiles" | "unrecordedObjective"> = {
     journey,
     method: method.id,
     activeItem: existing.activeItem,
@@ -257,7 +263,11 @@ export function planLifecycleItem(
   // Judged after the write, so the verdict describes the files as they now stand:
   // the scaffold Plan just wrote, or the file a person wrote before it (CR111).
   const storyFiles = artifactPath === null ? null : judgeStoryFiles(dirname(artifactPath));
-  return { ...report, storyFiles };
+  return {
+    ...report,
+    storyFiles,
+    unrecordedObjective: artifactPath === null && Boolean(options.objective),
+  };
 }
 
 /** Python `_granularity_message`. */
@@ -290,11 +300,17 @@ function planNextAction(report: BuilderPlanReport): string {
     : "Driver authors plan.md and presents it; the Navigator approves it or requests changes.";
 }
 
-/** The story files block: `build show`'s rows for the same files, or why there are none. */
+/**
+ * The story files block: `build show`'s rows for the same files. With no project
+ * nothing was written; the package row says why, and this one says what that cost.
+ */
 function storyFilesBlock(report: BuilderPlanReport): string[] {
-  return report.storyFiles === null
-    ? cardWrapped("not written: the journey has no project path")
-    : report.storyFiles.flatMap(storyFileLines);
+  if (report.storyFiles !== null) return report.storyFiles.flatMap(storyFileLines);
+  return cardWrapped(
+    report.unrecordedObjective
+      ? "none written, so the --objective given was recorded nowhere"
+      : "none written",
+  );
 }
 
 /** Python `_plan_boundary`. */
@@ -336,7 +352,7 @@ export function renderPlanCheckpoint(report: BuilderPlanReport): string {
     cardText(`level: ${report.activeItemLevel ?? "unknown"}`),
     "│                                                        │",
     cardText("story package"),
-    ...cardWrapped(written ? packagePath : "not materialized yet"),
+    ...cardWrapped(written ? packagePath : "none: the journey has no project path"),
     "│                                                        │",
     cardText("story files"),
     ...storyFilesBlock(report),
