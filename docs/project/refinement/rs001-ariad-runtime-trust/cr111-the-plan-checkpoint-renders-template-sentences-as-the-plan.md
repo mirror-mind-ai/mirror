@@ -1006,6 +1006,29 @@ Every step meets its pass condition:
 
 Next: the Navigator's walk of the route, then the handoff review.
 
+### Navigator validation (2026-09-30)
+
+The Navigator walked the [validation route](#validation-route) and accepted it.
+
+- The route was run as `bash tmp/cr111-route.sh` from the repository root, in the
+  Navigator's own shell. Its output matched the
+  [recorded output](#the-route-after-the-change-2026-09-30) line for line, compared
+  with `diff`. The `plan.md` digest was `dc4b78f3…`, so Plan wrote the same scaffold
+  bytes as before the change:
+  1. three story files and no plan block on the card, and 0 placeholder sentences on
+     any card;
+  2. the card and `build show` identical in the scaffold, authored, and partly
+     authored states;
+  3. `✓ plan.md — authored` over the Driver's own plan, agreeing with the artifacts
+     card, and the next action handing the plan to the Navigator to read;
+  4. `--objective` leaving `partly authored` without Objective;
+  5. the preauthorized next action telling the Driver to author first;
+  6. `build show` and the refusal naming the same two sections.
+
+CI was green on every push that carried the change: plateau 1 (`e2d03dc0`), plateau 2
+(`b6a33ad5`), plateau 3 (`2646855c`), and plateau 4 (`00601d23`). Each ran Tests on
+both legs and the smoke.
+
 ## Outcome
 
 Pending.
