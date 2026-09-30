@@ -858,6 +858,29 @@ That half of step 3 is [CR111](cr111-the-plan-checkpoint-renders-template-senten
 next in floor order; the records half, CR112's, reads `○ plan.md — scaffold` with
 the four sections to author.
 
+
+### Navigator validation (2026-09-30)
+
+The Navigator walked the [validation route](#validation-route) and accepted it.
+
+- The route was extracted from this document and run as `bash tmp/cr112-route.sh` from
+  the repository root. It printed the [recorded output](#the-route-after-the-change-2026-09-30)
+  line for line, with the same `plan.md` digest (`7a3dba32…`), so Plan wrote the
+  scaffold the route expects, byte for byte, in the Navigator's shell as in the Driver's:
+  1. Expand's template statement in the child index;
+  2. `○ index.md — scaffold` with its three sections, `○ plan.md — missing`;
+  3. the plan and the guide named scaffolds with their sections (the card half is CR111's);
+  4. `CHECKPOINT_REFUSED`, the cursor still at `plan`;
+  5. a refusal naming `Objective, Acceptance Behavior, Validation Route` with
+     `○ plan.md — partly authored`, then `PLAN_APPROVED`;
+  6. `PLAN_PREAUTHORIZATION_MISMATCH` listing the four sections, the cursor at `plan`;
+  7. the ordinary fallback approving after authoring;
+  8. `✓ plan.md — authored`, then `PLAN_APPROVED` and `IMPLEMENTATION_STARTED`.
+
+CI was green on the pushes that carried the code: plateau 2 (`2839d4ca`) and plateau 3
+(`8c76c34b`), Tests on both legs and the smoke. Plateau 1 (`d0d68089`) was red on lint,
+recorded above.
+
 ## Outcome
 
 Pending.
