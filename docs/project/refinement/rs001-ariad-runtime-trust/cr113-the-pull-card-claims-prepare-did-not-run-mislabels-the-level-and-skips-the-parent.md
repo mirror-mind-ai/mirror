@@ -470,6 +470,41 @@ the tree without DS1, and `Prepare was not executed automatically.` above the Pr
 card, under a marker naming a Delivery Story. Step 4 is D5's source row. Steps 2 and
 5 are the ribbon, `○ Expand` before Plan and `✓ Expand` after it.
 
+### Plateau 1 handoff (2026-09-30)
+
+Now true: the Pull card names the level it pulled, `USER STORY ACTIVATED` or `TECHNICAL
+STORY ACTIVATED`, under `ITEM_ACTIVATED`. The Delivery Story title keeps its old bytes,
+padded to terminal columns like every Builder title literal. The card claims nothing
+about Prepare. Its placement is the item's lineage, drawn by `placementRows`, which the
+Ready card now draws its tree with too; Ready's recorded bytes did not move. Its source
+row says whether the roadmap names the item. The skill's Pull section says what to do
+when it does not. Route steps 2 to 4 meet their pass conditions for the card, and step
+1 is unchanged. The ribbons are plateau 2's.
+
+The 9 recorded cards were edited by script, under criterion 7, and listed in
+`ts/test/goldens/README.md`. In 6 the source row now reads `not in the roadmap`. One of
+them is the command fixture's Technical Story, `CV1.DS1.TS1`, which its roadmap never
+names: D5 telling the truth about a recorded pull. Three CR018 tests asserted the old
+tree row and header. They still prove that a title is whole where it is read and
+clipped where it is restated; they now read the level's header and the story's row one
+level down. `test/builder/pullCard.test.ts` holds seven tests. 2893 tests pass, and the
+Builder smoke reached its end.
+
+One departure from the plan's text, found in implementation: **the listed check does
+not come from `inspectPullCandidates` alone.** That reader keeps only the statuses that
+can be pulled and drops anything with a Done artifact. On its own it would call a story
+marked Done, or a row in a Delivery Story's candidate table with no package yet, "not
+in the roadmap", which is false and defeats D5's own words. The second pass's engineer
+finding named it; the finding was mine, and it was wrong. So the item is named when a
+package heading claims it (the status-blind rule `resolveStoryDirectory` and Expand
+share), when its Delivery Story's candidate table lists it, or when it is a pull
+candidate. A Delivery Story's title comes from its package heading, else the index's
+listing. Expand's candidate-table parser moved to `roadmapGrammar.ts`, unchanged, so
+Pull and Expand read the table by one rule. A test pins the Done case. The behavior D5
+approved did not change; only the reader that implements it.
+
+Next: plateau 2, the ribbon.
+
 ## Outcome
 
 Pending.

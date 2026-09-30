@@ -2336,7 +2336,7 @@ test("CR018: a title reaches Pull, Plan, Ready, and the Snapshot whole", () => {
       "header",
     );
     assert.ok(
-      pullRows.some((row) => row.startsWith("  └─ 🟦[TS1] Remove the dormant pair")),
+      pullRows.some((row) => row.startsWith("     └─ 🟩[TS1] Remove the dormant pair")),
       "tree",
     );
 
@@ -2560,7 +2560,8 @@ test("CR018: a title is whole where it is read, and a one-line restatement ends 
     assert.equal(run(["sync-cursor"]).exitCode, 0);
 
     const pullRows = allCardRows(pull("CV1.DS1.TS1", LONG.ts1, "technical_story").stdout);
-    const header = pullRows.findIndex((row) => row.includes("DELIVERY STORY ACTIVATED"));
+    // CR113: the card names the level it pulled, a Technical Story here.
+    const header = pullRows.findIndex((row) => row.includes("TECHNICAL STORY ACTIVATED"));
     assert.equal(
       wrappedFrom(pullRows.slice(header + 2), () => true),
       LONG.ts1,
@@ -2571,7 +2572,8 @@ test("CR018: a title is whole where it is read, and a one-line restatement ends 
       `🟪[CV1] ${LONG.cv}`,
       "Pull CV row",
     );
-    assertClipped(pullRows, "  └─ 🟦[TS1] ", `  └─ 🟦[TS1] ${LONG.ts1}`);
+    // CR113: a story sits under its Delivery Story, in the story color.
+    assertClipped(pullRows, "     └─ 🟩[TS1] ", `     └─ 🟩[TS1] ${LONG.ts1}`);
 
     const readyRows = allCardRows(pull("CV1.DS2", LONG.ds2, "delivery_story").stdout);
     assert.equal(
@@ -2670,7 +2672,8 @@ test("CR018: a title's links become their labels where the title enters Ariad", 
     assert.equal(pulled.exitCode, 0, pulled.stderr);
     assert.equal(getDeliveryCursor(db, "demo")?.activeItemTitle, LINKED.ts1Plain, "the cursor");
     const pullRows = allCardRows(pulled.stdout);
-    const header = pullRows.findIndex((row) => row.includes("DELIVERY STORY ACTIVATED"));
+    // CR113: the card names the level it pulled, a Technical Story here.
+    const header = pullRows.findIndex((row) => row.includes("TECHNICAL STORY ACTIVATED"));
     assert.equal(
       wrappedFrom(pullRows.slice(header + 2), () => true),
       LINKED.ts1Plain,

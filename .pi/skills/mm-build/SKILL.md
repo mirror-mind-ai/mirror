@@ -622,6 +622,9 @@ expands it into implementable child stories and recommends the next
 User/Technical Story to plan. Pull must not create a Plan, approve a checkpoint,
 implement, validate, review, close, commit, push, or release.
 
+When the Pull card's source reads `not in the roadmap`, say so to the Navigator
+before planning: the code may be mistyped, or the roadmap behind.
+
 When the Navigator confirms the recommended child story after an Expand surface,
 pull that child story explicitly with `--item-level user_story` or
 `--item-level technical_story` using the recommended code/title from the surface.

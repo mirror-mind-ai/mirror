@@ -28,9 +28,9 @@ export const NO_ITEM_PULLED_YET = "no item pulled yet";
 /** The header of a candidate list that no journey scope narrows. */
 export const PROJECT_WIDE_CANDIDATES = "project-wide candidates";
 
-const NO_AUTHORED_PACKAGE = "no authored package";
-const NO_PROJECT_PATH = "no project path configured";
-const claimedBy = (count: number) => `claimed by ${count} packages`;
+export const NO_AUTHORED_PACKAGE = "no authored package";
+export const NO_PROJECT_PATH = "no project path configured";
+export const claimedBy = (count: number) => `claimed by ${count} packages`;
 
 /**
  * What stands where a recommendation would when there is none: the literal Pull

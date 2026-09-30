@@ -109,7 +109,7 @@ import {
 import { planLifecycleItem, renderPlanCheckpoint } from "./plan.ts";
 import { PlanPreauthorizationMismatch } from "./planPreauthorization.ts";
 import { prepareLifecycleItem, projectContractRules, renderPrepareReport } from "./prepare.ts";
-import { placementCvTitle, pullLifecycleItem, renderPullReport } from "./pull.ts";
+import { placementCvTitle, pullLifecycleItem, pullPlacement, renderPullReport } from "./pull.ts";
 import { inspectPullCandidates, inspectRoadmapSnapshot } from "./pullCandidates.ts";
 import {
   renderProjectPositionReport,
@@ -826,7 +826,7 @@ export function runPullItem(
 
   return {
     stdout:
-      printed(renderPullReport(pullReport, placementCvTitle(projectPath, pullReport.cursor))) +
+      printed(renderPullReport(pullReport, pullPlacement(projectPath, pullReport.cursor))) +
       printed(renderPrepareReport(prepareReport)),
     stderr: "",
     exitCode: 0,

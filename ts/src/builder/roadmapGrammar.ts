@@ -136,3 +136,86 @@ export function linkFreeTitle(title: string): string {
   }
   return result + title.slice(last).replace(INLINE_LINK_RE, "$1");
 }
+
+/** Python `_CandidateChild`. */
+export interface CandidateChild {
+  readonly code: string;
+  readonly title: string;
+  readonly level: string;
+  readonly status: string;
+}
+
+const REQUIRED_COLUMNS = ["code", "story", "type", "status"] as const;
+
+/**
+ * Python `_parse_candidate_stories`: a Delivery Story's `## Candidate Stories` table,
+ * header-driven. Expand reads its children with it, and Pull asks it whether a
+ * Delivery Story names a story (CR113), so the two read the table by one rule.
+ *
+ * Line-by-line rather than block-by-block, and the details matter:
+ *
+ *   * a non-table line BREAKS the scan once a header was found, but is SKIPPED
+ *     before — so the first canonical table wins and nothing after it is read;
+ *   * `line.strip("|")` removes every leading and trailing pipe, not one;
+ *   * duplicate header names keep the LAST index, because Python builds the map
+ *     with a dict comprehension over `enumerate`;
+ *   * a row shorter than the widest required column is skipped, not an error,
+ *     which is how a ragged authored table degrades instead of blocking.
+ */
+export function parseCandidateStories(content: string): CandidateChild[] {
+  const children: CandidateChild[] = [];
+  let columns: Map<string, number> | null = null;
+
+  for (const rawLine of content.split("\n")) {
+    const line = pyStrip(rawLine);
+    if (!line.startsWith("|")) {
+      if (columns !== null) break;
+      continue;
+    }
+    const cells = stripPipes(line)
+      .split("|")
+      .map((cell) => pyStrip(cell));
+
+    if (columns === null) {
+      // `cell.lower()` — ASCII header names in practice; Python's `str.lower()`
+      // and JavaScript's `toLowerCase()` differ only on characters no canonical
+      // header uses (`İ`, `ẞ`), and a divergence there fails closed by not
+      // matching the required set.
+      const lowered = cells.map((cell) => cell.toLowerCase());
+      if (REQUIRED_COLUMNS.every((name) => lowered.includes(name))) {
+        columns = new Map();
+        lowered.forEach((name, index) => {
+          columns?.set(name, index);
+        });
+      }
+      continue;
+    }
+
+    if (line.startsWith("|---")) continue;
+    if (cells.every((cell) => cell === "")) continue;
+    if (cells.every((cell) => [...cell].every((character) => character === "-"))) continue;
+
+    const widest = Math.max(...[...columns.values()]);
+    if (cells.length <= widest) continue;
+
+    const code = stripMarkdownLink(cells[columns.get("code") ?? 0] ?? "");
+    if (!code) continue;
+    const typeText = (cells[columns.get("type") ?? 0] ?? "").toLowerCase();
+    children.push({
+      code,
+      title: linkFreeTitle(cells[columns.get("story") ?? 0] ?? ""),
+      level: typeText.includes("technical") ? "technical_story" : "user_story",
+      status: cells[columns.get("status") ?? 0] ?? "",
+    });
+  }
+  return children;
+}
+
+/** Python `str.strip("|")`: remove every leading and trailing pipe. */
+function stripPipes(line: string): string {
+  let start = 0;
+  let end = line.length;
+  while (start < end && line[start] === "|") start += 1;
+  while (end > start && line[end - 1] === "|") end -= 1;
+  return line.slice(start, end);
+}
