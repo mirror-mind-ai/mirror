@@ -9,7 +9,7 @@ If a linked document and this index disagree, this index wins.
 ## Current Focus
 
 - Refinement Story: RS001
-- Change Request: none
+- Change Request: CR111
 
 Selecting a focus is an explicit project decision. Reading this file never selects or
 executes work.
@@ -68,7 +68,7 @@ Open work is ordered intentionally. Terminal history follows open work.
 | 34 | [CR108](rs010-cv22-oracle-and-port-hygiene/cr108-the-claude-code-copies-of-other-skills-drift-from-pi-in-behavior.md) | RS010 | The Claude Code copies of other skills drift from Pi in behavior, and no guard compares them | captured | — | — |
 | 35 | [CR109](rs009-cv22-front-door-routing-correctness/cr109-mirror-log-help-records-help-and-renames-the-conversation.md) | RS009 | `mirror log --help` records `--help` as the response and renames the conversation to it | captured | — | — |
 | 36 | [CR110](rs010-cv22-oracle-and-port-hygiene/cr110-the-doc-link-checker-reads-a-link-inside-inline-code-as-a-real-link.md) | RS010 | The doc-link checker reads a link inside inline code as a real link | captured | — | — |
-| 37 | [CR111](rs001-ariad-runtime-trust/cr111-the-plan-checkpoint-renders-template-sentences-as-the-plan.md) | RS001 | The Plan checkpoint renders template sentences as the plan | captured | — | — |
+| 37 | [CR111](rs001-ariad-runtime-trust/cr111-the-plan-checkpoint-renders-template-sentences-as-the-plan.md) | RS001 | The Plan checkpoint renders template sentences as the plan | in_progress | @viniciusteles | `mirror-ts-core` |
 | 38 | [CR113](rs001-ariad-runtime-trust/cr113-the-pull-card-claims-prepare-did-not-run-mislabels-the-level-and-skips-the-parent.md) | RS001 | The Pull card claims Prepare did not run, names every level a Delivery Story, and skips the parent | captured | — | — |
 | 39 | [CR114](rs001-ariad-runtime-trust/cr114-the-builder-resume-offers-prepare-on-a-completed-item.md) | RS001 | The Builder resume offers Prepare on a completed item | captured | — | — |
 | 40 | [CR115](rs001-ariad-runtime-trust/cr115-the-cadence-profile-is-shown-on-no-read-only-surface.md) | RS001 | The cadence profile that changes what Plan does is shown on no read-only surface | captured | — | — |
