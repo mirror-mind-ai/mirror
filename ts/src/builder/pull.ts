@@ -44,7 +44,12 @@ import {
   setTo,
 } from "./deliveryCursor.ts";
 import { renderLifecycleRibbon } from "./lifecycleRibbon.ts";
-import { inspectPullCandidates, inspectRoadmapSnapshot, roadmapPaths } from "./pullCandidates.ts";
+import {
+  inspectPullCandidates,
+  inspectRoadmapSnapshot,
+  type PullCandidate,
+  roadmapPaths,
+} from "./pullCandidates.ts";
 import { linkFreeTitle, matchHeading, parseCandidateStories } from "./roadmapGrammar.ts";
 import { readRoadmapFile } from "./roadmapScan.ts";
 import { resolveRoadmapScope, type ScopeCursor } from "./roadmapScope.ts";
@@ -226,13 +231,23 @@ export function pullPlacement(projectRoot: string | null, cursor: ScopeCursor): 
             candidates.find((candidate) => candidate.code === parentCode)?.title ??
             NO_AUTHORED_PACKAGE,
         };
-  return { cvTitle, deliveryStory, listed: namedByRoadmap(projectRoot, claims, code, dsCode) };
+  return {
+    cvTitle,
+    deliveryStory,
+    listed: namedByRoadmap(projectRoot, claims, candidates, code, dsCode),
+  };
 }
 
-/** Whether the roadmap names `code`: a package claims it, or its Delivery Story's table lists it. */
+/**
+ * Whether the roadmap names `code`, by any of three routes: a package heading claims
+ * it, its Delivery Story's candidate table lists it, or it is a pull candidate. The
+ * candidates are the ones `pullPlacement` already read, so one Pull scans them once
+ * (the handoff review, finding 1).
+ */
 function namedByRoadmap(
   projectRoot: string,
   claims: ReadonlyMap<string, readonly string[]>,
+  candidates: readonly PullCandidate[],
   code: string,
   dsCode: string | null,
 ): boolean {
@@ -245,9 +260,7 @@ function namedByRoadmap(
       return true;
     }
   }
-  return inspectPullCandidates(projectRoot, { journey: "", method: "ariad" }).candidates.some(
-    (candidate) => candidate.code === code,
-  );
+  return candidates.some((candidate) => candidate.code === code);
 }
 
 /** The last segment of a code: the label a tree row carries. */

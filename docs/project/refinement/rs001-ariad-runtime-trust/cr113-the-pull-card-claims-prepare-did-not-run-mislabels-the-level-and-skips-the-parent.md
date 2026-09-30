@@ -655,6 +655,24 @@ The other lenses were silent:
 - product-designer: the recorded command fixture that now reads `not in the roadmap`
   is D5 doing its job. That fixture pulls a code its roadmap never names.
 
+### Debt paid (2026-09-30)
+
+The Navigator decided to pay both findings before Done.
+
+1. **One candidates read per Pull.** `pullPlacement` reads `inspectPullCandidates` once
+   and passes the list to `namedByRoadmap`, whose comment now names its three routes.
+   For an item the roadmap does not name, measured on this repository's roadmap, the
+   placement went from 141.5 ms to 94.0 ms; for a named item it is unchanged, about
+   86 ms.
+2. **The two unnamed dependencies are named.** A Pull-card test titles a Delivery Story
+   that the roadmap index lists without a package by that listing, and finds the story
+   it does not list not in the roadmap. A mutant that removes the fallback fails it and
+   nothing else. The front-door walk's list now names `DEBT_REVIEW_STARTED` and
+   `DONE_CLOSURE_CONFIRMATION`.
+
+2898 tests pass, and the Builder smoke reached its end. The validation route, rerun,
+printed the validated output byte for byte.
+
 ## Outcome
 
 Pending.

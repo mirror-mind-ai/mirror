@@ -156,6 +156,24 @@ test("CR113: a story the roadmap marks Done is still named by it", () => {
   assert.deepEqual(block(pullCard(w, US1), "source"), ["roadmap candidate"]);
 });
 
+// The handoff review (finding 2): a Delivery Story with no package of its own is titled
+// by the roadmap index's listing of it, and a story that listing does not name is not
+// in the roadmap.
+test("CR113 review: a Delivery Story the index lists without a package is titled by that listing", () => {
+  const w = storyWorld();
+  const root = join(w.project, ROADMAP);
+  mkdirSync(root, { recursive: true });
+  writeFileSync(
+    join(root, "index.md"),
+    "# Roadmap\n\n## CV1: Checkout\n\n**Status:** 🟡 Planned\n\n" +
+      "Candidate Delivery Stories:\n- DS1 Checkout address\n",
+    "utf8",
+  );
+  const card = pullCard(w, US1);
+  assert.equal(block(card, "roadmap placement")[1], "  └─ 🟦[DS1] Checkout address");
+  assert.deepEqual(block(card, "source"), ["not in the roadmap: pulled by its code"]);
+});
+
 test("CR113: with no project path, every row says so", () => {
   const w = storyWorld();
   const card = pullCard(w, US1, null);

@@ -2043,7 +2043,11 @@ test("CR113: every Delivery ribbon a story's lifecycle prints draws Expand as no
       "PLAN_APPROVED",
       "ACTIVE_CHECKPOINT",
       "VALIDATION_CHECKPOINT",
+      // The two handoffs whose ribbons were fixed strings, named so the walk cannot
+      // stop printing them unnoticed (the handoff review, finding 2).
+      "DEBT_REVIEW_STARTED",
       "DEBT_REVIEW_CHECKPOINT",
+      "DONE_CLOSURE_CONFIRMATION",
       "COHERENCE_CHECKPOINT",
       "DONE_CHECKPOINT",
     ]) {
