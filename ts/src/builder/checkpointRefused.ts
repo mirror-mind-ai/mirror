@@ -39,7 +39,9 @@ export function renderCheckpointRefused(refusal: CheckpointRefusal): string {
   const stage = refusal.cursor === null ? null : lifecycleStageOf(refusal.cursor);
   const body = [
     "Delivery",
-    ...(stage === null ? [] : [renderLifecycleRibbon(stage)]),
+    ...(stage === null
+      ? []
+      : [renderLifecycleRibbon(stage, refusal.cursor?.activeItemLevel ?? null)]),
     "",
     FRAME_TOP,
     cardText("       ■  REQUEST REFUSED"),

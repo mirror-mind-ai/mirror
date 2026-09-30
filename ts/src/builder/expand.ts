@@ -301,7 +301,8 @@ export function expandDeliveryStory(
 export function renderExpandBlocked(activeItem: string, reason: string): string {
   const body = `${[
     "Delivery",
-    renderLifecycleRibbon("expand"),
+    // Expand is a Delivery Story's stage; only a Delivery Story reaches it (CR113).
+    renderLifecycleRibbon("expand", "delivery_story"),
     "",
     "╭────────────────────────────────────────────────────────╮",
     "│        🧭◆  EXPAND BLOCKED                             │",
@@ -333,7 +334,8 @@ export function renderExpandBlocked(activeItem: string, reason: string): string 
 export function renderExpandReport(report: BuilderExpandReport): string {
   const body = `${[
     "Delivery",
-    renderLifecycleRibbon("expand"),
+    // Expand is a Delivery Story's stage; only a Delivery Story reaches it (CR113).
+    renderLifecycleRibbon("expand", "delivery_story"),
     "",
     "╭────────────────────────────────────────────────────────╮",
     "│        🧭◆  EXPAND DECISION                            │",

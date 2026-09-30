@@ -130,7 +130,7 @@ export function approvePlanCheckpoint(
 export function renderPlanApproval(cursor: BuilderDeliveryCursor): string {
   const body = `${[
     "Delivery",
-    renderLifecycleRibbon("implement"),
+    renderLifecycleRibbon("implement", cursor.activeItemLevel),
     "",
     "╭────────────────────────────────────────────────────────╮",
     "│        🟩■  PLAN APPROVED                              │",

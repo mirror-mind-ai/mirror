@@ -91,7 +91,7 @@ export function renderActiveCheckpoint(view: ActiveCheckpointView): string {
   const stage = view.cursor === null ? null : lifecycleStageOf(view.cursor);
   const body = [
     "Delivery",
-    ...(stage === null ? [] : [renderLifecycleRibbon(stage)]),
+    ...(stage === null ? [] : [renderLifecycleRibbon(stage, view.cursor?.activeItemLevel ?? null)]),
     "",
     FRAME_TOP,
     cardText("       ■  ACTIVE CHECKPOINT"),

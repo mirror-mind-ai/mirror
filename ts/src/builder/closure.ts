@@ -305,7 +305,7 @@ export function renderValidationCheckpoint(report: BuilderValidationReport): str
   const blocked = report.missingEvidence.length > 0;
   const body = `${[
     "Delivery",
-    renderLifecycleRibbon("validate"),
+    renderLifecycleRibbon("validate", report.cursor.activeItemLevel),
     "",
     "╭────────────────────────────────────────────────────────╮",
     "│        🧪■  VALIDATION CHECKPOINT                      │",
@@ -518,7 +518,7 @@ export function renderReviewCheckpoint(report: BuilderReviewReport): string {
   const blocked = report.missingDecision.length > 0;
   const body = `${[
     "Delivery",
-    renderLifecycleRibbon("debt_review"),
+    renderLifecycleRibbon("debt_review", report.cursor.activeItemLevel),
     "",
     "╭────────────────────────────────────────────────────────╮",
     "│        🔎■  DEBT REVIEW CHECKPOINT                     │",
@@ -697,7 +697,7 @@ export function renderCoherenceCheckpoint(report: BuilderCoherenceReport): strin
   const blocked = report.missingCoherence.length > 0;
   const body = `${[
     "Delivery",
-    renderLifecycleRibbon("done"),
+    renderLifecycleRibbon("done", report.cursor.activeItemLevel),
     "",
     "╭────────────────────────────────────────────────────────╮",
     "│        ◉■  COHERENCE CHECKPOINT                        │",
@@ -885,7 +885,7 @@ export function renderDoneCheckpoint(report: BuilderDoneReport): string {
   const blocked = report.missingDone.length > 0;
   const body = `${[
     "Delivery",
-    renderLifecycleRibbon("done"),
+    renderLifecycleRibbon("done", report.cursor.activeItemLevel),
     "",
     "╭────────────────────────────────────────────────────────╮",
     "│        🟩■  DONE CHECKPOINT                             │",

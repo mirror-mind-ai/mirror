@@ -59,6 +59,7 @@ import {
   validateLifecycleItem,
 } from "./closure.ts";
 import {
+  type BuilderDeliveryCursor,
   type CursorWriteDeps,
   getDeliveryCursor,
   renderDeliveryCursorSyncReport,
@@ -98,6 +99,7 @@ import {
   renderImplementationGuardBlocked,
 } from "./implementationGuard.ts";
 import { LifecycleRefusal } from "./lifecycleRefusal.ts";
+import { renderLifecycleRibbon } from "./lifecycleRibbon.ts";
 import { getAdoptedMethod, setAdoptedMethod } from "./methodAdoption.ts";
 import {
   AVAILABLE_METHODS,
@@ -526,7 +528,12 @@ export function runCheckImplementation(
   } catch (error) {
     if (!(error instanceof ImplementationBlockedError)) throw error;
     return {
-      stdout: printed(renderImplementationGuardBlocked(error.message)),
+      stdout: printed(
+        renderImplementationGuardBlocked(
+          error.message,
+          getDeliveryCursor(context.db, journey)?.activeItemLevel ?? null,
+        ),
+      ),
       stderr: "",
       exitCode: 1,
     };
@@ -1585,7 +1592,7 @@ export function runValidateDeliveryStory(
     // Same CLI-only mini-card the story-level Validate prints, on the same
     // condition: a passed validation offers Debt Review.
     trailer: (report) =>
-      report.status === "passed" ? printed(renderDebtReviewHandoff(report.cursor.activeItem)) : "",
+      report.status === "passed" ? printed(renderDebtReviewHandoff(report.cursor)) : "",
   });
 }
 
@@ -1620,9 +1627,7 @@ export function runReviewDeliveryStory(
       ),
     // Keyed off the REQUESTED decision, as Python is — not off the report.
     trailer: (report) =>
-      options.decision === "no_action"
-        ? printed(renderDoneClosureConfirmation(report.cursor.activeItem))
-        : "",
+      options.decision === "no_action" ? printed(renderDoneClosureConfirmation(report.cursor)) : "",
   });
 }
 
@@ -1723,10 +1728,15 @@ export function runDoneDeliveryStory(
   });
 }
 
-function renderDebtReviewHandoff(activeItem: string | null): string {
+/**
+ * The handoff after an accepted validation. Its ribbon was a fixed string, so it drew a
+ * story's Expand as done where every other surface now draws it not applicable (CR113).
+ */
+function renderDebtReviewHandoff(cursor: BuilderDeliveryCursor): string {
+  const activeItem = cursor.activeItem;
   const body = `${[
     "Delivery",
-    "Delivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ✓ Plan → ✓ Implement → ✓ Validate → ◉ Debt Review → ○ Done",
+    renderLifecycleRibbon("debt_review", cursor.activeItemLevel),
     "",
     "╭────────────────────────────────────────────────────────╮",
     "│        🔎  DEBT REVIEW STARTED                        │",
@@ -1750,11 +1760,12 @@ function renderDebtReviewHandoff(activeItem: string | null): string {
   return wrapAriadSurface("debt_review_started", body);
 }
 
-/** Python `_render_done_closure_confirmation`. */
-function renderDoneClosureConfirmation(activeItem: string | null): string {
+/** Python `_render_done_closure_confirmation`, its ribbon told the level (CR113). */
+function renderDoneClosureConfirmation(cursor: BuilderDeliveryCursor): string {
+  const activeItem = cursor.activeItem;
   const body = `${[
     "Delivery",
-    "Delivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ✓ Plan → ✓ Implement → ✓ Validate → ✓ Debt Review → ◉ Done",
+    renderLifecycleRibbon("done", cursor.activeItemLevel),
     "",
     "╭────────────────────────────────────────────────────────╮",
     "│        🧭  DONE CLOSURE CONFIRMATION                  │",
@@ -1856,9 +1867,7 @@ export function runValidateItem(
       context.deps,
     );
     const handoff =
-      report.missingEvidence.length === 0
-        ? printed(renderDebtReviewHandoff(report.cursor.activeItem))
-        : "";
+      report.missingEvidence.length === 0 ? printed(renderDebtReviewHandoff(report.cursor)) : "";
     return {
       stdout: printed(renderValidationCheckpoint(report)) + handoff,
       stderr: "",
@@ -1914,7 +1923,7 @@ export function runReviewItem(
     // not, which is the distinction the second surface carries.
     const confirmation =
       report.debtDecision === "no_action" && report.missingDecision.length === 0
-        ? printed(renderDoneClosureConfirmation(report.cursor.activeItem))
+        ? printed(renderDoneClosureConfirmation(report.cursor))
         : "";
     return {
       stdout: printed(renderReviewCheckpoint(report)) + confirmation,

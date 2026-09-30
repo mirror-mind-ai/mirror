@@ -342,7 +342,7 @@ export function renderPlanCheckpoint(report: BuilderPlanReport): string {
 
   const card = [
     "Delivery",
-    renderLifecycleRibbon("plan"),
+    renderLifecycleRibbon("plan", report.activeItemLevel),
     "",
     "╭────────────────────────────────────────────────────────╮",
     "│        🧭■  PLAN CHECKPOINT                            │",

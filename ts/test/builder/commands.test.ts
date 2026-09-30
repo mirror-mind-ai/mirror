@@ -1962,6 +1962,135 @@ test("CR020: build show renders the stage, position, and records, and changes no
   }
 });
 
+// CR113 (D4): a story never expands, and no ribbon its lifecycle prints may say it did
+// or will. One walk through every Delivery surface a story reaches, through the front
+// door, pins them all; the compiler already makes every caller pass a level.
+test("CR113: every Delivery ribbon a story's lifecycle prints draws Expand as not applicable", () => {
+  const project = mkdtempSync("/tmp/builder-command-cr113-");
+  temporaryDirectories.push(project);
+  writeSiblingTree(project, { guide: false });
+  const db = seed("adopted", project);
+  const run = (argv: readonly string[]) =>
+    invoke(db, [argv[0] ?? "", "--method", "ariad", "--journey", "demo", ...argv.slice(1)]);
+  const printed: string[] = [];
+  const step = (argv: readonly string[]) => {
+    const result = run(argv);
+    printed.push(result.stdout);
+    return result;
+  };
+  try {
+    assert.equal(run(["sync-cursor"]).exitCode, 0);
+    step([
+      "pull-item",
+      "--item-code",
+      "CV1.DS1.TS1",
+      "--item-title",
+      "First slice",
+      "--item-level",
+      "technical_story",
+      "--why-now",
+      "CR113",
+    ]);
+    step(["check-implementation"]); // the blocked guard
+    const planned = step(["plan-item"]);
+    const planPath = planned.stdout.match(/^plan_artifact_path=(.+)$/mu)?.[1];
+    assert.ok(planPath, "the trailer names plan.md");
+    step(["approve-plan"]); // refused: the plan is still the scaffold
+    authorPlan(planPath);
+    step(["approve-plan"]);
+    step(["check-implementation"]); // the allowed guard
+    step(["show"]);
+    step([
+      "validate-item",
+      "--implementation-complete",
+      "--check",
+      "npm test",
+      "--checks-status",
+      "passed",
+      "--e2e-decision",
+      "not_required",
+      "--e2e-evidence",
+      "unit-level change",
+      "--navigator-route",
+      "walk the route",
+      "--navigator-accepted",
+      "--expected-observation",
+      "it shows",
+      "--pass-condition",
+      "it does",
+      "--fail-condition",
+      "it does not",
+    ]);
+    step(["review-item", "--debt", "No debt found", "--decision", "no_action"]);
+    step(["coherence-item", "--process", "p", "--project", "p", "--product", "p"]);
+    step([
+      "done-item",
+      "--history-action",
+      "h",
+      "--roadmap-update",
+      "r",
+      "--next-recommendation",
+      "n",
+    ]);
+
+    const surfaces = new Set(printed.flatMap(surfaceIds));
+    for (const id of [
+      "ITEM_ACTIVATED",
+      "PREPARE_FIELD_READING",
+      "IMPLEMENTATION_GUARD",
+      "PLAN_CHECKPOINT",
+      "CHECKPOINT_REFUSED",
+      "PLAN_APPROVED",
+      "ACTIVE_CHECKPOINT",
+      "VALIDATION_CHECKPOINT",
+      "DEBT_REVIEW_CHECKPOINT",
+      "COHERENCE_CHECKPOINT",
+      "DONE_CHECKPOINT",
+    ]) {
+      assert.ok(surfaces.has(id), `the walk printed ${id}`);
+    }
+    const ribbons = printed
+      .join("\n")
+      .split("\n")
+      .filter((line) => line.startsWith("Delivery Flow:"));
+    assert.ok(ribbons.length >= 12, `${ribbons.length} ribbons`);
+    for (const ribbon of ribbons) assert.match(ribbon, / – Expand → /u, ribbon);
+  } finally {
+    db.close();
+  }
+});
+
+test("CR113: a Delivery Story's refusal still draws the Expand it reached", () => {
+  const project = mkdtempSync("/tmp/builder-command-cr113-ds-");
+  temporaryDirectories.push(project);
+  writeSiblingTree(project, { guide: false });
+  const db = seed("adopted", project);
+  const run = (argv: readonly string[]) =>
+    invoke(db, [argv[0] ?? "", "--method", "ariad", "--journey", "demo", ...argv.slice(1)]);
+  try {
+    assert.equal(run(["sync-cursor"]).exitCode, 0);
+    run([
+      "pull-item",
+      "--item-code",
+      "CV1.DS1",
+      "--item-title",
+      "Alpha delivery",
+      "--item-level",
+      "delivery_story",
+      "--why-now",
+      "CR113",
+    ]);
+    const refused = run(["plan-item"]);
+    assert.deepEqual(surfaceIds(refused.stdout), ["CHECKPOINT_REFUSED"]);
+    const ribbon = refused.stdout.split("\n").find((line) => line.startsWith("Delivery Flow:"));
+    assert.ok(ribbon, "the refusal draws a ribbon");
+    assert.doesNotMatch(ribbon, /– Expand/u);
+    assert.match(ribbon, /[✓◉] Expand/u);
+  } finally {
+    db.close();
+  }
+});
+
 test("CR020: build show with no item pulled says so and gives the pull command", () => {
   const db = seed("adopted", scratchProject(false));
   try {

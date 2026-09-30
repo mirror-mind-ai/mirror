@@ -304,7 +304,7 @@ export function renderPullReport(report: BuilderPullReport, placement: PullPlace
   const title = report.item.title;
   const body = `${[
     "Delivery",
-    renderLifecycleRibbon("pull"),
+    renderLifecycleRibbon("pull", report.item.level),
     "",
     "╭────────────────────────────────────────────────────────╮",
     activatedTitleRow(report.item.level),

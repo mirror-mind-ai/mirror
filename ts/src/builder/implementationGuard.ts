@@ -77,7 +77,7 @@ export function assertImplementationAllowed(db: Database, journey: string): Buil
 export function renderImplementationGuardAllowed(cursor: BuilderDeliveryCursor): string {
   const body = [
     "Delivery",
-    renderLifecycleRibbon("implement"),
+    renderLifecycleRibbon("implement", cursor.activeItemLevel),
     "",
     FRAME_TOP,
     GUARD_TITLE,
@@ -98,11 +98,15 @@ export function renderImplementationGuardAllowed(cursor: BuilderDeliveryCursor):
   return wrapAriadSurface("implementation_guard", `${body}\n`);
 }
 
-/** Python `render_implementation_guard_blocked`. */
-export function renderImplementationGuardBlocked(reason: string): string {
+/**
+ * Python `render_implementation_guard_blocked`. The level is the cursor's, when there
+ * is one: the refusal carries only its reason, and a story's ribbon must still say
+ * Expand never applied (CR113).
+ */
+export function renderImplementationGuardBlocked(reason: string, level: string | null): string {
   const body = [
     "Delivery",
-    renderLifecycleRibbon("implement"),
+    renderLifecycleRibbon("implement", level),
     "",
     FRAME_TOP,
     GUARD_TITLE,

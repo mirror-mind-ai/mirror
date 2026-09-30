@@ -170,7 +170,7 @@ export function prepareLifecycleItem(
 export function renderPrepareReport(report: BuilderPrepareReport): string {
   const body = `${[
     "Delivery",
-    renderLifecycleRibbon("prepare"),
+    renderLifecycleRibbon("prepare", report.activeItemLevel),
     "",
     "╭────────────────────────────────────────────────────────╮",
     "│        🧭  PREPARE FIELD READING                       │",

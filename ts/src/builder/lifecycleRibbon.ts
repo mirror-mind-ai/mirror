@@ -13,6 +13,15 @@
 // An unknown stage RAISES rather than rendering a partial ribbon, and the message
 // names the vocabulary — `unknown Ariad lifecycle stage: x` versus `unknown Ariad
 // Refinement Story stage: x`. That is a Class B refusal with byte-exact text.
+//
+// CR113: a stage the item's level never reaches is drawn `–`, not applicable. A User
+// or Technical Story never expands, and the Delivery ribbon drew its Expand as done
+// once the cursor passed Prepare, and as still to come before. The level is a
+// required argument, so every caller decides; which levels never expand is the
+// runtime's one predicate, `isImplementableByDefault`. A Delivery Story, and a
+// ribbon drawn with no level, look as they always did.
+
+import { isImplementableByDefault } from "./cursorTransitions.ts";
 
 /** Python `DELIVERY_LIFECYCLE_STAGES`. */
 export const DELIVERY_LIFECYCLE_STAGES = [
@@ -73,7 +82,10 @@ const CHANGE_REQUEST_STAGE_LABELS: Record<string, string> = {
   done_note: "Done Note",
 };
 
-/** Python `_render_progress_ribbon`. */
+/** The mark for a stage the item's level never reaches (CR113). */
+const NOT_APPLICABLE = "–";
+
+/** Python `_render_progress_ribbon`, with the stages an item's level never reaches. */
 function renderProgressRibbon(options: {
   current: string;
   stages: readonly string[];
@@ -81,21 +93,35 @@ function renderProgressRibbon(options: {
   label: string;
   separator: string;
   unknownKind: string;
+  notApplicable?: ReadonlySet<string>;
 }): string {
   const { current, stages, labels, label, separator, unknownKind } = options;
+  const notApplicable = options.notApplicable ?? new Set<string>();
   const currentIndex = stages.indexOf(current);
   if (currentIndex === -1) {
     throw new Error(`unknown ${unknownKind}: ${current}`);
   }
   const parts = stages.map((stage, index) => {
-    const marker = index < currentIndex ? "✓" : index === currentIndex ? "◉" : "○";
+    const marker = notApplicable.has(stage)
+      ? NOT_APPLICABLE
+      : index < currentIndex
+        ? "✓"
+        : index === currentIndex
+          ? "◉"
+          : "○";
     return `${marker} ${labels[stage]}`;
   });
   return `${label}: ${parts.join(` ${separator} `)}`;
 }
 
-/** Python `render_lifecycle_ribbon`. */
-export function renderLifecycleRibbon(current = "pull"): string {
+/** The Delivery stages an item's level never reaches: Expand, for a story. */
+const STORY_NEVER_REACHES: ReadonlySet<string> = new Set(["expand"]);
+
+/**
+ * Python `render_lifecycle_ribbon`, told the item's level (CR113). `null` is a
+ * ribbon with no item to speak of, drawn as it always was.
+ */
+export function renderLifecycleRibbon(current: string, level: string | null): string {
   return renderProgressRibbon({
     current,
     stages: DELIVERY_LIFECYCLE_STAGES,
@@ -103,6 +129,8 @@ export function renderLifecycleRibbon(current = "pull"): string {
     label: "Delivery Flow",
     separator: "→",
     unknownKind: "Ariad lifecycle stage",
+    notApplicable:
+      level !== null && isImplementableByDefault(level) ? STORY_NEVER_REACHES : undefined,
   });
 }
 

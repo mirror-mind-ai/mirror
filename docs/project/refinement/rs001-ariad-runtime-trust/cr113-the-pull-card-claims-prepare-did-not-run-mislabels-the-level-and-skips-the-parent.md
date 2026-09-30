@@ -505,6 +505,97 @@ approved did not change; only the reader that implements it.
 
 Next: plateau 2, the ribbon.
 
+### Plateau 2 handoff (2026-09-30)
+
+Now true: every Delivery ribbon of a User or Technical Story draws `– Expand`, at every
+stage. `renderLifecycleRibbon(current, level)` takes the level as a required argument,
+and which levels never expand is `isImplementableByDefault`'s answer. The compiler
+named the fourteen callers and the resume-state test, and each passes the level it
+holds. The Expand cards pass `delivery_story`, since only a Delivery Story reaches
+Expand. The blocked guard gets the cursor's level from the command. A Delivery Story's
+ribbon, and a ribbon with no level, are unchanged. `lifecycleRibbon.test.ts` pins the
+glyph at every stage. One walk through the front door, pull to Done, collects every
+Delivery ribbon a story's lifecycle prints, across eleven surfaces; a second walk shows
+a Delivery Story's refusal still draws the Expand it reached. The route passes every
+step.
+
+What the walk found:
+
+- **Two ribbons were hard-coded strings.** `DEBT_REVIEW_STARTED` and `DONE_CLOSURE_CONFIRMATION`,
+  printed by `commands.ts` after a story's validation and review, carried their ribbon as
+  a fixed string with `✓ Expand`. They were never calls, so the required argument could
+  not name them. The walk failed on the first. Both now draw through
+  `renderLifecycleRibbon` with the cursor's level, and for a Delivery Story or no level
+  they produce the old string byte for byte, which was checked before the change. The
+  Delivery Story flow's own cards keep their fixed `DS Plan` ribbons: a Delivery Story
+  does expand.
+- **The resume-state golden moved by one card, which the plan said it would not.** Its
+  level-less `ribbons` map is unchanged, as planned. But it also records the
+  implementation guard in eleven states, and `ds_plan_wrong_level` seeds a User Story
+  cursor, so its blocked card now draws `– Expand`. The ribbon edits number 112, not
+  111: 78 lifecycle, 33 command, 1 resume state.
+
+The 112 ribbons were edited by script, each level taken from the record, and listed in
+`ts/test/goldens/README.md`. 2897 tests pass, and the Builder smoke reached its end.
+
+### The route after the change (2026-09-30)
+
+At the plateau 2 commit, identical across two runs:
+
+```text
+--- step 1: pull the Delivery Story; the front door prints its Ready card
+  answer: <<<ARIAD:DELIVERY_STORY_READY>>> <<<ARIAD:ARTIFACTS_MATERIALIZED>>>
+  Delivery Flow: ✓ Pull → ✓ Prepare → ◉ Expand → ○ DS Plan → ○ Implement → ○ Validate → ○ Debt Review → ○ Done
+ Where are we in the roadmap?
+ 🟪[CV1] Checkout
+   └─ 🟦[DS1] Checkout address
+  build show: (no ribbon)
+--- step 2: pull the User Story; the command runs Pull, then Prepare
+  answer: <<<ARIAD:ITEM_ACTIVATED>>> <<<ARIAD:PREPARE_FIELD_READING>>>
+  Delivery Flow: ◉ Pull → ○ Prepare → – Expand → ○ Plan → ○ Implement → ○ Validate → ○ Debt Review → ○ Done
+  Delivery Flow: ✓ Pull → ◉ Prepare → – Expand → ○ Plan → ○ Implement → ○ Validate → ○ Debt Review → ○ Done
+        🟪■  USER STORY ACTIVATED
+ roadmap placement
+ 🟪[CV1] Checkout
+   └─ 🟦[DS1] Checkout address
+      └─ 🟩[US1] Enter an address
+ source
+ roadmap candidate
+ next event
+ Prepare
+ boundary
+ Plan and later lifecycle work were not executed.
+--- step 3: pull the Technical Story
+  answer: <<<ARIAD:ITEM_ACTIVATED>>> <<<ARIAD:PREPARE_FIELD_READING>>>
+  Delivery Flow: ◉ Pull → ○ Prepare → – Expand → ○ Plan → ○ Implement → ○ Validate → ○ Debt Review → ○ Done
+  Delivery Flow: ✓ Pull → ◉ Prepare → – Expand → ○ Plan → ○ Implement → ○ Validate → ○ Debt Review → ○ Done
+        🟪■  TECHNICAL STORY ACTIVATED
+--- step 4: pull a story the roadmap does not list
+        🟪■  USER STORY ACTIVATED
+ roadmap placement
+ 🟪[CV1] Checkout
+   └─ 🟦[DS2] no authored package
+      └─ 🟩[US9] Unlisted story
+ source
+ not in the roadmap: pulled by its code
+--- step 5: the User Story again, planned; build show
+  Delivery Flow: ✓ Pull → ✓ Prepare → – Expand → ◉ Plan → ○ Implement → ○ Validate → ○ Debt Review → ○ Done
+  build show:
+  Delivery Flow: ✓ Pull → ✓ Prepare → – Expand → ◉ Plan → ○ Implement → ○ Validate → ○ Debt Review → ○ Done
+```
+
+Every step meets its pass condition:
+
+1. Unchanged: the Ready card's tree and its Delivery Story ribbon.
+2. `ITEM_ACTIVATED`, `USER STORY ACTIVATED`, and `– Expand` in both ribbons. The
+   lineage reads CV1, then DS1, then US1. The source is a roadmap candidate, the next
+   event Prepare, and the boundary no longer mentions Prepare.
+3. `TECHNICAL STORY ACTIVATED`, with `– Expand` in both ribbons.
+4. `no authored package` for DS2, and `not in the roadmap: pulled by its code`.
+5. `– Expand` on the Plan card and in `build show`.
+
+Next: the Navigator's walk of the route, then the handoff review.
+
 ## Outcome
 
 Pending.

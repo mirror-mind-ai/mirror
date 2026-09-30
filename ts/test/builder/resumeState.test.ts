@@ -18,7 +18,11 @@ import { join } from "node:path";
 import test from "node:test";
 
 import { cardText } from "#builder/card.ts";
-import { type SetDeliveryCursorOptions, setDeliveryCursor } from "#builder/deliveryCursor.ts";
+import {
+  getDeliveryCursor,
+  type SetDeliveryCursorOptions,
+  setDeliveryCursor,
+} from "#builder/deliveryCursor.ts";
 import {
   assertImplementationAllowed,
   ImplementationBlockedError,
@@ -140,7 +144,8 @@ function cursorOptions(changes: Record<string, unknown>): SetDeliveryCursorOptio
 
 test("every lifecycle ribbon matches Python", () => {
   for (const [stage, expected] of Object.entries(oracle.ribbons.delivery ?? {})) {
-    assert.equal(renderLifecycleRibbon(stage), expected, `delivery/${stage}`);
+    // The oracle drew the ribbon with no level; a level-less ribbon draws as it did (CR113).
+    assert.equal(renderLifecycleRibbon(stage, null), expected, `delivery/${stage}`);
   }
   for (const [stage, expected] of Object.entries(oracle.ribbons.refinement ?? {})) {
     assert.equal(renderRefinementLifecycleRibbon(stage), expected, `refinement/${stage}`);
@@ -152,7 +157,7 @@ test("every lifecycle ribbon matches Python", () => {
 
 test("an unknown ribbon stage refuses with Python's vocabulary-specific message", () => {
   const renderers: Record<string, (stage: string) => string> = {
-    delivery: renderLifecycleRibbon,
+    delivery: (stage) => renderLifecycleRibbon(stage, null),
     refinement: renderRefinementLifecycleRibbon,
     change_request: renderChangeRequestLifecycleRibbon,
   };
@@ -242,7 +247,14 @@ test("the implementation guard matches Python in all eleven states, surfaces inc
         (error: unknown) => {
           assert.ok(error instanceof ImplementationBlockedError, entry.name);
           assert.equal(error.message, entry.reason, `${entry.name} reason`);
-          assert.equal(renderImplementationGuardBlocked(error.message), entry.surface, entry.name);
+          // The product passes the cursor's level, so a story's ribbon says Expand never
+          // applied (CR113); the test renders it the same way.
+          const level = getDeliveryCursor(db, JOURNEY)?.activeItemLevel ?? null;
+          assert.equal(
+            renderImplementationGuardBlocked(error.message, level),
+            entry.surface,
+            entry.name,
+          );
           return true;
         },
         entry.name,
