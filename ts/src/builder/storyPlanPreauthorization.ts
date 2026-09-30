@@ -15,7 +15,7 @@
 //     "fall back to ordinary Navigator approval" true rather than aspirational.
 
 import type { WritableDatabase } from "#db/database.ts";
-import { unauthoredPlanSectionsFor } from "./artifacts/scaffoldState.ts";
+import { planSectionsToAuthor } from "./artifacts/scaffoldState.ts";
 import { cardPrefixed, cardText } from "./card.ts";
 import {
   type BuilderDeliveryCursor,
@@ -28,7 +28,6 @@ import {
 import { FLOW_UNIT_STORY_BY_STORY } from "./flowUnit.ts";
 import {
   invalidatePlanPreauthorization,
-  PLAN_APPROVAL_SECTIONS,
   PlanPreauthorizationMismatch,
   planPreauthorizationMismatchReason,
   STORY_PLAN_CONTRACT,
@@ -91,9 +90,10 @@ export function approveStoryPlanWithPreauthorization(
     throw new Error("story Plan approval requires a pending after_plan checkpoint");
   }
 
-  // The same rule the ordinary route applies (CR112): a section still holding the
-  // scaffold's sentences is not authored, whatever its structure.
-  const unfilled = unauthoredPlanSectionsFor(options.planArtifactPath, PLAN_APPROVAL_SECTIONS);
+  // The same rule the ordinary route applies (CR112), and the list `build show` prints
+  // (CR111 D4): a section still holding the scaffold's sentences is not authored,
+  // whatever its structure.
+  const unfilled = planSectionsToAuthor(options.planArtifactPath);
   const mismatch = planPreauthorizationMismatchReason(cursor, {
     journey,
     method,

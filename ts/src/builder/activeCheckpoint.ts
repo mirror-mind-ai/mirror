@@ -13,10 +13,12 @@
 // state -- missing, scaffold, partly authored, authored -- and, while not authored,
 // the sections still to write, by their exact heading text. The glyph carries only
 // done or not; the word carries the state. Closure records keep present or missing:
-// their truth is the seal.
+// their truth is the seal. The story files' lines come from `artifacts/storyFiles.ts`,
+// which the Plan checkpoint prints too (CR111).
 
-import { type ArtifactVerdict, describeArtifactState } from "./artifacts/scaffoldState.ts";
-import { CARD_WIDTH, cardText, cardWrapped } from "./card.ts";
+import type { ArtifactVerdict } from "./artifacts/scaffoldState.ts";
+import { storyFileLines } from "./artifacts/storyFiles.ts";
+import { cardText, cardWrapped } from "./card.ts";
 import type { BuilderDeliveryCursor } from "./deliveryCursor.ts";
 import { lifecycleStageOf } from "./lifecycleRefusal.ts";
 import { renderLifecycleRibbon } from "./lifecycleRibbon.ts";
@@ -27,16 +29,13 @@ const FRAME_TOP = "╭───────────────────�
 const FRAME_BOTTOM = "╰────────────────────────────────────────────────────────╯";
 const FRAME_BLANK = "│                                                        │";
 
-/** The artifacts Plan and Expand scaffold, in the order Plan writes them. */
-export const PLAN_STAGE_ARTIFACTS = ["index.md", "plan.md", "test-guide.md"] as const;
-
 /** A story package's closure records, in lifecycle order. */
 export const CLOSURE_RECORDS = ["validation.md", "review.md", "coherence.md", "done.md"] as const;
 
 export interface StoryRecords {
   /** The package directory, as the Navigator sees it (project-relative when inside). */
   readonly folder: string;
-  /** The Plan-stage artifacts, judged, in `PLAN_STAGE_ARTIFACTS` order. */
+  /** The Plan-stage artifacts, judged, in `PLAN_STAGE_ARTIFACTS` order (`judgeStoryFiles`). */
   readonly artifacts: readonly ArtifactVerdict[];
   /** The names in `CLOSURE_RECORDS` that exist on disk. */
   readonly present: ReadonlySet<string>;
@@ -49,49 +48,11 @@ export interface ActiveCheckpointView {
   readonly records: StoryRecords | null;
 }
 
-const TO_AUTHOR = "to author: ";
-const TO_AUTHOR_INDENT = "  ";
-
-/**
- * The sections still to write, wrapped BETWEEN headings, never inside one, with every
- * row after the first starting under the first heading. A heading cut in two reads as
- * two items: the first render printed `Navigator` over `Validation` (CR112's handoff
- * review). The headings are the scaffold tables' own, all far shorter than a row.
- */
-export function toAuthorLines(headers: readonly string[]): string[] {
-  const width = CARD_WIDTH - TO_AUTHOR_INDENT.length - TO_AUTHOR.length;
-  const rows: string[] = [];
-  let row = "";
-  headers.forEach((header, index) => {
-    const item = index < headers.length - 1 ? `${header},` : header;
-    const joined = row === "" ? item : `${row} ${item}`;
-    if (row !== "" && joined.length > width) {
-      rows.push(row);
-      row = item;
-    } else {
-      row = joined;
-    }
-  });
-  if (row !== "") rows.push(row);
-  const hanging = " ".repeat(TO_AUTHOR.length);
-  return rows.map((text, index) =>
-    cardText(`${TO_AUTHOR_INDENT}${index === 0 ? TO_AUTHOR : hanging}${text}`),
-  );
-}
-
-function artifactLines(verdict: ArtifactVerdict): string[] {
-  const glyph = verdict.state === "authored" ? "✓" : "○";
-  return [
-    cardText(`${glyph} ${verdict.name} — ${describeArtifactState(verdict.state)}`),
-    ...toAuthorLines(verdict.toAuthor),
-  ];
-}
-
 function recordLines(records: StoryRecords | null): string[] {
   if (records === null) return [cardText("no story package found")];
   return [
     ...cardWrapped(records.folder),
-    ...records.artifacts.flatMap(artifactLines),
+    ...records.artifacts.flatMap(storyFileLines),
     ...CLOSURE_RECORDS.map((name) => cardText(`${records.present.has(name) ? "✓" : "○"} ${name}`)),
   ];
 }

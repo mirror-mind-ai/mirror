@@ -38,34 +38,6 @@ export const PREAUTHORIZATION_STOP = "navigator_validation";
 export const DELIVERY_STORY_PLAN_CONTRACT = "delivery_story_plan@1";
 export const STORY_PLAN_CONTRACT = "story_plan@1";
 
-/** Python `STORY_PLAN_REQUIRED_SECTIONS`, in declaration order. */
-export const STORY_PLAN_REQUIRED_SECTIONS = [
-  "Scope",
-  "Non-Goals",
-  "Acceptance Behavior",
-  "Validation Route",
-  "Implementation Contract",
-] as const;
-
-/**
- * The sections a Plan approval requires authored, on either route (CR112): every
- * placeholder section of the story scaffold and every section the Plan contract
- * requires, in the order the plan file has them, so a refusal lists them as the reader
- * will find them. One list, so the ordinary and the preauthorized route cannot hold a
- * plan to different rules. A placeholder section counts until it is authored; a
- * required `default` section counts until it is not empty or pending.
- */
-export const PLAN_APPROVAL_SECTIONS: readonly string[] = [
-  ...PLAN_SECTIONS.filter(
-    (section) =>
-      section.kind === "placeholder" ||
-      (STORY_PLAN_REQUIRED_SECTIONS as readonly string[]).includes(section.header),
-  ).map((section) => section.header),
-  ...STORY_PLAN_REQUIRED_SECTIONS.filter(
-    (header) => !PLAN_SECTIONS.some((section) => section.header === header),
-  ),
-];
-
 /** Python `PlanPreauthorizationMismatch`. */
 export class PlanPreauthorizationMismatch extends Error {
   readonly reason: string;
@@ -288,8 +260,6 @@ export function invalidatePlanPreauthorization(
   }
 }
 
-// `unfilledPlanSectionsFor` and `levelTwoSections` live in `artifacts/scaffoldState.ts`
-// since CR112, beside the rule that also recognizes a scaffold's own sentences.
-export { unfilledPlanSectionsFor } from "./artifacts/scaffoldState.ts";
-
-import { PLAN_SECTIONS } from "./artifacts/scaffoldSections.ts";
+// The sections a Plan approval requires, `PLAN_APPROVAL_SECTIONS`, and the reader that
+// judges them live in `artifacts/` since CR111: one answer for every surface that says
+// what a `plan.md` still needs, approval included.

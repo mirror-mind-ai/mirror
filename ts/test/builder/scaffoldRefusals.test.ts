@@ -11,6 +11,7 @@ import { join } from "node:path";
 import test from "node:test";
 import { approvePlanCheckpoint } from "#builder/approve.ts";
 import { getAriadMethod } from "#builder/ariadMethod.ts";
+import { artifactState } from "#builder/artifacts/scaffoldState.ts";
 import { renderUserStoryIndex } from "#builder/artifacts/storyIndex.ts";
 import { doneLifecycleItem } from "#builder/closure.ts";
 import { getDeliveryCursor, setDeliveryCursor } from "#builder/deliveryCursor.ts";
@@ -247,6 +248,49 @@ test("CR112: the preauthorized route approves an authored plan and starts implem
   );
   assert.equal(report.implementationStarted, true);
   assert.deepEqual(report.unfilledSections, []);
+});
+
+// CR111 D4: `build show` read `authored` over an approval that refused, because approval
+// also requires Non-Goals and the Implementation Contract and `build show` did not look.
+test("CR111 D4: build show names exactly what both approval routes refuse on", () => {
+  const stripDefaults = (path: string) =>
+    writeFileSync(
+      path,
+      readFileSync(path, "utf8")
+        .replace(/## Non-Goals\n\n[^#]*/u, "")
+        .replace(/## Implementation Contract\n\n[^#]*/u, ""),
+      "utf8",
+    );
+
+  const ordinary = world();
+  plan(ordinary);
+  authorPlan(ordinary.plan);
+  stripDefaults(ordinary.plan);
+  const verdict = artifactState("plan.md", ordinary.plan);
+  assert.equal(verdict.state, "partly_authored");
+  assert.deepEqual(verdict.toAuthor, ["Non-Goals", "Implementation Contract"]);
+  assert.match(
+    refused(ordinary, () => approve(ordinary), "missing_evidence"),
+    /: Non-Goals, Implementation Contract\.$/u,
+  );
+
+  const preauthorized = world();
+  plan(preauthorized, true);
+  authorPlan(preauthorized.plan);
+  stripDefaults(preauthorized.plan);
+  assert.throws(
+    () =>
+      approveStoryPlanWithPreauthorization(
+        preauthorized.db,
+        { journey: "demo", method: "ariad", planArtifactPath: preauthorized.plan },
+        deps,
+      ),
+    (error: unknown) => {
+      assert.ok(error instanceof PlanPreauthorizationMismatch);
+      assert.deepEqual(error.sections, verdict.toAuthor);
+      return true;
+    },
+  );
 });
 
 test("CR112: another mismatch keeps its surface: no sections, no To author block", () => {

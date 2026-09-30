@@ -19,7 +19,7 @@
 import { existsSync } from "node:fs";
 import type { WritableDatabase } from "#db/database.ts";
 import { displayPath } from "./artifacts/artifactSurfaces.ts";
-import { unauthoredPlanSectionsFor } from "./artifacts/scaffoldState.ts";
+import { planSectionsToAuthor } from "./artifacts/scaffoldState.ts";
 import { cardText, cardWrapped } from "./card.ts";
 import { normalizeRequired } from "./cursorTransitions.ts";
 import {
@@ -31,7 +31,6 @@ import {
 } from "./deliveryCursor.ts";
 import { LifecycleRefusal, refuseIfAlreadyComplete } from "./lifecycleRefusal.ts";
 import { renderLifecycleRibbon } from "./lifecycleRibbon.ts";
-import { PLAN_APPROVAL_SECTIONS } from "./planPreauthorization.ts";
 import { wrapAriadSurface } from "./surfaceProtocol.ts";
 
 export interface ApprovePlanOptions {
@@ -50,11 +49,12 @@ export interface ApprovePlanOptions {
 
 /**
  * Refuse, before any write, a plan that is not yet a plan: any section in
- * `PLAN_APPROVAL_SECTIONS` missing, empty, pending, or still the scaffold's.
+ * `PLAN_APPROVAL_SECTIONS` missing, empty, pending, or still the scaffold's -- the list
+ * `build show` prints for the same file (CR111 D4).
  */
 function refuseUnauthoredPlan(planPath: string | null, projectRoot: string | null): void {
   if (planPath === null) return;
-  const unauthored = unauthoredPlanSectionsFor(planPath, PLAN_APPROVAL_SECTIONS);
+  const unauthored = planSectionsToAuthor(planPath);
   if (unauthored.length === 0) return;
   const shown = displayPath(planPath, projectRoot);
   throw new LifecycleRefusal(

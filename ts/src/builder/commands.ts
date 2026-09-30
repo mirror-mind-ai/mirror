@@ -35,11 +35,7 @@ import { getSessionOperatingMode } from "#mode/operatingMode.ts";
 import { PROGRAM } from "#util/program.ts";
 import { pyRStrip } from "#util/pythonText.ts";
 import { shellWord } from "#util/shellWord.ts";
-import {
-  CLOSURE_RECORDS,
-  PLAN_STAGE_ARTIFACTS,
-  renderActiveCheckpoint,
-} from "./activeCheckpoint.ts";
+import { CLOSURE_RECORDS, renderActiveCheckpoint } from "./activeCheckpoint.ts";
 import { approvePlanCheckpoint, renderPlanApproval } from "./approve.ts";
 import { getAriadMethod } from "./ariadMethod.ts";
 import {
@@ -56,7 +52,7 @@ import {
   PRODUCT_PLAN,
   SIBLING_NON_GOAL,
 } from "./artifacts/scaffoldSections.ts";
-import { artifactState } from "./artifacts/scaffoldState.ts";
+import { judgeStoryFiles } from "./artifacts/storyFiles.ts";
 import { CARD_WIDTH, cardText, wrapPlainText } from "./card.ts";
 import { renderCheckpointRefused } from "./checkpointRefused.ts";
 import {
@@ -577,9 +573,7 @@ export function runShowCheckpoint(
       ? null
       : {
           folder: displayPath(dirname(plan), projectPath),
-          artifacts: PLAN_STAGE_ARTIFACTS.map((name) =>
-            artifactState(name, join(dirname(plan), name)),
-          ),
+          artifacts: judgeStoryFiles(dirname(plan)),
           present: new Set(CLOSURE_RECORDS.filter((name) => existsSync(join(dirname(plan), name)))),
         };
   return {

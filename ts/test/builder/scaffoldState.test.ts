@@ -8,7 +8,6 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, it } from "node:test";
-import { toAuthorLines } from "#builder/activeCheckpoint.ts";
 import { getAriadMethod } from "#builder/ariadMethod.ts";
 import {
   type PlanArtifactInput,
@@ -21,23 +20,22 @@ import {
   fillPlanVocabulary,
   LIBRARY_PLAN,
   matchesTemplate,
+  PLAN_APPROVAL_SECTIONS,
   PLAN_SECTIONS,
   PRODUCT_PLAN,
   SIBLING_NON_GOAL,
   STORY_INDEX_SECTIONS,
+  STORY_PLAN_REQUIRED_SECTIONS,
   TEST_GUIDE_SECTIONS,
 } from "#builder/artifacts/scaffoldSections.ts";
 import {
   artifactState,
   judgeArtifact,
-  unauthoredPlanSectionsFor,
+  planSectionsToAuthor,
   unfilledPlanSectionsFor,
 } from "#builder/artifacts/scaffoldState.ts";
+import { toAuthorLines } from "#builder/artifacts/storyFiles.ts";
 import { renderTechnicalStoryIndex, renderUserStoryIndex } from "#builder/artifacts/storyIndex.ts";
-import {
-  PLAN_APPROVAL_SECTIONS,
-  STORY_PLAN_REQUIRED_SECTIONS,
-} from "#builder/planPreauthorization.ts";
 
 const TITLE = "Enter an address, with a comma";
 const CODE = "CV1.DS1.US1";
@@ -269,11 +267,14 @@ describe("a file a person wrote is never called a scaffold", () => {
       "# Plan — authored by the Driver\n\nThis body must survive Plan.\n",
     );
     assert.equal(verdict.state, "incomplete");
+    // CR111 D4: the list is what approval requires, the two required defaults included.
     assert.deepEqual(verdict.toAuthor, [
       "Objective",
       "Scope",
+      "Non-Goals",
       "Acceptance Behavior",
       "Validation Route",
+      "Implementation Contract",
     ]);
   });
 
@@ -353,18 +354,100 @@ describe("reading from disk, and the two plan-section rules", () => {
     assert.deepEqual(unfilledPlanSectionsFor(path, STORY_PLAN_REQUIRED_SECTIONS), ["Scope"]);
   });
 
-  it("unauthoredPlanSectionsFor counts the scaffold's own sentences, and holds a default section to the unfilled rule only", () => {
+  it("planSectionsToAuthor counts the scaffold's own sentences, and holds a default section to the unfilled rule only", () => {
     directory = mkdtempSync(join(tmpdir(), "cr112-"));
     const path = join(directory, "plan.md");
     writeFileSync(path, renderPlanArtifact(productReport()), "utf8");
-    const judged = [...PLACEHOLDER_PLAN_SECTIONS, ...STORY_PLAN_REQUIRED_SECTIONS];
-    assert.deepEqual(unauthoredPlanSectionsFor(path, judged), [
+    assert.deepEqual(planSectionsToAuthor(path), [
       "Objective",
       "Scope",
       "Acceptance Behavior",
       "Validation Route",
     ]);
-    assert.deepEqual(unauthoredPlanSectionsFor(null, ["Scope"]), ["Scope"]);
+  });
+
+  it("with no file, or no project, every section approval requires is still to write", () => {
+    directory = mkdtempSync(join(tmpdir(), "cr111-"));
+    assert.deepEqual(planSectionsToAuthor(join(directory, "plan.md")), [...PLAN_APPROVAL_SECTIONS]);
+    assert.deepEqual(planSectionsToAuthor(null), [...PLAN_APPROVAL_SECTIONS]);
+  });
+});
+
+// CR111 D4 -- `build show` said `authored` over an approval that refused, because it
+// judged the placeholder sections only while approval also requires Non-Goals and the
+// Implementation Contract. Two populations: the WORD comes from the placeholder
+// sections alone; the LIST is everything approval would refuse, in the file's order.
+describe("one answer to what plan.md still needs (CR111 D4)", () => {
+  let directory: string;
+  afterEach(() => {
+    if (directory) rmSync(directory, { recursive: true, force: true });
+  });
+  const scaffold = renderPlanArtifact(productReport());
+  const withoutDefaults = (text: string) =>
+    text.replace(/## Non-Goals\n\n[^#]*/u, "").replace(/## Implementation Contract\n\n[^#]*/u, "");
+  const authoredPlaceholders = (text: string) =>
+    text
+      .replace(
+        `Plan the smallest coherent, testable slice for ${TITLE}.`,
+        "Take an address at checkout.",
+      )
+      .replace(`- Deliver ${TITLE} as an observable slice.`, "- The address form.")
+      .replace(`Given the starting state needed for ${TITLE}`, "Given a valid address")
+      .replace(
+        "- Run automated tests that cover the planned behavior.",
+        "- Enter 1 Main St; expect it on the page.",
+      );
+
+  it("the placeholder sections authored and the required defaults gone: partly authored, both named", () => {
+    const verdict = judgeArtifact("plan.md", withoutDefaults(authoredPlaceholders(scaffold)));
+    assert.equal(verdict.state, "partly_authored");
+    assert.deepEqual(verdict.toAuthor, ["Non-Goals", "Implementation Contract"]);
+  });
+
+  it("an untouched scaffold still reads scaffold: its filled defaults do not count toward the word", () => {
+    const verdict = judgeArtifact("plan.md", scaffold);
+    assert.equal(verdict.state, "scaffold");
+    assert.deepEqual(verdict.toAuthor, PLACEHOLDER_PLAN_SECTIONS);
+  });
+
+  it("a scaffold whose Non-Goals were emptied is still a scaffold, with Non-Goals listed in the file's order", () => {
+    const verdict = judgeArtifact(
+      "plan.md",
+      scaffold.replace(/## Non-Goals\n\n[^#]*/u, "## Non-Goals\n\n"),
+    );
+    assert.equal(verdict.state, "scaffold");
+    assert.deepEqual(verdict.toAuthor, [
+      "Objective",
+      "Scope",
+      "Non-Goals",
+      "Acceptance Behavior",
+      "Validation Route",
+    ]);
+  });
+
+  it("the word is decided by the placeholder sections alone: the verdict's sections are those four", () => {
+    const verdict = judgeArtifact("plan.md", withoutDefaults(scaffold));
+    assert.deepEqual(
+      verdict.sections.map((section) => section.header),
+      PLACEHOLDER_PLAN_SECTIONS,
+    );
+  });
+
+  it("approval's list is the verdict's list, for every state a plan can be in", () => {
+    directory = mkdtempSync(join(tmpdir(), "cr111-"));
+    const path = join(directory, "plan.md");
+    const texts = [
+      scaffold,
+      authoredPlaceholders(scaffold),
+      withoutDefaults(scaffold),
+      withoutDefaults(authoredPlaceholders(scaffold)),
+      scaffold.replace(`- Deliver ${TITLE} as an observable slice.`, "- The address form."),
+      "# Plan — authored by the Driver\n\nThis body must survive Plan.\n",
+    ];
+    for (const text of texts) {
+      writeFileSync(path, text, "utf8");
+      assert.deepEqual(planSectionsToAuthor(path), judgeArtifact("plan.md", text).toAuthor);
+    }
   });
 });
 

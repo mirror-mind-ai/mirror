@@ -766,6 +766,36 @@ scaffold scope and acceptance, checked off, above `↻ existing plan — authore
 is D4: `✓ plan.md — authored`, then a refusal naming two sections. Two runs of the route
 printed identical output.
 
+### Plateau 1 handoff (2026-09-30)
+
+Now true: `build show` and both approval routes read one function. For `plan.md`,
+`judgeArtifact` lists what approval would refuse: the placeholder sections not authored
+and the required default sections missing or empty. `planSectionsToAuthor`, which both
+approval routes call, returns that list, or every section when there is no file. The
+word still comes from the placeholder sections alone. An untouched scaffold reads
+`scaffold`, and route step 6 already meets its pass condition: `○ plan.md — partly
+authored`, with `to author: Non-Goals, Implementation Contract`, and a refusal naming
+the same two.
+
+`PLAN_APPROVAL_SECTIONS` and `STORY_PLAN_REQUIRED_SECTIONS` moved from
+`planPreauthorization.ts` into `scaffoldSections.ts`, beside the sections they name, so
+the reader uses the list without depending on the approval layer. The story-file lines
+and `PLAN_STAGE_ARTIFACTS` moved from `activeCheckpoint.ts` into
+`artifacts/storyFiles.ts`, with `judgeStoryFiles`, which `build show` now calls and the
+Plan card will. No recorded golden changed. 2882 tests pass, and the Builder smoke
+passed 60 of 60.
+
+Two things the plan did not say:
+
+- **The list argument is gone.** `unauthoredPlanSectionsFor(path, requiredSections)`
+  took a list, and every caller passed the same one. It became
+  `planSectionsToAuthor(path)`, so no caller can hand approval a different rule.
+- **A dead re-export went with the move.** `planPreauthorization.ts` re-exported
+  `unfilledPlanSectionsFor`, and nothing imported it from there. Leaving it would have
+  kept a dependency from the approval layer back into the reader.
+
+Next: plateau 2, the card.
+
 ## Outcome
 
 Pending.

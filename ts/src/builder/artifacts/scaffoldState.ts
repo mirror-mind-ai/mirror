@@ -20,22 +20,31 @@
 // `unfilled` is judged before `scaffold`, so a section that holds a `TODO` beside the
 // template is unfilled, not scaffold, and either way not authored.
 //
-// Only `placeholder` sections decide the file. A `default` section is a rule the
-// Driver may keep verbatim. For `plan.md` every placeholder heading is required and a
-// missing one counts against the file, as the Plan contract has always required; for
+// Only `placeholder` sections decide the file's word. A `default` section is a rule
+// the Driver may keep verbatim. For `plan.md` every placeholder heading is required and
+// a missing one counts against the file, as the Plan contract has always required; for
 // `index.md` and `test-guide.md` a missing heading is the Driver's structure, not a
 // scaffold, and only sections that are present and still the scaffold's count.
 //
-// The file's word follows its judged sections: `authored` when all are, `partly
-// authored` when some are, `scaffold` when none is and the file still carries the
-// scaffold's text, and `incomplete` when none is and none of it is the scaffold's --
-// a file a person wrote without the sections the contract requires. Calling that
-// file a scaffold would say Ariad wrote what it did not.
+// The file's word follows its judged sections: `authored` when nothing is left to
+// write, `partly authored` when some are authored, `scaffold` when none is and the file
+// still carries the scaffold's text, and `incomplete` when none is and none of it is
+// the scaffold's -- a file a person wrote without the sections the contract requires.
+// Calling that file a scaffold would say Ariad wrote what it did not.
+//
+// CR111 D4: for `plan.md` the LIST of sections still to write is what approval would
+// refuse: `PLAN_APPROVAL_SECTIONS`, which adds the two required `default` sections,
+// Non-Goals and the Implementation Contract, while they are missing or empty. Until
+// then `build show` could say `authored` over an approval that refused. The two
+// required defaults lengthen the list; they never decide the word, or an untouched
+// scaffold, whose defaults are filled, would read `partly authored`. Approval reads
+// the same list (`planSectionsToAuthor`), so no surface can disagree with it.
 
 import { existsSync, readFileSync } from "node:fs";
 import { pySplitLines, pyStrip } from "#util/pythonText.ts";
 import {
   matchesTemplate,
+  PLAN_APPROVAL_SECTIONS,
   PLAN_SECTIONS,
   type SectionSpec,
   STORY_INDEX_SECTIONS,
@@ -61,7 +70,11 @@ export interface ArtifactVerdict {
   readonly state: ArtifactState;
   /** Every placeholder section the reader judged, in the artifact's own order. */
   readonly sections: readonly SectionVerdict[];
-  /** The placeholder sections still to be written, by their exact `## ` text. */
+  /**
+   * The sections still to be written, by their exact `## ` text, in the file's order:
+   * the placeholder sections not authored and, for `plan.md`, the required default
+   * sections missing or empty -- exactly what a Plan approval would refuse on.
+   */
   readonly toAuthor: readonly string[];
 }
 
@@ -153,6 +166,24 @@ function judgedSections(name: ArtifactName, sections: Map<string, string>): Sect
   return placeholders.filter((spec) => sections.has(spec.header));
 }
 
+/** The `PLAN_SECTIONS` entry for `header`; a heading the table lacks is a default. */
+function planSpec(header: string): SectionSpec {
+  return (
+    PLAN_SECTIONS.find((candidate) => candidate.header === header) ?? {
+      header,
+      kind: "default",
+      lines: [],
+    }
+  );
+}
+
+/** What approval would refuse on in a `plan.md` whose sections are `sections`. */
+function planToAuthor(sections: Map<string, string>): string[] {
+  return PLAN_APPROVAL_SECTIONS.filter(
+    (header) => sectionState(sections, planSpec(header)) !== "authored",
+  );
+}
+
 /** The verdict for artifact text already read; `null` text means the file is missing. */
 export function judgeArtifact(name: ArtifactName, text: string | null): ArtifactVerdict {
   if (text === null) return { name, state: "missing", sections: [], toAuthor: [] };
@@ -161,14 +192,16 @@ export function judgeArtifact(name: ArtifactName, text: string | null): Artifact
     header: spec.header,
     state: sectionState(sections, spec),
   }));
-  const toAuthor = verdicts
-    .filter((verdict) => verdict.state !== "authored")
-    .map((verdict) => verdict.header);
-  const authored = verdicts.length - toAuthor.length;
+  const toAuthor =
+    name === "plan.md"
+      ? planToAuthor(sections)
+      : verdicts.filter((verdict) => verdict.state !== "authored").map((verdict) => verdict.header);
+  // The word comes from the placeholder sections alone (D4): the required defaults
+  // lengthen the list, never turn a scaffold into a partly authored file.
   const state: ArtifactState =
-    authored === verdicts.length
+    toAuthor.length === 0
       ? "authored"
-      : authored > 0
+      : verdicts.some((verdict) => verdict.state === "authored")
         ? "partly_authored"
         : verdicts.some((verdict) => verdict.state === "scaffold")
           ? "scaffold"
@@ -202,24 +235,12 @@ export function unfilledPlanSectionsFor(
 }
 
 /**
- * The sections of `plan.md` a Plan approval must see authored: every one in
- * `requiredSections` that is missing, unfilled, or still the scaffold's. Judged with
- * `PLAN_SECTIONS`, so a required heading the table calls `default` is held to the
- * unfilled rule only.
+ * The sections of `plan.md` a Plan approval must see authored, on either route: the
+ * `toAuthor` list `build show` and the Plan checkpoint print for the same file (CR111
+ * D4). A missing file, or no file to read, leaves every one of them to write, which is
+ * what makes a receipt unusable before the Driver writes the Plan.
  */
-export function unauthoredPlanSectionsFor(
-  planPath: string | null,
-  requiredSections: readonly string[],
-): string[] {
-  const judged = [...new Set(requiredSections)];
-  if (planPath === null || !existsSync(planPath)) return judged;
-  const sections = levelTwoSections(readFileSync(planPath, "utf8"));
-  return judged.filter((header) => {
-    const spec = PLAN_SECTIONS.find((candidate) => candidate.header === header) ?? {
-      header,
-      kind: "default" as const,
-      lines: [],
-    };
-    return sectionState(sections, spec) !== "authored";
-  });
+export function planSectionsToAuthor(planPath: string | null): string[] {
+  if (planPath === null || !existsSync(planPath)) return [...PLAN_APPROVAL_SECTIONS];
+  return [...judgeArtifact("plan.md", readFileSync(planPath, "utf8")).toAuthor];
 }

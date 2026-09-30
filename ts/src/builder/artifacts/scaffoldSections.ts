@@ -231,6 +231,38 @@ export const PLAN_SECTIONS: readonly SectionSpec[] = [
   { header: "Approval Gate", kind: "default", lines: [] },
 ];
 
+/** Python `STORY_PLAN_REQUIRED_SECTIONS`, in declaration order: the Plan contract's headings. */
+export const STORY_PLAN_REQUIRED_SECTIONS = [
+  "Scope",
+  "Non-Goals",
+  "Acceptance Behavior",
+  "Validation Route",
+  "Implementation Contract",
+] as const;
+
+/**
+ * The sections a Plan approval requires authored, on either route (CR112): every
+ * placeholder section of the story scaffold and every section the Plan contract
+ * requires, in the order the plan file has them, so a refusal lists them as the reader
+ * will find them. A placeholder section counts until it is authored; a required
+ * `default` section counts until it is not empty or pending.
+ *
+ * One list for every surface that says what a `plan.md` still needs: both approval
+ * routes, `build show`, and the Plan checkpoint read it through `scaffoldState.ts`
+ * (CR111 D4). It lives here, with the sections it names, so the reader below the
+ * approval layer can use it without depending on that layer.
+ */
+export const PLAN_APPROVAL_SECTIONS: readonly string[] = [
+  ...PLAN_SECTIONS.filter(
+    (section) =>
+      section.kind === "placeholder" ||
+      (STORY_PLAN_REQUIRED_SECTIONS as readonly string[]).includes(section.header),
+  ).map((section) => section.header),
+  ...STORY_PLAN_REQUIRED_SECTIONS.filter(
+    (header) => !PLAN_SECTIONS.some((section) => section.header === header),
+  ),
+];
+
 /**
  * The sections of a story `index.md`. Expand's scaffold heads the statement
  * `## User Story` or `## Technical Story`; Plan's heads it `## Story Statement` and
