@@ -836,6 +836,31 @@ Two things the plan did not say:
 
 Next: plateau 3, one vocabulary.
 
+### Plateau 3 handoff (2026-09-30)
+
+Now true: one Plan vocabulary. `planLifecycleItem` composes the scaffold itself from
+`PRODUCT_PLAN`. It fills the title with the caller's, else the one Pull recorded, else
+the item's code (D5), and names the siblings the caller read from the roadmap as
+Non-Goals. `LIBRARY_PLAN` is gone, and a grep of `ts/src`, `ts/test`, and `ts/smoke`
+finds none of its sentences. `PlanOptions` takes no section text, only `--objective`, a
+title, and siblings. The report stopped carrying the section text that no reader used.
+`roadmapPlanContext` became `roadmapPlanFacts`: the roadmap's title for the item and its
+siblings, and no sentences. The compiler named the three callers of the old options,
+and each was changed.
+
+The corpus now records the product scaffold. 430 library lines in 78 snapshots across 15
+sequences were replaced, each as a whole line, by the product sentence for the same
+place, filled with the title on the step's cursor, and listed in the goldens README.
+The corpus harness refuses a recorded Plan step that passes section text, which would
+otherwise now be ignored silently. D5 has its own front-door test: an item the roadmap
+does not list is scaffolded "for Unlisted story", where it said "for CV1.DS2.US7".
+2886 tests pass, the Builder smoke reached its end, and the route's output is unchanged,
+because every route item is listed in its roadmap.
+
+Nothing departed from the plan.
+
+Next: plateau 4, the words, then validation.
+
 ## Outcome
 
 Pending.

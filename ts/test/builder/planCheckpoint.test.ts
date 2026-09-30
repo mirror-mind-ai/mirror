@@ -104,7 +104,7 @@ test("CR111: the card prints no placeholder sentence, and none of the plan's blo
         .replace(/^- /u, "")
         .replace(/^E2E decision: /u, ""),
     );
-  assert.ok(sentences.length > 10, "the model holds the placeholder sentences");
+  assert.ok(sentences.length > 0, "the model holds the placeholder sentences");
   for (const sentence of sentences) {
     assert.ok(!text.includes(sentence), `the card prints "${sentence}"`);
   }

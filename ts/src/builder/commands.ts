@@ -45,13 +45,6 @@ import {
 } from "./artifacts/artifactSurfaces.ts";
 import type { ArtifactOutcome } from "./artifacts/artifactWriter.ts";
 import { planPackageArtifacts } from "./artifacts/planArtifacts.ts";
-import {
-  fill,
-  fillPlanVocabulary,
-  type PlanVocabulary,
-  PRODUCT_PLAN,
-  SIBLING_NON_GOAL,
-} from "./artifacts/scaffoldSections.ts";
 import { judgeStoryFiles } from "./artifacts/storyFiles.ts";
 import { CARD_WIDTH, cardText, wrapPlainText } from "./card.ts";
 import { renderCheckpointRefused } from "./checkpointRefused.ts";
@@ -721,37 +714,27 @@ function artifactsSurface(options: {
 }
 
 /**
- * Python `_roadmap_plan_context`.
- *
- * Derives the Plan's default prose from the roadmap: the active candidate's whole
- * title (CR018), and its SIBLINGS' titles as explicit non-goals. Siblings are the other
- * children of the same parent, never an ancestor or a cousin (CR019).
+ * Python `_roadmap_plan_context`, reduced to the two facts only the roadmap holds
+ * (CR111 D3): the active candidate's whole title (CR018), and its SIBLINGS' titles,
+ * which Plan names as Non-Goals. Siblings are the other children of the same parent,
+ * never an ancestor or a cousin (CR019). The sentences are the scaffold model's, filled
+ * by `planLifecycleItem`; without a roadmap title it takes the title Pull recorded (D5).
  */
-function roadmapPlanContext(
+function roadmapPlanFacts(
   projectPath: string | null,
   cursor: { activeItem: string | null } | null,
-): PlanVocabulary {
+): { title: string | null; siblings: string[] } {
   const activeItem = cursor?.activeItem ?? null;
-  let title = String(activeItem ?? "the active item");
-  let siblings: string[] = [];
-  if (projectPath && activeItem) {
-    const candidates = inspectPullCandidates(projectPath, {
-      journey: "",
-      method: "ariad",
-    }).candidates;
-    const active = candidates.find((candidate) => candidate.code === activeItem);
-    if (active) {
-      if (active.title) title = active.title;
-      siblings = siblingsOf(candidates, activeItem).map((candidate) => candidate.title);
-    }
-  }
-  // Every sentence comes from the scaffold model (CR112), so the reader that tells
-  // a scaffold from an authored plan matches the lines this context writes.
-  const vocabulary = fillPlanVocabulary(PRODUCT_PLAN, { title });
-  const siblingNonGoals = siblings.map((sibling) => fill(SIBLING_NON_GOAL, { title: sibling }));
+  if (!projectPath || !activeItem) return { title: null, siblings: [] };
+  const candidates = inspectPullCandidates(projectPath, {
+    journey: "",
+    method: "ariad",
+  }).candidates;
+  const active = candidates.find((candidate) => candidate.code === activeItem);
+  if (!active) return { title: null, siblings: [] };
   return {
-    ...vocabulary,
-    nonGoals: siblingNonGoals.length > 0 ? siblingNonGoals : vocabulary.nonGoals,
+    title: active.title || null,
+    siblings: siblingsOf(candidates, activeItem).map((candidate) => candidate.title),
   };
 }
 
@@ -893,7 +876,7 @@ export function runPlanItem(
   const planPath = canonicalPackagePath(projectPath, cursor);
   const planArtifactPath = planPath === null ? null : join(planPath, "plan.md");
   const existedBefore = artifactExistence(planArtifactPath);
-  const planContext = roadmapPlanContext(projectPath, cursor);
+  const roadmap = roadmapPlanFacts(projectPath, cursor);
 
   try {
     const report = planLifecycleItem(
@@ -901,12 +884,9 @@ export function runPlanItem(
       {
         journey,
         method: getAriadMethod(),
-        objective: options.objective || planContext.objective,
-        scope: planContext.scope,
-        nonGoals: planContext.nonGoals,
-        acceptanceBehavior: planContext.acceptanceBehavior,
-        validationRoute: planContext.validationRoute,
-        e2eDecision: planContext.e2eDecision,
+        objective: options.objective || null,
+        title: roadmap.title,
+        siblings: roadmap.siblings,
         localRules: projectContractRules(projectPath),
         planArtifactPath,
         projectRoot: projectPath,

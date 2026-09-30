@@ -12,9 +12,12 @@
 //      invalidate it on arrival.
 //   2. **The generation does NOT advance.** Plan is a checkpoint on the item Pull
 //      committed to, and a bump would invalidate the receipt it just wrote.
-//   3. **Defaults are per FIELD, not per call.** Every empty argument falls back to
-//      its own Python default, so a caller that supplies only `objective` still gets
-//      Python's scope, non-goals, acceptance, and validation text.
+//   3. **The scaffold is composed here, from one vocabulary (CR111 D3).** Plan fills
+//      `PRODUCT_PLAN` with the caller's title, else the title Pull recorded, else the
+//      item's code (D5), and names the siblings the caller read from the roadmap as
+//      Non-Goals. A caller may set only the objective (`--objective`). Python took each
+//      section as an argument and fell back, per field, to a second set of sentences
+//      no product path wrote; the recorded corpus graded that set.
 //
 // CR111: the card prints what the runtime knows, and no section of the plan. It used
 // to print the scaffold's sentences as the plan -- scope, acceptance, validation,
@@ -26,7 +29,13 @@
 import { dirname } from "node:path";
 import type { WritableDatabase } from "#db/database.ts";
 import { STORY_SCOPED_COMMIT_RULE, writeStoryPackage } from "./artifacts/planArtifacts.ts";
-import { LIBRARY_PLAN } from "./artifacts/scaffoldSections.ts";
+import {
+  fill,
+  fillPlanVocabulary,
+  type PlanVocabulary,
+  PRODUCT_PLAN,
+  SIBLING_NON_GOAL,
+} from "./artifacts/scaffoldSections.ts";
 import type { ArtifactVerdict } from "./artifacts/scaffoldState.ts";
 import { judgeStoryFiles, storyFileLines } from "./artifacts/storyFiles.ts";
 import { cardPrefixed, cardText, cardWrapped } from "./card.ts";
@@ -58,12 +67,6 @@ export interface BuilderPlanReport {
   readonly activeItemTitle: string | null;
   readonly activeItemLevel: string | null;
   readonly implementableByDefault: boolean;
-  readonly objective: string;
-  readonly scope: readonly string[];
-  readonly nonGoals: readonly string[];
-  readonly acceptanceBehavior: readonly string[];
-  readonly validationRoute: readonly string[];
-  readonly e2eDecision: string;
   readonly planContract: ContractDefinition;
   readonly implementContract: ContractDefinition;
   readonly validationContract: ContractDefinition;
@@ -109,18 +112,44 @@ function cadencePreauthorizesStoryPlan(
 export interface PlanOptions {
   readonly journey: string;
   readonly method: MethodDefinition;
+  /** `--objective`: the one section a caller may write. Authored by construction. */
   readonly objective?: string | null;
-  readonly scope?: readonly string[];
-  readonly nonGoals?: readonly string[];
-  readonly acceptanceBehavior?: readonly string[];
-  readonly validationRoute?: readonly string[];
-  readonly e2eDecision?: string | null;
+  /**
+   * The item's title as the roadmap names it. Without one, the scaffold takes the
+   * title Pull recorded on the cursor, and only then the item's code (CR111 D5).
+   */
+  readonly title?: string | null;
+  /** The titles of the item's siblings in the roadmap, named as Non-Goals. */
+  readonly siblings?: readonly string[];
   readonly localRules?: readonly string[];
   readonly planArtifactPath?: string | null;
   /** The project the package must stay inside (CR079). */
   readonly projectRoot?: string | null;
   readonly preauthorize?: boolean;
   readonly stopBoundary?: string;
+}
+
+/**
+ * The sentences Plan writes where no file exists: `PRODUCT_PLAN`, filled with the
+ * caller's title, else the title Pull recorded, else the item's code (CR111 D5), with
+ * the roadmap's siblings as Non-Goals and the caller's objective when it gave one.
+ */
+function composeScaffold(
+  options: PlanOptions,
+  recordedTitle: string | null,
+  code: string,
+): PlanVocabulary {
+  const vocabulary = fillPlanVocabulary(PRODUCT_PLAN, {
+    title: options.title || recordedTitle || code,
+  });
+  const siblings = (options.siblings ?? []).map((sibling) =>
+    fill(SIBLING_NON_GOAL, { title: sibling }),
+  );
+  return {
+    ...vocabulary,
+    objective: options.objective || vocabulary.objective,
+    nonGoals: siblings.length > 0 ? siblings : vocabulary.nonGoals,
+  };
 }
 
 /** Python `plan_lifecycle_item`. */
@@ -202,21 +231,6 @@ export function planLifecycleItem(
     activeItemTitle: existing.activeItemTitle,
     activeItemLevel: existing.activeItemLevel,
     implementableByDefault: implementable,
-    // A caller that passes no sections gets the library vocabulary, recorded once in
-    // the scaffold model (CR112); the front door passes the product one.
-    objective: options.objective || LIBRARY_PLAN.objective,
-    scope: options.scope && options.scope.length > 0 ? options.scope : LIBRARY_PLAN.scope,
-    nonGoals:
-      options.nonGoals && options.nonGoals.length > 0 ? options.nonGoals : LIBRARY_PLAN.nonGoals,
-    acceptanceBehavior:
-      options.acceptanceBehavior && options.acceptanceBehavior.length > 0
-        ? options.acceptanceBehavior
-        : LIBRARY_PLAN.acceptanceBehavior,
-    validationRoute:
-      options.validationRoute && options.validationRoute.length > 0
-        ? options.validationRoute
-        : LIBRARY_PLAN.validationRoute,
-    e2eDecision: options.e2eDecision || LIBRARY_PLAN.e2eDecision,
     planContract: contractFor(method, "plan_contract"),
     implementContract: contractFor(method, "implement_contract"),
     validationContract: contractFor(method, "validation_contract"),
@@ -228,16 +242,12 @@ export function planLifecycleItem(
   };
 
   if (artifactPath !== null) {
+    const scaffold = composeScaffold(options, existing.activeItemTitle, existing.activeItem);
     writeStoryPackage(dirname(artifactPath), options.projectRoot, {
       activeItem: report.activeItem,
       activeItemTitle: report.activeItemTitle,
       activeItemLevel: report.activeItemLevel,
-      objective: report.objective,
-      scope: report.scope,
-      nonGoals: report.nonGoals,
-      acceptanceBehavior: report.acceptanceBehavior,
-      validationRoute: report.validationRoute,
-      e2eDecision: report.e2eDecision,
+      ...scaffold,
       localRules: report.localRules,
       implementContract: report.implementContract,
       activeCheckpoint: cursor.activeCheckpoint,

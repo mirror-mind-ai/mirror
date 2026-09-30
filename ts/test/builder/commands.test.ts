@@ -1559,6 +1559,45 @@ test("CR019: a story's Plan names only its own parent's other children as non-go
   );
 });
 
+// CR111 D5: the front door filled the scaffold's title with the roadmap's, else the
+// item's code, although the cursor holds the title Pull recorded.
+test("CR111 D5: an item the roadmap does not list is scaffolded with its recorded title", () => {
+  const project = mkdtempSync("/tmp/builder-command-cr111-d5-");
+  temporaryDirectories.push(project);
+  writeSiblingTree(project, { guide: false });
+  const db = seed("adopted", project);
+  try {
+    setDeliveryCursor(
+      db,
+      {
+        journey: "demo",
+        method: "ariad",
+        activeItem: "CV1.DS2.US7",
+        activeItemTitle: "Unlisted story",
+        activeItemLevel: "user_story",
+        lastDeliveryEvent: "prepare",
+        navigatorFlowUnit: "story_by_story",
+      },
+      { nowIso: () => NOW },
+    );
+    const result = invoke(db, ["plan-item", "--method", "ariad", "--journey", "demo"]);
+    assert.equal(result.exitCode, 0, result.stderr);
+    const planPath = result.stdout.match(/^plan_artifact_path=(.+)$/mu)?.[1];
+    assert.ok(planPath, "the trailer names plan.md");
+    const planMd = readFileSync(planPath, "utf8");
+    assert.equal(
+      planSection(planMd, "Objective"),
+      "Plan the smallest coherent, testable slice for Unlisted story.",
+    );
+    assert.equal(
+      planSection(planMd, "Scope").split("\n")[0],
+      "- Deliver Unlisted story as an observable slice.",
+    );
+  } finally {
+    db.close();
+  }
+});
+
 test("CR019: the contract carries Ariad's method rules, and a project's own only through its guide", () => {
   const first = {
     code: "CV1.DS1.TS1",

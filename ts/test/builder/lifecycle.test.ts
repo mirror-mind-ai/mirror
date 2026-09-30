@@ -801,6 +801,18 @@ function replayLifecycleStep(context: ReplayContext, step: Step): ReplayOutcome 
           context.existedBefore.set(path, existsSync(path));
         }
       }
+      // CR111 D3: Plan composes its scaffold from one vocabulary and takes no section
+      // text. Every recorded Plan step passed none; a step that did would now be
+      // ignored silently, so the harness refuses it instead.
+      for (const field of [
+        "scope",
+        "non_goals",
+        "acceptance_behavior",
+        "validation_route",
+      ] as const) {
+        assert.deepEqual(input[field] ?? [], [], `a recorded Plan step passes ${field}`);
+      }
+      assert.equal(input.e2e_decision ?? null, null, "a recorded Plan step passes e2e_decision");
       try {
         const report = planLifecycleItem(
           context.db,
@@ -808,11 +820,6 @@ function replayLifecycleStep(context: ReplayContext, step: Step): ReplayOutcome 
             journey: context.journey,
             method: getAriadMethod(),
             objective: input.objective ?? null,
-            scope: input.scope ?? [],
-            nonGoals: input.non_goals ?? [],
-            acceptanceBehavior: input.acceptance_behavior ?? [],
-            validationRoute: input.validation_route ?? [],
-            e2eDecision: input.e2e_decision ?? null,
             localRules: input.local_rules ?? [],
             planArtifactPath: planPath,
             projectRoot: context.project,

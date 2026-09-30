@@ -18,7 +18,6 @@ import {
 import {
   fill,
   fillPlanVocabulary,
-  LIBRARY_PLAN,
   matchesTemplate,
   PLAN_APPROVAL_SECTIONS,
   PLAN_SECTIONS,
@@ -61,11 +60,6 @@ function productReport(overrides: Partial<PlanArtifactInput> = {}): PlanArtifact
     pendingConfirmation: "navigator_approval",
     ...overrides,
   };
-}
-
-/** The report `planLifecycleItem` builds when a caller passes no sections. */
-function libraryReport(): PlanArtifactInput {
-  return productReport({ ...LIBRARY_PLAN });
 }
 
 const PLACEHOLDER_PLAN_SECTIONS = PLAN_SECTIONS.filter((s) => s.kind === "placeholder").map(
@@ -136,18 +130,10 @@ describe("the scaffolds the writers produce read as scaffolds", () => {
     ]);
   });
 
-  it("Plan's plan.md in the library vocabulary", () => {
-    const verdict = judgeArtifact("plan.md", renderPlanArtifact(libraryReport()));
+  it("Plan's test guide", () => {
+    const verdict = judgeArtifact("test-guide.md", renderTestGuideArtifact(productReport()));
     assert.equal(verdict.state, "scaffold");
-    assert.deepEqual(verdict.toAuthor, PLACEHOLDER_PLAN_SECTIONS);
-  });
-
-  it("Plan's test guide, in both vocabularies", () => {
-    for (const report of [productReport(), libraryReport()]) {
-      const verdict = judgeArtifact("test-guide.md", renderTestGuideArtifact(report));
-      assert.equal(verdict.state, "scaffold");
-      assert.deepEqual(verdict.toAuthor, ["Automated Validation", "Navigator Validation"]);
-    }
+    assert.deepEqual(verdict.toAuthor, ["Automated Validation", "Navigator Validation"]);
   });
 
   it("a Technical Story's plan.md reads the same as a User Story's", () => {

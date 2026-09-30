@@ -20,11 +20,11 @@
 // verbatim leaves no placeholder behind; keeping "Deliver X as an observable slice"
 // does.
 //
-// Two Plan vocabularies exist and both are recorded here, each once. `PRODUCT` is
-// what the front door writes (`roadmapPlanContext`); `LIBRARY` is what
-// `planLifecycleItem` writes when called with no sections, which only the recorded
-// corpus and tests do. CR112 keeps both so that no recorded byte moves; retiring the
-// library vocabulary is handed to CR111, which edits those surfaces anyway.
+// One Plan vocabulary, `PRODUCT_PLAN`, which `planLifecycleItem` fills for every
+// caller. CR112 recorded a second one, the defaults Python's `plan_lifecycle_item`
+// wrote when a caller passed no sections; no product path wrote it, only the recorded
+// corpus and the tests, so the corpus graded a scaffold no user received. CR111 (D3)
+// retired it.
 
 export type SectionKind = "placeholder" | "default";
 
@@ -118,7 +118,7 @@ export interface PlanVocabulary {
   readonly e2eDecision: string;
 }
 
-/** What the front door writes: Python `cmd_plan_item`'s roadmap context. */
+/** The Plan scaffold's sentences: Python `cmd_plan_item`'s roadmap context. */
 export const PRODUCT_PLAN: PlanVocabulary = {
   objective: "Plan the smallest coherent, testable slice for {title}.",
   scope: [
@@ -142,28 +142,6 @@ export const PRODUCT_PLAN: PlanVocabulary = {
 
 /** The Non-Goals line the front door writes for each sibling roadmap item. */
 export const SIBLING_NON_GOAL = "Do not implement sibling roadmap item: {title}.";
-
-/**
- * What `planLifecycleItem` writes when a caller passes no sections: Python
- * `plan_lifecycle_item`'s defaults. No product path reaches these; the recorded
- * corpus and the tests do.
- */
-export const LIBRARY_PLAN: PlanVocabulary = {
-  objective: "Confirm scope, validation route, and implementation contract.",
-  scope: ["Implement the smallest coherent slice for the active item."],
-  nonGoals: ["Do not silently absorb adjacent roadmap work."],
-  acceptanceBehavior: [
-    "Given the relevant starting state",
-    "When the Navigator exercises the planned behavior",
-    "Then the expected observable outcome appears",
-    "And important constraints still hold",
-  ],
-  validationRoute: [
-    "Run automated checks required by the local guide.",
-    "Provide a Navigator-visible validation route with expected observation and pass/fail condition.",
-  ],
-  e2eDecision: "Decide explicitly before implementation whether E2E is required.",
-};
 
 /** A vocabulary with its slots filled for one item. */
 export function fillPlanVocabulary(vocabulary: PlanVocabulary, values: SlotValues): PlanVocabulary {
@@ -194,37 +172,20 @@ function bullets(lines: readonly string[]): string[] {
   return lines.map((line) => `- ${line}`);
 }
 
-const PLAN_VOCABULARIES: readonly PlanVocabulary[] = [PRODUCT_PLAN, LIBRARY_PLAN];
-
 /** The sections of `plan.md`, in the order Plan writes them. */
 export const PLAN_SECTIONS: readonly SectionSpec[] = [
-  {
-    header: "Objective",
-    kind: "placeholder",
-    lines: PLAN_VOCABULARIES.map((vocabulary) => vocabulary.objective),
-  },
-  {
-    header: "Scope",
-    kind: "placeholder",
-    lines: PLAN_VOCABULARIES.flatMap((vocabulary) => bullets(vocabulary.scope)),
-  },
+  { header: "Objective", kind: "placeholder", lines: [PRODUCT_PLAN.objective] },
+  { header: "Scope", kind: "placeholder", lines: bullets(PRODUCT_PLAN.scope) },
   { header: "Non-Goals", kind: "default", lines: [] },
   {
     header: "Acceptance Behavior",
     kind: "placeholder",
-    lines: [
-      FENCE_OPEN,
-      ...PLAN_VOCABULARIES.flatMap((vocabulary) => vocabulary.acceptanceBehavior),
-      FENCE_CLOSE,
-    ],
+    lines: [FENCE_OPEN, ...PRODUCT_PLAN.acceptanceBehavior, FENCE_CLOSE],
   },
   {
     header: "Validation Route",
     kind: "placeholder",
-    lines: [
-      ...PLAN_VOCABULARIES.flatMap((vocabulary) => bullets(vocabulary.validationRoute)),
-      ...PLAN_VOCABULARIES.map((vocabulary) => `E2E decision: ${vocabulary.e2eDecision}`),
-    ],
+    lines: [...bullets(PRODUCT_PLAN.validationRoute), `E2E decision: ${PRODUCT_PLAN.e2eDecision}`],
   },
   { header: "Implementation Contract", kind: "default", lines: [] },
   { header: "Stop Conditions", kind: "default", lines: [] },
@@ -280,7 +241,7 @@ export const STORY_INDEX_SECTIONS: readonly SectionSpec[] = [
   {
     header: "Outcome",
     kind: "placeholder",
-    lines: [STORY_OUTCOME, ...PLAN_VOCABULARIES.map((vocabulary) => vocabulary.objective)],
+    lines: [STORY_OUTCOME, PRODUCT_PLAN.objective],
   },
   {
     header: "Acceptance Behavior",
@@ -289,7 +250,7 @@ export const STORY_INDEX_SECTIONS: readonly SectionSpec[] = [
       FENCE_OPEN,
       ...USER_STORY_ACCEPTANCE,
       ...TECHNICAL_STORY_ACCEPTANCE,
-      ...PLAN_VOCABULARIES.flatMap((vocabulary) => vocabulary.acceptanceBehavior),
+      ...PRODUCT_PLAN.acceptanceBehavior,
       FENCE_CLOSE,
     ],
   },
@@ -304,7 +265,7 @@ export const TEST_GUIDE_SECTIONS: readonly SectionSpec[] = [
   {
     header: "Automated Validation",
     kind: "placeholder",
-    lines: PLAN_VOCABULARIES.flatMap((vocabulary) => bullets(vocabulary.validationRoute)),
+    lines: bullets(PRODUCT_PLAN.validationRoute),
   },
   { header: "E2E Decision", kind: "default", lines: [] },
   { header: "Navigator Validation", kind: "placeholder", lines: [NAVIGATOR_VALIDATION_GUIDANCE] },
