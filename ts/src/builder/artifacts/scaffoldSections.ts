@@ -8,7 +8,7 @@
 // say whether it was still the scaffold, because nothing held the scaffold's lines in
 // a form a reader could compare against.
 //
-// This module holds them as TEMPLATES: fixed text with `{title}` and `{code}` slots.
+// This module holds them as TEMPLATES: fixed text with a `{title}` slot.
 // The writers fill them (`fill`) and produce the same bytes they always did; the
 // reader (`scaffoldState.ts`) matches a file's lines against them with the slots
 // wildcarded (`matchesTemplate`), so the check reads nothing but the file and this
@@ -36,17 +36,16 @@ export interface SectionSpec {
   readonly lines: readonly string[];
 }
 
-/** The slots a template may carry. */
+/** The slot a template may carry: the item's title, the one thing a scaffold varies by. */
 export interface SlotValues {
   readonly title?: string;
-  readonly code?: string;
 }
 
-const SLOT_RE = /\{(title|code)\}/g;
+const SLOT_RE = /\{(title)\}/g;
 
 /** Fill a template's slots. A slot with no value is left as written. */
 export function fill(template: string, values: SlotValues): string {
-  return template.replace(SLOT_RE, (whole, name: "title" | "code") => values[name] ?? whole);
+  return template.replace(SLOT_RE, (whole) => values.title ?? whole);
 }
 
 /**

@@ -8,6 +8,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, it } from "node:test";
+import { toAuthorLines } from "#builder/activeCheckpoint.ts";
 import { getAriadMethod } from "#builder/ariadMethod.ts";
 import {
   type PlanArtifactInput,
@@ -23,6 +24,8 @@ import {
   PLAN_SECTIONS,
   PRODUCT_PLAN,
   SIBLING_NON_GOAL,
+  STORY_INDEX_SECTIONS,
+  TEST_GUIDE_SECTIONS,
 } from "#builder/artifacts/scaffoldSections.ts";
 import {
   artifactState,
@@ -31,7 +34,10 @@ import {
   unfilledPlanSectionsFor,
 } from "#builder/artifacts/scaffoldState.ts";
 import { renderTechnicalStoryIndex, renderUserStoryIndex } from "#builder/artifacts/storyIndex.ts";
-import { STORY_PLAN_REQUIRED_SECTIONS } from "#builder/planPreauthorization.ts";
+import {
+  PLAN_APPROVAL_SECTIONS,
+  STORY_PLAN_REQUIRED_SECTIONS,
+} from "#builder/planPreauthorization.ts";
 
 const TITLE = "Enter an address, with a comma";
 const CODE = "CV1.DS1.US1";
@@ -96,8 +102,8 @@ describe("matchesTemplate", () => {
     );
     assert.equal(matchesTemplate("I want to X,", "I want to {title},"), true);
     assert.equal(matchesTemplate("I want to X", "I want to {title},"), false);
-    assert.equal(matchesTemplate("# CV1 — X", "# {code} — {title}"), true);
-    assert.equal(matchesTemplate("# CV1 - X", "# {code} — {title}"), false);
+    assert.equal(matchesTemplate("Pay CV1 — then X", "Pay {title} — then {title}"), true);
+    assert.equal(matchesTemplate("Pay CV1 - then X", "Pay {title} — then {title}"), false);
   });
 });
 
@@ -359,5 +365,49 @@ describe("reading from disk, and the two plan-section rules", () => {
       "Validation Route",
     ]);
     assert.deepEqual(unauthoredPlanSectionsFor(null, ["Scope"]), ["Scope"]);
+  });
+});
+
+describe("the sections to write read as the file has them (CR112 handoff review)", () => {
+  const rows = (headers: readonly string[]) =>
+    toAuthorLines(headers).map((line) => line.replace(/^│ /u, "").replace(/ +│$/u, ""));
+
+  it("a list that wraps breaks between headings, never inside one, and continues under the first", () => {
+    assert.deepEqual(rows(["Automated Validation", "Navigator Validation"]), [
+      "  to author: Automated Validation,",
+      "             Navigator Validation",
+    ]);
+    assert.deepEqual(rows(["Objective", "Scope", "Acceptance Behavior", "Validation Route"]), [
+      "  to author: Objective, Scope, Acceptance Behavior,",
+      "             Validation Route",
+    ]);
+    assert.deepEqual(rows(["User Story", "Outcome", "Acceptance Behavior"]), [
+      "  to author: User Story, Outcome, Acceptance Behavior",
+    ]);
+    assert.deepEqual(rows([]), []);
+  });
+
+  it("every row fits the card, for every heading the tables hold", () => {
+    const headers = [...PLAN_SECTIONS, ...STORY_INDEX_SECTIONS, ...TEST_GUIDE_SECTIONS].map(
+      (s) => s.header,
+    );
+    for (const line of toAuthorLines(headers)) assert.equal([...line].length, 58, line);
+  });
+
+  it("an approval lists its sections in the plan file's order", () => {
+    const order = PLAN_SECTIONS.map((s) => s.header);
+    const positions = PLAN_APPROVAL_SECTIONS.map((header) => order.indexOf(header));
+    assert.deepEqual(
+      positions,
+      [...positions].sort((a, b) => a - b),
+    );
+    assert.deepEqual(PLAN_APPROVAL_SECTIONS, [
+      "Objective",
+      "Scope",
+      "Non-Goals",
+      "Acceptance Behavior",
+      "Validation Route",
+      "Implementation Contract",
+    ]);
   });
 });

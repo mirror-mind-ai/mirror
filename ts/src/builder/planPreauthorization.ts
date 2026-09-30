@@ -49,18 +49,21 @@ export const STORY_PLAN_REQUIRED_SECTIONS = [
 
 /**
  * The sections a Plan approval requires authored, on either route (CR112): every
- * placeholder section of the story scaffold, then every section the Plan contract
- * requires. One list, so the ordinary and the preauthorized route cannot hold a plan
- * to different rules. A placeholder section counts until it is authored; a required
- * `default` section counts until it is not empty or pending.
+ * placeholder section of the story scaffold and every section the Plan contract
+ * requires, in the order the plan file has them, so a refusal lists them as the reader
+ * will find them. One list, so the ordinary and the preauthorized route cannot hold a
+ * plan to different rules. A placeholder section counts until it is authored; a
+ * required `default` section counts until it is not empty or pending.
  */
 export const PLAN_APPROVAL_SECTIONS: readonly string[] = [
-  ...new Set([
-    ...PLAN_SECTIONS.filter((section) => section.kind === "placeholder").map(
-      (section) => section.header,
-    ),
-    ...STORY_PLAN_REQUIRED_SECTIONS,
-  ]),
+  ...PLAN_SECTIONS.filter(
+    (section) =>
+      section.kind === "placeholder" ||
+      (STORY_PLAN_REQUIRED_SECTIONS as readonly string[]).includes(section.header),
+  ).map((section) => section.header),
+  ...STORY_PLAN_REQUIRED_SECTIONS.filter(
+    (header) => !PLAN_SECTIONS.some((section) => section.header === header),
+  ),
 ];
 
 /** Python `PlanPreauthorizationMismatch`. */

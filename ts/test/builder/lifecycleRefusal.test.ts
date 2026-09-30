@@ -119,7 +119,13 @@ function outcome(step: LifecycleStep, event: string): string {
     const common = { journey: "demo", method: getAriadMethod() };
     const run: Record<LifecycleStep, () => unknown> = {
       plan: () => planLifecycleItem(db, common, deps),
-      plan_approval: () => approvePlanCheckpoint(db, { journey: "demo", method: "ariad" }, deps),
+      // No project: the step order is under test here, not the files (CR112 reads those).
+      plan_approval: () =>
+        approvePlanCheckpoint(
+          db,
+          { journey: "demo", method: "ariad", planArtifactPath: null },
+          deps,
+        ),
       validate: () =>
         validateLifecycleItem(
           db,
@@ -153,7 +159,13 @@ function outcome(step: LifecycleStep, event: string): string {
       done: () =>
         doneLifecycleItem(
           db,
-          { ...common, historyAction: "h", roadmapUpdate: "r", nextRecommendation: "n" },
+          {
+            ...common,
+            historyAction: "h",
+            roadmapUpdate: "r",
+            nextRecommendation: "n",
+            indexArtifactPath: null,
+          },
           deps,
         ),
     };

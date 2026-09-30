@@ -883,14 +883,14 @@ Plan writes `plan.md` as a scaffold: template sentences with the item's title
 pasted in. It is not a plan. The Objective, Scope, Acceptance Behavior, and
 Validation Route are what the Navigator approves from: write them for this
 story, in Navigator-facing language. The Non-Goals, Implementation Contract,
-Stop Conditions, and Approval Gate may stand as written when they are true. When
-`build show` names `index.md` a scaffold, write its story statement, Outcome, and
-Acceptance Behavior too.
+Stop Conditions, and Approval Gate may stand as written when they are true. Unless
+`build show` names `index.md` authored, write its story statement, Outcome, and
+Acceptance Behavior too: it may say scaffold, partly authored, or incomplete.
 
 The sequence:
 
 1. `plan-item`.
-2. Author `plan.md`, and `index.md` when `build show` names it a scaffold.
+2. Author `plan.md`, and `index.md` unless `build show` names it authored.
 3. `build show` reads `✓ plan.md — authored`.
 4. Present the plan to the Navigator in the reply, and ask for approval.
 5. On approval, `approve-plan`.

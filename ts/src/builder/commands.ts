@@ -1288,20 +1288,28 @@ export function runContinueLifecycle(
   if (!(options.historyAction && options.roadmapUpdate && options.nextRecommendation)) {
     return blocked("Done requires history, roadmap, and next-step evidence.");
   }
-  const report = doneLifecycleItem(
-    context.db,
-    {
-      journey,
-      method: getAriadMethod(),
-      historyAction: options.historyAction,
-      roadmapUpdate: options.roadmapUpdate,
-      nextRecommendation: options.nextRecommendation,
-      doneArtifactPath: planPath === null ? null : join(dirname(planPath), "done.md"),
-      projectRoot: projectPath,
-    },
-    context.deps,
-  );
-  return { stdout: printed(renderDoneCheckpoint(report)), stderr: "", exitCode: 0 };
+  // The same Done as `done-item`, with the same record to read (CR112): a cadence that
+  // continues on its own must not close a story `done-item` would refuse.
+  try {
+    const report = doneLifecycleItem(
+      context.db,
+      {
+        journey,
+        method: getAriadMethod(),
+        historyAction: options.historyAction,
+        roadmapUpdate: options.roadmapUpdate,
+        nextRecommendation: options.nextRecommendation,
+        doneArtifactPath: planPath === null ? null : join(dirname(planPath), "done.md"),
+        indexArtifactPath: planPath === null ? null : join(dirname(planPath), "index.md"),
+        projectRoot: projectPath,
+      },
+      context.deps,
+    );
+    return { stdout: printed(renderDoneCheckpoint(report)), stderr: "", exitCode: 0 };
+  } catch (error) {
+    if (error instanceof LifecycleRefusal) return blocked(error.message);
+    throw error;
+  }
 }
 
 // --- Delivery Story leaves (plateau 5) --------------------------------------

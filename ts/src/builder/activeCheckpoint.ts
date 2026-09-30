@@ -16,7 +16,7 @@
 // their truth is the seal.
 
 import { type ArtifactVerdict, describeArtifactState } from "./artifacts/scaffoldState.ts";
-import { cardPrefixed, cardText, cardWrapped } from "./card.ts";
+import { CARD_WIDTH, cardText, cardWrapped } from "./card.ts";
 import type { BuilderDeliveryCursor } from "./deliveryCursor.ts";
 import { lifecycleStageOf } from "./lifecycleRefusal.ts";
 import { renderLifecycleRibbon } from "./lifecycleRibbon.ts";
@@ -49,14 +49,42 @@ export interface ActiveCheckpointView {
   readonly records: StoryRecords | null;
 }
 
+const TO_AUTHOR = "to author: ";
+const TO_AUTHOR_INDENT = "  ";
+
+/**
+ * The sections still to write, wrapped BETWEEN headings, never inside one, with every
+ * row after the first starting under the first heading. A heading cut in two reads as
+ * two items: the first render printed `Navigator` over `Validation` (CR112's handoff
+ * review). The headings are the scaffold tables' own, all far shorter than a row.
+ */
+export function toAuthorLines(headers: readonly string[]): string[] {
+  const width = CARD_WIDTH - TO_AUTHOR_INDENT.length - TO_AUTHOR.length;
+  const rows: string[] = [];
+  let row = "";
+  headers.forEach((header, index) => {
+    const item = index < headers.length - 1 ? `${header},` : header;
+    const joined = row === "" ? item : `${row} ${item}`;
+    if (row !== "" && joined.length > width) {
+      rows.push(row);
+      row = item;
+    } else {
+      row = joined;
+    }
+  });
+  if (row !== "") rows.push(row);
+  const hanging = " ".repeat(TO_AUTHOR.length);
+  return rows.map((text, index) =>
+    cardText(`${TO_AUTHOR_INDENT}${index === 0 ? TO_AUTHOR : hanging}${text}`),
+  );
+}
+
 function artifactLines(verdict: ArtifactVerdict): string[] {
   const glyph = verdict.state === "authored" ? "✓" : "○";
-  const lines = [cardText(`${glyph} ${verdict.name} — ${describeArtifactState(verdict.state)}`)];
-  if (verdict.toAuthor.length > 0) {
-    // A hanging indent, so a list that wraps stays one item to the eye.
-    lines.push(...cardPrefixed([`to author: ${verdict.toAuthor.join(", ")}`], " "));
-  }
-  return lines;
+  return [
+    cardText(`${glyph} ${verdict.name} — ${describeArtifactState(verdict.state)}`),
+    ...toAuthorLines(verdict.toAuthor),
+  ];
 }
 
 function recordLines(records: StoryRecords | null): string[] {

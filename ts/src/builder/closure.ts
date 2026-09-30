@@ -771,8 +771,10 @@ export interface DoneOptions {
   /**
    * The story's `index.md` (CR112). Done refuses while its placeholder sections are
    * still the scaffold's; `null` when there is no project, and no file to read.
+   * Required, not optional: `continue-lifecycle` once reached Done without it, and a
+   * story closed with its record still the scaffold (CR112's handoff review).
    */
-  readonly indexArtifactPath?: string | null;
+  readonly indexArtifactPath: string | null;
 }
 
 /**
@@ -819,7 +821,7 @@ export function doneLifecycleItem(
   ) {
     throw new LifecycleRefusal("done", "not_reached", "Done requires completed Debt Review");
   }
-  refuseUnauthoredIndex(options.indexArtifactPath ?? null, options.projectRoot ?? null);
+  refuseUnauthoredIndex(options.indexArtifactPath, options.projectRoot ?? null);
 
   const history = textOr(
     options.historyAction,

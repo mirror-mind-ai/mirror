@@ -14,7 +14,7 @@
 //                    throwaway token, or matches the placeholder pattern: the rule
 //                    `unfilledPlanSectionsFor` has always applied;
 //   * `scaffold`  -- every non-blank line is one the scaffold would write under this
-//                    heading, with the `{title}`/`{code}` slots wildcarded;
+//                    heading, with the `{title}` slot wildcarded;
 //   * `authored`  -- anything else. One real line under a heading is authored.
 //
 // `unfilled` is judged before `scaffold`, so a section that holds a `TODO` beside the

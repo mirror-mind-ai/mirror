@@ -39,9 +39,11 @@ export interface ApprovePlanOptions {
   readonly method: string;
   /**
    * The story package's `plan.md`. `null` when the journey has no project, so there
-   * is no file to read and approval proceeds as it always did.
+   * is no file to read and approval proceeds as it always did. Required, not optional:
+   * the rule lives in this argument, and a caller that could omit it could skip the
+   * rule without anyone deciding to (CR112's handoff review, finding 1).
    */
-  readonly planArtifactPath?: string | null;
+  readonly planArtifactPath: string | null;
   /** The project the refusal prints the path relative to. */
   readonly projectRoot?: string | null;
 }
@@ -50,7 +52,7 @@ export interface ApprovePlanOptions {
  * Refuse, before any write, a plan that is not yet a plan: any section in
  * `PLAN_APPROVAL_SECTIONS` missing, empty, pending, or still the scaffold's.
  */
-export function refuseUnauthoredPlan(planPath: string | null, projectRoot: string | null): void {
+function refuseUnauthoredPlan(planPath: string | null, projectRoot: string | null): void {
   if (planPath === null) return;
   const unauthored = unauthoredPlanSectionsFor(planPath, PLAN_APPROVAL_SECTIONS);
   if (unauthored.length === 0) return;
@@ -93,7 +95,7 @@ export function approvePlanCheckpoint(
       "Plan approval requires a Plan awaiting approval: run plan-item first.",
     );
   }
-  refuseUnauthoredPlan(options.planArtifactPath ?? null, options.projectRoot ?? null);
+  refuseUnauthoredPlan(options.planArtifactPath, options.projectRoot ?? null);
 
   let receipt = existing.planPreauthorization;
   if (receipt !== null && receipt.status === "pending") {

@@ -37,7 +37,7 @@ import { setAdoptedMethod } from "#builder/methodAdoption.ts";
 import { planLifecycleItem } from "#builder/plan.ts";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
 import golden from "#goldens/builder-command.golden.json" with { type: "json" };
-import { authorPlan } from "#helpers/authorScaffold.ts";
+import { authorPlan, authorStoryIndex } from "#helpers/authorScaffold.ts";
 import { invokeBuilderArgv } from "#helpers/builderInvoke.ts";
 import { normalizePathRows, projectRelative, scrubMessage } from "#helpers/builderSurfacePaths.ts";
 import { createIdentityTable } from "#helpers/identitySchema.ts";
@@ -1866,8 +1866,8 @@ test("CR020: build show renders the stage, position, and records, and changes no
         "to author: Objective, Scope, Acceptance Behavior,",
         "Validation Route",
         "○ test-guide.md — scaffold",
-        "to author: Automated Validation, Navigator",
-        "Validation",
+        "to author: Automated Validation,",
+        "Navigator Validation",
         "○ validation.md",
         "○ review.md",
         "○ coherence.md",
@@ -1911,8 +1911,8 @@ test("CR020: build show renders the stage, position, and records, and changes no
       "✓ index.md — authored",
       "✓ plan.md — authored",
       "○ test-guide.md — scaffold",
-      "to author: Automated Validation, Navigator",
-      "Validation",
+      "to author: Automated Validation,",
+      "Navigator Validation",
       "✓ validation.md",
       "○ review.md",
       "○ coherence.md",
@@ -2748,8 +2748,8 @@ test("CR112: build show and the artifacts card name what each Plan-stage artifac
     );
     assert.deepEqual(recordRows().slice(0, 5), [
       "○ index.md — scaffold",
-      "to author: Technical Story, Outcome, Acceptance",
-      "Behavior",
+      "to author: Technical Story, Outcome,",
+      "Acceptance Behavior",
       "○ plan.md — missing",
       "○ test-guide.md — missing",
     ]);
@@ -2793,6 +2793,70 @@ test("CR112: build show and the artifacts card name what each Plan-stage artifac
 
     rmSync(planPath);
     assert.deepEqual(recordRows().slice(3, 4), ["○ plan.md — missing"]);
+  } finally {
+    db.close();
+  }
+});
+
+test("CR112: continue-lifecycle closes a story only when its index is authored, as done-item does", () => {
+  const project = mkdtempSync("/tmp/builder-command-cr112-continue-");
+  temporaryDirectories.push(project);
+  writeSiblingTree(project, { guide: false });
+  const index = join(
+    project,
+    "docs/project/roadmap/cv1-first/cv1-ds1-alpha/cv1-ds1-ts1-first/index.md",
+  );
+  writeFileSync(index, renderTechnicalStoryIndex("CV1.DS1.TS1", "First slice"), "utf8");
+  const db = seed("adopted", project);
+  const cursorRow = () =>
+    (
+      db
+        .prepare("SELECT metadata FROM runtime_sessions WHERE session_id = ?")
+        .get("__builder_delivery_cursor__:demo") as { metadata: string }
+    ).metadata;
+  const continueLifecycle = () =>
+    invoke(db, [
+      "continue-lifecycle",
+      "--method",
+      "ariad",
+      "--journey",
+      "demo",
+      ...["--process", "p", "--project", "p", "--product", "p"],
+      ...["--history-action", "h", "--roadmap-update", "r", "--next-recommendation", "n"],
+    ]);
+  try {
+    setDeliveryCursor(
+      db,
+      {
+        journey: "demo",
+        method: "ariad",
+        activeItem: "CV1.DS1.TS1",
+        activeItemTitle: "First slice",
+        activeItemLevel: "technical_story",
+        lastDeliveryEvent: "review_complete",
+        cadenceProfile: "accelerated",
+        navigatorFlowUnit: "story_by_story",
+      },
+      { nowIso: () => NOW },
+    );
+    const before = cursorRow();
+    const refused = continueLifecycle();
+    assert.equal(refused.exitCode, 1, refused.stdout + refused.stderr);
+    assert.equal(refused.stderr, "");
+    assert.deepEqual(surfaceIds(refused.stdout), ["CHECKPOINT_REFUSED"]);
+    assert.equal(
+      cardRows(refused.stdout, "reason", "cursor"),
+      asCardRows(
+        "Done needs the story's own record. Still to author in docs/project/roadmap/cv1-first/cv1-ds1-alpha/cv1-ds1-ts1-first/index.md: Technical Story, Outcome, Acceptance Behavior.",
+      ),
+    );
+    assert.equal(cursorRow(), before, "the refusal changed nothing");
+
+    authorStoryIndex(index);
+    const closed = continueLifecycle();
+    assert.equal(closed.exitCode, 0, closed.stdout + closed.stderr);
+    assert.deepEqual(surfaceIds(closed.stdout), ["DONE_CHECKPOINT"]);
+    assert.match(cursorRow(), /"last_delivery_event": "done_complete"/u);
   } finally {
     db.close();
   }
