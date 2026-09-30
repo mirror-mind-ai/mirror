@@ -1029,6 +1029,52 @@ CI was green on every push that carried the change: plateau 1 (`e2d03dc0`), plat
 (`b6a33ad5`), plateau 3 (`2646855c`), and plateau 4 (`00601d23`). Each ran Tests on
 both legs and the smoke.
 
+### Handoff review (2026-09-30)
+
+This review came after validation, per the collaboration strategy. The baseline panel
+(engineer, quality-assurance, devops-engineer, security-engineer, database-architect)
+and the lenses that reviewed the plan (prompt-engineer, experience-designer,
+product-designer) reviewed the delivered code, tests, words, safety posture,
+operational cost, and resumability. Every finding was checked against the code before
+it was written down. Finding 2 was reproduced in a scratch home at both commits,
+before and after the change.
+
+Synthesis: the delivery does what the plan said on every path the plan named, and the
+recorded corpus agrees with the product byte for byte. The findings sit at edges the
+plan did not walk. One is a Plan with no project path and an `--objective`, for which
+the old card was the only trace. The other two are names that the renames left pointing
+at nothing, and one instruction that points at the wrong surface. None is a blocker.
+
+| # | Lens | Finding | Class | Recommendation |
+|---|---|---|---|---|
+| 1 | engineer | `unfilledPlanSectionsFor` has had no product caller since CR112, when both approval routes moved to the scaffold-aware rule. Its tests kept it alive, and plateau 1 removed its last export path. Comments still point at it, or at names that no longer exist: `planPreauthorization.unfilledPlanSectionsFor` (`deliveryStoryArtifacts.ts`), `unauthoredPlanSectionsFor` (`scaffoldState.ts`), and `planArtifacts.ts`, which names it as the reader of `plan.md` | Non-blocking debt. The stale names were introduced here; the dead function is carried from CR112 | Pay now: delete the function and its two tests. The rule it applied, `isUnfilledBody`, stays, used and tested through the section states. Point the comments at `planSectionsToAuthor` |
+| 2 | quality-assurance, experience-designer | With no project path, `plan-item --objective` exits 0 and the sentence is recorded nowhere: not on the card, in a file, or in `build show`. Before the change, the card echoed it once, its only trace. The card also states the same absence twice, with two stories: `not materialized yet`, which is temporary, above `not written: the journey has no project path`, which is structural | Non-blocking debt, introduced here | Pay now: state the reason once, on the package row, and have the story files row say that an `--objective` given was recorded nowhere. A test pins it. No recorded card lacks a project, so no golden moves |
+| 3 | prompt-engineer | The skill sends the agent to `build show` for `index.md`'s state in step 2, and in the paragraph above it, before the sequence runs `build show` in step 3. The Plan card the agent has just returned already names that state | Non-blocking debt. The card's new rows make the old pointer the long way round | Pay now: "unless the Plan checkpoint or `build show` names it authored", in both places, with the Claude copies regenerated |
+
+Checked and dropped:
+
+- For `plan.md`, `judgeArtifact` judges each placeholder section twice, once for the
+  word and once for the list (engineer). The two cannot disagree:
+  `PLAN_APPROVAL_SECTIONS` holds every placeholder section by construction, judged
+  with the same spec.
+- The golden-edit scripts are not committed (devops-engineer). No edit script has been
+  since the freeze. Each README row states what its script read, what it wrote, and
+  what it asserted.
+
+The other lenses were silent:
+
+- security-engineer: the card prints fixed heading names and each file's state, and no
+  longer echoes any caller text. The files it reads are the resolved package's own,
+  judged after the confined write.
+- database-architect: nothing persisted changed, and the cursor and the receipt keep
+  their shapes. The mismatch's section list is now the same function's answer, and it
+  is unchanged on every recorded case.
+- devops-engineer: the code, the skill, and the plugin copies shipped in one push, with
+  no migration. US3's real package reads `authored` after D4. The cost is three file
+  reads per Plan.
+- product-designer: D1 and D2 held against the corpus. In 13 recorded cards the plan was
+  authored before Plan, and the card now says so and hands it to the Navigator to read.
+
 ## Outcome
 
 Pending.
