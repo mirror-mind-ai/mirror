@@ -1540,11 +1540,11 @@ test("CR019: a story's Plan names only its own parent's other children as non-go
     "- Do not implement sibling roadmap item: Second slice.\n" +
       "- Do not implement sibling roadmap item: Third slice.",
   );
-  assert.equal(
-    cardRows(first.card, "non-goals", "acceptance"),
-    "○ Do not implement sibling roadmap item: Second slice. " +
-      "○ Do not implement sibling roadmap item: Third slice.",
-    "not the parent, the DS10 child, the cousin, the other Delivery Story, or CV2",
+  // CR111 D2: the siblings live in plan.md, where CR019 made them true; the card prints
+  // no section of the plan, non-goals included.
+  assert.ok(
+    !allCardRows(first.card).some((row) => row.trim() === "non-goals"),
+    "the card has no non-goals block",
   );
 
   const onlyChild = planStoryIn(project, {
@@ -2317,10 +2317,9 @@ test("CR018: a title reaches Pull, Plan, Ready, and the Snapshot whole", () => {
       planSection(planMd, "Non-Goals"),
       `- Do not implement sibling roadmap item: ${SLASHED.ts2}.`,
     );
-    assert.equal(
-      cardRows(planned.stdout, "non-goals", "acceptance"),
-      `○ Do not implement sibling roadmap item: ${SLASHED.ts2}.`,
-    );
+    // CR111: the card names the file's state, not its Non-Goals; the whole title is in
+    // plan.md, where the assertions above read it.
+    assert.ok(allCardRows(planned.stdout).some((row) => row.startsWith("○ plan.md — scaffold")));
 
     const ready = pull("CV1.DS2", SLASHED.ds2, "delivery_story");
     assert.equal(ready.exitCode, 0, ready.stderr);

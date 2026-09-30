@@ -397,7 +397,7 @@ card() { sed -n '/<<<ARIAD:PLAN_CHECKPOINT>>>/,/<<<END:PLAN_CHECKPOINT>>>/p'; }
 view() { echo '  [story files]'; rows 'story files' granularity < "$1"; echo '  [granularity .. approval gate]'; rows granularity 'approval gate' < "$1"; echo '  [next action]'; rows 'next action' boundary < "$1"; }
 sentences() { printf '  placeholder sentences on the card: %s\n' "$(grep -c 'as an observable slice\|Given the starting state needed for\|Plan the smallest coherent\|Run automated tests that cover' "$1")"; }
 records() { cr111 build show --journey j --method ariad | sed -n '/│ records/,/│ boundary/p' | sed '1d;$d' | sed 's/│//g; s/ *$//'; }
-agree() { rows 'story files' granularity < "$1" > "$V/card-files.txt"; records | sed -n '/index.md/,/validation.md/p' | sed '$d' > "$V/show-files.txt"; if [ -s "$V/card-files.txt" ] && diff -q "$V/card-files.txt" "$V/show-files.txt" > /dev/null; then echo '  card and build show: identical'; else echo '  card and build show: differ'; diff "$V/card-files.txt" "$V/show-files.txt" | sed 's/^/    /'; fi; }
+agree() { rows 'story files' granularity < "$1" | sed '1d;$d' > "$V/card-files.txt"; records | sed -n '/index.md/,/validation.md/p' | sed '$d' > "$V/show-files.txt"; if [ -s "$V/card-files.txt" ] && diff -q "$V/card-files.txt" "$V/show-files.txt" > /dev/null; then echo '  card and build show: identical'; else echo '  card and build show: differ'; diff "$V/card-files.txt" "$V/show-files.txt" | sed 's/^/    /'; fi; }
 echo '--- step 1: plan-item writes the scaffold'
 pull CV1.DS1.US1 user_story 'Enter an address'
 cr111 build plan-item --journey j --method ariad 2>&1 | card > "$V/c1.txt"; view "$V/c1.txt"; sentences "$V/c1.txt"
@@ -795,6 +795,46 @@ Two things the plan did not say:
   kept a dependency from the approval layer back into the reader.
 
 Next: plateau 2, the card.
+
+### Plateau 2 handoff (2026-09-30)
+
+Now true: the Plan checkpoint prints no section of the plan. The `plan`, `scope`,
+`non-goals`, `acceptance`, and `validation` blocks are gone. The `artifacts` path rows
+became `story files`: the three files, each with its state and the sections it still
+needs, judged by `planLifecycleItem` right after the write and carried on the report
+(`storyFiles`), in the rows `build show` prints, from the same function. The next
+action follows the table. The route passes every step: 0 placeholder sentences on each
+card, the card and `build show` identical in the three states the route visits, and
+the `plan.md` digest unchanged.
+
+The 18 recorded cards were edited by script, under criterion 8's contract, and listed in
+`ts/test/goldens/README.md`. 630 rows left, and 18 `story files` blocks of 129 rows
+arrived. 2886 tests pass, and the Builder smoke passed 60 of 60.
+
+What the corpus found:
+
+- **The recorded cards held the contradiction thirteen times.** In 13 of the 18,
+  `plan.md` was already authored when Plan ran, because the preauthorization and
+  cadence sequences seed a complete plan before Plan. Every one of those cards printed
+  template scope and acceptance, checked off, above a file that said something else:
+  route step 3, recorded since the port. They now read `✓ plan.md — authored`, with the
+  next action "Driver consumes bounded authority." in the eleven preauthorized ones.
+- **Two tests asserted the card's non-goals** (CR019's sibling test and CR018's
+  whole-title test). Their file assertions, the siblings in `plan.md`'s Non-Goals, stay.
+  Their card halves now assert what D2 decided: no non-goals block, and the file's state.
+
+Two things the plan did not say:
+
+- **The scratch story setup became a helper.** `scaffoldRefusals.test.ts` built its
+  world inline. The card tests needed the same one, so it moved to
+  `ts/test/helpers/storyWorld.ts`, and both suites use it.
+- **The route's agreement check compared a header with none.** It diffed the card's
+  block, header and closing blank row included, against `build show`'s rows without
+  them. The product's rows were identical from the first run. The helper now drops the
+  two lines, in the script and in the copy above. The recorded before-output is
+  unchanged, because the card had no block to drop them from.
+
+Next: plateau 3, one vocabulary.
 
 ## Outcome
 

@@ -15,11 +15,20 @@
 //   3. **Defaults are per FIELD, not per call.** Every empty argument falls back to
 //      its own Python default, so a caller that supplies only `objective` still gets
 //      Python's scope, non-goals, acceptance, and validation text.
+//
+// CR111: the card prints what the runtime knows, and no section of the plan. It used
+// to print the scaffold's sentences as the plan -- scope, acceptance, validation,
+// checked off -- even over a plan.md a person had written. It now names the story
+// files, each with its state and the sections it still needs, in the rows `build show`
+// prints, judged once here, right after the write, so the command and the recorded
+// corpus print the same card.
 
 import { dirname } from "node:path";
 import type { WritableDatabase } from "#db/database.ts";
 import { STORY_SCOPED_COMMIT_RULE, writeStoryPackage } from "./artifacts/planArtifacts.ts";
 import { LIBRARY_PLAN } from "./artifacts/scaffoldSections.ts";
+import type { ArtifactVerdict } from "./artifacts/scaffoldState.ts";
+import { judgeStoryFiles, storyFileLines } from "./artifacts/storyFiles.ts";
 import { cardPrefixed, cardText, cardWrapped } from "./card.ts";
 import { isImplementableByDefault, normalizeRequired } from "./cursorTransitions.ts";
 import {
@@ -61,6 +70,12 @@ export interface BuilderPlanReport {
   readonly localRules: readonly string[];
   readonly cursor: BuilderDeliveryCursor;
   readonly planArtifactPath: string | null;
+  /**
+   * The package's `index.md`, `plan.md`, and `test-guide.md`, judged right after Plan
+   * wrote what was missing (CR111); `null` when the journey has no project, so nothing
+   * was written.
+   */
+  readonly storyFiles: readonly ArtifactVerdict[] | null;
   readonly preauthorizationRecorded: boolean;
   readonly nextEvent: string;
 }
@@ -180,7 +195,7 @@ export function planLifecycleItem(
     deps,
   );
 
-  const report: BuilderPlanReport = {
+  const report: Omit<BuilderPlanReport, "storyFiles"> = {
     journey,
     method: method.id,
     activeItem: existing.activeItem,
@@ -229,9 +244,10 @@ export function planLifecycleItem(
       pendingConfirmation: cursor.pendingConfirmation,
     });
   }
-  // Unconditional, and after the artifacts: the cursor write was told not to
-  // publish, so this is the only refresh for the whole event.
-  return report;
+  // Judged after the write, so the verdict describes the files as they now stand:
+  // the scaffold Plan just wrote, or the file a person wrote before it (CR111).
+  const storyFiles = artifactPath === null ? null : judgeStoryFiles(dirname(artifactPath));
+  return { ...report, storyFiles };
 }
 
 /** Python `_granularity_message`. */
@@ -241,11 +257,34 @@ function granularityMessage(report: BuilderPlanReport): string {
     : "Delivery Story must expand into User Stories and/or Technical Stories before Plan.";
 }
 
-/** Python `_plan_next_action`. */
+/**
+ * Python `_plan_next_action`, told by the file (CR111). The words are the skill's:
+ * the Driver authors and presents, the Navigator approves. None of them names passing
+ * the structural check as the goal. With no project nothing was written, so there is
+ * no file to name and the line stays what it was.
+ */
 function planNextAction(report: BuilderPlanReport): string {
-  return report.preauthorizationRecorded
-    ? "Driver completes Plan and consumes bounded authority."
-    : "Navigator approves the Plan or requests changes.";
+  if (report.storyFiles === null) {
+    return report.preauthorizationRecorded
+      ? "Driver completes Plan and consumes bounded authority."
+      : "Navigator approves the Plan or requests changes.";
+  }
+  const authored = report.storyFiles.find((file) => file.name === "plan.md")?.state === "authored";
+  if (report.preauthorizationRecorded) {
+    return authored
+      ? "Driver consumes bounded authority."
+      : "Driver authors plan.md, then consumes bounded authority.";
+  }
+  return authored
+    ? "Navigator reads plan.md and approves it or requests changes."
+    : "Driver authors plan.md and presents it; the Navigator approves it or requests changes.";
+}
+
+/** The story files block: `build show`'s rows for the same files, or why there are none. */
+function storyFilesBlock(report: BuilderPlanReport): string[] {
+  return report.storyFiles === null
+    ? cardWrapped("not written: the journey has no project path")
+    : report.storyFiles.flatMap(storyFileLines);
 }
 
 /** Python `_plan_boundary`. */
@@ -256,7 +295,13 @@ function planBoundary(report: BuilderPlanReport): string {
 }
 
 /**
- * Python `render_plan_checkpoint`.
+ * Python `render_plan_checkpoint`, without the plan (CR111).
+ *
+ * The card prints no section of the plan: not the objective, scope, non-goals,
+ * acceptance, or validation, which it used to fill from the scaffold's sentences.
+ * In their place it names the story files, each with its state and the sections it
+ * still needs, in the rows `build show` prints. The implementation contract stays:
+ * its lines are Ariad's rules and the project's own, true whatever the plan says.
  *
  * The four `*_path=` trailer lines are appended OUTSIDE the card and only when an
  * artifact path exists — they are the machine-readable half of the surface, read by
@@ -283,29 +328,11 @@ export function renderPlanCheckpoint(report: BuilderPlanReport): string {
     cardText("story package"),
     ...cardWrapped(written ? packagePath : "not materialized yet"),
     "│                                                        │",
-    cardText("artifacts"),
-    ...cardWrapped(written ? `index: ${indexPath}` : "index: not written"),
-    ...cardWrapped(written ? `plan: ${planPath}` : "plan: not written"),
-    ...cardWrapped(written ? `test guide: ${testGuidePath}` : "test guide: not written"),
+    cardText("story files"),
+    ...storyFilesBlock(report),
     "│                                                        │",
     cardText("granularity"),
     ...cardWrapped(granularityMessage(report)),
-    "│                                                        │",
-    cardText("plan"),
-    ...cardWrapped(report.objective),
-    "│                                                        │",
-    cardText("scope"),
-    ...cardPrefixed(report.scope, "✓"),
-    "│                                                        │",
-    cardText("non-goals"),
-    ...cardPrefixed(report.nonGoals, "○"),
-    "│                                                        │",
-    cardText("acceptance"),
-    ...cardPrefixed(report.acceptanceBehavior, "✓"),
-    "│                                                        │",
-    cardText("validation"),
-    ...cardPrefixed(report.validationRoute, "✓"),
-    ...cardWrapped(`E2E: ${report.e2eDecision}`),
     "│                                                        │",
     cardText("implementation contract"),
     ...cardWrapped("TDD/characterization tests when behavior is testable."),

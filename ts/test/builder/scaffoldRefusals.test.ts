@@ -6,8 +6,7 @@
 // for having changed nothing.
 
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import test from "node:test";
 import { approvePlanCheckpoint } from "#builder/approve.ts";
 import { getAriadMethod } from "#builder/ariadMethod.ts";
@@ -16,76 +15,25 @@ import { renderUserStoryIndex } from "#builder/artifacts/storyIndex.ts";
 import { doneLifecycleItem } from "#builder/closure.ts";
 import { getDeliveryCursor, setDeliveryCursor } from "#builder/deliveryCursor.ts";
 import { LifecycleRefusal } from "#builder/lifecycleRefusal.ts";
-import { planLifecycleItem } from "#builder/plan.ts";
 import { PlanPreauthorizationMismatch } from "#builder/planPreauthorization.ts";
 import {
   approveStoryPlanWithPreauthorization,
   renderStoryPlanPreauthorizationMismatch,
 } from "#builder/storyPlanPreauthorization.ts";
-import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
 import { authorPlan, authorSections, authorStoryIndex } from "#helpers/authorScaffold.ts";
-import { createIdentityTable } from "#helpers/identitySchema.ts";
-import { createRuntimeTables } from "#helpers/runtimeSchema.ts";
+import {
+  storyDeps as deps,
+  STORY_PACKAGE as PACKAGE,
+  planStory,
+  removeStoryWorlds,
+  type StoryWorld as World,
+  storyWorld as world,
+} from "#helpers/storyWorld.ts";
 
-const NOW = "2026-09-30T12:00:00+00:00";
-const deps = { nowIso: () => NOW };
-const PACKAGE = "docs/project/roadmap/cv1/cv1-ds1/cv1-ds1-us1-enter-an-address";
-const directories: string[] = [];
-
-test.after(() => {
-  for (const directory of directories) rmSync(directory, { recursive: true, force: true });
-});
-
-interface World {
-  readonly db: WritableDatabase;
-  readonly project: string;
-  readonly plan: string;
-  readonly index: string;
-}
-
-/** A journey whose story was pulled and prepared, with its package directory made. */
-function world(event = "prepare", pending: string | null = null): World {
-  const root = mkdtempSync("/tmp/cr112-refusals-");
-  directories.push(root);
-  const db = openDatabaseCopyForWrite(join(root, "copy.db"));
-  createIdentityTable(db);
-  createRuntimeTables(db);
-  const project = join(root, "project");
-  mkdirSync(join(project, PACKAGE), { recursive: true });
-  setDeliveryCursor(
-    db,
-    {
-      journey: "demo",
-      method: "ariad",
-      activeItem: "CV1.DS1.US1",
-      activeItemTitle: "Enter an address",
-      activeItemLevel: "user_story",
-      lastDeliveryEvent: event,
-      pendingConfirmation: pending,
-      navigatorFlowUnit: "story_by_story",
-    },
-    deps,
-  );
-  return {
-    db,
-    project,
-    plan: join(project, PACKAGE, "plan.md"),
-    index: join(project, PACKAGE, "index.md"),
-  };
-}
+test.after(removeStoryWorlds);
 
 function plan(w: World, preauthorize = false): void {
-  planLifecycleItem(
-    w.db,
-    {
-      journey: "demo",
-      method: getAriadMethod(),
-      planArtifactPath: w.plan,
-      projectRoot: w.project,
-      preauthorize,
-    },
-    deps,
-  );
+  planStory(w, { preauthorize });
 }
 
 function approve(w: World, planPath: string | null = w.plan) {
