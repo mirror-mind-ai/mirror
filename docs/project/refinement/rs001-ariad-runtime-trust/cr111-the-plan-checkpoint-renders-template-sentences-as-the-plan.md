@@ -861,6 +861,151 @@ Nothing departed from the plan.
 
 Next: plateau 4, the words, then validation.
 
+### Plateau 4 handoff (2026-09-30)
+
+Now true: the words say what the card is. In `mm-build/SKILL.md`, the Plan section's
+first paragraph no longer asks for plan content from the card. It says the card names
+the story files and holds no plan, that the plan is read in `plan.md`, and that right
+after `plan-item` there is no plan to present yet. In the sequence, step 3 is an
+instruction: run `build show`, return its `ACTIVE_CHECKPOINT`, and author again until
+it reads `authored`. Step 4 presents the plan from `plan.md`, section by section, as the
+file states it. The Claude copies were regenerated. REFERENCE's Builder lifecycle
+artifacts says the Plan checkpoint names the same files in the same rows and prints
+none of the plan, that `build show`'s list for `plan.md` is what approval refuses on,
+and how the scaffold is titled. The troubleshooting entry CR112 added stays true
+unchanged, and D4 makes its last step reliable: `authored` now means approval passes.
+
+The real US3 package, read with `build show`, still reads `authored` for all three
+files.
+
+### The route after the change (2026-09-30)
+
+At `2646855c`, the last code commit, identical across two runs:
+
+```text
+--- step 1: plan-item writes the scaffold
+  [story files]
+ story files
+ ○ index.md — scaffold
+   to author: User Story, Outcome, Acceptance Behavior
+ ○ plan.md — scaffold
+   to author: Objective, Scope, Acceptance Behavior,
+              Validation Route
+ ○ test-guide.md — scaffold
+   to author: Automated Validation,
+              Navigator Validation
+
+  [granularity .. approval gate]
+ granularity
+ user_story is implementable by default.
+
+ implementation contract
+ TDD/characterization tests when behavior is testable.
+ Keep changes scoped to the active story.
+ Do not use git add .; commit only story-scoped files.
+
+  [next action]
+ next action
+ Driver authors plan.md and presents it; the Navigator
+ approves it or requests changes.
+
+  placeholder sentences on the card: 0
+  plan.md digest: dc4b78f345459252ea373938c99a8aab
+--- step 2: the card and build show say the same of the three files
+  card and build show: identical
+--- step 3: a plan.md authored before plan-item
+  [story files]
+ story files
+ ○ index.md — scaffold
+   to author: Technical Story, Outcome,
+              Acceptance Behavior
+ ✓ plan.md — authored
+ ○ test-guide.md — scaffold
+   to author: Automated Validation,
+              Navigator Validation
+
+  [granularity .. approval gate]
+ granularity
+ technical_story is implementable by default.
+
+ implementation contract
+ TDD/characterization tests when behavior is testable.
+ Keep changes scoped to the active story.
+ Do not use git add .; commit only story-scoped files.
+
+  [next action]
+ next action
+ Navigator reads plan.md and approves it or requests
+ changes.
+
+  placeholder sentences on the card: 0
+  the artifacts card below it:
+ ↻ existing plan — authored
+  card and build show: identical
+--- step 4: plan-item --objective
+  [story files]
+ story files
+ ○ index.md — scaffold
+   to author: User Story, Outcome, Acceptance Behavior
+ ○ plan.md — partly authored
+   to author: Scope, Acceptance Behavior,
+              Validation Route
+ ○ test-guide.md — scaffold
+   to author: Automated Validation,
+              Navigator Validation
+
+  [granularity .. approval gate]
+ granularity
+ user_story is implementable by default.
+
+ implementation contract
+ TDD/characterization tests when behavior is testable.
+ Keep changes scoped to the active story.
+ Do not use git add .; commit only story-scoped files.
+
+  [next action]
+ next action
+ Driver authors plan.md and presents it; the Navigator
+ approves it or requests changes.
+
+  placeholder sentences on the card: 0
+  plan.md Objective: Show the saved address on the confirmation page.
+  card and build show: identical
+--- step 5: the preauthorized route
+  answer: <<<ARIAD:PLAN_CHECKPOINT>>> <<<ARIAD:PLAN_PREAUTHORIZATION_RECORDED>>> <<<ARIAD:ARTIFACTS_MATERIALIZED>>>
+  [next action]
+ next action
+ Driver authors plan.md, then consumes bounded
+ authority.
+
+--- step 6: the four placeholder sections authored, Non-Goals and Implementation Contract removed
+ ○ plan.md — partly authored
+   to author: Non-Goals, Implementation Contract
+  answer: <<<ARIAD:CHECKPOINT_REFUSED>>>
+ reason
+ Plan approval needs an authored plan. Still to author
+ in
+ docs/project/roadmap/cv1/ds1/cv1-ds1-us3-edit-the-addr
+ ess/plan.md:
+ Non-Goals, Implementation Contract.
+```
+
+Every step meets its pass condition:
+
+1. The card holds the three story files and no plan block. Its next action tells the
+   Driver to author and present. It carries 0 placeholder sentences, and the digest
+   is `dc4b78f3…`, as before the change.
+2. The card and `build show` are identical.
+3. `✓ plan.md — authored`, agreeing with `↻ existing plan — authored` beneath it. The
+   next action has the Navigator read `plan.md`. The card and `build show` are
+   identical.
+4. `○ plan.md — partly authored`, without Objective. The objective is written to the
+   file as before, and the card and `build show` are identical.
+5. The preauthorized next action has the Driver author, then consume.
+6. `build show` and the refusal both name Non-Goals and Implementation Contract.
+
+Next: the Navigator's walk of the route, then the handoff review.
+
 ## Outcome
 
 Pending.

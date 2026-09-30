@@ -468,8 +468,14 @@ two rules:
   `build show` lists `index.md`, `plan.md`, and `test-guide.md` as
   `authored`, `partly authored`, `scaffold`, `incomplete` (written by a person
   without the sections the Plan contract requires), or `missing`, and under
-  any not authored, the sections still to write. The artifacts card says the
-  same of a file it left alone.
+  any not authored, the sections still to write. For `plan.md` that list is
+  exactly what `approve-plan` would refuse on. The artifacts card says the
+  same of a file it left alone. The Plan checkpoint names the same three files
+  in the same rows and prints none of the plan's sections: the plan is read in
+  `plan.md`
+  ([CR111](docs/project/refinement/rs001-ariad-runtime-trust/cr111-the-plan-checkpoint-renders-template-sentences-as-the-plan.md)).
+  Plan writes one scaffold for every item, titled by the roadmap's title for
+  it, else the title Pull recorded, else the item's code.
   - `approve-plan`, on either route, refuses a `plan.md` whose Objective,
     Scope, Acceptance Behavior, or Validation Route is missing, empty,
     pending, or still the scaffold's, or whose Non-Goals or Implementation

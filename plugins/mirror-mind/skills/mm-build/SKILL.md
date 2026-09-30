@@ -865,10 +865,12 @@ NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build pl
 ```
 
 Render the Plan Checkpoint visibly and include the `plan artifact` path from the
-command output in the reply. The response must show the actual plan content in
-Navigator-facing language: scope, non-goals, acceptance behavior, validation
-route, E2E decision, and approval question. Keep runtime cursor fields compact;
-do not let technical metadata replace the plan itself.
+command output in the reply. The card holds no plan: it names the story files,
+`index.md`, `plan.md`, and `test-guide.md`, each with its state and the sections
+still to author. The plan is read in `plan.md`. Right after `plan-item` that file
+is usually the scaffold, so there is no plan to present yet: present it after it
+is authored, by the sequence below. Keep runtime cursor fields compact; do not let
+technical metadata replace the plan itself.
 
 Plan may update runtime cursor checkpoint state and may create/update the
 Plan-stage story package (`index.md`, `plan.md`, and `test-guide.md`) only for an
@@ -891,8 +893,11 @@ The sequence:
 
 1. `plan-item`.
 2. Author `plan.md`, and `index.md` unless `build show` names it authored.
-3. `build show` reads `✓ plan.md — authored`.
-4. Present the plan to the Navigator in the reply, and ask for approval.
+3. Run `build show` and return its `ACTIVE_CHECKPOINT` block. It must read
+   `✓ plan.md — authored`; if it does not, author what it names and run it again.
+4. Present the plan from `plan.md`, section by section: the Objective, Scope,
+   Non-Goals, Acceptance Behavior, and Validation Route as the file states them,
+   not paraphrased into claims the file does not make. Then ask for approval.
 5. On approval, `approve-plan`.
 
 The runtime checks structure, not quality: one real line under a heading passes
