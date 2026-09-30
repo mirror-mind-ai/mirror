@@ -23,7 +23,11 @@ import { dirname, join, relative, resolve, sep } from "node:path";
 import test from "node:test";
 import { approvePlanCheckpoint, renderPlanApproval } from "#builder/approve.ts";
 import { getAriadMethod } from "#builder/ariadMethod.ts";
-import { renderArtifactsMaterializedSurface } from "#builder/artifacts/artifactSurfaces.ts";
+import {
+  type MaterializedArtifact,
+  renderArtifactsMaterializedSurface,
+} from "#builder/artifacts/artifactSurfaces.ts";
+import { planPackageArtifacts } from "#builder/artifacts/planArtifacts.ts";
 import {
   coherenceLifecycleItem,
   doneLifecycleItem,
@@ -719,11 +723,9 @@ function replayLifecycleStep(context: ReplayContext, step: Step): ReplayOutcome 
               }),
             },
           ],
-          artifacts: report.materializedArtifacts.map((artifact) => ({
-            kind: artifact.kind,
-            path: projectRelativePath(artifact.path, context.projectAbsolute),
-            status: artifact.status,
-          })),
+          artifacts: report.materializedArtifacts.map((artifact) =>
+            artifactRecord(artifact, context.projectAbsolute),
+          ),
           materializedPaths: report.materializedPaths.map((path) =>
             projectRelativePath(path, context.projectAbsolute),
           ),
@@ -832,7 +834,7 @@ function replayLifecycleStep(context: ReplayContext, step: Step): ReplayOutcome 
             text: renderStoryPlanPreauthorizationRecorded(report.cursor),
           });
         }
-        const artifacts = planPackageArtifacts(planPath, context);
+        const artifacts = planPackageArtifacts(planPath, context.existedBefore);
         if (artifacts.length > 0) {
           surfaces.push({
             id: "artifacts_materialized",
@@ -847,11 +849,7 @@ function replayLifecycleStep(context: ReplayContext, step: Step): ReplayOutcome 
         }
         return {
           surfaces,
-          artifacts: artifacts.map((artifact) => ({
-            kind: artifact.kind,
-            path: projectRelativePath(artifact.path, context.projectAbsolute),
-            status: artifact.status,
-          })),
+          artifacts: artifacts.map((artifact) => artifactRecord(artifact, context.projectAbsolute)),
         };
       } catch (error) {
         return { surfaces: [], error: pythonError(error, context.projectAbsolute) };
@@ -1145,11 +1143,9 @@ function replayLifecycleStep(context: ReplayContext, step: Step): ReplayOutcome 
         });
         return {
           surfaces,
-          artifacts: report.materializedArtifacts.map((artifact) => ({
-            kind: artifact.kind,
-            path: projectRelativePath(artifact.path, context.projectAbsolute),
-            status: artifact.status,
-          })),
+          artifacts: report.materializedArtifacts.map((artifact) =>
+            artifactRecord(artifact, context.projectAbsolute),
+          ),
           status: report.status,
         };
       } catch (error) {
@@ -1200,11 +1196,9 @@ function replayLifecycleStep(context: ReplayContext, step: Step): ReplayOutcome 
           artifacts:
             report.status === "already_approved"
               ? []
-              : report.materializedArtifacts.map((artifact) => ({
-                  kind: artifact.kind,
-                  path: projectRelativePath(artifact.path, context.projectAbsolute),
-                  status: artifact.status,
-                })),
+              : report.materializedArtifacts.map((artifact) =>
+                  artifactRecord(artifact, context.projectAbsolute),
+                ),
           status: report.status,
           implementationStarted: report.implementationStarted,
           unfilledSections: [...report.unfilledSections],
@@ -1372,11 +1366,7 @@ function replayDeliveryStoryClosure(context: ReplayContext, step: Step): ReplayO
     }
     return {
       surfaces,
-      artifacts: artifacts.map((artifact) => ({
-        kind: artifact.kind,
-        path: projectRelativePath(artifact.path, context.projectAbsolute),
-        status: artifact.status,
-      })),
+      artifacts: artifacts.map((artifact) => artifactRecord(artifact, context.projectAbsolute)),
       status: report.status,
       checkpoint: report.checkpoint,
     };
@@ -1428,26 +1418,20 @@ function canonicalPlanPath(context: ReplayContext): string | null {
 }
 
 /**
- * The CLI's `_plan_package_artifacts` over `_artifact_existence`: existence is
- * sampled BEFORE Plan writes, so a file Plan created reports `created` and one the
- * Driver authored reports `existing`.
+ * One recorded artifact: its kind, its project-relative path, its status, and the note
+ * that says what an existing file is, when there is one (CR112). Every lifecycle step
+ * records artifacts through this, so a field the product adds cannot be dropped at one
+ * site and kept at another. Plan's artifacts come from the product's own
+ * `planPackageArtifacts` over existence sampled BEFORE Plan writes, so a file Plan
+ * created reports `created` and one that was there reports `existing`.
  */
-function planPackageArtifacts(
-  planPath: string | null,
-  context: ReplayContext,
-): { kind: string; path: string; status: string }[] {
-  if (planPath === null) return [];
-  const directory = dirname(planPath);
-  const triple: [string, string][] = [
-    ["story index", join(directory, "index.md")],
-    ["plan", planPath],
-    ["test guide", join(directory, "test-guide.md")],
-  ];
-  return triple.map(([kind, path]) => ({
-    kind,
-    path,
-    status: context.existedBefore.get(path) === true ? "existing" : "created",
-  }));
+function artifactRecord(artifact: MaterializedArtifact, projectAbsolute: string) {
+  return {
+    kind: artifact.kind,
+    path: projectRelativePath(artifact.path, projectAbsolute),
+    status: artifact.status,
+    ...(artifact.note === undefined ? {} : { note: artifact.note }),
+  };
 }
 
 /**

@@ -28,6 +28,7 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { invokeReadOnlyBuilderArgv } from "#builder/argv.ts";
 import { getAriadMethod } from "#builder/ariadMethod.ts";
+import { renderTechnicalStoryIndex } from "#builder/artifacts/storyIndex.ts";
 import { cardText } from "#builder/card.ts";
 import { surfacesForTrigger } from "#builder/commands.ts";
 import { getDeliveryCursor, setDeliveryCursor } from "#builder/deliveryCursor.ts";
@@ -1799,9 +1800,12 @@ test("CR020: build show renders the stage, position, and records, and changes no
     return first.stdout;
   };
   const folder = "docs/project/roadmap/cv1-first/cv1-ds1-alpha/cv1-ds1-ts1-first";
+  // The records block: the folder (wrapped over one or more rows), then one row per
+  // artifact or record, with a `to author:` row under an unauthored artifact (CR112).
   const records = (card: string) => {
     const lines = cardLines(card, "records", "boundary");
-    return { folder: lines.slice(0, -5).join(""), files: lines.slice(-5) };
+    const first = lines.findIndex((line) => /^[✓○] /u.test(line));
+    return { folder: lines.slice(0, first).join(""), files: lines.slice(first) };
   };
   try {
     setDeliveryCursor(
@@ -1826,9 +1830,24 @@ test("CR020: build show renders the stage, position, and records, and changes no
       "navigator_approval",
     );
     assert.equal(cardRows(planned, "active checkpoint", "records"), "after_plan");
+    // CR112: the Plan-stage artifacts carry their state; the index the sibling tree
+    // wrote is authored, the plan and the guide Plan just wrote are scaffolds, and
+    // each scaffold names the sections still to write.
     assert.deepEqual(records(planned), {
       folder,
-      files: ["✓ plan.md", "○ validation.md", "○ review.md", "○ coherence.md", "○ done.md"],
+      files: [
+        "✓ index.md — authored",
+        "○ plan.md — scaffold",
+        "to author: Objective, Scope, Acceptance Behavior,",
+        "Validation Route",
+        "○ test-guide.md — scaffold",
+        "to author: Automated Validation, Navigator",
+        "Validation",
+        "○ validation.md",
+        "○ review.md",
+        "○ coherence.md",
+        "○ done.md",
+      ],
     });
     assert.match(
       planned.replace(/[│╭╮╰╯─]/gu, " ").replace(/\s+/gu, " "),
@@ -1863,7 +1882,13 @@ test("CR020: build show renders the stage, position, and records, and changes no
     const validated = show("Debt Review");
     assert.equal(cardRows(validated, "last event", "pending confirmation"), "validation_passed");
     assert.deepEqual(records(validated).files, [
-      "✓ plan.md",
+      "✓ index.md — authored",
+      "○ plan.md — scaffold",
+      "to author: Objective, Scope, Acceptance Behavior,",
+      "Validation Route",
+      "○ test-guide.md — scaffold",
+      "to author: Automated Validation, Navigator",
+      "Validation",
       "✓ validation.md",
       "○ review.md",
       "○ coherence.md",
@@ -2651,6 +2676,96 @@ test("CR018: EXPAND_BLOCKED's action names the Delivery Story whose index.md nee
         "Story, Type, and Status columns) to CV1.DS9's index.md, creating it if the " +
         "Delivery Story has none, or resolve the duplicate heading, then Expand again.",
     );
+  } finally {
+    db.close();
+  }
+});
+
+test("CR112: build show and the artifacts card name what each Plan-stage artifact is", () => {
+  const project = mkdtempSync("/tmp/builder-command-cr112-");
+  temporaryDirectories.push(project);
+  writeSiblingTree(project, { guide: false });
+  const packageDir = join(
+    project,
+    "docs/project/roadmap/cv1-first/cv1-ds1-alpha/cv1-ds1-ts1-first",
+  );
+  // The index the sibling tree wrote is replaced by the scaffold Expand would write, so
+  // the artifacts card has an existing scaffold to name.
+  writeFileSync(
+    join(packageDir, "index.md"),
+    renderTechnicalStoryIndex("CV1.DS1.TS1", "First slice"),
+    "utf8",
+  );
+  const db = seed("adopted", project);
+  const run = (argv: readonly string[]) =>
+    invoke(db, [argv[0] ?? "", "--method", "ariad", "--journey", "demo", ...argv.slice(1)]);
+  // Every row from the first artifact on: the folder rows precede it, and a wrapped
+  // `to author:` list continues on the row after it.
+  const recordRows = () => {
+    const lines = cardLines(run(["show"]).stdout, "records", "boundary");
+    return lines.slice(lines.findIndex((line) => /^[✓○] /u.test(line)));
+  };
+  try {
+    setDeliveryCursor(
+      db,
+      {
+        journey: "demo",
+        method: "ariad",
+        activeItem: "CV1.DS1.TS1",
+        activeItemTitle: "First slice",
+        activeItemLevel: "technical_story",
+        lastDeliveryEvent: "prepare",
+        navigatorFlowUnit: "story_by_story",
+      },
+      { nowIso: () => NOW },
+    );
+    assert.deepEqual(recordRows().slice(0, 5), [
+      "○ index.md — scaffold",
+      "to author: Technical Story, Outcome, Acceptance",
+      "Behavior",
+      "○ plan.md — missing",
+      "○ test-guide.md — missing",
+    ]);
+
+    const planned = run(["plan-item"]);
+    assert.equal(planned.exitCode, 0, planned.stderr);
+    assert.match(planned.stdout, /│ ↻ existing story index — scaffold +│/u);
+    assert.match(planned.stdout, /│ ✓ created plan +│/u);
+
+    const planPath = join(packageDir, "plan.md");
+    const scaffold = readFileSync(planPath, "utf8");
+    writeFileSync(
+      planPath,
+      scaffold.replace(
+        "- Deliver First slice as an observable slice.",
+        "- The first slice of the seam.",
+      ),
+      "utf8",
+    );
+    assert.deepEqual(recordRows().slice(3, 6), [
+      "○ plan.md — partly authored",
+      "to author: Objective, Acceptance Behavior,",
+      "Validation Route",
+    ]);
+
+    writeFileSync(
+      planPath,
+      readFileSync(planPath, "utf8")
+        .replace("Plan the smallest coherent, testable slice for First slice.", "Cut the seam.")
+        .replace("Given the starting state needed for First slice", "Given the seam")
+        .replace(
+          "- Run automated tests that cover the planned behavior.",
+          "- Run the seam's tests.",
+        ),
+      "utf8",
+    );
+    assert.deepEqual(recordRows().slice(3, 5), [
+      "✓ plan.md — authored",
+      "○ test-guide.md — scaffold",
+    ]);
+
+    rmSync(planPath);
+    assert.deepEqual(recordRows().slice(3, 4), ["○ plan.md — missing"]);
   } finally {
     db.close();
   }

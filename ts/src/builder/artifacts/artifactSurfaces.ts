@@ -19,11 +19,13 @@ import { isAbsolute, relative, resolve } from "node:path";
 import { cardText, cardWrapped } from "../card.ts";
 import { wrapAriadSurface } from "../surfaceProtocol.ts";
 
-/** Python `MaterializedArtifact`. */
+/** Python `MaterializedArtifact`, plus a note (CR112): what an existing file is. */
 export interface MaterializedArtifact {
   readonly kind: string;
   readonly path: string;
   readonly status: string;
+  /** Printed after the kind, as `— <note>`: `scaffold`, `authored`, `partly authored`. */
+  readonly note?: string;
 }
 
 /** Python `materialized_artifact`. */
@@ -35,9 +37,11 @@ export function materializedArtifact(
   return { kind, path, status: options.existedBefore ? "updated" : "created" };
 }
 
-/** Python `existing_artifact`. */
-export function existingArtifact(kind: string, path: string): MaterializedArtifact {
-  return { kind, path, status: "existing" };
+/** Python `existing_artifact`, with the state of the file that was left alone (CR112). */
+export function existingArtifact(kind: string, path: string, note?: string): MaterializedArtifact {
+  return note === undefined
+    ? { kind, path, status: "existing" }
+    : { kind, path, status: "existing", note };
 }
 
 /** Python `_status_icon`: an unknown status renders `•` rather than failing. */
@@ -102,8 +106,9 @@ export function renderArtifactsMaterializedSurface(options: ArtifactsSurfaceOpti
       // A blank row BETWEEN entries only, so the block does not open or close
       // with one. An off-by-one here is invisible until a golden compares bytes.
       if (index > 0) lines.push("│                                                        │");
+      const note = artifact.note === undefined ? "" : ` — ${artifact.note}`;
       lines.push(
-        ...cardWrapped(`${statusIcon(artifact.status)} ${artifact.status} ${artifact.kind}`),
+        ...cardWrapped(`${statusIcon(artifact.status)} ${artifact.status} ${artifact.kind}${note}`),
       );
       lines.push(...cardWrapped(displayPath(artifact.path, projectPath)));
     });

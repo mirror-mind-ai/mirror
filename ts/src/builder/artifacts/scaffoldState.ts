@@ -25,6 +25,12 @@
 // missing one counts against the file, as the Plan contract has always required; for
 // `index.md` and `test-guide.md` a missing heading is the Driver's structure, not a
 // scaffold, and only sections that are present and still the scaffold's count.
+//
+// The file's word follows its judged sections: `authored` when all are, `partly
+// authored` when some are, `scaffold` when none is and the file still carries the
+// scaffold's text, and `incomplete` when none is and none of it is the scaffold's --
+// a file a person wrote without the sections the contract requires. Calling that
+// file a scaffold would say Ariad wrote what it did not.
 
 import { existsSync, readFileSync } from "node:fs";
 import { pySplitLines, pyStrip } from "#util/pythonText.ts";
@@ -37,8 +43,13 @@ import {
 } from "./scaffoldSections.ts";
 
 export type SectionState = "missing" | "unfilled" | "scaffold" | "authored";
-export type ArtifactState = "missing" | "scaffold" | "partly_authored" | "authored";
+export type ArtifactState = "missing" | "scaffold" | "incomplete" | "partly_authored" | "authored";
 export type ArtifactName = "index.md" | "plan.md" | "test-guide.md";
+
+/** The state word a surface prints beside an artifact's name. */
+export function describeArtifactState(state: ArtifactState): string {
+  return state === "partly_authored" ? "partly authored" : state;
+}
 
 export interface SectionVerdict {
   readonly header: string;
@@ -155,11 +166,13 @@ export function judgeArtifact(name: ArtifactName, text: string | null): Artifact
     .map((verdict) => verdict.header);
   const authored = verdicts.length - toAuthor.length;
   const state: ArtifactState =
-    verdicts.length === 0 || authored === verdicts.length
+    authored === verdicts.length
       ? "authored"
-      : authored === 0
-        ? "scaffold"
-        : "partly_authored";
+      : authored > 0
+        ? "partly_authored"
+        : verdicts.some((verdict) => verdict.state === "scaffold")
+          ? "scaffold"
+          : "incomplete";
   return { name, state, sections: verdicts, toAuthor };
 }
 

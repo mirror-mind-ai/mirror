@@ -15,9 +15,15 @@
 // incomplete forever.
 
 import { mkdirSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import type { ContractDefinition } from "../methodDefinition.ts";
+import {
+  existingArtifact,
+  type MaterializedArtifact,
+  materializedArtifact,
+} from "./artifactSurfaces.ts";
 import { requireProjectRoot, writeBuilderArtifact } from "./artifactWriter.ts";
+import { type ArtifactName, artifactState, describeArtifactState } from "./scaffoldState.ts";
 
 /** Python `_markdown_list`: an empty list renders the literal fallback line. */
 export function markdownList(items: readonly string[]): string {
@@ -183,6 +189,32 @@ ${NAVIGATOR_VALIDATION_GUIDANCE}
 
 ${VALIDATION_EVIDENCE_PENDING}
 `;
+}
+
+/**
+ * Python `_plan_package_artifacts`: what Plan did to each file of the package.
+ *
+ * A file that existed before Plan is left alone (CR079) and named with what it is
+ * (CR112): a scaffold nobody authored, an incomplete file, or an authored one, so the
+ * reader of the artifacts card can tell which. The command and the recorded corpus
+ * both call this, so the card they print cannot differ.
+ */
+export function planPackageArtifacts(
+  planPath: string | null,
+  existedBefore: ReadonlyMap<string, boolean>,
+): MaterializedArtifact[] {
+  if (planPath === null) return [];
+  const directory = dirname(planPath);
+  const triple: [string, string, ArtifactName][] = [
+    ["story index", join(directory, "index.md"), "index.md"],
+    ["plan", planPath, "plan.md"],
+    ["test guide", join(directory, "test-guide.md"), "test-guide.md"],
+  ];
+  return triple.map(([kind, path, name]) =>
+    existedBefore.get(path) === true
+      ? existingArtifact(kind, path, describeArtifactState(artifactState(name, path).state))
+      : materializedArtifact(kind, path, { existedBefore: false }),
+  );
 }
 
 /**

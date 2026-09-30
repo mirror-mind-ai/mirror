@@ -374,12 +374,14 @@
             {
               "kind": "story index",
               "path": "docs/project/roadmap/cv1/cv1-us1-authored-story/index.md",
-              "status": "existing"
+              "status": "existing",
+              "note": "authored"
             },
             {
               "kind": "plan",
               "path": "docs/project/roadmap/cv1/cv1-us1-authored-story/plan.md",
-              "status": "existing"
+              "status": "existing",
+              "note": "incomplete"
             },
             {
               "kind": "test guide",
@@ -436,7 +438,7 @@
             },
             {
               "id": "artifacts_materialized",
-              "text": "<<<ARIAD:ARTIFACTS_MATERIALIZED>>>\nArtifacts\n\n╭────────────────────────────────────────────────────────╮\n│        ✎  ARTIFACTS MATERIALIZED                      │\n│                                                        │\n│ Plan — CV1.US1                                         │\n│                                                        │\n│ ↻ existing story index                                 │\n│ docs/project/roadmap/cv1/cv1-us1-authored-story/index. │\n│ md                                                     │\n│                                                        │\n│ ↻ existing plan                                        │\n│ docs/project/roadmap/cv1/cv1-us1-authored-story/plan.m │\n│ d                                                      │\n│                                                        │\n│ ✓ created test guide                                   │\n│ docs/project/roadmap/cv1/cv1-us1-authored-story/test-g │\n│ uide.md                                                │\n│                                                        │\n│ Plan artifacts were materialized. Implementation       │\n│ remains blocked until approval.                        │\n╰────────────────────────────────────────────────────────╯\n<<<END:ARTIFACTS_MATERIALIZED>>>\n"
+              "text": "<<<ARIAD:ARTIFACTS_MATERIALIZED>>>\nArtifacts\n\n╭────────────────────────────────────────────────────────╮\n│        ✎  ARTIFACTS MATERIALIZED                      │\n│                                                        │\n│ Plan — CV1.US1                                         │\n│                                                        │\n│ ↻ existing story index — authored                      │\n│ docs/project/roadmap/cv1/cv1-us1-authored-story/index. │\n│ md                                                     │\n│                                                        │\n│ ↻ existing plan — incomplete                           │\n│ docs/project/roadmap/cv1/cv1-us1-authored-story/plan.m │\n│ d                                                      │\n│                                                        │\n│ ✓ created test guide                                   │\n│ docs/project/roadmap/cv1/cv1-us1-authored-story/test-g │\n│ uide.md                                                │\n│                                                        │\n│ Plan artifacts were materialized. Implementation       │\n│ remains blocked until approval.                        │\n╰────────────────────────────────────────────────────────╯\n<<<END:ARTIFACTS_MATERIALIZED>>>\n"
             }
           ]
         }
@@ -2732,17 +2734,20 @@
             {
               "kind": "US-1 package",
               "path": "docs/project/roadmap/ds-35-application-admin-parity/ds-35-us-1-port-the-application-step-flow/index.md",
-              "status": "existing"
+              "status": "existing",
+              "note": "scaffold"
             },
             {
               "kind": "US-2 package",
               "path": "docs/project/roadmap/ds-35-application-admin-parity/ds-35-us-2-port-the-review-step/index.md",
-              "status": "existing"
+              "status": "existing",
+              "note": "scaffold"
             },
             {
               "kind": "TS-1 package",
               "path": "docs/project/roadmap/ds-35-application-admin-parity/ds-35-ts-1-admin-authentication-parity/index.md",
-              "status": "existing"
+              "status": "existing",
+              "note": "scaffold"
             }
           ],
           "cursor": {
@@ -2797,7 +2802,7 @@
             },
             {
               "id": "artifacts_materialized",
-              "text": "<<<ARIAD:ARTIFACTS_MATERIALIZED>>>\nArtifacts\n\n╭────────────────────────────────────────────────────────╮\n│        ✎  ARTIFACTS MATERIALIZED                      │\n│                                                        │\n│ Expand — DS-35                                         │\n│                                                        │\n│ ↻ existing DS package                                  │\n│ docs/project/roadmap/ds-35-application-admin-parity/in │\n│ dex.md                                                 │\n│                                                        │\n│ ↻ existing US-1 package                                │\n│ docs/project/roadmap/ds-35-application-admin-parity/ds │\n│ -35-us-1-port-the-application-step-flow/index.md       │\n│                                                        │\n│ ↻ existing US-2 package                                │\n│ docs/project/roadmap/ds-35-application-admin-parity/ds │\n│ -35-us-2-port-the-review-step/index.md                 │\n│                                                        │\n│ ↻ existing TS-1 package                                │\n│ docs/project/roadmap/ds-35-application-admin-parity/ds │\n│ -35-ts-1-admin-authentication-parity/index.md          │\n│                                                        │\n│ Files were materialized only. No Plan or               │\n│ implementation was executed.                           │\n╰────────────────────────────────────────────────────────╯\n<<<END:ARTIFACTS_MATERIALIZED>>>\n"
+              "text": "<<<ARIAD:ARTIFACTS_MATERIALIZED>>>\nArtifacts\n\n╭────────────────────────────────────────────────────────╮\n│        ✎  ARTIFACTS MATERIALIZED                      │\n│                                                        │\n│ Expand — DS-35                                         │\n│                                                        │\n│ ↻ existing DS package                                  │\n│ docs/project/roadmap/ds-35-application-admin-parity/in │\n│ dex.md                                                 │\n│                                                        │\n│ ↻ existing US-1 package — scaffold                     │\n│ docs/project/roadmap/ds-35-application-admin-parity/ds │\n│ -35-us-1-port-the-application-step-flow/index.md       │\n│                                                        │\n│ ↻ existing US-2 package — scaffold                     │\n│ docs/project/roadmap/ds-35-application-admin-parity/ds │\n│ -35-us-2-port-the-review-step/index.md                 │\n│                                                        │\n│ ↻ existing TS-1 package — scaffold                     │\n│ docs/project/roadmap/ds-35-application-admin-parity/ds │\n│ -35-ts-1-admin-authentication-parity/index.md          │\n│                                                        │\n│ Files were materialized only. No Plan or               │\n│ implementation was executed.                           │\n╰────────────────────────────────────────────────────────╯\n<<<END:ARTIFACTS_MATERIALIZED>>>\n"
             }
           ]
         }
@@ -4256,7 +4261,8 @@
             {
               "kind": "plan",
               "path": "docs/project/roadmap/story/plan.md",
-              "status": "existing"
+              "status": "existing",
+              "note": "authored"
             },
             {
               "kind": "test guide",
@@ -4331,7 +4337,7 @@
             },
             {
               "id": "artifacts_materialized",
-              "text": "<<<ARIAD:ARTIFACTS_MATERIALIZED>>>\nArtifacts\n\n╭────────────────────────────────────────────────────────╮\n│        ✎  ARTIFACTS MATERIALIZED                      │\n│                                                        │\n│ Plan — CV20.DS16.US1                                   │\n│                                                        │\n│ ✓ created story index                                  │\n│ docs/project/roadmap/story/index.md                    │\n│                                                        │\n│ ↻ existing plan                                        │\n│ docs/project/roadmap/story/plan.md                     │\n│                                                        │\n│ ✓ created test guide                                   │\n│ docs/project/roadmap/story/test-guide.md               │\n│                                                        │\n│ Plan artifacts were materialized. Implementation       │\n│ remains blocked until approval.                        │\n╰────────────────────────────────────────────────────────╯\n<<<END:ARTIFACTS_MATERIALIZED>>>\n"
+              "text": "<<<ARIAD:ARTIFACTS_MATERIALIZED>>>\nArtifacts\n\n╭────────────────────────────────────────────────────────╮\n│        ✎  ARTIFACTS MATERIALIZED                      │\n│                                                        │\n│ Plan — CV20.DS16.US1                                   │\n│                                                        │\n│ ✓ created story index                                  │\n│ docs/project/roadmap/story/index.md                    │\n│                                                        │\n│ ↻ existing plan — authored                             │\n│ docs/project/roadmap/story/plan.md                     │\n│                                                        │\n│ ✓ created test guide                                   │\n│ docs/project/roadmap/story/test-guide.md               │\n│                                                        │\n│ Plan artifacts were materialized. Implementation       │\n│ remains blocked until approval.                        │\n╰────────────────────────────────────────────────────────╯\n<<<END:ARTIFACTS_MATERIALIZED>>>\n"
             }
           ]
         },
@@ -4521,7 +4527,8 @@
             {
               "kind": "plan",
               "path": "docs/project/roadmap/story/plan.md",
-              "status": "existing"
+              "status": "existing",
+              "note": "authored"
             },
             {
               "kind": "test guide",
@@ -4596,7 +4603,7 @@
             },
             {
               "id": "artifacts_materialized",
-              "text": "<<<ARIAD:ARTIFACTS_MATERIALIZED>>>\nArtifacts\n\n╭────────────────────────────────────────────────────────╮\n│        ✎  ARTIFACTS MATERIALIZED                      │\n│                                                        │\n│ Plan — CV20.DS16.TS1                                   │\n│                                                        │\n│ ✓ created story index                                  │\n│ docs/project/roadmap/story/index.md                    │\n│                                                        │\n│ ↻ existing plan                                        │\n│ docs/project/roadmap/story/plan.md                     │\n│                                                        │\n│ ✓ created test guide                                   │\n│ docs/project/roadmap/story/test-guide.md               │\n│                                                        │\n│ Plan artifacts were materialized. Implementation       │\n│ remains blocked until approval.                        │\n╰────────────────────────────────────────────────────────╯\n<<<END:ARTIFACTS_MATERIALIZED>>>\n"
+              "text": "<<<ARIAD:ARTIFACTS_MATERIALIZED>>>\nArtifacts\n\n╭────────────────────────────────────────────────────────╮\n│        ✎  ARTIFACTS MATERIALIZED                      │\n│                                                        │\n│ Plan — CV20.DS16.TS1                                   │\n│                                                        │\n│ ✓ created story index                                  │\n│ docs/project/roadmap/story/index.md                    │\n│                                                        │\n│ ↻ existing plan — authored                             │\n│ docs/project/roadmap/story/plan.md                     │\n│                                                        │\n│ ✓ created test guide                                   │\n│ docs/project/roadmap/story/test-guide.md               │\n│                                                        │\n│ Plan artifacts were materialized. Implementation       │\n│ remains blocked until approval.                        │\n╰────────────────────────────────────────────────────────╯\n<<<END:ARTIFACTS_MATERIALIZED>>>\n"
             }
           ]
         },
@@ -4787,7 +4794,8 @@
             {
               "kind": "plan",
               "path": "docs/project/roadmap/story/plan.md",
-              "status": "existing"
+              "status": "existing",
+              "note": "authored"
             },
             {
               "kind": "test guide",
@@ -4862,7 +4870,7 @@
             },
             {
               "id": "artifacts_materialized",
-              "text": "<<<ARIAD:ARTIFACTS_MATERIALIZED>>>\nArtifacts\n\n╭────────────────────────────────────────────────────────╮\n│        ✎  ARTIFACTS MATERIALIZED                      │\n│                                                        │\n│ Plan — CV20.DS16.US1                                   │\n│                                                        │\n│ ✓ created story index                                  │\n│ docs/project/roadmap/story/index.md                    │\n│                                                        │\n│ ↻ existing plan                                        │\n│ docs/project/roadmap/story/plan.md                     │\n│                                                        │\n│ ✓ created test guide                                   │\n│ docs/project/roadmap/story/test-guide.md               │\n│                                                        │\n│ Plan artifacts were materialized. Implementation       │\n│ remains blocked until approval.                        │\n╰────────────────────────────────────────────────────────╯\n<<<END:ARTIFACTS_MATERIALIZED>>>\n"
+              "text": "<<<ARIAD:ARTIFACTS_MATERIALIZED>>>\nArtifacts\n\n╭────────────────────────────────────────────────────────╮\n│        ✎  ARTIFACTS MATERIALIZED                      │\n│                                                        │\n│ Plan — CV20.DS16.US1                                   │\n│                                                        │\n│ ✓ created story index                                  │\n│ docs/project/roadmap/story/index.md                    │\n│                                                        │\n│ ↻ existing plan — authored                             │\n│ docs/project/roadmap/story/plan.md                     │\n│                                                        │\n│ ✓ created test guide                                   │\n│ docs/project/roadmap/story/test-guide.md               │\n│                                                        │\n│ Plan artifacts were materialized. Implementation       │\n│ remains blocked until approval.                        │\n╰────────────────────────────────────────────────────────╯\n<<<END:ARTIFACTS_MATERIALIZED>>>\n"
             }
           ]
         },
@@ -4996,7 +5004,8 @@
             {
               "kind": "plan",
               "path": "docs/project/roadmap/story/plan.md",
-              "status": "existing"
+              "status": "existing",
+              "note": "authored"
             },
             {
               "kind": "test guide",
@@ -5053,7 +5062,7 @@
             },
             {
               "id": "artifacts_materialized",
-              "text": "<<<ARIAD:ARTIFACTS_MATERIALIZED>>>\nArtifacts\n\n╭────────────────────────────────────────────────────────╮\n│        ✎  ARTIFACTS MATERIALIZED                      │\n│                                                        │\n│ Plan — CV20.DS16.US1                                   │\n│                                                        │\n│ ✓ created story index                                  │\n│ docs/project/roadmap/story/index.md                    │\n│                                                        │\n│ ↻ existing plan                                        │\n│ docs/project/roadmap/story/plan.md                     │\n│                                                        │\n│ ✓ created test guide                                   │\n│ docs/project/roadmap/story/test-guide.md               │\n│                                                        │\n│ Plan artifacts were materialized. Implementation       │\n│ remains blocked until approval.                        │\n╰────────────────────────────────────────────────────────╯\n<<<END:ARTIFACTS_MATERIALIZED>>>\n"
+              "text": "<<<ARIAD:ARTIFACTS_MATERIALIZED>>>\nArtifacts\n\n╭────────────────────────────────────────────────────────╮\n│        ✎  ARTIFACTS MATERIALIZED                      │\n│                                                        │\n│ Plan — CV20.DS16.US1                                   │\n│                                                        │\n│ ✓ created story index                                  │\n│ docs/project/roadmap/story/index.md                    │\n│                                                        │\n│ ↻ existing plan — authored                             │\n│ docs/project/roadmap/story/plan.md                     │\n│                                                        │\n│ ✓ created test guide                                   │\n│ docs/project/roadmap/story/test-guide.md               │\n│                                                        │\n│ Plan artifacts were materialized. Implementation       │\n│ remains blocked until approval.                        │\n╰────────────────────────────────────────────────────────╯\n<<<END:ARTIFACTS_MATERIALIZED>>>\n"
             }
           ]
         },
@@ -5167,7 +5176,8 @@
             {
               "kind": "plan",
               "path": "docs/project/roadmap/story/plan.md",
-              "status": "existing"
+              "status": "existing",
+              "note": "authored"
             },
             {
               "kind": "test guide",
@@ -5224,7 +5234,7 @@
             },
             {
               "id": "artifacts_materialized",
-              "text": "<<<ARIAD:ARTIFACTS_MATERIALIZED>>>\nArtifacts\n\n╭────────────────────────────────────────────────────────╮\n│        ✎  ARTIFACTS MATERIALIZED                      │\n│                                                        │\n│ Plan — CV20.DS16.US1                                   │\n│                                                        │\n│ ✓ created story index                                  │\n│ docs/project/roadmap/story/index.md                    │\n│                                                        │\n│ ↻ existing plan                                        │\n│ docs/project/roadmap/story/plan.md                     │\n│                                                        │\n│ ✓ created test guide                                   │\n│ docs/project/roadmap/story/test-guide.md               │\n│                                                        │\n│ Plan artifacts were materialized. Implementation       │\n│ remains blocked until approval.                        │\n╰────────────────────────────────────────────────────────╯\n<<<END:ARTIFACTS_MATERIALIZED>>>\n"
+              "text": "<<<ARIAD:ARTIFACTS_MATERIALIZED>>>\nArtifacts\n\n╭────────────────────────────────────────────────────────╮\n│        ✎  ARTIFACTS MATERIALIZED                      │\n│                                                        │\n│ Plan — CV20.DS16.US1                                   │\n│                                                        │\n│ ✓ created story index                                  │\n│ docs/project/roadmap/story/index.md                    │\n│                                                        │\n│ ↻ existing plan — authored                             │\n│ docs/project/roadmap/story/plan.md                     │\n│                                                        │\n│ ✓ created test guide                                   │\n│ docs/project/roadmap/story/test-guide.md               │\n│                                                        │\n│ Plan artifacts were materialized. Implementation       │\n│ remains blocked until approval.                        │\n╰────────────────────────────────────────────────────────╯\n<<<END:ARTIFACTS_MATERIALIZED>>>\n"
             }
           ]
         },
@@ -5337,7 +5347,8 @@
             {
               "kind": "plan",
               "path": "docs/project/roadmap/story/plan.md",
-              "status": "existing"
+              "status": "existing",
+              "note": "authored"
             },
             {
               "kind": "test guide",
@@ -5412,7 +5423,7 @@
             },
             {
               "id": "artifacts_materialized",
-              "text": "<<<ARIAD:ARTIFACTS_MATERIALIZED>>>\nArtifacts\n\n╭────────────────────────────────────────────────────────╮\n│        ✎  ARTIFACTS MATERIALIZED                      │\n│                                                        │\n│ Plan — CV20.DS16.US1                                   │\n│                                                        │\n│ ✓ created story index                                  │\n│ docs/project/roadmap/story/index.md                    │\n│                                                        │\n│ ↻ existing plan                                        │\n│ docs/project/roadmap/story/plan.md                     │\n│                                                        │\n│ ✓ created test guide                                   │\n│ docs/project/roadmap/story/test-guide.md               │\n│                                                        │\n│ Plan artifacts were materialized. Implementation       │\n│ remains blocked until approval.                        │\n╰────────────────────────────────────────────────────────╯\n<<<END:ARTIFACTS_MATERIALIZED>>>\n"
+              "text": "<<<ARIAD:ARTIFACTS_MATERIALIZED>>>\nArtifacts\n\n╭────────────────────────────────────────────────────────╮\n│        ✎  ARTIFACTS MATERIALIZED                      │\n│                                                        │\n│ Plan — CV20.DS16.US1                                   │\n│                                                        │\n│ ✓ created story index                                  │\n│ docs/project/roadmap/story/index.md                    │\n│                                                        │\n│ ↻ existing plan — authored                             │\n│ docs/project/roadmap/story/plan.md                     │\n│                                                        │\n│ ✓ created test guide                                   │\n│ docs/project/roadmap/story/test-guide.md               │\n│                                                        │\n│ Plan artifacts were materialized. Implementation       │\n│ remains blocked until approval.                        │\n╰────────────────────────────────────────────────────────╯\n<<<END:ARTIFACTS_MATERIALIZED>>>\n"
             }
           ]
         },
@@ -5593,7 +5604,8 @@
             {
               "kind": "plan",
               "path": "docs/project/roadmap/story/plan.md",
-              "status": "existing"
+              "status": "existing",
+              "note": "authored"
             },
             {
               "kind": "test guide",
@@ -5668,7 +5680,7 @@
             },
             {
               "id": "artifacts_materialized",
-              "text": "<<<ARIAD:ARTIFACTS_MATERIALIZED>>>\nArtifacts\n\n╭────────────────────────────────────────────────────────╮\n│        ✎  ARTIFACTS MATERIALIZED                      │\n│                                                        │\n│ Plan — CV20.DS16.US1                                   │\n│                                                        │\n│ ✓ created story index                                  │\n│ docs/project/roadmap/story/index.md                    │\n│                                                        │\n│ ↻ existing plan                                        │\n│ docs/project/roadmap/story/plan.md                     │\n│                                                        │\n│ ✓ created test guide                                   │\n│ docs/project/roadmap/story/test-guide.md               │\n│                                                        │\n│ Plan artifacts were materialized. Implementation       │\n│ remains blocked until approval.                        │\n╰────────────────────────────────────────────────────────╯\n<<<END:ARTIFACTS_MATERIALIZED>>>\n"
+              "text": "<<<ARIAD:ARTIFACTS_MATERIALIZED>>>\nArtifacts\n\n╭────────────────────────────────────────────────────────╮\n│        ✎  ARTIFACTS MATERIALIZED                      │\n│                                                        │\n│ Plan — CV20.DS16.US1                                   │\n│                                                        │\n│ ✓ created story index                                  │\n│ docs/project/roadmap/story/index.md                    │\n│                                                        │\n│ ↻ existing plan — authored                             │\n│ docs/project/roadmap/story/plan.md                     │\n│                                                        │\n│ ✓ created test guide                                   │\n│ docs/project/roadmap/story/test-guide.md               │\n│                                                        │\n│ Plan artifacts were materialized. Implementation       │\n│ remains blocked until approval.                        │\n╰────────────────────────────────────────────────────────╯\n<<<END:ARTIFACTS_MATERIALIZED>>>\n"
             }
           ]
         },
@@ -5843,7 +5855,8 @@
             {
               "kind": "plan",
               "path": "docs/project/roadmap/story/plan.md",
-              "status": "existing"
+              "status": "existing",
+              "note": "authored"
             },
             {
               "kind": "test guide",
@@ -5918,7 +5931,7 @@
             },
             {
               "id": "artifacts_materialized",
-              "text": "<<<ARIAD:ARTIFACTS_MATERIALIZED>>>\nArtifacts\n\n╭────────────────────────────────────────────────────────╮\n│        ✎  ARTIFACTS MATERIALIZED                      │\n│                                                        │\n│ Plan — CV20.DS16.US1                                   │\n│                                                        │\n│ ✓ created story index                                  │\n│ docs/project/roadmap/story/index.md                    │\n│                                                        │\n│ ↻ existing plan                                        │\n│ docs/project/roadmap/story/plan.md                     │\n│                                                        │\n│ ✓ created test guide                                   │\n│ docs/project/roadmap/story/test-guide.md               │\n│                                                        │\n│ Plan artifacts were materialized. Implementation       │\n│ remains blocked until approval.                        │\n╰────────────────────────────────────────────────────────╯\n<<<END:ARTIFACTS_MATERIALIZED>>>\n"
+              "text": "<<<ARIAD:ARTIFACTS_MATERIALIZED>>>\nArtifacts\n\n╭────────────────────────────────────────────────────────╮\n│        ✎  ARTIFACTS MATERIALIZED                      │\n│                                                        │\n│ Plan — CV20.DS16.US1                                   │\n│                                                        │\n│ ✓ created story index                                  │\n│ docs/project/roadmap/story/index.md                    │\n│                                                        │\n│ ↻ existing plan — authored                             │\n│ docs/project/roadmap/story/plan.md                     │\n│                                                        │\n│ ✓ created test guide                                   │\n│ docs/project/roadmap/story/test-guide.md               │\n│                                                        │\n│ Plan artifacts were materialized. Implementation       │\n│ remains blocked until approval.                        │\n╰────────────────────────────────────────────────────────╯\n<<<END:ARTIFACTS_MATERIALIZED>>>\n"
             }
           ]
         },
@@ -6093,7 +6106,8 @@
             {
               "kind": "plan",
               "path": "docs/project/roadmap/story/plan.md",
-              "status": "existing"
+              "status": "existing",
+              "note": "authored"
             },
             {
               "kind": "test guide",
@@ -6168,7 +6182,7 @@
             },
             {
               "id": "artifacts_materialized",
-              "text": "<<<ARIAD:ARTIFACTS_MATERIALIZED>>>\nArtifacts\n\n╭────────────────────────────────────────────────────────╮\n│        ✎  ARTIFACTS MATERIALIZED                      │\n│                                                        │\n│ Plan — CV20.DS16.US1                                   │\n│                                                        │\n│ ✓ created story index                                  │\n│ docs/project/roadmap/story/index.md                    │\n│                                                        │\n│ ↻ existing plan                                        │\n│ docs/project/roadmap/story/plan.md                     │\n│                                                        │\n│ ✓ created test guide                                   │\n│ docs/project/roadmap/story/test-guide.md               │\n│                                                        │\n│ Plan artifacts were materialized. Implementation       │\n│ remains blocked until approval.                        │\n╰────────────────────────────────────────────────────────╯\n<<<END:ARTIFACTS_MATERIALIZED>>>\n"
+              "text": "<<<ARIAD:ARTIFACTS_MATERIALIZED>>>\nArtifacts\n\n╭────────────────────────────────────────────────────────╮\n│        ✎  ARTIFACTS MATERIALIZED                      │\n│                                                        │\n│ Plan — CV20.DS16.US1                                   │\n│                                                        │\n│ ✓ created story index                                  │\n│ docs/project/roadmap/story/index.md                    │\n│                                                        │\n│ ↻ existing plan — authored                             │\n│ docs/project/roadmap/story/plan.md                     │\n│                                                        │\n│ ✓ created test guide                                   │\n│ docs/project/roadmap/story/test-guide.md               │\n│                                                        │\n│ Plan artifacts were materialized. Implementation       │\n│ remains blocked until approval.                        │\n╰────────────────────────────────────────────────────────╯\n<<<END:ARTIFACTS_MATERIALIZED>>>\n"
             }
           ]
         },
@@ -6341,7 +6355,8 @@
             {
               "kind": "plan",
               "path": "docs/project/roadmap/story/plan.md",
-              "status": "existing"
+              "status": "existing",
+              "note": "authored"
             },
             {
               "kind": "test guide",
@@ -6416,7 +6431,7 @@
             },
             {
               "id": "artifacts_materialized",
-              "text": "<<<ARIAD:ARTIFACTS_MATERIALIZED>>>\nArtifacts\n\n╭────────────────────────────────────────────────────────╮\n│        ✎  ARTIFACTS MATERIALIZED                      │\n│                                                        │\n│ Plan — CV20.DS16.US1                                   │\n│                                                        │\n│ ✓ created story index                                  │\n│ docs/project/roadmap/story/index.md                    │\n│                                                        │\n│ ↻ existing plan                                        │\n│ docs/project/roadmap/story/plan.md                     │\n│                                                        │\n│ ✓ created test guide                                   │\n│ docs/project/roadmap/story/test-guide.md               │\n│                                                        │\n│ Plan artifacts were materialized. Implementation       │\n│ remains blocked until approval.                        │\n╰────────────────────────────────────────────────────────╯\n<<<END:ARTIFACTS_MATERIALIZED>>>\n"
+              "text": "<<<ARIAD:ARTIFACTS_MATERIALIZED>>>\nArtifacts\n\n╭────────────────────────────────────────────────────────╮\n│        ✎  ARTIFACTS MATERIALIZED                      │\n│                                                        │\n│ Plan — CV20.DS16.US1                                   │\n│                                                        │\n│ ✓ created story index                                  │\n│ docs/project/roadmap/story/index.md                    │\n│                                                        │\n│ ↻ existing plan — authored                             │\n│ docs/project/roadmap/story/plan.md                     │\n│                                                        │\n│ ✓ created test guide                                   │\n│ docs/project/roadmap/story/test-guide.md               │\n│                                                        │\n│ Plan artifacts were materialized. Implementation       │\n│ remains blocked until approval.                        │\n╰────────────────────────────────────────────────────────╯\n<<<END:ARTIFACTS_MATERIALIZED>>>\n"
             }
           ]
         },
@@ -6766,7 +6781,8 @@
             {
               "kind": "plan",
               "path": "docs/project/roadmap/story/plan.md",
-              "status": "existing"
+              "status": "existing",
+              "note": "authored"
             },
             {
               "kind": "test guide",
@@ -6841,7 +6857,7 @@
             },
             {
               "id": "artifacts_materialized",
-              "text": "<<<ARIAD:ARTIFACTS_MATERIALIZED>>>\nArtifacts\n\n╭────────────────────────────────────────────────────────╮\n│        ✎  ARTIFACTS MATERIALIZED                      │\n│                                                        │\n│ Plan — CV20.DS16.US1                                   │\n│                                                        │\n│ ✓ created story index                                  │\n│ docs/project/roadmap/story/index.md                    │\n│                                                        │\n│ ↻ existing plan                                        │\n│ docs/project/roadmap/story/plan.md                     │\n│                                                        │\n│ ✓ created test guide                                   │\n│ docs/project/roadmap/story/test-guide.md               │\n│                                                        │\n│ Plan artifacts were materialized. Implementation       │\n│ remains blocked until approval.                        │\n╰────────────────────────────────────────────────────────╯\n<<<END:ARTIFACTS_MATERIALIZED>>>\n"
+              "text": "<<<ARIAD:ARTIFACTS_MATERIALIZED>>>\nArtifacts\n\n╭────────────────────────────────────────────────────────╮\n│        ✎  ARTIFACTS MATERIALIZED                      │\n│                                                        │\n│ Plan — CV20.DS16.US1                                   │\n│                                                        │\n│ ✓ created story index                                  │\n│ docs/project/roadmap/story/index.md                    │\n│                                                        │\n│ ↻ existing plan — authored                             │\n│ docs/project/roadmap/story/plan.md                     │\n│                                                        │\n│ ✓ created test guide                                   │\n│ docs/project/roadmap/story/test-guide.md               │\n│                                                        │\n│ Plan artifacts were materialized. Implementation       │\n│ remains blocked until approval.                        │\n╰────────────────────────────────────────────────────────╯\n<<<END:ARTIFACTS_MATERIALIZED>>>\n"
             }
           ]
         },
@@ -6967,7 +6983,8 @@
             {
               "kind": "plan",
               "path": "docs/project/roadmap/story/plan.md",
-              "status": "existing"
+              "status": "existing",
+              "note": "authored"
             },
             {
               "kind": "test guide",
@@ -7042,7 +7059,7 @@
             },
             {
               "id": "artifacts_materialized",
-              "text": "<<<ARIAD:ARTIFACTS_MATERIALIZED>>>\nArtifacts\n\n╭────────────────────────────────────────────────────────╮\n│        ✎  ARTIFACTS MATERIALIZED                      │\n│                                                        │\n│ Plan — CV20.DS16.US1                                   │\n│                                                        │\n│ ✓ created story index                                  │\n│ docs/project/roadmap/story/index.md                    │\n│                                                        │\n│ ↻ existing plan                                        │\n│ docs/project/roadmap/story/plan.md                     │\n│                                                        │\n│ ✓ created test guide                                   │\n│ docs/project/roadmap/story/test-guide.md               │\n│                                                        │\n│ Plan artifacts were materialized. Implementation       │\n│ remains blocked until approval.                        │\n╰────────────────────────────────────────────────────────╯\n<<<END:ARTIFACTS_MATERIALIZED>>>\n"
+              "text": "<<<ARIAD:ARTIFACTS_MATERIALIZED>>>\nArtifacts\n\n╭────────────────────────────────────────────────────────╮\n│        ✎  ARTIFACTS MATERIALIZED                      │\n│                                                        │\n│ Plan — CV20.DS16.US1                                   │\n│                                                        │\n│ ✓ created story index                                  │\n│ docs/project/roadmap/story/index.md                    │\n│                                                        │\n│ ↻ existing plan — authored                             │\n│ docs/project/roadmap/story/plan.md                     │\n│                                                        │\n│ ✓ created test guide                                   │\n│ docs/project/roadmap/story/test-guide.md               │\n│                                                        │\n│ Plan artifacts were materialized. Implementation       │\n│ remains blocked until approval.                        │\n╰────────────────────────────────────────────────────────╯\n<<<END:ARTIFACTS_MATERIALIZED>>>\n"
             }
           ]
         },
@@ -7271,7 +7288,8 @@
             {
               "kind": "plan",
               "path": "docs/project/roadmap/story/plan.md",
-              "status": "existing"
+              "status": "existing",
+              "note": "authored"
             },
             {
               "kind": "test guide",
@@ -7346,7 +7364,7 @@
             },
             {
               "id": "artifacts_materialized",
-              "text": "<<<ARIAD:ARTIFACTS_MATERIALIZED>>>\nArtifacts\n\n╭────────────────────────────────────────────────────────╮\n│        ✎  ARTIFACTS MATERIALIZED                      │\n│                                                        │\n│ Plan — CV20.DS16.US1                                   │\n│                                                        │\n│ ✓ created story index                                  │\n│ docs/project/roadmap/story/index.md                    │\n│                                                        │\n│ ↻ existing plan                                        │\n│ docs/project/roadmap/story/plan.md                     │\n│                                                        │\n│ ✓ created test guide                                   │\n│ docs/project/roadmap/story/test-guide.md               │\n│                                                        │\n│ Plan artifacts were materialized. Implementation       │\n│ remains blocked until approval.                        │\n╰────────────────────────────────────────────────────────╯\n<<<END:ARTIFACTS_MATERIALIZED>>>\n"
+              "text": "<<<ARIAD:ARTIFACTS_MATERIALIZED>>>\nArtifacts\n\n╭────────────────────────────────────────────────────────╮\n│        ✎  ARTIFACTS MATERIALIZED                      │\n│                                                        │\n│ Plan — CV20.DS16.US1                                   │\n│                                                        │\n│ ✓ created story index                                  │\n│ docs/project/roadmap/story/index.md                    │\n│                                                        │\n│ ↻ existing plan — authored                             │\n│ docs/project/roadmap/story/plan.md                     │\n│                                                        │\n│ ✓ created test guide                                   │\n│ docs/project/roadmap/story/test-guide.md               │\n│                                                        │\n│ Plan artifacts were materialized. Implementation       │\n│ remains blocked until approval.                        │\n╰────────────────────────────────────────────────────────╯\n<<<END:ARTIFACTS_MATERIALIZED>>>\n"
             }
           ]
         },

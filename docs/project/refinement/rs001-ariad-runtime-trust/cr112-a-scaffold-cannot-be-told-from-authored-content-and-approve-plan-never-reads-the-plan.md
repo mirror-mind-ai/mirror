@@ -137,8 +137,11 @@ throwaway token, the placeholder pattern); `scaffold` (every non-blank line is o
 the lines the scaffold would write for this section and this item today); `authored`
 (anything else). Prose is never judged — one real line under a template heading is
 authored, as `unfilledPlanSectionsFor` already decides today. The file's state follows
-its placeholder sections: `missing`; `scaffold` when none is authored; `partly authored`
-when some are; `authored` when all are. `unfilledPlanSectionsFor` is re-expressed on
+its placeholder sections: `missing`; `scaffold` when none is authored and the file still
+carries the scaffold's text; `incomplete` when none is authored and none of it is the
+scaffold's; `partly authored` when some are; `authored` when all are. (`incomplete` was
+added at plateau 2, when the corpus showed a Driver's own plan, written without the
+required headings, reading as a scaffold: see the plateau 2 handoff.) `unfilledPlanSectionsFor` is re-expressed on
 this module and keeps its verdicts on the existing tests; the Delivery Story plan's own
 check moves onto it if its verdicts survive unchanged (D3).
 
@@ -605,6 +608,64 @@ edit are walked too. Before the change they meet a plan already approved in step
 5, and show one more thing: `approve-plan` on an already-approved plan prints a plain
 `Error:` line where CR067's rule asks for `CHECKPOINT_REFUSED`; folded into the
 refusal work above.
+
+### Plateau 1 handoff (2026-09-30)
+
+`d0d68089`. Now true: every sentence a story scaffold carries lives once, in
+`ts/src/builder/artifacts/scaffoldSections.ts`, as a template with `{title}`/`{code}`
+slots and a `placeholder` or `default` kind. `storyIndex.ts`, `planArtifacts.ts`,
+`roadmapPlanContext`, and `planLifecycleItem`'s defaults read it; the 2830 tests that
+grade scaffold bytes passed unchanged, so no scaffold byte moved (criterion 1).
+`ts/src/builder/artifacts/scaffoldState.ts` reads a file back through the same templates
+and answers per section and per file; `unfilledPlanSectionsFor` moved beside it with
+its rule unchanged, and `unauthoredPlanSectionsFor` also counts the scaffold's own
+sentences. 24 new tests in `scaffoldState.test.ts` (27 after plateau 2).
+
+Three things the plan did not say:
+
+- **Two Plan vocabularies, each recorded once (Driver decision).** The front door
+  writes one set of sentences (`roadmapPlanContext`); `planLifecycleItem` called with
+  no sections writes another, reached only by the recorded corpus and the tests.
+  Deleting the second now would move the `plan.md` bytes of every corpus sequence and
+  the Plan card's sentences, which CR111 rewrites anyway, so the same bytes would be
+  edited twice. Both are in the model, each once, and retiring the library vocabulary
+  is handed to CR111. Criterion 7 holds: no sentence is defined in two places, and
+  neither caller carries one.
+- **D3's outcome: the Delivery Story check stays.** Its rule is strictly broader than
+  the story rule, since it matches the scaffold line anywhere in a body and "placeholder"
+  anywhere, and `delivery_story_preauthorization_refuses_prose_placeholder` grades that
+  difference. Moving it onto the shared module would change a recorded verdict, which is
+  the condition under which D3 said it stays.
+- **One mutant the tests cannot kill, recorded.** Judging `scaffold` before `unfilled`
+  leaves every test green, because with today's tables no line is both a scaffold line
+  and an unfilled line, so the order is unobservable. The order stays as designed for
+  the day a table holds a `Pending` line.
+
+### Plateau 2 handoff (2026-09-30)
+
+Now true: `build show` lists `index.md`, `plan.md`, and `test-guide.md` with their state
+before the closure records, and under an unauthored one the sections still to write,
+by exact heading text, with a hanging indent so a wrapped list reads as one item. The
+glyph carries only done or not. `ARTIFACTS_MATERIALIZED` names what an existing file is
+(`↻ existing story index — scaffold`), for a story Plan's three files and for Expand's
+child indexes; Delivery Story package artifacts are unchanged. Goldens edited by
+script, counts asserted, listed in `ts/test/goldens/README.md`: 18 artifact notes in 15
+`builder-lifecycle` steps and 3 `builder-command` Plan renders. 2858 tests pass.
+
+What the corpus found:
+
+- **A Driver's file is not a scaffold.** `plan_preserves_authored_plan` records a plan a
+  person wrote with none of the required headings. With every placeholder section
+  missing and none authored, the first model called it a scaffold, which says Ariad
+  wrote what it did not. The file state gained `incomplete`: nothing authored and
+  nothing of the scaffold's. Approval will refuse it like a scaffold; the card says
+  what it is.
+- **The harness had its own copy of `planPackageArtifacts`**, the kind of duplicate this
+  change exists to remove: it could not carry the note, and would have kept the corpus
+  blind to it. The product's function moved to `planArtifacts.ts` and both call it; the
+  harness's five inline artifact maps became one `artifactRecord`.
+
+Next: plateau 3, the refusals.
 
 ## Outcome
 

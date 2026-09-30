@@ -31,6 +31,7 @@ import type { WritableDatabase } from "#db/database.ts";
 import { pyStrip } from "#util/pythonText.ts";
 import { existingArtifact, type MaterializedArtifact } from "./artifacts/artifactSurfaces.ts";
 import { writeBuilderArtifact } from "./artifacts/artifactWriter.ts";
+import { artifactState, describeArtifactState } from "./artifacts/scaffoldState.ts";
 import {
   renderDeliveryStoryIndex,
   renderStoryIndex,
@@ -179,6 +180,15 @@ function firstPendingChild(children: readonly CandidateChild[]): CandidateChild 
  * `authored` is the package that already claims the child's code, found by heading
  * before Expand wrote anything. It is reported where it lives and never written.
  */
+/** An existing child index, named with what it is: a scaffold or an authored file (CR112). */
+function existingIndex(label: string, path: string): MaterializedArtifact {
+  return existingArtifact(
+    label,
+    path,
+    describeArtifactState(artifactState("index.md", path).state),
+  );
+}
+
 function materializeChildPackage(
   dsDirectory: string,
   child: CandidateChild,
@@ -188,7 +198,7 @@ function materializeChildPackage(
   const label = `${child.code.split(".").at(-1) ?? child.code} package`;
   if (authored !== null) {
     const authoredIndex = join(authored, "index.md");
-    return { path: authoredIndex, artifact: existingArtifact(label, authoredIndex) };
+    return { path: authoredIndex, artifact: existingIndex(label, authoredIndex) };
   }
   // The whole title slugs the folder, as it does for any new package (CR018).
   const childDirectory = join(dsDirectory, storyFolderName(child.code, child.title));
@@ -203,7 +213,7 @@ function materializeChildPackage(
     path: childIndex,
     artifact:
       outcome === "existing"
-        ? existingArtifact(label, childIndex)
+        ? existingIndex(label, childIndex)
         : { kind: label, path: childIndex, status: "created" },
   };
 }

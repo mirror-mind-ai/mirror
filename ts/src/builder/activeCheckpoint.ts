@@ -4,10 +4,19 @@
 // cursor keeps position only, never a checkpoint's evidence. So a lost surface cannot be
 // replayed from it; the Navigator chose not to store emissions (option A). This surface
 // shows where the cursor stands and where the full record lives: the story package's
-// Plan and closure records, each marked present or missing. The package path is printed
-// once, because record paths are longer than a card line.
+// Plan-stage artifacts, each with its state, and its closure records, each marked
+// present or missing. The package path is printed once, because record paths are
+// longer than a card line.
+//
+// CR112: `index.md`, `plan.md`, and `test-guide.md` are written as scaffolds and then
+// authored, and present-or-missing said nothing about which. Each now carries its
+// state -- missing, scaffold, partly authored, authored -- and, while not authored,
+// the sections still to write, by their exact heading text. The glyph carries only
+// done or not; the word carries the state. Closure records keep present or missing:
+// their truth is the seal.
 
-import { cardText, cardWrapped } from "./card.ts";
+import { type ArtifactVerdict, describeArtifactState } from "./artifacts/scaffoldState.ts";
+import { cardPrefixed, cardText, cardWrapped } from "./card.ts";
 import type { BuilderDeliveryCursor } from "./deliveryCursor.ts";
 import { lifecycleStageOf } from "./lifecycleRefusal.ts";
 import { renderLifecycleRibbon } from "./lifecycleRibbon.ts";
@@ -18,19 +27,18 @@ const FRAME_TOP = "╭───────────────────�
 const FRAME_BOTTOM = "╰────────────────────────────────────────────────────────╯";
 const FRAME_BLANK = "│                                                        │";
 
-/** A story package's Plan and closure records, in lifecycle order. */
-export const STORY_RECORDS = [
-  "plan.md",
-  "validation.md",
-  "review.md",
-  "coherence.md",
-  "done.md",
-] as const;
+/** The artifacts Plan and Expand scaffold, in the order Plan writes them. */
+export const PLAN_STAGE_ARTIFACTS = ["index.md", "plan.md", "test-guide.md"] as const;
+
+/** A story package's closure records, in lifecycle order. */
+export const CLOSURE_RECORDS = ["validation.md", "review.md", "coherence.md", "done.md"] as const;
 
 export interface StoryRecords {
   /** The package directory, as the Navigator sees it (project-relative when inside). */
   readonly folder: string;
-  /** The names in `STORY_RECORDS` that exist on disk. */
+  /** The Plan-stage artifacts, judged, in `PLAN_STAGE_ARTIFACTS` order. */
+  readonly artifacts: readonly ArtifactVerdict[];
+  /** The names in `CLOSURE_RECORDS` that exist on disk. */
   readonly present: ReadonlySet<string>;
 }
 
@@ -41,11 +49,22 @@ export interface ActiveCheckpointView {
   readonly records: StoryRecords | null;
 }
 
+function artifactLines(verdict: ArtifactVerdict): string[] {
+  const glyph = verdict.state === "authored" ? "✓" : "○";
+  const lines = [cardText(`${glyph} ${verdict.name} — ${describeArtifactState(verdict.state)}`)];
+  if (verdict.toAuthor.length > 0) {
+    // A hanging indent, so a list that wraps stays one item to the eye.
+    lines.push(...cardPrefixed([`to author: ${verdict.toAuthor.join(", ")}`], " "));
+  }
+  return lines;
+}
+
 function recordLines(records: StoryRecords | null): string[] {
   if (records === null) return [cardText("no story package found")];
   return [
     ...cardWrapped(records.folder),
-    ...STORY_RECORDS.map((name) => cardText(`${records.present.has(name) ? "✓" : "○"} ${name}`)),
+    ...records.artifacts.flatMap(artifactLines),
+    ...CLOSURE_RECORDS.map((name) => cardText(`${records.present.has(name) ? "✓" : "○"} ${name}`)),
   ];
 }
 

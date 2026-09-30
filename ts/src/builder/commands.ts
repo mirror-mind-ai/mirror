@@ -35,17 +35,20 @@ import { getSessionOperatingMode } from "#mode/operatingMode.ts";
 import { PROGRAM } from "#util/program.ts";
 import { pyRStrip } from "#util/pythonText.ts";
 import { shellWord } from "#util/shellWord.ts";
-import { renderActiveCheckpoint, STORY_RECORDS } from "./activeCheckpoint.ts";
+import {
+  CLOSURE_RECORDS,
+  PLAN_STAGE_ARTIFACTS,
+  renderActiveCheckpoint,
+} from "./activeCheckpoint.ts";
 import { approvePlanCheckpoint, renderPlanApproval } from "./approve.ts";
 import { getAriadMethod } from "./ariadMethod.ts";
 import {
   displayPath,
-  existingArtifact,
   type MaterializedArtifact,
-  materializedArtifact,
   renderArtifactsMaterializedSurface,
 } from "./artifacts/artifactSurfaces.ts";
 import type { ArtifactOutcome } from "./artifacts/artifactWriter.ts";
+import { planPackageArtifacts } from "./artifacts/planArtifacts.ts";
 import {
   fill,
   fillPlanVocabulary,
@@ -53,6 +56,7 @@ import {
   PRODUCT_PLAN,
   SIBLING_NON_GOAL,
 } from "./artifacts/scaffoldSections.ts";
+import { artifactState } from "./artifacts/scaffoldState.ts";
 import { CARD_WIDTH, cardText, wrapPlainText } from "./card.ts";
 import { renderCheckpointRefused } from "./checkpointRefused.ts";
 import {
@@ -573,7 +577,10 @@ export function runShowCheckpoint(
       ? null
       : {
           folder: displayPath(dirname(plan), projectPath),
-          present: new Set(STORY_RECORDS.filter((name) => existsSync(join(dirname(plan), name)))),
+          artifacts: PLAN_STAGE_ARTIFACTS.map((name) =>
+            artifactState(name, join(dirname(plan), name)),
+          ),
+          present: new Set(CLOSURE_RECORDS.filter((name) => existsSync(join(dirname(plan), name)))),
         };
   return {
     stdout: printed(renderActiveCheckpoint({ journey, cursor, records })),
@@ -691,25 +698,6 @@ function artifactExistence(planPath: string | null): Map<string, boolean> {
     existence.set(path, existsSync(path));
   }
   return existence;
-}
-
-/** Python `_plan_package_artifacts`. */
-function planPackageArtifacts(
-  planPath: string | null,
-  existedBefore: Map<string, boolean>,
-): MaterializedArtifact[] {
-  if (planPath === null) return [];
-  const directory = dirname(planPath);
-  const triple: [string, string][] = [
-    ["story index", join(directory, "index.md")],
-    ["plan", planPath],
-    ["test guide", join(directory, "test-guide.md")],
-  ];
-  return triple.map(([kind, path]) =>
-    existedBefore.get(path) === true
-      ? existingArtifact(kind, path)
-      : materializedArtifact(kind, path, { existedBefore: false }),
-  );
 }
 
 /** The surface's last word on a closure record, true to what the writer did (CR079). */

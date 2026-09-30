@@ -8,6 +8,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, it } from "node:test";
+import { getAriadMethod } from "#builder/ariadMethod.ts";
 import {
   type PlanArtifactInput,
   renderPlanArtifact,
@@ -30,7 +31,6 @@ import {
   unfilledPlanSectionsFor,
 } from "#builder/artifacts/scaffoldState.ts";
 import { renderTechnicalStoryIndex, renderUserStoryIndex } from "#builder/artifacts/storyIndex.ts";
-import { getAriadMethod } from "#builder/ariadMethod.ts";
 import { STORY_PLAN_REQUIRED_SECTIONS } from "#builder/planPreauthorization.ts";
 
 const TITLE = "Enter an address, with a comma";
@@ -252,6 +252,36 @@ describe("unfilled is judged before scaffold, and never as authored", () => {
     const text = scaffold.replace("## Validation Route\n", "## Route\n");
     const verdict = judgeArtifact("plan.md", text);
     assert.equal(verdict.sections.find((s) => s.header === "Validation Route")?.state, "missing");
+    assert.ok(verdict.toAuthor.includes("Validation Route"));
+  });
+});
+
+describe("a file a person wrote is never called a scaffold", () => {
+  it("a Driver's plan with none of the required headings is incomplete, every section named", () => {
+    const verdict = judgeArtifact(
+      "plan.md",
+      "# Plan — authored by the Driver\n\nThis body must survive Plan.\n",
+    );
+    assert.equal(verdict.state, "incomplete");
+    assert.deepEqual(verdict.toAuthor, [
+      "Objective",
+      "Scope",
+      "Acceptance Behavior",
+      "Validation Route",
+    ]);
+  });
+
+  it("a plan whose sections all say Pending is incomplete, not scaffold", () => {
+    const text = PLAN_SECTIONS.filter((s) => s.kind === "placeholder")
+      .map((s) => `## ${s.header}\n\nPending.\n`)
+      .join("\n");
+    assert.equal(judgeArtifact("plan.md", text).state, "incomplete");
+  });
+
+  it("a scaffold with a heading removed is still a scaffold: what remains is Ariad's", () => {
+    const text = renderPlanArtifact(productReport()).replace("## Validation Route\n", "## Route\n");
+    const verdict = judgeArtifact("plan.md", text);
+    assert.equal(verdict.state, "scaffold");
     assert.ok(verdict.toAuthor.includes("Validation Route"));
   });
 });
