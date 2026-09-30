@@ -3191,6 +3191,60 @@ with [CR090](refinement/rs001-ariad-runtime-trust/cr090-debt-review-surface-mixe
 on 2026-09-28. With the backups, every change the release gate names is done.
 US3 is next, and remains separately authorized.
 
+**Amended 2026-09-30: US3's first two commands reopen the floor by three
+changes, worked before US3.** US3 was pulled and planned on 2026-09-30, the
+floor's validation route by this decision's own reasoning. Its Pull and its
+Plan each rendered a surface that was not true, and the Plan exposed a hole
+under both:
+
+- [CR112](refinement/rs001-ariad-runtime-trust/cr112-a-scaffold-cannot-be-told-from-authored-content-and-approve-plan-never-reads-the-plan.md):
+  a scaffold Ariad wrote cannot be told from a file a person authored, `build
+  show` reports only present or missing, and ordinary `approve-plan` never
+  reads `plan.md`, so an untouched scaffold can be approved. US3's `index.md`
+  held Expand's template sentence for eleven days. Silent damage; first in
+  order.
+- [CR111](refinement/rs001-ariad-runtime-trust/cr111-the-plan-checkpoint-renders-template-sentences-as-the-plan.md):
+  the Plan checkpoint prints template sentences with the title pasted in as
+  `scope` and `acceptance`, checked off, and cannot show a real plan; the
+  transport rule then puts that card above the plan the Driver wrote. CR019's
+  class, at the same gate.
+- [CR113](refinement/rs001-ariad-runtime-trust/cr113-the-pull-card-claims-prepare-did-not-run-mislabels-the-level-and-skips-the-parent.md):
+  the Pull card says Prepare was not executed while the same command runs it,
+  names every level a Delivery Story, omits the parent from its tree, and the
+  ribbon marks Expand done for an item that never expands.
+
+The Navigator's words: fix those problems completely, and make the
+implementation airtight before the release. Asked for more, the Driver
+proposed every open RS001 Change Request, and the Navigator took all of them,
+the same day:
+
+- [CR114](refinement/rs001-ariad-runtime-trust/cr114-the-builder-resume-offers-prepare-on-a-completed-item.md):
+  the resume offers Prepare on a completed item, on the first surface a
+  session reads.
+- [CR115](refinement/rs001-ariad-runtime-trust/cr115-the-cadence-profile-is-shown-on-no-read-only-surface.md):
+  the cadence that removes the Navigator's Plan turn is shown on no read-only
+  surface.
+- [CR082](refinement/rs001-ariad-runtime-trust/cr082-lifecycle-surfaces-print-absolute-paths.md)
+  with [CR009](refinement/rs001-ariad-runtime-trust/cr009-name-the-target-project-in-artifact-surfaces.md):
+  Plan and Expand print absolute paths where the artifact card prints
+  project-relative ones, and no card names the project it wrote into. Both
+  were left out on 2026-09-25 for a cost, the parity goldens, that TS5
+  removed.
+- [CR103](refinement/rs001-ariad-runtime-trust/cr103-candidate-and-position-rows-print-a-package-s-entire-status-line.md):
+  the resume's roadmap position is a package's whole status line, links and
+  all.
+- [CR107](refinement/rs001-ariad-runtime-trust/cr107-an-escaped-pipe-in-a-candidate-table-title-is-read-as-a-cell-border.md):
+  an escaped pipe in a title is read as a cell border by Expand and by the
+  scaffold it writes.
+
+With these, RS001 has no open Change Request outside the floor. The floor is
+now nineteen changes and twenty-two identifiers, eleven of them done. The
+order: CR112, CR111, CR113, CR114 with CR115, CR082 with CR009, CR103, CR107
+— what can advance a wrong state first, then what is wrong at the point where
+the Navigator decides, then what is merely wrong. Each is worked through the
+full Refinement route, one at a time. US3 stays pulled at its Plan checkpoint,
+awaiting approval, and is worked after the floor.
+
 ### A Builder journey's position is its cursor's active item, never a roadmap scan
 
 **Date:** 2026-09-26 · **Context:** [CR002](refinement/rs001-ariad-runtime-trust/cr002-cursor-sync-roadmap-selection.md),
