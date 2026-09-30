@@ -365,7 +365,8 @@ cursor
 echo '--- step 5: the preauthorized route on the sibling, same scaffold'
 cr112 build pull-item --journey j --method ariad --item-code CV1.DS1.TS1 --item-level technical_story --item-title 'Validate the address' --why-now now > /dev/null 2>&1
 cr112 build plan-item --journey j --method ariad --preauthorize-approval --stop-after navigator_validation 2>&1 | answer
-cr112 build approve-plan --journey j --method ariad --use-preauthorization 2>&1 | answer
+cr112 build approve-plan --journey j --method ariad --use-preauthorization > "$V/mismatch.txt" 2>&1; answer < "$V/mismatch.txt"
+sed -n '/│ Reason/,/│ Fallback/p' "$V/mismatch.txt" | sed '$d' | sed 's/│//g; s/ *$//'
 cursor
 echo '--- step 5b: after the mismatch, author the sibling and take the ordinary fallback'
 TS1="$(find "$R/cv1/ds1" -mindepth 1 -maxdepth 1 -type d -name '*ts1*')"
@@ -708,6 +709,154 @@ Two places where the implementation departs from this document's text:
   non-empty**, as the preauthorized route always has. D2 named only the
   placeholder sections; the design also said one rule for every approval route, and
   the two could not both hold. One rule won.
+
+
+### The route after the change (2026-09-30)
+
+At `8c76c34b`, with step 5 amended to print the mismatch's reason block, so the
+sections it names are visible in the route and not only in a unit test:
+
+```text
+--- step 1: pull the Delivery Story; Expand writes the child indexes
+  answer: <<<ARIAD:DELIVERY_STORY_READY>>> <<<ARIAD:ARTIFACTS_MATERIALIZED>>>
+  child index written by Expand (cv1-ds1-us1-enter-an-address/index.md):
+    ## User Story
+    
+    As a user,
+    I want to Enter an address,
+    So that I can receive the value of this story.
+    
+--- step 2: pull the child; build show reports its records
+  answer: <<<ARIAD:DELIVERY_STORY_IDENTIFIED>>> <<<ARIAD:PREPARE_FIELD_READING>>>
+ docs/project/roadmap/cv1/ds1/cv1-ds1-us1-enter-an-addr
+ ess
+ ○ index.md — scaffold
+   to author: User Story, Outcome, Acceptance Behavior
+ ○ plan.md — missing
+ ○ test-guide.md — missing
+ ○ validation.md
+ ○ review.md
+ ○ coherence.md
+ ○ done.md
+
+--- step 3: plan-item writes the scaffold; the checkpoint prints it as the plan
+ plan
+ Plan the smallest coherent, testable slice for Enter
+ an address.
+
+ scope
+ ✓ Deliver Enter an address as an observable slice.
+ ✓ Keep the implementation narrow enough to validate at
+   the Plan-defined checkpoint.
+
+ non-goals
+ ○ Do not implement sibling roadmap item: Validate the
+   address.
+ ○ Do not implement sibling roadmap item: Show the
+   address.
+
+ acceptance
+ ✓ Given the starting state needed for Enter an address
+ ✓ When the Navigator exercises Enter an address
+ ✓ Then the planned observable behavior is visible
+ ✓ And out-of-scope sibling roadmap items remain
+   untouched
+
+ validation
+ ✓ Run automated tests that cover the planned behavior.
+ ✓ Provide a Navigator-visible route with expected
+   observation, pass condition, and fail condition.
+ E2E: required unless Navigator explicitly accepts a
+ narrower fixture-level validation route
+
+ docs/project/roadmap/cv1/ds1/cv1-ds1-us1-enter-an-addr
+ ess
+ ○ index.md — scaffold
+   to author: User Story, Outcome, Acceptance Behavior
+ ○ plan.md — scaffold
+   to author: Objective, Scope, Acceptance Behavior,
+   Validation Route
+ ○ test-guide.md — scaffold
+   to author: Automated Validation, Navigator
+   Validation
+ ○ validation.md
+ ○ review.md
+ ○ coherence.md
+ ○ done.md
+
+  plan.md is byte-identical to the scaffold:  7a3dba323bdb86a05974342a6cd3f43c
+--- step 4: approve-plan on the untouched scaffold
+  answer: <<<ARIAD:CHECKPOINT_REFUSED>>>
+  last event: plan
+  pending confirmation: navigator_approval
+  active checkpoint: after_plan
+--- step 4b: author Scope in place, then approve; then author the rest, then approve
+  answer: <<<ARIAD:CHECKPOINT_REFUSED>>>
+ docs/project/roadmap/cv1/ds1/cv1-ds1-us1-enter-an-addr
+ ess
+ ○ index.md — scaffold
+   to author: User Story, Outcome, Acceptance Behavior
+ ○ plan.md — partly authored
+   to author: Objective, Acceptance Behavior,
+   Validation Route
+ ○ test-guide.md — scaffold
+   to author: Automated Validation, Navigator
+   Validation
+ ○ validation.md
+ ○ review.md
+ ○ coherence.md
+ ○ done.md
+
+  answer: <<<ARIAD:PLAN_APPROVED>>>
+  last event: plan_approved
+  pending confirmation: none
+  active checkpoint: none
+--- step 5: the preauthorized route on the sibling, same scaffold
+  answer: <<<ARIAD:PLAN_CHECKPOINT>>> <<<ARIAD:PLAN_PREAUTHORIZATION_RECORDED>>> <<<ARIAD:ARTIFACTS_MATERIALIZED>>>
+  answer: <<<ARIAD:PLAN_PREAUTHORIZATION_MISMATCH>>>
+ Reason
+ plan_incomplete
+
+ To author in plan.md
+ - Objective
+ - Scope
+ - Acceptance Behavior
+ - Validation Route
+
+  last event: plan
+  pending confirmation: navigator_approval
+  active checkpoint: after_plan
+--- step 5b: after the mismatch, author the sibling and take the ordinary fallback
+  answer: <<<ARIAD:PLAN_APPROVED>>>
+  last event: plan_approved
+  pending confirmation: none
+  active checkpoint: none
+--- step 6: the preauthorized route on an authored plan
+  answer: <<<ARIAD:PLAN_CHECKPOINT>>> <<<ARIAD:PLAN_PREAUTHORIZATION_RECORDED>>> <<<ARIAD:ARTIFACTS_MATERIALIZED>>>
+ docs/project/roadmap/cv1/ds1/cv1-ds1-us2-show-the-addr
+ ess
+ ○ index.md — scaffold
+   to author: User Story, Outcome, Acceptance Behavior
+ ✓ plan.md — authored
+ ○ test-guide.md — scaffold
+   to author: Automated Validation, Navigator
+   Validation
+ ○ validation.md
+ ○ review.md
+ ○ coherence.md
+ ○ done.md
+
+  answer: <<<ARIAD:PLAN_APPROVED>>> <<<ARIAD:IMPLEMENTATION_STARTED>>>
+  last event: plan_approved
+  pending confirmation: none
+  active checkpoint: none
+```
+
+Every step meets its pass condition, with one reading to make explicit: step 3's
+card still prints the scaffold's sentences as `scope` and `acceptance`, checked off.
+That half of step 3 is [CR111](cr111-the-plan-checkpoint-renders-template-sentences-as-the-plan.md)'s,
+next in floor order; the records half, CR112's, reads `○ plan.md — scaffold` with
+the four sections to author.
 
 ## Outcome
 
