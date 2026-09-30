@@ -922,6 +922,51 @@ The other lenses were silent:
   troubleshooting, and the CI cost is a few file reads per Builder test.
 - product-designer: D4 holds, and the digest question stays with CR111.
 
+### Debt paid (2026-09-30)
+
+The Navigator decided to pay all four findings before Done, in `7079c85d`, green on
+both legs and the smoke.
+
+1. **`continue-lifecycle` reads the story's record.** It passes the index to Done and
+   renders the refusal as its other refusals are rendered. The plan and index paths
+   are required parameters now, `string | null`: the compiler named the two remaining
+   callers, both in the table-driven test, which pass `null` for a journey with no
+   project. A CLI test runs `continue-lifecycle` under `accelerated` cadence against a
+   scaffold index: refused, cursor unchanged; authored, closed. A mutant that passes
+   `null` from `continue-lifecycle` fails it.
+2. **The skill keys on "authored", not on "scaffold"**, in both places.
+3. **The lists read whole.** `to author:` wraps between headings and continues under
+   the first; `PLAN_APPROVAL_SECTIONS` follows the plan file's order, and the three
+   corpus mismatches that list sections were reordered by script. The validation
+   route, rerun, differs from the recorded one only in those rows:
+
+   ```text
+      to author: Automated Validation,
+                 Navigator Validation
+   ```
+
+   where it printed `Navigator` over `Validation`; no refusal, approval, or cursor
+   line moved.
+4. **The `{code}` slot and the stray export are gone.**
+
 ## Outcome
 
-Pending.
+Done 2026-09-30. A scaffold is not a plan, and Ariad can now tell the two apart. Every
+sentence a story scaffold carries lives once, in
+`ts/src/builder/artifacts/scaffoldSections.ts`, as a template with a `{title}` slot
+and a kind, placeholder or default. The writers fill it, and they wrote the same bytes
+before and after. `scaffoldState.ts` reads a file back through the same templates and
+tells `missing`, `scaffold`, `incomplete`, `partly authored`, and `authored` apart,
+from structure alone. `build show` and the artifacts card name each Plan-stage file's
+state and the sections still to write. Both approval routes refuse, before any write,
+a `plan.md` whose required sections are missing, empty, pending, or still the
+scaffold's. Story Done refuses, by `done-item` and by `continue-lifecycle`, an index
+that still says what Expand or Plan wrote. The skill states the bar, the sequence,
+and what a refusal means. The corpus, the command tests, and the smoke author before
+they approve and close, through one shared helper, the way a Driver does.
+
+Delivered on `mirror-ts-core` in `d0d68089` (the model and the reader), `2839d4ca`
+(the surfaces), `8c76c34b` (the refusals), and `7079c85d` (debt). CI was green on
+every push after the first, whose lint failure is recorded above. The Plan checkpoint
+still prints the scaffold's sentences as the plan: that is
+[CR111](cr111-the-plan-checkpoint-renders-template-sentences-as-the-plan.md), next.

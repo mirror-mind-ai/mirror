@@ -12,6 +12,35 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-09-30 — CR112 done: a scaffold is not a plan, and approval reads the plan
+
+This is the first change of the reopened trust floor. US3's first two commands,
+its Pull and its Plan, each printed something untrue, and the Plan showed a hole
+under both. Plan and Expand write story files as scaffolds, and nothing read them
+back. An untouched scaffold was approvable on both approval routes, and a story
+could close with its index still saying "I want to <title>". US3's own index did,
+for eleven days. The Navigator put five new Change Requests and the three RS001
+requests still open on the floor, nineteen changes in all, to be worked before US3.
+
+Now every sentence a story scaffold carries lives once, as a template with a
+`{title}` slot and a kind, placeholder or default. One reader matches files against
+it, and `build show` and the artifacts card say whether each Plan-stage file is
+missing, a scaffold, incomplete, partly authored, or authored, with the sections
+still to write. Both approval routes refuse a plan whose required sections are still
+the scaffold's, and story Done refuses a scaffold index, by `done-item` and by
+`continue-lifecycle`. Characterizing found the preauthorized route approving the
+scaffold too. The corpus found a Driver's own plan reading as a scaffold, now
+`incomplete`, and the test harness carrying its own copy of the artifact report.
+
+Plateau 1 went out red on lint, because the next plateau began before its CI run
+finished. That is recorded, and every run since was watched to the end. The
+Navigator validated the route in a scratch home. The handoff review found a blocker:
+`continue-lifecycle` closed a scaffold under `accelerated` cadence, because the rule
+lived in an optional argument. It was paid with three debts: the paths are required
+now, the skill keys on "authored", and the lists wrap between headings.
+
+Next: CR111, the Plan checkpoint that prints template sentences as the plan.
+
 ### 2026-09-28 — CR105 done, with CR090: every Builder surface asks the question the cursor is at, in English
 
 This closes the Ariad trust floor at eleven of eleven changes, and with the backups,

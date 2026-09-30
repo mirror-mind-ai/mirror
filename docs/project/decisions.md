@@ -3404,3 +3404,48 @@ records it as the cursor's pending confirmation, so a resume can say it is open,
 and no stop stays on the cursor that no surface is asking. `FLOW_STOPS` in
 `ts/src/builder/flowUnit.ts` names the flow stops, and Expand takes its own
 from it.
+
+### A scaffold is not a plan: approval reads the plan, and Done reads the story's record
+
+**Date:** 2026-09-30 · **Context:** [CR112](refinement/rs001-ariad-runtime-trust/cr112-a-scaffold-cannot-be-told-from-authored-content-and-approve-plan-never-reads-the-plan.md),
+first of the changes US3's Pull and Plan put back on the
+[Ariad trust floor](#the-cv22-release-is-gated-on-an-ariad-trust-floor-worked-before-us3).
+Plan and Expand write story files as scaffolds, template sentences with the title
+pasted in, and CR079 protects them like authored files. Nothing read them back:
+`build show` said present or missing, ordinary approval never opened `plan.md`, and
+the preauthorized route's structural check could not see the scaffold's own sentences.
+An untouched scaffold was approvable on both routes, and a story could close with its
+record still saying "I want to <title>". CV22.DS10.US3's own index did, for eleven
+days.
+
+**The decision: every sentence a story scaffold carries has one home, as a template
+with a `{title}` slot and a kind, placeholder or default. The writers fill it; one
+reader matches files against it and says missing, scaffold, incomplete, partly
+authored, or authored. Every surface that names a Plan-stage file says which. Both
+approval routes refuse a plan whose required sections are missing, empty, pending, or
+still the scaffold's, and story Done, by any route, refuses an index that still is.**
+
+**Why structure, and never prose.** One real line under a heading is authored. The
+runtime cannot judge a plan's quality and must not pretend to. What it can know
+exactly is whether a file is still the text it wrote itself. The skill states the
+bar, a plan the Navigator can approve from, and names the structural check as the
+floor it is.
+
+**Why no marker in the file.** The runtime knows its own bytes. A marker would be one
+more thing a Driver forgets to remove, and a file without one would be trusted.
+
+**Why a kind per section.** "Deliver X as an observable slice" stands in for content
+the Driver must write; "Do not use git add ." is a rule a Driver may keep verbatim. A
+check that treated them alike would refuse honest plans or pass empty ones.
+
+**Why one list and required arguments.** The two approval routes read one list,
+`PLAN_APPROVAL_SECTIONS`, so they cannot hold a plan to different rules. The handoff
+review found the rule's weak point anyway: it lived in optional arguments, and
+`continue-lifecycle` reached Done without the index path, closing a scaffold under
+`accelerated` cadence. The paths are required now, so every caller must decide,
+including the next one.
+
+**The rule that follows.** A scaffold sentence lives only in
+`ts/src/builder/artifacts/scaffoldSections.ts`, and a new scaffold section declares its
+kind there. A lifecycle rule that reads a project file takes that file's path as a
+required argument, `null` only where there is no project to read.

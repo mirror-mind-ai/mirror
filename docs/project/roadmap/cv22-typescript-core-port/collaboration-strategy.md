@@ -170,9 +170,19 @@ and green CI on every push.
          ✓ CR102 (added 2026-09-25); ✓ CR104 (added and done
          2026-09-27); ✓ CR105 with CR090 (added 2026-09-27, done
          2026-09-28)
-→ DS10.US3 — npm distribution                      ← next, separately authorized
+→ Ariad trust floor, reopened 2026-09-30            ← current
+         US3's Pull and Plan printed untrue surfaces; eight changes,
+         worked before US3: ✓ CR112 (done 2026-09-30), CR111, CR113,
+         CR114 with CR115, CR082 with CR009, CR103, CR107
+→ DS10.US3 — npm distribution                      ← pulled and planned 2026-09-30;
+                                                     waits at its Plan checkpoint
   release — once, when US3 is done
 ```
+
+Reopened 2026-09-30 — see the amendment to
+[Decisions — The CV22 release is gated on an Ariad trust floor](../../decisions.md#the-cv22-release-is-gated-on-an-ariad-trust-floor-worked-before-us3).
+US3 was pulled as the floor's validation route, and its first two commands found
+what the floor was for.
 
 Re-sequenced 2026-09-25 — see
 [Decisions — The CV22 release is gated on an Ariad trust floor, worked before US3](../../decisions.md#the-cv22-release-is-gated-on-an-ariad-trust-floor-worked-before-us3).
