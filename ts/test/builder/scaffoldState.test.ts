@@ -1,0 +1,333 @@
+// CR112 — a scaffold can be told from an authored file, from structure alone.
+//
+// Every scaffold under test is produced by the real writers, so the reader is graded
+// against the bytes Expand and Plan actually write, never against a copy kept here.
+
+import { strict as assert } from "node:assert";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterEach, describe, it } from "node:test";
+import {
+  type PlanArtifactInput,
+  renderPlanArtifact,
+  renderStoryIndexArtifact,
+  renderTestGuideArtifact,
+} from "#builder/artifacts/planArtifacts.ts";
+import {
+  fill,
+  fillPlanVocabulary,
+  LIBRARY_PLAN,
+  matchesTemplate,
+  PLAN_SECTIONS,
+  PRODUCT_PLAN,
+  SIBLING_NON_GOAL,
+} from "#builder/artifacts/scaffoldSections.ts";
+import {
+  artifactState,
+  judgeArtifact,
+  unauthoredPlanSectionsFor,
+  unfilledPlanSectionsFor,
+} from "#builder/artifacts/scaffoldState.ts";
+import { renderTechnicalStoryIndex, renderUserStoryIndex } from "#builder/artifacts/storyIndex.ts";
+import { getAriadMethod } from "#builder/ariadMethod.ts";
+import { STORY_PLAN_REQUIRED_SECTIONS } from "#builder/planPreauthorization.ts";
+
+const TITLE = "Enter an address, with a comma";
+const CODE = "CV1.DS1.US1";
+
+function implementContract() {
+  const contract = getAriadMethod().contracts.find((c) => c.id === "implement_contract");
+  if (!contract) throw new Error("implement_contract missing from the Ariad method");
+  return contract;
+}
+
+/** The report the front door builds for `plan-item`: the product vocabulary, siblings named. */
+function productReport(overrides: Partial<PlanArtifactInput> = {}): PlanArtifactInput {
+  const vocabulary = fillPlanVocabulary(PRODUCT_PLAN, { title: TITLE });
+  return {
+    activeItem: CODE,
+    activeItemTitle: TITLE,
+    activeItemLevel: "user_story",
+    ...vocabulary,
+    nonGoals: [fill(SIBLING_NON_GOAL, { title: "Validate the address" })],
+    localRules: [],
+    implementContract: implementContract(),
+    activeCheckpoint: "after_plan",
+    pendingConfirmation: "navigator_approval",
+    ...overrides,
+  };
+}
+
+/** The report `planLifecycleItem` builds when a caller passes no sections. */
+function libraryReport(): PlanArtifactInput {
+  return productReport({ ...LIBRARY_PLAN });
+}
+
+const PLACEHOLDER_PLAN_SECTIONS = PLAN_SECTIONS.filter((s) => s.kind === "placeholder").map(
+  (s) => s.header,
+);
+
+describe("matchesTemplate", () => {
+  it("a template without a slot matches only itself", () => {
+    assert.equal(matchesTemplate("Run automated tests.", "Run automated tests."), true);
+    assert.equal(matchesTemplate("Run automated tests", "Run automated tests."), false);
+  });
+
+  it("a slot holds anything, including nothing and text with commas", () => {
+    const template = "Deliver {title} as an observable slice.";
+    assert.equal(
+      matchesTemplate("Deliver npm distribution as an observable slice.", template),
+      true,
+    );
+    assert.equal(matchesTemplate(`Deliver ${TITLE} as an observable slice.`, template), true);
+    assert.equal(matchesTemplate("Deliver  as an observable slice.", template), true);
+    assert.equal(
+      matchesTemplate("Deliver npm distribution as an observable slice", template),
+      false,
+    );
+    assert.equal(matchesTemplate("The address form takes a street.", template), false);
+  });
+
+  it("a slot at the end, and two slots, keep their fixed text in order", () => {
+    assert.equal(
+      matchesTemplate("Given the user is ready for X", "Given the user is ready for {title}"),
+      true,
+    );
+    assert.equal(matchesTemplate("I want to X,", "I want to {title},"), true);
+    assert.equal(matchesTemplate("I want to X", "I want to {title},"), false);
+    assert.equal(matchesTemplate("# CV1 — X", "# {code} — {title}"), true);
+    assert.equal(matchesTemplate("# CV1 - X", "# {code} — {title}"), false);
+  });
+});
+
+describe("the scaffolds the writers produce read as scaffolds", () => {
+  it("Expand's User Story index", () => {
+    const verdict = judgeArtifact("index.md", renderUserStoryIndex(CODE, TITLE));
+    assert.equal(verdict.state, "scaffold");
+    assert.deepEqual(verdict.toAuthor, ["User Story", "Outcome", "Acceptance Behavior"]);
+  });
+
+  it("Expand's Technical Story index", () => {
+    const verdict = judgeArtifact("index.md", renderTechnicalStoryIndex(CODE, TITLE));
+    assert.equal(verdict.state, "scaffold");
+    assert.deepEqual(verdict.toAuthor, ["Technical Story", "Outcome", "Acceptance Behavior"]);
+  });
+
+  it("Plan's index, whose statement is headed Story Statement and whose Outcome is the objective", () => {
+    const verdict = judgeArtifact("index.md", renderStoryIndexArtifact(productReport()));
+    assert.equal(verdict.state, "scaffold");
+    assert.deepEqual(verdict.toAuthor, ["Story Statement", "Outcome", "Acceptance Behavior"]);
+  });
+
+  it("Plan's plan.md in the product vocabulary, siblings named", () => {
+    const verdict = judgeArtifact("plan.md", renderPlanArtifact(productReport()));
+    assert.equal(verdict.state, "scaffold");
+    assert.deepEqual(verdict.toAuthor, PLACEHOLDER_PLAN_SECTIONS);
+    assert.deepEqual(verdict.toAuthor, [
+      "Objective",
+      "Scope",
+      "Acceptance Behavior",
+      "Validation Route",
+    ]);
+  });
+
+  it("Plan's plan.md in the library vocabulary", () => {
+    const verdict = judgeArtifact("plan.md", renderPlanArtifact(libraryReport()));
+    assert.equal(verdict.state, "scaffold");
+    assert.deepEqual(verdict.toAuthor, PLACEHOLDER_PLAN_SECTIONS);
+  });
+
+  it("Plan's test guide, in both vocabularies", () => {
+    for (const report of [productReport(), libraryReport()]) {
+      const verdict = judgeArtifact("test-guide.md", renderTestGuideArtifact(report));
+      assert.equal(verdict.state, "scaffold");
+      assert.deepEqual(verdict.toAuthor, ["Automated Validation", "Navigator Validation"]);
+    }
+  });
+
+  it("a Technical Story's plan.md reads the same as a User Story's", () => {
+    const verdict = judgeArtifact(
+      "plan.md",
+      renderPlanArtifact(productReport({ activeItemLevel: "technical_story" })),
+    );
+    assert.equal(verdict.state, "scaffold");
+  });
+});
+
+describe("authoring changes the verdict, one section at a time", () => {
+  const scaffold = renderPlanArtifact(productReport());
+
+  it("one real line in place of the Scope bullet authors Scope and nothing else", () => {
+    const text = scaffold.replace(
+      `- Deliver ${TITLE} as an observable slice.`,
+      "- The address form takes street, number, and postcode.",
+    );
+    const verdict = judgeArtifact("plan.md", text);
+    assert.equal(verdict.state, "partly_authored");
+    assert.deepEqual(verdict.toAuthor, ["Objective", "Acceptance Behavior", "Validation Route"]);
+    assert.deepEqual(
+      verdict.sections.map((s) => `${s.header}:${s.state}`),
+      [
+        "Objective:scaffold",
+        "Scope:authored",
+        "Acceptance Behavior:scaffold",
+        "Validation Route:scaffold",
+      ],
+    );
+  });
+
+  it("a real line added beside the template authors the section too: prose is never judged", () => {
+    const text = scaffold.replace(
+      `- Deliver ${TITLE} as an observable slice.`,
+      `- Deliver ${TITLE} as an observable slice.\n- Street, number, and postcode.`,
+    );
+    assert.equal(judgeArtifact("plan.md", text).sections[1]?.state, "authored");
+  });
+
+  it("every placeholder section authored reads authored, with the default sections untouched", () => {
+    const text = scaffold
+      .replace(
+        `Plan the smallest coherent, testable slice for ${TITLE}.`,
+        "Take an address at checkout.",
+      )
+      .replace(`- Deliver ${TITLE} as an observable slice.`, "- The address form.")
+      .replace(`Given the starting state needed for ${TITLE}`, "Given a valid address")
+      .replace(
+        "- Run automated tests that cover the planned behavior.",
+        "- Enter 1 Main St; expect it on the page.",
+      );
+    const verdict = judgeArtifact("plan.md", text);
+    assert.equal(verdict.state, "authored");
+    assert.deepEqual(verdict.toAuthor, []);
+    assert.ok(text.includes("- Do not use git add .; commit only story-scoped files."));
+  });
+
+  it("a custom --objective is authored by construction, the rest still scaffold", () => {
+    const text = renderPlanArtifact(productReport({ objective: "Take an address at checkout." }));
+    const verdict = judgeArtifact("plan.md", text);
+    assert.equal(verdict.state, "partly_authored");
+    assert.deepEqual(verdict.toAuthor, ["Scope", "Acceptance Behavior", "Validation Route"]);
+  });
+
+  it("the verdict does not depend on the title the scaffold was written with", () => {
+    const other = renderPlanArtifact(
+      productReport({
+        activeItemTitle: "Something else entirely",
+        ...fillPlanVocabulary(PRODUCT_PLAN, { title: "Something else entirely" }),
+      }),
+    );
+    assert.equal(judgeArtifact("plan.md", other).state, "scaffold");
+    assert.equal(judgeArtifact("plan.md", scaffold).state, "scaffold");
+  });
+});
+
+describe("unfilled is judged before scaffold, and never as authored", () => {
+  const scaffold = renderPlanArtifact(productReport());
+
+  it("an emptied section is unfilled", () => {
+    const text = scaffold.replace(
+      `- Deliver ${TITLE} as an observable slice.\n- Keep the implementation narrow enough to validate at the Plan-defined checkpoint.\n`,
+      "",
+    );
+    const verdict = judgeArtifact("plan.md", text);
+    assert.equal(verdict.sections.find((s) => s.header === "Scope")?.state, "unfilled");
+    assert.ok(verdict.toAuthor.includes("Scope"));
+  });
+
+  it("a TODO or a pending line beside the template is unfilled, not scaffold", () => {
+    const todo = scaffold.replace(
+      `- Deliver ${TITLE} as an observable slice.`,
+      `- Deliver ${TITLE} as an observable slice.\nTODO`,
+    );
+    assert.equal(judgeArtifact("plan.md", todo).sections[1]?.state, "unfilled");
+    const pending = scaffold.replace(
+      "Plan the smallest coherent",
+      "Pending — plan the smallest coherent",
+    );
+    assert.equal(judgeArtifact("plan.md", pending).sections[0]?.state, "unfilled");
+  });
+
+  it("a plan.md missing a placeholder heading is not authored there", () => {
+    const text = scaffold.replace("## Validation Route\n", "## Route\n");
+    const verdict = judgeArtifact("plan.md", text);
+    assert.equal(verdict.sections.find((s) => s.header === "Validation Route")?.state, "missing");
+    assert.ok(verdict.toAuthor.includes("Validation Route"));
+  });
+});
+
+describe("a story index is judged only on the placeholder headings it has", () => {
+  const scaffold = renderUserStoryIndex(CODE, TITLE);
+
+  it("edits elsewhere leave the statement, the outcome, and the acceptance block scaffold: US3's case", () => {
+    const text = `${scaffold}\n## What US3 Inherits\n\nTwelve items, in [inherited.md](inherited.md).\n`;
+    const verdict = judgeArtifact("index.md", text);
+    assert.equal(verdict.state, "scaffold");
+    assert.deepEqual(verdict.toAuthor, ["User Story", "Outcome", "Acceptance Behavior"]);
+  });
+
+  it("an authored outcome with the template statement is partly authored, the statement named", () => {
+    const text = scaffold.replace(
+      `Navigator can validate ${TITLE} as an observable behavior.`,
+      "The order carries the address the user typed.",
+    );
+    const verdict = judgeArtifact("index.md", text);
+    assert.equal(verdict.state, "partly_authored");
+    assert.deepEqual(verdict.toAuthor, ["User Story", "Acceptance Behavior"]);
+  });
+
+  it("an index in the Driver's own structure, with none of the placeholder headings, is authored", () => {
+    const text =
+      "[< Parent](../index.md)\n\n# CV1.DS1.US1 — Enter an address\n\n## Why\n\nBecause.\n\n## Done Condition\n\nIt works.\n";
+    const verdict = judgeArtifact("index.md", text);
+    assert.equal(verdict.state, "authored");
+    assert.deepEqual(verdict.sections, []);
+  });
+});
+
+describe("reading from disk, and the two plan-section rules", () => {
+  let directory: string;
+  afterEach(() => {
+    if (directory) rmSync(directory, { recursive: true, force: true });
+  });
+
+  it("a missing file is missing", () => {
+    directory = mkdtempSync(join(tmpdir(), "cr112-"));
+    assert.equal(artifactState("plan.md", join(directory, "plan.md")).state, "missing");
+    assert.deepEqual(
+      unfilledPlanSectionsFor(join(directory, "plan.md"), STORY_PLAN_REQUIRED_SECTIONS),
+      [...STORY_PLAN_REQUIRED_SECTIONS],
+    );
+    assert.deepEqual(unfilledPlanSectionsFor(null, ["Scope"]), ["Scope"]);
+  });
+
+  it("unfilledPlanSectionsFor keeps its rule: a scaffold is filled, an emptied section is not", () => {
+    directory = mkdtempSync(join(tmpdir(), "cr112-"));
+    const path = join(directory, "plan.md");
+    writeFileSync(path, renderPlanArtifact(productReport()), "utf8");
+    assert.deepEqual(unfilledPlanSectionsFor(path, STORY_PLAN_REQUIRED_SECTIONS), []);
+    writeFileSync(
+      path,
+      renderPlanArtifact(productReport()).replace(
+        `- Deliver ${TITLE} as an observable slice.\n- Keep the implementation narrow enough to validate at the Plan-defined checkpoint.\n`,
+        "",
+      ),
+      "utf8",
+    );
+    assert.deepEqual(unfilledPlanSectionsFor(path, STORY_PLAN_REQUIRED_SECTIONS), ["Scope"]);
+  });
+
+  it("unauthoredPlanSectionsFor counts the scaffold's own sentences, and holds a default section to the unfilled rule only", () => {
+    directory = mkdtempSync(join(tmpdir(), "cr112-"));
+    const path = join(directory, "plan.md");
+    writeFileSync(path, renderPlanArtifact(productReport()), "utf8");
+    const judged = [...PLACEHOLDER_PLAN_SECTIONS, ...STORY_PLAN_REQUIRED_SECTIONS];
+    assert.deepEqual(unauthoredPlanSectionsFor(path, judged), [
+      "Objective",
+      "Scope",
+      "Acceptance Behavior",
+      "Validation Route",
+    ]);
+    assert.deepEqual(unauthoredPlanSectionsFor(null, ["Scope"]), ["Scope"]);
+  });
+});

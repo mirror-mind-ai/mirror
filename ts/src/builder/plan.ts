@@ -19,6 +19,7 @@
 import { dirname } from "node:path";
 import type { WritableDatabase } from "#db/database.ts";
 import { STORY_SCOPED_COMMIT_RULE, writeStoryPackage } from "./artifacts/planArtifacts.ts";
+import { LIBRARY_PLAN } from "./artifacts/scaffoldSections.ts";
 import { cardPrefixed, cardText, cardWrapped } from "./card.ts";
 import { isImplementableByDefault, normalizeRequired } from "./cursorTransitions.ts";
 import {
@@ -186,33 +187,21 @@ export function planLifecycleItem(
     activeItemTitle: existing.activeItemTitle,
     activeItemLevel: existing.activeItemLevel,
     implementableByDefault: implementable,
-    objective: options.objective || "Confirm scope, validation route, and implementation contract.",
-    scope:
-      options.scope && options.scope.length > 0
-        ? options.scope
-        : ["Implement the smallest coherent slice for the active item."],
+    // A caller that passes no sections gets the library vocabulary, recorded once in
+    // the scaffold model (CR112); the front door passes the product one.
+    objective: options.objective || LIBRARY_PLAN.objective,
+    scope: options.scope && options.scope.length > 0 ? options.scope : LIBRARY_PLAN.scope,
     nonGoals:
-      options.nonGoals && options.nonGoals.length > 0
-        ? options.nonGoals
-        : ["Do not silently absorb adjacent roadmap work."],
+      options.nonGoals && options.nonGoals.length > 0 ? options.nonGoals : LIBRARY_PLAN.nonGoals,
     acceptanceBehavior:
       options.acceptanceBehavior && options.acceptanceBehavior.length > 0
         ? options.acceptanceBehavior
-        : [
-            "Given the relevant starting state",
-            "When the Navigator exercises the planned behavior",
-            "Then the expected observable outcome appears",
-            "And important constraints still hold",
-          ],
+        : LIBRARY_PLAN.acceptanceBehavior,
     validationRoute:
       options.validationRoute && options.validationRoute.length > 0
         ? options.validationRoute
-        : [
-            "Run automated checks required by the local guide.",
-            "Provide a Navigator-visible validation route with expected observation and pass/fail condition.",
-          ],
-    e2eDecision:
-      options.e2eDecision || "Decide explicitly before implementation whether E2E is required.",
+        : LIBRARY_PLAN.validationRoute,
+    e2eDecision: options.e2eDecision || LIBRARY_PLAN.e2eDecision,
     planContract: contractFor(method, "plan_contract"),
     implementContract: contractFor(method, "implement_contract"),
     validationContract: contractFor(method, "validation_contract"),

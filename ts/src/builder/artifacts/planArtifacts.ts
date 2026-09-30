@@ -24,6 +24,7 @@ export function markdownList(items: readonly string[]): string {
   return items.length > 0 ? items.map((item) => `- ${item}`).join("\n") : "- None declared.";
 }
 
+import { NAVIGATOR_VALIDATION_GUIDANCE, VALIDATION_EVIDENCE_PENDING } from "./scaffoldSections.ts";
 /** Python `_user_story_statement` / `_technical_story_statement`, shared with Expand. */
 import { technicalStoryStatement, userStoryStatement } from "./storyIndex.ts";
 
@@ -176,11 +177,11 @@ ${report.e2eDecision}
 
 ## Navigator Validation
 
-Provide the Navigator-visible route with expected observation, pass condition, and fail condition before the story can pass Validation.
+${NAVIGATOR_VALIDATION_GUIDANCE}
 
 ## Validation Evidence
 
-Pending implementation and validation.
+${VALIDATION_EVIDENCE_PENDING}
 `;
 }
 

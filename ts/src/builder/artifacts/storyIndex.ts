@@ -14,25 +14,36 @@
 // whose own Expand refuses it.
 
 import { storyFolderName } from "../storyPaths.ts";
+import {
+  fill,
+  STORY_OUTCOME,
+  TECHNICAL_STORY_ACCEPTANCE,
+  TECHNICAL_STORY_STATEMENT,
+  USER_STORY_ACCEPTANCE,
+  USER_STORY_STATEMENT,
+} from "./scaffoldSections.ts";
+
+// Every sentence below is a template in `scaffoldSections.ts` (CR112): the reader
+// that tells a scaffold from an authored file matches against the same lines these
+// writers fill, so neither can drift from the other.
+
+function fillLines(lines: readonly string[], title: string): string {
+  return lines.map((line) => fill(line, { title })).join("\n");
+}
 
 /** Python `_user_story_statement`. */
 export function userStoryStatement(title: string): string {
-  return `As a user,\nI want to ${title},\nSo that I can receive the value of this story.`;
+  return fillLines(USER_STORY_STATEMENT, title);
 }
 
 /** Python `_technical_story_statement`. */
 export function technicalStoryStatement(title: string): string {
-  return [
-    "In order to support the delivery capability,",
-    "As an engineering team/system component,",
-    `I want to ${title},`,
-    "So that the expected technical outcome is available.",
-  ].join("\n");
+  return fillLines(TECHNICAL_STORY_STATEMENT, title);
 }
 
 /** Python `_user_story_outcome`. */
 export function userStoryOutcome(title: string): string {
-  return `Navigator can validate ${title} as an observable behavior.`;
+  return fill(STORY_OUTCOME, { title });
 }
 
 /** Python `_render_delivery_story_index`. */
@@ -90,10 +101,7 @@ ${userStoryOutcome(title)}
 ## Acceptance Behavior
 
 \`\`\`text
-Given the system is ready for ${title}
-When the planned technical change is applied
-Then the expected technical outcome is observable
-And unrelated Delivery Story scope remains untouched
+${fillLines(TECHNICAL_STORY_ACCEPTANCE, title)}
 \`\`\`
 
 ## Scope
@@ -132,10 +140,7 @@ ${userStoryOutcome(title)}
 ## Acceptance Behavior
 
 \`\`\`text
-Given the user is ready for ${title}
-When the user performs the planned action
-Then the expected observable behavior is visible
-And unrelated Delivery Story scope remains untouched
+${fillLines(USER_STORY_ACCEPTANCE, title)}
 \`\`\`
 
 ## Scope

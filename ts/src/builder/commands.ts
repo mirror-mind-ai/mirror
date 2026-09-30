@@ -46,6 +46,13 @@ import {
   renderArtifactsMaterializedSurface,
 } from "./artifacts/artifactSurfaces.ts";
 import type { ArtifactOutcome } from "./artifacts/artifactWriter.ts";
+import {
+  fill,
+  fillPlanVocabulary,
+  type PlanVocabulary,
+  PRODUCT_PLAN,
+  SIBLING_NON_GOAL,
+} from "./artifacts/scaffoldSections.ts";
 import { CARD_WIDTH, cardText, wrapPlainText } from "./card.ts";
 import { renderCheckpointRefused } from "./checkpointRefused.ts";
 import {
@@ -741,14 +748,7 @@ function artifactsSurface(options: {
 function roadmapPlanContext(
   projectPath: string | null,
   cursor: { activeItem: string | null } | null,
-): {
-  objective: string;
-  scope: string[];
-  nonGoals: string[];
-  acceptanceBehavior: string[];
-  validationRoute: string[];
-  e2eDecision: string;
-} {
+): PlanVocabulary {
   const activeItem = cursor?.activeItem ?? null;
   let title = String(activeItem ?? "the active item");
   let siblings: string[] = [];
@@ -763,31 +763,13 @@ function roadmapPlanContext(
       siblings = siblingsOf(candidates, activeItem).map((candidate) => candidate.title);
     }
   }
-  const siblingNonGoals = siblings.map(
-    (sibling) => `Do not implement sibling roadmap item: ${sibling}.`,
-  );
+  // Every sentence comes from the scaffold model (CR112), so the reader that tells
+  // a scaffold from an authored plan matches the lines this context writes.
+  const vocabulary = fillPlanVocabulary(PRODUCT_PLAN, { title });
+  const siblingNonGoals = siblings.map((sibling) => fill(SIBLING_NON_GOAL, { title: sibling }));
   return {
-    objective: `Plan the smallest coherent, testable slice for ${title}.`,
-    scope: [
-      `Deliver ${title} as an observable slice.`,
-      "Keep the implementation narrow enough to validate at the Plan-defined checkpoint.",
-    ],
-    nonGoals:
-      siblingNonGoals.length > 0
-        ? siblingNonGoals
-        : ["Do not silently absorb adjacent roadmap work."],
-    acceptanceBehavior: [
-      `Given the starting state needed for ${title}`,
-      `When the Navigator exercises ${title}`,
-      "Then the planned observable behavior is visible",
-      "And out-of-scope sibling roadmap items remain untouched",
-    ],
-    validationRoute: [
-      "Run automated tests that cover the planned behavior.",
-      "Provide a Navigator-visible route with expected observation, pass condition, and fail condition.",
-    ],
-    e2eDecision:
-      "required unless Navigator explicitly accepts a narrower fixture-level validation route",
+    ...vocabulary,
+    nonGoals: siblingNonGoals.length > 0 ? siblingNonGoals : vocabulary.nonGoals,
   };
 }
 

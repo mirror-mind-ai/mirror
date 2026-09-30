@@ -19,10 +19,10 @@
 // other way, because a hash mismatch can only refuse.
 
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync } from "node:fs";
+
 import type { WritableDatabase } from "#db/database.ts";
 import { pythonJsonDumpsCanonical } from "#util/pyGenerators.ts";
-import { pySplitLines, pyStrip, sortByCodePoint } from "#util/pythonText.ts";
+import { pyStrip, sortByCodePoint } from "#util/pythonText.ts";
 import {
   type BuilderDeliveryCursor,
   type CursorWriteDeps,
@@ -46,19 +46,6 @@ export const STORY_PLAN_REQUIRED_SECTIONS = [
   "Validation Route",
   "Implementation Contract",
 ] as const;
-
-/**
- * Python `_PLACEHOLDER_LINE_RE`.
- *
- * `^(?:[-*]\s+)?(?:this (?:section )?is (?:a )?)?placeholder(?:\b|$)`, case
- * insensitive. `\s` is Python's, which matches more than JavaScript's — but this
- * pattern's `\s+` sits between an ASCII bullet and the word, where the two agree.
- * The `\b` alternative is what keeps "placeholder story" a placeholder while
- * "placeholders" is not; and the whole point is that it anchors at the START, so
- * "Do not implement the sibling Payment placeholder story" is product vocabulary,
- * not an unfilled section.
- */
-const PLACEHOLDER_LINE_RE = /^(?:[-*]\s+)?(?:this (?:section )?is (?:a )?)?placeholder(?:\b|$)/i;
 
 /** Python `PlanPreauthorizationMismatch`. */
 export class PlanPreauthorizationMismatch extends Error {
@@ -275,58 +262,6 @@ export function invalidatePlanPreauthorization(
   }
 }
 
-/**
- * Python `unfilled_plan_sections_for`: structure only, never prose judgement.
- *
- * An absent file means EVERY section is unfilled, which is what makes a receipt
- * unusable before the Driver writes the Plan. A section counts as unfilled when it
- * is empty, or when any of its non-blank lines starts with `pending`, is exactly
- * one of the throwaway tokens, or matches the placeholder pattern at line start.
- */
-export function unfilledPlanSectionsFor(
-  planPath: string | null,
-  requiredSections: readonly string[],
-): string[] {
-  if (planPath === null || !existsSync(planPath)) return [...requiredSections];
-  const sections = levelTwoSections(readFileSync(planPath, "utf8"));
-  const unfilled: string[] = [];
-  for (const header of requiredSections) {
-    const body = pyStrip(sections.get(header) ?? "");
-    const lines = pySplitLines(body)
-      .map((line) => pyStrip(line).toLowerCase())
-      .filter((line) => line !== "");
-    const throwaway = new Set(["todo", "tbd", "...", "n/a", "none"]);
-    if (
-      !body ||
-      lines.some((line) => line.startsWith("pending")) ||
-      lines.some((line) => throwaway.has(line)) ||
-      lines.some((line) => PLACEHOLDER_LINE_RE.test(line))
-    ) {
-      unfilled.push(header);
-    }
-  }
-  return unfilled;
-}
-
-/**
- * Python `_level_two_sections`.
- *
- * `setdefault` means a REPEATED `## Scope` heading appends to the first section
- * rather than replacing it, so a Plan with two Scope headings is complete if either
- * carries content.
- */
-function levelTwoSections(planText: string): Map<string, string> {
-  const sections = new Map<string, string[]>();
-  let current: string | null = null;
-  for (const line of pySplitLines(planText)) {
-    if (line.startsWith("## ")) {
-      current = pyStrip(line.slice(3));
-      if (!sections.has(current)) sections.set(current, []);
-    } else if (current !== null) {
-      sections.get(current)?.push(line);
-    }
-  }
-  const joined = new Map<string, string>();
-  for (const [header, lines] of sections) joined.set(header, lines.join("\n"));
-  return joined;
-}
+// `unfilledPlanSectionsFor` and `levelTwoSections` live in `artifacts/scaffoldState.ts`
+// since CR112, beside the rule that also recognizes a scaffold's own sentences.
+export { unfilledPlanSectionsFor } from "./artifacts/scaffoldState.ts";
