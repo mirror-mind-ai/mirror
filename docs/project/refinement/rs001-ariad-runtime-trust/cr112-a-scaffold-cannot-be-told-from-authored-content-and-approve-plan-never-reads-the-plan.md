@@ -881,6 +881,47 @@ CI was green on the pushes that carried the code: plateau 2 (`2839d4ca`) and pla
 (`8c76c34b`), Tests on both legs and the smoke. Plateau 1 (`d0d68089`) was red on lint,
 recorded above.
 
+
+### Handoff review (2026-09-30)
+
+This review came after validation, per the collaboration strategy. The baseline panel
+(engineer, quality-assurance, devops-engineer, security-engineer, database-architect)
+and the lenses that reviewed the plan (prompt-engineer, experience-designer,
+product-designer) reviewed the delivered code, tests, safety posture, operational
+cost, and resumability. Every finding was checked against the code before it was
+written down; the first was reproduced end to end in a scratch home.
+
+Synthesis: the delivery does what the plan said on every path the plan named, and the
+refusals sit where they belong, before any write. Its weak point is structural: the
+new rules are arguments a caller may omit, and one caller did. A second, smaller class
+of findings is words: a skill keyed to one state word, and a list wrapped inside a
+heading.
+
+| # | Lens | Finding | Class | Recommendation |
+|---|---|---|---|---|
+| 1 | engineer, quality-assurance | `continue-lifecycle`, the higher-autonomy cadence's route to Done, calls `doneLifecycleItem` without the index path, so D4 does not apply there. Reproduced: under `accelerated` cadence a story whose `build show` read `○ index.md — scaffold` closed to `done_complete`. The refusal, had it fired, would also have escaped `runContinueLifecycle`, which catches nothing. The rule depended on each caller remembering an optional argument | Blocker | Pay before Done: pass the index, render its refusal as `continue-lifecycle`'s other refusals are rendered, and make `planArtifactPath` and `indexArtifactPath` required (`string \| null`), so the compiler asks every caller, now and later; a test through `continue-lifecycle` |
+| 2 | prompt-engineer | The skill says to author `index.md` "when `build show` names it a scaffold". `build show` also prints `partly authored` and `incomplete`, and an agent reading literally skips both | Non-blocking debt, introduced here | Pay now: "unless `build show` names it authored", in both places |
+| 3 | experience-designer | `to author:` wraps inside a heading: the Navigator's own run printed `to author: Automated Validation, Navigator` over `Validation`, which reads as two items. And the approval refusal lists Non-Goals and Implementation Contract after Validation Route, out of the file's order | Non-blocking debt, introduced here | Pay now: wrap between headings, never inside one, with the continuation under the first heading; list sections in the file's order |
+| 4 | engineer | The `{code}` slot is declared and no template uses it; `refuseUnauthoredPlan` is exported and used only in its own module | Non-blocking debt, introduced here | Pay now: drop the slot, unexport the function |
+
+Checked and dropped: a custom E2E decision would make the Validation Route authored by
+construction, since its line is not a template line. It cannot be reached: `plan-item`
+has no E2E flag, and the product always writes the default.
+
+Accepted as limitations, both stated in the design and the skill: prose is never judged,
+so one real line under a heading passes; and the Plan card prints the scaffold's
+sentences until CR111.
+
+The other lenses were silent:
+
+- security-engineer: a refusal prints fixed heading names and a project-relative path,
+  never file content, and the files read are the resolved package's own.
+- database-architect: no persisted shape changed; the receipt keeps its reason token,
+  and `plan_approval` exists only in code.
+- devops-engineer: the rollout, refusals where approvals used to pass, is documented in
+  troubleshooting, and the CI cost is a few file reads per Builder test.
+- product-designer: D4 holds, and the digest question stays with CR111.
+
 ## Outcome
 
 Pending.
