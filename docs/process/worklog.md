@@ -12,6 +12,30 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-09-30 — CR113 done: the Pull card says what happened, at the level that happened
+
+This is the third change of the reopened trust floor. The Pull card, which the product
+prints only after a story is pulled, was headed DELIVERY STORY ACTIVATED under a
+marker naming a Delivery Story. It said Prepare had not run while the same command ran
+it, drew a story straight under its CV, and called any pulled code a roadmap candidate.
+Every Delivery ribbon drew a story's Expand as done, or as still to come.
+
+Now the card names the level under `ITEM_ACTIVATED`, drops the Prepare claim, and draws
+the item's lineage from the roadmap through one renderer that Ready shares. Its source
+row says `not in the roadmap` when nothing names the item, and the skill tells the
+agent to raise it with the Navigator. A story's ribbon draws `– Expand` everywhere,
+with the level a required argument at every call. Characterizing found that the
+product printed the card only for stories, and that the pull-candidates reader was
+blind to Done stories, so the listed check is status-blind. A walk through a story's
+whole lifecycle found two handoffs with a fixed ribbon that no compiler could name.
+
+Each plateau waited for its CI run, and every run was green. The Navigator validated
+the route in their own shell and judged the dash in their terminal. The handoff review
+found no blocker and two debts, both paid: the candidates list is read once per Pull,
+and the Delivery Story title's index fallback and the two handoffs are pinned by tests.
+
+Next: CR114 with CR115, the Builder resume and the cadence it does not show.
+
 ### 2026-09-30 — CR111 done: the Plan checkpoint holds no plan
 
 This is the second change of the reopened trust floor. The Plan checkpoint printed the

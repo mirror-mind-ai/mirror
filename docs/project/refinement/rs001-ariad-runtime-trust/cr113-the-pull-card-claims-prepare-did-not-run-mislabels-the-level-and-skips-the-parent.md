@@ -675,4 +675,24 @@ printed the validated output byte for byte.
 
 ## Outcome
 
-Pending.
+Done 2026-09-30. The Pull card says what happened, at the level that happened, and
+where the item lives. It is headed `USER STORY ACTIVATED` or `TECHNICAL STORY
+ACTIVATED`, the only levels the product prints it for, under `ITEM_ACTIVATED`, a
+marker that names no level. It claims nothing about Prepare: Prepare's own card
+follows it. Its placement is the item's lineage, CV, then Delivery Story, then story,
+titled by the roadmap and drawn by `placementRows`, which the Ready card shares, so
+the two trees cannot disagree. Its source row says `not in the roadmap: pulled by its
+code` when no package, candidate table, or candidate names the item, and the skill
+tells the agent to raise that with the Navigator before planning. A User or Technical
+Story's Delivery ribbon draws `– Expand` everywhere. `renderLifecycleRibbon` takes the
+level as a required argument, and one front-door walk pins every ribbon a story's
+lifecycle prints.
+
+Two departures from the plan's text are recorded with their reasons. The listed check
+is status-blind, because the pull-candidates reader alone would call a Done story "not
+in the roadmap". The walk found two handoffs whose ribbon was a fixed string, which no
+compiler could name. The recorded corpus moved by 9 cards and 112 ribbons, one of them
+in the resume-state golden.
+
+Delivered on `mirror-ts-core` in `f95992fd` (the card), `05ac1dae` (the ribbon), and
+`7b4cd69f` (debt). CI was green on every push. Next in floor order: CR114 with CR115.

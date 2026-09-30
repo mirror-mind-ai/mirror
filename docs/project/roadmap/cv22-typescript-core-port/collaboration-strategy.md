@@ -173,8 +173,8 @@ and green CI on every push.
 → Ariad trust floor, reopened 2026-09-30            ← current
          US3's Pull and Plan printed untrue surfaces; eight changes,
          worked before US3: ✓ CR112 (done 2026-09-30), ✓ CR111 (done
-         2026-09-30), CR113, CR114 with CR115, CR082 with CR009, CR103,
-         CR107
+         2026-09-30), ✓ CR113 (done 2026-09-30), CR114 with CR115, CR082
+         with CR009, CR103, CR107
 → DS10.US3 — npm distribution                      ← pulled and planned 2026-09-30;
                                                      waits at its Plan checkpoint
   release — once, when US3 is done

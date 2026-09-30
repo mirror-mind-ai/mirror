@@ -3496,3 +3496,41 @@ content a person must write. A surface that names a Plan-stage file prints the r
 `ts/src/builder/artifacts/storyFiles.ts`, and anything that says what a `plan.md` still
 needs asks `planSectionsToAuthor`. An argument a command cannot record is named on its
 surface, never dropped silently.
+
+### The Pull card says what happened, and a stage a level never reaches is drawn as not applicable
+
+**Date:** 2026-09-30 · **Context:** [CR113](refinement/rs001-ariad-runtime-trust/cr113-the-pull-card-claims-prepare-did-not-run-mislabels-the-level-and-skips-the-parent.md),
+the third change US3's Pull and Plan put back on the
+[Ariad trust floor](#the-cv22-release-is-gated-on-an-ariad-trust-floor-worked-before-us3).
+The Pull card, which the product prints only after a story is pulled, was headed
+DELIVERY STORY ACTIVATED under a marker naming a Delivery Story. It said Prepare had
+not run while the same command ran it, drew a story straight under its CV, and called
+any pulled code a roadmap candidate. Every Delivery ribbon drew a story's Expand as done
+once it passed Prepare, and as still to come before.
+
+**The decision: the Pull card names the level it pulled, under `ITEM_ACTIVATED`, a
+marker that names no level. It claims nothing about Prepare, whose own card follows. Its
+placement is the item's lineage, CV, then Delivery Story, then story, titled by the
+roadmap and drawn by the renderer the Ready card shares. Its source row says whether
+the roadmap names the item. A stage an item's level never reaches is drawn `–`, not
+applicable: a User or Technical Story's Expand, on every Delivery ribbon.**
+
+**Why "named by the roadmap" is status-blind.** The pull-candidates reader keeps only
+the statuses that can be pulled. A story marked Done, or a candidate-table row with no
+package yet, is still named by the roadmap. So the item is named when a package heading
+claims it, when its Delivery Story's candidate table lists it, or when it is a pull
+candidate.
+
+**Why a required argument, and a walk as well.** The compiler named every call to the
+ribbon. It could not name the two handoffs whose ribbon was a fixed string. One walk
+through a story's whole lifecycle, through the front door, collects every ribbon it
+prints, and it found them.
+
+**Why a dash, not an omission.** One ribbon shape serves every level. The Navigator
+judged the dash in their own terminal.
+
+**The rule that follows.** A surface that draws a story's Delivery ribbon draws it
+through `renderLifecycleRibbon`, with the item's level; the Delivery Story flow's own
+ribbons are that flow's matter. Which levels never expand is `isImplementableByDefault`'s
+answer, and nowhere else. A surface that says where a pulled item sits asks
+`pullPlacement` and draws with `placementRows`.
