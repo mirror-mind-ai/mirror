@@ -13,6 +13,7 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { invokeBuilderArgv, invokeReadOnlyBuilderArgv } from "#builder/argv.ts";
 import { bootstrapDatabase } from "#db/bootstrap.ts";
+import { authorPlan } from "#helpers/authorScaffold.ts";
 import { createJourney } from "#journey/journeyWrite.ts";
 
 const NOW = "2026-09-28T12:00:00.000000Z";
@@ -39,7 +40,9 @@ test("the Debt Review surface records no action needed, in English", () => {
       ...["--item-code", "CV1.DS1.US1", "--item-level", "user_story"],
       ...["--item-title", "Enter an address", "--why-now", "now"],
     );
-    run("plan-item");
+    const planned = run("plan-item");
+    // CR112: approval reads the plan, so the Driver writes it first.
+    authorPlan(/plan_artifact_path=(.+)/u.exec(planned)?.[1] ?? "");
     run("approve-plan");
     const validated = run(
       "validate-item",

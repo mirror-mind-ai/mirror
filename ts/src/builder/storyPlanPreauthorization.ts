@@ -15,7 +15,8 @@
 //     "fall back to ordinary Navigator approval" true rather than aspirational.
 
 import type { WritableDatabase } from "#db/database.ts";
-import { cardText } from "./card.ts";
+import { unauthoredPlanSectionsFor } from "./artifacts/scaffoldState.ts";
+import { cardPrefixed, cardText } from "./card.ts";
 import {
   type BuilderDeliveryCursor,
   type CursorWriteDeps,
@@ -27,11 +28,10 @@ import {
 import { FLOW_UNIT_STORY_BY_STORY } from "./flowUnit.ts";
 import {
   invalidatePlanPreauthorization,
+  PLAN_APPROVAL_SECTIONS,
   PlanPreauthorizationMismatch,
   planPreauthorizationMismatchReason,
   STORY_PLAN_CONTRACT,
-  STORY_PLAN_REQUIRED_SECTIONS,
-  unfilledPlanSectionsFor,
 } from "./planPreauthorization.ts";
 import { wrapAriadSurface } from "./surfaceProtocol.ts";
 
@@ -91,7 +91,9 @@ export function approveStoryPlanWithPreauthorization(
     throw new Error("story Plan approval requires a pending after_plan checkpoint");
   }
 
-  const unfilled = unfilledPlanSectionsFor(options.planArtifactPath, STORY_PLAN_REQUIRED_SECTIONS);
+  // The same rule the ordinary route applies (CR112): a section still holding the
+  // scaffold's sentences is not authored, whatever its structure.
+  const unfilled = unauthoredPlanSectionsFor(options.planArtifactPath, PLAN_APPROVAL_SECTIONS);
   const mismatch = planPreauthorizationMismatchReason(cursor, {
     journey,
     method,
@@ -102,7 +104,10 @@ export function approveStoryPlanWithPreauthorization(
   });
   if (mismatch !== null) {
     invalidatePlanPreauthorization(db, cursor, mismatch, deps);
-    throw new PlanPreauthorizationMismatch(mismatch);
+    throw new PlanPreauthorizationMismatch(
+      mismatch,
+      mismatch === "plan_incomplete" ? unfilled : [],
+    );
   }
 
   const receipt = cursor.planPreauthorization;
@@ -251,7 +256,10 @@ export function renderStoryPreauthorizationAlreadyConsumed(cursor: BuilderDelive
 export function renderStoryPlanPreauthorizationMismatch(options: {
   activeItem: string | null;
   reason: string;
+  /** The `plan.md` sections still to author, when the reason is `plan_incomplete`. */
+  toAuthor?: readonly string[];
 }): string {
+  const toAuthor = options.toAuthor ?? [];
   const body = `${[
     "Delivery",
     "",
@@ -264,6 +272,13 @@ export function renderStoryPlanPreauthorizationMismatch(options: {
     cardText("Reason"),
     cardText(options.reason),
     "│                                                        │",
+    ...(toAuthor.length > 0
+      ? [
+          cardText("To author in plan.md"),
+          ...cardPrefixed(toAuthor, "-"),
+          "│                                                        │",
+        ]
+      : []),
     cardText("Fallback"),
     cardText("Ordinary Navigator Plan approval remains required."),
     "╰────────────────────────────────────────────────────────╯",

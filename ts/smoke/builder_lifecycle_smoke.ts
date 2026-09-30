@@ -49,10 +49,12 @@ import {
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { fileURLToPath } from "node:url";
+import { artifactState } from "../src/builder/artifacts/scaffoldState.ts";
 import { bootstrapDatabaseIfMissing } from "../src/db/bootstrap.ts";
 import { openDatabaseCopyForWrite } from "../src/db/database.ts";
 import { createJourney } from "../src/journey/journeyWrite.ts";
 import { activateOperatingMode } from "../src/mode/operatingMode.ts";
+import { authorPlan, authorStoryIndex } from "../test/helpers/authorScaffold.ts";
 
 const TS_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const REPO_ROOT = resolve(TS_ROOT, "..");
@@ -164,25 +166,6 @@ function cursorMetadata(world: World): string | null {
   }
 }
 
-/** Authored project files. `.mirror/` is the retired publisher's tree, counted apart. */
-function projectFiles(world: World): Record<string, string> {
-  const files: Record<string, string> = {};
-  const walk = (directory: string): void => {
-    for (const entry of readdirSync(directory, { withFileTypes: true, encoding: "utf8" })) {
-      const full = join(directory, entry.name);
-      const key = relative(world.project, full).split(sep).join("/");
-      if (key.startsWith(".mirror/")) continue;
-      if (entry.isDirectory()) {
-        walk(full);
-        continue;
-      }
-      files[key] = readFileSync(full, "utf8");
-    }
-  };
-  walk(world.project);
-  return files;
-}
-
 /** Anything under `.mirror/projections/`: published documents and receipts. */
 function projections(world: World): { documents: string[]; receipts: number } {
   const publications = join(world.project, ".mirror", "projections");
@@ -233,12 +216,14 @@ const ARIAD = ["--journey", JOURNEY, "--method", "ariad"] as const;
 /**
  * A step is either an invocation or an AUTHORED EDIT.
  *
- * The edit exists because `done-delivery-story` refuses on the content of the
- * Navigator's roadmap: the Delivery Story package Ariad itself scaffolds says
- * `🟡 Planned`, so closing it requires a human to mark the work Done. It is a
- * step rather than a hidden `writeFileSync` because it has checks of its own:
- * the edit must actually change the authored status, and -- an authored edit
- * not being a cursor write -- it must publish nothing.
+ * An edit is what a person does between two commands, when a command refuses on
+ * the content of the Navigator's files. `done-delivery-story` refuses a Delivery
+ * Story package Ariad scaffolded as `🟡 Planned`, so a human marks the work Done;
+ * since CR112, `approve-plan` refuses a plan that is still the scaffold and
+ * `done-item` a story index that is, so the Driver authors them. Each edit is a
+ * step rather than a hidden `writeFileSync` because it has checks of its own: it
+ * must make true what it says it authors, and -- an authored edit not being a
+ * cursor write -- it must publish nothing.
  */
 type Step =
   | {
@@ -252,7 +237,23 @@ type Step =
       readonly kind: "edit";
       readonly label: string;
       readonly edit: (project: string) => void;
+      /** What the edit must have made true, checked after it runs. */
+      readonly authored: (project: string) => boolean;
     };
+
+/** The story package every story sequence plans in. */
+const STORY_PACKAGE = "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story";
+
+/** CR112: the Driver authors a file Plan scaffolded, before approval or Done reads it. */
+function authorStoryFile(file: "plan.md" | "index.md"): Step {
+  const path = (project: string): string => join(project, STORY_PACKAGE, file);
+  return {
+    kind: "edit",
+    label: `the Driver authors the story's ${file}`,
+    edit: (project) => (file === "plan.md" ? authorPlan : authorStoryIndex)(path(project)),
+    authored: (project) => artifactState(file, path(project)).state === "authored",
+  };
+}
 
 function command(label: string, argv: readonly string[], exit = 0): Step {
   return { kind: "command", label, argv, exit };
@@ -300,6 +301,7 @@ const STORY_STEPS: readonly Step[] = [
     ],
     1,
   ),
+  authorStoryFile("plan.md"),
   command("approve-plan", ["approve-plan", ...ARIAD], 0),
   command("check-implementation after approval", ["check-implementation", ...ARIAD], 0),
   command(
@@ -347,6 +349,7 @@ const STORY_STEPS: readonly Step[] = [
     ],
     0,
   ),
+  authorStoryFile("index.md"),
   command(
     "done-item",
     [
@@ -472,6 +475,11 @@ const DS_STEPS: readonly Step[] = [
     kind: "edit",
     label: "a human marks the Delivery Story and its children Done",
     edit: markDeliveryStoryDone,
+    authored: (project) =>
+      readFileSync(
+        join(project, "docs/project/roadmap/cv1-first/cv1-ds2-pullable/index.md"),
+        "utf8",
+      ).includes(DONE),
   },
   command("done-delivery-story", [
     "done-delivery-story",
@@ -574,7 +582,9 @@ const CADENCE_STEPS: readonly Step[] = [
   ]),
   command("cancel-plan-preauthorization", ["cancel-plan-preauthorization", ...ARIAD]),
   command("cancel-plan-preauthorization again", ["cancel-plan-preauthorization", ...ARIAD], 1),
-  // The withdrawal did not consume the Plan gate: ordinary approval still works.
+  // The withdrawal did not consume the Plan gate: ordinary approval still works,
+  // on a plan the Driver wrote (CR112).
+  authorStoryFile("plan.md"),
   command("approve-plan", ["approve-plan", ...ARIAD]),
   command("check-implementation after approval", ["check-implementation", ...ARIAD]),
 ];
@@ -593,10 +603,7 @@ function runSequence(name: string, steps: readonly Step[], seed?: (project: stri
         `${where}: the edit published nothing`,
         `${before.receipts} → ${projections(world).receipts}`,
       );
-      check(
-        Object.values(projectFiles(world)).some((content) => content.includes(DONE)),
-        `${where}: the edit actually changed the authored status`,
-      );
+      check(step.authored(world.project), `${where}: the edit authored what it claims`);
       continue;
     }
     const outcome = run(world, step.argv);

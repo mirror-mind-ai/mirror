@@ -26,6 +26,7 @@
 
 import type { WritableDatabase } from "#db/database.ts";
 import { pyStrip, sortByCodePoint } from "#util/pythonText.ts";
+import { displayPath } from "./artifacts/artifactSurfaces.ts";
 import type { ArtifactOutcome } from "./artifacts/artifactWriter.ts";
 import {
   renderCoherenceArtifact,
@@ -34,6 +35,7 @@ import {
   renderValidationArtifact,
   writeClosureArtifact,
 } from "./artifacts/closureArtifacts.ts";
+import { artifactState } from "./artifacts/scaffoldState.ts";
 import { cardPrefixed, cardText, cardWrapped } from "./card.ts";
 import { normalizeRequired } from "./cursorTransitions.ts";
 import {
@@ -766,6 +768,27 @@ export interface DoneOptions {
   readonly doneArtifactPath?: string | null;
   /** The project the artifact must stay inside (CR079). */
   readonly projectRoot?: string | null;
+  /**
+   * The story's `index.md` (CR112). Done refuses while its placeholder sections are
+   * still the scaffold's; `null` when there is no project, and no file to read.
+   */
+  readonly indexArtifactPath?: string | null;
+}
+
+/**
+ * CR112, decision D4: a story does not close while its own record still says what
+ * Expand or Plan wrote -- "I want to <title>". Only the placeholder headings the file
+ * has are judged, so an index in the Driver's own structure is never refused.
+ */
+function refuseUnauthoredIndex(indexPath: string | null, projectRoot: string | null): void {
+  if (indexPath === null) return;
+  const verdict = artifactState("index.md", indexPath);
+  if (verdict.toAuthor.length === 0) return;
+  throw new LifecycleRefusal(
+    "done",
+    "missing_evidence",
+    `Done needs the story's own record. Still to author in ${displayPath(indexPath, projectRoot ?? null)}: ${verdict.toAuthor.join(", ")}.`,
+  );
 }
 
 /** Python `done_lifecycle_item`. */
@@ -796,6 +819,7 @@ export function doneLifecycleItem(
   ) {
     throw new LifecycleRefusal("done", "not_reached", "Done requires completed Debt Review");
   }
+  refuseUnauthoredIndex(options.indexArtifactPath ?? null, options.projectRoot ?? null);
 
   const history = textOr(
     options.historyAction,

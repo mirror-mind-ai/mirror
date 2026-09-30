@@ -996,9 +996,19 @@ export function runApprovePlan(
         exitCode: 0,
       };
     }
+    const projectPath = getProjectPath(context.db, journey);
     const cursor = approvePlanCheckpoint(
       context.db,
-      { journey, method: options.method },
+      {
+        journey,
+        method: options.method,
+        planArtifactPath: closureArtifactPath(
+          projectPath,
+          getDeliveryCursor(context.db, journey),
+          "plan.md",
+        ),
+        projectRoot: projectPath,
+      },
       context.deps,
     );
     return { stdout: printed(renderPlanApproval(cursor)), stderr: "", exitCode: 0 };
@@ -1013,11 +1023,15 @@ export function runApprovePlan(
           renderStoryPlanPreauthorizationMismatch({
             activeItem: cursor?.activeItem ?? null,
             reason: error.reason,
+            toAuthor: error.sections,
           }),
         ),
         stderr: "",
         exitCode: 0,
       };
+    }
+    if (error instanceof LifecycleRefusal) {
+      return refusedSurface(context.db, journey, "approve-plan", error);
     }
     return refuseValueError(error);
   }
@@ -2008,6 +2022,7 @@ export function runDoneItem(
         roadmapUpdate: options.roadmapUpdate ?? null,
         nextRecommendation: options.nextRecommendation ?? null,
         doneArtifactPath: closureArtifactPath(projectPath, cursor, "done.md"),
+        indexArtifactPath: closureArtifactPath(projectPath, cursor, "index.md"),
         projectRoot: projectPath,
       },
       context.deps,

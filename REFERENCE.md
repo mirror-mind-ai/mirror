@@ -461,6 +461,23 @@ two rules:
   Delivery Story Plan packages (`index.md`, `plan.md`, `test-guide.md`),
   the story indexes Expand creates, and the method templates. From then on they
   belong to the Driver, and no command rewrites them.
+- **A scaffold is not a plan.** Ariad reads a story's files back through the
+  same template sentences it writes, so it can tell its own scaffold from an
+  authored file
+  ([CR112](docs/project/refinement/rs001-ariad-runtime-trust/cr112-a-scaffold-cannot-be-told-from-authored-content-and-approve-plan-never-reads-the-plan.md)).
+  `build show` lists `index.md`, `plan.md`, and `test-guide.md` as
+  `authored`, `partly authored`, `scaffold`, `incomplete` (written by a person
+  without the sections the Plan contract requires), or `missing`, and under
+  any not authored, the sections still to write. The artifacts card says the
+  same of a file it left alone.
+  - `approve-plan`, on either route, refuses a `plan.md` whose Objective,
+    Scope, Acceptance Behavior, or Validation Route is missing, empty,
+    pending, or still the scaffold's, or whose Non-Goals or Implementation
+    Contract is empty.
+  - `done-item` refuses a story whose `index.md` still carries the scaffold's
+    statement, Outcome, or acceptance block.
+  - A journey with no project has no file to read, and neither check applies.
+    See [Troubleshooting](docs/process/troubleshooting.md#approve-plan-or-done-item-refuses-with-still-to-author).
 - **Records carry a seal.** These are `validation.md`, `review.md`,
   `coherence.md`, and `done.md`, at story and Delivery Story level. Each
   ends with `<!-- ariad-seal sha256:… -->`, the hash of everything above it.

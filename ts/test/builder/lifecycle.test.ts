@@ -857,11 +857,14 @@ function replayLifecycleStep(context: ReplayContext, step: Step): ReplayOutcome 
     }
     case "approve": {
       try {
+        // The package's plan, resolved as the command resolves it (CR112).
         const cursor = approvePlanCheckpoint(
           context.db,
           {
             journey: context.journey,
             method: (step.input as { method?: string }).method ?? "ariad",
+            planArtifactPath: closureArtifactPath(context, "plan.md"),
+            projectRoot: context.project,
           },
           context.deps,
         );
@@ -916,6 +919,7 @@ function replayLifecycleStep(context: ReplayContext, step: Step): ReplayOutcome 
                 text: renderStoryPlanPreauthorizationMismatch({
                   activeItem: cursor?.activeItem ?? null,
                   reason: error.reason,
+                  toAuthor: error.sections,
                 }),
               },
             ],
@@ -1043,6 +1047,7 @@ function replayLifecycleStep(context: ReplayContext, step: Step): ReplayOutcome 
             roadmapUpdate: (input.roadmap_update as string | null) ?? null,
             nextRecommendation: (input.next_recommendation as string | null) ?? null,
             doneArtifactPath: closureArtifactPath(context, input.artifact as string | null),
+            indexArtifactPath: closureArtifactPath(context, "index.md"),
             projectRoot: context.project,
           },
           context.deps,

@@ -10,6 +10,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 
+import { approvePlanCheckpoint } from "#builder/approve.ts";
 import { getAriadMethod } from "#builder/ariadMethod.ts";
 import { renderCheckpointRefused } from "#builder/checkpointRefused.ts";
 import {
@@ -118,6 +119,7 @@ function outcome(step: LifecycleStep, event: string): string {
     const common = { journey: "demo", method: getAriadMethod() };
     const run: Record<LifecycleStep, () => unknown> = {
       plan: () => planLifecycleItem(db, common, deps),
+      plan_approval: () => approvePlanCheckpoint(db, { journey: "demo", method: "ariad" }, deps),
       validate: () =>
         validateLifecycleItem(
           db,
@@ -169,7 +171,14 @@ function outcome(step: LifecycleStep, event: string): string {
 }
 
 test("CR067: every command's outcome at every event agrees with the stage order", () => {
-  const steps: LifecycleStep[] = ["plan", "validate", "debt_review", "coherence", "done"];
+  const steps: LifecycleStep[] = [
+    "plan",
+    "plan_approval",
+    "validate",
+    "debt_review",
+    "coherence",
+    "done",
+  ];
   for (const step of steps) {
     for (const event of STORY_LIFECYCLE_EVENTS) {
       const result = outcome(step, event);

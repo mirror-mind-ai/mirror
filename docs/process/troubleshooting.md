@@ -29,6 +29,7 @@ but no fix yet are also welcome (mark them `Status: mitigated`).
 - [Portuguese accents appear as mojibake on Windows](#portuguese-accents-appear-as-mojibake-on-windows)
 - [Pi Builder conversations appear without journeys](#pi-builder-conversations-appear-without-journeys)
 - [A Builder command refuses with `requires a journey`](#a-builder-command-refuses-with-requires-a-journey)
+- [`approve-plan` or `done-item` refuses with "Still to author"](#approve-plan-or-done-item-refuses-with-still-to-author)
 - [Concurrent writes fail with `table conversations already exists` or `disk I/O error`](#concurrent-writes-fail-with-table-conversations-already-exists-or-disk-io-error)
 - [Hooks skip when a runtime cannot find `node`](#hooks-skip-when-a-runtime-cannot-find-node)
 - [Pi logger fails silently when `python3` resolves outside the project venv](#pi-logger-fails-silently-when-python3-resolves-outside-the-project-venv)
@@ -348,6 +349,53 @@ with `--session-id` or `MIRROR_SESSION_ID`, can omit `--journey`.
 If you do not know which journey the session loaded, ask. Do not take it from
 `mode status` or the status line: they show the last activation in the
 database, which may be another window's.
+
+---
+
+## `approve-plan` or `done-item` refuses with "Still to author"
+
+**Date:** 2026-09-30
+**Status:** by design ([CR112](../project/refinement/rs001-ariad-runtime-trust/cr112-a-scaffold-cannot-be-told-from-authored-content-and-approve-plan-never-reads-the-plan.md))
+**Affected component:** `build approve-plan`, `build done-item`, `build show`
+**Severity:** one refused command; nothing is written
+
+### Symptom
+
+```text
+Plan approval needs an authored plan. Still to author in docs/project/roadmap/…/plan.md: Objective, Scope, Acceptance Behavior, Validation Route.
+```
+
+or, closing a story:
+
+```text
+Done needs the story's own record. Still to author in docs/project/roadmap/…/index.md: User Story, Outcome, Acceptance Behavior.
+```
+
+A story approved or closed this way before the update now refuses the same step.
+
+### Root cause
+
+This is intended. Plan writes `plan.md`, and Expand or Plan writes the story's
+`index.md`, as scaffolds: template sentences with the item's title pasted in.
+Until CR112 no approval opened `plan.md` and nothing told a scaffold from an
+authored file, so a plan of five template sentences was approvable, on both
+the ordinary and the preauthorized route, and a story could close while its
+record still said "I want to <title>". The refusal means the file was never
+authored. It does not mean the update broke anything.
+
+### Fix
+
+Open the file the refusal names and write each section it lists, by that
+heading, for this story. Then check:
+
+```bash
+mirror build show --journey <slug> --method ariad
+```
+
+`build show` lists `index.md`, `plan.md`, and `test-guide.md` with their state,
+and under any that is not authored, the sections still to write. When
+`plan.md` reads `authored`, present the plan to the Navigator and approve again.
+A journey with no project has no file to read, and neither check applies.
 
 ---
 

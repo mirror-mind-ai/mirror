@@ -47,14 +47,37 @@ export const STORY_PLAN_REQUIRED_SECTIONS = [
   "Implementation Contract",
 ] as const;
 
+/**
+ * The sections a Plan approval requires authored, on either route (CR112): every
+ * placeholder section of the story scaffold, then every section the Plan contract
+ * requires. One list, so the ordinary and the preauthorized route cannot hold a plan
+ * to different rules. A placeholder section counts until it is authored; a required
+ * `default` section counts until it is not empty or pending.
+ */
+export const PLAN_APPROVAL_SECTIONS: readonly string[] = [
+  ...new Set([
+    ...PLAN_SECTIONS.filter((section) => section.kind === "placeholder").map(
+      (section) => section.header,
+    ),
+    ...STORY_PLAN_REQUIRED_SECTIONS,
+  ]),
+];
+
 /** Python `PlanPreauthorizationMismatch`. */
 export class PlanPreauthorizationMismatch extends Error {
   readonly reason: string;
+  /**
+   * For `plan_incomplete`, the sections still to author (CR112). The surface names
+   * them; the receipt keeps only the reason token, so a persisted cursor reads back as
+   * it always did.
+   */
+  readonly sections: readonly string[];
 
-  constructor(reason: string) {
+  constructor(reason: string, sections: readonly string[] = []) {
     super(reason);
     this.name = "PlanPreauthorizationMismatch";
     this.reason = reason;
+    this.sections = sections;
   }
 }
 
@@ -265,3 +288,5 @@ export function invalidatePlanPreauthorization(
 // `unfilledPlanSectionsFor` and `levelTwoSections` live in `artifacts/scaffoldState.ts`
 // since CR112, beside the rule that also recognizes a scaffold's own sentences.
 export { unfilledPlanSectionsFor } from "./artifacts/scaffoldState.ts";
+
+import { PLAN_SECTIONS } from "./artifacts/scaffoldSections.ts";

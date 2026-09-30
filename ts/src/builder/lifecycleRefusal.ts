@@ -59,7 +59,13 @@ export function lifecycleStageOf(
 }
 
 /** The story steps a lifecycle command can be refused at. */
-export type LifecycleStep = "plan" | "validate" | "debt_review" | "coherence" | "done";
+export type LifecycleStep =
+  | "plan"
+  | "plan_approval"
+  | "validate"
+  | "debt_review"
+  | "coherence"
+  | "done";
 
 /** Why a step was refused. Only `already_complete` is decided by this module. */
 export type RefusalKind =
@@ -70,6 +76,7 @@ export type RefusalKind =
 
 const COMPLETING_EVENT: Readonly<Record<LifecycleStep, string>> = {
   plan: "plan",
+  plan_approval: "plan_approved",
   validate: "validation_passed",
   debt_review: "review_complete",
   coherence: "coherence_complete",
@@ -78,6 +85,7 @@ const COMPLETING_EVENT: Readonly<Record<LifecycleStep, string>> = {
 
 const STEP_NAME: Readonly<Record<LifecycleStep, string>> = {
   plan: "Plan",
+  plan_approval: "Plan approval",
   validate: "Validation",
   debt_review: "Debt Review",
   coherence: "Coherence",

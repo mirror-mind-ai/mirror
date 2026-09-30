@@ -223,6 +223,42 @@
         },
         {
           "cursor": {
+            "active_checkpoint": "after_plan",
+            "active_item": "CHECKOUT-FLOW",
+            "active_item_level": "user_story",
+            "active_item_title": "Checkout Flow",
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": null,
+            "child_work_items": [],
+            "cursor_generation": 1,
+            "granularity_decision": null,
+            "journey": "sandbox-pet-store",
+            "last_delivery_event": "plan",
+            "method": "ariad",
+            "navigator_flow_unit": null,
+            "pending_confirmation": "navigator_approval",
+            "plan_preauthorization": null,
+            "release_intent": null,
+            "release_intent_delivery_story": null
+          },
+          "files": {
+            "README.md": "# Project\n",
+            "docs/project/roadmap/checkout-flow-checkout-flow/index.md": "[< Parent](../index.md)\n\n# CHECKOUT-FLOW — Checkout Flow\n\n**Status:** 🟡 Planned\n**Type:** User Story\n\n---\n\n## Outcome\n\nConfirm scope, validation route, and implementation contract.\n\n## Story Statement\n\nAs a user,\nI want to Checkout Flow,\nSo that I can receive the value of this story.\n\n## Acceptance Behavior\n\n```text\nGiven the relevant starting state\nWhen the Navigator exercises the planned behavior\nThen the expected observable outcome appears\nAnd important constraints still hold\n```\n\n## Scope\n\n- Implement the smallest coherent slice for the active item.\n\n## Out Of Scope\n\n- Do not silently absorb adjacent roadmap work.\n\n## Validation\n\n- Run automated checks required by the local guide.\n- Provide a Navigator-visible validation route with expected observation and pass/fail condition.\n\n---\n\n## Artifacts\n\n- [Plan](plan.md)\n- [Test Guide](test-guide.md)\n",
+            "docs/project/roadmap/checkout-flow-checkout-flow/plan.md": "# Plan — CHECKOUT-FLOW\n\n## Objective\n\nObjective, as the Driver wrote it for this story.\n\n## Scope\n\nScope, as the Driver wrote it for this story.\n\n## Non-Goals\n\n- Do not silently absorb adjacent roadmap work.\n\n## Acceptance Behavior\n\nAcceptance Behavior, as the Driver wrote it for this story.\n\n## Validation Route\n\nValidation Route, as the Driver wrote it for this story.\n\n## Implementation Contract\n\n- Use TDD or characterization tests for behavior changes when testable.\n- Keep changes scoped to `CHECKOUT-FLOW`.\n- Do not use git add .; commit only story-scoped files.\n\n## Stop Conditions\n\n- scope_change_detected\n- plan_rule_conflict\n- failing_required_check_without_clear_fix\n- navigator_decision_needed\n\n## Approval Gate\n\n- active checkpoint: `after_plan`\n- pending confirmation: `navigator_approval`\n- implementation remains blocked until Navigator approval.\n",
+            "docs/project/roadmap/checkout-flow-checkout-flow/test-guide.md": "[< Story](index.md)\n\n# Test Guide — CHECKOUT-FLOW\n\n## Automated Validation\n\n- Run automated checks required by the local guide.\n- Provide a Navigator-visible validation route with expected observation and pass/fail condition.\n\n## E2E Decision\n\nDecide explicitly before implementation whether E2E is required.\n\n## Navigator Validation\n\nProvide the Navigator-visible route with expected observation, pass condition, and fail condition before the story can pass Validation.\n\n## Validation Evidence\n\nPending implementation and validation.\n",
+            "docs/project/roadmap/index.md": "# Roadmap\n"
+          },
+          "index": 6,
+          "input": {
+            "path": "docs/project/roadmap/checkout-flow-checkout-flow/plan.md"
+          },
+          "metadata": "{\"method\": \"ariad\", \"active_item\": \"CHECKOUT-FLOW\", \"active_item_title\": \"Checkout Flow\", \"active_item_level\": \"user_story\", \"active_checkpoint\": \"after_plan\", \"pending_confirmation\": \"navigator_approval\", \"last_delivery_event\": \"plan\", \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": null, \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 1, \"plan_preauthorization\": null, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+          "op": "write_file",
+          "projection_requests": []
+        },
+        {
+          "cursor": {
             "active_checkpoint": null,
             "active_item": "CHECKOUT-FLOW",
             "active_item_level": "user_story",
@@ -245,11 +281,11 @@
           "files": {
             "README.md": "# Project\n",
             "docs/project/roadmap/checkout-flow-checkout-flow/index.md": "[< Parent](../index.md)\n\n# CHECKOUT-FLOW — Checkout Flow\n\n**Status:** 🟡 Planned\n**Type:** User Story\n\n---\n\n## Outcome\n\nConfirm scope, validation route, and implementation contract.\n\n## Story Statement\n\nAs a user,\nI want to Checkout Flow,\nSo that I can receive the value of this story.\n\n## Acceptance Behavior\n\n```text\nGiven the relevant starting state\nWhen the Navigator exercises the planned behavior\nThen the expected observable outcome appears\nAnd important constraints still hold\n```\n\n## Scope\n\n- Implement the smallest coherent slice for the active item.\n\n## Out Of Scope\n\n- Do not silently absorb adjacent roadmap work.\n\n## Validation\n\n- Run automated checks required by the local guide.\n- Provide a Navigator-visible validation route with expected observation and pass/fail condition.\n\n---\n\n## Artifacts\n\n- [Plan](plan.md)\n- [Test Guide](test-guide.md)\n",
-            "docs/project/roadmap/checkout-flow-checkout-flow/plan.md": "# Plan — CHECKOUT-FLOW\n\n## Objective\n\nConfirm scope, validation route, and implementation contract.\n\n## Scope\n\n- Implement the smallest coherent slice for the active item.\n\n## Non-Goals\n\n- Do not silently absorb adjacent roadmap work.\n\n## Acceptance Behavior\n\n```text\nGiven the relevant starting state\nWhen the Navigator exercises the planned behavior\nThen the expected observable outcome appears\nAnd important constraints still hold\n```\n\n## Validation Route\n\n- Run automated checks required by the local guide.\n- Provide a Navigator-visible validation route with expected observation and pass/fail condition.\n\nE2E decision: Decide explicitly before implementation whether E2E is required.\n\n## Implementation Contract\n\n- Use TDD or characterization tests for behavior changes when testable.\n- Keep changes scoped to `CHECKOUT-FLOW`.\n- Do not use git add .; commit only story-scoped files.\n\n## Stop Conditions\n\n- scope_change_detected\n- plan_rule_conflict\n- failing_required_check_without_clear_fix\n- navigator_decision_needed\n\n## Approval Gate\n\n- active checkpoint: `after_plan`\n- pending confirmation: `navigator_approval`\n- implementation remains blocked until Navigator approval.\n",
+            "docs/project/roadmap/checkout-flow-checkout-flow/plan.md": "# Plan — CHECKOUT-FLOW\n\n## Objective\n\nObjective, as the Driver wrote it for this story.\n\n## Scope\n\nScope, as the Driver wrote it for this story.\n\n## Non-Goals\n\n- Do not silently absorb adjacent roadmap work.\n\n## Acceptance Behavior\n\nAcceptance Behavior, as the Driver wrote it for this story.\n\n## Validation Route\n\nValidation Route, as the Driver wrote it for this story.\n\n## Implementation Contract\n\n- Use TDD or characterization tests for behavior changes when testable.\n- Keep changes scoped to `CHECKOUT-FLOW`.\n- Do not use git add .; commit only story-scoped files.\n\n## Stop Conditions\n\n- scope_change_detected\n- plan_rule_conflict\n- failing_required_check_without_clear_fix\n- navigator_decision_needed\n\n## Approval Gate\n\n- active checkpoint: `after_plan`\n- pending confirmation: `navigator_approval`\n- implementation remains blocked until Navigator approval.\n",
             "docs/project/roadmap/checkout-flow-checkout-flow/test-guide.md": "[< Story](index.md)\n\n# Test Guide — CHECKOUT-FLOW\n\n## Automated Validation\n\n- Run automated checks required by the local guide.\n- Provide a Navigator-visible validation route with expected observation and pass/fail condition.\n\n## E2E Decision\n\nDecide explicitly before implementation whether E2E is required.\n\n## Navigator Validation\n\nProvide the Navigator-visible route with expected observation, pass condition, and fail condition before the story can pass Validation.\n\n## Validation Evidence\n\nPending implementation and validation.\n",
             "docs/project/roadmap/index.md": "# Roadmap\n"
           },
-          "index": 6,
+          "index": 7,
           "input": {
             "method": "ariad"
           },
@@ -1100,7 +1136,7 @@
             "release_intent": null,
             "release_intent_delivery_story": null
           },
-          "error": "ValueError: Plan approval requires a pending after_plan navigator_approval checkpoint",
+          "error": "ValueError: Plan approval requires a Plan awaiting approval: run plan-item first.",
           "files": {},
           "index": 1,
           "input": {
@@ -5783,7 +5819,7 @@
           "surfaces": [
             {
               "id": "plan_preauthorization_mismatch",
-              "text": "<<<ARIAD:PLAN_PREAUTHORIZATION_MISMATCH>>>\nDelivery\n\n╭────────────────────────────────────────────────────────╮\n│        ✕  PLAN PREAUTHORIZATION MISMATCH               │\n│                                                        │\n│ Active story                                           │\n│ CV20.DS16.US1                                          │\n│                                                        │\n│ Reason                                                 │\n│ plan_incomplete                                        │\n│                                                        │\n│ Fallback                                               │\n│ Ordinary Navigator Plan approval remains required.     │\n╰────────────────────────────────────────────────────────╯\n<<<END:PLAN_PREAUTHORIZATION_MISMATCH>>>\n"
+              "text": "<<<ARIAD:PLAN_PREAUTHORIZATION_MISMATCH>>>\nDelivery\n\n╭────────────────────────────────────────────────────────╮\n│        ✕  PLAN PREAUTHORIZATION MISMATCH               │\n│                                                        │\n│ Active story                                           │\n│ CV20.DS16.US1                                          │\n│                                                        │\n│ Reason                                                 │\n│ plan_incomplete                                        │\n│                                                        │\n│ To author in plan.md                                   │\n│ - Objective                                            │\n│ - Scope                                                │\n│ - Acceptance Behavior                                  │\n│ - Validation Route                                     │\n│ - Non-Goals                                            │\n│ - Implementation Contract                              │\n│                                                        │\n│ Fallback                                               │\n│ Ordinary Navigator Plan approval remains required.     │\n╰────────────────────────────────────────────────────────╯\n<<<END:PLAN_PREAUTHORIZATION_MISMATCH>>>\n"
             }
           ]
         }
@@ -6034,7 +6070,7 @@
           "surfaces": [
             {
               "id": "plan_preauthorization_mismatch",
-              "text": "<<<ARIAD:PLAN_PREAUTHORIZATION_MISMATCH>>>\nDelivery\n\n╭────────────────────────────────────────────────────────╮\n│        ✕  PLAN PREAUTHORIZATION MISMATCH               │\n│                                                        │\n│ Active story                                           │\n│ CV20.DS16.US1                                          │\n│                                                        │\n│ Reason                                                 │\n│ plan_incomplete                                        │\n│                                                        │\n│ Fallback                                               │\n│ Ordinary Navigator Plan approval remains required.     │\n╰────────────────────────────────────────────────────────╯\n<<<END:PLAN_PREAUTHORIZATION_MISMATCH>>>\n"
+              "text": "<<<ARIAD:PLAN_PREAUTHORIZATION_MISMATCH>>>\nDelivery\n\n╭────────────────────────────────────────────────────────╮\n│        ✕  PLAN PREAUTHORIZATION MISMATCH               │\n│                                                        │\n│ Active story                                           │\n│ CV20.DS16.US1                                          │\n│                                                        │\n│ Reason                                                 │\n│ plan_incomplete                                        │\n│                                                        │\n│ To author in plan.md                                   │\n│ - Objective                                            │\n│ - Scope                                                │\n│ - Acceptance Behavior                                  │\n│ - Validation Route                                     │\n│ - Non-Goals                                            │\n│ - Implementation Contract                              │\n│                                                        │\n│ Fallback                                               │\n│ Ordinary Navigator Plan approval remains required.     │\n╰────────────────────────────────────────────────────────╯\n<<<END:PLAN_PREAUTHORIZATION_MISMATCH>>>\n"
             }
           ]
         }
@@ -6283,7 +6319,7 @@
           "surfaces": [
             {
               "id": "plan_preauthorization_mismatch",
-              "text": "<<<ARIAD:PLAN_PREAUTHORIZATION_MISMATCH>>>\nDelivery\n\n╭────────────────────────────────────────────────────────╮\n│        ✕  PLAN PREAUTHORIZATION MISMATCH               │\n│                                                        │\n│ Active story                                           │\n│ CV20.DS16.US1                                          │\n│                                                        │\n│ Reason                                                 │\n│ plan_incomplete                                        │\n│                                                        │\n│ Fallback                                               │\n│ Ordinary Navigator Plan approval remains required.     │\n╰────────────────────────────────────────────────────────╯\n<<<END:PLAN_PREAUTHORIZATION_MISMATCH>>>\n"
+              "text": "<<<ARIAD:PLAN_PREAUTHORIZATION_MISMATCH>>>\nDelivery\n\n╭────────────────────────────────────────────────────────╮\n│        ✕  PLAN PREAUTHORIZATION MISMATCH               │\n│                                                        │\n│ Active story                                           │\n│ CV20.DS16.US1                                          │\n│                                                        │\n│ Reason                                                 │\n│ plan_incomplete                                        │\n│                                                        │\n│ To author in plan.md                                   │\n│ - Objective                                            │\n│ - Scope                                                │\n│ - Acceptance Behavior                                  │\n│ - Validation Route                                     │\n│ - Non-Goals                                            │\n│ - Implementation Contract                              │\n│                                                        │\n│ Fallback                                               │\n│ Ordinary Navigator Plan approval remains required.     │\n╰────────────────────────────────────────────────────────╯\n<<<END:PLAN_PREAUTHORIZATION_MISMATCH>>>\n"
             }
           ]
         }

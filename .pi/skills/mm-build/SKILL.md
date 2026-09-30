@@ -877,6 +877,37 @@ as the implementable unit; they must expand first. Plan must not approve the
 checkpoint, start implementation, change implementation files for the pulled
 item, change story status, commit, push, or release.
 
+### Author the plan before asking for approval
+
+Plan writes `plan.md` as a scaffold: template sentences with the item's title
+pasted in. It is not a plan. The Objective, Scope, Acceptance Behavior, and
+Validation Route are what the Navigator approves from: write them for this
+story, in Navigator-facing language. The Non-Goals, Implementation Contract,
+Stop Conditions, and Approval Gate may stand as written when they are true. When
+`build show` names `index.md` a scaffold, write its story statement, Outcome, and
+Acceptance Behavior too.
+
+The sequence:
+
+1. `plan-item`.
+2. Author `plan.md`, and `index.md` when `build show` names it a scaffold.
+3. `build show` reads `✓ plan.md — authored`.
+4. Present the plan to the Navigator in the reply, and ask for approval.
+5. On approval, `approve-plan`.
+
+The runtime checks structure, not quality: one real line under a heading passes
+it. That check is a floor. The bar is a plan the Navigator can approve from.
+
+`approve-plan` refuses with `CHECKPOINT_REFUSED` while any section it requires is
+missing, empty, pending, or still the scaffold's, and names each by its heading.
+A refusal means: author what it names, run `build show`, and present the plan
+again. Do not run `approve-plan` again in the same turn as if the approval were
+still standing: the Navigator approved a plan that did not exist yet.
+
+`done-item` refuses the same way while the story's `index.md` still says what
+Expand or Plan wrote ("I want to <title>"). Write the story it is before closing
+it.
+
 ### Conditional story Plan preauthorization
 
 Use story-level conditional preauthorization for one active User Story or
@@ -913,9 +944,13 @@ receipt surface. Do not pause for Navigator approval after either route.
 
 Return `PLAN_CHECKPOINT`, `PLAN_PREAUTHORIZATION_RECORDED`, and artifact surfaces
 verbatim. Preserve existing `index.md`, `plan.md`, and `test-guide.md` bytes. The
-receipt is not approval: the Driver-owned Plan must contain complete Scope,
-Non-Goals, Acceptance Behavior, Validation Route, and Implementation Contract
-sections before authority can be consumed.
+receipt is not approval: the Driver-owned Plan must be authored, as in
+[Author the plan before asking for approval](#author-the-plan-before-asking-for-approval),
+before authority can be consumed. The Objective, Scope, Acceptance Behavior, and
+Validation Route must be written for this story, not the scaffold's sentences, and
+the Non-Goals and Implementation Contract must not be empty. A plan that is not
+authored returns `PLAN_PREAUTHORIZATION_MISMATCH` with reason `plan_incomplete` and
+the sections still to author.
 
 In the same assistant turn, after completing the exact story Plan, run:
 

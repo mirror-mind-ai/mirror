@@ -29,7 +29,7 @@ import { fileURLToPath } from "node:url";
 import { invokeReadOnlyBuilderArgv } from "#builder/argv.ts";
 import { getAriadMethod } from "#builder/ariadMethod.ts";
 import { renderTechnicalStoryIndex } from "#builder/artifacts/storyIndex.ts";
-import { cardText } from "#builder/card.ts";
+import { cardText, cardWrapped } from "#builder/card.ts";
 import { surfacesForTrigger } from "#builder/commands.ts";
 import { getDeliveryCursor, setDeliveryCursor } from "#builder/deliveryCursor.ts";
 import { planDeliveryStoryCheckpoint } from "#builder/deliveryStoryPlan.ts";
@@ -37,6 +37,7 @@ import { setAdoptedMethod } from "#builder/methodAdoption.ts";
 import { planLifecycleItem } from "#builder/plan.ts";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
 import golden from "#goldens/builder-command.golden.json" with { type: "json" };
+import { authorPlan } from "#helpers/authorScaffold.ts";
 import { invokeBuilderArgv } from "#helpers/builderInvoke.ts";
 import { normalizePathRows, projectRelative, scrubMessage } from "#helpers/builderSurfacePaths.ts";
 import { createIdentityTable } from "#helpers/identitySchema.ts";
@@ -1506,6 +1507,13 @@ function planSection(planMd: string, heading: string): string {
  * always follows a blank row, which keeps wrapped text that happens to begin with a
  * label's word, such as "cursor is at ...", from ending the block early.
  */
+/** A reason as `cardRows` reads it back: wrapped as the card wraps it, rows joined. */
+function asCardRows(text: string): string {
+  return cardWrapped(text)
+    .map((line) => line.replace(/^│ ?/u, "").replace(/ *│$/u, "").trim())
+    .join(" ");
+}
+
 function cardRows(card: string, from: string, to: string): string {
   const match = card.match(new RegExp(`│ ${from} [\\s\\S]*?\\n([\\s\\S]*?)│ +│\\n│ ${to} `, "u"));
   assert.ok(match, `the card has a ${from} block`);
@@ -1700,7 +1708,24 @@ test("CR067: every refusal renders where the cursor stands, says why, and change
       "Plan is already complete for CV1.DS1.TS1: the cursor is at plan, pending navigator_approval.",
     );
     refuse(validate, "Plan", "Validation is blocked: pending confirmation navigator_approval.");
+    // CR112: approval reads the plan, refuses the scaffold Plan wrote, and names what to write.
+    refuse(
+      ["approve-plan"],
+      "Plan",
+      asCardRows(
+        "Plan approval needs an authored plan. Still to author in docs/project/roadmap/cv1-first/cv1-ds1-alpha/cv1-ds1-ts1-first/plan.md: Objective, Scope, Acceptance Behavior, Validation Route.",
+      ),
+    );
+    authorPlan(
+      join(project, "docs/project/roadmap/cv1-first/cv1-ds1-alpha/cv1-ds1-ts1-first/plan.md"),
+    );
     proceed(["approve-plan"]);
+    // Approving twice says the step is done, where the cursor stands (CR067's shape).
+    refuse(
+      ["approve-plan"],
+      "Implement",
+      "Plan approval is already complete for CV1.DS1.TS1: the cursor is at plan_approved.",
+    );
     proceed(["set-cadence", "--profile", "stepwise"]);
     refuse(
       ["continue-lifecycle", "--process", "p", "--project", "p", "--product", "p"],
@@ -1854,6 +1879,7 @@ test("CR020: build show renders the stage, position, and records, and changes no
       /boundary Read-only: the cursor and the project files were not changed\. <<<END/u,
     );
 
+    authorPlan(join(project, folder, "plan.md"));
     assert.equal(run(["approve-plan"]).exitCode, 0);
     assert.equal(
       run([
@@ -1883,9 +1909,7 @@ test("CR020: build show renders the stage, position, and records, and changes no
     assert.equal(cardRows(validated, "last event", "pending confirmation"), "validation_passed");
     assert.deepEqual(records(validated).files, [
       "✓ index.md — authored",
-      "○ plan.md — scaffold",
-      "to author: Objective, Scope, Acceptance Behavior,",
-      "Validation Route",
+      "✓ plan.md — authored",
       "○ test-guide.md — scaffold",
       "to author: Automated Validation, Navigator",
       "Validation",
@@ -1985,6 +2009,9 @@ test("CR067: a failure after the cursor moved is an error, never a refusal that 
       { nowIso: () => NOW },
     );
     assert.equal(run(["plan-item"]).exitCode, 0);
+    authorPlan(
+      join(project, "docs/project/roadmap/cv1-first/cv1-ds1-alpha/cv1-ds1-ts1-first/plan.md"),
+    );
     assert.equal(run(["approve-plan"]).exitCode, 0);
     // A directory where the record belongs: the closure writes the cursor, then fails
     // reading the record it was about to seal.

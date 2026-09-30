@@ -673,6 +673,42 @@ What the corpus found:
 
 Next: plateau 3, the refusals.
 
+### Plateau 3 handoff (2026-09-30)
+
+Now true: approval reads the plan and Done reads the story's record. Ordinary
+`approve-plan` refuses, before any write and as `CHECKPOINT_REFUSED`, a `plan.md`
+whose Objective, Scope, Acceptance Behavior, or Validation Route is missing, empty,
+pending, or still the scaffold's, naming each by its heading and the file by its
+project-relative path; the preauthorized route refuses the same file with
+`PLAN_PREAUTHORIZATION_MISMATCH`, reason `plan_incomplete` as before, and the surface
+now lists the sections. Both read one list, `PLAN_APPROVAL_SECTIONS`. The approval
+precondition is a refusal told apart as not reached, waiting on another
+confirmation, or already complete (`plan_approval` joined the step table, and the
+table-driven test runs it against every event). Story Done refuses an `index.md`
+still carrying the scaffold's statement, Outcome, or acceptance block. A journey
+with no project approves and closes as before.
+
+The corpus and the smoke author before they approve and close: one `write_file`
+step in `story_lifecycle_happy_path`, and in the smoke an authored-edit step, whose
+check is now each edit's own claim rather than the Delivery Story's Done marker.
+Four command tests author through the shared helper, and the CR067 walk gained
+the scaffold refusal and the approve-twice refusal. `scaffoldRefusals.test.ts` holds
+13 tests, one per criterion; three mutants (approval stops reading the plan, Done
+stops reading the index, the preauthorized route falls back to the structural
+rule) each fail them. The skill states the bar, the sequence, and the refusal loop;
+REFERENCE and troubleshooting say what the refusal means. 2871 tests pass.
+
+Two places where the implementation departs from this document's text:
+
+- **No cursor stays a plain `Error:`.** The design grouped it with the checkpoint
+  error as a refusal. Every other lifecycle command since CR067 keeps "no cursor"
+  as an error, since the journey has no lifecycle yet to say where it stands, and
+  approval follows them.
+- **Ordinary approval also requires Non-Goals and Implementation Contract to be
+  non-empty**, as the preauthorized route always has. D2 named only the
+  placeholder sections; the design also said one rule for every approval route, and
+  the two could not both hold. One rule won.
+
 ## Outcome
 
 Pending.
