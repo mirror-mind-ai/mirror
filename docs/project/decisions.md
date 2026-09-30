@@ -3449,3 +3449,50 @@ including the next one.
 `ts/src/builder/artifacts/scaffoldSections.ts`, and a new scaffold section declares its
 kind there. A lifecycle rule that reads a project file takes that file's path as a
 required argument, `null` only where there is no project to read.
+
+### The Plan checkpoint holds no plan: it names the story files
+
+**Date:** 2026-09-30 · **Context:** [CR111](refinement/rs001-ariad-runtime-trust/cr111-the-plan-checkpoint-renders-template-sentences-as-the-plan.md),
+the second change US3's Pull and Plan put back on the
+[Ariad trust floor](#the-cv22-release-is-gated-on-an-ariad-trust-floor-worked-before-us3).
+The Plan checkpoint filled its `plan`, `scope`, `non-goals`, `acceptance`, and
+`validation` blocks from the scaffold's sentences and checked them off. It did so over a
+plan a person had written, too, while the artifacts card printed below it said
+`existing plan — authored`: 13 of the 18 recorded Plan cards were that case. The
+Builder skill's transport rule put the card first in every Plan turn.
+
+**The decision: the Plan checkpoint prints what the runtime knows and no section of the
+plan. In place of the plan it names the story files, each with its state and the
+sections still to author, in the rows `build show` prints, from one function. Its next
+action says where the plan is read. `build show`, the Plan checkpoint, and both approval
+routes give one answer to what a `plan.md` still needs. Plan writes one scaffold
+vocabulary, titled by the roadmap's title for the item, else the title Pull recorded,
+else the item's code.**
+
+**Why no digest.** A digest of the authored plan, its first lines or its line counts,
+is a lossy copy of the plan on the one surface that must not look like one. The runtime
+reads structure and the Navigator reads plans (CR112). The approval surface is `build
+show` reading `authored`, returned verbatim, and the Driver presenting the file,
+section by section.
+
+**Why the non-goals left too.** The sibling list is the scaffold's Non-Goals text, and
+after authoring the file may say otherwise. The rule that holds whatever the plan says,
+that changes stay scoped to the active story, is in the implementation contract, which
+stays on the card.
+
+**Why one answer.** Approval required the Non-Goals and the Implementation Contract, and
+`build show` did not look at them, so a plan read `authored` over an approval that
+refused. A card built on `build show` would have repeated it. The list is now the
+approval rule's, and every surface reads it. The word still comes from the placeholder
+sections alone, so an untouched scaffold, whose defaults are filled, still reads
+`scaffold`.
+
+**Why one vocabulary.** The second set of sentences was written only when a caller
+passed no sections, and no product path did. The corpus graded a scaffold no user
+received.
+
+**The rule that follows.** A Builder surface prints no sentence that stands in for
+content a person must write. A surface that names a Plan-stage file prints the rows of
+`ts/src/builder/artifacts/storyFiles.ts`, and anything that says what a `plan.md` still
+needs asks `planSectionsToAuthor`. An argument a command cannot record is named on its
+surface, never dropped silently.

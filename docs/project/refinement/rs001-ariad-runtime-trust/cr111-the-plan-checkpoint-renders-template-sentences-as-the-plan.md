@@ -1102,4 +1102,24 @@ accepted.
 
 ## Outcome
 
-Pending.
+Done 2026-09-30. The Plan checkpoint holds no plan. It prints what the runtime knows
+and no section of the plan: no objective, scope, non-goals, acceptance, or validation.
+In their place it names the story files, `index.md`, `plan.md`, and `test-guide.md`,
+each with its state and the sections still to author. It prints them in the rows
+`build show` prints, from `ts/src/builder/artifacts/storyFiles.ts`, judged once by
+`planLifecycleItem` right after the write. The next action follows the file and the
+route: the Driver authors and presents, or the Navigator reads `plan.md`. `build show`,
+the Plan checkpoint, and both approval routes give one answer to what a `plan.md`
+still needs, `planSectionsToAuthor`, so `authored` means approval passes (D4). Plan
+writes one scaffold vocabulary, titled by the roadmap's title, else the one Pull
+recorded, else the item's code (D3, D5). The corpus records the scaffold users get. A
+journey with no project says what it could not record. The skill tells the Driver to
+return `build show`'s block and present the plan from the file.
+
+The recorded corpus held the defect thirteen times. In 13 of its 18 Plan cards,
+`plan.md` was authored before Plan ran, and each card printed template scope and
+acceptance above it.
+
+Delivered on `mirror-ts-core` in `e2d03dc0` (one answer), `b6a33ad5` (the card),
+`2646855c` (one vocabulary), `00601d23` (the words), and `acbf4221` (debt). CI was
+green on every push. Next in floor order: [CR113](cr113-the-pull-card-claims-prepare-did-not-run-mislabels-the-level-and-skips-the-parent.md).

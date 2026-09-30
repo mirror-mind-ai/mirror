@@ -12,6 +12,30 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-09-30 — CR111 done: the Plan checkpoint holds no plan
+
+This is the second change of the reopened trust floor. The Plan checkpoint printed the
+scaffold's sentences as the plan, scope and acceptance checked off. It did so even over
+a plan a person had written, while the artifacts card under it said `existing plan —
+authored`. The recorded corpus held that contradiction in 13 of its 18 Plan cards.
+
+Now the card prints no section of the plan. It names the story files, each with its
+state and the sections still to author, in the rows `build show` prints, from one
+function, judged once, right after Plan writes. Its next action follows the file and
+the route. Characterizing found `build show` reading `authored` over an approval that
+refused, because approval also requires the Non-Goals and the Implementation Contract.
+The Navigator had it fixed here: every surface now gives approval's answer. The second
+scaffold vocabulary, which only the corpus recorded, is retired. The scaffold's title
+falls back to the one Pull recorded before the item's code.
+
+Each plateau waited for its CI run, and every run was green. The Navigator validated
+the route in their own shell, and it matched the recorded output line for line. The
+handoff review found no blocker and three debts, all paid. A no-project Plan with
+`--objective` had kept the sentence nowhere, and now says so. A rule dead since CR112
+left with its stale pointers. The skill points at the card for `index.md`'s state.
+
+Next: CR113, the Pull card that says Prepare did not run.
+
 ### 2026-09-30 — CR112 done: a scaffold is not a plan, and approval reads the plan
 
 This is the first change of the reopened trust floor. US3's first two commands,
