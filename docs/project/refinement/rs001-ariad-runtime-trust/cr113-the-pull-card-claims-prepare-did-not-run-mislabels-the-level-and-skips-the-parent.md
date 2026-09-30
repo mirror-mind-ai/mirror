@@ -596,6 +596,27 @@ Every step meets its pass condition:
 
 Next: the Navigator's walk of the route, then the handoff review.
 
+### Navigator validation (2026-09-30)
+
+The Navigator walked the [validation route](#validation-route) and accepted it:
+"Everything looks fine."
+
+- The route was run as `bash tmp/cr113-route.sh` from the repository root, in the
+  Navigator's own shell. Its output matched the
+  [recorded output](#the-route-after-the-change-2026-09-30) line for line, compared
+  with `diff`:
+  1. the Ready card's tree and Delivery Story ribbon unchanged;
+  2. `ITEM_ACTIVATED`, `USER STORY ACTIVATED`, and `– Expand` in both ribbons, with the
+     lineage CV1, DS1, US1, a roadmap candidate, and no claim about Prepare;
+  3. `TECHNICAL STORY ACTIVATED`, with `– Expand`;
+  4. `no authored package` for DS2, and `not in the roadmap: pulled by its code`;
+  5. `– Expand` on the Plan card and in `build show`.
+- D4's glyph was judged in the Navigator's terminal, as the plan asked. The dash reads
+  as not applicable, not as a separator.
+
+CI was green on every push that carried the change: plateau 1 (`f95992fd`) and plateau
+2 (`05ac1dae`). Each ran Tests on both legs and the smoke.
+
 ## Outcome
 
 Pending.
