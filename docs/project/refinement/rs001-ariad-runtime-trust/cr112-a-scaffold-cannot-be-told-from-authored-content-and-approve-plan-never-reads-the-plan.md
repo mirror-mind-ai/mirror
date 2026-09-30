@@ -641,6 +641,12 @@ Three things the plan did not say:
   and an unfilled line, so the order is unobservable. The order stays as designed for
   the day a table holds a `Pending` line.
 
+**Pushed red, and fixed in plateau 2.** `d0d68089` failed CI's lint step: the new test
+file's imports were not in Biome's order. The Driver ran the formatter on it but not the
+full lint, and began plateau 2 without watching the run finish, which the development
+guide forbids. Plateau 2's commit carries the fix and ran green on both legs
+(`2839d4ca`). Every plateau from here waits for its run.
+
 ### Plateau 2 handoff (2026-09-30)
 
 Now true: `build show` lists `index.md`, `plan.md`, and `test-guide.md` with their state
