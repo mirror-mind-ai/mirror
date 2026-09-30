@@ -617,6 +617,44 @@ The Navigator walked the [validation route](#validation-route) and accepted it:
 CI was green on every push that carried the change: plateau 1 (`f95992fd`) and plateau
 2 (`05ac1dae`). Each ran Tests on both legs and the smoke.
 
+### Handoff review (2026-09-30)
+
+This review came after validation, per the collaboration strategy. The same eight
+lenses as CR111's reviewed the delivered code, tests, words, safety posture,
+operational cost, and resumability: engineer, quality-assurance, devops-engineer,
+security-engineer, database-architect, prompt-engineer, experience-designer, and
+product-designer. Every finding was checked against the code. The cost was measured,
+not estimated.
+
+Synthesis: the delivery does what the plan said, and the two places it departed from
+the plan's text are recorded with their reasons. The findings are about economy and
+coverage, not correctness. The placement reads the candidates list twice, and two
+things the change relies on are not named by any test.
+
+| # | Lens | Finding | Class | Recommendation |
+|---|---|---|---|---|
+| 1 | engineer, devops-engineer | `pullPlacement` reads `inspectPullCandidates` for the Delivery Story's fallback title, and `namedByRoadmap` reads it again for the listed check. Measured on this repository's 366-package roadmap, the placement takes about 91 ms per pull against 22 ms for the CV title alone before the change, and one candidates scan costs about 52 ms, paid twice for an item the roadmap does not claim. `namedByRoadmap`'s comment names two of its three routes | Non-blocking debt, introduced here | Pay now: read the candidates once and pass them, and name the three routes where the function is declared |
+| 2 | quality-assurance | Two things the change relies on are named by no test. The Delivery Story title's fallback to the roadmap index's own listing, for a Delivery Story with no package, is unexercised. The front-door walk's list of expected surfaces omits `DEBT_REVIEW_STARTED` and `DONE_CLOSURE_CONFIRMATION`, the two handoffs whose fixed ribbons it caught. Their ribbons are checked today only because the walk happens to print them | Non-blocking debt, introduced here | Pay now: one Pull-card test over a bullet-listed Delivery Story, and the two handoffs named in the walk's list |
+
+Checked and dropped:
+
+- `activatedTitleRow`'s `ITEM` fallback can never be reached, since Pull refuses any
+  level outside the three (engineer). It is one token, and it prints a word rather than
+  crashing if the level list ever grows. It stays.
+- The tree's third row aligns under the Delivery Story's glyph (experience-designer).
+  The Navigator judged the card and the dash in their own terminal.
+
+The other lenses were silent:
+
+- security-engineer: the files read are the heading claims' own index files, found by
+  the scan inside the roadmap root. Titles pass through the link-free reader, as
+  everywhere else.
+- database-architect: the cursor's shape and values are unchanged.
+- prompt-engineer: the skill's one sentence reads as an instruction and holds in every
+  cadence: say so, then plan.
+- product-designer: the recorded command fixture that now reads `not in the roadmap`
+  is D5 doing its job. That fixture pulls a code its roadmap never names.
+
 ## Outcome
 
 Pending.
