@@ -876,6 +876,39 @@ Every step meets its pass condition:
 
 Next: the Navigator's walk of the route, then the handoff review.
 
+### Navigator validation (2026-10-01)
+
+The Navigator walked the [validation route](#validation-route) and accepted it:
+"Validation accepted".
+
+- The route was run in the Navigator's own shell, from the repository root, as
+  `bash tmp/cr114-route.sh | diff - tmp/cr114-route-after.txt`, against the
+  [recorded output](#the-route-after-the-change-2026-10-01). `diff` printed nothing:
+  all 18 steps matched line for line.
+- The cards were judged in the Navigator's terminal, as the panel asked of the
+  orientation's question. The script below renders three of them for two journeys
+  under `autonomous` with two limits, one with a story pulled and one with none: the
+  resume and `build show` offer `plan_active_item` first, after Pull, and print the
+  cadence and its limits before the steps; the orientation asks `How will the next item
+  run?` between the Refinement question and `What can we do now?`.
+
+```bash
+V=$(mktemp -d) && mkdir -p "$V/home" "$V/p" && export MIRROR_HOME="$V/home" MIRROR_USER= NODE_OPTIONS=--no-warnings
+cards() { node ts/src/frontDoor/cli.ts "$@"; }
+git -C "$V/p" init -q
+for j in j k; do printf '# %s\n' $j | cards identity set journey $j > /dev/null && cards journey set-path $j "$V/p" > /dev/null 2>&1
+  cards build adopt --journey $j --method ariad > /dev/null && cards build sync-cursor --journey $j --method ariad > /dev/null
+  cards build set-cadence --journey $j --method ariad --profile autonomous --limit 'stop before push or release' --limit 'stop on scope change' > /dev/null; done
+cards build pull-item --journey j --method ariad --item-code CV1.US1 --item-level user_story --item-title 'One story' --why-now now > /dev/null 2>&1
+cards build load j 2>/dev/null | sed -n '/<<<ARIAD:BUILDER_RESUME>>>/,/<<<END:BUILDER_RESUME>>>/p'
+cards build show --journey j --method ariad
+cards build load k 2>/dev/null | sed -n '/<<<ARIAD:BUILDER_ORIENTATION>>>/,/<<<END:BUILDER_ORIENTATION>>>/p'
+unset MIRROR_HOME MIRROR_USER; rm -rf "$V"
+```
+
+CI was green on every push that carried the change: plateau 1 (`51b5639f`), plateau 2
+(`8485cc7c`), and plateau 3 (`b25b3fff`). Each ran Tests on both legs and the smoke.
+
 ## Outcome
 
 Pending.

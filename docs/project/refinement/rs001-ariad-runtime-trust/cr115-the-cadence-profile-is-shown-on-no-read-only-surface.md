@@ -74,6 +74,13 @@ Observed 2026-09-30 at `9dca47a0`: `build load mirror-ts-core`, `build show`, an
 `cadence` finds nothing; `deliveryCursor.ts:507` prints `cadence profile` and
 `cadence limits` in the sync report only.
 
+### Navigator validation (2026-10-01)
+
+Delivered with CR114, in its plateau 3 (`b25b3fff`). The Navigator walked
+[CR114's route](cr114-the-builder-resume-offers-prepare-on-a-completed-item.md#navigator-validation-2026-10-01),
+whose step 17 is this change, and judged the three cards in their own terminal, and
+accepted it: "Validation accepted".
+
 ## Outcome
 
 Pending.
