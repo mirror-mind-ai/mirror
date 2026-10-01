@@ -441,6 +441,36 @@ test("CR114: a Delivery Story whose Expand was blocked is offered Expand, and Pu
   );
 });
 
+test("CR114 (D3): Prepare refuses a Done story through the front door, and nothing changes", () => {
+  const w = world();
+  try {
+    run(w, PULL_US1);
+    run(w, ["plan-item"]);
+    authorPackage(w);
+    run(w, VALIDATE);
+    (STORY_STEPS.review_active_item_debt as Step)(w);
+    accepted((STORY_STEPS.close_active_item as Step)(w), "done");
+    const cursor = () =>
+      (
+        w.db
+          .prepare("SELECT metadata FROM runtime_sessions WHERE session_id = ?")
+          .get("__builder_delivery_cursor__:demo") as { metadata: string }
+      ).metadata;
+    const before = cursor();
+    const refused = run(w, ["prepare-item"]);
+    assert.equal(refused.exitCode, 1);
+    assert.match(refused.stdout, /^<<<ARIAD:CHECKPOINT_REFUSED>>>\n/u);
+    assert.match(
+      refused.stdout.replace(/[│\s]+/gu, " "),
+      /reason Prepare is already complete for CV1\.DS1\.US1: the cursor is at done_complete\. /u,
+    );
+    assert.equal(cursor(), before, "the cursor did not move");
+    assert.deepEqual(lists(w).show, [...NO_ITEM], "the closed story still offers the next pull");
+  } finally {
+    w.db.close();
+  }
+});
+
 test("CR114: with no cursor, the resume and build show both say sync, and show gives no Pull", () => {
   const w = world({ sync: false });
   try {

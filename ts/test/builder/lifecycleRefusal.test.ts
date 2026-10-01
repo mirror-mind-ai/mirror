@@ -20,13 +20,14 @@ import {
   validateLifecycleItem,
 } from "#builder/closure.ts";
 import { lifecycleStageOf, STORY_LIFECYCLE_EVENTS } from "#builder/cursorPosition.ts";
-import { setDeliveryCursor } from "#builder/deliveryCursor.ts";
+import { getDeliveryCursor, setDeliveryCursor } from "#builder/deliveryCursor.ts";
 import {
   isAlreadyComplete,
   LifecycleRefusal,
   type LifecycleStep,
 } from "#builder/lifecycleRefusal.ts";
 import { planLifecycleItem } from "#builder/plan.ts";
+import { prepareLifecycleItem } from "#builder/prepare.ts";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
 import { createIdentityTable } from "#helpers/identitySchema.ts";
 import { createRuntimeTables } from "#helpers/runtimeSchema.ts";
@@ -117,6 +118,8 @@ function outcome(step: LifecycleStep, event: string): string {
     );
     const common = { journey: "demo", method: getAriadMethod() };
     const run: Record<LifecycleStep, () => unknown> = {
+      prepare: () =>
+        prepareLifecycleItem(db, { journey: "demo", method: "ariad", projectPath: null }, deps),
       plan: () => planLifecycleItem(db, common, deps),
       // No project: the step order is under test here, not the files (CR112 reads those).
       plan_approval: () =>
@@ -183,6 +186,7 @@ function outcome(step: LifecycleStep, event: string): string {
 
 test("CR067: every command's outcome at every event agrees with the stage order", () => {
   const steps: LifecycleStep[] = [
+    "prepare",
     "plan",
     "plan_approval",
     "validate",
@@ -208,6 +212,87 @@ test("CR067: every command's outcome at every event agrees with the stage order"
         ].includes(result),
         `${step} at ${event}: ${result}`,
       );
+    }
+  }
+});
+
+test("CR114 (D3): Prepare is already complete once Plan is reached, and runs again before it", () => {
+  assert.equal(isAlreadyComplete("prepare", "pull"), false);
+  assert.equal(isAlreadyComplete("prepare", "prepare"), false, "Prepare at Prepare runs again");
+  assert.equal(isAlreadyComplete("prepare", "plan"), true);
+  assert.equal(isAlreadyComplete("prepare", "done_complete"), true);
+});
+
+/** Prepare on a cursor seeded at `event`: "proceeds", or the refusal, and the cursor after. */
+function prepareAt(
+  event: string | null,
+  level: string,
+  pendingConfirmation: string | null = null,
+): { outcome: string; message: string | null; changed: boolean } {
+  const db = database();
+  try {
+    setDeliveryCursor(
+      db,
+      {
+        journey: "demo",
+        method: "ariad",
+        activeItem: level === "delivery_story" ? "CV1.DS1" : "CV1.DS1.US1",
+        activeItemLevel: level,
+        lastDeliveryEvent: event,
+        pendingConfirmation,
+      },
+      deps,
+    );
+    const before = getDeliveryCursor(db, "demo");
+    try {
+      prepareLifecycleItem(db, { journey: "demo", method: "ariad", projectPath: null }, deps);
+      return { outcome: "proceeds", message: null, changed: true };
+    } catch (error) {
+      if (!(error instanceof LifecycleRefusal)) throw error;
+      assert.equal(error.step, "prepare");
+      return {
+        outcome: error.kind,
+        message: error.message,
+        changed: JSON.stringify(getDeliveryCursor(db, "demo")) !== JSON.stringify(before),
+      };
+    }
+  } finally {
+    db.close();
+  }
+}
+
+test("CR114 (D3): Prepare follows Pull, so a Delivery Story's own events and unknown ones refuse it", () => {
+  const written: [string, string | null][] = [
+    ["expand", "navigator_story_confirmation"],
+    ["navigator_flow_unit_selected", "navigator_scope_confirmation"],
+    ["delivery_story_plan", "navigator_delivery_story_plan_approval"],
+    ["delivery_story_plan_approved", null],
+    ["delivery_story_validation", "navigator_delivery_story_validation"],
+    ["delivery_story_validation_complete", null],
+    ["delivery_story_review_complete", null],
+    ["delivery_story_coherence_complete", null],
+    ["delivery_story_done_complete", null],
+  ];
+  for (const [event, pending] of written) {
+    const pendingText = pending ? `, pending ${pending}` : "";
+    assert.deepEqual(
+      prepareAt(event, "delivery_story", pending),
+      {
+        outcome: "not_reached",
+        message: `Prepare follows Pull: CV1.DS1 is at ${event}${pendingText}.`,
+        changed: false,
+      },
+      event,
+    );
+  }
+  assert.deepEqual(prepareAt("pulled", "user_story"), {
+    outcome: "not_reached",
+    message: "Prepare follows Pull: CV1.DS1.US1 is at pulled.",
+    changed: false,
+  });
+  for (const level of ["user_story", "delivery_story"]) {
+    for (const event of ["pull", "prepare", null]) {
+      assert.equal(prepareAt(event, level).outcome, "proceeds", `${level} at ${event}`);
     }
   }
 });

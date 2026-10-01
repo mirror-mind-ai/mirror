@@ -16,6 +16,7 @@ import type { BuilderDeliveryCursor } from "./deliveryCursor.ts";
 
 /** The story steps a lifecycle command can be refused at. */
 export type LifecycleStep =
+  | "prepare"
   | "plan"
   | "plan_approval"
   | "validate"
@@ -31,6 +32,9 @@ export type RefusalKind =
   | "missing_evidence";
 
 const COMPLETING_EVENT: Readonly<Record<LifecycleStep, string>> = {
+  // CR114 (D3): Prepare is complete once the cursor reaches Plan; Prepare at Prepare
+  // runs again, which rewrites only what Prepare wrote.
+  prepare: "plan",
   plan: "plan",
   plan_approval: "plan_approved",
   validate: "validation_passed",
@@ -40,6 +44,7 @@ const COMPLETING_EVENT: Readonly<Record<LifecycleStep, string>> = {
 };
 
 const STEP_NAME: Readonly<Record<LifecycleStep, string>> = {
+  prepare: "Prepare",
   plan: "Plan",
   plan_approval: "Plan approval",
   validate: "Validation",

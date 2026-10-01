@@ -726,6 +726,29 @@ with it. Every smoke reached its end.
 
 Next: plateau 2, Prepare's guard.
 
+### Plateau 2 handoff (2026-10-01)
+
+Now true: Prepare is the seventh `LifecycleStep`, complete once the cursor reaches Plan,
+and `prepareLifecycleItem` refuses before writing anywhere but at `pull`, at `prepare`,
+or on an item with no event. From Plan on it is already complete, in CR067's sentence:
+`Prepare is already complete for CV1.US1: the cursor is at plan, pending
+navigator_approval.` At a Delivery Story's own events, and at an event the table does
+not know, it is not Prepare's place: `Prepare follows Pull: CV1.DS1 is at expand, pending
+navigator_story_confirmation.` `prepare-item` renders either as `CHECKPOINT_REFUSED`,
+exit 1, with the cursor where it was. Pull's own Prepare runs right after Pull writes
+`pull`, and every Pull still prepares. Route step 8 meets its pass condition: the Done
+story refuses, and `build show` still reads `done_complete`.
+
+Red first: the front-door test of route step 8 failed on `prepare-item`'s exit 0, and
+the table-driven test did not compile, since Prepare was not a step. CR067's test now
+runs Prepare at all thirteen ordered events with the other six steps. A second test
+runs it at the nine Delivery Story events and at `pulled`, each refused with the cursor
+unchanged, and lets it through at `pull`, `prepare`, and no event, at both levels. No
+golden moved, as plateau 0 counted. 2913 tests pass, and the Builder smoke reached its
+end.
+
+Next: plateau 3, the cadence.
+
 ## Outcome
 
 Pending.

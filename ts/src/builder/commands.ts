@@ -858,6 +858,10 @@ export function runPrepareItem(
     );
     return { stdout: printed(renderPrepareReport(report)), stderr: "", exitCode: 0 };
   } catch (error) {
+    // CR114 (D3): a Prepare past its place is refused where the cursor stands.
+    if (error instanceof LifecycleRefusal) {
+      return refusedSurface(context.db, journey, "prepare-item", error);
+    }
     return refuseValueError(error);
   }
 }

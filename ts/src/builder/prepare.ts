@@ -13,6 +13,12 @@
 // It also writes: the cursor moves to `last_delivery_event=prepare` and clears any
 // pending confirmation, which is what lets Plan's `Prepare must be completed`
 // guard mean something.
+//
+// CR114 (D3): which is also why it must not run from anywhere. It ran on any cursor,
+// so a Done story prepared again went back before Plan, where Plan accepted it. It now
+// runs only at Pull, at Prepare again, or on an item with no event, and refuses
+// anywhere else before writing: as already complete from Plan on, by CR067's rule,
+// and as not its place at a Delivery Story's own events or an event it does not know.
 
 import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
@@ -26,6 +32,7 @@ import {
   getDeliveryCursor,
   setDeliveryCursor,
 } from "./deliveryCursor.ts";
+import { LifecycleRefusal, refuseIfAlreadyComplete } from "./lifecycleRefusal.ts";
 import { renderLifecycleRibbon } from "./lifecycleRibbon.ts";
 import { wrapAriadSurface } from "./surfaceProtocol.ts";
 
@@ -120,6 +127,16 @@ export function prepareLifecycleItem(
   const existing = getDeliveryCursor(db, journey);
   if (existing === null) throw new Error("delivery cursor is required before prepare");
   if (!existing.activeItem) throw new Error("active item is required before prepare");
+  refuseIfAlreadyComplete("prepare", existing);
+  const event = existing.lastDeliveryEvent;
+  if (event !== null && event !== "pull" && event !== "prepare") {
+    const pending = existing.pendingConfirmation ? `, pending ${existing.pendingConfirmation}` : "";
+    throw new LifecycleRefusal(
+      "prepare",
+      "not_reached",
+      `Prepare follows Pull: ${existing.activeItem} is at ${event}${pending}.`,
+    );
+  }
 
   const cursor = setDeliveryCursor(
     db,
