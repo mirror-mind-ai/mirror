@@ -3245,6 +3245,22 @@ the Navigator decides, then what is merely wrong. Each is worked through the
 full Refinement route, one at a time. US3 stays pulled at its Plan checkpoint,
 awaiting approval, and is worked after the floor.
 
+**Amended 2026-10-01: characterizing CR114 with CR115 found two defects, and
+the Navigator decided both.** The resume offered `prepare_active_item` at every
+position with nothing pending, and `prepare-item` has no guard: run on a Done
+story, it moves the story back before Plan, where `plan-item` accepts it again.
+As with CR018's Expand defect, the Navigator had the guard fixed inside
+[CR114](refinement/rs001-ariad-runtime-trust/cr114-the-builder-resume-offers-prepare-on-a-completed-item.md)
+(decision D3): removing the offer and leaving the rewind would fix the card and
+not the harm it pointed at. And Pull carries a Delivery Story's flow unit to
+every item pulled after it, so after any Delivery Story run in Delivery Story
+flow, no story Plan can be preauthorized, under `accelerated` or on the
+Navigator's explicit delegation, and the remedy the refusal names is one the
+runtime refuses for a story. That is captured as
+[CR117](refinement/rs001-ariad-runtime-trust/cr117-a-delivery-story-s-flow-unit-outlives-it.md),
+and joins the floor last, after CR107 (decision D5). The floor is now twenty
+changes and twenty-three identifiers, fourteen of them done.
+
 ### A Builder journey's position is its cursor's active item, never a roadmap scan
 
 **Date:** 2026-09-26 · **Context:** [CR002](refinement/rs001-ariad-runtime-trust/cr002-cursor-sync-roadmap-selection.md),

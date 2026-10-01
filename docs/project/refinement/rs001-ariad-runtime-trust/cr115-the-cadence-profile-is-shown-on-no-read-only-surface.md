@@ -4,6 +4,8 @@
 
 ## Problem
 
+### As captured (2026-09-30)
+
 A journey's cadence profile changes what `build plan-item` does. Under `accelerated`,
 Plan records a story preauthorization receipt and the Driver is told to complete the
 plan and continue into implementation without a Navigator turn
@@ -18,6 +20,24 @@ being changed, or when the cursor is being rewritten. `■ BUILDER RESUME`,
 `build show`, the Builder home surface, and `build inspect-method --journey` print
 nothing about it. A Navigator resuming a journey cannot see whether the next Plan will
 stop for approval or start implementing.
+
+### As characterized (2026-10-01)
+
+Reproduced at `82c1084a` with CR114's
+[validation route](cr114-the-builder-resume-offers-prepare-on-a-completed-item.md#validation-route),
+step 17: under each of the four profiles, the resume, `build show`, and the Builder
+orientation of a journey with no item pulled print no cadence. The capture holds.
+
+Two facts the capture did not state. The runtime applies `stepwise` to a cursor that
+stores no cadence: the sync report prints it, `continue-lifecycle` refuses as stepwise,
+and Plan records no authority. Each holds that default separately. And `autonomous` does
+not change what Plan does: its plan approval policy is `navigator_approval`, like
+`stepwise` and `checkpoint`. Only `accelerated` carries `bounded_story_authority`. What
+`autonomous` changes is `continue-lifecycle`, which refuses it without limits.
+
+Characterizing found a defect in the cadence's reach, captured as
+[CR117](cr117-a-delivery-story-s-flow-unit-outlives-it.md): after a Delivery Story runs
+in Delivery Story flow, no story pulled next can be planned under `accelerated`.
 
 ## Expected Behavior
 
@@ -34,8 +54,17 @@ sign of `accelerated` is implementation starting.
 
 ## Plan Or Decision
 
-Captured 2026-09-30 while working the trust floor. Proposed for the floor; the Navigator
-decides.
+Captured 2026-09-30 while working the trust floor, and taken onto it the same day by the
+Navigator's decision
+([Decisions](../../decisions.md#the-cv22-release-is-gated-on-an-ariad-trust-floor-worked-before-us3)).
+
+**Planned and assigned 2026-10-01, one delivery with
+[CR114](cr114-the-builder-resume-offers-prepare-on-a-completed-item.md#plan-or-decision)**,
+whose plan, decisions, and validation route cover both. The Navigator approved the plan
+and its decisions D1 to D5; Driver `@viniciusteles`, Delivery `mirror-ts-core`. The resume, `build show`, and the
+orientation print `cadence profile` and, under `autonomous`, `cadence limits`, from one
+function; a cursor that stores no cadence prints `stepwise`. Decision D4 there keeps
+`build inspect-method --journey` out.
 
 ## Evidence
 
