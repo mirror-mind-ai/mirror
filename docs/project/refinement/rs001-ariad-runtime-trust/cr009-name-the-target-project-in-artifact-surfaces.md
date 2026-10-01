@@ -98,4 +98,11 @@ accepted it: "Validation accepted".
 
 ## Outcome
 
-Pending.
+Done 2026-10-01, with [CR082](cr082-lifecycle-surfaces-print-absolute-paths.md#outcome),
+in `63ed0de5`. Every report of a write names where it went, as `project: <folder> ·
+journey: <slug>`: `ARTIFACTS_MATERIALIZED` under its context row, each story closure
+checkpoint above its record, and the template preparation report beside the journey. A
+wrong journey, or a journey whose project path names the wrong folder, shows as a wrong
+name on the card itself, and the skill tells the agent to stop and tell the Navigator
+when the row names a project or journey other than the one the session loaded. A card
+that wrote nothing names nothing. Validated by the Navigator on CR082's route and cards.

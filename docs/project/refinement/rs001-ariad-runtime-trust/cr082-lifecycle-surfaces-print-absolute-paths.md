@@ -2,7 +2,7 @@
 
 # CR082 — Plan and Expand surfaces print absolute filesystem paths where their artifact surface prints project-relative ones
 
-**Status:** validated
+**Status:** done
 **RS:** RS001
 **Driver:** @viniciusteles
 **Delivery:** `mirror-ts-core`
@@ -1022,7 +1022,34 @@ exactly.
 
 ## Outcome
 
-_Pending._
+Done 2026-10-01, with CR009. No marked Ariad surface prints an absolute path inside the
+project. Every path a card prints goes through `displayPath`, in `projectPaths.ts`,
+relative to the journey's project, over one core the Delivery Story Done preflight
+shares: the Plan checkpoint's package row, the four story closure records, and the
+reasons of Expand's three refusals. Those messages, and the `Error:` line a double claim
+prints from any other command, name their packages relative where they are raised (D4).
+Plan's four `*_path=` lines stay absolute for the agent and print after the surface's
+end marker, where the transport rule does not copy them (D1). `EXPAND_DECISION`, which
+no command in either engine ever printed, is gone (D5).
+
+CR009's half: every report of a write names the project's folder and the journey on one
+row, `project: <folder> · journey: <slug>`: the artifacts card under its context, a story
+closure above its record, and the template preparation report beside the journey (D2,
+D3). The skill says how to open a card's path, and that a row naming another project or
+journey stops the agent until the Navigator answers.
+
+The recorded corpus grades those rows whole now: 14 collapsed tokens and 63 repo-rooted
+rows became project-relative, 18 Plan renders moved their four lines, 15
+`EXPAND_DECISION` renders left, and 133 write reports gained their row. The test helper
+that collapsed absolute rows is gone, and a front-door walk runs every command that
+prints a path or reports a write under a known root. Characterizing found the four
+story closure checkpoints the capture missed, and the plan's panel found the second
+shape a closure reports its record in, captured as
+[CR118](cr118-a-story-closure-and-a-delivery-story-closure-report-their-record-in-two-shapes.md),
+outside the floor (D6).
+
+Delivered on `mirror-ts-core` in `421db48d` (one path form), `63ed0de5` (the target
+named), and `81d43527` (debt). CI was green on every push. Next in floor order: CR103.
 
 ## Provenance
 

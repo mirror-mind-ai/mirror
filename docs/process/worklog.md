@@ -12,6 +12,36 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-10-01 — CR082 with CR009 done: every card names its paths relative to the project, and every write report names the project
+
+This is the fifth change of the reopened trust floor. Six surfaces printed paths as the
+runtime resolved them: the Plan checkpoint, the four story closure checkpoints, and
+Expand's refusals. The owner's home directory travelled with every transported card, and
+each card cut its path where the root's length decided, so the recorded corpus could
+only collapse those rows. No report of a write named the project it wrote into; the
+closure checkpoints named it only inside the absolute path.
+
+Now every path a card prints goes through one function, relative to the journey's
+project, and every message that names a package is built that way where it is raised,
+so a double claim's `Error:` line reads the same. Plan's four `*_path=` lines, the
+agent's, stay absolute and print after the surface's end marker. Every report of a write
+carries one row naming the project's folder and the journey, and the skill says to stop
+and tell the Navigator when that row names another. `EXPAND_DECISION`, which no command
+ever printed, is gone. Characterizing found the closure checkpoints the capture missed;
+the plan's panel found the second shape a closure reports its record in, captured as
+CR118, outside the floor.
+
+The persona panel reviewed the plan twice before approval: the first pass moved the four
+lines below the end marker, and the second had CR118 captured. Each plateau waited for
+its CI run, and every run was green. A front-door walk runs every command that prints a
+path or reports a write. The Navigator validated the route in their own shell, by a
+script that compares it with its recorded output, and judged the cards in their
+terminal. The handoff review found no blocker and three debts, all paid: the path core's
+outside is exact, the walk covers `continue-lifecycle`, and the skill names the
+`project_path=` line by its key.
+
+Next: CR103, the candidate and position rows that print a package's whole status line.
+
 ### 2026-10-01 — CR114 with CR115 done: every orienting surface names the next step and the cadence
 
 This is the fourth change of the reopened trust floor. The Builder resume chose its next

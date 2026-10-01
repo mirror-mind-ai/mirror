@@ -3599,3 +3599,52 @@ walk in `nextActionsWalk.test.ts` proves by running it. A surface that orients t
 Navigator prints the cadence from `cadence.ts`, whose `effectiveCadenceProfile` is the
 one default for a cursor that stores none. Offering a step is not running it: the
 Builder Activation Boundary still holds after a load.
+
+### A Builder surface names every path relative to the journey's project, and every report of a write names the project
+
+**Date:** 2026-10-01 · **Context:** [CR082](refinement/rs001-ariad-runtime-trust/cr082-lifecycle-surfaces-print-absolute-paths.md)
+with [CR009](refinement/rs001-ariad-runtime-trust/cr009-name-the-target-project-in-artifact-surfaces.md),
+the fifth change on the reopened
+[Ariad trust floor](#the-cv22-release-is-gated-on-an-ariad-trust-floor-worked-before-us3).
+Six surfaces printed paths as the runtime resolved them, absolute: the Plan
+checkpoint's package row and its four `*_path=` lines, the four story closure
+checkpoints' records, and Expand's refusals. Surfaces are transported verbatim into
+replies, handoffs, and committed documents, so the owner's home directory travelled with
+them, and a card cut each path where the root's length decided, so a recorded card read
+differently on every machine and the corpus could only collapse those rows. The
+artifacts card, meanwhile, printed paths relative to a project it never named, which is
+how CR009's Navigator searched the wrong repository.
+
+**The decision: every path a Builder card prints goes through `displayPath`, in
+`projectPaths.ts`, relative to the journey's project, and every message that names a
+package is built with it where it is raised. Plan's four `*_path=` lines are the agent's:
+absolute, and printed after the surface's end marker. Every report of a write names the
+project's folder and the journey on one row, `project: <folder> · journey: <slug>`.**
+
+**Why the agent's lines stay absolute, and leave the surface (D1).** An agent often works
+from a directory that is not the project, and a relative path joined to it names a file
+in another repository, one this repository's own `docs/project/roadmap/` would make look
+right. But inside the block the transport rule copied the root into every reply. Below
+the end marker the agent still reads them, as it reads `build load`'s `project_path=`.
+
+**Why the folder and the journey (D2).** A wrong journey, and a journey whose project path
+names the wrong folder, both show as a wrong name, and the row is the same on every
+machine. The absolute root would put back what this decision removes; the journey alone
+passes a wrong project path. Two checkouts of one repository share a folder name, and
+there the slug tells them apart, and `build load` prints the root.
+
+**Why one row per report of a write (D3).** The question a reader asks is where the files
+went, once per card. A story's closure reports its record on its own card and a Delivery
+Story's on the artifacts card; both carry the row, and the two shapes are
+[CR118](refinement/rs001-ariad-runtime-trust/cr118-a-story-closure-and-a-delivery-story-closure-report-their-record-in-two-shapes.md)'s
+question (D6).
+
+**Why where the message is raised (D4).** Every reader of those messages is human, a card
+or an `Error:` line, and a renderer that searched prose for paths would leave the
+`Error:` line absolute.
+
+**The rule that follows.** A card that prints a path asks `displayPath`; a message that
+names a package is built with it; a report of a write prints `targetLine`; and a line for
+the agent goes below the surface, not inside it. `pathsWalk.test.ts` runs every command
+that prints a path or reports a write under a known root and fails on that root inside
+any marked surface.
