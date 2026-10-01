@@ -909,6 +909,49 @@ unset MIRROR_HOME MIRROR_USER; rm -rf "$V"
 CI was green on every push that carried the change: plateau 1 (`51b5639f`), plateau 2
 (`8485cc7c`), and plateau 3 (`b25b3fff`). Each ran Tests on both legs and the smoke.
 
+### Handoff review (2026-10-01)
+
+This review came after validation, per the collaboration strategy. The nine lenses of
+the plan's first pass reviewed the delivered code, tests, words, safety posture,
+operational cost, and resumability: engineer, quality-assurance, database-architect,
+devops-engineer, security-engineer, ai-engineer, prompt-engineer, experience-designer,
+and product-designer. Every finding was checked against the code, and the one about
+behavior was reproduced: an item at `prepare` with no level, and one with the level
+`epic`, were each offered `plan_active_item`, and `plan-item` refused both with
+`CHECKPOINT_REFUSED`, "Plan requires a User Story or Technical Story". The cost was
+measured: the four new test files run in 0.7 seconds together.
+
+Synthesis: the delivery does what the plan said, and the Navigator's walk matched it
+line for line. The findings sit where the table meets its two readers: one row decides
+by a different predicate than the command it offers, and two lines of the skill say
+more or less than the table does.
+
+| # | Lens | Finding | Class | Recommendation |
+|---|---|---|---|---|
+| 1 | engineer, quality-assurance | At `prepare`, the table offers `plan_active_item` to an item whose level is neither a story nor a Delivery Story, and Plan refuses it. The table decides `prepare` by `level === "delivery_story"`; Plan decides by `isImplementableByDefault`. Pull accepts only the three levels, so no product cursor reaches it, but the table promised that every step it offers is accepted, and the table test grades only the three levels | Non-blocking debt, introduced here | Pay now: decide `prepare` by Plan's own predicate. A story plans, a Delivery Story expands, and any other level is offered no step; the table test grades a level that is neither |
+| 2 | prompt-engineer, ai-engineer | Two lines of the skill's list say more or less than the table. `inspect_roadmap` shares a line with `pull_candidate_if_known` under "the item is closed, or none is pulled", but it ends every open item's list too. And "a list with no lifecycle step" names a category the skill never defines. A pending list holds `answer_pending_confirmation` and `inspect_method`, and an agent that counted it in that category would offer `sync-cursor`, which resets the cursor, its pending question and its cadence with it | Non-blocking debt, introduced here | Pay now: one line per inspection, with "the item is closed, or none is pulled" on `pull_candidate_if_known` alone; the rule names its list exactly, `inspect_roadmap` and `inspect_method` with nothing else, and says what `sync-cursor` resets |
+| 3 | engineer | `NO_CURSOR_ACTIONS` is exported and read nowhere outside its module; the resume reaches it through `allowedNextActions(null)` | Non-blocking debt, introduced here | Pay now: unexport it |
+
+Checked and dropped:
+
+- The suffix `, pending <confirmation>` is built in two places, CR067's
+  already-complete refusal and Prepare's `Prepare follows Pull` (engineer). It is one
+  string with two callers, and a helper would add a hop to read it.
+- The golden edits were made by scripts kept in `tmp/`, uncommitted, as CR111's and
+  CR113's were (devops-engineer). Each README row says what its script changed and
+  what it asserted.
+- The orientation's wrapped limits continue flush left (experience-designer). Its other
+  `label: value` rows wrap the same way, and the Navigator judged the card.
+
+The other lenses were silent:
+
+- database-architect: nothing stored changes, and the guard keeps a closed item from
+  moving back at the one write that moved it.
+- security-engineer: the limits are the Navigator's own text, printed inside card rows,
+  as roadmap titles are.
+- product-designer: each decision point now names its step, and a closed item points
+  to the next pull, after the Done trailer has printed its recommendation.
+
 ## Outcome
 
 Pending.
