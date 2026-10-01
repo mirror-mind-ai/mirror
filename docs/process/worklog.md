@@ -12,6 +12,36 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-10-01 — CR114 with CR115 done: every orienting surface names the next step and the cadence
+
+This is the fourth change of the reopened trust floor. The Builder resume chose its next
+actions without reading the cursor's last event, so it offered Prepare at every position
+with nothing pending: after a Pull, which had already prepared, and after Done alike.
+The offered command had no guard, and run on a Done story it moved the story back before
+Plan. `build show` printed no list, and no orienting surface printed the cadence, which
+decides whether the next Plan stops for the Navigator.
+
+Now one ordered table of cursor positions names the ribbon stage and the steps each
+position accepts, and the resume and `build show` both read it through one selector.
+A closed item points to the next pull, and a position the table does not know offers no
+lifecycle step. Prepare refuses once the item is past it. The resume, `build show`, and
+the orientation print the cadence from one module, which the sync report and
+`continue-lifecycle` read too. The skill says what each step routes to, and that
+offering a step is not running it. Characterizing found `build show` giving a Pull
+command that refuses when no cursor exists, and a Delivery Story's flow unit outliving
+it, which blocks every preauthorized story Plan after it; that is captured as CR117 and
+sits last on the floor.
+
+The plan was reviewed twice by the persona panel before approval. Each plateau waited
+for its CI run, and every run was green. A front-door walk runs every offered step where
+it was offered. The Navigator validated the route in their own shell, with `diff`
+printing nothing, and judged the cards in their terminal. The handoff review found no
+blocker and three debts, all paid: Prepare is placed by Plan's own predicate, the
+skill's list says exactly what the table says, and a dead export left.
+
+Next: CR082 with CR009, the absolute paths and the unnamed project on the artifact
+cards.
+
 ### 2026-09-30 — CR113 done: the Pull card says what happened, at the level that happened
 
 This is the third change of the reopened trust floor. The Pull card, which the product

@@ -83,4 +83,14 @@ accepted it: "Validation accepted".
 
 ## Outcome
 
-Pending.
+Done 2026-10-01, with [CR114](cr114-the-builder-resume-offers-prepare-on-a-completed-item.md#outcome),
+in `b25b3fff`. Every surface that orients the Navigator prints the journey's cadence:
+the Builder resume after its last delivery event, `build show` before the steps it
+names, and the Builder orientation, which asks `How will the next item run?` before
+`What can we do now?`. A cursor that stores no cadence prints `stepwise`, the
+profile the runtime applies to it, and no cursor prints `none`. Under `autonomous`
+the limits follow; under any other profile, limits a cursor stores bound nothing, and
+are not printed. One module, `cadence.ts`, holds the effective profile for these
+surfaces, the cursor sync report, and `continue-lifecycle`, which each held it before.
+`build inspect-method --journey` stays the method's surface (CR114, D4). Validated by
+the Navigator on CR114's route and cards.

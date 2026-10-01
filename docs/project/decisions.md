@@ -3550,3 +3550,52 @@ through `renderLifecycleRibbon`, with the item's level; the Delivery Story flow'
 ribbons are that flow's matter. Which levels never expand is `isImplementableByDefault`'s
 answer, and nowhere else. A surface that says where a pulled item sits asks
 `pullPlacement` and draws with `placementRows`.
+
+### Every Builder surface takes its next steps from one table of cursor positions, and prints the cadence they run at
+
+**Date:** 2026-10-01 · **Context:** [CR114](refinement/rs001-ariad-runtime-trust/cr114-the-builder-resume-offers-prepare-on-a-completed-item.md)
+with [CR115](refinement/rs001-ariad-runtime-trust/cr115-the-cadence-profile-is-shown-on-no-read-only-surface.md),
+the fourth change US3's Pull and Plan put back on the
+[Ariad trust floor](#the-cv22-release-is-gated-on-an-ariad-trust-floor-worked-before-us3).
+The Builder resume chose its next actions from whether a confirmation was pending and
+whether an item was active, and never from the cursor's last event. So it offered
+`prepare_active_item` at every position with nothing pending: right after a Pull, which
+had already prepared, and after Done alike. `prepare-item` then ran from anywhere, and a
+Done story it prepared went back before Plan. `build show` printed no list, and with no
+cursor it gave a Pull command that refused. No surface that opens a session printed the
+cadence, which decides whether the next Plan stops for the Navigator.
+
+**The decision: one ordered table of cursor positions, in `cursorPosition.ts`, names for
+each event the runtime writes the ribbon stage a story draws and the steps the runtime
+accepts next. The Builder resume and `build show` choose their next actions through one
+selector, `allowedNextActions`, and nothing else chooses them. Each step offered is one
+the runtime accepts where it is offered; a position the table does not know, or a level
+Plan refuses, is offered no lifecycle step. Prepare is a lifecycle step, complete once
+the cursor reaches Plan. The resume, `build show`, and the Builder orientation print the
+journey's cadence, from `cadence.ts`.**
+
+**Why the steps are named, not printed as commands.** The resume already spoke in
+`<verb>_active_item` identifiers, a command wraps to two or three card rows, and in
+Delivery Story flow the same step runs a different command. The skill says what each
+identifier routes to, and a test fails when the table can produce one the skill does not
+name (D1).
+
+**Why no guess for an unknown position.** A guessed step is the defect itself: the old
+fallback, Prepare, rewound whatever state the cursor held. CR067 drew no ribbon stage for
+an event it did not know, and the list follows the same rule (D2).
+
+**Why the guard lives in this change.** Removing the offer would have left the rewind
+one keystroke away. Prepare joined CR067's steps rather than carrying a refusal of its
+own, so CR067's table-driven test grades it at every ordered event (D3).
+
+**Why the cadence is printed as a name.** The profile's name is the method's own
+vocabulary, defined once by `inspect-method ariad` and explained to the agent by the
+skill; a gloss on three cards would restate the method and drift from it.
+
+**The rule that follows.** A Builder surface that names what comes next asks
+`allowedNextActions`; one that places the cursor on the ribbon asks `lifecycleStageOf`;
+and a step it offers is one the runtime accepts at that position, which the front-door
+walk in `nextActionsWalk.test.ts` proves by running it. A surface that orients the
+Navigator prints the cadence from `cadence.ts`, whose `effectiveCadenceProfile` is the
+one default for a cursor that stores none. Offering a step is not running it: the
+Builder Activation Boundary still holds after a load.

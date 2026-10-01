@@ -979,4 +979,34 @@ and every smoke reached its end.
 
 ## Outcome
 
-Pending.
+Done 2026-10-01, with CR115. The Builder resume and `build show` name the step the
+cursor accepts next, from one ordered table of positions in `cursorPosition.ts`, which
+also places the cursor on the ribbon and gives CR067's refusals their event order.
+Both choose their list through one selector, `allowedNextActions`, so they cannot
+disagree. After Pull, a story plans and a Delivery Story expands; after approval, the
+item is implemented, then validated; after Debt Review comes Coherence or Done; after
+Done, the next pull; and the Delivery Story's own positions likewise. A position the
+table does not know, or a level Plan refuses, is offered no lifecycle step. With no
+cursor, `build show` says so and offers the sync, where it gave a Pull command that
+refused.
+
+Prepare, the step the resume offered everywhere, is a lifecycle step now: it is
+already complete from Plan on, refuses at a Delivery Story's own events and at events
+it does not know, and changes nothing when it refuses (D3). The skill says what each
+step routes to, that offering a step is not running it, that a pending question is
+asked and never answered, and which one list means a position Ariad does not know. A
+front-door walk through a story's lifecycle, both ways out of Debt Review, a Delivery
+Story in Delivery Story flow, a blocked Expand, and a journey with no cursor runs every
+offered step where it was offered, and the runtime takes each one.
+
+CR115's half: the resume, `build show`, and the orientation print the cadence, from
+`cadence.ts`, which the cursor sync report and `continue-lifecycle` read too.
+
+The recorded corpus moved by 8 lists (6 resume renders and 2 resume-state
+expectations) and by the cadence rows of 28 renders. Characterizing found a defect
+outside both requests, a Delivery Story's flow unit outliving it; it is captured as
+[CR117](cr117-a-delivery-story-s-flow-unit-outlives-it.md), last on the floor.
+
+Delivered on `mirror-ts-core` in `51b5639f` (the next steps), `8485cc7c` (Prepare's
+guard), `b25b3fff` (the cadence), and `2e401a9c` (debt). CI was green on every push.
+Next in floor order: CR082 with CR009.
