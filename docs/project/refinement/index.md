@@ -9,7 +9,7 @@ If a linked document and this index disagree, this index wins.
 ## Current Focus
 
 - Refinement Story: RS001
-- Change Request: none
+- Change Request: CR082
 
 Selecting a focus is an explicit project decision. Reading this file never selects or
 executes work.
@@ -32,7 +32,7 @@ Open work is ordered intentionally. Terminal history follows open work.
 
 | Order | ID | RS | Change | Status | Driver | Delivery |
 |------:|----|----|--------|--------|--------|----------|
-| 1 | [CR009](rs001-ariad-runtime-trust/cr009-name-the-target-project-in-artifact-surfaces.md) | RS001 | Name the target project in artifact materialization surfaces | captured | — | — |
+| 1 | [CR009](rs001-ariad-runtime-trust/cr009-name-the-target-project-in-artifact-surfaces.md) | RS001 | Name the target project in artifact materialization surfaces | in_progress | @viniciusteles | `mirror-ts-core` |
 | 2 | [CR014](rs004-identity-resolution-fidelity/cr014-resolve-owner-name-from-one-authority.md) | RS004 | Resolve the owner's name from one authority | captured | — | — |
 | 3 | [CR055](rs009-cv22-front-door-routing-correctness/cr055-audit-subcommand-inheritance-in-claimed-families.md) | RS009 | Audit subcommand inheritance across claimed command families | captured | — | — |
 | 4 | [CR056](rs010-cv22-oracle-and-port-hygiene/cr056-measure-title-length-by-code-point.md) | RS010 | Measure title length by code point in titleNeedsImprovement | captured | — | — |
@@ -48,7 +48,7 @@ Open work is ordered intentionally. Terminal history follows open work.
 | 14 | [CR078](rs010-cv22-oracle-and-port-hygiene/cr078-stop-spending-thirteen-seconds-polling-for-a-consult-cost.md) | RS010 | Stop spending thirteen seconds polling for a `consult` cost | captured | — | — |
 | 15 | [CR080](rs010-cv22-oracle-and-port-hygiene/cr080-give-the-consolidation-prompt-an-identity-context-it-can-act-on.md) | RS010 | Give the consolidation prompt an identity context it can act on | captured | — | — |
 | 16 | [CR081](rs010-cv22-oracle-and-port-hygiene/cr081-typecheck-the-parity-tools.md) | RS010 | Typecheck the parity tools | captured | — | — |
-| 17 | [CR082](rs001-ariad-runtime-trust/cr082-lifecycle-surfaces-print-absolute-paths.md) | RS001 | Plan and Expand surfaces print absolute filesystem paths where their artifact surface prints project-relative ones | captured | — | — |
+| 17 | [CR082](rs001-ariad-runtime-trust/cr082-lifecycle-surfaces-print-absolute-paths.md) | RS001 | Plan and Expand surfaces print absolute filesystem paths where their artifact surface prints project-relative ones | in_progress | @viniciusteles | `mirror-ts-core` |
 | 18 | [CR083](rs010-cv22-oracle-and-port-hygiene/cr083-path-normalization-assumptions-are-untested-in-the-port.md) | RS010 | Path-normalization assumptions in the ported tree are untested, and one shipped wrong for two plateaus | captured | — | — |
 | 19 | [CR085](rs009-cv22-front-door-routing-correctness/cr085-the-ts-front-door-does-not-read-the-env-python-reads.md) | RS009 | The TypeScript front door does not read the `.env` Python reads | captured | — | — |
 | 20 | [CR086](rs010-cv22-oracle-and-port-hygiene/cr086-baseline-advance-must-name-the-oracle-change.md) | RS010 | A baseline advance must name the oracle change it absorbs | captured | — | — |
@@ -70,6 +70,7 @@ Open work is ordered intentionally. Terminal history follows open work.
 | 36 | [CR110](rs010-cv22-oracle-and-port-hygiene/cr110-the-doc-link-checker-reads-a-link-inside-inline-code-as-a-real-link.md) | RS010 | The doc-link checker reads a link inside inline code as a real link | captured | — | — |
 | 37 | [CR116](rs004-identity-resolution-fidelity/cr116-identity-get-piped-to-identity-set-adds-a-newline-each-round-trip.md) | RS004 | `identity get` piped to `identity set` adds a newline each round trip | captured | — | — |
 | 38 | [CR117](rs001-ariad-runtime-trust/cr117-a-delivery-story-s-flow-unit-outlives-it.md) | RS001 | A Delivery Story's flow unit outlives it, and no story after it can be preauthorized | captured | — | — |
+| 39 | [CR118](rs001-ariad-runtime-trust/cr118-a-story-closure-and-a-delivery-story-closure-report-their-record-in-two-shapes.md) | RS001 | A story's closure and a Delivery Story's report their record in two shapes | captured | — | — |
 | — | [CR114](rs001-ariad-runtime-trust/cr114-the-builder-resume-offers-prepare-on-a-completed-item.md) | RS001 | The Builder resume offers Prepare on a completed item | done | @viniciusteles | `mirror-ts-core` |
 | — | [CR115](rs001-ariad-runtime-trust/cr115-the-cadence-profile-is-shown-on-no-read-only-surface.md) | RS001 | The cadence profile that changes what Plan does is shown on no read-only surface | done | @viniciusteles | `mirror-ts-core` |
 | — | [CR113](rs001-ariad-runtime-trust/cr113-the-pull-card-claims-prepare-did-not-run-mislabels-the-level-and-skips-the-parent.md) | RS001 | The Pull card claims Prepare did not run, names every level a Delivery Story, and skips the parent | done | @viniciusteles | `mirror-ts-core` |
