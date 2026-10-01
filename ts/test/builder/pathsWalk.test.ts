@@ -440,7 +440,7 @@ test("the skill tells the agent how to read a card's path, and what the `project
     "utf8",
   ).replaceAll(/\s+/gu, " ");
   for (const sentence of [
-    "A card prints a path inside the project relative to the journey's `project_path`, the line `build load` printed last.",
+    "A card prints a path inside the project relative to the journey's `project_path`, from the `project_path=` line `build load` prints.",
     "Open it by joining the two, never by joining it to the working directory, which can belong to another repository.",
     "If that row names a project or journey other than the one this session loaded, tell the Navigator before touching the files.",
     "They are not part of the surface: use them as printed, and do not render them.",
@@ -449,4 +449,49 @@ test("the skill tells the agent how to read a card's path, and what the `project
     assert.ok(skill.includes(sentence), `the skill says: ${sentence}`);
   }
   assert.ok(!skill.includes("include the `plan artifact` path"), "the old Plan line left");
+  assert.ok(!skill.includes("the line `build load` printed last"), "the positional locator left");
+});
+
+test("continue-lifecycle crosses Done with its record project-relative and its target named", () => {
+  // The command that closes a story under a cadence that continues on its own reports
+  // the same write `done-item` does, through the same card.
+  const w = world();
+  ran(
+    runBuild(w, [
+      "pull-item",
+      "--item-code",
+      "CV1.DS1.US1",
+      "--item-level",
+      "user_story",
+      "--item-title",
+      "Enter an address",
+      "--why-now",
+      "next",
+    ]),
+    "pull",
+  );
+  ran(runBuild(w, ["plan-item"]), "plan");
+  const absolute = join(w.project, PACKAGE);
+  authorPlan(join(absolute, "plan.md"));
+  authorStoryIndex(join(absolute, "index.md"));
+  ran(runBuild(w, ["approve-plan"]), "approve");
+  ran(runBuild(w, VALIDATE), "validate");
+  ran(runBuild(w, ["review-item", "--debt", "No debt found", "--decision", "no_action"]), "review");
+  ran(runBuild(w, ["set-cadence", "--profile", "checkpoint"]), "cadence");
+  const crossed = ran(
+    runBuild(w, [
+      "continue-lifecycle",
+      "--history-action",
+      "h",
+      "--roadmap-update",
+      "r",
+      "--next-recommendation",
+      "n",
+    ]),
+    "continue to Done",
+  );
+  assert.deepEqual(block(crossed.stdout, "DONE_CHECKPOINT", "done artifact"), [
+    TARGET,
+    ...wrapped(`${PACKAGE}/done.md`),
+  ]);
 });

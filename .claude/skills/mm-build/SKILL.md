@@ -311,7 +311,7 @@ as evidence of where the cursor stands.
 ### Paths on Ariad surfaces
 
 A card prints a path inside the project relative to the journey's `project_path`,
-the line `build load` printed last. Open it by joining the two, never by joining it
+from the `project_path=` line `build load` prints. Open it by joining the two, never by joining it
 to the working directory, which can belong to another repository. A card that
 reports a file written or left in place names its project folder and journey on a
 `project:` row. If that row names a project or journey other than the one this

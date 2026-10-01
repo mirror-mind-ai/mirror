@@ -998,6 +998,28 @@ The other lenses were silent:
 - experience-designer: the Navigator judged the cards in their terminal.
 - product-designer: CR118 holds the question of the two closure shapes.
 
+### Debt paid (2026-10-01)
+
+The Navigator decided all three: "Pay all now". One commit pays them, each with its
+test.
+
+1. **The core's outside.** `projectRelative` reads a relation as outside when it is
+   `..` itself or starts with `..` and a separator, so a project folder named `..cache`
+   is inside, for a card and for the Done preflight alike. Red first: the new test in
+   `projectPaths.test.ts` failed on `..cache/index.md`, and it also holds the project's
+   parent and a sibling outside.
+2. **The walk's claim.** `pathsWalk.test.ts` crosses Done through `continue-lifecycle`
+   under `checkpoint` and requires the target row and the project-relative record on
+   its `DONE_CHECKPOINT`. It passed on arrival: the card was already right, as the
+   corpus's `continue_crosses_done` showed. What was wrong was the walk's word "every".
+3. **The skill's locator.** The paragraph names the line by its key: "from the
+   `project_path=` line `build load` prints". The skill test pins the new words and
+   that the positional locator left, and the Claude copies were regenerated.
+
+2937 tests pass, 2 of them new. Typecheck, lint, the repository checks, the migration
+proofs, and every smoke are green, and the route still prints its recorded output
+exactly.
+
 ## Outcome
 
 _Pending._

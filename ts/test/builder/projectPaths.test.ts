@@ -64,3 +64,13 @@ test("a report of a write names the project's folder and the journey (CR009)", (
   assert.equal(projectFolder(relative(process.cwd(), "/tmp/storefront")), "storefront");
   assert.equal(projectFolder("/"), "/", "the filesystem root has no last segment");
 });
+
+test("a project folder whose name begins with `..` is inside the project", () => {
+  // Outside is `..` itself or `..` followed by a separator: `..cache` is a folder name.
+  const cached = join(ROOT, "..cache", "index.md");
+  assert.equal(projectRelative(cached, ROOT), join("..cache", "index.md"));
+  assert.equal(displayPath(cached, ROOT), join("..cache", "index.md"));
+  assert.equal(relativeOrRefuse(cached, ROOT), "..cache/index.md");
+  assert.equal(projectRelative(join(ROOT, ".."), ROOT), null, "the project's parent");
+  assert.equal(projectRelative(join(ROOT, "..", "x"), ROOT), null, "a sibling of the project");
+});

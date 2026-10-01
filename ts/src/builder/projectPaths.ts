@@ -18,19 +18,20 @@
 // row (CR009): a wrong journey, or a journey whose project path names the wrong folder,
 // shows as a wrong name on the card itself.
 
-import { basename, isAbsolute, relative, resolve } from "node:path";
+import { basename, isAbsolute, relative, resolve, sep } from "node:path";
 
 /**
  * The path's relation to the project, in the platform's separators: `""` for the
  * project root itself, and `null` for a path outside the project.
  *
  * Both arguments are resolved first, so an absolute path and a relative one name the
- * same place when they resolve to it.
+ * same place when they resolve to it. Outside means `..` itself or `..` followed by a
+ * separator: a project folder may be named `..cache`.
  */
 export function projectRelative(path: string, projectRoot: string): string | null {
   const relation = relative(resolve(projectRoot), resolve(path));
-  if (relation.startsWith("..") || isAbsolute(relation)) return null;
-  return relation;
+  const outside = relation === ".." || relation.startsWith(`..${sep}`) || isAbsolute(relation);
+  return outside ? null : relation;
 }
 
 /**
