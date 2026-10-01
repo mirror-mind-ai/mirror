@@ -903,8 +903,8 @@ says a natural-language equivalent such as `planeje o item puxado`, run:
 NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build plan-item --journey <slug> --method ariad
 ```
 
-Render the Plan Checkpoint visibly and include the `plan artifact` path from the
-command output in the reply. The card holds no plan: it names the story files,
+Render the Plan Checkpoint visibly, and name the plan in the reply by its
+project-relative path: the card's `story package`, then `/plan.md`. The card holds no plan: it names the story files,
 `index.md`, `plan.md`, and `test-guide.md`, each with its state and the sections
 still to author. The plan is read in `plan.md`. Right after `plan-item` that file
 is usually the scaffold, so there is no plan to present yet: present it after it

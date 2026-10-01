@@ -18,7 +18,6 @@
 
 import { existsSync } from "node:fs";
 import type { WritableDatabase } from "#db/database.ts";
-import { displayPath } from "./artifacts/artifactSurfaces.ts";
 import { planSectionsToAuthor } from "./artifacts/scaffoldState.ts";
 import { cardText, cardWrapped } from "./card.ts";
 import { normalizeRequired } from "./cursorTransitions.ts";
@@ -31,6 +30,7 @@ import {
 } from "./deliveryCursor.ts";
 import { LifecycleRefusal, refuseIfAlreadyComplete } from "./lifecycleRefusal.ts";
 import { renderLifecycleRibbon } from "./lifecycleRibbon.ts";
+import { displayPath } from "./projectPaths.ts";
 import { wrapAriadSurface } from "./surfaceProtocol.ts";
 
 export interface ApprovePlanOptions {

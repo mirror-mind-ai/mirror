@@ -27,8 +27,9 @@
 // Read-only by construction: nothing in this module writes.
 
 import { readFileSync } from "node:fs";
-import { join, relative, resolve, sep } from "node:path";
+import { join, resolve, sep } from "node:path";
 import { PYTHON_WHITESPACE_CLASS, pyStrip } from "#util/pythonText.ts";
+import { projectRelative } from "./projectPaths.ts";
 import { stripMarkdownLink } from "./roadmapGrammar.ts";
 import { scanRoadmapIndexFiles } from "./roadmapScan.ts";
 import { resolveStoryDirectory } from "./storyPaths.ts";
@@ -53,10 +54,15 @@ function isDone(status: string): boolean {
   return pyStrip(status).toLowerCase().endsWith("done");
 }
 
-/** Python `_relative`: project-relative POSIX, raising when the path escapes. */
-function projectRelative(path: string, projectRoot: string): string {
-  const relation = relative(projectRoot, resolve(path));
-  if (relation === "" || relation.startsWith("..") || resolve(relation) === relation) {
+/**
+ * Python `_relative`: project-relative POSIX, raising when the path escapes. The
+ * relation comes from the core every surface names paths with (CR082); this caller
+ * refuses the project root and a path outside, where a surface prints `.` or the path
+ * as given.
+ */
+export function relativeOrRefuse(path: string, projectRoot: string): string {
+  const relation = projectRelative(path, projectRoot);
+  if (relation === null || relation === "") {
     // Python raises `ValueError` from `relative_to` here and the CLI prints
     // CPython's own prose. Recorded divergence (plan, Parity Contract): the
     // message is ours, the refusal is the same.
@@ -125,7 +131,7 @@ export function inspectAuthoredClosure(
     const content = readFileSync(indexPath, "utf8");
     const status = STATUS_LINE_RE.exec(content)?.groups?.status;
     if (status === undefined || !isDone(status)) {
-      issues.push(`${projectRelative(indexPath, projectRoot)}: package status is not Done`);
+      issues.push(`${relativeOrRefuse(indexPath, projectRoot)}: package status is not Done`);
     }
   }
 
@@ -135,7 +141,7 @@ export function inspectAuthoredClosure(
     for (const [code, status] of statusTableRows(file.absolutePath)) {
       if (known.has(code) && !isDone(status)) {
         issues.push(
-          `${projectRelative(file.absolutePath, projectRoot)}: table row ${code} is not Done`,
+          `${relativeOrRefuse(file.absolutePath, projectRoot)}: table row ${code} is not Done`,
         );
       }
     }

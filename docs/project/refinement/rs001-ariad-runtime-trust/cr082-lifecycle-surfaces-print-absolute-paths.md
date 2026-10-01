@@ -463,7 +463,7 @@ absolute() { LC_ALL=C awk '/^<<<ARIAD:/ { s = substr($0, 10, length($0) - 12) } 
   END { printf "  absolute: "; for (k in n) printf "%s%s×%d", (c++ ? ", " : ""), k, n[k]; print (c ? "" : "none") }' "$V/out"; }
 value() { sed -n "/<<<ARIAD:$1>>>/,/<<<END:$1>>>/p" "$V/out" | sed "s/│//g" | LC_ALL=C awk -v h="$2" '
   { c = substr($0, 2); sub(/ +$/, "", c) } f && c == "" { exit }
-  f { printf "%s%s", (n++ && !chunk ? " " : ""), c; chunk = (length(c) >= 54) } c == h { f = 1 }
+  f { printf "%s%s", (n++ && !chunk ? " " : ""), c; chunk = (length(c) >= 54 && index(c, " ") == 0) } c == h { f = 1 }
   END { print (n ? "" : "(none)") }' | sed "s#$ROOT#<root>#g; s/^/  $2: /"; }
 target() { t=$(sed 's/│//g; s/^ *//; s/ *$//' "$V/out" | grep '^project: ' | sort | uniq -c | sed 's/^ *\([0-9]*\) /\1× /' | paste -sd ';' -); echo "  target: ${t:-(none)}"; }
 author() { awk '/^## /{print; print ""; print substr($0,4) ", as the Driver wrote it for this story."; print ""; s=1; next} !s{print}' "$1" > "$1.new" && mv "$1.new" "$1"; }
@@ -741,6 +741,65 @@ cards themselves the root sits inside a 54-column chunk: the package row is
 `/private/tmp/cr082.XXXXXX/storefront/docs/project/road` and `map/cv1/ds1/…` beneath
 it, on macOS, where `journey set-path` stores `/tmp` resolved. No row anywhere names
 `storefront` or `alpha` as such.
+
+### Plateau 1 handoff (2026-10-01)
+
+Now true: no marked surface prints an absolute path inside the project. `projectPaths.ts`
+holds the core, `projectRelative`, and `displayPath`, which moved there from the
+artifacts surface; every card row that prints a path goes through it. Plan's `story
+package` row and the four closure records name their path relative to the project, and
+the Plan and closure reports carry the root they were written under. Expand's two
+refusals and the double claim's message name their packages that way where they are
+raised, so `EXPAND_BLOCKED` and the `Error:` line Plan prints read the same words. Plan's
+four `*_path=` lines, still absolute, follow `<<<END:PLAN_CHECKPOINT>>>`.
+`renderExpandReport` is gone. The Delivery Story Done preflight reads the core and
+refuses as it did. The skill's Plan line names the plan project-relative; the Claude
+copies were regenerated. Route steps 0 and 2 to 13 meet their pass conditions for
+paths. Step 1's project block and every `target:` line are plateau 2's.
+
+Two test files hold the change. `projectPaths.test.ts` grades the core, `displayPath`
+at the root and outside the project, and the preflight's refusals of both, through the
+exported `relativeOrRefuse`. `pathsWalk.test.ts` runs, through the front door, a story's
+lifecycle, a Delivery Story's through its four closures, Expand's three refusals, and
+Plan meeting a double claim, in a project under `/tmp/builder-world-*`. It fails on the
+root inside any marked surface, on a card row there that opens a path at `/`, and on the
+root outside a surface anywhere but the four lines, which it requires right after the
+end marker, absolute and in order. Red first: before the change it failed at Plan, at
+the first refusal, and on the `Error:` line, and the Delivery Story walk passed, as
+characterized. `builderSurfacePaths.ts` left: the command comparison substitutes the
+scratch root in the four lines and nowhere else, and errors and `stderr` are compared as
+printed. CR018's double-claim test now expects the exact relative message.
+
+What the work found:
+
+- **A third golden held the message.** `builder-roadmap` recorded the double claim with
+  the fixture root redacted to `<FIXTURES>`. The plan's census read the command and
+  lifecycle corpora only. Its one message is edited with the rest and listed in the
+  README as the plan's one deviation from criterion 7.
+- **The walk's `/` check, as planned, would have failed on a correct card.** The
+  lifecycle corpus's own test had recorded why a plain "no row starts with `/`" was
+  removed: a long project-relative path can be cut right before a slash. The walk
+  exempts a row that continues a full 54-column chunk, so it still catches an absolute
+  path that opens a row.
+- **The route's joiner read a full row of words as a chunk.** Step 10's reason wraps to
+  a row of exactly 54 columns, and the route printed `tableheader`. A chunk of a long
+  word has no space in it, so the joiner now requires that too. The corrected route
+  reproduces the recorded "before" output byte for byte at `7e1fbd17`, run in a
+  worktree, in bash and zsh.
+- **The recorded transport test learned Plan's four lines.** It required every surface's
+  text to end at its end marker; Plan's now continues with exactly the four lines.
+- **Two stale notes in the lifecycle replay** named the deleted Python helper and a
+  determinism gate the generators took with them; they now say what holds the line.
+
+The recorded rows were edited by script, under criterion 7, and listed in
+`ts/test/goldens/README.md`: in `builder-command`, 3 package rows, 10 record rows, and 1
+reason, and the 3 Plan renders' lines moved; in `builder-lifecycle`, 15 package rows and
+48 record rows, the 15 Plan renders' lines moved, 2 reasons, and the 15
+`EXPAND_DECISION` renders removed, with the 4 `not materialized` checkpoints unchanged;
+and `builder-roadmap`'s 1 message. 2932 tests pass, 8 of them new. Typecheck, lint, the
+repository checks, the migration proofs, and every smoke are green.
+
+Next: plateau 2, the target named.
 
 ## Outcome
 

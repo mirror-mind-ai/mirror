@@ -9,14 +9,11 @@
 //   * the STATUS is a three-way distinction, not a boolean. `existing` is what the
 //     preservation rule reports when a file was authored by a human and kept, and
 //     it is the only visible evidence that the command did not overwrite it.
-//   * the PATH is relativized against the journey's project root. Every sibling
-//     lifecycle surface prints the absolute path it resolved instead, which is
-//     inconsistent, leaks the owner's home directory into a transported surface,
-//     and is recorded as CR082. Reproduced here exactly: this surface relativizes,
-//     the others do not.
+//   * the PATH is relativized against the journey's project root, through
+//     `displayPath`, the one rule every card that prints a path follows (CR082).
 
-import { isAbsolute, relative, resolve } from "node:path";
 import { cardText, cardWrapped } from "../card.ts";
+import { displayPath } from "../projectPaths.ts";
 import { wrapAriadSurface } from "../surfaceProtocol.ts";
 
 /** Python `MaterializedArtifact`, plus a note (CR112): what an existing file is. */
@@ -59,26 +56,6 @@ function statusIcon(status: string): string {
     default:
       return "•";
   }
-}
-
-/**
- * Python `_display_path`.
- *
- * The fallback returns the ORIGINAL path, not the resolved one, so a path outside
- * the project prints as the caller wrote it. Reproduced deliberately: resolving in
- * the fallback would print a different string than Python for the same input.
- */
-export function displayPath(path: string, projectPath: string | null): string {
-  if (projectPath !== null) {
-    const relation = relative(resolve(projectPath), resolve(path));
-    // `Path.relative_to` raises only when the path is not under the root, and
-    // returns `.` when the two are equal. So: a `..` prefix or an absolute result
-    // means "not under", and an empty result means "is the root".
-    if (!relation.startsWith("..") && !isAbsolute(relation)) {
-      return relation === "" ? "." : relation;
-    }
-  }
-  return path;
 }
 
 export interface ArtifactsSurfaceOptions {

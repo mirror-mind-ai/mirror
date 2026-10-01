@@ -25,6 +25,9 @@
 // files, each with its state and the sections it still needs, in the rows `build show`
 // prints, judged once here, right after the write, so the command and the recorded
 // corpus print the same card.
+//
+// CR082: the card names the package relative to the project, and the four `*_path=`
+// lines, the agent's, stay absolute and print below the surface's end marker (D1).
 
 import { dirname } from "node:path";
 import type { WritableDatabase } from "#db/database.ts";
@@ -57,6 +60,7 @@ import {
   PREAUTHORIZATION_STOP,
   STORY_PLAN_CONTRACT,
 } from "./planPreauthorization.ts";
+import { displayPath } from "./projectPaths.ts";
 import { wrapAriadSurface } from "./surfaceProtocol.ts";
 
 /** Python `BuilderPlanReport`. */
@@ -73,6 +77,8 @@ export interface BuilderPlanReport {
   readonly localRules: readonly string[];
   readonly cursor: BuilderDeliveryCursor;
   readonly planArtifactPath: string | null;
+  /** The project Plan wrote under: the card names the package relative to it (CR082). */
+  readonly projectRoot: string | null;
   /**
    * The package's `index.md`, `plan.md`, and `test-guide.md`, judged right after Plan
    * wrote what was missing (CR111); `null` when the journey has no project, so nothing
@@ -243,6 +249,7 @@ export function planLifecycleItem(
     localRules: options.localRules ?? [],
     cursor,
     planArtifactPath: artifactPath,
+    projectRoot: options.projectRoot ?? null,
     preauthorizationRecorded,
     nextEvent: "implement",
   };
@@ -329,16 +336,16 @@ function planBoundary(report: BuilderPlanReport): string {
  * still needs, in the rows `build show` prints. The implementation contract stays:
  * its lines are Ariad's rules and the project's own, true whatever the plan says.
  *
- * The four `*_path=` trailer lines are appended OUTSIDE the card and only when an
- * artifact path exists — they are the machine-readable half of the surface, read by
- * the skill rather than by a human, and they print absolute paths (CR082).
+ * The card names the package relative to the project, as every card names a path
+ * (CR082). The four `*_path=` lines are the agent's: absolute, because an agent often
+ * works from a directory that is not the project, and printed only when an artifact
+ * path exists. They follow the surface's end marker, where the transport rule that
+ * copies a surface into the reply does not carry the owner's home directory (D1), the
+ * way `build load` prints `project_path=` outside its card.
  */
 export function renderPlanCheckpoint(report: BuilderPlanReport): string {
   const written = report.planArtifactPath !== null;
   const packagePath = written ? dirname(report.planArtifactPath as string) : "not written";
-  const indexPath = written ? `${packagePath}/index.md` : "not written";
-  const planPath = written ? (report.planArtifactPath as string) : "not written";
-  const testGuidePath = written ? `${packagePath}/test-guide.md` : "not written";
 
   const card = [
     "Delivery",
@@ -352,7 +359,11 @@ export function renderPlanCheckpoint(report: BuilderPlanReport): string {
     cardText(`level: ${report.activeItemLevel ?? "unknown"}`),
     "│                                                        │",
     cardText("story package"),
-    ...cardWrapped(written ? packagePath : "none: the journey has no project path"),
+    ...cardWrapped(
+      written
+        ? displayPath(packagePath, report.projectRoot)
+        : "none: the journey has no project path",
+    ),
     "│                                                        │",
     cardText("story files"),
     ...storyFilesBlock(report),
@@ -382,10 +393,10 @@ export function renderPlanCheckpoint(report: BuilderPlanReport): string {
   const trailer = written
     ? [
         `story_package_path=${packagePath}\n`,
-        `index_artifact_path=${indexPath}\n`,
-        `plan_artifact_path=${planPath}\n`,
-        `test_guide_artifact_path=${testGuidePath}\n`,
+        `index_artifact_path=${packagePath}/index.md\n`,
+        `plan_artifact_path=${report.planArtifactPath as string}\n`,
+        `test_guide_artifact_path=${packagePath}/test-guide.md\n`,
       ].join("")
     : "";
-  return wrapAriadSurface("plan_checkpoint", `${card}\n${trailer}`);
+  return wrapAriadSurface("plan_checkpoint", card) + trailer;
 }

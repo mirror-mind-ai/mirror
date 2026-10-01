@@ -26,7 +26,6 @@
 
 import type { WritableDatabase } from "#db/database.ts";
 import { pyStrip, sortByCodePoint } from "#util/pythonText.ts";
-import { displayPath } from "./artifacts/artifactSurfaces.ts";
 import type { ArtifactOutcome } from "./artifacts/artifactWriter.ts";
 import {
   renderCoherenceArtifact,
@@ -47,6 +46,7 @@ import {
 import { LifecycleRefusal, refuseIfAlreadyComplete } from "./lifecycleRefusal.ts";
 import { renderLifecycleRibbon } from "./lifecycleRibbon.ts";
 import type { ContractDefinition, MethodDefinition } from "./methodDefinition.ts";
+import { displayPath } from "./projectPaths.ts";
 import { wrapAriadSurface } from "./surfaceProtocol.ts";
 
 /** Python `_contract_for`. */
@@ -111,6 +111,8 @@ export interface BuilderValidationReport {
   readonly validationContract: ContractDefinition;
   readonly cursor: BuilderDeliveryCursor;
   readonly validationArtifactPath: string | null;
+  /** The project the record was written under: the card names it relative (CR082). */
+  readonly projectRoot: string | null;
   /** What the writer did with the record (CR079); absent when there is no artifact path. */
   readonly validationArtifactOutcome?: ArtifactOutcome | null;
   readonly nextEvent: string;
@@ -289,6 +291,7 @@ export function validateLifecycleItem(
     validationContract: contractFor(options.method, "validation_contract"),
     cursor,
     validationArtifactPath: options.validationArtifactPath ?? null,
+    projectRoot: options.projectRoot ?? null,
     nextEvent: "debt_review",
   };
   if (report.validationArtifactPath === null) return report;
@@ -355,7 +358,7 @@ export function renderValidationCheckpoint(report: BuilderValidationReport): str
     ...cardPrefixed(report.validationContract.rules, "✓"),
     "│                                                        │",
     cardText("validation artifact"),
-    ...cardWrapped(report.validationArtifactPath ?? "not materialized"),
+    ...recordRows(report.validationArtifactPath, report.projectRoot),
     ...preservedNote(report.validationArtifactOutcome),
     "│                                                        │",
     cardText("boundary"),
@@ -384,6 +387,8 @@ export interface BuilderReviewReport {
   readonly debtReviewContract: ContractDefinition;
   readonly cursor: BuilderDeliveryCursor;
   readonly reviewArtifactPath: string | null;
+  /** The project the record was written under: the card names it relative (CR082). */
+  readonly projectRoot: string | null;
   /** What the writer did with the record (CR079); absent when there is no artifact path. */
   readonly reviewArtifactOutcome?: ArtifactOutcome | null;
   readonly nextEvent: string;
@@ -502,6 +507,7 @@ export function reviewLifecycleItem(
     debtReviewContract: contractFor(options.method, "debt_review_contract"),
     cursor,
     reviewArtifactPath: options.reviewArtifactPath ?? null,
+    projectRoot: options.projectRoot ?? null,
     nextEvent: "coherence",
   };
   if (report.reviewArtifactPath === null) return report;
@@ -551,7 +557,7 @@ export function renderReviewCheckpoint(report: BuilderReviewReport): string {
     ...cardPrefixed(report.debtReviewContract.rules, "✓"),
     "│                                                        │",
     cardText("review artifact"),
-    ...cardWrapped(report.reviewArtifactPath ?? "not materialized"),
+    ...recordRows(report.reviewArtifactPath, report.projectRoot),
     ...preservedNote(report.reviewArtifactOutcome),
     "│                                                        │",
     cardText("boundary"),
@@ -580,6 +586,8 @@ export interface BuilderCoherenceReport {
   readonly coherenceContract: ContractDefinition;
   readonly cursor: BuilderDeliveryCursor;
   readonly coherenceArtifactPath: string | null;
+  /** The project the record was written under: the card names it relative (CR082). */
+  readonly projectRoot: string | null;
   /** What the writer did with the record (CR079); absent when there is no artifact path. */
   readonly coherenceArtifactOutcome?: ArtifactOutcome | null;
   readonly nextEvent: string;
@@ -681,6 +689,7 @@ export function coherenceLifecycleItem(
     coherenceContract: contractFor(options.method, "coherence_contract"),
     cursor,
     coherenceArtifactPath: options.coherenceArtifactPath ?? null,
+    projectRoot: options.projectRoot ?? null,
     nextEvent: "done",
   };
   if (report.coherenceArtifactPath === null) return report;
@@ -727,7 +736,7 @@ export function renderCoherenceCheckpoint(report: BuilderCoherenceReport): strin
     ...cardPrefixed(report.coherenceContract.rules, "✓"),
     "│                                                        │",
     cardText("coherence artifact"),
-    ...cardWrapped(report.coherenceArtifactPath ?? "not materialized"),
+    ...recordRows(report.coherenceArtifactPath, report.projectRoot),
     ...preservedNote(report.coherenceArtifactOutcome),
     "│                                                        │",
     cardText("boundary"),
@@ -755,6 +764,8 @@ export interface BuilderDoneReport {
   readonly doneContract: ContractDefinition;
   readonly cursor: BuilderDeliveryCursor;
   readonly doneArtifactPath: string | null;
+  /** The project the record was written under: the card names it relative (CR082). */
+  readonly projectRoot: string | null;
   /** What the writer did with the record (CR079); absent when there is no artifact path. */
   readonly doneArtifactOutcome?: ArtifactOutcome | null;
 }
@@ -870,6 +881,7 @@ export function doneLifecycleItem(
     doneContract: contractFor(options.method, "done_contract"),
     cursor,
     doneArtifactPath: options.doneArtifactPath ?? null,
+    projectRoot: options.projectRoot ?? null,
   };
   if (report.doneArtifactPath === null) return report;
   const doneArtifactOutcome = writeClosureArtifact(
@@ -912,7 +924,7 @@ export function renderDoneCheckpoint(report: BuilderDoneReport): string {
     ...cardPrefixed(report.doneContract.rules, "✓"),
     "│                                                        │",
     cardText("done artifact"),
-    ...cardWrapped(report.doneArtifactPath ?? "not materialized"),
+    ...recordRows(report.doneArtifactPath, report.projectRoot),
     ...preservedNote(report.doneArtifactOutcome),
     "│                                                        │",
     cardText("boundary"),
@@ -924,6 +936,14 @@ export function renderDoneCheckpoint(report: BuilderDoneReport): string {
     "╰────────────────────────────────────────────────────────╯",
   ].join("\n")}\n`;
   return wrapAriadSurface("done_checkpoint", body);
+}
+
+/**
+ * A closure record's rows (CR082): the path relative to the project, as every card
+ * names a path, or `not materialized` when the journey has no project.
+ */
+function recordRows(path: string | null, projectRoot: string | null): string[] {
+  return cardWrapped(path === null ? "not materialized" : displayPath(path, projectRoot));
 }
 
 /**

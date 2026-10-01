@@ -21,6 +21,7 @@
 
 import { relative, resolve, sep } from "node:path";
 import { kebabSlug } from "#util/slug.ts";
+import { displayPath } from "./projectPaths.ts";
 import { inspectRoadmapSnapshot, roadmapPaths } from "./pullCandidates.ts";
 import { matchHeading } from "./roadmapGrammar.ts";
 import { readRoadmapFile, scanRoadmapIndexFiles } from "./roadmapScan.ts";
@@ -93,8 +94,11 @@ export function storyDirectoryResolver(projectRoot: string): (code: string) => s
     const matches = claims.get(code) ?? [];
     if (matches.length === 0) return null;
     if (matches.length > 1) {
+      // Named relative to the project (CR082): Pull prints this message on
+      // `EXPAND_BLOCKED`, and every other command on an `Error:` line.
+      const claimants = matches.map((directory) => displayPath(absolute(directory), projectRoot));
       throw new StoryPackageAmbiguityError(
-        `${matches.length} roadmap packages claim code '${code}': ${matches.map(absolute).join(", ")}`,
+        `${matches.length} roadmap packages claim code '${code}': ${claimants.join(", ")}`,
       );
     }
     return absolute(matches[0] ?? "");

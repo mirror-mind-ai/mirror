@@ -39,7 +39,6 @@ import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts
 import golden from "#goldens/builder-command.golden.json" with { type: "json" };
 import { authorPlan, authorStoryIndex } from "#helpers/authorScaffold.ts";
 import { invokeBuilderArgv } from "#helpers/builderInvoke.ts";
-import { normalizePathRows, projectRelative, scrubMessage } from "#helpers/builderSurfacePaths.ts";
 import { createIdentityTable } from "#helpers/identitySchema.ts";
 import { createRuntimeTables } from "#helpers/runtimeSchema.ts";
 import { upsertRuntimeSession } from "#mirror/runtimeSession.ts";
@@ -916,7 +915,7 @@ test("the file-writing lifecycle leaves match Python's streams and its files", (
         `${entry.name} stdout`,
       );
       assert.equal(
-        scrubMessage(actual.stderr, project),
+        actual.stderr,
         withoutSeamWarnings(entry.stderr, entry.name),
         `${entry.name} stderr`,
       );
@@ -963,32 +962,15 @@ function withoutSeamWarnings(stderr: string, caseName: string): string {
 }
 
 /**
- * The generator's `_normalize_paths`, for stdout.
- *
- * Wrapped card rows carrying an absolute path collapse to one token; the unwrapped
- * `*_path=` trailer lines are rewritten project-relative. `builder_surface_paths.py`
- * owns the rule and explains why the two halves need different treatment.
+ * The scratch root out of the four `*_path=` lines Plan prints below its surface. They
+ * stay absolute for the agent (CR082, D1), and the recording holds them
+ * project-relative, as the generator rewrote them. Nowhere else: since CR082 no card
+ * row and no message holds the root, so one that did would fail this comparison.
  */
 function normalizeCommandPaths(stdout: string, project: string): string {
-  const absolute = [project, ...walkPaths(project)].sort((a, b) => b.length - a.length);
-  let normalized = normalizePathRows(stdout, absolute);
-  for (const path of absolute) {
-    normalized = normalized.replaceAll(path, projectRelative(path, project));
-  }
-  return normalized;
-}
-
-function walkPaths(root: string): string[] {
-  const found: string[] = [];
-  const walk = (directory: string): void => {
-    for (const entry of readdirSync(directory, { withFileTypes: true })) {
-      const absolute = join(directory, entry.name);
-      found.push(absolute);
-      if (entry.isDirectory()) walk(absolute);
-    }
-  };
-  walk(root);
-  return found;
+  return stdout.replace(/^([a-z_]+_path=)(.*)$/gmu, (_line, key: string, path: string) =>
+    path.startsWith(`${project}/`) ? `${key}${path.slice(project.length + 1)}` : `${key}${path}`,
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -2368,8 +2350,10 @@ const PACKAGE_RESOLVING_COMMANDS: readonly (readonly string[])[] = [
 
 test("CR018: a code two packages claim is one Error line in every command that resolves it", () => {
   const project = claimsProject({ duplicate: true });
+  // Named relative to the project, as every message that names a package is (CR082).
   const claimed =
-    /^Error: 2 roadmap packages claim code 'CV1\.DS1\.TS1': \S+\/cv1\/ds1\/ts1-copy, \S+\/cv1\/ds1\/ts1-named-by-a-human\n$/u;
+    "Error: 2 roadmap packages claim code 'CV1.DS1.TS1': docs/project/roadmap/cv1/ds1/ts1-copy, " +
+    "docs/project/roadmap/cv1/ds1/ts1-named-by-a-human\n";
   for (const command of PACKAGE_RESOLVING_COMMANDS) {
     const name = command[0] ?? "";
     const db = seed("adopted", project);
@@ -2397,7 +2381,7 @@ test("CR018: a code two packages claim is one Error line in every command that r
       }, name);
       assert.equal(result?.exitCode, 1, name);
       assert.equal(result?.stdout, "", name);
-      assert.match(result?.stderr ?? "", claimed, name);
+      assert.equal(result?.stderr, claimed, name);
       assert.equal(databaseSnapshot(db), database, `${name} wrote nothing to the database`);
       assert.deepEqual(projectSnapshot(project), tree, `${name} wrote nothing to the project`);
     } finally {

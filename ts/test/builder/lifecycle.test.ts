@@ -64,12 +64,7 @@ import {
 } from "#builder/deliveryStoryPlan.ts";
 import { renderDeliveryStoryReadyReport } from "#builder/deliveryStoryReady.ts";
 import { inspectAuthoredClosure } from "#builder/deliveryStoryRoadmapClosure.ts";
-import {
-  ExpandBlockedError,
-  expandDeliveryStory,
-  renderExpandBlocked,
-  renderExpandReport,
-} from "#builder/expand.ts";
+import { ExpandBlockedError, expandDeliveryStory, renderExpandBlocked } from "#builder/expand.ts";
 import {
   inspectNavigatorFlowUnit,
   renderFlowUnitScopeConfirmationReport,
@@ -105,7 +100,6 @@ import {
 } from "#builder/storyPlanPreauthorization.ts";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
 import golden from "#goldens/builder-lifecycle.golden.json" with { type: "json" };
-import { absolutePathsIn, normalizePathRows, scrubMessage } from "#helpers/builderSurfacePaths.ts";
 import { createRuntimeTables } from "#helpers/runtimeSchema.ts";
 import { pyTitle } from "#util/pythonText.ts";
 
@@ -299,7 +293,10 @@ test("the corpus covers the lifecycle shapes plateaus 3 and 4 have to port", () 
 test("every recorded surface is a complete Ariad transport block", () => {
   // The story's transport invariant is that a surface crosses the boundary
   // verbatim, so a port that drops a marker or trims the trailing newline breaks
-  // the contract before anyone reads the body.
+  // the contract before anyone reads the body. Plan's four `*_path=` lines are the
+  // agent's and follow its end marker (CR082, D1), so for Plan the marker sits four
+  // lines higher, with exactly those lines under it.
+  const AGENT_LINES = /^(story_package|index_artifact|plan_artifact|test_guide_artifact)_path=/u;
   let graded = 0;
   for (const sequence of sequences) {
     for (const step of sequence.steps) {
@@ -311,9 +308,10 @@ test("every recorded surface is a complete Ariad transport block", () => {
           `<<<ARIAD:${marker}>>>`,
           `${sequence.name} step ${step.index} ${surface.id}: begin marker`,
         );
-        assert.equal(
-          lines.at(-2),
-          `<<<END:${marker}>>>`,
+        const below = lines.slice(lines.indexOf(`<<<END:${marker}>>>`) + 1, -1);
+        assert.deepEqual(
+          below.map((line) => AGENT_LINES.test(line)),
+          surface.id === "plan_checkpoint" ? [true, true, true, true] : [],
           `${sequence.name} step ${step.index} ${surface.id}: end marker`,
         );
         assert.ok(
@@ -328,11 +326,12 @@ test("every recorded surface is a complete Ariad transport block", () => {
 });
 
 test("no recorded path is machine-dependent", () => {
-  // The corpus is only portable because every path it records is project-relative
-  // or an explicit token. An absolute path here is byte-stable on one machine and
-  // wrong on every other — the failure CI caught for the roadmap golden, and the
-  // reason `ts/parity/builder_surface_paths.py` exists. Asserted on the committed
-  // artifact so a regenerated corpus cannot reintroduce it quietly.
+  // The corpus is only portable because every path it records is project-relative.
+  // An absolute path here is byte-stable on one machine and wrong on every other —
+  // the failure CI caught for the roadmap golden, and the reason the corpus once
+  // collapsed such rows to a token, until CR082 made every card name its paths
+  // relative to the project. Asserted on the committed artifact, so a hand edit
+  // cannot reintroduce it quietly.
   const absolute = /\/(?:Users|home|private\/var|var\/folders)\//;
   for (const sequence of sequences) {
     assert.ok(
@@ -358,16 +357,10 @@ test("no recorded path is machine-dependent", () => {
           `${sequence.name} step ${step.index} ${surface.id}: absolute path in surface`,
         );
         // A stricter "no card row may start with `/`" was tried here and removed:
-        // it flags legitimate repo-relative chunks, because wrapping can split
-        // `…/roadmap/story` so a continuation row begins with `/story`. Detecting
-        // the real defect — a row whose BOUNDARY depends on an absolute prefix's
-        // length — needs the prefix, which this test does not have.
-        //
-        // The decisive control for that class is CI: the determinism gate
-        // regenerates every golden on Linux runners, where the temp root has a
-        // different length, and fails on any diff. That is how the equivalent leak
-        // in the roadmap golden was caught, and it is why this plateau must be
-        // pushed rather than validated only locally.
+        // it flags legitimate project-relative chunks, because wrapping can split
+        // `…/roadmap/story` so a continuation row begins with `/story`. Since CR082
+        // no card prints a path whose chunks depend on a root's length, and
+        // `pathsWalk.test.ts` runs every command that prints one under a known root.
       }
       if (step.error !== undefined) {
         assert.ok(!absolute.test(step.error), `${sequence.name}: absolute path in error`);
@@ -681,7 +674,7 @@ function replayLifecycleStep(context: ReplayContext, step: Step): ReplayOutcome 
           surfaces: [{ id: "item_activated", text: renderPullReport(report, placement) }],
         };
       } catch (error) {
-        return { surfaces: [], error: pythonError(error, context.projectAbsolute) };
+        return { surfaces: [], error: pythonError(error) };
       }
     }
     case "expand": {
@@ -696,7 +689,6 @@ function replayLifecycleStep(context: ReplayContext, step: Step): ReplayOutcome 
           },
           context.deps,
         );
-        const absolute = [...report.materializedPaths];
         const ready =
           context.reports.pull !== undefined && context.reports.prepare !== undefined
             ? [
@@ -712,11 +704,8 @@ function replayLifecycleStep(context: ReplayContext, step: Step): ReplayOutcome 
               ]
             : [];
         return {
+          // No command prints `EXPAND_DECISION`, in either engine, so it left (CR082, D5).
           surfaces: [
-            {
-              id: "expand_decision",
-              text: normalizePathRows(renderExpandReport(report), absolute),
-            },
             ...ready,
             {
               id: "artifacts_materialized",
@@ -742,16 +731,13 @@ function replayLifecycleStep(context: ReplayContext, step: Step): ReplayOutcome 
             surfaces: [
               {
                 id: "expand_blocked",
-                text: normalizePathRows(
-                  renderExpandBlocked(before?.activeItem ?? "none", message),
-                  absolutePathsIn(message),
-                ),
+                text: renderExpandBlocked(before?.activeItem ?? "none", message),
               },
             ],
-            error: pythonError(error, context.projectAbsolute),
+            error: pythonError(error),
           };
         }
-        return { surfaces: [], error: pythonError(error, context.projectAbsolute) };
+        return { surfaces: [], error: pythonError(error) };
       }
     }
     case "prepare": {
@@ -769,7 +755,7 @@ function replayLifecycleStep(context: ReplayContext, step: Step): ReplayOutcome 
         context.reports.prepare = report;
         return { surfaces: [{ id: "prepare_field_reading", text: renderPrepareReport(report) }] };
       } catch (error) {
-        return { surfaces: [], error: pythonError(error, context.projectAbsolute) };
+        return { surfaces: [], error: pythonError(error) };
       }
     }
     case "plan": {
@@ -837,7 +823,7 @@ function replayLifecycleStep(context: ReplayContext, step: Step): ReplayOutcome 
         const surfaces = [
           {
             id: "plan_checkpoint",
-            text: normalizeTrailerAndRows(renderPlanCheckpoint(report), context.projectAbsolute),
+            text: renderPlanCheckpoint(report),
           },
         ];
         if (report.preauthorizationRecorded) {
@@ -864,7 +850,7 @@ function replayLifecycleStep(context: ReplayContext, step: Step): ReplayOutcome 
           artifacts: artifacts.map((artifact) => artifactRecord(artifact, context.projectAbsolute)),
         };
       } catch (error) {
-        return { surfaces: [], error: pythonError(error, context.projectAbsolute) };
+        return { surfaces: [], error: pythonError(error) };
       }
     }
     case "approve": {
@@ -882,7 +868,7 @@ function replayLifecycleStep(context: ReplayContext, step: Step): ReplayOutcome 
         );
         return { surfaces: [{ id: "plan_approved", text: renderPlanApproval(cursor) }] };
       } catch (error) {
-        return { surfaces: [], error: pythonError(error, context.projectAbsolute) };
+        return { surfaces: [], error: pythonError(error) };
       }
     }
     case "approve_with_preauthorization": {
@@ -938,7 +924,7 @@ function replayLifecycleStep(context: ReplayContext, step: Step): ReplayOutcome 
             error: `PlanPreauthorizationMismatch: ${error.reason}`,
           };
         }
-        return { surfaces: [], error: pythonError(error, context.projectAbsolute) };
+        return { surfaces: [], error: pythonError(error) };
       }
     }
     case "cancel_preauthorization": {
@@ -963,7 +949,7 @@ function replayLifecycleStep(context: ReplayContext, step: Step): ReplayOutcome 
           ],
         };
       } catch (error) {
-        return { surfaces: [], error: pythonError(error, context.projectAbsolute) };
+        return { surfaces: [], error: pythonError(error) };
       }
     }
     case "validate": {
@@ -994,7 +980,7 @@ function replayLifecycleStep(context: ReplayContext, step: Step): ReplayOutcome 
           missingEvidence: [...report.missingEvidence],
         };
       } catch (error) {
-        return { surfaces: [], error: pythonError(error, context.projectAbsolute) };
+        return { surfaces: [], error: pythonError(error) };
       }
     }
     case "review": {
@@ -1019,7 +1005,7 @@ function replayLifecycleStep(context: ReplayContext, step: Step): ReplayOutcome 
           missingDecision: [...report.missingDecision],
         };
       } catch (error) {
-        return { surfaces: [], error: pythonError(error, context.projectAbsolute) };
+        return { surfaces: [], error: pythonError(error) };
       }
     }
     case "coherence": {
@@ -1044,7 +1030,7 @@ function replayLifecycleStep(context: ReplayContext, step: Step): ReplayOutcome 
           missingCoherence: [...report.missingCoherence],
         };
       } catch (error) {
-        return { surfaces: [], error: pythonError(error, context.projectAbsolute) };
+        return { surfaces: [], error: pythonError(error) };
       }
     }
     case "done": {
@@ -1069,7 +1055,7 @@ function replayLifecycleStep(context: ReplayContext, step: Step): ReplayOutcome 
           missingDone: [...report.missingDone],
         };
       } catch (error) {
-        return { surfaces: [], error: pythonError(error, context.projectAbsolute) };
+        return { surfaces: [], error: pythonError(error) };
       }
     }
     // -- Delivery Story ops (plateau 5) ------------------------------------
@@ -1085,7 +1071,7 @@ function replayLifecycleStep(context: ReplayContext, step: Step): ReplayOutcome 
           source: report.source,
         };
       } catch (error) {
-        return { surfaces: [], error: pythonError(error, context.projectAbsolute) };
+        return { surfaces: [], error: pythonError(error) };
       }
     }
     case "set_flow_unit": {
@@ -1115,7 +1101,7 @@ function replayLifecycleStep(context: ReplayContext, step: Step): ReplayOutcome 
           source: report.source,
         };
       } catch (error) {
-        return { surfaces: [], error: pythonError(error, context.projectAbsolute) };
+        return { surfaces: [], error: pythonError(error) };
       }
     }
     case "plan_delivery_story": {
@@ -1166,7 +1152,7 @@ function replayLifecycleStep(context: ReplayContext, step: Step): ReplayOutcome 
           status: report.status,
         };
       } catch (error) {
-        return { surfaces: [], error: pythonError(error, context.projectAbsolute) };
+        return { surfaces: [], error: pythonError(error) };
       }
     }
     case "approve_delivery_story": {
@@ -1235,7 +1221,7 @@ function replayLifecycleStep(context: ReplayContext, step: Step): ReplayOutcome 
             error: `PlanPreauthorizationMismatch: ${error.reason}`,
           };
         }
-        return { surfaces: [], error: pythonError(error, context.projectAbsolute) };
+        return { surfaces: [], error: pythonError(error) };
       }
     }
     case "cancel_delivery_story_preauthorization": {
@@ -1260,7 +1246,7 @@ function replayLifecycleStep(context: ReplayContext, step: Step): ReplayOutcome 
           ],
         };
       } catch (error) {
-        return { surfaces: [], error: pythonError(error, context.projectAbsolute) };
+        return { surfaces: [], error: pythonError(error) };
       }
     }
     case "validate_delivery_story":
@@ -1287,7 +1273,7 @@ function replayLifecycleStep(context: ReplayContext, step: Step): ReplayOutcome 
           releaseChanged: report.changed,
         };
       } catch (error) {
-        return { surfaces: [], error: pythonError(error, context.projectAbsolute) };
+        return { surfaces: [], error: pythonError(error) };
       }
     }
     case "authored_closure": {
@@ -1303,7 +1289,7 @@ function replayLifecycleStep(context: ReplayContext, step: Step): ReplayOutcome 
           authoredIssues: [...report.issues],
         };
       } catch (error) {
-        return { surfaces: [], error: pythonError(error, context.projectAbsolute) };
+        return { surfaces: [], error: pythonError(error) };
       }
     }
     default:
@@ -1388,15 +1374,15 @@ function replayDeliveryStoryClosure(context: ReplayContext, step: Step): ReplayO
       checkpoint: report.checkpoint,
     };
   } catch (error) {
-    return { surfaces: [], error: pythonError(error, context.projectAbsolute) };
+    return { surfaces: [], error: pythonError(error) };
   }
 }
 
 /**
  * The CLI's `_checkpoint_artifact_path`, rendered relative like the Plan path.
  *
- * The closure surfaces print the path they were handed, so the generator passes a
- * repo-relative one and the rows stay byte-comparable.
+ * The generator passed a repo-relative path so that closure cards printing it as
+ * handed stayed byte-comparable. Since CR082 a card names it relative to the project.
  */
 function closureArtifactPath(context: ReplayContext, filename: string | null): string | null {
   if (filename === null) return null;
@@ -1452,20 +1438,6 @@ function artifactRecord(artifact: MaterializedArtifact, projectAbsolute: string)
 }
 
 /**
- * `plan_checkpoint` carries paths in two forms: WRAPPED card rows, which collapse to
- * a token, and unwrapped `*_path=` trailer lines, which the generator rewrites
- * project-relative because they can be substituted exactly.
- */
-function normalizeTrailerAndRows(text: string, projectAbsolute: string): string {
-  const absolute = absolutePathsIn(text).filter((path) => path.startsWith(projectAbsolute));
-  let normalized = normalizePathRows(text, absolute);
-  for (const path of absolute.slice().sort((a, b) => b.length - a.length)) {
-    normalized = normalized.replaceAll(path, projectRelativePath(path, projectAbsolute));
-  }
-  return normalized;
-}
-
-/**
  * Project-relative, from either form of input: Expand's paths are absolute and
  * Plan's are the relative ones the generator handed it, so both are resolved before
  * the comparison.
@@ -1474,26 +1446,31 @@ function projectRelativePath(path: string, projectAbsolute: string): string {
   return relative(projectAbsolute, resolve(path)).split(sep).join("/");
 }
 
-/** Python's `f"{type(exc).__name__}: {exc}"`, with paths scrubbed as the generator scrubbed them. */
-function pythonError(error: unknown, project: string): string {
+/**
+ * Python's `f"{type(exc).__name__}: {exc}"`. Compared as raised: the generator scrubbed
+ * the project root out of the oracle's messages, and since CR082 the runtime names
+ * every package relative to the project where it raises, so there is nothing to scrub.
+ */
+function pythonError(error: unknown): string {
   const name =
     error instanceof ExpandBlockedError
       ? "ExpandBlockedError"
       : error instanceof StoryPackageAmbiguityError
         ? "StoryPackageAmbiguityError"
         : "ValueError";
-  return scrubMessage(`${name}: ${(error as Error).message}`, project);
+  return `${name}: ${(error as Error).message}`;
 }
 
 function replaySequence(sequence: Sequence): void {
   // The sequence's OWN recorded project root, relative like the generator's, not a
-  // `mkdtemp` directory. `plan_checkpoint` prints its package path with no
-  // relativization (CR082), and the generator therefore hands Plan a repo-relative
-  // path so those rows are byte-stable. Replaying under an absolute temp root would
-  // force the rows through path normalization and stop grading them, so the test
-  // stages the same relative directory instead. It resolves under `ts/` here and the
-  // repository root there; both are gitignored `tmp/`, which also satisfies the
-  // database copy guard.
+  // `mkdtemp` directory. The generator handed Plan and the closures repo-relative paths
+  // so that rows printing them unrelativized stayed byte-stable. Since CR082 every card
+  // row names its path relative to the project, whatever the root, but the recorded
+  // `*_path=` lines Plan prints still hold the repo-relative form, so the test stages
+  // the same relative directory. It resolves under `ts/` here and the repository root
+  // there; both are gitignored `tmp/`, which also satisfies the database copy guard.
+  // The front-door walks (`pathsWalk.test.ts`) run the absolute roots the product
+  // passes.
   const project = sequence.project_root;
   const root = dirname(project);
   rmSync(root, { recursive: true, force: true });

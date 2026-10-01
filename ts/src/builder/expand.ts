@@ -36,7 +36,7 @@ import {
   renderStoryIndex,
   renderUserStoryIndex,
 } from "./artifacts/storyIndex.ts";
-import { cardPrefixed, cardText, cardWrapped } from "./card.ts";
+import { cardText, cardWrapped } from "./card.ts";
 import { normalizeRequired } from "./cursorTransitions.ts";
 import {
   type BuilderDeliveryCursor,
@@ -46,6 +46,7 @@ import {
 } from "./deliveryCursor.ts";
 import { FLOW_STOPS } from "./flowUnit.ts";
 import { renderLifecycleRibbon } from "./lifecycleRibbon.ts";
+import { displayPath } from "./projectPaths.ts";
 import { type CandidateChild, parseCandidateStories } from "./roadmapGrammar.ts";
 import { createStoryDirectory, storyDirectoryResolver, storyFolderName } from "./storyPaths.ts";
 import { wrapAriadSurface } from "./surfaceProtocol.ts";
@@ -171,9 +172,12 @@ export function expandDeliveryStory(
   const dsExists = existsSync(dsIndex);
   const children = dsExists ? parseCandidateStories(readFileSync(dsIndex, "utf8")) : [];
 
+  // CR082: a refusal names the package relative to the project, where it is raised, so
+  // `EXPAND_BLOCKED` prints the reason as given and copies no home directory anywhere.
   if (dsExists && children.length === 0) {
     throw new ExpandBlockedError(
-      `authored package at ${dsDirectory} has no canonical candidate-stories table ` +
+      `authored package at ${displayPath(dsDirectory, options.projectPath)} has no ` +
+        "canonical candidate-stories table " +
         "(a Markdown table header must include Code, Story, Type, and Status columns); " +
         "refusing to fabricate a generic story",
     );
@@ -225,7 +229,8 @@ export function expandDeliveryStory(
     if (claimed !== null) {
       throw new ExpandBlockedError(
         `${activeItem} has no package, and an authored package already claims ` +
-          `${recommendedCode} at ${claimed}; refusing to invent a story over it`,
+          `${recommendedCode} at ${displayPath(claimed, options.projectPath)}; ` +
+          "refusing to invent a story over it",
       );
     }
     const usDirectory = join(dsDirectory, storyFolderName(recommendedCode, recommendedTitle));
@@ -328,42 +333,4 @@ export function renderExpandBlocked(activeItem: string, reason: string): string 
     "╰────────────────────────────────────────────────────────╯",
   ].join("\n")}\n`;
   return wrapAriadSurface("expand_blocked", body);
-}
-
-/** Python `render_expand_report`. */
-export function renderExpandReport(report: BuilderExpandReport): string {
-  const body = `${[
-    "Delivery",
-    // Expand is a Delivery Story's stage; only a Delivery Story reaches it (CR113).
-    renderLifecycleRibbon("expand", "delivery_story"),
-    "",
-    "╭────────────────────────────────────────────────────────╮",
-    "│        🧭◆  EXPAND DECISION                            │",
-    "│                                                        │",
-    cardText("delivery story"),
-    cardText(`🟦[${report.deliveryStory}]`),
-    ...cardWrapped(report.deliveryStoryTitle),
-    "│                                                        │",
-    cardText("materialized"),
-    // Absolute paths, unlike `artifacts_materialized`, which relativizes the same
-    // values two surfaces later in the same output. CR082.
-    ...cardPrefixed(report.materializedPaths, "✓"),
-    "│                                                        │",
-    cardText("recommended next story"),
-    cardText(`🟩[${report.recommendedStory}]`),
-    ...cardWrapped(report.recommendedStoryTitle),
-    "│                                                        │",
-    cardText("navigator flow unit"),
-    cardText("story_by_story: child stories keep Navigator checkpoints"),
-    cardText("delivery_story: DS becomes the Navigator-facing lifecycle"),
-    cardText("default: story_by_story"),
-    "│                                                        │",
-    cardText("next action"),
-    cardText("Navigator chooses flow unit or confirms a child story."),
-    "│                                                        │",
-    cardText("boundary"),
-    cardText("No Plan or implementation was executed."),
-    "╰────────────────────────────────────────────────────────╯",
-  ].join("\n")}\n`;
-  return wrapAriadSurface("expand_decision", body);
 }

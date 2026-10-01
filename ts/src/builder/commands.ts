@@ -39,7 +39,6 @@ import { CLOSURE_RECORDS, renderActiveCheckpoint } from "./activeCheckpoint.ts";
 import { approvePlanCheckpoint, renderPlanApproval } from "./approve.ts";
 import { getAriadMethod } from "./ariadMethod.ts";
 import {
-  displayPath,
   type MaterializedArtifact,
   renderArtifactsMaterializedSurface,
 } from "./artifacts/artifactSurfaces.ts";
@@ -112,6 +111,7 @@ import {
 import { planLifecycleItem, renderPlanCheckpoint } from "./plan.ts";
 import { PlanPreauthorizationMismatch } from "./planPreauthorization.ts";
 import { prepareLifecycleItem, projectContractRules, renderPrepareReport } from "./prepare.ts";
+import { displayPath } from "./projectPaths.ts";
 import { placementCvTitle, pullLifecycleItem, pullPlacement, renderPullReport } from "./pull.ts";
 import { inspectPullCandidates, inspectRoadmapSnapshot } from "./pullCandidates.ts";
 import {
