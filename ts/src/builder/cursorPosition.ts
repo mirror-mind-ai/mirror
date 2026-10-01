@@ -18,6 +18,8 @@
 // is offered no lifecycle step, only the two inspections (CR114, D2): the same rule,
 // applied to the list.
 
+import { isImplementableByDefault } from "./cursorTransitions.ts";
+
 /** Every action a Builder surface can offer: one closed vocabulary (CR114, D1). */
 export const NEXT_ACTIONS = [
   "adopt_method",
@@ -42,7 +44,7 @@ export type NextAction = (typeof NEXT_ACTIONS)[number];
 export const NOT_ADOPTED_ACTIONS: readonly NextAction[] = ["adopt_method", "inspect_method"];
 
 /** An adopted journey whose delivery cursor was never synced. */
-export const NO_CURSOR_ACTIONS: readonly NextAction[] = ["sync_cursor", "inspect_method"];
+const NO_CURSOR_ACTIONS: readonly NextAction[] = ["sync_cursor", "inspect_method"];
 
 /** No item pulled, or the item closed: the next move is a Pull. */
 export const NO_ACTIVE_ITEM_ACTIONS: readonly NextAction[] = [
@@ -112,6 +114,13 @@ const POSITION_AFTER: ReadonlyMap<string, Position> = new Map(POSITIONS);
 /** A prepared Delivery Story expands next rather than plans: Pull runs its Expand. */
 const DELIVERY_STORY_PREPARED: Position = { stage: "expand", next: ["expand_active_item"] };
 
+/**
+ * A prepared item of any other level: Plan refuses it and Expand never reads it, so
+ * nothing is offered. Its ribbon stands at Plan, where CR067 drew it. Pull accepts only
+ * the three levels, so only a seeded cursor holds one.
+ */
+const UNPLANNABLE_PREPARED: Position = { stage: "plan", next: [] };
+
 /** The story lifecycle's events, in the order a cursor reaches them: the story rows. */
 export const STORY_LIFECYCLE_EVENTS: readonly string[] = POSITIONS.filter(
   ([, position]) => position.stage !== null,
@@ -125,13 +134,19 @@ export interface CursorPositionView {
   readonly lastDeliveryEvent: string | null;
 }
 
+/**
+ * After Prepare the level decides, by Plan's own predicate: a story plans, a Delivery
+ * Story expands, and any other level is offered nothing (CR114, handoff review).
+ */
 function positionOf(
   cursor: Pick<CursorPositionView, "lastDeliveryEvent" | "activeItemLevel">,
 ): Position | null {
   const event = cursor.lastDeliveryEvent;
   if (event === null) return null;
-  if (event === "prepare" && cursor.activeItemLevel === "delivery_story") {
-    return DELIVERY_STORY_PREPARED;
+  if (event === "prepare" && !isImplementableByDefault(cursor.activeItemLevel)) {
+    return cursor.activeItemLevel === "delivery_story"
+      ? DELIVERY_STORY_PREPARED
+      : UNPLANNABLE_PREPARED;
   }
   return POSITION_AFTER.get(event) ?? null;
 }

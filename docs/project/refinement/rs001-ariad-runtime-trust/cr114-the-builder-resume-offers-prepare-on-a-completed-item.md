@@ -952,6 +952,31 @@ The other lenses were silent:
 - product-designer: each decision point now names its step, and a closed item points
   to the next pull, after the Done trailer has printed its recommendation.
 
+### Debt paid (2026-10-01)
+
+The Navigator decided to pay all three findings before Done: "Fix all of them now."
+
+1. **Prepare is placed by Plan's own predicate.** At `prepare`, a story plans, a
+   Delivery Story expands, and an item of any other level is offered no step, since
+   Plan refuses it and Expand never reads it. Its ribbon still stands at Plan, where
+   CR067 drew it. The table test grades no level and `epic`, and a front-door test
+   seeds each and finds the resume and `build show` offering only the inspections,
+   and `plan-item` refusing.
+2. **The skill's list says what the table says.** `pull_candidate_if_known` alone
+   carries "the item is closed, or none is pulled", and each inspection has its own
+   line. The rule names its list exactly, "A list of only `inspect_roadmap` and
+   `inspect_method`", and says that `sync-cursor` drops the item and any pending
+   question and returns the cadence to `stepwise`. A test reads that list from the
+   skill and requires it to be the table's list for an unknown position, and no
+   pending, closed, prepared, or cursorless list. The Claude copies were regenerated.
+3. **`NO_CURSOR_ACTIONS` is module-private.** The resume reaches it through
+   `allowedNextActions(null)`, as `build show` does.
+
+Red first: the three new tests failed before the fixes, the first two on
+`plan_active_item` and the third on the skill's old sentence. No golden moved, and the
+validation route, rerun, printed the validated output byte for byte. 2924 tests pass,
+and every smoke reached its end.
+
 ## Outcome
 
 Pending.

@@ -360,13 +360,17 @@ Delivery Story flow to its Delivery Story command:
 - `review_active_item_debt`: Review Ariad Debt.
 - `check_active_item_coherence`: Check Ariad Coherence.
 - `close_active_item`: Close Ariad Done.
-- `inspect_roadmap`, `pull_candidate_if_known`: the item is closed, or none is
-  pulled. Inspect Roadmap And Pull Candidates, then Pull.
-- `sync_cursor`, `adopt_method`, `inspect_method`: Sync Delivery Cursor, Adopt
-  Ariad, Inspect Builder Method.
+- `pull_candidate_if_known`: the item is closed, or none is pulled. Pull the item
+  the Navigator chooses, as Pull And Prepare Ariad Work describes.
+- `inspect_roadmap`: Inspect Roadmap And Pull Candidates.
+- `inspect_method`: Inspect Builder Method.
+- `sync_cursor`: Sync Delivery Cursor.
+- `adopt_method`: Adopt Ariad.
 
-A list with no lifecycle step, on an item that is open, means the cursor holds a
-position Ariad does not know. Say so, and offer `sync-cursor`, then Pull.
+A list of only `inspect_roadmap` and `inspect_method`, on an item that is open,
+means the cursor holds a position Ariad does not know. Say so, and offer
+`sync-cursor`, then Pull. `sync-cursor` drops the item and any pending question,
+and returns the cadence to `stepwise`.
 
 ## Compose Refinement Work
 

@@ -70,6 +70,16 @@ test("CR114: each position a Delivery Story rests at offers the steps the runtim
   }
 });
 
+test("CR114: at Prepare, a level Plan refuses and Expand never reads is offered no step", () => {
+  // Plan decides by `isImplementableByDefault`; the table decides the same way. Pull
+  // accepts only the three levels, so this cursor is seeded, never pulled.
+  for (const level of [null, "epic"] as const) {
+    const cursor = { ...at("prepare", "user_story"), activeItemLevel: level };
+    assert.deepEqual([...allowedNextActions(cursor)], INSPECT, String(level));
+    assert.equal(lifecycleStageOf(cursor), "plan", "its ribbon stands where CR067 drew it");
+  }
+});
+
 test("CR114: an event the runtime writes with a pending confirmation has no step of its own", () => {
   const written: Record<string, [string, string]> = {
     plan: ["user_story", "navigator_approval"],
@@ -158,11 +168,29 @@ test("CR114: a Delivery Story's own events draw no ribbon stage, as CR067 left t
   assert.equal(lifecycleStageOf(at("prepare", "delivery_story")), "expand");
 });
 
+const SKILL = readFileSync(
+  fileURLToPath(new URL("../../../.pi/skills/mm-build/SKILL.md", import.meta.url)),
+  "utf8",
+);
+
 test("CR114: the Builder skill names every action a Builder surface can offer", () => {
-  const skill = readFileSync(
-    fileURLToPath(new URL("../../../.pi/skills/mm-build/SKILL.md", import.meta.url)),
-    "utf8",
-  );
-  const unnamed = NEXT_ACTIONS.filter((action) => !skill.includes(`\`${action}\``));
+  const unnamed = NEXT_ACTIONS.filter((action) => !SKILL.includes(`\`${action}\``));
   assert.deepEqual(unnamed, [], "every action is named in mm-build, in backticks");
+});
+
+test("CR114: the list the skill calls an unknown position is the table's list for one", () => {
+  // The rule offers `sync-cursor`, which resets the whole cursor, so it must name a list
+  // no other position prints: not a pending one, not a closed one, not one with no cursor.
+  const named = SKILL.match(/A list of only `([a-z_]+)` and `([a-z_]+)`/u);
+  assert.ok(named, "the skill names the list exactly");
+  const unknown = [...allowedNextActions(at("pulled", "user_story"))];
+  assert.deepEqual([named[1], named[2]], unknown);
+  for (const cursor of [
+    at("plan", "user_story", "navigator_approval"),
+    at("done_complete", "user_story"),
+    at("prepare", "user_story"),
+  ]) {
+    assert.notDeepEqual([...allowedNextActions(cursor)], unknown, String(cursor.lastDeliveryEvent));
+  }
+  assert.notDeepEqual([...allowedNextActions(null)], unknown, "no cursor");
 });

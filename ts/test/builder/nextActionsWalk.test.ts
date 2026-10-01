@@ -15,6 +15,7 @@ import { join } from "node:path";
 import test from "node:test";
 
 import type { NextAction } from "#builder/cursorPosition.ts";
+import { setDeliveryCursor } from "#builder/deliveryCursor.ts";
 import { renderBuilderEntrySurface } from "#builder/load.ts";
 import { authorPlan, authorStoryIndex } from "#helpers/authorScaffold.ts";
 import {
@@ -395,6 +396,35 @@ test("CR114: a Delivery Story whose Expand was blocked is offered Expand, and Pu
     ],
     DELIVERY_STORY_STEPS,
   );
+});
+
+test("CR114: an item at Prepare whose level Plan refuses is offered no step, since Plan would refuse it", () => {
+  // Pull accepts only the three levels, so this cursor is seeded: the handoff review
+  // found the table offering Plan here, and Plan refusing it.
+  for (const level of [null, "epic"]) {
+    const w = world();
+    try {
+      setDeliveryCursor(
+        w.db,
+        {
+          journey: "demo",
+          method: "ariad",
+          activeItem: "CV1.X1",
+          activeItemLevel: level,
+          lastDeliveryEvent: "prepare",
+        },
+        { nowIso: () => "2026-10-01T12:00:00+00:00" },
+      );
+      const { resume, show } = lists(w);
+      assert.deepEqual(resume, [...INSPECT], `${level}: the resume`);
+      assert.deepEqual(show, [...INSPECT], `${level}: build show`);
+      const planned = runBuild(w, ["plan-item"]);
+      assert.equal(planned.exitCode, 1, `${level}: Plan refuses this level`);
+      assert.match(planned.stdout, /CHECKPOINT_REFUSED/u);
+    } finally {
+      w.db.close();
+    }
+  }
 });
 
 test("CR114 (D3): Prepare refuses a Done story through the front door, and nothing changes", () => {
