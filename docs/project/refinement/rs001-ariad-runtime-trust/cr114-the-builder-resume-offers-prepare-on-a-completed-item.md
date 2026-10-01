@@ -749,6 +749,133 @@ end.
 
 Next: plateau 3, the cadence.
 
+### Plateau 3 handoff (2026-10-01)
+
+Now true: `cadence.ts` holds the effective profile, `stepwise` for a cursor that stores
+none, and the rows that print it. It declares the two fields it reads, so it imports
+nothing from the cursor's persistence module. The resume prints `cadence profile`
+after `last delivery event`, and `build show` prints it after `active checkpoint` and
+before the steps, in each of its branches; under `autonomous` both add `cadence
+limits`, and with no cursor both print `none`. The orientation asks `How will the next
+item run?` before `What can we do now?`, and answers in its own rows.
+`renderBuilderOrientationSurface` takes the cadence as a required argument, and the
+compiler named its callers. The cursor sync report and `continue-lifecycle` read the
+same effective profile, and their recorded output did not move. The skill's `Show The
+Active Checkpoint` names the cadence, and its cadence section says where to read it;
+the Claude copies were regenerated. Route step 17 meets its pass condition, and so
+does every other step.
+
+Red first: `cadence.test.ts` failed on the missing module, and the five tests of
+`cadenceSurfaces.test.ts` failed on every surface: under each profile, the resume,
+`build show` with and without an item, and the orientation; a cursor that stores
+none; no cursor; and the order of the rows. The two front-door test files now share
+one scratch journey, `test/helpers/builderWorld.ts`, which plateau 1's walk moved
+onto.
+
+What the work found: one test pinned `build show`'s rows by their neighbours, and the
+cadence came between them. CR020's `build show renders the stage` now reads the
+cadence too, `stepwise` for its cursor, which stores none.
+
+The 28 recorded renders were edited by script, under criterion 7, and listed in
+`ts/test/goldens/README.md`: the 6 `builder-load` resume renders, and the 14 resume
+and 8 orientation renders in `builder-orientation`. No recorded cursor stores a
+cadence, which the script asserted. 2921 tests pass, and every smoke reached its end.
+
+### The route after the change (2026-10-01)
+
+At the plateau 3 commit, identical across two runs, and in bash and zsh:
+
+```text
+--- 0. a journey adopted, its cursor not synced
+  resume: none → sync_cursor, inspect_method
+  show:   (none) → sync_cursor, inspect_method
+  show:   no delivery cursor yet
+--- 1. a User Story pulled: Pull runs Prepare
+  answer: <<<ARIAD:ITEM_ACTIVATED>>> <<<ARIAD:PREPARE_FIELD_READING>>>
+  resume: prepare → plan_active_item, inspect_roadmap, inspect_method
+  show:   prepare → plan_active_item, inspect_roadmap, inspect_method
+--- 2. planned
+  answer: <<<ARIAD:PLAN_CHECKPOINT>>> <<<ARIAD:ARTIFACTS_MATERIALIZED>>>
+  resume: plan → answer_pending_confirmation, inspect_method
+  show:   plan → answer_pending_confirmation, inspect_method
+--- 3. Plan approved
+  answer: <<<ARIAD:PLAN_APPROVED>>>
+  resume: plan_approved → implement_active_item, validate_active_item, inspect_roadmap, inspect_method
+  show:   plan_approved → implement_active_item, validate_active_item, inspect_roadmap, inspect_method
+--- 4. validated
+  answer: <<<ARIAD:VALIDATION_CHECKPOINT>>> <<<ARIAD:DEBT_REVIEW_STARTED>>>
+  resume: validation_passed → review_active_item_debt, inspect_roadmap, inspect_method
+  show:   validation_passed → review_active_item_debt, inspect_roadmap, inspect_method
+--- 5. debt reviewed
+  answer: <<<ARIAD:DEBT_REVIEW_CHECKPOINT>>> <<<ARIAD:DONE_CLOSURE_CONFIRMATION>>>
+  resume: review_complete → check_active_item_coherence, close_active_item, inspect_roadmap, inspect_method
+  show:   review_complete → check_active_item_coherence, close_active_item, inspect_roadmap, inspect_method
+--- 6. coherent
+  answer: <<<ARIAD:COHERENCE_CHECKPOINT>>>
+  resume: coherence_complete → close_active_item, inspect_roadmap, inspect_method
+  show:   coherence_complete → close_active_item, inspect_roadmap, inspect_method
+--- 7. done
+  answer: <<<ARIAD:DONE_CHECKPOINT>>> <<<ARIAD:PROJECT_POSITION>>>
+  resume: done_complete → inspect_roadmap, pull_candidate_if_known, inspect_method
+  show:   done_complete → inspect_roadmap, pull_candidate_if_known, inspect_method
+--- 8. Prepare, run on the done story
+  answer: <<<ARIAD:CHECKPOINT_REFUSED>>>
+  show:   done_complete
+--- 9. the Delivery Story pulled: Pull runs Prepare and Expand
+  answer: <<<ARIAD:DELIVERY_STORY_READY>>> <<<ARIAD:ARTIFACTS_MATERIALIZED>>>
+  resume: expand → answer_pending_confirmation, inspect_method
+  show:   expand → answer_pending_confirmation, inspect_method
+--- 10. Delivery Story flow chosen
+  answer: <<<ARIAD:DELIVERY_STORY_SCOPE_CONFIRMATION>>>
+  resume: navigator_flow_unit_selected → answer_pending_confirmation, inspect_method
+  show:   navigator_flow_unit_selected → answer_pending_confirmation, inspect_method
+--- 11. Delivery Story planned
+  answer: <<<ARIAD:DELIVERY_STORY_PLAN_CHECKPOINT>>> <<<ARIAD:ARTIFACTS_MATERIALIZED>>>
+  resume: delivery_story_plan → answer_pending_confirmation, inspect_method
+  show:   delivery_story_plan → answer_pending_confirmation, inspect_method
+--- 12. Delivery Story Plan approved
+  answer: <<<ARIAD:DELIVERY_STORY_PLAN_CHECKPOINT>>> <<<ARIAD:ARTIFACTS_MATERIALIZED>>> <<<ARIAD:IMPLEMENTATION_STARTED>>>
+  resume: delivery_story_plan_approved → implement_active_item, validate_active_item, inspect_roadmap, inspect_method
+  show:   delivery_story_plan_approved → implement_active_item, validate_active_item, inspect_roadmap, inspect_method
+--- 13. Delivery Story validated
+  answer: <<<ARIAD:DELIVERY_STORY_CLOSURE_CHECKPOINT>>> <<<ARIAD:ARTIFACTS_MATERIALIZED>>> <<<ARIAD:DEBT_REVIEW_STARTED>>>
+  resume: delivery_story_validation_complete → review_active_item_debt, inspect_roadmap, inspect_method
+  show:   delivery_story_validation_complete → review_active_item_debt, inspect_roadmap, inspect_method
+--- 14. Delivery Story debt reviewed
+  answer: <<<ARIAD:DELIVERY_STORY_CLOSURE_CHECKPOINT>>> <<<ARIAD:ARTIFACTS_MATERIALIZED>>> <<<ARIAD:DONE_CLOSURE_CONFIRMATION>>>
+  resume: delivery_story_review_complete → close_active_item, inspect_roadmap, inspect_method
+  show:   delivery_story_review_complete → close_active_item, inspect_roadmap, inspect_method
+--- 15. Delivery Story done
+  answer: <<<ARIAD:DELIVERY_STORY_CLOSURE_CHECKPOINT>>> <<<ARIAD:ARTIFACTS_MATERIALIZED>>> <<<ARIAD:PROJECT_POSITION>>>
+  resume: delivery_story_done_complete → inspect_roadmap, pull_candidate_if_known, inspect_method
+  show:   delivery_story_done_complete → inspect_roadmap, pull_candidate_if_known, inspect_method
+--- 16. a Delivery Story whose Expand is blocked
+  answer: <<<ARIAD:EXPAND_BLOCKED>>>
+  resume: prepare → expand_active_item, inspect_roadmap, inspect_method
+  show:   prepare → expand_active_item, inspect_roadmap, inspect_method
+--- 17. the cadence on every orienting surface; journey k has no item pulled
+  stepwise: resume stepwise [(none)] | show stepwise [(none)] | orientation stepwise [(none)]
+  checkpoint: resume checkpoint [(none)] | show checkpoint [(none)] | orientation checkpoint [(none)]
+  accelerated: resume accelerated [(none)] | show accelerated [(none)] | orientation accelerated [(none)]
+  autonomous: resume autonomous [stop before push] | show autonomous [stop before push] | orientation autonomous [stop before push]
+```
+
+Every step meets its pass condition:
+
+1. Step 0: both surfaces offer `sync_cursor` and `inspect_method`, and `build show`
+   reads `no delivery cursor yet` with no Pull command.
+2. Steps 1 to 7: a story's positions, each list the table's, the resume's and `build
+   show`'s the same, and after Done the next pull.
+3. Step 8: `CHECKPOINT_REFUSED`, and the Done story is still at `done_complete`.
+4. Steps 9 to 11: `answer_pending_confirmation` and `inspect_method`, as before.
+5. Steps 12 to 15: a Delivery Story's positions in Delivery Story flow, and after its
+   Done the next pull.
+6. Step 16: after `EXPAND_BLOCKED`, `expand_active_item`.
+7. Step 17: each profile on all three surfaces, and its limits only under
+   `autonomous`.
+
+Next: the Navigator's walk of the route, then the handoff review.
+
 ## Outcome
 
 Pending.

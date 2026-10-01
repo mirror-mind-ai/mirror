@@ -10,25 +10,22 @@
 // offered lifecycle step in a world replayed to that position.
 
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 
 import type { NextAction } from "#builder/cursorPosition.ts";
 import { renderBuilderEntrySurface } from "#builder/load.ts";
-import { setAdoptedMethod } from "#builder/methodAdoption.ts";
-import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
 import { authorPlan, authorStoryIndex } from "#helpers/authorScaffold.ts";
-import { invokeBuilderArgv } from "#helpers/builderInvoke.ts";
-import { createIdentityTable } from "#helpers/identitySchema.ts";
-import { createRuntimeTables } from "#helpers/runtimeSchema.ts";
+import {
+  type BuilderRun,
+  type BuilderWorld,
+  builderWorld,
+  removeBuilderWorlds,
+  runBuild,
+} from "#helpers/builderWorld.ts";
 
-const NOW = "2026-10-01T12:00:00+00:00";
-const directories: string[] = [];
-
-test.after(() => {
-  for (const directory of directories) rmSync(directory, { recursive: true, force: true });
-});
+test.after(removeBuilderWorlds);
 
 const INSPECT: readonly NextAction[] = ["inspect_roadmap", "inspect_method"];
 const NO_ITEM: readonly NextAction[] = [
@@ -75,62 +72,17 @@ const DS2_FIXED = `# CV1.DS2 — Checkout payment
 | CV1.DS2.US1 | Pay by card | User Story | 🟡 Planned |
 `;
 
-interface World {
-  readonly db: WritableDatabase;
-  readonly project: string;
-  /** The last `plan.md` a Plan step wrote. */
-  plan: string | null;
-}
-
-interface Run {
-  readonly stdout: string;
-  readonly stderr: string;
-  readonly exitCode: number;
-}
-
-function run(w: World, argv: readonly string[]): Run {
-  const result = invokeBuilderArgv(
-    w.db,
-    [argv[0] ?? "", "--method", "ariad", "--journey", "demo", ...argv.slice(1)],
-    { nowIso: () => NOW },
-  );
-  const plan = result.stdout.match(/^plan_artifact_path=(.+)$/mu)?.[1];
-  if (plan) w.plan = plan;
-  return result;
-}
-
 /** A project with one Delivery Story to deliver and one whose table Expand cannot read. */
-function world(options: { sync: boolean } = { sync: true }): World {
-  const root = mkdtempSync("/tmp/builder-cr114-");
-  directories.push(root);
-  const project = join(root, "project");
-  const roadmap = join(project, "docs/project/roadmap");
-  mkdirSync(join(roadmap, "cv1/ds1"), { recursive: true });
-  mkdirSync(join(roadmap, "cv1/ds2"), { recursive: true });
-  writeFileSync(join(roadmap, "index.md"), "# Roadmap\n", "utf8");
-  writeFileSync(join(roadmap, "cv1/index.md"), "# CV1 — Checkout\n\n**Status:** 🟢 Active\n");
-  writeFileSync(join(roadmap, "cv1/ds1/index.md"), DS1_INDEX, "utf8");
-  writeFileSync(join(roadmap, "cv1/ds2/index.md"), DS2_BLOCKED, "utf8");
-
-  const db = openDatabaseCopyForWrite(join(root, "copy.db"));
-  createIdentityTable(db);
-  createRuntimeTables(db);
-  db.prepare(
-    `INSERT INTO identity (id, layer, key, content, created_at, updated_at, metadata)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
-  ).run(
-    "journey:demo",
-    "journey",
-    "demo",
-    "# Demo\n",
-    NOW,
-    NOW,
-    JSON.stringify({ project_path: project }),
-  );
-  setAdoptedMethod(db, "demo", "ariad", () => NOW);
-  const w: World = { db, project, plan: null };
-  if (options.sync) assert.equal(run(w, ["sync-cursor"]).exitCode, 0);
-  return w;
+function world(options: { sync: boolean } = { sync: true }): BuilderWorld {
+  return builderWorld({
+    sync: options.sync,
+    files: {
+      "docs/project/roadmap/index.md": "# Roadmap\n",
+      "docs/project/roadmap/cv1/index.md": "# CV1 — Checkout\n\n**Status:** 🟢 Active\n",
+      "docs/project/roadmap/cv1/ds1/index.md": DS1_INDEX,
+      "docs/project/roadmap/cv1/ds2/index.md": DS2_BLOCKED,
+    },
+  });
 }
 
 /** The `allowed next actions` a wrapped surface prints, without their dashes; null if none. */
@@ -151,9 +103,9 @@ function listOf(stdout: string, surface: string): string[] | null {
 }
 
 /** The resume's list and `build show`'s, at the position the world stands at. */
-function lists(w: World): { resume: string[] | null; show: string[] | null } {
+function lists(w: BuilderWorld): { resume: string[] | null; show: string[] | null } {
   const entry = renderBuilderEntrySurface(w.db, "demo", w.project);
-  const shown = run(w, ["show"]);
+  const shown = runBuild(w, ["show"]);
   assert.equal(shown.exitCode, 0, shown.stderr);
   return {
     resume: listOf(entry, "BUILDER_RESUME"),
@@ -161,7 +113,7 @@ function lists(w: World): { resume: string[] | null; show: string[] | null } {
   };
 }
 
-function accepted(result: Run, label: string): void {
+function accepted(result: BuilderRun, label: string): void {
   assert.equal(result.exitCode, 0, `${label}: ${result.stderr}${result.stdout}`);
   assert.doesNotMatch(result.stdout, /CHECKPOINT_REFUSED|EXPAND_BLOCKED/u, label);
   assert.doesNotMatch(result.stdout, /│ blocked +│/u, label);
@@ -190,7 +142,7 @@ const VALIDATE = [
 ] as const;
 
 /** Mark every Delivery Story file of CV1.DS1 Done, as the skill asks before its Done. */
-function alignDeliveryStoryDone(w: World): void {
+function alignDeliveryStoryDone(w: BuilderWorld): void {
   const root = join(w.project, "docs/project/roadmap/cv1/ds1");
   const visit = (directory: string): void => {
     for (const entry of readdirSync(directory, { withFileTypes: true })) {
@@ -207,20 +159,20 @@ function alignDeliveryStoryDone(w: World): void {
   visit(root);
 }
 
-type Step = (w: World) => Run;
+type Step = (w: BuilderWorld) => BuilderRun;
 
 /** What each lifecycle step routes to, for a story. */
 const STORY_STEPS: Partial<Record<NextAction, Step>> = {
-  prepare_active_item: (w) => run(w, ["prepare-item"]),
-  plan_active_item: (w) => run(w, ["plan-item"]),
-  implement_active_item: (w) => run(w, ["check-implementation"]),
-  validate_active_item: (w) => run(w, VALIDATE),
+  prepare_active_item: (w) => runBuild(w, ["prepare-item"]),
+  plan_active_item: (w) => runBuild(w, ["plan-item"]),
+  implement_active_item: (w) => runBuild(w, ["check-implementation"]),
+  validate_active_item: (w) => runBuild(w, VALIDATE),
   review_active_item_debt: (w) =>
-    run(w, ["review-item", "--debt", "No debt found", "--decision", "no_action"]),
+    runBuild(w, ["review-item", "--debt", "No debt found", "--decision", "no_action"]),
   check_active_item_coherence: (w) =>
-    run(w, ["coherence-item", "--process", "p", "--project", "p", "--product", "p"]),
+    runBuild(w, ["coherence-item", "--process", "p", "--project", "p", "--product", "p"]),
   close_active_item: (w) =>
-    run(w, [
+    runBuild(w, [
       "done-item",
       "--history-action",
       "h",
@@ -230,7 +182,7 @@ const STORY_STEPS: Partial<Record<NextAction, Step>> = {
       "n",
     ]),
   pull_candidate_if_known: (w) =>
-    run(w, [
+    runBuild(w, [
       "pull-item",
       "--item-code",
       "CV1.DS1.TS1",
@@ -245,18 +197,18 @@ const STORY_STEPS: Partial<Record<NextAction, Step>> = {
 
 /** What each lifecycle step routes to, for a Delivery Story in Delivery Story flow. */
 const DELIVERY_STORY_STEPS: Partial<Record<NextAction, Step>> = {
-  implement_active_item: (w) => run(w, ["check-implementation"]),
+  implement_active_item: (w) => runBuild(w, ["check-implementation"]),
   validate_active_item: (w) =>
-    run(w, ["validate-delivery-story", "--summary", "s", "--navigator-accepted"]),
+    runBuild(w, ["validate-delivery-story", "--summary", "s", "--navigator-accepted"]),
   review_active_item_debt: (w) =>
-    run(w, ["review-delivery-story", "--decision", "no_action", "--summary", "s"]),
+    runBuild(w, ["review-delivery-story", "--decision", "no_action", "--summary", "s"]),
   close_active_item: (w) => {
     alignDeliveryStoryDone(w);
-    return run(w, ["done-delivery-story", "--summary", "s"]);
+    return runBuild(w, ["done-delivery-story", "--summary", "s"]);
   },
   expand_active_item: (w) => {
     writeFileSync(join(w.project, "docs/project/roadmap/cv1/ds2/index.md"), DS2_FIXED, "utf8");
-    return run(w, PULL_DS2);
+    return runBuild(w, PULL_DS2);
   },
   pull_candidate_if_known: STORY_STEPS.pull_candidate_if_known,
 };
@@ -308,7 +260,7 @@ interface Move {
  * position, so trying a step never changes the walk.
  */
 function walk(moves: readonly Move[], steps: Partial<Record<NextAction, Step>>): void {
-  const replay = (count: number): World => {
+  const replay = (count: number): BuilderWorld => {
     const w = world();
     for (const move of moves.slice(0, count)) move.act(w);
     return w;
@@ -341,14 +293,18 @@ const authorPackage: Step = (w) => {
   assert.ok(w.plan, "Plan wrote plan.md");
   authorPlan(w.plan);
   authorStoryIndex(join(w.plan, "..", "index.md"));
-  return run(w, ["approve-plan"]);
+  return runBuild(w, ["approve-plan"]);
 };
 
 test("CR114: a story's resume and build show name the same steps, and each one is taken", () => {
   walk(
     [
-      { label: "pulled", act: (w) => run(w, PULL_US1), expect: ["plan_active_item", ...INSPECT] },
-      { label: "planned", act: (w) => run(w, ["plan-item"]), expect: PENDING },
+      {
+        label: "pulled",
+        act: (w) => runBuild(w, PULL_US1),
+        expect: ["plan_active_item", ...INSPECT],
+      },
+      { label: "planned", act: (w) => runBuild(w, ["plan-item"]), expect: PENDING },
       {
         label: "approved",
         act: authorPackage,
@@ -356,7 +312,7 @@ test("CR114: a story's resume and build show name the same steps, and each one i
       },
       {
         label: "validated",
-        act: (w) => run(w, VALIDATE),
+        act: (w) => runBuild(w, VALIDATE),
         expect: ["review_active_item_debt", ...INSPECT],
       },
       {
@@ -383,16 +339,16 @@ test("CR114: a story's resume and build show name the same steps, and each one i
 test("CR114: a Delivery Story's resume and build show name the same steps, and each one is taken", () => {
   walk(
     [
-      { label: "pulled and expanded", act: (w) => run(w, PULL_DS1), expect: PENDING },
+      { label: "pulled and expanded", act: (w) => runBuild(w, PULL_DS1), expect: PENDING },
       {
         label: "flow chosen",
-        act: (w) => run(w, ["set-flow-unit", "--unit", "delivery_story"]),
+        act: (w) => runBuild(w, ["set-flow-unit", "--unit", "delivery_story"]),
         expect: PENDING,
       },
       {
         label: "planned",
         act: (w) =>
-          run(w, [
+          runBuild(w, [
             "plan-delivery-story",
             "--objective",
             "Checkout takes an address",
@@ -405,7 +361,7 @@ test("CR114: a Delivery Story's resume and build show name the same steps, and e
       },
       {
         label: "approved",
-        act: (w) => run(w, ["approve-delivery-story-plan"]),
+        act: (w) => runBuild(w, ["approve-delivery-story-plan"]),
         expect: ["implement_active_item", "validate_active_item", ...INSPECT],
       },
       {
@@ -430,7 +386,7 @@ test("CR114: a Delivery Story whose Expand was blocked is offered Expand, and Pu
       {
         label: "Expand blocked",
         act: (w) => {
-          const result = run(w, PULL_DS2);
+          const result = runBuild(w, PULL_DS2);
           assert.match(result.stdout, /<<<ARIAD:EXPAND_BLOCKED>>>/u);
           return result;
         },
@@ -444,10 +400,10 @@ test("CR114: a Delivery Story whose Expand was blocked is offered Expand, and Pu
 test("CR114 (D3): Prepare refuses a Done story through the front door, and nothing changes", () => {
   const w = world();
   try {
-    run(w, PULL_US1);
-    run(w, ["plan-item"]);
+    runBuild(w, PULL_US1);
+    runBuild(w, ["plan-item"]);
     authorPackage(w);
-    run(w, VALIDATE);
+    runBuild(w, VALIDATE);
     (STORY_STEPS.review_active_item_debt as Step)(w);
     accepted((STORY_STEPS.close_active_item as Step)(w), "done");
     const cursor = () =>
@@ -457,7 +413,7 @@ test("CR114 (D3): Prepare refuses a Done story through the front door, and nothi
           .get("__builder_delivery_cursor__:demo") as { metadata: string }
       ).metadata;
     const before = cursor();
-    const refused = run(w, ["prepare-item"]);
+    const refused = runBuild(w, ["prepare-item"]);
     assert.equal(refused.exitCode, 1);
     assert.match(refused.stdout, /^<<<ARIAD:CHECKPOINT_REFUSED>>>\n/u);
     assert.match(
@@ -477,10 +433,10 @@ test("CR114: with no cursor, the resume and build show both say sync, and show g
     const { resume, show } = lists(w);
     assert.deepEqual(resume, ["sync_cursor", "inspect_method"]);
     assert.deepEqual(show, ["sync_cursor", "inspect_method"]);
-    const shown = run(w, ["show"]).stdout;
+    const shown = runBuild(w, ["show"]).stdout;
     assert.match(shown, /│ no delivery cursor yet +│/u);
     assert.doesNotMatch(shown, /pull explicitly/u, "Pull refuses without a cursor");
-    accepted(run(w, ["sync-cursor"]), "sync_cursor");
+    accepted(runBuild(w, ["sync-cursor"]), "sync_cursor");
   } finally {
     w.db.close();
   }
@@ -489,7 +445,7 @@ test("CR114: with no cursor, the resume and build show both say sync, and show g
 test("CR114: with no item pulled, build show lists the moves for no item after its Pull command", () => {
   const w = world();
   try {
-    const shown = run(w, ["show"]).stdout;
+    const shown = runBuild(w, ["show"]).stdout;
     assert.deepEqual(listOf(shown, "ACTIVE_CHECKPOINT"), [...NO_ITEM]);
     assert.match(shown, /pull explicitly/u);
     assert.equal(

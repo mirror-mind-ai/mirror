@@ -23,7 +23,11 @@
 // renders `PROJECT_POSITION` and this surface. CR002 deleted it rather than
 // scope a surface no journey could see, whose one distinctive line was a
 // project-wide "recommended pull".
+//
+// CR115: it asks how the next item will run, and answers with the journey's cadence,
+// which shapes the next Plan; `build load` passes the cursor's, so every caller decides.
 
+import { type CadenceView, cadenceOrientationLines } from "./cadence.ts";
 import { cardPrefixed, cardText, cardWrapped } from "./card.ts";
 import type { PullCandidatesReport } from "./pullCandidates.ts";
 import { CANONICAL_REFINEMENT_INDEX, type RefinementFieldSnapshot } from "./refinementField.ts";
@@ -87,8 +91,9 @@ export function availableRefinementMoves(
 export function renderBuilderOrientationSurface(options: {
   candidates: PullCandidatesReport;
   refinement: RefinementFieldSnapshot;
+  cadence: CadenceView;
 }): string {
-  const { candidates, refinement } = options;
+  const { candidates, refinement, cadence } = options;
   const lines: string[] = [
     "Builder Orientation",
     "",
@@ -103,6 +108,9 @@ export function renderBuilderOrientationSurface(options: {
     FRAME_BLANK,
     cardText("What is open for refinement?"),
     ...refinementOrientationLines(refinement),
+    FRAME_BLANK,
+    cardText("How will the next item run?"),
+    ...cadenceOrientationLines(cadence),
     FRAME_BLANK,
     cardText("What can we do now?"),
     ...cardPrefixed(availableRefinementMoves(refinement, candidates.journey), "-"),

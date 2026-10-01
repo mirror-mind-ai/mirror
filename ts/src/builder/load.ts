@@ -136,6 +136,7 @@ export function renderBuilderEntrySurface(
       {
         candidates,
         refinement: inspectRefinementField(projectPath),
+        cadence: cursor,
       },
     )}`;
   }

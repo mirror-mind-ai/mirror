@@ -21,6 +21,7 @@
 // carrying it forward would import a maintenance obligation with no observable
 // behavior. Recorded in the story's debt list instead.
 
+import { type CadenceView, cadenceCardLines } from "./cadence.ts";
 import { cardPrefixed, cardText, cardWrapped } from "./card.ts";
 import { CANONICAL_REFINEMENT_INDEX } from "./refinementField.ts";
 import type { RoadmapScope } from "./roadmapScope.ts";
@@ -32,7 +33,7 @@ const FRAME_BOTTOM = "╰──────────────────�
 const FRAME_BLANK = "│                                                        │";
 
 /** The cursor fields the resume surface reads, and its next actions are chosen from. */
-export interface ResumeCursorView {
+export interface ResumeCursorView extends CadenceView {
   readonly activeItem: string | null;
   readonly activeItemLevel: string | null;
   readonly activeCheckpoint: string | null;
@@ -130,6 +131,8 @@ export function renderBuilderResumeSurface(
     FRAME_BLANK,
     cardText("last delivery event"),
     cardText(cursor?.lastDeliveryEvent || "none"),
+    FRAME_BLANK,
+    ...cadenceCardLines(cursor),
     ...releaseIntentLines(cursor),
     FRAME_BLANK,
     cardText("🧰 Refinement field"),

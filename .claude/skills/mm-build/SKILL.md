@@ -592,10 +592,10 @@ NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build sh
 ```
 
 Return the `ACTIVE_CHECKPOINT` surface verbatim. It shows the stage, the cursor's
-position, the steps the cursor accepts next, as the resume lists them, and the story
-package's files: `index.md`, `plan.md`, and `test-guide.md` with their state, and
-the closure records, each present or missing. It does not replay the original
-checkpoint surface: that evidence lives in those records, so read the one the
+position, the cadence, the steps the cursor accepts next, as the resume lists them,
+and the story package's files: `index.md`, `plan.md`, and `test-guide.md` with
+their state, and the closure records, each present or missing. It does not replay the
+original checkpoint surface: that evidence lives in those records, so read the one the
 Navigator needs, such as `plan.md` before Plan approval. It is read-only and changes
 neither the cursor nor any file.
 
@@ -616,6 +616,10 @@ NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build se
   --limit "stop on scope change" \
   --limit "stop on failing checks"
 ```
+
+The Builder resume, `build show`, and the Builder orientation print the cadence
+profile and, under `autonomous`, its limits. Read it there before Plan: under
+`accelerated`, Plan continues into implementation without a Navigator turn.
 
 Higher-autonomy cadence never grants permission to cross Navigator validation acceptance, debt decisions, unsafe operations, scope changes, push/release, or Done/history boundaries. For an active User Story or Technical Story in `story_by_story`, `accelerated` satisfies the Plan approval gate through a complete, structurally matching, single-use receipt instead of pausing for another Navigator turn; Plan completeness and mismatch checks still apply. In current Ariad, Pull is the Navigator signal to Prepare; pulling a Delivery Story also expands it into implementable User/Technical Stories and stops for confirmation of the recommended next story.
 

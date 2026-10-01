@@ -103,6 +103,9 @@ function toResumeState(dump: Record<string, unknown>): BuilderResumeState {
           lastDeliveryEvent: cursorDump.last_delivery_event,
           releaseIntent: cursorDump.release_intent,
           releaseIntentDeliveryStory: cursorDump.release_intent_delivery_story,
+          // The recorded cursors store no cadence; the resume prints the one they run.
+          cadenceProfile: null,
+          cadenceLimits: [],
         };
   return {
     journey: dump.journey as string,
@@ -227,6 +230,8 @@ test("BUILDER ORIENTATION renders across refinement x candidate states, project-
     const actual = renderBuilderOrientationSurface({
       candidates: report,
       refinement: toRefinement(row.refinement),
+      // The oracle recorded no cursor; a cursor that stores no cadence runs stepwise.
+      cadence: { cadenceProfile: null, cadenceLimits: [] },
     });
     assert.equal(actual, row.expected, row.name);
   }

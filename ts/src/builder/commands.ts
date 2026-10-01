@@ -46,6 +46,7 @@ import {
 import type { ArtifactOutcome } from "./artifacts/artifactWriter.ts";
 import { planPackageArtifacts } from "./artifacts/planArtifacts.ts";
 import { judgeStoryFiles } from "./artifacts/storyFiles.ts";
+import { effectiveCadenceProfile } from "./cadence.ts";
 import { CARD_WIDTH, cardText, wrapPlainText } from "./card.ts";
 import { renderCheckpointRefused } from "./checkpointRefused.ts";
 import {
@@ -1253,7 +1254,7 @@ export function runContinueLifecycle(
     stderr: "",
     exitCode: 1,
   });
-  const profile = cursor.cadenceProfile || "stepwise";
+  const profile = effectiveCadenceProfile(cursor);
   if (profile === "stepwise") {
     return blocked("Stepwise cadence does not continue automatically.");
   }

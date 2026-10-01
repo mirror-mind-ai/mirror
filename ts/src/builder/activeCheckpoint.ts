@@ -19,9 +19,11 @@
 // CR114: it prints the steps the cursor accepts next, the list the Builder resume
 // prints, from the same selector, so the two cannot disagree. With no cursor it says
 // so, and offers the sync the resume offers, where it gave a Pull command Pull refuses.
+// CR115: before the steps, the cadence they will run at, as the resume prints it.
 
 import type { ArtifactVerdict } from "./artifacts/scaffoldState.ts";
 import { storyFileLines } from "./artifacts/storyFiles.ts";
+import { cadenceCardLines } from "./cadence.ts";
 import { cardPrefixed, cardText, cardWrapped } from "./card.ts";
 import { allowedNextActions, lifecycleStageOf } from "./cursorPosition.ts";
 import type { BuilderDeliveryCursor } from "./deliveryCursor.ts";
@@ -64,9 +66,14 @@ function recordLines(records: StoryRecords | null): string[] {
 /** What a journey whose delivery cursor was never synced holds. */
 const NO_DELIVERY_CURSOR_YET = "no delivery cursor yet";
 
-/** The steps the cursor accepts next: the list the Builder resume prints (CR114). */
+/**
+ * The cadence the steps run at (CR115), then the steps the cursor accepts next: what
+ * the Builder resume prints, in its order (CR114).
+ */
 function nextActionLines(cursor: BuilderDeliveryCursor | null): string[] {
   return [
+    FRAME_BLANK,
+    ...cadenceCardLines(cursor),
     FRAME_BLANK,
     cardText("allowed next actions"),
     ...cardPrefixed(allowedNextActions(cursor), "-"),

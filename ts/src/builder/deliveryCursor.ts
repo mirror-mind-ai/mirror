@@ -35,6 +35,7 @@ import {
   upsertRuntimeSession,
 } from "#mirror/runtimeSession.ts";
 import { pythonJsonDumps } from "#util/pyGenerators.ts";
+import { effectiveCadenceProfile } from "./cadence.ts";
 
 const CURSOR_SESSION_PREFIX = "__builder_delivery_cursor__:";
 
@@ -483,7 +484,8 @@ export function clearDeliveryCursor(
  * Note the DEFAULTS shown for two fields that are `None` on the cursor:
  * `cadence profile` prints `stepwise` and `navigator flow unit` prints
  * `story_by_story` when unset, so the report shows the effective value rather
- * than the stored one. Every other absent field prints `none`.
+ * than the stored one. Every other absent field prints `none`. The cadence's
+ * default is `cadence.ts`'s, which every orienting surface prints too (CR115).
  */
 export function renderDeliveryCursorSyncReport(cursor: BuilderDeliveryCursor): string {
   return `${[
@@ -505,7 +507,7 @@ export function renderDeliveryCursorSyncReport(cursor: BuilderDeliveryCursor): s
     cursor.activeItemLevel || "none",
     "",
     "cadence profile",
-    cursor.cadenceProfile || "stepwise",
+    effectiveCadenceProfile(cursor),
     "",
     "cadence limits",
     cursor.cadenceLimits.length > 0 ? cursor.cadenceLimits.join(", ") : "none",

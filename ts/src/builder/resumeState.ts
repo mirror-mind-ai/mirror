@@ -70,6 +70,8 @@ export function readBuilderResumeState(db: Database, journey: string): BuilderRe
     lastDeliveryEvent: cursor.lastDeliveryEvent,
     releaseIntent: cursor.releaseIntent,
     releaseIntentDeliveryStory: cursor.releaseIntentDeliveryStory,
+    cadenceProfile: cursor.cadenceProfile,
+    cadenceLimits: cursor.cadenceLimits,
   };
   return {
     journey: normalizedJourney,

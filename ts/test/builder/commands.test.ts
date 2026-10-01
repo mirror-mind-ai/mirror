@@ -1893,7 +1893,9 @@ test("CR020: build show renders the stage, position, and records, and changes no
       cardRows(planned, "pending confirmation", "active checkpoint"),
       "navigator_approval",
     );
-    assert.equal(cardRows(planned, "active checkpoint", "allowed next actions"), "after_plan");
+    assert.equal(cardRows(planned, "active checkpoint", "cadence profile"), "after_plan");
+    // CR115: the cadence the steps run at; this cursor stores none, so it runs stepwise.
+    assert.equal(cardRows(planned, "cadence profile", "allowed next actions"), "stepwise");
     // CR114: the steps the cursor accepts next, the list the resume prints.
     assert.equal(
       cardRows(planned, "allowed next actions", "records"),

@@ -465,6 +465,8 @@ test("each position paragraph starts its own card line on the resume surface", (
         lastDeliveryEvent: "pull",
         releaseIntent: null,
         releaseIntentDeliveryStory: null,
+        cadenceProfile: null,
+        cadenceLimits: [],
       },
       resumable: true,
       reason: null,
