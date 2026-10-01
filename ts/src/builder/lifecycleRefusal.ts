@@ -1,62 +1,18 @@
-// CR067 with CR020 — where a story's delivery cursor stands, and refusals that say so.
+// CR067 with CR020 — refusals that say where a story's delivery cursor stands.
 //
 // The story lifecycle's guards in `plan.ts` and `closure.ts` each test the cursor's
-// last event by hand. This module is the one place that states the order those events
-// come in, so a refusal can tell "not reached yet" from "already done" and a surface
-// can place the cursor on the ribbon. The guards stay as written; a table-driven test
-// runs every step against every event here, so the two expressions cannot drift apart.
+// last event by hand. This module states which event completes each step, so a refusal
+// can tell "not reached yet" from "already done". The order those events come in is
+// the table of positions in `cursorPosition.ts` (CR114), which also places the cursor
+// on the ribbon and names what it accepts next. The guards stay as written; a
+// table-driven test runs every step against every event, so the two expressions cannot
+// drift apart.
 //
-// Delivery Story events are deliberately outside the table: a cursor holding one gets
-// no stage marker and no already-complete refusal, never a guessed one.
+// Delivery Story events are outside the order: a cursor holding one gets no
+// already-complete refusal, never a guessed one.
 
+import { STORY_LIFECYCLE_EVENTS } from "./cursorPosition.ts";
 import type { BuilderDeliveryCursor } from "./deliveryCursor.ts";
-
-/** The story lifecycle's events, in the order a cursor reaches them. */
-export const STORY_LIFECYCLE_EVENTS = [
-  "pull",
-  "prepare",
-  "plan",
-  "plan_approved",
-  "implementation_complete",
-  "validate",
-  "validation_passed",
-  "review",
-  "review_complete",
-  "coherence",
-  "coherence_complete",
-  "done",
-  "done_complete",
-] as const;
-
-/** The ribbon stage a cursor stands at, by its last event (CR067's stage table). */
-const STAGE_AFTER: Readonly<Record<string, string>> = {
-  pull: "prepare",
-  prepare: "plan",
-  plan: "plan",
-  plan_approved: "implement",
-  implementation_complete: "validate",
-  validate: "validate",
-  validation_passed: "debt_review",
-  review: "debt_review",
-  review_complete: "done",
-  coherence: "done",
-  coherence_complete: "done",
-  done: "done",
-  done_complete: "done",
-};
-
-/**
- * The lifecycle stage the cursor stands at, for the ribbon; `null` for an event
- * outside the table. A prepared Delivery Story expands next rather than plans.
- */
-export function lifecycleStageOf(
-  cursor: Pick<BuilderDeliveryCursor, "lastDeliveryEvent" | "activeItemLevel">,
-): string | null {
-  const event = cursor.lastDeliveryEvent;
-  if (event === null || !Object.hasOwn(STAGE_AFTER, event)) return null;
-  if (event === "prepare" && cursor.activeItemLevel === "delivery_story") return "expand";
-  return STAGE_AFTER[event] ?? null;
-}
 
 /** The story steps a lifecycle command can be refused at. */
 export type LifecycleStep =
@@ -94,7 +50,7 @@ const STEP_NAME: Readonly<Record<LifecycleStep, string>> = {
 
 /** True once the cursor has reached or passed the event that completes `step`. */
 export function isAlreadyComplete(step: LifecycleStep, event: string | null): boolean {
-  const order: readonly string[] = STORY_LIFECYCLE_EVENTS;
+  const order = STORY_LIFECYCLE_EVENTS;
   const at = event === null ? -1 : order.indexOf(event);
   return at !== -1 && at >= order.indexOf(COMPLETING_EVENT[step]);
 }

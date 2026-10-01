@@ -15,12 +15,16 @@
 // done or not; the word carries the state. Closure records keep present or missing:
 // their truth is the seal. The story files' lines come from `artifacts/storyFiles.ts`,
 // which the Plan checkpoint prints too (CR111).
+//
+// CR114: it prints the steps the cursor accepts next, the list the Builder resume
+// prints, from the same selector, so the two cannot disagree. With no cursor it says
+// so, and offers the sync the resume offers, where it gave a Pull command Pull refuses.
 
 import type { ArtifactVerdict } from "./artifacts/scaffoldState.ts";
 import { storyFileLines } from "./artifacts/storyFiles.ts";
-import { cardText, cardWrapped } from "./card.ts";
+import { cardPrefixed, cardText, cardWrapped } from "./card.ts";
+import { allowedNextActions, lifecycleStageOf } from "./cursorPosition.ts";
 import type { BuilderDeliveryCursor } from "./deliveryCursor.ts";
-import { lifecycleStageOf } from "./lifecycleRefusal.ts";
 import { renderLifecycleRibbon } from "./lifecycleRibbon.ts";
 import { NO_ITEM_PULLED_YET, pullExplicitly } from "./scopePhrases.ts";
 import { wrapAriadSurface } from "./surfaceProtocol.ts";
@@ -57,13 +61,29 @@ function recordLines(records: StoryRecords | null): string[] {
   ];
 }
 
+/** What a journey whose delivery cursor was never synced holds. */
+const NO_DELIVERY_CURSOR_YET = "no delivery cursor yet";
+
+/** The steps the cursor accepts next: the list the Builder resume prints (CR114). */
+function nextActionLines(cursor: BuilderDeliveryCursor | null): string[] {
+  return [
+    FRAME_BLANK,
+    cardText("allowed next actions"),
+    ...cardPrefixed(allowedNextActions(cursor), "-"),
+  ];
+}
+
 function positionLines(view: ActiveCheckpointView): string[] {
   const cursor = view.cursor;
-  if (cursor === null || !cursor.activeItem) {
+  if (cursor === null) {
+    return [cardText("active item"), cardText(NO_DELIVERY_CURSOR_YET), ...nextActionLines(null)];
+  }
+  if (!cursor.activeItem) {
     return [
       cardText("active item"),
       cardText(NO_ITEM_PULLED_YET),
       ...cardWrapped(pullExplicitly(view.journey)),
+      ...nextActionLines(cursor),
     ];
   }
   const item = cursor.activeItemTitle
@@ -81,6 +101,7 @@ function positionLines(view: ActiveCheckpointView): string[] {
     FRAME_BLANK,
     cardText("active checkpoint"),
     cardText(cursor.activeCheckpoint ?? "none"),
+    ...nextActionLines(cursor),
     FRAME_BLANK,
     cardText("records"),
     ...recordLines(view.records),

@@ -195,7 +195,6 @@
       "expected": {
         "adopted_method": "ariad",
         "allowed_next_actions": [
-          "prepare_active_item",
           "inspect_roadmap",
           "inspect_method"
         ],
@@ -266,7 +265,6 @@
     "expected": {
       "adopted_method": "ariad",
       "allowed_next_actions": [
-        "prepare_active_item",
         "inspect_roadmap",
         "inspect_method"
       ],

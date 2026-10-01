@@ -8,8 +8,8 @@
 // condition it was written for.
 
 import { cardText, cardWrapped } from "./card.ts";
+import { lifecycleStageOf } from "./cursorPosition.ts";
 import type { BuilderDeliveryCursor } from "./deliveryCursor.ts";
-import { lifecycleStageOf } from "./lifecycleRefusal.ts";
 import { renderLifecycleRibbon } from "./lifecycleRibbon.ts";
 import { NO_ITEM_PULLED_YET, showCheckpoint } from "./scopePhrases.ts";
 import { wrapAriadSurface } from "./surfaceProtocol.ts";

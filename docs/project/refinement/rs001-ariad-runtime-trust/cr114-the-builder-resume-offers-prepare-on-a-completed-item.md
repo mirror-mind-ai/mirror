@@ -686,6 +686,46 @@ Every resting position but those waiting on a confirmation reads `prepare_active
 and left it at `prepare`. Step 0 is the Pull command `build show` gives a journey whose
 Pull would refuse. Step 17 is CR115: no orienting surface prints the cadence.
 
+### Plateau 1 handoff (2026-10-01)
+
+Now true: the resume and `build show` choose their next actions through one selector,
+`allowedNextActions`, which reads the one ordered table of positions in
+`cursorPosition.ts`. The table also gives the ribbon its stage and `lifecycleRefusal.ts`
+its event order, read from the story rows, so nothing lists the events twice.
+`selectAllowedNextActions` and its inline copy are gone. `build show` prints the list in
+its three branches, and with no cursor it reads `no delivery cursor yet` and offers the
+sync, where it gave a Pull command Pull refused. The skill carries the offer rule and
+the list of steps, and `Show The Active Checkpoint` says what the surface prints; the
+Claude copies were regenerated. Route steps 0 to 7 and 9 to 16 meet their pass
+conditions. Step 8 is plateau 2's, and step 17 plateau 3's.
+
+Two test files hold the change. `cursorPosition.test.ts` grades the table: every
+position at both levels, every event written with a confirmation, the positions it does
+not know, the lists that outrank it, the event order, and the skill naming all fourteen
+actions. `nextActionsWalk.test.ts` walks a story, both of Debt Review's ways out, a
+Delivery Story in Delivery Story flow, a blocked Expand, a journey with no cursor, and
+one with no item. At each position it compares the list `build load` renders with the
+one `build show` prints, and runs every offered lifecycle step's command in a world
+replayed to that position; none refused. Red first: before the selector was wired in,
+the walk failed at its first position, `pulled: the resume`, on `prepare_active_item`.
+
+What the work found:
+
+- **A test named for no item ran with no cursor.** CR020's `build show with no item
+  pulled` seeded an adopted journey and never synced it, so the Pull command it pinned
+  was the one that refuses. It now syncs first, and the walk owns the no-cursor case.
+- **`build load`'s entry surface was private.** The walk needed the list exactly as
+  `build load` prints it, so `renderBuilderEntrySurface` is exported, and its comment,
+  which still described the Workbench and Builder Home, now describes what it renders.
+
+The 8 recorded lists were edited by script, under criterion 7, and listed in
+`ts/test/goldens/README.md`: the 6 `builder-load` resume renders of a story at
+`plan_approved`, and the 2 `builder-resume-state` expectations for an item at a position
+the table does not know. 2910 tests pass: 13 are new, and the old selector's test left
+with it. Every smoke reached its end.
+
+Next: plateau 2, Prepare's guard.
+
 ## Outcome
 
 Pending.

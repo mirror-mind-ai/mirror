@@ -1893,7 +1893,12 @@ test("CR020: build show renders the stage, position, and records, and changes no
       cardRows(planned, "pending confirmation", "active checkpoint"),
       "navigator_approval",
     );
-    assert.equal(cardRows(planned, "active checkpoint", "records"), "after_plan");
+    assert.equal(cardRows(planned, "active checkpoint", "allowed next actions"), "after_plan");
+    // CR114: the steps the cursor accepts next, the list the resume prints.
+    assert.equal(
+      cardRows(planned, "allowed next actions", "records"),
+      "- answer_pending_confirmation - inspect_method",
+    );
     // CR112: the Plan-stage artifacts carry their state; the index the sibling tree
     // wrote is authored, the plan and the guide Plan just wrote are scaffolds, and
     // each scaffold names the sections still to write.
@@ -2098,6 +2103,9 @@ test("CR113: a Delivery Story's refusal still draws the Expand it reached", () =
 test("CR020: build show with no item pulled says so and gives the pull command", () => {
   const db = seed("adopted", scratchProject(false));
   try {
+    // A synced cursor with no item: without a cursor, Pull refuses, and build show says
+    // so instead (CR114, `nextActionsWalk.test.ts`).
+    assert.equal(invoke(db, ["sync-cursor", "--method", "ariad", "--journey", "demo"]).exitCode, 0);
     const result = invoke(db, ["show", "--method", "ariad", "--journey", "demo"]);
     assert.equal(result.exitCode, 0, result.stderr);
     assert.deepEqual(surfaceIds(result.stdout), ["ACTIVE_CHECKPOINT"]);

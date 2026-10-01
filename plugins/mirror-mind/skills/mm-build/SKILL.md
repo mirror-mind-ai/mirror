@@ -342,6 +342,32 @@ journey with no active item, ask only which item the Navigator wants to pull,
 from the project-wide list and without ranking it, or whether to inspect the
 roadmap further, after the verbatim blocks.
 
+For an Ariad journey with an active item, the resume's `allowed next actions` are
+the steps the cursor accepts next, the recommended one first; `build show` prints
+the same list. Offer the step the list names, and no lifecycle step it does not.
+Offering is not doing: the Builder Activation Boundary holds, and no step runs
+before the Navigator says so. Each step routes to a section of this skill, or in
+Delivery Story flow to its Delivery Story command:
+
+- `answer_pending_confirmation`: ask the Navigator the question the `pending
+  confirmation` row names. Never answer it.
+- `prepare_active_item`: Prepare, `build prepare-item`.
+- `expand_active_item`: Expand was blocked. After the Navigator fixes what
+  `EXPAND_BLOCKED` named, pull the Delivery Story again.
+- `plan_active_item`: Plan Ariad Work.
+- `implement_active_item`: the implementation guard, then the approved Plan.
+- `validate_active_item`: Validate Ariad Work.
+- `review_active_item_debt`: Review Ariad Debt.
+- `check_active_item_coherence`: Check Ariad Coherence.
+- `close_active_item`: Close Ariad Done.
+- `inspect_roadmap`, `pull_candidate_if_known`: the item is closed, or none is
+  pulled. Inspect Roadmap And Pull Candidates, then Pull.
+- `sync_cursor`, `adopt_method`, `inspect_method`: Sync Delivery Cursor, Adopt
+  Ariad, Inspect Builder Method.
+
+A list with no lifecycle step, on an item that is open, means the cursor holds a
+position Ariad does not know. Say so, and offer `sync-cursor`, then Pull.
+
 ## Compose Refinement Work
 
 ### The Refinement authority
@@ -566,10 +592,12 @@ NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build sh
 ```
 
 Return the `ACTIVE_CHECKPOINT` surface verbatim. It shows the stage, the cursor's
-position, and the story package's Plan and closure records, each marked present or
-missing. It does not replay the original checkpoint surface: that evidence lives in
-those records, so read the one the Navigator needs, such as `plan.md` before Plan
-approval. It is read-only and changes neither the cursor nor any file.
+position, the steps the cursor accepts next, as the resume lists them, and the story
+package's files: `index.md`, `plan.md`, and `test-guide.md` with their state, and
+the closure records, each present or missing. It does not replay the original
+checkpoint surface: that evidence lives in those records, so read the one the
+Navigator needs, such as `plan.md` before Plan approval. It is read-only and changes
+neither the cursor nor any file.
 
 ## Pull And Prepare Ariad Work
 

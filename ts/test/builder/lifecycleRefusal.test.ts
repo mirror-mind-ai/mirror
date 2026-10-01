@@ -19,13 +19,12 @@ import {
   reviewLifecycleItem,
   validateLifecycleItem,
 } from "#builder/closure.ts";
+import { lifecycleStageOf, STORY_LIFECYCLE_EVENTS } from "#builder/cursorPosition.ts";
 import { setDeliveryCursor } from "#builder/deliveryCursor.ts";
 import {
   isAlreadyComplete,
   LifecycleRefusal,
   type LifecycleStep,
-  lifecycleStageOf,
-  STORY_LIFECYCLE_EVENTS,
 } from "#builder/lifecycleRefusal.ts";
 import { planLifecycleItem } from "#builder/plan.ts";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";

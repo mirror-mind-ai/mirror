@@ -11,7 +11,11 @@ import assert from "node:assert/strict";
 import { join } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-
+import {
+  allowedNextActions,
+  NO_ACTIVE_ITEM_ACTIONS,
+  PENDING_CONFIRMATION_ACTIONS,
+} from "#builder/cursorPosition.ts";
 import { availableRefinementMoves, renderBuilderOrientationSurface } from "#builder/homeSurface.ts";
 import type { PullCandidatesReport, RoadmapSnapshotReport } from "#builder/pullCandidates.ts";
 import {
@@ -20,13 +24,9 @@ import {
   type RefinementFieldSnapshot,
 } from "#builder/refinementField.ts";
 import {
-  ACTIVE_ITEM_ACTIONS,
   type BuilderResumeState,
-  NO_ACTIVE_ITEM_ACTIONS,
-  PENDING_CONFIRMATION_ACTIONS,
   type ResumeCursorView,
   renderBuilderResumeSurface,
-  selectAllowedNextActions,
 } from "#builder/resumeSurface.ts";
 import { type AuthoredPackage, cvCodeOf, type RoadmapScope } from "#builder/roadmapScope.ts";
 import golden from "#goldens/builder-orientation.golden.json" with { type: "json" };
@@ -97,6 +97,7 @@ function toResumeState(dump: Record<string, unknown>): BuilderResumeState {
       ? null
       : {
           activeItem: cursorDump.active_item,
+          activeItemLevel: null,
           activeCheckpoint: cursorDump.active_checkpoint,
           pendingConfirmation: cursorDump.pending_confirmation,
           lastDeliveryEvent: cursorDump.last_delivery_event,
@@ -113,37 +114,19 @@ function toResumeState(dump: Record<string, unknown>): BuilderResumeState {
   };
 }
 
-test("the allowed-next-action tuples match Python", () => {
+test("the oracle's three tuples are the lists for no item, a pulled item, and a pending confirmation", () => {
+  // CR114: Python offered its active-item tuple at every position with nothing
+  // pending. It is the list for one of them, an item at Pull; the table offers every
+  // other position its own step (`cursorPosition.test.ts`).
   assert.deepEqual([...NO_ACTIVE_ITEM_ACTIONS], oracle.action_tuples.no_active_item);
-  assert.deepEqual([...ACTIVE_ITEM_ACTIONS], oracle.action_tuples.active_item);
-  assert.deepEqual([...PENDING_CONFIRMATION_ACTIONS], oracle.action_tuples.pending_confirmation);
-});
-
-test("selectAllowedNextActions ranks pending confirmation over an active item", () => {
-  const base: ResumeCursorView = {
-    activeItem: null,
-    activeCheckpoint: null,
+  const pulled = {
+    activeItem: "CV22.DS7.US8",
+    activeItemLevel: "user_story",
     pendingConfirmation: null,
-    lastDeliveryEvent: null,
-    releaseIntent: null,
-    releaseIntentDeliveryStory: null,
+    lastDeliveryEvent: "pull",
   };
-  assert.deepEqual([...selectAllowedNextActions(base)], [...NO_ACTIVE_ITEM_ACTIONS]);
-  assert.deepEqual(
-    [...selectAllowedNextActions({ ...base, activeItem: "CV22.DS7.US8" })],
-    [...ACTIVE_ITEM_ACTIONS],
-  );
-  assert.deepEqual(
-    [
-      ...selectAllowedNextActions({
-        ...base,
-        activeItem: "CV22.DS7.US8",
-        pendingConfirmation: "navigator_approval",
-      }),
-    ],
-    [...PENDING_CONFIRMATION_ACTIONS],
-    "a pending confirmation outranks an active item",
-  );
+  assert.deepEqual([...allowedNextActions(pulled)], oracle.action_tuples.active_item);
+  assert.deepEqual([...PENDING_CONFIRMATION_ACTIONS], oracle.action_tuples.pending_confirmation);
 });
 
 /**
@@ -177,6 +160,9 @@ function scopeForRecordedRow(row: (typeof oracle.resume)[number]): RoadmapScope 
 }
 
 test("BUILDER RESUME renders every recorded state, with the position its cursor implies", () => {
+  // The recorded states carry the oracle's lists as renderer input, the Prepare it
+  // offered at `plan_approved` among them (CR114). The renderer prints the list it is
+  // given; which list a cursor gets is graded in `cursorPosition.test.ts`.
   // 17 before CV22.DS10.TS4; the four Workbench-populated states collapsed
   // into one "no canonical index" state.
   assert.ok(oracle.resume.length >= 14);

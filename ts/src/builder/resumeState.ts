@@ -4,12 +4,16 @@
 // deferred from plateau 1 because it needs both the adoption row and the delivery
 // cursor, and the cursor's reader ships with its writer.
 //
-// Three states, in Python's order of precedence, each with its own reason and its
-// own allowed-next-actions tuple:
+// Three states, in Python's order of precedence, each with its own reason:
 //
 //   no adopted method -> `adoption_required`
 //   no cursor         -> `cursor_sync_required`
-//   otherwise         -> resumable, actions chosen by the cursor
+//   otherwise         -> resumable
+//
+// CR114: the actions come from `allowedNextActions` in `cursorPosition.ts`, the list
+// `build show` prints too, except for a journey that adopted no method, which `build
+// show` refuses. Python chose them here, from two facts and never the cursor's last
+// event, so it offered Prepare at every position with nothing pending.
 //
 // CV22.DS10.TS4 removed the Workbench read that used to happen here, and with
 // it an asymmetry both engines carried: Python read the Workbench unguarded
@@ -18,14 +22,10 @@
 // state now; the absent-tables case is graded in the golden.
 
 import type { Database } from "#db/database.ts";
+import { allowedNextActions, NOT_ADOPTED_ACTIONS } from "./cursorPosition.ts";
 import { getDeliveryCursor } from "./deliveryCursor.ts";
 import { getAdoptedMethod } from "./methodAdoption.ts";
-import {
-  ACTIVE_ITEM_ACTIONS,
-  type BuilderResumeState,
-  NO_ACTIVE_ITEM_ACTIONS,
-  PENDING_CONFIRMATION_ACTIONS,
-} from "./resumeSurface.ts";
+import type { BuilderResumeState, ResumeCursorView } from "./resumeSurface.ts";
 
 /** Python `_normalize_journey`. */
 function normalizeJourney(journey: string): string {
@@ -46,7 +46,7 @@ export function readBuilderResumeState(db: Database, journey: string): BuilderRe
       cursor: null,
       resumable: false,
       reason: "adoption_required",
-      allowedNextActions: ["adopt_method", "inspect_method"],
+      allowedNextActions: [...NOT_ADOPTED_ACTIONS],
     };
   }
 
@@ -58,29 +58,25 @@ export function readBuilderResumeState(db: Database, journey: string): BuilderRe
       cursor: null,
       resumable: false,
       reason: "cursor_sync_required",
-      allowedNextActions: ["sync_cursor", "inspect_method"],
+      allowedNextActions: [...allowedNextActions(null)],
     };
   }
 
-  const allowedNextActions = cursor.pendingConfirmation
-    ? PENDING_CONFIRMATION_ACTIONS
-    : cursor.activeItem
-      ? ACTIVE_ITEM_ACTIONS
-      : NO_ACTIVE_ITEM_ACTIONS;
-
+  const view: ResumeCursorView = {
+    activeItem: cursor.activeItem,
+    activeItemLevel: cursor.activeItemLevel,
+    activeCheckpoint: cursor.activeCheckpoint,
+    pendingConfirmation: cursor.pendingConfirmation,
+    lastDeliveryEvent: cursor.lastDeliveryEvent,
+    releaseIntent: cursor.releaseIntent,
+    releaseIntentDeliveryStory: cursor.releaseIntentDeliveryStory,
+  };
   return {
     journey: normalizedJourney,
     adoptedMethod,
-    cursor: {
-      activeItem: cursor.activeItem,
-      activeCheckpoint: cursor.activeCheckpoint,
-      pendingConfirmation: cursor.pendingConfirmation,
-      lastDeliveryEvent: cursor.lastDeliveryEvent,
-      releaseIntent: cursor.releaseIntent,
-      releaseIntentDeliveryStory: cursor.releaseIntentDeliveryStory,
-    },
+    cursor: view,
     resumable: true,
     reason: null,
-    allowedNextActions: [...allowedNextActions],
+    allowedNextActions: [...allowedNextActions(view)],
   };
 }

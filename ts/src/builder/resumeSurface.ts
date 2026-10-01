@@ -1,10 +1,10 @@
 // CV22.DS7.US8 plateau 1 — the `■ BUILDER RESUME` surface.
 //
-// Port of `src/memory/builder/resume_surface.py`, plus the pure half of
-// `resume_state.py`: the three allowed-next-action tuples and the rule that picks
-// between them. The DB-backed composition (`read_builder_resume_state`) arrives in
-// plateau 2 with the delivery cursor, because the cursor's reader and writer share
-// one serialization and D2's revert argument rests on those bytes being symmetric.
+// Port of `src/memory/builder/resume_surface.py`. Python's three allowed-next-action
+// tuples and the rule that picked between them lived here too. CR114 replaced them:
+// the rule never read the cursor's last event, so it offered Prepare at every
+// position with nothing pending. The list is chosen in `cursorPosition.ts` now, and
+// this module only prints it.
 //
 // Three conditional shapes a port merges by accident:
 //
@@ -31,29 +31,10 @@ const FRAME_TOP = "╭───────────────────�
 const FRAME_BOTTOM = "╰────────────────────────────────────────────────────────╯";
 const FRAME_BLANK = "│                                                        │";
 
-/** Python `NO_ACTIVE_ITEM_ACTIONS`. */
-export const NO_ACTIVE_ITEM_ACTIONS = [
-  "inspect_roadmap",
-  "pull_candidate_if_known",
-  "inspect_method",
-] as const;
-
-/** Python `ACTIVE_ITEM_ACTIONS`. */
-export const ACTIVE_ITEM_ACTIONS = [
-  "prepare_active_item",
-  "inspect_roadmap",
-  "inspect_method",
-] as const;
-
-/** Python `PENDING_CONFIRMATION_ACTIONS`. */
-export const PENDING_CONFIRMATION_ACTIONS = [
-  "answer_pending_confirmation",
-  "inspect_method",
-] as const;
-
-/** The cursor fields the resume surface reads. */
+/** The cursor fields the resume surface reads, and its next actions are chosen from. */
 export interface ResumeCursorView {
   readonly activeItem: string | null;
+  readonly activeItemLevel: string | null;
   readonly activeCheckpoint: string | null;
   readonly pendingConfirmation: string | null;
   readonly lastDeliveryEvent: string | null;
@@ -69,16 +50,6 @@ export interface BuilderResumeState {
   readonly resumable: boolean;
   readonly reason: string | null;
   readonly allowedNextActions: readonly string[];
-}
-
-/**
- * Python's branch inside `read_builder_resume_state`: pending confirmation wins
- * over an active item, which wins over neither.
- */
-export function selectAllowedNextActions(cursor: ResumeCursorView): readonly string[] {
-  if (cursor.pendingConfirmation) return PENDING_CONFIRMATION_ACTIONS;
-  if (cursor.activeItem) return ACTIVE_ITEM_ACTIONS;
-  return NO_ACTIVE_ITEM_ACTIONS;
 }
 
 /** Python `_release_intent_lines`: both fields, or no block at all. */

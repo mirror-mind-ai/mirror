@@ -27,7 +27,7 @@
 // follow the searches. The degraded card is indistinguishable from a healthy one —
 // reproduced, and carried to Debt Review as a CR rather than marked here.
 
-import type { WritableDatabase } from "#db/database.ts";
+import type { Database, WritableDatabase } from "#db/database.ts";
 import { memoriesById } from "#frontDoor/searchRoute.ts";
 import { getIdentityContent } from "#identity/identityRead.ts";
 import { getProjectPath } from "#journey/journeyStatus.ts";
@@ -109,17 +109,15 @@ export interface BuildLoadDeps {
  *
  * Which surface appears is decided by the CURSOR, not by adoption: an adopted
  * journey whose cursor has neither an active item nor a pending confirmation gets
- * the position report plus `■ Builder Home`; anything else gets `■ BUILDER
- * RESUME`. Both blocks were ported at plateaus 1–2; this is the branch that picks
- * between them.
+ * the position report plus `■ BUILDER ORIENTATION`; anything else gets
+ * `■ BUILDER RESUME`. Both read the Refinement field from project files only,
+ * since CV22.DS10.TS4 retired the Workbench.
  *
- * The Refinement field is read from the WORKBENCH only when the project has no
- * canonical index — `include_refinement` is `canonical is None`, which is also the
- * reason a legacy-store project can make `■ BUILDER RESUME` raise where Builder
- * Home degrades (the asymmetry recorded at plateau 2).
+ * Exported for the CR114 walk, which compares the list this prints with `build show`'s
+ * at every position of a lifecycle.
  */
-function renderEntrySurface(
-  db: WritableDatabase,
+export function renderBuilderEntrySurface(
+  db: Database,
   slug: string,
   projectPath: string | null,
 ): string {
@@ -237,7 +235,7 @@ export async function runBuildLoad(
   const stderr = `${guard?.stderr ?? ""}${banner(slug, projectPath)}`;
 
   if (getAdoptedMethod(db, slug) === "ariad") {
-    stdout += printed(renderEntrySurface(db, slug, projectPath));
+    stdout += printed(renderBuilderEntrySurface(db, slug, projectPath));
   }
 
   stdout += printed(await loadMirrorContext(db, { persona: "engineer", journey: slug }));

@@ -459,6 +459,7 @@ test("each position paragraph starts its own card line on the resume surface", (
       adoptedMethod: "ariad",
       cursor: {
         activeItem: "CV4.DS1",
+        activeItemLevel: "delivery_story",
         activeCheckpoint: null,
         pendingConfirmation: null,
         lastDeliveryEvent: "pull",
