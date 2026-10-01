@@ -2,7 +2,7 @@
 
 # CR082 — Plan and Expand surfaces print absolute filesystem paths where their artifact surface prints project-relative ones
 
-**Status:** in_progress
+**Status:** validated
 **RS:** RS001
 **Driver:** @viniciusteles
 **Delivery:** `mirror-ts-core`
@@ -831,6 +831,129 @@ of them new. Typecheck, lint, the repository checks, the migration proofs, and e
 smoke are green.
 
 Next: plateau 3, the Navigator's validation and the handoff review.
+
+### The route after the change (2026-10-01)
+
+At `63ed0de5`, the same in bash and zsh, every step meets its pass condition:
+
+```text
+--- 0. build load names the project root, for the agent
+  absolute: outside any surface×2
+--- 1. templates prepared
+  absolute: none
+  project: storefront
+  journey: alpha
+--- 2. a User Story pulled
+  answer: <<<ARIAD:ITEM_ACTIVATED>>> <<<ARIAD:PREPARE_FIELD_READING>>>
+  absolute: none
+--- 3. planned
+  answer: <<<ARIAD:PLAN_CHECKPOINT>>> <<<ARIAD:ARTIFACTS_MATERIALIZED>>>
+  absolute: outside any surface×4
+  story package: docs/project/roadmap/cv1/ds1/cv1-ds1-us1-enter-an-address
+  trailer: plan_artifact_path=<root>/docs/project/roadmap/cv1/ds1/cv1-ds1-us1-enter-an-address/plan.md
+  target: 1× project: storefront · journey: alpha
+--- 4. validated
+  answer: <<<ARIAD:VALIDATION_CHECKPOINT>>> <<<ARIAD:DEBT_REVIEW_STARTED>>>
+  absolute: none
+  validation artifact: project: storefront · journey: alpha docs/project/roadmap/cv1/ds1/cv1-ds1-us1-enter-an-address/validation.md
+  target: 1× project: storefront · journey: alpha
+--- 5. debt reviewed
+  absolute: none
+  review artifact: project: storefront · journey: alpha docs/project/roadmap/cv1/ds1/cv1-ds1-us1-enter-an-address/review.md
+  target: 1× project: storefront · journey: alpha
+--- 6. coherent
+  absolute: none
+  coherence artifact: project: storefront · journey: alpha docs/project/roadmap/cv1/ds1/cv1-ds1-us1-enter-an-address/coherence.md
+  target: 1× project: storefront · journey: alpha
+--- 7. done
+  absolute: none
+  done artifact: project: storefront · journey: alpha docs/project/roadmap/cv1/ds1/cv1-ds1-us1-enter-an-address/done.md
+  target: 1× project: storefront · journey: alpha
+--- 8. the Delivery Story pulled: Expand finds US1 and writes TS1
+  answer: <<<ARIAD:DELIVERY_STORY_READY>>> <<<ARIAD:ARTIFACTS_MATERIALIZED>>>
+  absolute: none
+  target: 1× project: storefront · journey: alpha
+--- 9. Delivery Story planned
+  answer: <<<ARIAD:DELIVERY_STORY_PLAN_CHECKPOINT>>> <<<ARIAD:ARTIFACTS_MATERIALIZED>>>
+  absolute: none
+  target: 1× project: storefront · journey: alpha
+--- 10. Expand blocked: the table has no Code, Story, Type, and Status
+  answer: <<<ARIAD:EXPAND_BLOCKED>>>
+  absolute: none
+  why blocked: authored package at docs/project/roadmap/cv1/ds2 has no canonical candidate-stories table (a Markdown table header must include Code, Story, Type, and Status columns); refusing to fabricate a generic story
+--- 11. Expand blocked: another package claims the story it would invent
+  absolute: none
+  why blocked: CV1.DS3 has no package, and an authored package already claims CV1.DS3.US1 at docs/project/roadmap/cv1/claim; refusing to invent a story over it
+--- 12. Expand blocked: two packages claim the Delivery Story
+  absolute: none
+  why blocked: 2 roadmap packages claim code 'CV1.DS4': docs/project/roadmap/cv1/dup-a, docs/project/roadmap/cv1/dup-b
+--- 13. the same double claim, met by Plan
+  answer: Error: 2 roadmap packages claim code 'CV1.DS4': docs/project/roadmap/cv1/dup-a, docs/project/roadmap/cv1/dup-b
+  absolute: none
+```
+
+No marked surface holds the scratch root. Outside them, only `build load`'s card and its
+`project_path=` line (step 0) and Plan's four `*_path=` lines (step 3) do. Every report
+of a write names `storefront` and `alpha` once, and the refusals and the `Error:` line
+name their packages project-relative.
+
+### Navigator validation (2026-10-01)
+
+The Navigator walked the [validation route](#validation-route) and accepted it:
+"Validation accepted".
+
+- The route was run in the Navigator's own shell, from the repository root, by the
+  script below, which takes the route from this document, runs it, and compares its
+  output with the [recorded output](#the-route-after-the-change-2026-10-01). It printed
+  `PASS: the route, as the CR states it, prints exactly the recorded after-change
+  output (53 lines).` The script was first proven able to fail: with one count changed
+  in a copy of the recorded output, it printed the differing line and `FAIL`.
+- The cards were judged in the Navigator's terminal: the second script prints the Plan
+  card with its four lines after the end marker, the artifacts card under it, a
+  validation card, and an Expand refusal.
+
+```bash
+doc=docs/project/refinement/rs001-ariad-runtime-trust/cr082-lifecycle-surfaces-print-absolute-paths.md
+route=$(mktemp) recorded=$(mktemp) actual=$(mktemp)
+awk '/^### Validation route/{v=1} v && /^```bash$/{f=1; next} f && /^```$/{exit} f{print}' "$doc" > "$route"
+awk '/^### The route after the change/{v=1} v && /^```text$/{f=1; next} f && /^```$/{exit} f{print}' "$doc" > "$recorded"
+bash "$route" > "$actual" 2>&1
+if diff "$recorded" "$actual"; then
+  echo "PASS: the route, as the CR states it, prints exactly the recorded after-change output ($(wc -l < "$actual" | tr -d ' ') lines)."
+else
+  echo "FAIL: the lines above differ from the recorded after-change output."
+fi
+rm -f "$route" "$recorded" "$actual"
+```
+
+```bash
+V=$(mktemp -d /tmp/cr082.XXXXXX) && mkdir -p "$V/home" && export MIRROR_HOME="$V/home" MIRROR_USER= NODE_OPTIONS=--no-warnings
+cr082() { node ts/src/frontDoor/cli.ts "$@"; }
+P="$V/storefront" && R="$P/docs/project/roadmap" && mkdir -p "$R/cv1/ds1" "$R/cv1/ds2"
+printf '# Roadmap\n' > "$R/index.md" && printf '# CV1 — Checkout\n\n**Status:** 🟢 Active\n' > "$R/cv1/index.md"
+printf '# CV1.DS1 — Checkout address\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n\n## Candidate Stories\n\n| Code | Story | Type | Status |\n|------|-------|------|--------|\n| CV1.DS1.US1 | Enter an address | User Story | 🟡 Planned |\n' > "$R/cv1/ds1/index.md"
+printf '# CV1.DS2 — Checkout payment\n\n**Status:** 🟡 Planned\n\n## Candidate Stories\n\n| Family | Scope |\n|--------|-------|\n| cards | pay by card |\n' > "$R/cv1/ds2/index.md"
+git -C "$P" init -q
+printf '# alpha\n' | cr082 identity set journey alpha > /dev/null && cr082 journey set-path alpha "$P" > /dev/null 2>&1
+cr082 build adopt --journey alpha --method ariad > /dev/null && cr082 build sync-cursor --journey alpha --method ariad > /dev/null
+b() { cr082 build "$@" --journey alpha --method ariad; }
+author() { awk '/^## /{print; print ""; print substr($0,4) ", as the Driver wrote it for this story."; print ""; s=1; next} !s{print}' "$1" > "$1.new" && mv "$1.new" "$1"; }
+S="$R/cv1/ds1/cv1-ds1-us1-enter-an-address"
+b pull-item --item-code CV1.DS1.US1 --item-level user_story --item-title 'Enter an address' --why-now now > /dev/null
+echo '=================== plan-item: the Plan card, its four lines, the artifacts card'
+b plan-item
+author "$S/plan.md"; author "$S/index.md"; b approve-plan > /dev/null
+echo '=================== validate-item: the validation card'
+b validate-item --implementation-complete --check 'npm test' --checks-status passed --e2e-decision not_required \
+  --e2e-evidence 'unit covered' --navigator-route 'run it' --navigator-accepted --expected-observation 'it works' \
+  --pass-condition 'it works' --fail-condition 'it breaks' | sed -n '/<<<ARIAD:VALIDATION_CHECKPOINT>>>/,/<<<END:VALIDATION_CHECKPOINT>>>/p'
+echo '=================== pull-item on a Delivery Story Expand refuses: the refusal'
+b pull-item --item-code CV1.DS2 --item-level delivery_story --item-title 'Checkout payment' --why-now now
+unset MIRROR_HOME MIRROR_USER; rm -rf "$V"
+```
+
+CI was green on every push that carried the change: plateau 1 (`421db48d`) and plateau 2
+(`63ed0de5`), each running Tests on both legs and the smoke.
 
 ## Outcome
 

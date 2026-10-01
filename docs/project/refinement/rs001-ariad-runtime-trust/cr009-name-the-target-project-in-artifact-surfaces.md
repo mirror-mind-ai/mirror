@@ -89,6 +89,13 @@ times in Navigator-facing summaries before the filesystem sweep disproved it.
 surface still reports bare project-relative paths; no journey/project/root line exists in
 the surface code. Still valid.
 
+### Navigator validation (2026-10-01)
+
+Delivered with CR082, in its plateau 2 (`63ed0de5`). The Navigator walked
+[CR082's route](cr082-lifecycle-surfaces-print-absolute-paths.md#navigator-validation-2026-10-01),
+whose steps 1 and 3 to 9 are this change, judged the cards in their own terminal, and
+accepted it: "Validation accepted".
+
 ## Outcome
 
 Pending.
