@@ -955,6 +955,49 @@ unset MIRROR_HOME MIRROR_USER; rm -rf "$V"
 CI was green on every push that carried the change: plateau 1 (`421db48d`) and plateau 2
 (`63ed0de5`), each running Tests on both legs and the smoke.
 
+### Handoff review (2026-10-01)
+
+This review came after the Navigator's walk, per the collaboration strategy. The nine
+lenses of the plan's first pass reviewed the delivered code, tests, words, safety
+posture, operational cost, and resumability: engineer, quality-assurance,
+database-architect, devops-engineer, security-engineer, ai-engineer, prompt-engineer,
+experience-designer, and product-designer. Every finding was checked against the code,
+and the one about behavior was reproduced: `projectRelative("/tmp/p/..cache/x",
+"/tmp/p")` answered none, and `displayPath` printed the path absolute. The cost was
+measured: the two new test files run in 0.28 seconds together.
+
+Synthesis: the delivery does what the plan said, and the Navigator's walk matched it
+line for line. The findings sit at the edges: one rule the new core inherited, one claim
+the walk makes about itself, and one locator in the skill's words.
+
+| # | Lens | Finding | Class | Recommendation |
+|---|---|---|---|---|
+| 1 | engineer | The core reads any relation that starts with `..` as outside the project, so a file under a project folder named `..cache` is outside, and a card would print it absolute. Both copies the core replaced had the same test; no Ariad path reaches it, since they all sit under `docs/project/roadmap/`. But the core is now the one answer to that question, for every card and the Done preflight | Non-blocking debt, inherited, made shared here | Pay now: outside is `..` itself, or `..` followed by a separator; a test grades `..cache` |
+| 2 | quality-assurance | The walk says it runs every command that prints a path or reports a write, and it skips `continue-lifecycle`, which crosses Done and prints a `DONE_CHECKPOINT` with its record. The corpus grades that card, `continue_crosses_done`, edited in both plateaus, so it is not unguarded; but the walk's claim is untrue | Non-blocking debt, introduced here | Pay now: the walk crosses Done through `continue-lifecycle` under `checkpoint` |
+| 3 | prompt-engineer | The skill locates `project_path` as "the line `build load` printed last". In the combined output an agent reads, two banner lines on stderr follow it, the second of which prints the root again behind an emoji | Non-blocking debt, introduced here | Pay now: name the line by its key, the `project_path=` line `build load` prints; the skill test pins the new words |
+
+Checked and dropped:
+
+- `relativeOrRefuse` is exported only for its test (engineer). Its refusal cannot be
+  reached through `inspectAuthoredClosure`, and the alternative is not grading it.
+- The skill's section 1 says `build load` emits `project_path=` as the last output line
+  (prompt-engineer). That is true of stdout, the stream that section's contract
+  describes.
+- A journey rooted at the home directory would name the account on every write report
+  (security-engineer). It is the folder the user chose, and `build load` prints the
+  whole path anyway.
+- The golden edits were made by scripts kept in `tmp/`, uncommitted, as CR111's,
+  CR113's, and CR114's were (devops-engineer). Each README row says what its script
+  derived and what it asserted.
+
+The other lenses were silent:
+
+- database-architect: nothing stored changes, and no project snapshot moved.
+- ai-engineer: the four lines still reach the agent in the tool output, and nothing
+  parses them inside the block; the tests find them by line.
+- experience-designer: the Navigator judged the cards in their terminal.
+- product-designer: CR118 holds the question of the two closure shapes.
+
 ## Outcome
 
 _Pending._
