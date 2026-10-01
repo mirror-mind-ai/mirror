@@ -10,7 +10,7 @@ import { join, relative } from "node:path";
 import test from "node:test";
 
 import { relativeOrRefuse } from "#builder/deliveryStoryRoadmapClosure.ts";
-import { displayPath, projectRelative } from "#builder/projectPaths.ts";
+import { displayPath, projectFolder, projectRelative, targetLine } from "#builder/projectPaths.ts";
 
 const ROOT = "/tmp/a-project";
 
@@ -56,4 +56,11 @@ test("the Done preflight names a roadmap file in POSIX form, and refuses the roo
       path,
     );
   }
+});
+
+test("a report of a write names the project's folder and the journey (CR009)", () => {
+  assert.equal(targetLine("/tmp/storefront", "alpha"), "project: storefront · journey: alpha");
+  assert.equal(targetLine("/tmp/storefront/", "alpha"), "project: storefront · journey: alpha");
+  assert.equal(projectFolder(relative(process.cwd(), "/tmp/storefront")), "storefront");
+  assert.equal(projectFolder("/"), "/", "the filesystem root has no last segment");
 });

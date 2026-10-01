@@ -46,7 +46,7 @@ import {
 import { LifecycleRefusal, refuseIfAlreadyComplete } from "./lifecycleRefusal.ts";
 import { renderLifecycleRibbon } from "./lifecycleRibbon.ts";
 import type { ContractDefinition, MethodDefinition } from "./methodDefinition.ts";
-import { displayPath } from "./projectPaths.ts";
+import { displayPath, targetLine } from "./projectPaths.ts";
 import { wrapAriadSurface } from "./surfaceProtocol.ts";
 
 /** Python `_contract_for`. */
@@ -358,7 +358,7 @@ export function renderValidationCheckpoint(report: BuilderValidationReport): str
     ...cardPrefixed(report.validationContract.rules, "✓"),
     "│                                                        │",
     cardText("validation artifact"),
-    ...recordRows(report.validationArtifactPath, report.projectRoot),
+    ...recordRows(report.validationArtifactPath, report.projectRoot, report.journey),
     ...preservedNote(report.validationArtifactOutcome),
     "│                                                        │",
     cardText("boundary"),
@@ -557,7 +557,7 @@ export function renderReviewCheckpoint(report: BuilderReviewReport): string {
     ...cardPrefixed(report.debtReviewContract.rules, "✓"),
     "│                                                        │",
     cardText("review artifact"),
-    ...recordRows(report.reviewArtifactPath, report.projectRoot),
+    ...recordRows(report.reviewArtifactPath, report.projectRoot, report.journey),
     ...preservedNote(report.reviewArtifactOutcome),
     "│                                                        │",
     cardText("boundary"),
@@ -736,7 +736,7 @@ export function renderCoherenceCheckpoint(report: BuilderCoherenceReport): strin
     ...cardPrefixed(report.coherenceContract.rules, "✓"),
     "│                                                        │",
     cardText("coherence artifact"),
-    ...recordRows(report.coherenceArtifactPath, report.projectRoot),
+    ...recordRows(report.coherenceArtifactPath, report.projectRoot, report.journey),
     ...preservedNote(report.coherenceArtifactOutcome),
     "│                                                        │",
     cardText("boundary"),
@@ -924,7 +924,7 @@ export function renderDoneCheckpoint(report: BuilderDoneReport): string {
     ...cardPrefixed(report.doneContract.rules, "✓"),
     "│                                                        │",
     cardText("done artifact"),
-    ...recordRows(report.doneArtifactPath, report.projectRoot),
+    ...recordRows(report.doneArtifactPath, report.projectRoot, report.journey),
     ...preservedNote(report.doneArtifactOutcome),
     "│                                                        │",
     cardText("boundary"),
@@ -939,11 +939,14 @@ export function renderDoneCheckpoint(report: BuilderDoneReport): string {
 }
 
 /**
- * A closure record's rows (CR082): the path relative to the project, as every card
- * names a path, or `not materialized` when the journey has no project.
+ * A closure record's rows: the project and journey it was written for (CR009), then its
+ * path relative to that project (CR082), or `not materialized` when the journey has no
+ * project, and nothing was written.
  */
-function recordRows(path: string | null, projectRoot: string | null): string[] {
-  return cardWrapped(path === null ? "not materialized" : displayPath(path, projectRoot));
+function recordRows(path: string | null, projectRoot: string | null, journey: string): string[] {
+  if (path === null) return cardWrapped("not materialized");
+  const target = projectRoot === null ? [] : cardWrapped(targetLine(projectRoot, journey));
+  return [...target, ...cardWrapped(displayPath(path, projectRoot))];
 }
 
 /**

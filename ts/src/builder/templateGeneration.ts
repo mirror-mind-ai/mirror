@@ -20,6 +20,7 @@
 import { relative, resolve } from "node:path";
 import { writeBuilderArtifact } from "./artifacts/artifactWriter.ts";
 import type { MethodDefinition, TemplateDefinition } from "./methodDefinition.ts";
+import { projectFolder } from "./projectPaths.ts";
 
 /** Python `PENDING_TEMPLATE_PREPARATION_ITEMS`. */
 export const PENDING_TEMPLATE_PREPARATION_ITEMS = [
@@ -41,6 +42,8 @@ export interface TemplateWriteResult {
 /** Python `BuilderTemplatePreparation`. */
 export interface BuilderTemplatePreparation {
   readonly journey: string;
+  /** The project's folder, named beside the journey (CR009). */
+  readonly project: string;
   readonly method: string;
   readonly checked: readonly string[];
   readonly created: readonly TemplateWriteResult[];
@@ -95,6 +98,7 @@ export function prepareMethodTemplates(
 
   return {
     journey: options.journey,
+    project: projectFolder(projectPath),
     method: options.method.id,
     checked,
     created,
@@ -119,6 +123,9 @@ export function renderTemplatePreparationReport(report: BuilderTemplatePreparati
     "",
     "journey",
     report.journey,
+    "",
+    "project",
+    report.project,
     "",
     "method",
     report.method,

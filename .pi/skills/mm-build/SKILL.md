@@ -308,6 +308,17 @@ described in **Show The Active Checkpoint**. Return its `ACTIVE_CHECKPOINT` bloc
 verbatim. Never substitute another command's surface, such as `check-implementation`,
 as evidence of where the cursor stands.
 
+### Paths on Ariad surfaces
+
+A card prints a path inside the project relative to the journey's `project_path`,
+the line `build load` printed last. Open it by joining the two, never by joining it
+to the working directory, which can belong to another repository. A card that
+reports a file written or left in place names its project folder and journey on a
+`project:` row. If that row names a project or journey other than the one this
+session loaded, tell the Navigator before touching the files. Plan prints its files'
+absolute paths as `*_path=` lines below its surface. They are not part of the
+surface: use them as printed, and do not render them.
+
 ## Ariad Activation Surfaces
 
 For Ariad-adopted journeys whose delivery cursor has no active item,

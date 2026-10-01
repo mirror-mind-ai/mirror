@@ -506,9 +506,9 @@ Pass, after the change:
 - Step 3: `absolute: outside any surface×4`; `story package:
   docs/project/roadmap/cv1/ds1/cv1-ds1-us1-enter-an-address`; the trailer unchanged,
   `<root>/docs/…/plan.md`; `target: 1× project: storefront · journey: alpha`.
-- Steps 4 to 7: `absolute: none`; the record at
-  `docs/project/roadmap/cv1/ds1/cv1-ds1-us1-enter-an-address/<record>.md`; `target: 1×
-  project: storefront · journey: alpha`.
+- Steps 4 to 7: `absolute: none`; the record's block reads the target row, then the
+  record at `docs/project/roadmap/cv1/ds1/cv1-ds1-us1-enter-an-address/<record>.md`;
+  `target: 1× project: storefront · journey: alpha`.
 - Steps 8 and 9: `absolute: none`; `target: 1× project: storefront · journey: alpha`.
 - Steps 10 to 12: `absolute: none`, and the reasons name
   `docs/project/roadmap/cv1/ds2`, `docs/project/roadmap/cv1/claim`, and
@@ -800,6 +800,37 @@ and `builder-roadmap`'s 1 message. 2932 tests pass, 8 of them new. Typecheck, li
 repository checks, the migration proofs, and every smoke are green.
 
 Next: plateau 2, the target named.
+
+### Plateau 2 handoff (2026-10-01)
+
+Now true: every report of a write names where it went. `projectPaths.ts` composes the
+row, `project: <folder> · journey: <slug>`, from the project's last path segment, or the
+path itself at the filesystem root. `ARTIFACTS_MATERIALIZED` prints it under its
+context row, from a `journey` option every caller must now pass; the four story closure
+checkpoints print it under their record's label, above the path, and print none when
+the record was not materialized; the template preparation report names the project
+between `journey` and `method`. The skill carries **Paths on Ariad surfaces**, with the
+action the row asks for, and the Claude copies were regenerated. Every route step meets
+its pass condition, the same in bash and zsh.
+
+`pathsWalk.test.ts` now requires the row once on every write report the walk meets,
+under the artifacts card's context and under a closure record's label, and no row on any
+other surface; a sixth walk, with the project path removed, closes a story whose
+validation card reads `not materialized` and names no target; and a test pins the
+skill's sentences, and that the old Plan line left. `projectPaths.test.ts` grades the
+row at a trailing separator, a relative root, and the filesystem root. Red first: the
+two lifecycle walks failed at the template report and at the first artifacts card, and
+the no-project walk passed, as a guard. `commands.test.ts` copies its fixture into a
+fixed-name `project` folder, so the row reads the same on every run.
+
+The recorded cards gained their row by script, under criterion 7, and the edit is listed
+in `ts/test/goldens/README.md`: in `builder-command`, 13 artifacts cards, 10 closure
+checkpoints, and 2 template reports; in `builder-lifecycle`, 60 artifacts cards and 48
+closure checkpoints, with the 4 `not materialized` ones unchanged. 2935 tests pass, 3
+of them new. Typecheck, lint, the repository checks, the migration proofs, and every
+smoke are green.
+
+Next: plateau 3, the Navigator's validation and the handoff review.
 
 ## Outcome
 

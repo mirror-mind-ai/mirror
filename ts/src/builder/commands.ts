@@ -708,6 +708,7 @@ function artifactsSurface(options: {
   context: string;
   artifacts: readonly MaterializedArtifact[];
   projectPath: string | null;
+  journey: string;
   boundary: string;
 }): string {
   if (options.artifacts.length === 0) return "";
@@ -716,6 +717,7 @@ function artifactsSurface(options: {
       context: options.context,
       artifacts: options.artifacts,
       projectPath: options.projectPath,
+      journey: options.journey,
       boundary: options.boundary,
     }),
   );
@@ -827,6 +829,7 @@ export function runPullItem(
         context: `Expand — ${expandReport.deliveryStory}`,
         artifacts: expandReport.materializedArtifacts,
         projectPath,
+        journey,
         boundary: "Files were materialized only. No Plan or implementation was executed.",
       });
     return { stdout, stderr: "", exitCode: 0 };
@@ -917,6 +920,7 @@ export function runPlanItem(
         context: `Plan — ${report.activeItem}`,
         artifacts: planPackageArtifacts(report.planArtifactPath, existedBefore),
         projectPath,
+        journey,
         boundary:
           "Plan artifacts were materialized. Implementation remains blocked until approval.",
       });
@@ -1400,6 +1404,7 @@ export function runPlanDeliveryStory(
           context: `Delivery Story Plan — ${report.cursor.activeItem || "active item"}`,
           artifacts: report.materializedArtifacts,
           projectPath,
+          journey,
           boundary:
             "Plan artifacts were materialized. Implementation remains blocked until approval.",
         }),
@@ -1456,6 +1461,7 @@ export function runApproveDeliveryStoryPlan(
           context: `Delivery Story Plan Approval — ${report.cursor.activeItem || "active item"}`,
           artifacts: report.materializedArtifacts,
           projectPath,
+          journey,
           boundary:
             "Plan approval artifacts were materialized. Implementation may proceed under the approved plan.",
         }) +
@@ -1554,6 +1560,7 @@ function runDeliveryStoryClosure(
           context: `Delivery Story ${spec.label} — ${report.cursor.activeItem || "active item"}`,
           artifacts: closureArtifactManifest(spec.kind, artifactPath, report.artifactOutcome),
           projectPath,
+          journey,
           boundary: closureBoundary(spec.label, report.artifactOutcome),
         }) +
         (spec.trailer?.(report, projectPath) ?? ""),

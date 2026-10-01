@@ -10,10 +10,12 @@
 //     preservation rule reports when a file was authored by a human and kept, and
 //     it is the only visible evidence that the command did not overwrite it.
 //   * the PATH is relativized against the journey's project root, through
-//     `displayPath`, the one rule every card that prints a path follows (CR082).
+//     `displayPath`, the one rule every card that prints a path follows (CR082), and
+//     the row under the context names that project and the journey (CR009), so the
+//     relative paths can be checked against the right repository.
 
 import { cardText, cardWrapped } from "../card.ts";
-import { displayPath } from "../projectPaths.ts";
+import { displayPath, targetLine } from "../projectPaths.ts";
 import { wrapAriadSurface } from "../surfaceProtocol.ts";
 
 /** Python `MaterializedArtifact`, plus a note (CR112): what an existing file is. */
@@ -62,6 +64,8 @@ export interface ArtifactsSurfaceOptions {
   readonly context: string;
   readonly artifacts: readonly MaterializedArtifact[];
   readonly projectPath?: string | null;
+  /** The journey the files were written for, named with the project (CR009). */
+  readonly journey: string;
   readonly boundary?: string;
 }
 
@@ -76,6 +80,7 @@ export function renderArtifactsMaterializedSurface(options: ArtifactsSurfaceOpti
     "│        ✎  ARTIFACTS MATERIALIZED                      │",
     "│                                                        │",
     ...cardWrapped(options.context),
+    ...(projectPath === null ? [] : cardWrapped(targetLine(projectPath, options.journey))),
     "│                                                        │",
   ];
   if (options.artifacts.length > 0) {

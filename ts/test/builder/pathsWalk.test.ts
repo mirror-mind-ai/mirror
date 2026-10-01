@@ -9,11 +9,16 @@
 //
 // The four `*_path=` lines Plan prints are the agent's. They stay absolute, and they
 // print below the surface's end marker, where the transport rule does not reach (D1).
+//
+// CR009: every report of a write names the project's folder and the journey on one row,
+// so a Navigator can tell from the card alone where the files went. The world's
+// project folder is `project`, and its journey is `demo`.
 
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 
 import { CARD_WIDTH, cardWrapped } from "#builder/card.ts";
 import { authorPlan, authorStoryIndex } from "#helpers/authorScaffold.ts";
@@ -62,6 +67,14 @@ function world(): BuilderWorld {
 }
 
 const PACKAGE = "docs/project/roadmap/cv1/ds1/cv1-ds1-us1-enter-an-address";
+const TARGET = "project: project · journey: demo";
+
+const CLOSURE_LABELS: Readonly<Record<string, string>> = {
+  VALIDATION_CHECKPOINT: "validation artifact",
+  DEBT_REVIEW_CHECKPOINT: "review artifact",
+  COHERENCE_CHECKPOINT: "coherence artifact",
+  DONE_CHECKPOINT: "done artifact",
+};
 
 interface Surface {
   readonly id: string;
@@ -147,9 +160,36 @@ function wrapped(text: string): string[] {
   return cardWrapped(text).map((row) => content(row) ?? "");
 }
 
+/**
+ * Every report of a write names its target once (CR009): the artifacts card on the row
+ * under its context, a story closure on the row under its record's label, when it has a
+ * record. A card names no other target.
+ */
+function assertTargetNamed(result: BuilderRun, label: string): void {
+  for (const surface of split(result.stdout).surfaces) {
+    const rows = surface.rows.map(content);
+    const named = rows.filter((row) => row?.startsWith("project: ")).length;
+    if (surface.id === "ARTIFACTS_MATERIALIZED") {
+      const context = rows.indexOf("") + 1;
+      const end = rows.indexOf("", context);
+      assert.equal(rows[end - 1], TARGET, `${label}: the artifacts card's target`);
+      assert.equal(named, 1, `${label}: the artifacts card names one target`);
+      continue;
+    }
+    const record = CLOSURE_LABELS[surface.id];
+    if (record !== undefined && rows[rows.indexOf(record) + 1] !== "not materialized") {
+      assert.equal(rows[rows.indexOf(record) + 1], TARGET, `${label}: ${surface.id}'s target`);
+      assert.equal(named, 1, `${label}: ${surface.id} names one target`);
+      continue;
+    }
+    assert.equal(named, 0, `${label}: ${surface.id} names a target it did not write to`);
+  }
+}
+
 function ran(result: BuilderRun, label: string, exitCode = 0): BuilderRun {
   assert.equal(result.exitCode, exitCode, `${label}: ${result.stderr}${result.stdout}`);
   assertNoAbsolutePath(result, label);
+  assertTargetNamed(result, label);
   return result;
 }
 
@@ -177,7 +217,8 @@ const VALIDATE = [
 
 test("a story's lifecycle prints every path project-relative, and Plan's lines below its surface", () => {
   const w = world();
-  ran(runBuild(w, ["prepare-templates"]), "templates");
+  const templates = ran(runBuild(w, ["prepare-templates"]), "templates");
+  assert.match(templates.stdout, /^journey\ndemo\n\nproject\nproject\n\nmethod\nariad\n/mu);
   ran(
     runBuild(w, [
       "pull-item",
@@ -234,8 +275,8 @@ test("a story's lifecycle prints every path project-relative, and Plan's lines b
     const closed = ran(runBuild(w, argv), label);
     assert.deepEqual(
       block(closed.stdout, surface, label),
-      wrapped(`${PACKAGE}/${record}`),
-      `${label}: the record, project-relative`,
+      [TARGET, ...wrapped(`${PACKAGE}/${record}`)],
+      `${label}: the target, then the record, project-relative`,
     );
   }
 });
@@ -364,4 +405,48 @@ test("a double claim met by Plan names both packages project-relative on its Err
       "docs/project/roadmap/cv1/dup-b\n",
   );
   assert.ok(dirname(w.project).startsWith(ROOT_MARK), "the world sits under the short root");
+});
+
+test("with no project, a closure writes no record, and its card names no target", () => {
+  const w = world();
+  w.db
+    .prepare("UPDATE identity SET metadata = ? WHERE layer = 'journey' AND key = 'demo'")
+    .run(JSON.stringify({}));
+  ran(
+    runBuild(w, [
+      "pull-item",
+      "--item-code",
+      "CV1.DS1.US1",
+      "--item-level",
+      "user_story",
+      "--item-title",
+      "Enter an address",
+      "--why-now",
+      "next",
+    ]),
+    "pull without a project",
+  );
+  ran(runBuild(w, ["plan-item"]), "plan without a project");
+  ran(runBuild(w, ["approve-plan"]), "approve without a project");
+  const validated = ran(runBuild(w, VALIDATE), "validate without a project");
+  assert.deepEqual(block(validated.stdout, "VALIDATION_CHECKPOINT", "validation artifact"), [
+    "not materialized",
+  ]);
+});
+
+test("the skill tells the agent how to read a card's path, and what the `project:` row is for", () => {
+  const skill = readFileSync(
+    fileURLToPath(new URL("../../../.pi/skills/mm-build/SKILL.md", import.meta.url)),
+    "utf8",
+  ).replaceAll(/\s+/gu, " ");
+  for (const sentence of [
+    "A card prints a path inside the project relative to the journey's `project_path`, the line `build load` printed last.",
+    "Open it by joining the two, never by joining it to the working directory, which can belong to another repository.",
+    "If that row names a project or journey other than the one this session loaded, tell the Navigator before touching the files.",
+    "They are not part of the surface: use them as printed, and do not render them.",
+    "name the plan in the reply by its project-relative path: the card's `story package`, then `/plan.md`.",
+  ]) {
+    assert.ok(skill.includes(sentence), `the skill says: ${sentence}`);
+  }
+  assert.ok(!skill.includes("include the `plan artifact` path"), "the old Plan line left");
 });

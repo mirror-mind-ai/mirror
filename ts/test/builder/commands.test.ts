@@ -558,8 +558,12 @@ function seedLifecycle(db: WritableDatabase, project: string, scenario: string):
 }
 
 function scratchProject(seedAuthored: boolean): string {
-  const directory = mkdtempSync("/tmp/builder-command-project-");
-  temporaryDirectories.push(directory);
+  // A fixed folder name inside the temporary directory: every report of a write names
+  // the project by its folder (CR009), so a random one would make the row differ
+  // between runs. The fixture's own folder is named `project`, and so is this one.
+  const scratch = mkdtempSync("/tmp/builder-command-project-");
+  temporaryDirectories.push(scratch);
+  const directory = join(scratch, "project");
   cpSync(PROJECT, directory, { recursive: true });
   if (seedAuthored) {
     for (const relativePath of [

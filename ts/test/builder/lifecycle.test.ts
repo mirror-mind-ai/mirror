@@ -713,6 +713,7 @@ function replayLifecycleStep(context: ReplayContext, step: Step): ReplayOutcome 
                 context: `Expand — ${report.deliveryStory}`,
                 artifacts: report.materializedArtifacts,
                 projectPath: context.project,
+                journey: context.journey,
                 boundary: "Files were materialized only. No Plan or implementation was executed.",
               }),
             },
@@ -840,6 +841,7 @@ function replayLifecycleStep(context: ReplayContext, step: Step): ReplayOutcome 
               context: `Plan — ${report.activeItem}`,
               artifacts,
               projectPath: context.project,
+              journey: context.journey,
               boundary:
                 "Plan artifacts were materialized. Implementation remains blocked until approval.",
             }),
@@ -1140,6 +1142,7 @@ function replayLifecycleStep(context: ReplayContext, step: Step): ReplayOutcome 
             context: `Delivery Story Plan — ${report.cursor.activeItem ?? "active item"}`,
             artifacts: report.materializedArtifacts,
             projectPath: context.project,
+            journey: context.journey,
             boundary:
               "Plan artifacts were materialized. Implementation remains blocked until approval.",
           }),
@@ -1183,6 +1186,7 @@ function replayLifecycleStep(context: ReplayContext, step: Step): ReplayOutcome 
               context: `Delivery Story Plan Approval — ${report.cursor.activeItem ?? "active item"}`,
               artifacts: report.materializedArtifacts,
               projectPath: context.project,
+              journey: context.journey,
               boundary:
                 "Plan approval artifacts were materialized. Implementation may proceed under the approved plan.",
             }),
@@ -1363,6 +1367,7 @@ function replayDeliveryStoryClosure(context: ReplayContext, step: Step): ReplayO
           context: `Delivery Story ${pyTitle(kind)} — ${report.cursor.activeItem ?? "active item"}`,
           artifacts,
           projectPath: context.project,
+          journey: context.journey,
           boundary: `${pyTitle(kind)} artifact was materialized.`,
         }),
       });

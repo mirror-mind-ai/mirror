@@ -12,8 +12,13 @@
 // One core answers "where is this path in the project", and each caller keeps its own
 // reading of the two answers that are not a plain relative path: the project root
 // itself, and a path outside the project.
+//
+// A relative path names a file only together with its project, so every report of a
+// write also names the project, by its folder, and the journey it was made for, on one
+// row (CR009): a wrong journey, or a journey whose project path names the wrong folder,
+// shows as a wrong name on the card itself.
 
-import { isAbsolute, relative, resolve } from "node:path";
+import { basename, isAbsolute, relative, resolve } from "node:path";
 
 /**
  * The path's relation to the project, in the platform's separators: `""` for the
@@ -40,4 +45,19 @@ export function displayPath(path: string, projectPath: string | null): string {
   const relation = projectRelative(path, projectPath);
   if (relation === null) return path;
   return relation === "" ? "." : relation;
+}
+
+/** The project's folder: the last segment of its path, or the path itself at the root. */
+export function projectFolder(projectRoot: string): string {
+  const resolved = resolve(projectRoot);
+  return basename(resolved) || resolved;
+}
+
+/**
+ * The row a report of a write prints (CR009): where the files went, by the project's
+ * folder, and for which journey. Two checkouts of one repository share a folder name;
+ * the slug on the row tells their journeys apart, and `build load` prints the root.
+ */
+export function targetLine(projectRoot: string, journey: string): string {
+  return `project: ${projectFolder(projectRoot)} · journey: ${journey}`;
 }
