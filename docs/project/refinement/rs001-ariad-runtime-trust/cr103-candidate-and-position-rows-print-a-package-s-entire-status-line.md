@@ -632,6 +632,14 @@ the change meets every pass condition; its output is under
 [The route after the change](#the-route-after-the-change-2026-10-04). Plateau 2 is
 the skill's subsection and the Claude copies.
 
+### Plateau 2 handoff (2026-10-04)
+
+Now true: `.pi/skills/mm-build/SKILL.md` carries `Statuses on Ariad surfaces` as
+drafted under [Skill text](#skill-text), the two Claude copies are regenerated from it,
+and `buildClaudePlugin.ts --check` and the skill parity check pass. `formatPackage` and
+the render module say what they are given. Nothing else changed. Plateau 3 is the
+Navigator's walk of the route, the handoff review, and the ledger.
+
 ### The route after the change (2026-10-04)
 
 At the plateau 1 commit, on `f2d806b6`'s roadmap:
@@ -679,6 +687,18 @@ At the plateau 1 commit, on `f2d806b6`'s roadmap:
 │ CV3.DS2 — Export to PDF [user_story] 🟡 Candidate       │
 │ (docs/project/roadmap/cv3/ds2/index.md)                │
 ```
+
+### Navigator validation (2026-10-04)
+
+The Navigator ran the route from the repository root at `6b372621`, in their own shell
+(`bash <(awk …)` over this document's script). The output matched the Driver's run above
+line for line, on the commit's roadmap: step 1 `71` card lines, the list `56`, the
+CV9.E2 and CV22 rows `4` each, no Markdown, the fifteen codes in the recorded order;
+step 2 `75`; step 3 the row at `4` lines with no Markdown; step 4 every row ending at
+its status and `CV3.DS3` absent; step 5 the two lines; step 6 `58` against `58`, with
+`Payments` on the row; step 7 `CV3.DS2 — Export to PDF` recommended, `CV3.DS1` listed as
+`🔴 Blocked`, `CV3.DS3` absent. The optional Claude Code check was not taken. The
+Navigator accepted the validation the same day.
 
 The CV9.E2 and CV22 rows are 4 lines each, not 2 or 3 as the pass condition said: their
 titles and paths wrap, and the status takes none of it. The condition's number was a
