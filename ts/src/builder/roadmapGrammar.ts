@@ -29,6 +29,7 @@
 //
 // `re.fullmatch` maps to anchoring the pattern, not to `.test()` on a substring.
 
+import { clipCodePoints } from "#util/clipCodePoints.ts";
 import { PYTHON_WHITESPACE_CLASS, pyStrip } from "#util/pythonText.ts";
 
 const WS = `[${PYTHON_WHITESPACE_CLASS}]`;
@@ -137,7 +138,41 @@ export function linkFreeTitle(title: string): string {
   return result + title.slice(last).replace(INLINE_LINK_RE, "$1");
 }
 
-/** Python `_CandidateChild`. */
+/** The most a status clause takes on a card row; the widest status on this roadmap. */
+export const STATUS_CLAUSE_WIDTH = 24;
+
+/** The separators after which a status line stops being its status (CR103). */
+const STATUS_SEPARATOR_RE = /\s(?:\u2014|\u2013|-|\u00b7|\()\s?|[;,.:]\s/u;
+
+/** `**`, `__`, and the backticks of a code span: Markdown a card cannot render. */
+const STATUS_MARKS_RE = /\*\*|__|`/gu;
+
+/**
+ * A status line as the status its author declared: its first clause, Markdown
+ * reduced, bounded to `STATUS_CLAUSE_WIDTH` (CR103).
+ *
+ * Several roadmaps write a package's `**Status:**` line as a running changelog, and
+ * every Builder reader read it whole: the rows printed a hundred card lines of it, and
+ * the classifiers found a status word in its prose. The clause is what a row prints
+ * and what a classifier reads, so the two cannot disagree. It is applied where a status
+ * leaves a reader, so every `PullCandidate`, `RoadmapSnapshotItem`, `AuthoredPackage`,
+ * and `CandidateChild` carries a clause by construction; `matchStatus` still returns the
+ * line, for the reader that wants it.
+ *
+ * In order: `pyStrip`; links and images to their labels, then `**`, `__`, and backticks
+ * out, so a separator inside a label or a target does not cut and a `**` that closes
+ * after the separator still goes; the cut before the first separator, never at the
+ * start; trailing punctuation off, and an empty clause gives way to the reduced line;
+ * then the clip, by the card's rule.
+ */
+export function statusClause(status: string): string {
+  const reduced = pyStrip(linkFreeTitle(pyStrip(status)).replace(STATUS_MARKS_RE, ""));
+  const cut = reduced.search(STATUS_SEPARATOR_RE);
+  const clause = pyStrip((cut > 0 ? reduced.slice(0, cut) : reduced).replace(/[.:;,]+$/u, ""));
+  return clipCodePoints(clause === "" ? reduced : clause, STATUS_CLAUSE_WIDTH);
+}
+
+/** Python `_CandidateChild`. Its `status` is the cell's clause (CR103). */
 export interface CandidateChild {
   readonly code: string;
   readonly title: string;
@@ -205,7 +240,7 @@ export function parseCandidateStories(content: string): CandidateChild[] {
       code,
       title: linkFreeTitle(cells[columns.get("story") ?? 0] ?? ""),
       level: typeText.includes("technical") ? "technical_story" : "user_story",
-      status: cells[columns.get("status") ?? 0] ?? "",
+      status: statusClause(cells[columns.get("status") ?? 0] ?? ""),
     });
   }
   return children;

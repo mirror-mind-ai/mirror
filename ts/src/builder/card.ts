@@ -22,6 +22,7 @@
 // items. Both budgets are measured in CODE POINTS, because Python's `len()`
 // is.
 
+import { clipCodePoints } from "#util/clipCodePoints.ts";
 import { codePointLength, pySplitWhitespace, sliceCodePoints } from "#util/pythonText.ts";
 
 /** `_card_text`'s field width: `f"│ {text[:54]:<54} │"`. */
@@ -102,32 +103,14 @@ export function cardText(text: string): string {
 }
 
 /**
- * `text` cut to fit `width` code points, with `…` in the last place when anything was
- * cut. A cut that would split a word backs up to the word's start, because a code cut
- * short reads as another code: `(per D12)` must not become `(per D1…` (CR018). It
- * backs up only while at least half the width stays; past that, the word is cut. A
- * space the cut leaves at the end goes, so the mark sits on the word.
- */
-function clipped(text: string, width: number): string {
-  const points = Array.from(text);
-  if (points.length <= width) return text;
-  let kept = points.slice(0, width - 1);
-  const next = points[width - 1] ?? "";
-  if (!/\s/u.test(next)) {
-    const wordStart = kept.lastIndexOf(" ");
-    if (wordStart >= Math.ceil(width / 2)) kept = kept.slice(0, wordStart);
-  }
-  return `${kept.join("").trimEnd()}…`;
-}
-
-/**
  * A row that restates a title on one line (CR018): `cardText`, except that a cut says
- * so. `cardText` cuts silently, as Python's `_card_text` did, and a Navigator reading
- * `Canonical Refinement Index And Artifact Conven` has no way to know a title goes on.
- * Where a title is read rather than restated, it wraps instead (`cardWrapped`).
+ * so, by `clipCodePoints`'s rule. `cardText` cuts silently, as Python's `_card_text`
+ * did, and a Navigator reading `Canonical Refinement Index And Artifact Conven` has no
+ * way to know a title goes on. Where a title is read rather than restated, it wraps
+ * instead (`cardWrapped`).
  */
 export function cardClipped(text: string): string {
-  return cardText(clipped(text, CARD_WIDTH));
+  return cardText(clipCodePoints(text, CARD_WIDTH));
 }
 
 /** Python `_card_wrapped(text)`: wrap at 54, then one card line per wrapped line. */
@@ -149,7 +132,9 @@ export function cardWrapped(text: string): string[] {
  */
 export function cardLine(left: string, right: string, options: { clip?: boolean } = {}): string {
   const leftWidth = Math.max(1, CARD_WIDTH - codePointLength(right) - 1);
-  const trimmedLeft = options.clip ? clipped(left, leftWidth) : sliceCodePoints(left, leftWidth);
+  const trimmedLeft = options.clip
+    ? clipCodePoints(left, leftWidth)
+    : sliceCodePoints(left, leftWidth);
   const leftPadding = " ".repeat(Math.max(0, leftWidth - codePointLength(trimmedLeft)));
   const content = `${trimmedLeft}${leftPadding} ${right}`;
   const contentPadding = " ".repeat(Math.max(0, CARD_WIDTH - codePointLength(content)));

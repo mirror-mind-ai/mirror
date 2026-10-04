@@ -22,6 +22,7 @@ import {
   matchHeading,
   matchStatus,
   matchType,
+  statusClause,
   stripMarkdownLink,
 } from "./roadmapGrammar.ts";
 import { readRoadmapFile, scanRoadmapIndexFiles } from "./roadmapScan.ts";
@@ -60,6 +61,7 @@ const DS_BULLET_RE = new RegExp(`^-${WS}+(DS\\d+)${WS}+([^\\n]+?)\\.?$`, "u");
 export interface RoadmapSnapshotItem {
   code: string;
   title: string;
+  /** The status cell's clause, never the cell (CR103). */
   status: string;
 }
 
@@ -76,6 +78,7 @@ export interface PullCandidate {
   code: string;
   title: string;
   level: string;
+  /** The status line's clause, never the line (CR103). */
   status: string;
   /** POSIX path relative to the project root, as Python's `relative_to(root)`. */
   path: string;
@@ -174,7 +177,7 @@ function cvTableItems(content: string): RoadmapSnapshotItem[] {
         items.push({
           code: stripMarkdownLink(parts[0] ?? ""),
           title: linkFreeTitle(parts[1] ?? ""),
-          status: parts[2] ?? "",
+          status: statusClause(parts[2] ?? ""),
         });
       }
       continue;
@@ -206,7 +209,7 @@ function dsTableItems(content: string): RoadmapSnapshotItem[] {
         items.push({
           code: stripMarkdownLink(parts[0] ?? ""),
           title: linkFreeTitle(parts[1] ?? ""),
-          status: parts[2] ?? "",
+          status: statusClause(parts[2] ?? ""),
         });
       }
       continue;
@@ -236,7 +239,7 @@ function cvHeadingItems(content: string): RoadmapSnapshotItem[] {
       items.push({
         code: currentCv.code,
         title: currentCv.title,
-        status: pyStrip(statusMatch[1] ?? ""),
+        status: statusClause(statusMatch[1] ?? ""),
       });
       currentCv = null;
     }
@@ -286,7 +289,7 @@ function candidateFromIndexContent(
   const heading = matchHeading(content);
   const status = matchStatus(content);
   if (!heading || status === null) return null;
-  const statusText = pyStrip(status);
+  const statusText = statusClause(status);
   if (!hasCandidateStatus(statusText)) return null;
   const code = pyStrip(heading.code);
   return {
@@ -328,7 +331,7 @@ function candidateDeliveryStoriesFromContent(
     }
     const statusMatch = LINE_STATUS_RE.exec(line);
     if (statusMatch && currentCv) {
-      currentStatus = pyStrip(statusMatch[1] ?? "");
+      currentStatus = statusClause(statusMatch[1] ?? "");
       continue;
     }
     if (line === "Candidate Delivery Stories:") {
@@ -444,7 +447,12 @@ export function recommend(candidates: readonly PullCandidate[]): PullCandidate |
   return candidates[0] ?? null;
 }
 
-/** Python `_status_marker`. Order matters: Active is tested before Candidate. */
+/**
+ * Python `_status_marker`. Order matters: Active is tested before Candidate. Given a
+ * clause (CR103), so its fallback prints at most `
+ ` and `STATUS_CLAUSE_WIDTH`, and a
+ * Blocked CV in focus keeps its title on the snapshot's focus row.
+ */
 export function statusMarker(status: string): string {
   if (status.includes("Active") || status.includes("In Progress")) return "◉ active";
   if (status.includes("Candidate")) return "◉ candidate";
@@ -453,7 +461,7 @@ export function statusMarker(status: string): string {
   return `○ ${status.toLowerCase()}`;
 }
 
-/** Python `_format_candidate`. */
+/** Python `_format_candidate`, given a candidate whose status is its clause (CR103). */
 export function formatCandidate(candidate: PullCandidate): string {
   return `${candidate.code} — ${candidate.title} [${candidate.level}] ${candidate.status} (${candidate.path})`;
 }

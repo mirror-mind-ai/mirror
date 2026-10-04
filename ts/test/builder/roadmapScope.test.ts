@@ -77,7 +77,7 @@ const JULY_INDEX = [
   "|------|------------------|--------|",
   "| [CV2](cv2-small/index.md) | Small Things | 🟡 Planned |",
   "| [CV9](cv9-mirror/index.md) | Mirror Mind 1.0 | 🟢 In Progress |",
-  "| [CV20](cv20-builder/index.md) | Builder Mode Evolution | 🟢 In Progress (table) |",
+  "| [CV20](cv20-builder/index.md) | Builder Mode Evolution | 🟢 In Progress table |",
   "",
 ].join("\n");
 
@@ -388,7 +388,7 @@ test("the focus is the roadmap index row, then the CV package, then a stated pla
   assert.equal(scopeFocus(julyItems, resolveRoadmapScope(july, null)), null, "unscoped");
   assert.deepEqual(
     scopeFocus(julyItems, scoped(july, "CV20.DS12.TS1")),
-    { code: "CV20", title: "Builder Mode Evolution", status: "🟢 In Progress (table)" },
+    { code: "CV20", title: "Builder Mode Evolution", status: "🟢 In Progress table" },
     "the index row wins over the package heading, as the old focus did",
   );
 

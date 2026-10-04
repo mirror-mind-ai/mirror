@@ -27,7 +27,7 @@ import {
   recommend,
   roadmapPaths,
 } from "./pullCandidates.ts";
-import { linkFreeTitle, matchHeading, matchStatus } from "./roadmapGrammar.ts";
+import { linkFreeTitle, matchHeading, matchStatus, statusClause } from "./roadmapGrammar.ts";
 import { readRoadmapFile } from "./roadmapScan.ts";
 import { roadmapHeadingDirectories } from "./storyPaths.ts";
 
@@ -37,7 +37,7 @@ export type UnscopedReason = "no_cursor" | "no_active_item";
 export interface AuthoredPackage {
   readonly code: string;
   readonly title: string;
-  /** The package's `**Status:**` value, or `""` when it has none. */
+  /** The clause of the package's `**Status:**` line (CR103), or `""` when it has none. */
   readonly status: string;
   /** POSIX, relative to the project root, ending in `index.md`. */
   readonly path: string;
@@ -181,7 +181,7 @@ function readPackage(projectRoot: string, directory: string): AuthoredPackage | 
   return {
     code: pyStrip(heading.code),
     title: linkFreeTitle(pyStrip(heading.title)),
-    status: status === null ? "" : pyStrip(status),
+    status: status === null ? "" : statusClause(status),
     path: indexPath(directory),
   };
 }
