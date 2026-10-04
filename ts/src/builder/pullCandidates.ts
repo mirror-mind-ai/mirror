@@ -24,6 +24,7 @@ import {
   matchType,
   statusClause,
   stripMarkdownLink,
+  tableRowCells,
 } from "./roadmapGrammar.ts";
 import { readRoadmapFile, scanRoadmapIndexFiles } from "./roadmapScan.ts";
 
@@ -147,15 +148,9 @@ export function snapshotItemsFromContent(content: string): RoadmapSnapshotItem[]
   if (ds.length > 0) return ds;
   return cvHeadingItems(content);
 }
-
-/** Python `line.strip("|").split("|")` with each cell `.strip()`ed. */
-function rowCells(line: string): string[] {
-  return line
-    .replace(/^\|+/u, "")
-    .replace(/\|+$/u, "")
-    .split("|")
-    .map((cell) => pyStrip(cell));
-}
+/** The row's cells, with `\|` read as a pipe (CR107); Python split on every pipe. */
+/** The row's cells, with `\\|` read as a pipe (CR107); Python split on every pipe. */
+const rowCells = tableRowCells;
 
 /**
  * Python `_cv_table_items`. Note the termination: any non-empty line that does

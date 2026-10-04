@@ -172,6 +172,61 @@ export function statusClause(status: string): string {
   return clipCodePoints(clause === "" ? reduced : clause, STATUS_CLAUSE_WIDTH);
 }
 
+/**
+ * The cells of a Markdown table row, each `pyStrip`ped, with GFM's escape honored
+ * (CR107): `\|` is a pipe inside the cell, a code span included, and `\\` is a backslash,
+ * so `\\|` is a backslash and a border. Every other character is itself, as every other
+ * reader leaves it. The row's leading pipes go, and its trailing unescaped ones, as
+ * Python's `strip("|")` took them; an escaped trailing pipe is content.
+ *
+ * Three readers split on every pipe before this: the roadmap index's CV and DS tables,
+ * a Delivery Story's candidate table, and the Done preflight's status tables. A cell
+ * with an escape split in two and shifted every column after it, so Expand recommended
+ * a fragment, the index read a status from the wrong cell, and the preflight refused a
+ * Done row. One reader now, and `tableCell` is its inverse.
+ */
+export function tableRowCells(line: string): string[] {
+  let start = 0;
+  while (start < line.length && line[start] === "|") start += 1;
+  let end = line.length;
+  while (end > start && line[end - 1] === "|" && !escapedAt(line, end - 1)) end -= 1;
+  const cells: string[] = [];
+  let cell = "";
+  for (let at = start; at < end; at += 1) {
+    const char = line[at];
+    const next = line[at + 1];
+    if (char === "\\" && at + 1 < end && (next === "|" || next === "\\")) {
+      cell += next;
+      at += 1;
+      continue;
+    }
+    if (char === "|") {
+      cells.push(pyStrip(cell));
+      cell = "";
+      continue;
+    }
+    cell += char;
+  }
+  cells.push(pyStrip(cell));
+  return cells;
+}
+
+/** Whether the pipe at `index` is escaped: preceded by an odd run of backslashes. */
+function escapedAt(line: string, index: number): boolean {
+  let backslashes = 0;
+  for (let at = index - 1; at >= 0 && line[at] === "\\"; at -= 1) backslashes += 1;
+  return backslashes % 2 === 1;
+}
+
+/**
+ * `text` as a table cell: every backslash doubled, then every pipe escaped, so
+ * `tableRowCells` gives the text back exactly (CR107). The Delivery Story scaffold writes
+ * a title into two cells through it; nothing else Ariad writes is a table cell.
+ */
+export function tableCell(text: string): string {
+  return text.replace(/\\/gu, "\\\\").replace(/\|/gu, "\\|");
+}
+
 /** Python `_CandidateChild`. Its `status` is the cell's clause (CR103). */
 export interface CandidateChild {
   readonly code: string;
@@ -207,9 +262,7 @@ export function parseCandidateStories(content: string): CandidateChild[] {
       if (columns !== null) break;
       continue;
     }
-    const cells = stripPipes(line)
-      .split("|")
-      .map((cell) => pyStrip(cell));
+    const cells = tableRowCells(line);
 
     if (columns === null) {
       // `cell.lower()` — ASCII header names in practice; Python's `str.lower()`
@@ -244,13 +297,4 @@ export function parseCandidateStories(content: string): CandidateChild[] {
     });
   }
   return children;
-}
-
-/** Python `str.strip("|")`: remove every leading and trailing pipe. */
-function stripPipes(line: string): string {
-  let start = 0;
-  let end = line.length;
-  while (start < end && line[start] === "|") start += 1;
-  while (end > start && line[end - 1] === "|") end -= 1;
-  return line.slice(start, end);
 }

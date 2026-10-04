@@ -30,7 +30,7 @@ import { readFileSync } from "node:fs";
 import { join, resolve, sep } from "node:path";
 import { PYTHON_WHITESPACE_CLASS, pyStrip } from "#util/pythonText.ts";
 import { projectRelative } from "./projectPaths.ts";
-import { stripMarkdownLink } from "./roadmapGrammar.ts";
+import { stripMarkdownLink, tableRowCells } from "./roadmapGrammar.ts";
 import { scanRoadmapIndexFiles } from "./roadmapScan.ts";
 import { resolveStoryDirectory } from "./storyPaths.ts";
 
@@ -92,7 +92,7 @@ function statusTableRows(indexPath: string): [string, string][] {
       columns = null;
       continue;
     }
-    const cells = line.replace(/^\|+/u, "").replace(/\|+$/u, "").split("|").map(pyStrip);
+    const cells = tableRowCells(line);
     if (columns === null) {
       const lowered = cells.map((cell) => cell.toLowerCase());
       const code = lowered.indexOf("code");

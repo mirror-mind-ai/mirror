@@ -68,8 +68,8 @@ and expanded long ago.
 ## Expected Behavior
 
 A `\|` inside a cell is part of the cell's text, in every roadmap table Ariad reads,
-code spans included, as GFM reads it; a `\\` before a pipe is a backslash, and the pipe
-is a border. A title Ariad writes into a table cell has its pipes escaped, so the row
+code spans included, as GFM reads it, and `\\` is a backslash wherever it stands, so
+`\\|` is a backslash and a border. A title Ariad writes into a table cell has its pipes escaped, so the row
 reads back exactly as written. The title reaches the Navigator whole on every card, in
 the child's heading, and in its folder name, where the slug drops the pipe as it drops
 any punctuation.
@@ -108,7 +108,7 @@ this repository already has reads as Done.
 **One row reader (D1).** `tableRowCells(line)` in `roadmapGrammar.ts`, beside the
 heading and status patterns: it drops the row's leading pipes and its trailing
 unescaped pipes, as `str.strip("|")` did, then walks the row once. A backslash before a
-pipe yields a literal pipe; a backslash before a backslash yields both, so `\\|` is a
+pipe yields a pipe, and a backslash before a backslash yields one backslash, so `\\|` is a
 backslash and a border, as GFM reads it; any other character is itself, and an unescaped
 pipe closes a cell. Each cell is `pyStrip`ped. The three readers call it where they
 split today: `rowCells` in `pullCandidates.ts` becomes it, `parseCandidateStories`'s
@@ -118,8 +118,8 @@ no escape, and `|---` is still `|---`. The code column still goes through
 `stripMarkdownLink` and the story column through `linkFreeTitle`, on the unescaped text,
 so a link labelled `a \| b` reads `a | b`, as GFM renders it.
 
-**One cell writer (D2).** `tableCell(text)` beside it doubles a backslash that precedes a
-pipe, then escapes every `|` as `\|`, so it is the reader's inverse for the characters the
+**One cell writer (D2).** `tableCell(text)` beside it doubles every backslash, then
+escapes every `|` as `\|`, so it is the reader's inverse for the characters the
 reader interprets: ``a \| b`` as a title reads back as ``a \| b`` (panel: engineer).
 `renderDeliveryStoryIndex` passes the recommended title and its outcome through it, the
 two cells that carry a title. No other writer puts text into a table cell: the story
@@ -149,8 +149,9 @@ Ariad escapes the pipes in any title it writes into a cell.
 ### Decisions this plan asks the Navigator to take
 
 1. **D1: GFM's escape is the rule, in every table Ariad reads.** `\|` is a pipe inside
-   the cell, a code span included; `\\` before a pipe is a backslash, and the pipe a
-   border. Alternative: honor `\|` only in `parseCandidateStories`, the reader the
+   the cell, a code span included, and `\\` is a backslash wherever it stands, so `\\|`
+   is a backslash and a border (amended at plateau 1: the plan had said before a pipe
+   only, and the writer's round trip showed that was not an inverse). Alternative: honor `\|` only in `parseCandidateStories`, the reader the
    capture names, and leave the index tables and the Done preflight as they are; the
    Done preflight would keep refusing CV20.DS13.
 2. **D2: the scaffold escapes the pipes in a title it writes into a cell**, and the
@@ -310,8 +311,8 @@ folded into the plan above.
 
 | Lens | Dissent | Resolution |
 |---|---|---|
-| engineer | The writer escapes a pipe, but a title that already holds `\|` would be written `\\|`, which the reader gives back as a backslash and a border: the writer is not the reader's inverse | `tableCell` doubles a backslash that precedes a pipe before escaping the pipe, so ``a \| b`` as a title reads back as ``a \| b``; the round trip is criterion 3's second case |
-| engineer | "Other escapes left as written" is true for the reader but not stated for `\\` away from a pipe, which GFM renders as one backslash | Recorded: the reader gives `\\` back only when a pipe follows; no cell on this roadmap holds `\\`, and a general unescape is another reader's change |
+| engineer | The writer escapes a pipe, but a title that already holds `\|` would be written `\\|`, which the reader gives back as a backslash and a border: the writer is not the reader's inverse | `tableCell` doubles every backslash before escaping the pipes (every, since plateau 1), so ``a \| b`` as a title reads back as ``a \| b``; the round trip is criterion 3's second case |
+| engineer | "Other escapes left as written" is true for the reader but not stated for `\\` away from a pipe, which GFM renders as one backslash | Recorded at Plan; overturned at plateau 1, where the round trip showed the reader must give `\\` as `\` wherever it stands for the writer to have an inverse. No cell on this roadmap holds `\\` |
 | quality-assurance | The one real row, `CV20.DS13.TS1`, is graded by a unit test on its text and never through the front door | Checked: the Delivery Story's child packages do not exist as folders, so `done-delivery-story` on a copy would refuse for `package CV20.DS13.TS1 was not found` before and after, and Expand's recommendation on a table whose children are all Done is its first child either way. The verbatim row in the every-reader test is the proof, and the synthetic route step 4 is the same gate on a row with an escape |
 | product-designer | D2's alternative, refusing a piped title, would have been the safer floor change | Declined, recorded: the heading, the cards, and the slug carry the title already; only the cell needed the escape |
 
@@ -372,6 +373,47 @@ At `1876297a`, identical across two runs:
 The `CV20.DS13.TS1` reading was taken by a script at `1876297a`: `parseCandidateStories`
 over its `index.md` gives the row the status `Code \`, and `inspectAuthoredClosure` for
 `CV20.DS13` with that child refuses `table row CV20.DS13.TS1 is not Done`.
+
+### Plateau 1 handoff (2026-10-04)
+
+Now true: every roadmap table Ariad reads splits a row on unescaped pipes only, through
+`tableRowCells` in `roadmapGrammar.ts`, and the Delivery Story scaffold writes a title
+into its two cells through `tableCell`. Red first: `escapedPipe.test.ts` failed at its
+import, then the splitter's table and the inverse failed on the rule as the plan wrote
+it. That rule did not survive its own round trip. The plan said `\\` is a backslash only
+before a pipe and the writer doubles only a backslash before a pipe; then ``a \| b`` as
+a title, written ``a \\\| b``, read back as ``a \\| b``. GFM reads `\\` as one backslash
+wherever it stands, and that is the rule now: the reader gives `\|` as `|` and `\\` as
+`\`, and the writer doubles every backslash before escaping the pipes, so the two are
+inverses for everything the reader interprets. The plan's D1 sentence and the panel's
+second engineer row are amended below to say so. No roadmap cell here holds `\\`, no
+fixture row holds a backslash before a pipe, and no golden moved: 2949 tests pass, 7 of
+them new. The route after the change meets every pass condition; its output is under
+[The route after the change](#the-route-after-the-change-2026-10-04). Plateau 2 is
+the skill's sentence and the Claude copies.
+
+### The route after the change (2026-10-04)
+
+At the plateau 1 commit:
+
+```text
+--- 1. a Delivery Story whose candidate table holds `Read `a \| b` input`: Pull expands it
+    answer: <<<ARIAD:DELIVERY_STORY_READY>>> <<<ARIAD:ARTIFACTS_MATERIALIZED>>>
+│ 🟩[US1] Read `a | b` input                              │
+    the child heading: # CV1.DS1.US1 — Read `a | b` input
+    the child folder:  cv1-ds1-us1-read-a-b-input
+--- 2. the roadmap index: a CV title with an escaped pipe, on the snapshot's focus row
+│ 🟪[CV1]  Checkout, cash | card                 ◉ active │
+│ value: Checkout, cash | card                           │
+--- 3. a Delivery Story with no package, pulled with a title that holds a pipe: the scaffold it writes
+    answer: <<<ARIAD:DELIVERY_STORY_READY>>> <<<ARIAD:ARTIFACTS_MATERIALIZED>>>
+    written at: cv1/cv1-ds2-pay-by-cash-card/index.md
+    | [CV1.DS2.US1](cv1-ds2-us1-pay-by-cash-card/index.md) | Pay by cash \| card | User Story | Navigator can validate Pay by cash \| card as an observable behavior. | 🟡 Planned |
+    read back by Expand, the same Delivery Story pulled from another journey:
+│ 🟩[US1] Pay by cash | card                              │
+--- 4. the Done preflight on a table row whose Story cell holds an escaped pipe
+    answer: <<<ARIAD:DELIVERY_STORY_CLOSURE_CHECKPOINT>>> <<<ARIAD:ARTIFACTS_MATERIALIZED>>> <<<ARIAD:PROJECT_POSITION>>>
+```
 
 ## Outcome
 

@@ -13,6 +13,7 @@
 // `parseCandidateStories` requires. A port that drifts here produces a package
 // whose own Expand refuses it.
 
+import { tableCell } from "../roadmapGrammar.ts";
 import { storyFolderName } from "../storyPaths.ts";
 import {
   fill,
@@ -71,7 +72,7 @@ ${title}
 
 | Code | Story | Type | Outcome | Status |
 |------|-------|------|---------|--------|
-| [${recommendedCode}](${link}) | ${recommendedTitle} | User Story | ${userStoryOutcome(recommendedTitle)} | 🟡 Planned |
+| [${recommendedCode}](${link}) | ${tableCell(recommendedTitle)} | User Story | ${tableCell(userStoryOutcome(recommendedTitle))} | 🟡 Planned |
 
 ## Done Condition
 
