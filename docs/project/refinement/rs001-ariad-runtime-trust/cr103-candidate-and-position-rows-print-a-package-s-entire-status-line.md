@@ -709,6 +709,52 @@ under `docs/project/roadmap` at `548e70a2`: `matchStatus` on each (366 lines), t
 first-clause reduction, `hasCandidateStatus` and `statusMarker` on the line and on the
 clause, `isDone` on the line, and `parseCandidateStories` on each (173 cells).
 
+### Handoff review (2026-10-04)
+
+After the Navigator's walk, per the collaboration strategy. The nine lenses of the plan's
+first pass reviewed the delivered code, tests, words, safety posture, operational cost,
+and resumability. Every finding was checked against the code; the one about the walk's
+completeness was checked against `commands.ts`. The cost was measured: the two new test
+files run in under half a second together.
+
+Synthesis: the delivery does what the plan said, the Navigator's walk matched it line
+for line, and the classifiers now read what the rows print. The findings are in the
+words and at one edge of the rule, not in the behavior the route proves.
+
+| # | Lens | Finding | Class | Recommendation |
+|---|---|---|---|---|
+| 1 | engineer | `statusMarker`'s comment is broken: the `○ ` in "prints at most `○ ` and `STATUS_CLAUSE_WIDTH`" was written as a line break inside the code span, so the comment reads as two lines with an open backtick | Non-blocking debt, introduced here | Pay now: the sentence as meant |
+| 2 | engineer | `statusClause`'s comment says a separator inside a label does not cut. It does, and the test says so (a link labelled `Done, finally` reads `Done`): the reduction protects a target, and a label's words are the author's words. The plan was corrected at plateau 1; the comment was not | Non-blocking debt, introduced here | Pay now: the comment says what the test says |
+| 3 | engineer | `STATUS_SEPARATOR_RE` takes the dash forms with an optional space after (`\s?`), so ` -rc1` in `v2 -rc1` cuts, where the plan's separators are the spaced ` — `, ` – `, ` - `, and ` · `. Only ` (` opens without a space | Non-blocking debt, introduced here | Pay now: the dash and dot forms require the space on both sides; a table row grades `v2 -rc1` |
+
+Checked and dropped:
+
+- The walk names its commands by the renderers' callers and does not cross Done through
+  `continue-lifecycle` (quality-assurance, as CR082's review found for paths).
+  `runContinueLifecycle` prints `DONE_CHECKPOINT` and no `PROJECT_POSITION` trailer
+  (`commands.ts`), so it calls none of the three renderers, and the walk's list is the
+  callers' list. That `continue-lifecycle`'s Done prints no trailer where `done-item`'s
+  does is a shape question of CR118's kind, noted here and not captured: nobody has
+  asked for the trailer there.
+- The skill says a status is "cut to fit the row" where the bound is 24 code points, less
+  than a row (prompt-engineer). True in effect; the row is what the reader sees.
+- The golden edit script lives in `/tmp`, uncommitted, as CR082's, CR111's, CR113's,
+  and CR114's did (devops-engineer). The README row says what it derived and asserted,
+  and that it reproduced every row group before changing it.
+
+The other lenses were silent:
+
+- database-architect: nothing stored changes; the clause is derived on read.
+- security-engineer: a row prints less of untrusted roadmap content, and a link's
+  target no longer reaches a card.
+- ai-engineer: the measured saving stands, 24,570 to 8,758 characters on the two
+  unscoped surfaces of this roadmap, and the journey identity's Stage line still carries
+  CV22's history into the activation.
+- experience-designer: the Navigator judged the rows in their terminal; the path chunk
+  was declined at Plan.
+- product-designer: the Blocked row's cost was accepted at Plan, and the skill names the
+  case to open the file.
+
 ## Outcome
 
 Pending.
