@@ -319,6 +319,13 @@ session loaded, tell the Navigator before touching the files. Plan prints its fi
 absolute paths as `*_path=` lines below its surface. They are not part of the
 surface: use them as printed, and do not render them.
 
+### Statuses on Ariad surfaces
+
+A row that names a roadmap package states its status as the first clause of the
+package's `**Status:**` line, links reduced to their labels, cut to fit the row. The
+rest of the line is in the package the row names; read it there when you need more
+than the status, such as why a package is Blocked.
+
 ## Ariad Activation Surfaces
 
 For Ariad-adopted journeys whose delivery cursor has no active item,

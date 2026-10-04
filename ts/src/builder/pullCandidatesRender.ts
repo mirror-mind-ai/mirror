@@ -23,6 +23,11 @@
 // (`roadmapScope.ts`), never from the whole project. Unscoped, a surface names no
 // focus and no recommendation, labels its list project-wide, and gives the literal
 // Pull command; the words are `scopePhrases.ts`'s.
+//
+// CR103: every status these surfaces print or mark is a clause, read once by the
+// roadmap readers. The focus row and the progress line mark it; the candidate rows
+// print it. A Blocked CV in focus once printed its whole status on the right of the
+// focus row and pushed the border off the card.
 
 import { cardClipped, cardLine, cardPrefixed, cardText, cardWrapped } from "./card.ts";
 import {

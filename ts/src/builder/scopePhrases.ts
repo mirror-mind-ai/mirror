@@ -75,7 +75,11 @@ export function noRecommendationLines(view: ScopedPullCandidates): string[] {
   return [`no remaining candidates in ${view.scope.cvCode}`, pull];
 }
 
-/** `CV22 — <title> (<status>) [<path>]`, the pre-CR002 format; no `()` when there is no status. */
+/**
+ * `CV22 — <title> (<status>) [<path>]`, the pre-CR002 format; no `()` when there is no
+ * status. The status is the package's clause (CR103): this row once printed CV22's
+ * whole changelog, twenty card lines, on every load.
+ */
 function formatPackage(authored: AuthoredPackage): string {
   const status = authored.status ? ` (${authored.status})` : "";
   return `${authored.code} — ${authored.title}${status} [${authored.path}]`;
