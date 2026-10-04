@@ -43,6 +43,7 @@ test("statusClause: one row per rule", () => {
     ["em dash", "🟢 Active — restarted 2026-09-02", "🟢 Active"],
     ["en dash", "Done – validated", "Done"],
     ["spaced hyphen", "In Progress - 3/8", "In Progress"],
+    ["a hyphen with no space after it does not cut", "v2 -rc1 pending", "v2 -rc1 pending"],
     ["semicolon", "Dropped; replaced by CV20.DS4.US2", "Dropped"],
     ["comma", "Planned, with CV9.E2.S1 done", "Planned"],
     ["full stop", "Done. Six plateaus.", "Done"],

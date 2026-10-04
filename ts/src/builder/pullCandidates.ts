@@ -449,8 +449,7 @@ export function recommend(candidates: readonly PullCandidate[]): PullCandidate |
 
 /**
  * Python `_status_marker`. Order matters: Active is tested before Candidate. Given a
- * clause (CR103), so its fallback prints at most `
- ` and `STATUS_CLAUSE_WIDTH`, and a
+ * clause (CR103), so its fallback prints at most `○ ` and `STATUS_CLAUSE_WIDTH`, and a
  * Blocked CV in focus keeps its title on the snapshot's focus row.
  */
 export function statusMarker(status: string): string {

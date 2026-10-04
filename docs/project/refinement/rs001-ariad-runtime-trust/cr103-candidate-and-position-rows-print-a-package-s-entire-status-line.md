@@ -755,6 +755,22 @@ The other lenses were silent:
 - product-designer: the Blocked row's cost was accepted at Plan, and the skill names the
   case to open the file.
 
+### Debt paid (2026-10-04)
+
+The Navigator decided all three: "Pay all of them now". One commit pays them.
+
+1. **`statusMarker`'s comment** reads as one sentence again, with the marker glyph in
+   its code span.
+2. **`statusClause`'s comment** says what the test says: a separator inside a link's
+   target cannot cut, and a label's words cut like the author's own.
+3. **The separator rule.** The dash and dot forms require the space on both sides; only
+   ` (` opens without one. Red first: the new table row, `v2 -rc1 pending`, failed on
+   the old rule and passes on the new. No status on this roadmap or in a fixture reads
+   differently.
+
+2942 tests pass, one row of them new. Typecheck, lint, the repository checks, and the
+smokes are green, and the route still prints its recorded output exactly.
+
 ## Outcome
 
 Pending.

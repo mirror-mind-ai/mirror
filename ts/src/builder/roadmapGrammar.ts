@@ -142,7 +142,7 @@ export function linkFreeTitle(title: string): string {
 export const STATUS_CLAUSE_WIDTH = 24;
 
 /** The separators after which a status line stops being its status (CR103). */
-const STATUS_SEPARATOR_RE = /\s(?:\u2014|\u2013|-|\u00b7|\()\s?|[;,.:]\s/u;
+const STATUS_SEPARATOR_RE = /\s(?:\u2014|\u2013|-|\u00b7)\s|\s\(|[;,.:]\s/u;
 
 /** `**`, `__`, and the backticks of a code span: Markdown a card cannot render. */
 const STATUS_MARKS_RE = /\*\*|__|`/gu;
@@ -160,8 +160,8 @@ const STATUS_MARKS_RE = /\*\*|__|`/gu;
  * line, for the reader that wants it.
  *
  * In order: `pyStrip`; links and images to their labels, then `**`, `__`, and backticks
- * out, so a separator inside a label or a target does not cut and a `**` that closes
- * after the separator still goes; the cut before the first separator, never at the
+ * out, so a separator inside a link's target cannot cut, a label's words cut like the
+ * author's own, and a `**` that closes after the separator still goes; the cut before the first separator, never at the
  * start; trailing punctuation off, and an empty clause gives way to the reduced line;
  * then the clip, by the card's rule.
  */
