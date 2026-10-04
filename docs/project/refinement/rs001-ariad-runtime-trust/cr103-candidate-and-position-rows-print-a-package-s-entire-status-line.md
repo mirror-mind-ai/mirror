@@ -773,4 +773,35 @@ smokes are green, and the route still prints its recorded output exactly.
 
 ## Outcome
 
-Pending.
+Done 2026-10-04. A roadmap status enters Ariad as its first clause: `statusClause`, in
+`roadmapGrammar.ts`, reads a `**Status:**` line or a status cell as the status its
+author declared, links to labels, `**`, `__`, and backticks out, cut before the first
+separator, trailing punctuation off, bounded to 24 code points by the card's clip, which
+moved to `util/clipCodePoints.ts`. It is applied at the seven places a status leaves a
+reader, so every candidate, snapshot item, authored package, and candidate-table child
+carries a clause by construction, and the classifiers and the three formatters read what
+the rows print with no change of their own (D2, D3). The fix is in what the runtime
+reads; this repository's 54 long lines stand as written (D1). The Done preflight's rule
+is [CR119](cr119-the-delivery-story-done-preflight-reads-a-status-line-s-last-word.md),
+outside the floor (D4).
+
+On this roadmap, `PROJECT_POSITION` went from 205 card lines to 71, `PULL_CANDIDATES`
+from 209 to 75, and the resume's roadmap position from 23 to 4, with the same fifteen
+candidates in the same order; a Blocked CV in focus keeps its title at the frame's
+width; a Candidate is recommended over a Blocked story whose changelog says Planned, and
+a Done story whose changelog says Active is not listed. The skill says a row's status is
+the clause and where the rest of the line is. Eight `builder-roadmap` scenarios changed,
+two by the Markdown and six by the bound, edited by a script that reproduced every row
+group before changing it; the count was four at Plan and eight when plateau 1 met the
+bound.
+
+Delivered on `mirror-ts-core` in `3d999558` (the clause), `6b372621` (the skill), and
+`276733a3` (debt). CI was green on every push. Next in floor order: CR107, then CR117.
+
+## Provenance
+
+Captured on 2026-09-26 during CR002's Navigator validation, when the `CV9.E2` row of
+`PROJECT_POSITION` rendered as about 90 card lines on the July tree, and the resume
+that opened the session carried CV22's whole status. Captured without fixing, by the
+floor's rule, and taken onto the floor on 2026-09-30 with every open RS001 request when
+US3's Pull and Plan reopened it.

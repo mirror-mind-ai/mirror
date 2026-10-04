@@ -12,6 +12,37 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-10-04 — CR103 done: a roadmap status enters Ariad as its first clause
+
+This is the sixth change of the reopened trust floor. Several packages on this
+roadmap write their `**Status:**` line as a running changelog, and every Builder
+reader read it whole. The two unscoped surfaces were 205 and 209 card lines, the
+resume's roadmap position 23 on every load, Markdown raw in all of them; a Blocked CV
+in focus lost its title and its border to a fallback marker; and the classifiers
+found a status word in prose, so a Blocked story whose changelog said Planned was
+recommended over a Candidate and a Done story whose changelog said Active was listed.
+
+Now one function reads a status line as the status its author declared: links to
+labels, emphasis and code marks out, cut before the first separator, bounded to 24
+code points by the card's clip, which moved to a util. It is applied at the seven
+places a status leaves a reader, so the classifiers and the three formatters are
+given a clause and change no code. The surfaces are 71, 75, and 4 lines; the same
+fifteen candidates are listed in the same order; the Blocked focus row keeps its title
+at the frame's width; the Candidate is recommended. The skill says a row's status is
+the clause and where the rest of the line is. The Done preflight, which refuses 47 of
+this roadmap's 320 Done statuses because their last word is not "done", is captured
+as CR119, outside the floor.
+
+The persona panel reviewed the plan twice before approval: the first pass put the
+real-roadmap identity check in the route and the completeness rule in the walk, the
+second found that the walk's Delivery Story Done would meet CR119's gate. Each plateau
+waited for its CI run, and every run was green. The Navigator validated the route in
+their own shell, line for line against the recorded output. The handoff review found
+no blocker and three debts, all paid: two comments made true, and the separator rule
+spaced on both sides.
+
+Next: CR107, the escaped pipe in a candidate-table title; then CR117; then US3.
+
 ### 2026-10-01 — CR082 with CR009 done: every card names its paths relative to the project, and every write report names the project
 
 This is the fifth change of the reopened trust floor. Six surfaces printed paths as the

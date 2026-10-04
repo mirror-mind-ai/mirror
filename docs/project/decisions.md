@@ -3648,3 +3648,60 @@ names a package is built with it; a report of a write prints `targetLine`; and a
 the agent goes below the surface, not inside it. `pathsWalk.test.ts` runs every command
 that prints a path or reports a write under a known root and fails on that root inside
 any marked surface.
+
+### A roadmap status enters Ariad as its first clause
+
+**Date:** 2026-10-04 · **Context:** [CR103](refinement/rs001-ariad-runtime-trust/cr103-candidate-and-position-rows-print-a-package-s-entire-status-line.md),
+the sixth change on the reopened
+[Ariad trust floor](#the-cv22-release-is-gated-on-an-ariad-trust-floor-worked-before-us3).
+Several packages on this roadmap write their `**Status:**` line as a running
+changelog, up to 5,417 characters, and every Builder reader read the line whole.
+Three formatters printed it: the candidate rows of `PROJECT_POSITION` and
+`PULL_CANDIDATES` (205 and 209 card lines on this roadmap), the resume's roadmap
+position (23 lines on every load, Markdown raw), and `statusMarker`'s fallback, which
+printed a Blocked CV's whole status on the snapshot's focus row and pushed the title
+and the border off the card. The classifiers behind the rows searched the same line
+for a word, so a Blocked story whose prose said Planned was recommended over a
+Candidate, and a Done story whose prose said Active was listed.
+
+**The decision: a status line enters Ariad as the status its author declared, its
+first clause: links reduced to their labels, `**`, `__`, and backticks removed, cut
+before the first separator (` — `, ` – `, ` - `, `; `, `, `, `. `, ` (`, ` · `, `: `),
+trailing punctuation dropped, bounded to 24 code points by the card's clip. The
+clause is applied where a status leaves a reader, so every candidate, snapshot item,
+authored package, and candidate-table child carries it by construction, and the
+classifiers and the formatters read what the rows print. The rest of the line stays
+in the package, whose path the row names.**
+
+**Why in what the runtime reads, not in how lines are written (D1).** Ariad renders
+roadmaps it did not author and cannot depend on another project's authoring
+discipline; rewriting this repository's 54 long lines would fix one roadmap and churn
+its history. The corpus settled the rule: the 366 lines reduce to 18 clauses, each the
+status its author meant, and all but one lead with the status word.
+
+**Why the author's clause, not a marker (D2).** A normalized marker needs a vocabulary
+every project's wording must fit, and Blocked, Future, Superseded, Retired, Deferred,
+and Cancelled were already outside the five markers. The two surfaces that print a
+marker keep it; its fallback prints the clause, so a Blocked CV reads `○ 🔴 blocked`
+and keeps its title.
+
+**Why one reading (D3).** A row that printed the clause over classifiers that read
+the line would recommend what it shows as Blocked and list what it shows as Done: the
+fix would make the contradiction and hide its cause. Reading the clause changed no
+candidate and no recommendation on this roadmap. The cost, accepted: a status that
+does not lead with its status word stops being a candidate; none exists here, and
+Ariad's own scaffolds put the word first.
+
+**What stays outside (D4).** The Delivery Story Done preflight reads its own line and
+passes it only when its last word is `done`, refusing 47 of this roadmap's 320 Done
+statuses and passing `Not done`. It is a gate, not a row; captured as
+[CR119](refinement/rs001-ariad-runtime-trust/cr119-the-delivery-story-done-preflight-reads-a-status-line-s-last-word.md),
+outside the floor, with the instruction to read the clause when it is fixed.
+
+**The rule that follows.** A reader that carries a roadmap status into a surface or a
+classification yields `statusClause`, never the line; `matchStatus` returns the line
+for the one gate that wants it, until CR119. A new reader joins the every-reader test
+in `statusClause.test.ts`, and `statusWalk.test.ts` runs every command that prints a
+status on a roadmap whose every line carries a sentinel after its separator, and
+fails on the sentinel inside any marked surface. The skill says a row's status is the
+clause, and where the rest of the line is.
