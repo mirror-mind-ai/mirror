@@ -174,8 +174,8 @@ and green CI on every push.
          US3's Pull and Plan printed untrue surfaces; nine changes,
          worked before US3: ✓ CR112 (done 2026-09-30), ✓ CR111 (done
          2026-09-30), ✓ CR113 (done 2026-09-30), ✓ CR114 with CR115
-         (done 2026-10-01), ✓ CR082 with CR009 (done 2026-10-01), CR103,
-         CR107, CR117 (added 2026-10-01)
+         (done 2026-10-01), ✓ CR082 with CR009 (done 2026-10-01), CR103
+         (in progress), CR107, CR117 (added 2026-10-01)
 → DS10.US3 — npm distribution                      ← pulled and planned 2026-09-30;
                                                      waits at its Plan checkpoint
   release — once, when US3 is done

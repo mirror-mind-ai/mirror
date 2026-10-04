@@ -9,7 +9,7 @@ If a linked document and this index disagree, this index wins.
 ## Current Focus
 
 - Refinement Story: RS001
-- Change Request: none
+- Change Request: CR103
 
 Selecting a focus is an explicit project decision. Reading this file never selects or
 executes work.
@@ -60,7 +60,7 @@ Open work is ordered intentionally. Terminal history follows open work.
 | 26 | [CR099](rs010-cv22-oracle-and-port-hygiene/cr099-a-global-capability-binding-is-not-idempotent.md) | RS010 | A `--global` capability binding is not idempotent | captured | — | — |
 | 27 | [CR100](rs010-cv22-oracle-and-port-hygiene/cr100-the-session-resolver-guesses-from-a-table-of-three-row-kinds.md) | RS010 | The session resolver guesses "the session" from a table that holds three kinds of row | captured | — | — |
 | 28 | [CR101](rs010-cv22-oracle-and-port-hygiene/cr101-explorer-and-soul-activation-stamp-a-guessed-session.md) | RS010 | Explorer and Soul activation stamp their mode onto a guessed session | captured | — | — |
-| 29 | [CR103](rs001-ariad-runtime-trust/cr103-candidate-and-position-rows-print-a-package-s-entire-status-line.md) | RS001 | Candidate and position rows print a roadmap package's entire status line | captured | — | — |
+| 29 | [CR103](rs001-ariad-runtime-trust/cr103-candidate-and-position-rows-print-a-package-s-entire-status-line.md) | RS001 | Candidate and position rows print a roadmap package's entire status line | in_progress | @viniciusteles | `mirror-ts-core` |
 | 30 | [CR106](rs010-cv22-oracle-and-port-hygiene/cr106-a-pi-session-in-a-scratch-mirror-home-copies-the-whole-pi-history-into-it.md) | RS010 | A Pi session started against a scratch Mirror home copies the whole Pi history into it | captured | — | — |
 | 31 | [CR107](rs001-ariad-runtime-trust/cr107-an-escaped-pipe-in-a-candidate-table-title-is-read-as-a-cell-border.md) | RS001 | An escaped pipe in a candidate-table title is read as a cell border | captured | — | — |
 | 32 | [CR108](rs010-cv22-oracle-and-port-hygiene/cr108-the-claude-code-copies-of-other-skills-drift-from-pi-in-behavior.md) | RS010 | The Claude Code copies of other skills drift from Pi in behavior, and no guard compares them | captured | — | — |
@@ -69,6 +69,7 @@ Open work is ordered intentionally. Terminal history follows open work.
 | 35 | [CR116](rs004-identity-resolution-fidelity/cr116-identity-get-piped-to-identity-set-adds-a-newline-each-round-trip.md) | RS004 | `identity get` piped to `identity set` adds a newline each round trip | captured | — | — |
 | 36 | [CR117](rs001-ariad-runtime-trust/cr117-a-delivery-story-s-flow-unit-outlives-it.md) | RS001 | A Delivery Story's flow unit outlives it, and no story after it can be preauthorized | captured | — | — |
 | 37 | [CR118](rs001-ariad-runtime-trust/cr118-a-story-closure-and-a-delivery-story-closure-report-their-record-in-two-shapes.md) | RS001 | A story's closure and a Delivery Story's report their record in two shapes | captured | — | — |
+| 38 | [CR119](rs001-ariad-runtime-trust/cr119-the-delivery-story-done-preflight-reads-a-status-line-s-last-word.md) | RS001 | The Delivery Story Done preflight reads a status line's last word, so `✅ Done · 2026-05-11` is refused and `Not done` passes | captured | — | — |
 | — | [CR082](rs001-ariad-runtime-trust/cr082-lifecycle-surfaces-print-absolute-paths.md) | RS001 | Plan and Expand surfaces print absolute filesystem paths where their artifact surface prints project-relative ones | done | @viniciusteles | `mirror-ts-core` |
 | — | [CR009](rs001-ariad-runtime-trust/cr009-name-the-target-project-in-artifact-surfaces.md) | RS001 | Name the target project in artifact materialization surfaces | done | @viniciusteles | `mirror-ts-core` |
 | — | [CR114](rs001-ariad-runtime-trust/cr114-the-builder-resume-offers-prepare-on-a-completed-item.md) | RS001 | The Builder resume offers Prepare on a completed item | done | @viniciusteles | `mirror-ts-core` |
