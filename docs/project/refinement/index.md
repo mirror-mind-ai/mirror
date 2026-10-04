@@ -9,7 +9,7 @@ If a linked document and this index disagree, this index wins.
 ## Current Focus
 
 - Refinement Story: RS001
-- Change Request: none
+- Change Request: CR107
 
 Selecting a focus is an explicit project decision. Reading this file never selects or
 executes work.
@@ -61,7 +61,7 @@ Open work is ordered intentionally. Terminal history follows open work.
 | 27 | [CR100](rs010-cv22-oracle-and-port-hygiene/cr100-the-session-resolver-guesses-from-a-table-of-three-row-kinds.md) | RS010 | The session resolver guesses "the session" from a table that holds three kinds of row | captured | — | — |
 | 28 | [CR101](rs010-cv22-oracle-and-port-hygiene/cr101-explorer-and-soul-activation-stamp-a-guessed-session.md) | RS010 | Explorer and Soul activation stamp their mode onto a guessed session | captured | — | — |
 | 29 | [CR106](rs010-cv22-oracle-and-port-hygiene/cr106-a-pi-session-in-a-scratch-mirror-home-copies-the-whole-pi-history-into-it.md) | RS010 | A Pi session started against a scratch Mirror home copies the whole Pi history into it | captured | — | — |
-| 30 | [CR107](rs001-ariad-runtime-trust/cr107-an-escaped-pipe-in-a-candidate-table-title-is-read-as-a-cell-border.md) | RS001 | An escaped pipe in a candidate-table title is read as a cell border | captured | — | — |
+| 30 | [CR107](rs001-ariad-runtime-trust/cr107-an-escaped-pipe-in-a-candidate-table-title-is-read-as-a-cell-border.md) | RS001 | An escaped pipe in a candidate-table title is read as a cell border | in_progress | @viniciusteles | `mirror-ts-core` |
 | 31 | [CR108](rs010-cv22-oracle-and-port-hygiene/cr108-the-claude-code-copies-of-other-skills-drift-from-pi-in-behavior.md) | RS010 | The Claude Code copies of other skills drift from Pi in behavior, and no guard compares them | captured | — | — |
 | 32 | [CR109](rs009-cv22-front-door-routing-correctness/cr109-mirror-log-help-records-help-and-renames-the-conversation.md) | RS009 | `mirror log --help` records `--help` as the response and renames the conversation to it | captured | — | — |
 | 33 | [CR110](rs010-cv22-oracle-and-port-hygiene/cr110-the-doc-link-checker-reads-a-link-inside-inline-code-as-a-real-link.md) | RS010 | The doc-link checker reads a link inside inline code as a real link | captured | — | — |
