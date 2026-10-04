@@ -719,6 +719,9 @@ Navigator proposes a different shape (for example `| Family | Scope | Type |
 Risk |`), flag the mismatch before Pull/Expand runs so the table is
 Expand-compatible by construction.
 
+A pipe inside a cell is written `\|`, as GFM writes it, and reads back as `|`;
+Ariad escapes the pipes in any title it writes into a cell.
+
 If Expand renders `<<<ARIAD:EXPAND_BLOCKED>>>` (the resolved package's table
 does not parse, two packages claim the same code, or a Delivery Story with no
 package would need a story that an authored package already claims), return the

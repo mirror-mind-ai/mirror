@@ -392,6 +392,14 @@ them new. The route after the change meets every pass condition; its output is u
 [The route after the change](#the-route-after-the-change-2026-10-04). Plateau 2 is
 the skill's sentence and the Claude copies.
 
+### Plateau 2 handoff (2026-10-04)
+
+Now true: the candidate-table authoring contract in `.pi/skills/mm-build/SKILL.md` says a
+pipe inside a cell is written `\|` and that Ariad escapes the pipes in a title it writes
+into a cell, as drafted under [Skill text](#skill-text); the two Claude copies are
+regenerated, and the plugin check and the skill parity check pass. Nothing else changed.
+Plateau 3 is the Navigator's walk, the handoff review, and the ledger.
+
 ### The route after the change (2026-10-04)
 
 At the plateau 1 commit:
