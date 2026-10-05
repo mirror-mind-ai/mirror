@@ -1,6 +1,6 @@
-[< RS001](index.md) · [Canonical status](../index.md#change-requests)
+[< RS001](index.md) Â· [Canonical status](../index.md#change-requests)
 
-# CR107 — An escaped pipe in a candidate-table title is read as a cell border
+# CR107 â An escaped pipe in a candidate-table title is read as a cell border
 
 ## Problem
 
@@ -37,11 +37,11 @@ candidate table, and `statusTableRows` in `deliveryStoryRoadmapClosure.ts` for t
 preflight. None reads `\|`, GFM's one way to put a pipe in a cell. A cell with one
 splits into two, and every column after it shifts by one:
 
-- Expand recommends ``🟩[US1] Read `a \``, heads the child ``# CV1.DS1.US1 — Read `a \``,
+- Expand recommends ``ð©[US1] Read `a \``, heads the child ``# CV1.DS1.US1 â Read `a \``,
   and names its folder `cv1-ds1-us1-read-a` (route step 1).
-- The index's CV table row `| CV1 | Checkout, cash \| card | 🟢 Active |` reaches the
+- The index's CV table row `| CV1 | Checkout, cash \| card | ð¢ Active |` reaches the
   snapshot's focus row as the title `Checkout, cash \` with the status `card`, marked
-  `○ card` (step 2). The CV's real status is in the fourth cell, which nothing reads.
+  `â card` (step 2). The CV's real status is in the fourth cell, which nothing reads.
 - The Done preflight reads a Done row's `Status` column from the cell the escape pushed
   into it, `User Story`, and refuses `done-delivery-story`: `table row CV1.DS1.US1 is
   not Done` (step 4).
@@ -200,15 +200,15 @@ plateau begins.
    table through `snapshotItemsFromContent`, the candidate table through
    `parseCandidateStories`, and the Done preflight through `inspectAuthoredClosure` on a
    package whose Done row holds an escape; and `CV20.DS13.TS1`'s row, as written in
-   this repository, reads with the status `✅ Done` and the level `technical_story`.
+   this repository, reads with the status `â Done` and the level `technical_story`.
 3. `renderDeliveryStoryIndex` with the title `Pay by cash | card` writes `Pay by cash \|
    card` in the Story cell and in the Outcome cell, and `parseCandidateStories` reads the
    row back with the title `Pay by cash | card`; with the title ``a \| b`` it writes
    ``a \\\| b`` and reads back ``a \| b``.
 4. Through the front door: Pull on a Delivery Story whose table holds ``Read `a \| b`
-   input`` recommends ``🟩[US1] Read `a | b` input``, heads the child with it, and names
+   input`` recommends ``ð©[US1] Read `a | b` input``, heads the child with it, and names
    the folder `cv1-ds1-us1-read-a-b-input`; the snapshot's focus row for an index row
-   with an escape reads the whole title and `◉ active`; a Delivery Story pulled with a
+   with an escape reads the whole title and `â active`; a Delivery Story pulled with a
    piped title writes a row that a second Pull reads back whole; and `done-delivery-story`
    proceeds past the preflight on a Done row with an escape.
 5. Every golden is byte-identical.
@@ -226,15 +226,15 @@ deletes its temporary directory:
 ```bash
 V=$(mktemp -d) && mkdir -p "$V/home" && export MIRROR_HOME="$V/home" MIRROR_USER= NODE_OPTIONS=--no-warnings
 cr107() { node ts/src/frontDoor/cli.ts "$@"; }
-card() { sed -n "/<<<ARIAD:$1>>>/,/<<<END:$1>>>/p" | sed -n '/^╭/,/^╰/p'; }
+card() { sed -n "/<<<ARIAD:$1>>>/,/<<<END:$1>>>/p" | sed -n '/^â­/,/^â°/p'; }
 answer() { grep -o '<<<ARIAD:[A-Z_]*>>>\|^Error: .*' | paste -sd ' ' - | sed 's/^/    answer: /'; }
 journey() { printf '# %s\n' "$1" | cr107 identity set journey "$1" > /dev/null && cr107 journey set-path "$1" "$2" > /dev/null 2>&1
   cr107 build adopt --journey "$1" --method ariad > /dev/null; cr107 build sync-cursor --journey "$1" --method ariad > /dev/null; }
 pullds() { cr107 build pull-item --journey "$1" --method ariad --item-code "$2" --item-level delivery_story --item-title "$3" --why-now now 2>&1; }
 R="$V/p/docs/project/roadmap" && mkdir -p "$R/cv1/ds1" && git -C "$V/p" init -q
-printf '# Roadmap\n\n| Code | Capability Value | Status |\n|---|---|---|\n| CV1 | Checkout, cash \\| card | 🟢 Active |\n' > "$R/index.md"
-printf '# CV1 — Checkout\n\n**Status:** 🟢 Active\n' > "$R/cv1/index.md"
-printf '# CV1.DS1 — Checkout address\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n\n## Candidate Stories\n\n| Code | Story | Type | Status |\n|------|-------|------|--------|\n| CV1.DS1.US1 | Read `a \\| b` input | User Story | 🟡 Planned |\n| CV1.DS1.TS1 | Validate the address | Technical Story | 🟡 Planned |\n' > "$R/cv1/ds1/index.md"
+printf '# Roadmap\n\n| Code | Capability Value | Status |\n|---|---|---|\n| CV1 | Checkout, cash \\| card | ð¢ Active |\n' > "$R/index.md"
+printf '# CV1 â Checkout\n\n**Status:** ð¢ Active\n' > "$R/cv1/index.md"
+printf '# CV1.DS1 â Checkout address\n\n**Status:** ð¡ Planned\n**Type:** Delivery Story\n\n## Candidate Stories\n\n| Code | Story | Type | Status |\n|------|-------|------|--------|\n| CV1.DS1.US1 | Read `a \\| b` input | User Story | ð¡ Planned |\n| CV1.DS1.TS1 | Validate the address | Technical Story | ð¡ Planned |\n' > "$R/cv1/ds1/index.md"
 journey a "$V/p"; journey b "$V/p"; journey c "$V/p"
 echo '--- 1. a Delivery Story whose candidate table holds `Read `a \| b` input`: Pull expands it'
 pullds a CV1.DS1 'Checkout address' > "$V/pull-a"; answer < "$V/pull-a"
@@ -254,23 +254,23 @@ cr107 build plan-delivery-story --journey a --method ariad --objective o --child
 cr107 build approve-delivery-story-plan --journey a --method ariad > /dev/null 2>&1
 cr107 build validate-delivery-story --journey a --method ariad --summary s --navigator-accepted > /dev/null 2>&1
 cr107 build review-delivery-story --journey a --method ariad --decision no_action --summary s > /dev/null 2>&1
-for f in $(find "$R/cv1/ds1" -name index.md); do perl -pi -e 's/🟡 Planned/✅ Done/g; s/^\*\*Status:\*\* .*/**Status:** ✅ Done/' "$f"; done
+for f in $(find "$R/cv1/ds1" -name index.md); do perl -pi -e 's/ð¡ Planned/â Done/g; s/^\*\*Status:\*\* .*/**Status:** â Done/' "$f"; done
 cr107 build done-delivery-story --journey a --method ariad --summary s 2>&1 | answer
 unset MIRROR_HOME MIRROR_USER; rm -rf "$V"
 ```
 
 Pass, after the change:
 
-- Step 1: the recommendation row reads ``🟩[US1] Read `a | b` input``; the child heading
-  is ``# CV1.DS1.US1 — Read `a | b` input``; the folder is `cv1-ds1-us1-read-a-b-input`.
-- Step 2: the focus row reads `🟪[CV1]  Checkout, cash | card` on the left and
-  `◉ active` on the right; the value line reads `value: Checkout, cash | card`.
+- Step 1: the recommendation row reads ``ð©[US1] Read `a | b` input``; the child heading
+  is ``# CV1.DS1.US1 â Read `a | b` input``; the folder is `cv1-ds1-us1-read-a-b-input`.
+- Step 2: the focus row reads `ðª[CV1]  Checkout, cash | card` on the left and
+  `â active` on the right; the value line reads `value: Checkout, cash | card`.
 - Step 3: the written row holds `Pay by cash \| card` in its second and fourth cells,
-  and the read-back recommendation is `🟩[US1] Pay by cash | card`.
+  and the read-back recommendation is `ð©[US1] Pay by cash | card`.
 - Step 4: `<<<ARIAD:DELIVERY_STORY_CLOSURE_CHECKPOINT>>>` and its companions, no
   `Error:` line.
 
-Fail: a backslash on any row or heading; a title cut at a pipe; `○ card`; a scaffold row
+Fail: a backslash on any row or heading; a title cut at a pipe; `â card`; a scaffold row
 with a bare pipe inside a cell; the preflight's refusal.
 
 ### Conscious exclusions
@@ -343,9 +343,9 @@ Found while characterizing
 [CR018](cr018-story-titles-with-slashes-truncated-in-surfaces-and-scaffolds.md) on
 2026-09-27, at `4169c2ad`, on a scratch project with an isolated `MIRROR_HOME`. A
 Delivery Story whose candidate table held the row
-``| CV1.DS1.US1 | Read `a \| b` input | User Story | 🟡 Planned |`` was pulled. Expand's
-recommendation read ``🟩[US1] Read `a \``, and the child it wrote was headed
-``# CV1.DS1.US1 — Read `a \``.
+``| CV1.DS1.US1 | Read `a \| b` input | User Story | ð¡ Planned |`` was pulled. Expand's
+recommendation read ``ð©[US1] Read `a \``, and the child it wrote was headed
+``# CV1.DS1.US1 â Read `a \``.
 
 ### The route before the change
 
@@ -354,18 +354,18 @@ At `1876297a`, identical across two runs:
 ```text
 --- 1. a Delivery Story whose candidate table holds `Read `a \| b` input`: Pull expands it
     answer: <<<ARIAD:DELIVERY_STORY_READY>>> <<<ARIAD:ARTIFACTS_MATERIALIZED>>>
-│ 🟩[US1] Read `a \                                       │
-    the child heading: # CV1.DS1.US1 — Read `a \
+â ð©[US1] Read `a \                                       â
+    the child heading: # CV1.DS1.US1 â Read `a \
     the child folder:  cv1-ds1-us1-read-a
 --- 2. the roadmap index: a CV title with an escaped pipe, on the snapshot's focus row
-│ 🟪[CV1]  Checkout, cash \                        ○ card │
-│ value: Checkout, cash \                                │
+â ðª[CV1]  Checkout, cash \                        â card â
+â value: Checkout, cash \                                â
 --- 3. a Delivery Story with no package, pulled with a title that holds a pipe: the scaffold it writes
     answer: <<<ARIAD:DELIVERY_STORY_READY>>> <<<ARIAD:ARTIFACTS_MATERIALIZED>>>
     written at: cv1/cv1-ds2-pay-by-cash-card/index.md
-    | [CV1.DS2.US1](cv1-ds2-us1-pay-by-cash-card/index.md) | Pay by cash | card | User Story | Navigator can validate Pay by cash | card as an observable behavior. | 🟡 Planned |
+    | [CV1.DS2.US1](cv1-ds2-us1-pay-by-cash-card/index.md) | Pay by cash | card | User Story | Navigator can validate Pay by cash | card as an observable behavior. | ð¡ Planned |
     read back by Expand, the same Delivery Story pulled from another journey:
-│ 🟩[US1] Pay by cash                                     │
+â ð©[US1] Pay by cash                                     â
 --- 4. the Done preflight on a table row whose Story cell holds an escaped pipe
     answer: Error: authored roadmap is not ready for Delivery Story Done: docs/project/roadmap/cv1/ds1/index.md: table row CV1.DS1.US1 is not Done
 ```
@@ -407,21 +407,31 @@ At the plateau 1 commit:
 ```text
 --- 1. a Delivery Story whose candidate table holds `Read `a \| b` input`: Pull expands it
     answer: <<<ARIAD:DELIVERY_STORY_READY>>> <<<ARIAD:ARTIFACTS_MATERIALIZED>>>
-│ 🟩[US1] Read `a | b` input                              │
-    the child heading: # CV1.DS1.US1 — Read `a | b` input
+â ð©[US1] Read `a | b` input                              â
+    the child heading: # CV1.DS1.US1 â Read `a | b` input
     the child folder:  cv1-ds1-us1-read-a-b-input
 --- 2. the roadmap index: a CV title with an escaped pipe, on the snapshot's focus row
-│ 🟪[CV1]  Checkout, cash | card                 ◉ active │
-│ value: Checkout, cash | card                           │
+â ðª[CV1]  Checkout, cash | card                 â active â
+â value: Checkout, cash | card                           â
 --- 3. a Delivery Story with no package, pulled with a title that holds a pipe: the scaffold it writes
     answer: <<<ARIAD:DELIVERY_STORY_READY>>> <<<ARIAD:ARTIFACTS_MATERIALIZED>>>
     written at: cv1/cv1-ds2-pay-by-cash-card/index.md
-    | [CV1.DS2.US1](cv1-ds2-us1-pay-by-cash-card/index.md) | Pay by cash \| card | User Story | Navigator can validate Pay by cash \| card as an observable behavior. | 🟡 Planned |
+    | [CV1.DS2.US1](cv1-ds2-us1-pay-by-cash-card/index.md) | Pay by cash \| card | User Story | Navigator can validate Pay by cash \| card as an observable behavior. | ð¡ Planned |
     read back by Expand, the same Delivery Story pulled from another journey:
-│ 🟩[US1] Pay by cash | card                              │
+â ð©[US1] Pay by cash | card                              â
 --- 4. the Done preflight on a table row whose Story cell holds an escaped pipe
     answer: <<<ARIAD:DELIVERY_STORY_CLOSURE_CHECKPOINT>>> <<<ARIAD:ARTIFACTS_MATERIALIZED>>> <<<ARIAD:PROJECT_POSITION>>>
 ```
+
+### Navigator validation (2026-10-05)
+
+The Navigator ran the route from the repository root at `422ec315`, in their own shell
+(`bash <(awk …)` over this document's script). The output matched the Driver's run above
+line for line: step 1 the recommendation ``🟩[US1] Read `a | b` input``, the heading, and
+the folder `cv1-ds1-us1-read-a-b-input`; step 2 `Checkout, cash | card` and `◉ active`;
+step 3 `Pay by cash \| card` twice in the written row and `Pay by cash | card` read back;
+step 4 the three closure surfaces and no `Error:` line. The Navigator accepted the
+validation the same day.
 
 ## Outcome
 
