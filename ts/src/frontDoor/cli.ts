@@ -1777,7 +1777,11 @@ export async function main(rawArgv = process.argv.slice(2)): Promise<number> {
   // from stdin, or spawned -- and logged by SCOPE only: an unknown top-level
   // name is whatever the caller typed, and it stays out of the log.
   if (decision.engine === "usage") {
-    const answer = answerUsage(decision.request);
+    const env = process.env;
+    const answer = answerUsage(decision.request, {
+      userConfigured: Boolean(env.MIRROR_USER || env.MIRROR_HOME || env.MEMORY_DIR || env.DB_PATH),
+      configFile: configFilePath(env),
+    });
     (answer.stream === "stdout" ? process.stdout : process.stderr).write(answer.text);
     logFrontDoor(logPath, {
       command: decision.command,

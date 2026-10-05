@@ -44,6 +44,7 @@ export const REQUIRED_FILES: readonly string[] = [
   "package.json",
   "README.md",
   "LICENSE",
+  "AGENTS.md",
   "bin/mirror.js",
   "ts/src/frontDoor/cli.ts",
   "ts/src/hooks/main.ts",

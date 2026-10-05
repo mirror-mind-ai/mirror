@@ -89,13 +89,17 @@ cd "$WORK/home"
 
 say "2. mirror is on the PATH, from the install, with nothing else set"
 check "command -v mirror" "$(command -v mirror)" "$WORK/prefix/bin/mirror"
-USAGE="$(mirror 2>&1 || true)"
-contains "bare mirror prints usage-ish output" "$USAGE" "mirror"
+BARE="$(mirror 2>&1 || true)"
+contains "bare mirror, no user yet: the orientation, not the usage dump" "$BARE" "No user configured yet."
+contains "the orientation names init" "$BARE" "Run: mirror init <your-name>"
+contains "the orientation names the config file" "$BARE" "Configuration will live at: $HOME/.config/mirror/env"
 VERSION_OUT="$(mirror runtime version 2>"$WORK/version.err" || true)"
 contains "runtime version answers" "$VERSION_OUT" "Version: "
 check "runtime version writes nothing to stderr (no ExperimentalWarning, no .env needed)" "$(wc -c <"$WORK/version.err" | tr -d ' ')" "0"
 
 say "3. mirror init from an empty home"
+contains "the package carries the operating instructions (D13)" "$(head -1 "$PKG/AGENTS.md")" "Mirror Mind"
+[ ! -f "$PKG/CLAUDE.md" ] && ok "and not the repository's project context" || bad "CLAUDE.md shipped"
 INIT_OUT="$(mirror init smokeuser 2>"$WORK/init.err")"; INIT_CODE=$?
 check "init exit code" "$INIT_CODE" "0"
 contains "init created the modern home" "$INIT_OUT" "Created user home: $HOME/.mirror-minds/smokeuser"
@@ -106,6 +110,9 @@ check "config file is 0600" "$(stat -f '%Lp' "$CONFIG" 2>/dev/null || stat -c '%
 check "config directory is 0700" "$(stat -f '%Lp' "$HOME/.config/mirror" 2>/dev/null || stat -c '%a' "$HOME/.config/mirror")" "700"
 contains "init says where the key goes" "$INIT_OUT" "OPENROUTER_API_KEY"
 [ -f "$HOME/.mirror-minds/smokeuser/identity/self/soul.yaml" ] && ok "identity templates copied" || bad "identity not copied"
+
+BARE_AFTER="$(mirror 2>&1 || true)"
+contains "bare mirror, user configured: the usage" "$BARE_AFTER" "Usage: mirror <command> [args]"
 
 say "4. mirror seed, resolving the user from the config file alone"
 set +e

@@ -39,6 +39,7 @@
     "plugins/mirror-mind",
     "scripts/codex-hooks",
     "scripts/codex-mirror.sh",
+    "AGENTS.md",
     "README.md",
     "LICENSE"
   ],

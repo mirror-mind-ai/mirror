@@ -124,11 +124,39 @@ export function renderUnknownSubcommand(
   return `${familyUsageLine(program, choices)}${program}: error: ${detail}\n`;
 }
 
+/**
+ * What the front door knows about the machine when it answers bare `mirror`:
+ * whether any source configured a user, and where the config file would be.
+ */
+export interface UsageContext {
+  readonly userConfigured: boolean;
+  readonly configFile: string;
+}
+
+/**
+ * The first seconds after `npm install -g mirror-mind` (CV22.DS10.US3): bare
+ * `mirror` on a machine with no user configured is an orientation, not a
+ * usage dump -- three lines that say what is missing, what to run, and where
+ * the configuration will live. With a user configured, bare `mirror` is the
+ * usage block, as before.
+ */
+export function renderOrientation(configFile: string): string {
+  return [
+    "No user configured yet.",
+    `  Run: ${PROGRAM} init <your-name>`,
+    `  Configuration will live at: ${configFile}`,
+    "",
+  ].join("\n");
+}
+
 /** Render the answer for a request routing could not place. */
-export function answerUsage(request: UsageRequest): UsageAnswer {
+export function answerUsage(request: UsageRequest, context?: UsageContext): UsageAnswer {
   if (request.scope === "top-level") {
     if (request.given !== null && HELP.has(request.given)) {
       return { stream: "stdout", exitCode: 0, text: USAGE };
+    }
+    if (request.given === null && context !== undefined && !context.userConfigured) {
+      return { stream: "stdout", exitCode: 1, text: renderOrientation(context.configFile) };
     }
     const unknown = request.given === null ? "" : `Unknown command: ${request.given}\n\n`;
     return { stream: "stdout", exitCode: 1, text: `${unknown}${USAGE}` };

@@ -71,6 +71,24 @@ test("top level: _dispatch's shape on stdout with exit 1, and help with exit 0",
   }
 });
 
+test("US3: bare mirror with no user configured is a three-line orientation, not the usage dump", () => {
+  const unconfigured = { userConfigured: false, configFile: "/home/u/.config/mirror/env" };
+  assert.deepEqual(answerUsage({ scope: "top-level", given: null }, unconfigured), {
+    stream: "stdout",
+    exitCode: 1,
+    text: "No user configured yet.\n  Run: mirror init <your-name>\n  Configuration will live at: /home/u/.config/mirror/env\n",
+  });
+  // A configured machine keeps the usage; an unknown command and help are
+  // unchanged either way -- the orientation is only for the bare call.
+  const configured = { ...unconfigured, userConfigured: true };
+  assert.equal(answerUsage({ scope: "top-level", given: null }, configured).text, USAGE);
+  assert.match(
+    answerUsage({ scope: "top-level", given: "frobnicate" }, unconfigured).text,
+    /^Unknown command/,
+  );
+  assert.equal(answerUsage({ scope: "top-level", given: "--help" }, unconfigured).text, USAGE);
+});
+
 test("a family: argparse's shape on stderr with exit 2, the family as the program", () => {
   const request = {
     scope: "family",
