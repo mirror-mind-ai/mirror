@@ -267,6 +267,7 @@ It builds a scratch origin, clone, mirror home, and env-file, and shadows `pytho
 # stage new files first, or they are invisible to it and a green run proves
 # nothing about the commit.
 node ts/scripts/checkRetiredSurfaces.ts
+node ts/scripts/checkPackContents.ts
 node ts/scripts/checkDocLinks.ts
 node ts/scripts/checkSkillCommandParity.ts
 # The plugin is generated from .claude/skills/, and both Claude copies of

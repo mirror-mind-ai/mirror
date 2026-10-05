@@ -114,6 +114,15 @@ jobs:
       - name: Retired-surface tripwire (DS10 deletions must stay deleted)
         run: node ts/scripts/checkRetiredSurfaces.ts
 
+      # CV22.DS10.US3: the artifact half of DS10's Zero Python gate. `files`
+      # is a whitelist and this proves it: `npm pack --dry-run` must list the
+      # runtime subset and nothing else -- no test, golden, smoke, scratch,
+      # environment file, database, Python, or Windows product -- and the
+      # manifest must declare no install lifecycle script. Installing Mirror
+      # is a file copy.
+      - name: Pack contents (the tarball is the runtime subset, with no install script)
+        run: node ts/scripts/checkPackContents.ts
+
       # The custody proof (CV22.DS10.TS5, the panel's blocking amendment). Both
       # scripts grade the TypeScript engine against COMMITTED fixtures -- every
       # migration step from its pre-state to its recorded end-state, and a fresh
