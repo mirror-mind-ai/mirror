@@ -587,7 +587,24 @@ The test guide carries the commands. In outline:
     only and document the file for the person to copy — a session that answers
     `/mm-mirror` without routing modes or signing personas is not a Mirror session.
 
-Approving the Plan approves these thirteen as recorded; amendments re-open Plan.
+14. **D14 — `init` creates `~/.mirror-minds/<user>`** (taken at plateau 1, 2026-10-05). Python's
+    `default_user_home` wrote the legacy `~/.mirror/<user>` and told the person to set
+    `MIRROR_HOME` by hand; with D3 writing `MIRROR_USER`, a legacy home would print the
+    legacy-path warning on every later command. Alternative: keep parity and have `init`
+    write `MIRROR_HOME` instead — a per-user absolute path in a file meant to hold a name.
+15. **D15 — the `mirror` bin is `bin/mirror.js`, a loader shim** (taken at plateau 1,
+    2026-10-05, on the package smoke's first finding). Node refuses to strip types for
+    files under `node_modules` and has no flag for it, so "ship `.ts`, no build step" holds
+    in a checkout and through `npm link` but not under `npm install -g`. The shim registers
+    a `module.registerHooks` load hook that strips types for `.ts` files under its own
+    package root only, then runs the front door's `runAsEntry()`, which the entry guard
+    calls too; every shipped path stays what it is (D2), and `mirror-hook` (D5) takes the
+    same shim at plateau 3. Both APIs are experimental in Node 24, the class `node:sqlite`
+    already puts the core in; the package smoke pins them on CI. Alternative: compile to
+    `dist/` at `prepack` — breaks D2's same-paths claim, needs `tsc` emit with import
+    rewriting and a second `#imports` map, and brings back the two-layout detector.
+
+Approving the Plan approves these as recorded; amendments re-open Plan.
 
 ## Review
 

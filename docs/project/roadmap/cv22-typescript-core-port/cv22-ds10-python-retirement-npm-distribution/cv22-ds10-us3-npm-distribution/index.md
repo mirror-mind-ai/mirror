@@ -6,7 +6,8 @@
 panel-reviewed the same day; a second panel pass on 2026-10-05 (prompt-engineer,
 ai-engineer, product-designer, experience-designer) found six things, the sharpest that
 the operating instructions did not ship in the tarball; all six folded, and the Plan
-**approved by the Navigator on 2026-10-05 with D1–D13**. Implementation starts at plateau 0.
+**approved by the Navigator on 2026-10-05 with D1–D13**; D14 and D15 taken during plateau 1.
+Plateaus 0 and 1 done the same day.
 **Type:** User Story
 **Depends on:** every other DS10 story (done); the release gate (done 2026-09-28).
 
@@ -97,7 +98,8 @@ the Frame and installer (D4); two bins and two wrapper forms (D5); Pi wiring by 
 `runtime channel` (D9); item 11 recorded (D10); the briefing rewritten here (D11); the
 Python-era updater's last hop as a release-gate item (D12); the Operating Instructions
 ship and each runtime is told how to load them (D13, added by the 2026-10-05 panel pass).
-All thirteen approved 2026-10-05.
+All thirteen approved 2026-10-05. Two more taken during plateau 1: `init` creates the modern
+home (D14); the `mirror` bin is a type-stripping loader shim (D15).
 
 ## Plateau Progress
 
@@ -114,6 +116,28 @@ All thirteen approved 2026-10-05.
   Plateau 6 replays it through `mirror` and expects an empty diff. Verified: typecheck,
   lint, the 2952-test suite, the four repository checks, the four runtime smokes.
   Next: plateau 1 (§B), the package.
+- **Plateau 1 — the package (done 2026-10-05, six commits `ef282869`..`65aaa776`).** The
+  manifest is at the root, `mirror-mind`, public, with a `files` whitelist; `npm pack` yields
+  462 files with the same paths as a checkout (D2). `PACKAGE_NAME` is the one constant TS5
+  predicted; `installKind` resolves symlinks so an `npm link`ed clone is a clone. One
+  `runtime/config.ts` reads `.env` from the entry's tree and `~/.config/mirror/env`, never
+  overriding, and silences the sqlite warning in-process (D3); `init` writes `MIRROR_USER`
+  0600/0700 and `diagnose` grades the file's mode. One `runtime/treeRoot.ts` serves
+  templates, release notes, the welcome title — and the version, a fourth cwd reader the Plan
+  had not named, pulled forward because route 2 would have shown `unknown`. The pack guard
+  (`checkPackContents.ts`) is in CI. `AGENTS.md` is a real file holding the Operating
+  Instructions alone and ships; `CLAUDE.md` imports it (D13). Bare `mirror` orients.
+  **Two findings, both from the install-from-nothing smoke's first run.** (1) Node refuses to
+  strip types under `node_modules`, so "ship `.ts`" did not survive `npm install -g`;
+  **D15**: the bin is `bin/mirror.js`, a loader shim that strips types for its own package's
+  files only. (2) **F1**: a fresh `seed` exits 1 everywhere because the shipped
+  `ego/constraints` template is empty and seed calls that an error; pre-existing, named in
+  the smoke, not fixed here. Also **D14**: `init` creates `~/.mirror-minds/<user>`, the path
+  `MIRROR_USER` resolves to, instead of Python's legacy `~/.mirror/<user>`. Deferred to
+  plateau 3: `init` printing each detected runtime's wiring step, which plateau 3 verifies.
+  `scripts/smoke_npm_package.sh` (40 checks, in CI) proves init, seed, list, status, and a
+  migrating open through the `mirror` bin from a scratch global install. Verified: typecheck,
+  lint, 2980 tests, the repository checks, every smoke. Next: plateau 2 (§C), skills and Pi.
 
 ## Where To Resume
 
