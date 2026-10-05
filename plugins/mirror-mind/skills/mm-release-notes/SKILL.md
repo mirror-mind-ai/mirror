@@ -19,13 +19,13 @@ Use when the user asks any natural-language variant of:
 For the latest release note:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts runtime release-notes latest
+mirror runtime release-notes latest
 ```
 
 For a specific version:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts runtime release-notes vX.Y.Z
+mirror runtime release-notes vX.Y.Z
 ```
 
 Show the output verbatim. Do not summarize unless the user explicitly asks for a shorter explanation.

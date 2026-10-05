@@ -244,6 +244,7 @@ Mirror Mind is one TypeScript package, run directly by Node.js 24+ with no build
 
 ```bash
 npm ci               # pinned dependencies: yaml at runtime; TypeScript and Biome for the checks
+npm link             # once: puts `mirror` on the PATH, pointing at this checkout (the skills say `mirror`)
 npm run typecheck    # tsc --noEmit
 npm run lint         # Biome
 npm test             # node:test, the whole suite
@@ -257,6 +258,8 @@ For stories that touch **the updater or the release chain**, run the operational
 ```bash
 bash scripts/smoke_runtime_update.sh
 ```
+
+`npm link` is the one-time developer step CV22.DS10.US3 introduced: every skill copy invokes `mirror`, and in a checkout that name exists only because the link points it here. A clone that pulls past US3 without linking loses every skill until it runs it; the Pi extension says so at session start. `npm unlink -g mirror-mind` removes the link.
 
 For stories that touch **the package** -- the manifest, `files`, the `bin`, an entry point, configuration, or anything a fresh install runs first -- run the install-from-nothing smoke:
 

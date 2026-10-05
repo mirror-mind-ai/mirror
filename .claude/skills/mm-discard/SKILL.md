@@ -22,7 +22,7 @@ exit and drop this conversation
 Run:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts conversation-logger discard-current --interface claude_code
+mirror conversation-logger discard-current --interface claude_code
 ```
 
 The command deletes the current conversation and marks the runtime session so the

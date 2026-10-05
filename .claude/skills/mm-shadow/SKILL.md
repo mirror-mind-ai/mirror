@@ -36,7 +36,7 @@ fires AND the structural layer has confirmed content. It surfaces with provenanc
 ## 1. Show current shadow layer (orientation)
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts shadow show
+mirror shadow show
 ```
 
 ---
@@ -44,7 +44,7 @@ NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts shadow s
 ## 2. Scan for candidate observations
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts shadow scan [--limit 50]
+mirror shadow scan [--limit 50]
 ```
 
 Scans memories where:
@@ -75,18 +75,18 @@ Ask: **accept / edit / reject?**
 
 **Accept:**
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts shadow apply <proposal_id>
+mirror shadow apply <proposal_id>
 ```
 
 **Accept with edited content:**
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts shadow apply <proposal_id> \
+mirror shadow apply <proposal_id> \
   --content "User-revised observation text"
 ```
 
 **Reject:**
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts shadow reject <proposal_id>
+mirror shadow reject <proposal_id>
 ```
 
 What happens on acceptance:
@@ -101,7 +101,7 @@ Rejected proposals leave the shadow layer and source memories unchanged.
 ## 5. List history
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts shadow list [--status pending|accepted|rejected]
+mirror shadow list [--status pending|accepted|rejected]
 ```
 
 ---

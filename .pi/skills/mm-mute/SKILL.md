@@ -10,9 +10,9 @@ When receiving `/mm-mute`:
 
 1. Check current status:
    ```bash
-   NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts conversation-logger status
+   mirror conversation-logger status
    ```
 
 2. Toggle:
-   - If **ACTIVE**: run `NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts conversation-logger mute` → say "Conversation logging muted."
-   - If **MUTED**: run `NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts conversation-logger unmute` → say "Conversation logging reactivated."
+   - If **ACTIVE**: run `mirror conversation-logger mute` → say "Conversation logging muted."
+   - If **MUTED**: run `mirror conversation-logger unmute` → say "Conversation logging reactivated."

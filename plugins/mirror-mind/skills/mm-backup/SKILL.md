@@ -9,7 +9,7 @@ user-invocable: true
 Runs a backup of the configured production database.
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts backup
+mirror backup
 ```
 
 This command:

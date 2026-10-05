@@ -18,7 +18,7 @@ Use when the user asks any natural-language variant of:
 Run the safe updater:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts runtime update
+mirror runtime update
 ```
 
 Show the output verbatim. Do not replace this with `git pull`, `git fetch`, or

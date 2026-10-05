@@ -9,7 +9,7 @@ user-invocable: true
 When receiving `/mm:tasks`, run:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts tasks [SUBCOMMAND] [ARGS]
+mirror tasks [SUBCOMMAND] [ARGS]
 ```
 
 ## Subcommands

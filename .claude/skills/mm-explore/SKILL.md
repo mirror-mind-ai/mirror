@@ -28,7 +28,7 @@ open exploration for <journey-slug>
 ## 1. Activate Explorer Mode
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts explore load <slug>
+mirror explore load <slug>
 ```
 
 The command:
@@ -48,7 +48,7 @@ that surface visibly to the user before continuing with exploratory work. Do not
 recreate it from scratch unless the command failed to render it; copy the
 rendered surface from the command output.
 
-After any `NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts explore story ...` command that returns a
+After any `mirror explore story ...` command that returns a
 Mirror surface, paste the returned surface as the first visible block in the
 response. Do not summarize, interpret, or paraphrase before rendering it.
 
@@ -84,7 +84,7 @@ While Explorer Mode is active:
 - When an Exploratory Story begins, open it with:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts explore story open <slug> --story "..." --summary "..." --last-card "..."
+mirror explore story open <slug> --story "..." --summary "..." --last-card "..."
 ```
 
 - Before calling `story thicken`, classify the change as either `narrative/substantive` or `local/refinement`.
@@ -92,7 +92,7 @@ NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts explore 
 - When material substantively changes the accumulated Exploratory Story, thicken it with:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts explore story thicken <slug> --story "..." --summary "..." --last-card "..." --changed "..."
+mirror explore story thicken <slug> --story "..." --summary "..." --last-card "..." --changed "..."
 ```
 
 Use `story thicken` for:
@@ -118,32 +118,32 @@ For local refinements, continue the conversation without updating the story. If 
 - When the user asks for the attractor, or when a strong directional pull should be proposed visibly, render attractors with:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts explore story attractors <slug> --attractor "..." --description "..." --status proposed
+mirror explore story attractors <slug> --attractor "..." --description "..." --status proposed
 ```
 
 - When the user corrects an attractor, replace it with the corrected attractor using the same command. Do not accumulate hidden competing interpretations.
 - When the user asks what small experiment tests the attractor, render an experiment proposal with:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts explore story experiment <slug> --title "..." --description "..." --status proposed
+mirror explore story experiment <slug> --title "..." --description "..." --status proposed
 ```
 
 - When the user asks what is currently being explored, render a snapshot with:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts explore story snapshot <slug>
+mirror explore story snapshot <slug>
 ```
 
 - When the user asks to see explorations for the active journey, render durable story visibility with:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts explore story list <slug>
+mirror explore story list <slug>
 ```
 
 - When the user asks to archive or close the active exploration without promoting it, archive the active story with:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts explore story archive <slug>
+mirror explore story archive <slug>
 ```
 
 - Render the story surface returned by those commands visibly to the user.
@@ -168,7 +168,7 @@ This is operational Builder work, not exploratory thickening. Explorer preserves
 Only after the user confirms the switch should Mirror activate Builder Mode with:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build load <slug>
+mirror build load <slug>
 ```
 
 Local refinements to the exploration itself, such as microcopy discussion,
@@ -187,7 +187,7 @@ return to normal mode
 Mirror should then call the contained Explorer operation:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts explore deactivate
+mirror explore deactivate
 ```
 
 Render the deactivation confirmation visibly to the user. Deactivation leaves the
@@ -210,14 +210,14 @@ Do not switch to Builder silently. First produce a transfer document set and
 render the handoff proposal. If the user asks to include source conversations,
 confirm which conversations should be included before adding raw source evidence.
 When the user names the current or recent conversation rather than an id, inspect
-recent journey conversations with `NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts conversations --journey
+recent journey conversations with `mirror conversations --journey
 <slug> --limit 5`, show the candidate source evidence, and ask for confirmation.
 Use `--source-conversation <conversation-id>` for reviewed source evidence. Use
 `--include-full-conversation` only after explicit confirmation that raw
 conversation evidence should be written with privacy obfuscation.
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts explore story handoff <slug> --title "..." --summary "..." --editorial-synthesis "..." --source-conversation "<conversation-id>:origin conversation" --include-full-conversation
+mirror explore story handoff <slug> --title "..." --summary "..." --editorial-synthesis "..." --source-conversation "<conversation-id>:origin conversation" --include-full-conversation
 ```
 
 Render `△ BUILDER HANDOFF PROPOSED` visibly, including the generated document
@@ -234,7 +234,7 @@ full-conversation.md        # only after explicit confirmation
 Ask for explicit confirmation. Only after the user confirms should Mirror call:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts explore story promote <slug>
+mirror explore story promote <slug>
 ```
 
 Promotion activates Builder Mode through the normal Builder load path. If the

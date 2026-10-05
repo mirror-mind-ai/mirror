@@ -9,8 +9,8 @@ user-invocable: true
 When receiving `/mm-new`:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts conversation-logger switch
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts mirror deactivate
+mirror conversation-logger switch
+mirror mirror deactivate
 ```
 
 Tell the user:

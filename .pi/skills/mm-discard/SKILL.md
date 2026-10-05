@@ -22,7 +22,7 @@ quit and discard this conversation
 Run:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts conversation-logger discard-current --interface pi
+mirror conversation-logger discard-current --interface pi
 ```
 
 The command deletes the current conversation and marks the runtime session so the

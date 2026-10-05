@@ -34,3 +34,19 @@ test("CLAUDE.md imports AGENTS.md and holds the Project Context alone", () => {
   assert.match(claude, /^## Project Context/m);
   assert.doesNotMatch(claude, /^## Mirror Operating Instructions$/m);
 });
+
+test("the Pi extension runs the core it ships with and carries the instructions (D6, D13)", () => {
+  // Textual: the extension is loaded by Pi, not by this suite. What a reader
+  // can check without Pi is that it names nothing the cwd would have to
+  // supply: the bin beside it, never cli.ts or an --env-file; its own
+  // AGENTS.md; and that it looks for `mirror` on the PATH.
+  const extension = readFileSync(join(REPO_ROOT, ".pi", "extensions", "mirror-logger.ts"), "utf8");
+  assert.match(extension, /new URL\("\.\.\/\.\.\/", import\.meta\.url\)/);
+  assert.match(extension, /join\(TREE_ROOT, "bin", "mirror\.js"\)/);
+  assert.match(extension, /join\(TREE_ROOT, "AGENTS\.md"\)/);
+  assert.match(extension, /contextFiles/);
+  assert.match(extension, /_mirrorOnPath\(\)/);
+  assert.doesNotMatch(extension, /ts\/src\/frontDoor\/cli\.ts"/);
+  assert.doesNotMatch(extension, /--env-file/);
+  assert.doesNotMatch(extension, /_readDotenv\(process\.cwd\(\)\)/);
+});

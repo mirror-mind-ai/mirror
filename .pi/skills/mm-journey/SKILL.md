@@ -9,15 +9,15 @@ user-invocable: true
 When receiving `/mm-journey [slug]`: answered by the TS core (CV22.DS7.US1).
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts journey [slug]
+mirror journey [slug]
 ```
 
 When receiving `/mm-journey update <slug> <content>`: answered by the TS core (CV22.DS7.US1).
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts journey update <slug> "<content>"
+mirror journey update <slug> "<content>"
 # or pipe via stdin:
-echo "<content>" | NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts journey update <slug> -
+echo "<content>" | mirror journey update <slug> -
 ```
 
 Present the output to the user.

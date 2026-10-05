@@ -587,23 +587,30 @@ describe("the Claude allowlist", () => {
 
   test("any front-door grant matches the invocation the skills actually make", () => {
     // A prefix rule is only a grant if the command starts with it. The skills
-    // run the front door behind NODE_OPTIONS and --env-file, so the grant TS5
-    // first wrote, `Bash(node ts/src/frontDoor/cli.ts *)`, matched no skill
-    // invocation -- and the Python-era grant it replaced had not matched the
-    // interpreter form the skills used then either. The walk had to approve
-    // every call.
-    // Checked against the real form, so a stale grant cannot pass as a live one.
+    // used to run the front door behind NODE_OPTIONS and --env-file, so the
+    // grant TS5 first wrote, `Bash(node ts/src/frontDoor/cli.ts *)`, matched no
+    // skill invocation -- and the Python-era grant it replaced had not matched
+    // the interpreter form the skills used then either. The walk had to
+    // approve every call. Since CV22.DS10.US3 (D7) every skill invokes
+    // `mirror <command>`, so a grant, if one is ever written, is `Bash(mirror:*)`
+    // and nothing else. Checked against the real form, so a stale grant cannot
+    // pass as a live one.
     const invocations = new Set<string>();
     const skillsDir = join(REPO_ROOT, ".claude/skills");
     for (const skill of readdirSync(skillsDir)) {
       const body = readFileSync(join(skillsDir, skill, "SKILL.md"), "utf8");
-      // From the command's start, leading VAR=value assignments included.
-      const command = /(?:\b[A-Z][A-Z_]*=\S+\s+)*\bnode\b[^`\n]*?ts\/src\/frontDoor\/cli\.ts/g;
-      for (const match of body.matchAll(command)) invocations.add(match[0]);
+      for (const match of body.matchAll(/^\s*(mirror [a-z][^\n]*)/gm))
+        invocations.add(match[1] ?? "");
     }
     assert.ok(invocations.size > 0, "the skills invoke the front door");
+    assert.ok(
+      [...invocations].every(
+        (invocation) => !/node |cli\.ts|NODE_OPTIONS|--env-file/.test(invocation),
+      ),
+      "no skill names the checkout form",
+    );
 
-    for (const entry of allow.filter((grant) => grant.includes("ts/src/frontDoor/cli.ts"))) {
+    for (const entry of allow.filter((grant) => /^Bash\(mirror[ :]/.test(grant))) {
       const prefix = entry.replace(/^Bash\(/, "").replace(/(:\*| \*)\)$/, "");
       for (const invocation of invocations) {
         assert.ok(

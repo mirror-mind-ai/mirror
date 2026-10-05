@@ -27,12 +27,12 @@ Use these commands to inspect and edit identity directly — no YAML files neede
 List all identity entries currently stored in the database. Answered by the TS core (CV22.DS7.US1).
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts identity list [--layer LAYER] [--mirror-home PATH]
+mirror identity list [--layer LAYER] [--mirror-home PATH]
 ```
 
 **Examples:**
-- `NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts identity list` — all entries
-- `NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts identity list --layer ego` — only ego layer
+- `mirror identity list` — all entries
+- `mirror identity list --layer ego` — only ego layer
 
 Layers: `self`, `ego`, `user`, `organization`, `persona`, `journey`, `journey_path`
 
@@ -43,13 +43,13 @@ Layers: `self`, `ego`, `user`, `organization`, `persona`, `journey`, `journey_pa
 Print the full content of one identity entry. Answered by the TS core (CV22.DS7.US1).
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts identity get <layer> <key> [--mirror-home PATH]
+mirror identity get <layer> <key> [--mirror-home PATH]
 ```
 
 **Examples:**
-- `NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts identity get ego behavior`
-- `NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts identity get self soul`
-- `NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts identity get persona engineer`
+- `mirror identity get ego behavior`
+- `mirror identity get self soul`
+- `mirror identity get persona engineer`
 
 ---
 
@@ -58,7 +58,7 @@ NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts identity
 Update identity content directly in the database.
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts identity set <layer> <key> --content "..." [--mirror-home PATH]
+mirror identity set <layer> <key> --content "..." [--mirror-home PATH]
 ```
 
 If `--content` is omitted, content is read from stdin.
@@ -69,8 +69,8 @@ these keys into commands, so `set` and `edit` refuse any other new key and name
 one that would work. A key created before this rule keeps working.
 
 **Examples:**
-- `NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts identity set ego behavior --content "Be direct."`
-- `cat new-soul.md | NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts identity set self soul`
+- `mirror identity set ego behavior --content "Be direct."`
+- `cat new-soul.md | mirror identity set self soul`
 
 ---
 
@@ -79,13 +79,13 @@ one that would work. A key created before this rule keeps working.
 Open the current content in `$EDITOR`, edit it, and save back to the database on close.
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts identity edit <layer> <key> [--mirror-home PATH]
+mirror identity edit <layer> <key> [--mirror-home PATH]
 ```
 
 **Examples:**
-- `NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts identity edit ego behavior`
-- `NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts identity edit self soul`
-- `NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts identity edit persona engineer`
+- `mirror identity edit ego behavior`
+- `mirror identity edit self soul`
+- `mirror identity edit persona engineer`
 
 If no changes are detected, nothing is written. If the file is left empty, the edit is aborted.
 

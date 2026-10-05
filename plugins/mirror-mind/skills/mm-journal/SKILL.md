@@ -9,7 +9,7 @@ user-invocable: true
 When receiving `/mm:journal`, run:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts journal [--journey SLUG] "ENTRY_TEXT"
+mirror journal [--journey SLUG] "ENTRY_TEXT"
 ```
 
 The entry text comes from `$ARGUMENTS`. If the user did not provide text, ask what they want to record.

@@ -104,7 +104,7 @@ database carries `routing_keywords` and a routing descriptor. At runtime,
 `detectPersona` (`ts/src/persona/detectPersona.ts`) scores the query against
 those keywords. If no persona scores above threshold, the ego answers alone. To
 inspect active routing:
-`NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts detect-persona "<query>"`.
+`mirror detect-persona "<query>"`.
 
 **Signature format:**
 

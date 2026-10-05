@@ -9,7 +9,7 @@ user-invocable: true
 When receiving `/mm-backup`: answered by the TS core (CV22.DS7.TS1).
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts backup
+mirror backup
 ```
 
 The backup succeeded only when the command exits 0 and prints a

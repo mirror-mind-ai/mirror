@@ -42,7 +42,7 @@ start Soul Mode for <journey-slug>
 ## 1. Activate Soul Mode
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts soul load [slug]
+mirror soul load [slug]
 ```
 
 The command:
@@ -76,7 +76,7 @@ Use the contained renderer. This call is required Soul Mode behavior, not
 optional tool use:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts soul listen \
+mirror soul listen \
   --self "situated Self Voice description" \
   --shadow "situated Shadow Voice description" \
   [--wisdom "situated Wisdom Voice description"] \
@@ -119,7 +119,7 @@ This is operational Builder work, not Soul Mode ritual listening. Soul Mode turn
 Only after the user confirms the switch should Mirror activate Builder Mode with:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build load <slug>
+mirror build load <slug>
 ```
 
 Local refinements to the ritual experience, such as discussing microcopy,
@@ -133,18 +133,18 @@ Voice, Wisdom Voice, or Beauty Voice in natural language, render the listening
 surface before the interpretive bridge:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts soul rite self
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts soul rite shadow
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts soul rite wisdom \
+mirror soul rite self
+mirror soul rite shadow
+mirror soul rite wisdom \
   --says "complete Wisdom Voice response"
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts soul rite beauty \
+mirror soul rite beauty \
   --says "complete Beauty Voice response"
 ```
 
 You may pass situated listening copy when it improves continuity:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts soul rite self \
+mirror soul rite self \
   --says "complete Self Voice response"
 ```
 
@@ -157,7 +157,7 @@ connecting what the voice says to the ongoing conversation. Do not render a
 For Self Voice, use the composed prompt as the voice contract:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts soul prompt self
+mirror soul prompt self
 ```
 
 This command injects the user's current `self/soul` identity layer into the base
@@ -182,7 +182,7 @@ voice response back to the conversation.
 For Wisdom Voice, use the canonical prompt as the voice contract:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts soul prompt wisdom
+mirror soul prompt wisdom
 ```
 
 Before rendering the Wisdom card, compose the complete Wisdom Voice utterance yourself from the prompt and the user's living material. Then call `soul rite wisdom --says "..."`. Never call `soul rite wisdom` without `--says`; that would render no real voice.
@@ -223,7 +223,7 @@ that is reliable.
 For Beauty Voice, use the canonical prompt as the voice contract:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts soul prompt beauty
+mirror soul prompt beauty
 ```
 
 Before rendering the Beauty card, compose the complete Beauty Voice utterance yourself from the prompt and the user's living material. Then call `soul rite beauty --says "..."`. Never call `soul rite beauty` without `--says`; that would render no real voice.
@@ -252,7 +252,7 @@ During an active Self Voice or Shadow Voice rite, when the conversation yields a
 provisional harvest, render one Fruit In Maturation at the end of the response:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts soul fruit set "provisional fruit text"
+mirror soul fruit set "provisional fruit text"
 ```
 
 Use `--session-id` when a Pi session id is available.
@@ -265,7 +265,7 @@ call `fruit set` with the denser formulation.
 If needed, render the current fruit first:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts soul fruit show
+mirror soul fruit show
 ```
 
 Fruit maturation replaces the wording, not the lineage. Preserve the previous
@@ -310,7 +310,7 @@ close this ritual
 Compose compact situated material from the conversation and call:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts soul close \
+mirror soul close \
   --harvested "what was harvested" \
   --echoes "what still echoes" \
   --open "what remains open" \
@@ -330,7 +330,7 @@ If the user says yes, render Integration Proposal. If the user declines and incl
 toward ending for today, exit Soul Mode by deactivating the active operating mode:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts mode deactivate
+mirror mode deactivate
 ```
 
 Then leave a short farewell in Mirror's normal voice. If the user brings another
@@ -347,7 +347,7 @@ remain, render Integration Proposal. This card is the proposed integration text
 itself, not a preliminary map:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts soul review \
+mirror soul review \
   --origin "where this material came from" \
   --self "first-person principle/practice" \
   --shadow "protective part to recognize" \
@@ -384,16 +384,16 @@ When the user asks how one specific point could remain in Self, Shadow, Ego, or 
 persona, first load the current target identity when possible:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts identity get self soul
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts identity get shadow profile
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts identity get ego behavior
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts identity get persona <persona-id>
+mirror identity get self soul
+mirror identity get shadow profile
+mirror identity get ego behavior
+mirror identity get persona <persona-id>
 ```
 
 Then render a proposal-only surface:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts soul propose self \
+mirror soul propose self \
   --origin "Soul Mode harvest / review context" \
   --current "current self/soul material or none loaded" \
   --proposed "proposed identity content" \
@@ -438,7 +438,7 @@ Do you confirm applying exactly this text?
 If the user explicitly confirms applying a proposal, call:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts soul apply self \
+mirror soul apply self \
   --proposed "exact proposed integration text" \
   --origin "Soul Mode harvest / integration proposal context" \
   --confirm APPLY
@@ -468,13 +468,13 @@ When the user says they wish to harvest, close the current fruit into a Harveste
 Fruit surface:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts soul harvest set "final fruit text"
+mirror soul harvest set "final fruit text"
 ```
 
 If the fruit is already harvested, render it with:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts soul harvest show
+mirror soul harvest show
 ```
 
 Paste the Harvested Fruit surface visibly. Do not save automatically. The card
@@ -484,7 +484,7 @@ confirm saving or request an edit.
 When the user confirms saving, call:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts soul harvest save [--journey journey-slug]
+mirror soul harvest save [--journey journey-slug]
 ```
 
 This creates one structured Markdown journal entry and clears the harvested fruit state. When a runtime conversation is available, the journal entry includes the originating `conversation_id`, an origin link, and preserved conversation material. If the user asks to save again after state is cleared, do not create a duplicate.
@@ -496,7 +496,7 @@ remaining echoes/open questions from the conversation. Then ask: `There is livin
 When the user declines saving, call:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts soul harvest decline
+mirror soul harvest decline
 ```
 
 This clears the harvested fruit without creating a journal entry.

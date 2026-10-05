@@ -9,7 +9,7 @@ user-invocable: true
 When receiving `/mm-memories [--type TYPE] [--layer LAYER] [--journey SLUG] [--search "text"] [--limit N]`:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts memories [args]
+mirror memories [args]
 ```
 
 The TS front door routes memory listing **and** fresh semantic search to the TS core (CV22.DS8.US1). With `OPENROUTER_API_KEY` set, `--search` runs a live embedding through TypeScript; without a key it degrades to lexical-only search, printing the same note the Python engine prints.

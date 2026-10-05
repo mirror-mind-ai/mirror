@@ -29,13 +29,13 @@ Sends prompts with Mirror identity context to other models through OpenRouter.
 Analyze the message to determine persona and journey using Mirror routing.
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts consult FAMILY TIER "QUESTION" \
+mirror consult FAMILY TIER "QUESTION" \
   [--persona PERSONA] [--journey JOURNEY] [--org]
 ```
 
 **Examples:**
-- `/mm-consult gemini lite "draft an opening for this article"` → `NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts consult gemini lite "draft an opening for this article" --persona writer`
-- `/mm-consult deepseek "is this design overengineered?"` → `NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts consult deepseek "is this design overengineered?" --persona engineer`
+- `/mm-consult gemini lite "draft an opening for this article"` → `mirror consult gemini lite "draft an opening for this article" --persona writer`
+- `/mm-consult deepseek "is this design overengineered?"` → `mirror consult deepseek "is this design overengineered?" --persona engineer`
 
 The script prints the response, cost, and balance. Always show the complete response to the user without summarizing or omitting it.
 
@@ -44,7 +44,7 @@ The script prints the response, cost, and balance. Always show the complete resp
 When the user omits the question, synthesize Mirror Mode content (reflection, strategy, content — not Builder Mode code or architecture) into a self-contained prompt, then call:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts consult FAMILY TIER "SYNTHESIZED_PROMPT" \
+mirror consult FAMILY TIER "SYNTHESIZED_PROMPT" \
   [--persona PERSONA] [--journey JOURNEY] [--org]
 ```
 
@@ -53,7 +53,7 @@ The synthesized prompt must be self-contained — the external LLM has no access
 ## Credits
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts consult credits
+mirror consult credits
 ```
 
 Shows OpenRouter usage and remaining balance.

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
-// Fail CI when a skill copy reaches Python, or when the three copies disagree
-// about a command's entry point. (CV22.DS10.US2, decision D6)
+// Fail CI when a skill copy reaches Python or the checkout's invocation form,
+// or when the three copies disagree about a command's entry point.
+// (CV22.DS10.US2, decision D6; CV22.DS10.US3, decision D7)
 //
 // The Node successor to `scripts/check_skill_command_parity.py`. The port is
 // not cosmetic: a guard whose job is to assert that nothing invokes the Python
@@ -26,6 +27,14 @@
 //     trees AND anywhere in `plugins/mirror-mind/` (manifest, commands, hooks,
 //     skills), which is the packaged-plugin half of the gate: an installed
 //     user resolves that directory, not this repository's `.pi/`.
+//   * CHECKED -- ABSENCE of the checkout form in every skill copy, since
+//     CV22.DS10.US3 (D7): `ts/src/frontDoor/cli.ts`, `NODE_OPTIONS`, and
+//     `--env-file`. A skill tells an agent what to run, and what it runs is
+//     `mirror`, which `npm link` provides in a checkout and `npm install -g`
+//     everywhere else. Two invocation grammars is how CR071 happened.
+//     Repository tooling -- tests, smokes, guards, CI -- keeps calling
+//     `node ts/src/frontDoor/cli.ts`; the assertion is about what an agent
+//     is told, not what a script runs.
 //   * NOT CHECKED -- argument spellings, frontmatter names, per-runtime Usage
 //     sections, or the Portuguese/English examples. Those differences are
 //     deliberate (CR071).
@@ -47,8 +56,20 @@ const CLAUDE_ROOT = join(REPO_ROOT, ".claude", "skills");
 const PLUGIN_DIR = join(REPO_ROOT, "plugins", "mirror-mind");
 const PLUGIN_ROOT = join(PLUGIN_DIR, "skills");
 
-const FRONT_DOOR_RE = /ts\/src\/frontDoor\/cli\.ts\s+(?<rest>.+)$/;
+/**
+ * The `mirror` bin, as a skill writes it: at the start of a line (a code
+ * block) or opening a backtick span (inline). Prose such as "the mirror home"
+ * does not start a line with the word followed by a command, and when it does
+ * the parity check only compares copies that document the same name.
+ */
+const FRONT_DOOR_RE = /(?:^\s*|`)mirror\s+(?<rest>[a-z][^`]*)/;
 const PYTHON_RE = /uv run python -m memory\s*(?<rest>.*)$/;
+/** The checkout form, forbidden in every skill copy since US3 (D7). */
+const CHECKOUT_FORMS: readonly { pattern: RegExp; name: string }[] = [
+  { pattern: /ts\/src\/frontDoor\/cli\.ts/, name: "ts/src/frontDoor/cli.ts" },
+  { pattern: /NODE_OPTIONS/, name: "NODE_OPTIONS" },
+  { pattern: /--env-file/, name: "--env-file" },
+];
 
 type EntryPoint = "front-door" | "python";
 
@@ -156,10 +177,16 @@ function walk(dir: string): string[] {
  * manifest, commands, hooks, skills -- because an installed user resolves that
  * directory rather than this repository's `.pi/`.
  */
-function checkPythonAbsent(problems: string[]): void {
+function checkForbiddenFormsAbsent(problems: string[]): void {
   const roots = [PI_ROOT, CLAUDE_ROOT, PLUGIN_DIR].filter(exists);
   for (const root of roots) {
     for (const path of walk(root)) {
+      // The checkout form is forbidden where an agent reads an instruction:
+      // the three skill trees. The plugin's hook wrappers and MCP launcher are
+      // scripts, and what a script runs is its own business (plateau 3 makes
+      // them resolve the bin, for a different reason).
+      const isSkill =
+        path.startsWith(PI_ROOT) || path.startsWith(CLAUDE_ROOT) || path.startsWith(PLUGIN_ROOT);
       if (/\.(png|jpg|jpeg|gif|zip|ico)$/i.test(path)) continue;
       let text: string;
       try {
@@ -173,6 +200,14 @@ function checkPythonAbsent(problems: string[]): void {
             `${relative(REPO_ROOT, path)}:${index + 1} invokes \`uv run python -m memory\` — ` +
               "route it through the front door (CV22.DS10 Skill Invocation Gate)",
           );
+        }
+        for (const form of CHECKOUT_FORMS) {
+          if (isSkill && form.pattern.test(line)) {
+            problems.push(
+              `${relative(REPO_ROOT, path)}:${index + 1} names \`${form.name}\` — ` +
+                "a skill invokes `mirror`, which is on the PATH from npm link or npm install -g (CV22.DS10.US3 D7)",
+            );
+          }
         }
       });
     }
@@ -193,7 +228,7 @@ export function main(): number {
     checkByteIdentity(skill, problems);
     checkEntryPoints(skill, problems);
   }
-  checkPythonAbsent(problems);
+  checkForbiddenFormsAbsent(problems);
 
   if (problems.length > 0) {
     process.stdout.write("skill command parity: DRIFT DETECTED\n\n");
@@ -210,7 +245,7 @@ export function main(): number {
 
   process.stdout.write(
     `skill command parity: clean -- ${skills.length} skills agree on every entry point, ` +
-      "and no copy invokes Python.\n",
+      "and no copy invokes Python or the checkout form.\n",
   );
   return 0;
 }

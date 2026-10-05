@@ -9,16 +9,16 @@ user-invocable: true
 When receiving `/mm-tasks [subcommand] [args]`:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts tasks [subcommand] [args]
+mirror tasks [subcommand] [args]
 ```
 
 Subcommands: `list` (default), `add`, `done`, `doing`, `block`, `delete`, `import`, `sync`, `sync-config`
 
 **Examples:**
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts tasks --journey mirror
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts tasks add "Write plan doc" --journey mirror
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts tasks done <task-id>
+mirror tasks --journey mirror
+mirror tasks add "Write plan doc" --journey mirror
+mirror tasks done <task-id>
 ```
 
 Present the output to the user without modification.

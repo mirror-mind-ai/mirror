@@ -37,7 +37,7 @@ This is intentional — identity updates are meaningful acts.
 > The scan answers from TypeScript against the live provider (CV22.DS8.TS2). Each cluster is one model call bounded by the extraction timeout (`MEMORY_LLM_TIMEOUT_EXTRACTION`, 60 s) with bounded retries, and every successful call leaves a priced `llm_calls` row before its proposal is parsed. A call that fails is logged by class (`outcome=transport_failed kind=…`) in `front-door.log` beside the database.
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts consolidate scan \
+mirror consolidate scan \
   [--journey <slug>] \
   [--layer <layer>] \
   [--limit 5] \
@@ -71,18 +71,18 @@ Ask: **accept as-is / edit / reject?**
 
 **Accept as-is:**
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts consolidate apply <proposal_id>
+mirror consolidate apply <proposal_id>
 ```
 
 **Accept with edited content:**
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts consolidate apply <proposal_id> \
+mirror consolidate apply <proposal_id> \
   --content "User-revised version of the proposed content"
 ```
 
 **Reject:**
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts consolidate reject <proposal_id>
+mirror consolidate reject <proposal_id>
 ```
 
 What happens on acceptance:
@@ -97,7 +97,7 @@ Rejected proposals leave source memories unchanged.
 ## 4. List consolidation history
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts consolidate list [--status pending|accepted|rejected] [--limit 20]
+mirror consolidate list [--status pending|accepted|rejected] [--limit 20]
 ```
 
 ---
