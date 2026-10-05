@@ -61,6 +61,8 @@ test("tableCell is the reader's inverse for the characters the reader interprets
   assert.equal(tableCell("a \\| b"), "a \\\\\\| b");
 });
 
+// `CV20.DS13.TS1`'s row, as written in this repository's roadmap at `1876297a`: six escapes
+// in its Outcome cell, which read as the status `Code \` before CR107.
 const THIS_ROW =
   "| CV20.DS13.TS1 | Pull Candidates DS Grammar | Technical Story | `inspect_pull_candidates` and the roadmap snapshot exclude the `legacy/` archive, accept hyphenated `DS-NN` codes, classify top-level DS codes as `delivery_story`, and read `\\| Code \\| Delivery Story \\| Status \\|` tables under `## Chapter N —` sections | ✅ Done |";
 
@@ -97,17 +99,6 @@ test("CR107: every reader gives a cell its escaped pipe", () => {
     row.map((child) => [child.code, child.level, child.status]),
     [["CV20.DS13.TS1", "technical_story", "✅ Done"]],
     "this repository's row, as written",
-  );
-  assert.equal(
-    readFileSync(
-      join(
-        import.meta.dirname,
-        "../../../docs/project/roadmap/cv20-builder-mode-evolution/cv20-ds13-ds-grammar-roadmap-support/index.md",
-      ),
-      "utf8",
-    ).includes(THIS_ROW),
-    true,
-    "the row is still as written on this roadmap",
   );
 });
 

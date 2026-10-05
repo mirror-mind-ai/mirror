@@ -460,6 +460,20 @@ The other lenses were silent: nothing stored, no model, no migration; the escape
 removes a way for a cell's text to reach the wrong column; the skill's sentence is one
 line in the section that governs the table; a title prints as the author wrote it.
 
+### Debt paid (2026-10-05)
+
+The Navigator decided all three: "Pay all three now". One commit pays them.
+
+1. **The comment.** One doc comment, and it went with the alias.
+2. **The alias.** The two table readers in `pullCandidates.ts` call `tableRowCells` by
+   its name; `rowCells` is gone.
+3. **The coupling.** The every-reader test keeps `CV20.DS13.TS1`'s row as a constant
+   that says where it came from and at which commit, and no longer opens the roadmap
+   document.
+
+2949 tests pass. Typecheck, lint, the repository checks, and the smokes are green, and
+the route still prints its recorded output exactly.
+
 ## Outcome
 
 Pending.

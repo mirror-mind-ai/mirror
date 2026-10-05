@@ -148,9 +148,6 @@ export function snapshotItemsFromContent(content: string): RoadmapSnapshotItem[]
   if (ds.length > 0) return ds;
   return cvHeadingItems(content);
 }
-/** The row's cells, with `\|` read as a pipe (CR107); Python split on every pipe. */
-/** The row's cells, with `\\|` read as a pipe (CR107); Python split on every pipe. */
-const rowCells = tableRowCells;
 
 /**
  * Python `_cv_table_items`. Note the termination: any non-empty line that does
@@ -167,7 +164,7 @@ function cvTableItems(content: string): RoadmapSnapshotItem[] {
     }
     if (inTable && line.startsWith("|---")) continue;
     if (inTable && line.startsWith("|")) {
-      const parts = rowCells(line);
+      const parts = tableRowCells(line);
       if (parts.length >= 3) {
         items.push({
           code: stripMarkdownLink(parts[0] ?? ""),
@@ -199,7 +196,7 @@ function dsTableItems(content: string): RoadmapSnapshotItem[] {
     }
     if (inTable && line.startsWith("|---")) continue;
     if (inTable && line.startsWith("|")) {
-      const parts = rowCells(line);
+      const parts = tableRowCells(line);
       if (parts.length >= 3) {
         items.push({
           code: stripMarkdownLink(parts[0] ?? ""),
