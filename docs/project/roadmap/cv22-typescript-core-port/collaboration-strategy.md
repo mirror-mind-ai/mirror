@@ -176,7 +176,7 @@ and green CI on every push.
          2026-09-30), ✓ CR113 (done 2026-09-30), ✓ CR114 with CR115
          (done 2026-10-01), ✓ CR082 with CR009 (done 2026-10-01), ✓ CR103
          (done 2026-10-04), ✓ CR107 (done 2026-10-05), CR117
-         (added 2026-10-01)
+         (added 2026-10-01; in progress)
 → DS10.US3 — npm distribution                      ← pulled and planned 2026-09-30;
                                                      waits at its Plan checkpoint
   release — once, when US3 is done

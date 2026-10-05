@@ -9,7 +9,7 @@ If a linked document and this index disagree, this index wins.
 ## Current Focus
 
 - Refinement Story: RS001
-- Change Request: none
+- Change Request: CR117
 
 Selecting a focus is an explicit project decision. Reading this file never selects or
 executes work.
@@ -65,7 +65,7 @@ Open work is ordered intentionally. Terminal history follows open work.
 | 31 | [CR109](rs009-cv22-front-door-routing-correctness/cr109-mirror-log-help-records-help-and-renames-the-conversation.md) | RS009 | `mirror log --help` records `--help` as the response and renames the conversation to it | captured | — | — |
 | 32 | [CR110](rs010-cv22-oracle-and-port-hygiene/cr110-the-doc-link-checker-reads-a-link-inside-inline-code-as-a-real-link.md) | RS010 | The doc-link checker reads a link inside inline code as a real link | captured | — | — |
 | 33 | [CR116](rs004-identity-resolution-fidelity/cr116-identity-get-piped-to-identity-set-adds-a-newline-each-round-trip.md) | RS004 | `identity get` piped to `identity set` adds a newline each round trip | captured | — | — |
-| 34 | [CR117](rs001-ariad-runtime-trust/cr117-a-delivery-story-s-flow-unit-outlives-it.md) | RS001 | A Delivery Story's flow unit outlives it, and no story after it can be preauthorized | captured | — | — |
+| 34 | [CR117](rs001-ariad-runtime-trust/cr117-a-delivery-story-s-flow-unit-outlives-it.md) | RS001 | A Delivery Story's flow unit outlives it, and no story after it can be preauthorized | in_progress | @viniciusteles | `mirror-ts-core` |
 | 35 | [CR118](rs001-ariad-runtime-trust/cr118-a-story-closure-and-a-delivery-story-closure-report-their-record-in-two-shapes.md) | RS001 | A story's closure and a Delivery Story's report their record in two shapes | captured | — | — |
 | 36 | [CR119](rs001-ariad-runtime-trust/cr119-the-delivery-story-done-preflight-reads-a-status-line-s-last-word.md) | RS001 | The Delivery Story Done preflight reads a status line's last word, so `✅ Done · 2026-05-11` is refused and `Not done` passes | captured | — | — |
 | — | [CR107](rs001-ariad-runtime-trust/cr107-an-escaped-pipe-in-a-candidate-table-title-is-read-as-a-cell-border.md) | RS001 | An escaped pipe in a candidate-table title is read as a cell border | done | @viniciusteles | `mirror-ts-core` |
