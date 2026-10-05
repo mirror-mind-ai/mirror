@@ -2,7 +2,8 @@
 
 # Test Guide — CV22.DS10.US3
 
-Written at the Plan checkpoint, 2026-09-30. Commands name the files and verbs the
+Written at the Plan checkpoint, 2026-09-30; routes 1 and 2 rewritten at plateau 2
+(2026-10-05) to what the tree does now. Commands name the files and verbs the
 [plan](plan.md) introduces; each plateau updates this guide when a name settles.
 
 ## Automated Validation
@@ -42,9 +43,11 @@ for smoke in smoke_codex smoke_gemini_cli smoke_claude_plugin smoke_mirror_mcp; 
 done
 ```
 
-Expected: every command exits 0; `smoke_npm_package.sh` prints the installed version, the
-install kind `package (mirror-mind@<version>)`, twelve seeded personas, a `_migrations`
-ledger that ends at `017`, and `0 interpreter spawns`. CI runs the same set twice, the
+Expected: every command exits 0; `smoke_npm_package.sh` prints `passed: 40 failed: 0`
+(plateau 4 adds the install kind `package (mirror-mind@<version>)`; plateau 3 the runtime
+smokes against the installed wrappers), twelve seeded personas, a migrating open that
+applies `017` from the package location, and `no python, python3, or uv process was spawned`.
+`seed` inside it exits 1 by **F1** (the empty `ego/constraints` template), named in the smoke. CI runs the same set twice, the
 second time with `python`, `python3`, and `uv` shadowed.
 
 ### New unit coverage (plateau by plateau)
@@ -76,19 +79,32 @@ Four routes. Run them as written, with `bash`, so aliases do not apply
 ```bash
 cd ~/dev/workspace/mirror-ts-core
 npm link                      # once; puts `mirror` on the PATH from this tree
-command -v mirror             # → <global bin>/mirror
-mirror runtime status | grep -i 'install'
+command -v mirror             # → /opt/homebrew/bin/mirror (or the global bin of your Node)
+mirror runtime status | sed -n '3,4p'
 ```
 
-Expected observation: `Install: clone (/Users/vinicius/dev/workspace/mirror-ts-core)`.
-Then open Pi in the checkout and run `/mm-mirror`, `/mm-journeys`,
-`/mm-build mirror-ts-core`, `/mm-backup`, and `/mm-update --check`.
+Expected observation: `Version: 0.31.14` and `Repository: /Users/vinicius/dev/workspace/mirror-ts-core`
+(the `Install kind:` line is plateau 4's).
+
+Then open Pi in the checkout and run `/mm-mirror`, `/mm-journeys`, `/mm-build mirror-ts-core`,
+`/mm-backup`, and `/mm-update --check`.
 
 - Pass: every skill runs `mirror …` (visible in the tool calls) and answers as it did on
   2026-09-30; `front-door.log` records each; no `NODE_OPTIONS`, `--env-file`, or
-  `ts/src/frontDoor/cli.ts` appears in any command the agent runs.
+  `ts/src/frontDoor/cli.ts` appears in any command the agent runs; the status line renders.
 - Fail: `mirror: command not found`; a skill that still prints the checkout invocation; an
   answer that differs from the plateau-0 capture for the same family.
+
+**1b — the agent with no `mirror`** (the ai-engineer finding). Once, deliberately:
+
+```bash
+npm unlink -g mirror-mind && command -v mirror || echo "gone, as intended"
+```
+
+Open Pi in the checkout. Expected observation: at session start, one visible notice —
+``Mirror: `mirror` is not on the PATH — run `npm link` once in /Users/vinicius/dev/workspace/mirror-ts-core. Skills will fail until it is.``
+Then ask for `/mm-journeys` and record what the agent does when the command is absent (the
+plan asks for this observation). Quit, and `npm link` again.
 
 ### Route 2 — outside the checkout, plateau 2
 
@@ -101,55 +117,75 @@ and the Pi sessions directory are scratch (CR106).
 # 2a — the install, from nothing
 set -eu
 SCRATCH="$(mktemp -d /tmp/us3-route2.XXXXXX)"
-mkdir -p "$SCRATCH/prefix" "$SCRATCH/home" "$SCRATCH/pi-sessions" "$SCRATCH/mirror-home"
+mkdir -p "$SCRATCH/prefix" "$SCRATCH/home" "$SCRATCH/pi-sessions"
 ( cd ~/dev/workspace/mirror-ts-core && npm pack --pack-destination "$SCRATCH" >/dev/null )
 TARBALL="$(ls "$SCRATCH"/mirror-mind-*.tgz)"
 npm install -g --prefix "$SCRATCH/prefix" "$TARBALL"
-PKG="$(npm root -g --prefix "$SCRATCH/prefix")/mirror-mind"
+PKG="$SCRATCH/prefix/lib/node_modules/mirror-mind"
 
 cd /tmp                       # no checkout anywhere near
 env -i PATH="$SCRATCH/prefix/bin:/usr/bin:/bin:$(dirname "$(command -v node)")" \
-       HOME="$SCRATCH/home" XDG_CONFIG_HOME="$SCRATCH/home/.config" bash -c '
+       HOME="$SCRATCH/home" bash -c '
   command -v mirror
+  mirror                                    # the orientation: three lines
   mirror init route2
-  mirror seed
-  mirror list personas --verbose | head -5
-  mirror runtime status | grep -i "install"
-  stat -f "%Sp" "$XDG_CONFIG_HOME/mirror/env" "$XDG_CONFIG_HOME/mirror"
+  mirror seed || echo "exit $? — F1, expected"
+  mirror list personas | head -5
+  mirror runtime status | sed -n "3,8p"
+  stat -f "%Sp" "$HOME/.config/mirror/env" "$HOME/.config/mirror"
+  cat "$HOME/.config/mirror/env"
 '
 ```
 
-- Expected observation: `mirror` resolves under `$SCRATCH/prefix/bin`; `init` prints the
-  config path and the line to add; twelve personas; `status` says
-  `package (mirror-mind@<version>)` with the scratch root; the two `stat` lines read
-  `-rw-------` and `drwx------`.
+- Expected observation: `mirror` resolves under `$SCRATCH/prefix/bin`; bare `mirror` prints
+  `No user configured yet.` and two lines; `init` prints `Configuration: …/.config/mirror/env
+  (MIRROR_USER=route2)` and where the key goes; `seed` creates 19 entries and exits 1 by F1;
+  twelve personas; `status` names the version, `Mirror home: $SCRATCH/home/.mirror-minds/route2`,
+  and `Database exists: yes`; the two `stat` lines read `-rw-------` and `drwx------`; the
+  config file holds exactly `MIRROR_USER=route2`.
 - Pass: all of the above, and `$SCRATCH/home/.mirror-minds/route2/memory.db` exists.
-- Fail: any command reaching for `ts/src/frontDoor/cli.ts`; a `.env` "not found" notice;
-  a permission wider than owner-only; anything written under the real `HOME`.
+- Fail: any command reaching for `ts/src/frontDoor/cli.ts`; an `ExperimentalWarning` on
+  stderr; a `.env` "not found" notice; a permission wider than owner-only; anything written
+  under the real `HOME`.
 
 ```bash
 # 2b — Pi, from the same install, real Pi auth, scratch Mirror state
-mkdir -p "$SCRATCH/config/mirror"
-printf 'MIRROR_HOME=%s\n' "$SCRATCH/mirror-home" > "$SCRATCH/config/mirror/env"
-chmod 700 "$SCRATCH/config/mirror"; chmod 600 "$SCRATCH/config/mirror/env"
-# add OPENROUTER_API_KEY=… to that file by hand; the route never passes it on a command line
+# The config file from 2a selects the scratch user; add the key to it by hand:
+#   echo 'OPENROUTER_API_KEY=…' >> "$SCRATCH/home/.config/mirror/env"
+# The route never passes the key on a command line.
 pi install "$PKG"             # personal package, real ~/.pi/agent/settings.json; removed below
+ls -la ~/.mirror-minds/vinicius-ts > "$SCRATCH/real-home-before.txt"
 cd /tmp
-PATH="$SCRATCH/prefix/bin:$PATH" XDG_CONFIG_HOME="$SCRATCH/config" PI_SESSIONS_DIR="$SCRATCH/pi-sessions" \
-  MIRROR_USER= MIRROR_HOME= pi
+env -u MIRROR_USER -u MIRROR_HOME \
+  PATH="$SCRATCH/prefix/bin:$PATH" XDG_CONFIG_HOME="$SCRATCH/home/.config" PI_SESSIONS_DIR="$SCRATCH/pi-sessions" pi
 ```
 
-Inside Pi: `/mm-seed`, then `/mm-mirror`, `/mm-journeys`, `/mm-build personal-growth`.
+Do **not** blank `MIRROR_USER=`/`MIRROR_HOME=` in the shell: an empty variable is
+"defined" to the core's loader and would block the config file. `env -u` unsets them.
 
-- Expected observation: the status line renders `◇ … · ◌ Mirror Mode · ✓`; the three
-  skills run `mirror …` and answer; after quitting,
-  `PATH="$SCRATCH/prefix/bin:$PATH" XDG_CONFIG_HOME="$SCRATCH/config" mirror conversations`
-  lists the session.
-- Pass: all of the above; `~/.mirror-minds/vinicius-ts` untouched (compare `ls -la` before
-  and after); `$SCRATCH/pi-sessions` holds the session, `~/.pi/agent/sessions` gained
-  nothing.
-- Fail: a skill that names the checkout; the real Mirror home or the real Pi sessions
-  touched; the extension logging to a home other than `$SCRATCH/mirror-home`.
+Inside Pi, in this order:
+
+1. `/mm-journeys` — the skill runs `mirror journeys` and answers from the scratch database.
+2. `/mm-mirror`, then a Mirror Mode question that needs a specialist — for example
+   *"How should I think about pricing a mentorship?"* — **the D13 prompt**: the answer must
+   carry a `◇ <persona>` signature and be in the first person, which only the Operating
+   Instructions tell the model to do. Without them the skill still answers; the signature
+   is the proof the instructions arrived.
+3. `/mm-build personal-growth` — must load context and **stop at the Builder Activation
+   Boundary**, asking what to do next (the second D13 proof: the boundary is an instruction,
+   not a skill step).
+
+- Expected observation: the status line renders `◇ … · ◌ Mirror Mode · ✓`; every skill
+  runs `mirror …`; the persona signature appears; Builder load stops and asks. After
+  quitting, `PATH="$SCRATCH/prefix/bin:$PATH" XDG_CONFIG_HOME="$SCRATCH/home/.config" mirror conversations`
+  lists the session, and `$SCRATCH/home/.mirror-minds/route2/mirror-logger.log` holds
+  `operating instructions appended from …/mirror-mind/AGENTS.md` and, if Pi reached the
+  extension twice, one `second registration skipped` line (record which).
+- Pass: all of the above; `diff <(ls -la ~/.mirror-minds/vinicius-ts) "$SCRATCH/real-home-before.txt"`
+  is empty; `$SCRATCH/pi-sessions` holds the session and `~/.pi/agent/sessions` gained nothing.
+- Fail: a skill that names the checkout; no persona signature on the D13 prompt; Builder
+  load that starts work; the real Mirror home or the real Pi sessions touched; the
+  extension logging to a home other than the scratch one.
 
 Clean up: `pi remove "$PKG"`, then `rm -rf "$SCRATCH"`.
 

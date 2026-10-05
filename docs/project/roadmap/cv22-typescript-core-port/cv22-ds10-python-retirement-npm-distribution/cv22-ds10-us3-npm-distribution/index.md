@@ -138,6 +138,19 @@ home (D14); the `mirror` bin is a type-stripping loader shim (D15).
   `scripts/smoke_npm_package.sh` (40 checks, in CI) proves init, seed, list, status, and a
   migrating open through the `mirror` bin from a scratch global install. Verified: typecheck,
   lint, 2980 tests, the repository checks, every smoke. Next: plateau 2 (§C), skills and Pi.
+- **Plateau 2 — skills and Pi (implemented 2026-10-05, `86d9014b`, `fb22e2fa`; awaiting the
+  Navigator's first walk).** All 399 invocation lines (135 / 132 / 132) say `mirror`, rewritten by
+  a script with asserted counts and reviewed as a diff; the plugin regenerated; the parity guard
+  forbids `cli.ts`, `NODE_OPTIONS`, and `--env-file` in every skill copy (D7); `AGENTS.md`'s one
+  prose invocation followed. The extension spawns `bin/mirror.js` from its own file (D6, D15),
+  resolves the mirror home in the core's order (tree `.env`, then the user's config file, never
+  the cwd's), says once at session start when `mirror` is not on the `PATH` (naming `npm link`
+  or the global bin), appends `AGENTS.md` to the system prompt's context files when Pi did not
+  load it from the cwd (D13), and registers once per process. The dev guide names `npm link`.
+  The test guide's routes 1 and 2 were rewritten to what the tree does: route 2b must `env -u`
+  the two variables rather than blank them, since an empty variable blocks the config file.
+  Deferred: `init`'s wiring-step print (plateau 3). **Waiting on:** route 1, 1b, and 2 — the
+  D13 prompt and the double-load observation are the walk's.
 
 ## Where To Resume
 
