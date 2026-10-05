@@ -258,6 +258,14 @@ For stories that touch **the updater or the release chain**, run the operational
 bash scripts/smoke_runtime_update.sh
 ```
 
+For stories that touch **the package** -- the manifest, `files`, the `bin`, an entry point, configuration, or anything a fresh install runs first -- run the install-from-nothing smoke:
+
+```bash
+bash scripts/smoke_npm_package.sh
+```
+
+It packs the tree, installs the tarball into a scratch prefix, and with a scratch `HOME`, no checkout, and interpreters shadowed, runs `mirror init`, `seed`, `list personas`, `runtime status`, and a migrating open through the `mirror` bin. It needs `sqlite3` on the `PATH` for the migrating open; without it that section is skipped and says so.
+
 It builds a scratch origin, clone, mirror home, and env-file, and shadows `python`, `python3`, and `uv` with stubs that exit 66 — so an interpreter spawn fails the smoke instead of passing unnoticed. That is how CV22.DS10.US2 found the updater spawning `uv` to fill in a display field its own gate never read.
 
 **The checklist above is not the full gate.** CI's list in `.github/workflows/` is the authority, and it includes work `npm test` does not touch. Before a push, run the rest of it from the repository root:

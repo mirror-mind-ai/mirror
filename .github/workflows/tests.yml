@@ -232,3 +232,12 @@ jobs:
             echo "FAIL: a runtime smoke reached for an interpreter" >&2
             exit 1
           fi
+
+      # CV22.DS10.US3: the install from nothing. Packs this tree, installs the
+      # tarball into a scratch prefix, and with no checkout in sight runs
+      # init, seed, list, status, and an open of a database that needs
+      # migration 017 -- through the `mirror` bin, from the package location.
+      # This is the one check that exercises bin/mirror.js (D15) the way an
+      # npm user reaches it; nothing run inside the repository can stand in.
+      - name: npm package smoke (install from nothing, through the mirror bin)
+        run: bash scripts/smoke_npm_package.sh "${RUNNER_TEMP}/mirror-npm-package-smoke"

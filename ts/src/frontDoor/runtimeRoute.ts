@@ -170,7 +170,7 @@ export function runWelcomeRoute(argv: readonly string[], io: RuntimeRouteIo = {}
     return 0;
   }
 
-  const version = packageVersion(cwd) ?? "unknown";
+  const version = packageVersion(runningTreeRoot()) ?? "unknown";
   const card = composeWelcome({
     mirrorHome: home,
     cwd,
@@ -192,7 +192,10 @@ export async function runRuntimeReadRoute(
   const cwd = io.cwd ?? process.cwd();
   const args = argv.slice(1);
   const subcommand = args[0] ?? "";
-  const version = packageVersion(cwd) ?? "unknown";
+  // The version is the running tree's, never the cwd's: for a skill the cwd
+  // is the user's project, and for an installed package it is anything
+  // (CV22.DS10.US3, the fourth tree reader the plan's list did not name).
+  const version = packageVersion(runningTreeRoot()) ?? "unknown";
 
   if (subcommand === "version") {
     const startArg = optionValue(args, "--start");
@@ -395,7 +398,7 @@ function runRuntimeUpdate(
   env: NodeJS.ProcessEnv,
   cwd: string,
 ): number {
-  const version = packageVersion(cwd) ?? "unknown";
+  const version = packageVersion(runningTreeRoot()) ?? "unknown";
   const channelOverride = optionValue(args, "--channel");
   // `npm root -g` is resolved once, and only matters for identifying a
   // package install: a clone never pays for it.

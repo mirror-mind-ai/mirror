@@ -18,6 +18,7 @@ import { PACKAGE_NAME } from "#runtime/packageIdentity.ts";
 
 /** Directory prefixes (with trailing slash) and exact files the tarball may contain. */
 export const ALLOWED_PREFIXES: readonly string[] = [
+  "bin/",
   "ts/src/",
   "templates/",
   "docs/releases/",
@@ -43,6 +44,7 @@ export const REQUIRED_FILES: readonly string[] = [
   "package.json",
   "README.md",
   "LICENSE",
+  "bin/mirror.js",
   "ts/src/frontDoor/cli.ts",
   "ts/src/hooks/main.ts",
   "ts/src/mcp/main.ts",

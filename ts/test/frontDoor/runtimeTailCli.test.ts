@@ -156,7 +156,13 @@ test("welcome answers from TS by default, card and status line alike", () => {
     const card = runCli(f, ["welcome", "--mirror-home", f.home], env);
     assert.equal(card.status, 0, card.stderr);
     assert.match(card.stdout, /^◇ Mirror · mirror-home\n/);
-    assert.match(card.stdout, /Version 9\.9\.9 · channel stable\n/);
+    // The running tree's version (US3), the cwd's channel marker.
+    assert.match(
+      card.stdout,
+      new RegExp(
+        `Version ${(packageVersion(REPO_ROOT) ?? "").replaceAll(".", "\\.")} · channel stable\\n`,
+      ),
+    );
     assert.match(
       card.stdout,
       /0 journeys · 0 personas · 0 memories · 0 conversations · since today/,
@@ -202,9 +208,17 @@ test("runtime version and release-notes answer from TS with exit 0", () => {
   try {
     const env = {};
 
+    // The version is the RUNNING tree's (this checkout's), not the fixture
+    // repository's at the cwd (US3): from /tmp an installed package would
+    // otherwise say `unknown`. Git inspection still describes the cwd.
     const version = runCli(f, ["runtime", "version"], env);
     assert.equal(version.status, 0, version.stderr);
-    assert.match(version.stdout, /^Mirror runtime version\n\nVersion: 9\.9\.9\n/);
+    const shipped = packageVersion(REPO_ROOT) ?? "";
+    assert.match(
+      version.stdout,
+      new RegExp(`^Mirror runtime version\\n\\nVersion: ${shipped.replaceAll(".", "\\.")}\\n`),
+    );
+    assert.doesNotMatch(version.stdout, /Version: 9\.9\.9/);
     assert.match(version.stdout, /Git branch: stable\n/);
     assert.match(version.stdout, /Update channel: stable\n/);
 
@@ -214,7 +228,6 @@ test("runtime version and release-notes answer from TS with exit 0", () => {
     const latest = runCli(f, ["runtime", "release-notes"], env);
     assert.equal(latest.status, 0, latest.stderr);
     assert.doesNotMatch(latest.stdout, /Fixture release/);
-    const shipped = packageVersion(REPO_ROOT) ?? "";
     assert.match(latest.stdout, new RegExp(`v${shipped.replaceAll(".", "\\.")}`));
     // An explicit version and the `latest` default resolve to the same note.
     assert.equal(runCli(f, ["runtime", "release-notes", `v${shipped}`], env).stdout, latest.stdout);
@@ -389,7 +402,10 @@ test("release-notes tells a positional from an option value", () => {
     const bundle = runCli(f, ["runtime", "release-notes", "pending", "--no-fetch"], env);
     assert.equal(bundle.status, 0, bundle.stderr);
     assert.match(bundle.stdout, /^Mirror runtime release notes\n/);
-    assert.match(bundle.stdout, /Current version: v9\.9\.9/);
+    assert.match(
+      bundle.stdout,
+      new RegExp(`Current version: v${(packageVersion(REPO_ROOT) ?? "").replaceAll(".", "\\.")}`),
+    );
 
     // `--from` takes a value too, and its value is not the positional.
     const fromOnly = runCli(f, ["runtime", "release-notes", "--from", "v0.1.0"], env);

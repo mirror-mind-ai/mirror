@@ -12,7 +12,7 @@ const REPO_ROOT = resolve(import.meta.dirname, "..", "..", "..");
 const MANIFEST = {
   name: "mirror-mind",
   version: "1.0.0",
-  bin: { mirror: "ts/src/frontDoor/cli.ts" },
+  bin: { mirror: "bin/mirror.js" },
   files: ["ts/src"],
   scripts: { test: "node --test" },
 };

@@ -25,9 +25,10 @@
     "node": ">=24"
   },
   "bin": {
-    "mirror": "ts/src/frontDoor/cli.ts"
+    "mirror": "bin/mirror.js"
   },
   "files": [
+    "bin",
     "ts/src",
     "templates",
     "docs/releases",

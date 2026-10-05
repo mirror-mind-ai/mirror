@@ -1822,10 +1822,21 @@ export async function main(rawArgv = process.argv.slice(2)): Promise<number> {
   }
 }
 
+/**
+ * What the entry does, for the two ways the program is started: this file run
+ * directly (a checkout, `npm link`), or the `bin/mirror.js` shim that an
+ * installed package needs because Node will not strip types under
+ * `node_modules` (CV22.DS10.US3, D15). Configuration and the warning filter
+ * run here and nowhere else, so importing this module does neither.
+ */
+export async function runAsEntry(rawArgv = process.argv.slice(2)): Promise<number> {
+  silenceExperimentalWarnings();
+  loadConfiguration({ entryPath: import.meta.filename });
+  return main(rawArgv);
+}
+
 // Run only when invoked as the CLI entry, not when imported (keeps the module
 // importable for tests and tooling, and keeps `process.env` untouched there).
 if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
-  silenceExperimentalWarnings();
-  loadConfiguration({ entryPath: import.meta.filename });
-  process.exitCode = await main();
+  process.exitCode = await runAsEntry();
 }
