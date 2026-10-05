@@ -433,6 +433,33 @@ step 3 `Pay by cash \| card` twice in the written row and `Pay by cash | card` r
 step 4 the three closure surfaces and no `Error:` line. The Navigator accepted the
 validation the same day.
 
+### Handoff review (2026-10-05)
+
+After the Navigator's walk, per the collaboration strategy. The nine lenses reviewed the
+delivered code, tests, words, safety posture, operational cost, and resumability. Every
+finding was checked against the diff from `4d16361b` to `422ec315`.
+
+Synthesis: the reader and the writer are inverses and the route proves the four
+surfaces; the findings are leftovers of the edit, not of the rule.
+
+| # | Lens | Finding | Class | Recommendation |
+|---|---|---|---|---|
+| 1 | engineer | `pullCandidates.ts` carries the new doc comment twice in a row, one copy with `\|` and one with `\\|`; a failed in-place edit left both | Non-blocking debt, introduced here | Pay now: one comment |
+| 2 | engineer | `const rowCells = tableRowCells;` keeps Python's name as an alias for three callers; a reader finds two names for one reader | Non-blocking debt, introduced here | Pay now: the callers name `tableRowCells`, and the alias goes |
+| 3 | quality-assurance | The every-reader test opens `docs/project/roadmap/cv20-…/index.md` and asserts that `CV20.DS13.TS1`'s row is still there, so a doc edit outside `ts/` fails a unit test; the verbatim row is the evidence, and the file check adds coupling, not proof | Non-blocking debt, introduced here | Pay now: the constant keeps the row and says where it came from; the file read goes |
+
+Checked and dropped:
+
+- `escapedAt` and the walk decide "escaped" twice, by an odd run of backslashes and by
+  consuming pairs (engineer). They agree by construction, the table grades the trailing
+  cases both ways, and one rule in two places is the cost of stripping before walking.
+- `tableCell` doubles every backslash, so a title with `\\` in it is written `\\\\`
+  (engineer). It reads back as written, which is the contract; no title here has one.
+
+The other lenses were silent: nothing stored, no model, no migration; the escape only
+removes a way for a cell's text to reach the wrong column; the skill's sentence is one
+line in the section that governs the table; a title prints as the author wrote it.
+
 ## Outcome
 
 Pending.
