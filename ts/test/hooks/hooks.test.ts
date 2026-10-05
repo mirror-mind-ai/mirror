@@ -479,7 +479,7 @@ describe("the Codex wrapper", () => {
 
     // The parts of a checkout the wrapper and the front door need, and no .env.
     mkdirSync(join(checkout, "ts"));
-    for (const path of ["scripts/codex-mirror.sh", "ts/package.json"]) {
+    for (const path of ["scripts/codex-mirror.sh", "package.json"]) {
       mkdirSync(join(checkout, path, ".."), { recursive: true });
       copyFileSync(join(REPO_ROOT, path), join(checkout, path));
     }
@@ -487,7 +487,7 @@ describe("the Codex wrapper", () => {
       recursive: true,
     });
     cpSync(join(REPO_ROOT, "ts/src"), join(checkout, "ts/src"), { recursive: true });
-    symlinkSync(join(REPO_ROOT, "ts/node_modules"), join(checkout, "ts/node_modules"));
+    symlinkSync(join(REPO_ROOT, "node_modules"), join(checkout, "node_modules"));
 
     const sessionId = "019d3b75-0462-7762-ac7c-4852a85ce725";
     writeFileSync(

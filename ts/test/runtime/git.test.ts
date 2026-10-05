@@ -93,7 +93,7 @@ function fixture(): { root: string; clone: string; seed: string; cleanup: () => 
   // every recorded id with it; leaving it untracked would make the fixture
   // dirty. Neither is the thing under test, so the manifest exists on disk
   // for `packageVersion` and nowhere for git.
-  writeFileSync(join(clone, ".git", "info", "exclude"), "ts/\n", "utf8");
+  writeFileSync(join(clone, ".git", "info", "exclude"), "ts/\npackage.json\n", "utf8");
   stageMirrorPackage(clone, { version: golden.meta.fixture_version });
   writeFileSync(join(seed, "README.md"), "fixture, moved on\n");
   git(seed, "commit", "-am", "second");

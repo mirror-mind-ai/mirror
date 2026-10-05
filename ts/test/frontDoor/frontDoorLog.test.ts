@@ -4,11 +4,12 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
+import { fileURLToPath } from "node:url";
 import { openDatabaseCopyForWrite } from "#db/database.ts";
 import { frontDoorLogPath, logFrontDoor } from "#frontDoor/frontDoorLog.ts";
 import { createIdentityTable, seedKnownMigrations } from "#helpers/identitySchema.ts";
 
-const CLI = "src/frontDoor/cli.ts";
+const CLI = fileURLToPath(new URL("../../src/frontDoor/cli.ts", import.meta.url));
 
 test("logFrontDoor is fail-quietly on an unwritable path and skips a null path", () => {
   assert.doesNotThrow(() => logFrontDoor(null, { command: "x", route: "ts", exitCode: 0 }));

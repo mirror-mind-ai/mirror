@@ -1,7 +1,13 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.5.1/schema.json",
   "files": {
-    "includes": ["src/**/*.ts", "test/**/*.ts", "evals/**/*.ts", "scripts/**/*.ts", "smoke/**/*.ts"]
+    "includes": [
+      "ts/src/**/*.ts",
+      "ts/test/**/*.ts",
+      "ts/evals/**/*.ts",
+      "ts/scripts/**/*.ts",
+      "ts/smoke/**/*.ts"
+    ]
   },
   "formatter": {
     "enabled": true,
@@ -17,7 +23,7 @@
   },
   "overrides": [
     {
-      "includes": ["src/db/schemaInventorySnapshot.ts"],
+      "includes": ["ts/src/db/schemaInventorySnapshot.ts"],
       "javascript": {
         "formatter": {
           "quoteProperties": "preserve",

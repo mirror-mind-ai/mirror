@@ -329,7 +329,6 @@ tags, which an installed user does not have. It is maintainer tooling now, and t
 door answers the old name with its [cutoff](docs/releases/pending-cutoffs.md#release-tooling-leaves-the-product-command-surface).
 
 ```bash
-cd ts
 npm run release:doctor -- --target vX.Y.Z [--stable origin/stable]
 ```
 
@@ -343,7 +342,6 @@ answers the old name with its cutoff, *before dispatch*, so a stray `--push` rea
 nothing.
 
 ```bash
-cd ts
 npm run release:promote -- --target vX.Y.Z --dry-run
 npm run release:promote -- --target vX.Y.Z
 npm run release:promote -- --target vX.Y.Z --push

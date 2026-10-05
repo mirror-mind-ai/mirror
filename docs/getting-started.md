@@ -74,10 +74,10 @@ If you are not using Pi as your primary harness:
 ```bash
 git clone https://github.com/viniciusteles/mirror.git
 cd mirror
-(cd ts && npm ci)
+npm ci
 ```
 
-`npm ci` installs the exact dependency versions from `ts/package-lock.json`:
+`npm ci` installs the exact dependency versions from `package-lock.json`:
 one runtime dependency (`yaml`) and the development tools.
 
 Every command below is written as `mirror <command>`, the name the front door

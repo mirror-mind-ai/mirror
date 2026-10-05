@@ -45,7 +45,7 @@ export interface ServeOptions {
 export function resolveServerVersion(): string {
   // The Python server reported `importlib.metadata.version("mirror")` --
   // 0.31.x. This reports THE product version, `packageVersion`, which reads
-  // `ts/package.json` since CV22.DS10.TS5 (decision D1): the same source the
+  // `package.json` since CV22.DS10.TS5 (decision D1; at the root since US3 D2): the same source the
   // plugin manifest is generated from and the same one `runtime version`
   // reads. An explicit MIRROR_MCP_VERSION pin still wins; the DS9 parity
   // harness that set it is gone, and the guard probe unsets it. "0.0.0" is

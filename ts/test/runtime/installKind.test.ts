@@ -15,11 +15,12 @@ function fs(paths: readonly string[]) {
   return (path: string) => set.has(path.replace(/\/+$/, ""));
 }
 
-test("a git checkout carrying ts/package.json is a clone", () => {
+test("a git checkout carrying a root package.json is a clone", () => {
+  // CV22.DS10.US3 decision D2: the manifest sits at the repository root.
   const root = "/home/dev/mirror";
   const kind = detectInstallKind({
     frontDoorPath: join(root, "ts/src/frontDoor/cli.ts"),
-    exists: fs([join(root, ".git"), join(root, "ts/package.json")]),
+    exists: fs([join(root, ".git"), join(root, "package.json")]),
   });
   assert.deepEqual(kind, { kind: "clone", repository: root });
   assert.match(describeInstallKind(kind), /^clone \(/);
@@ -27,27 +28,44 @@ test("a git checkout carrying ts/package.json is a clone", () => {
 
 test("a global npm install is a package, named and versioned from its manifest", () => {
   const globalRoot = "/usr/local/lib/node_modules";
-  const pkg = join(globalRoot, "mirror-core");
+  const pkg = join(globalRoot, "mirror-mind");
   const kind = detectInstallKind({
-    frontDoorPath: join(pkg, "dist/frontDoor/cli.js"),
+    frontDoorPath: join(pkg, "ts/src/frontDoor/cli.ts"),
     npmRootGlobal: globalRoot,
     exists: fs([join(pkg, "package.json")]),
-    readFile: () => JSON.stringify({ name: "mirror-core", version: "1.2.3" }),
+    readFile: () => JSON.stringify({ name: "mirror-mind", version: "1.2.3" }),
   });
-  assert.deepEqual(kind, { kind: "package", root: pkg, name: "mirror-core", version: "1.2.3" });
-  assert.equal(describeInstallKind(kind), "package (mirror-core@1.2.3)");
+  assert.deepEqual(kind, { kind: "package", root: pkg, name: "mirror-mind", version: "1.2.3" });
+  assert.equal(describeInstallKind(kind), "package (mirror-mind@1.2.3)");
+});
+
+test("a checkout LINKED under the global root (npm link) is a clone, not a package", () => {
+  // `npm link` puts a symlink named like the package under `npm root -g`, so a
+  // front door reached through it has a path that LOOKS installed. Updating
+  // that with `npm install -g` would replace the developer's link with a
+  // registry copy. The detector resolves symlinks before it decides.
+  const globalRoot = "/usr/local/lib/node_modules";
+  const checkout = "/home/dev/mirror";
+  const linked = join(globalRoot, "mirror-mind", "ts/src/frontDoor/cli.ts");
+  const kind = detectInstallKind({
+    frontDoorPath: linked,
+    npmRootGlobal: globalRoot,
+    exists: fs([join(checkout, ".git"), join(checkout, "package.json")]),
+    realpath: (path) => (path === linked ? join(checkout, "ts/src/frontDoor/cli.ts") : path),
+  });
+  assert.deepEqual(kind, { kind: "clone", repository: checkout });
 });
 
 test("a PROJECT-LOCAL node_modules is not a package install", () => {
   // The trap: being under some `node_modules/` is not being under the GLOBAL
   // one. `npm install -g` would update a different tree from the one running,
   // and the user would watch an update succeed and change nothing.
-  const local = "/home/dev/someapp/node_modules/mirror-core";
+  const local = "/home/dev/someapp/node_modules/mirror-mind";
   const kind = detectInstallKind({
-    frontDoorPath: join(local, "dist/frontDoor/cli.js"),
+    frontDoorPath: join(local, "ts/src/frontDoor/cli.ts"),
     npmRootGlobal: "/usr/local/lib/node_modules",
     exists: fs([join(local, "package.json")]),
-    readFile: () => JSON.stringify({ name: "mirror-core", version: "1.2.3" }),
+    readFile: () => JSON.stringify({ name: "mirror-mind", version: "1.2.3" }),
   });
   assert.equal(kind.kind, "unknown");
   assert.match(kind.kind === "unknown" ? kind.reason : "", /global npm root/);
@@ -58,10 +76,10 @@ test("a path that merely SHARES A PREFIX with the global root is not inside it",
   // string and is a different directory. Component-wise containment, not
   // `startsWith`.
   const kind = detectInstallKind({
-    frontDoorPath: "/usr/local/lib/node_modules-old/mirror-core/dist/cli.js",
+    frontDoorPath: "/usr/local/lib/node_modules-old/mirror-mind/ts/src/frontDoor/cli.ts",
     npmRootGlobal: "/usr/local/lib/node_modules",
-    exists: fs(["/usr/local/lib/node_modules-old/mirror-core/package.json"]),
-    readFile: () => JSON.stringify({ name: "mirror-core", version: "1.2.3" }),
+    exists: fs(["/usr/local/lib/node_modules-old/mirror-mind/package.json"]),
+    readFile: () => JSON.stringify({ name: "mirror-mind", version: "1.2.3" }),
   });
   assert.equal(kind.kind, "unknown");
 });
@@ -76,7 +94,7 @@ test("without npm, a non-checkout is unknown and says npm is why", () => {
   assert.match(kind.kind === "unknown" ? kind.reason : "", /npm is unavailable/);
 });
 
-test("a checkout without ts/package.json is not this project's clone", () => {
+test("a checkout without a root package.json is not this project's clone", () => {
   // A `.git` alone is any repository. The updater must not fast-forward a
   // tree that merely happens to contain the front door.
   const kind = detectInstallKind({

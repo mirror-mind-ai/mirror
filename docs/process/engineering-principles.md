@@ -28,7 +28,7 @@ consult when you touch that area. Before calling a story done, run
 **[§10](#10-definition-of-done) (Definition of Done)** as a checklist.
 
 **The core ships with one runtime npm dependency, and adding a second is a
-decision.** `ts/package.json` carries exactly one: `yaml` (zero transitive
+decision.** `package.json` carries exactly one: `yaml` (zero transitive
 dependencies, `parse()` safe by construction), added with a named
 justification when `seed` was ported (CV22.DS7.US1). Everything else is
 devDependencies (Biome, TypeScript, types). This is a security property, not a

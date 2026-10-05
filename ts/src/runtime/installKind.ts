@@ -8,7 +8,7 @@
 // Three answers, and `unknown` is a real one: an install we cannot identify is
 // refused with its reason printed, never updated on a guess.
 
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { dirname, join, resolve, sep } from "node:path";
 
 export type InstallKind =
@@ -26,6 +26,13 @@ export interface InstallKindProbe {
   npmRootGlobal?: string | null;
   exists?: (path: string) => boolean;
   readFile?: (path: string) => string;
+  /**
+   * Symlink resolution for the front door's path. `npm link` places a symlink
+   * named like the package under the global root, so a developer's checkout
+   * can be reached through a path that looks installed; what is updated must
+   * be the tree the file really lives in.
+   */
+  realpath?: (path: string) => string;
 }
 
 /** Is `child` inside `parent`, by path components rather than string prefix? */
@@ -37,15 +44,15 @@ function isInside(parent: string, child: string): boolean {
 
 /**
  * The git work tree holding this front door, identified by the repository
- * marker this project actually has: a root that carries `ts/package.json` and
- * a `.git` entry. Walking up rather than asking git keeps detection free of a
+ * marker this project actually has: a root that carries `package.json` and a
+ * `.git` entry (the manifest moved to the root in CV22.DS10.US3, D2). Walking up rather than asking git keeps detection free of a
  * subprocess and of git's own notion of "inside a work tree", which is true in
  * places this updater must not touch (a submodule, a nested checkout).
  */
 function cloneRootFor(startDir: string, exists: (path: string) => boolean): string | null {
   let current = resolve(startDir);
   for (;;) {
-    if (exists(join(current, ".git")) && exists(join(current, "ts", "package.json"))) {
+    if (exists(join(current, ".git")) && exists(join(current, "package.json"))) {
       return current;
     }
     const parent = dirname(current);
@@ -93,10 +100,20 @@ function packageFor(
   }
 }
 
+/** `realpathSync`, except that a path that does not exist is returned as given. */
+function safeRealpath(path: string): string {
+  try {
+    return realpathSync(path);
+  } catch {
+    return path;
+  }
+}
+
 export function detectInstallKind(probe: InstallKindProbe): InstallKind {
   const exists = probe.exists ?? existsSync;
   const readFile = probe.readFile ?? ((path: string) => readFileSync(path, "utf8"));
-  const frontDoorPath = resolve(probe.frontDoorPath);
+  const realpath = probe.realpath ?? safeRealpath;
+  const frontDoorPath = realpath(resolve(probe.frontDoorPath));
 
   const asPackage = packageFor(frontDoorPath, probe.npmRootGlobal, exists, readFile);
   if (asPackage !== null) return asPackage;

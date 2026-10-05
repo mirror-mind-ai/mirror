@@ -1,8 +1,11 @@
 // Shared front-door spawn helper for CLI tests (CR009).
 
 import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 
-const CLI = "src/frontDoor/cli.ts";
+// Resolved from this file, not from the cwd: the suite runs from the
+// repository root since CV22.DS10.US3 moved the manifest there (D2).
+const CLI = fileURLToPath(new URL("../../src/frontDoor/cli.ts", import.meta.url));
 
 export interface FrontDoorResult {
   status: number | null;

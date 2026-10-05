@@ -30,7 +30,7 @@ after(() => {
 });
 
 describe("this repository", () => {
-  test("reports the version ts/package.json declares", () => {
+  test("reports the version package.json declares", () => {
     const version = packageVersion(REPO_ROOT);
     assert.match(version ?? "", /^\d+\.\d+\.\d+$/);
   });
@@ -49,9 +49,8 @@ describe("findPackageIdentity", () => {
     // carry one inside this very repository. The front door is what makes the
     // tree this program.
     const root = tmpRoot();
-    mkdirSync(join(root, "ts"), { recursive: true });
     writeFileSync(
-      join(root, "ts", "package.json"),
+      join(root, "package.json"),
       JSON.stringify({ name: PACKAGE_NAME, version: "1.0.0" }),
       "utf8",
     );
@@ -59,8 +58,26 @@ describe("findPackageIdentity", () => {
     assert.equal(findPackageIdentity(root), null);
   });
 
-  test("recognizes an installed package, where ts/ has been flattened away", () => {
-    // The shape US3 publishes: manifest and front door at the package root.
+  test("one layout, checked out or installed: a root manifest beside ts/src/frontDoor/cli.ts", () => {
+    // CV22.DS10.US3 decision D2: the repository is the package, so an
+    // installed tree has the same paths as a checkout and one detector serves
+    // both. The TS5-era second candidate (a root manifest beside a flattened
+    // `src/frontDoor/cli.ts`) described a shape that was never published and
+    // is gone.
+    const root = tmpRoot();
+    mkdirSync(join(root, "ts", "src", "frontDoor"), { recursive: true });
+    writeFileSync(join(root, "ts", "src", "frontDoor", "cli.ts"), "// entry\n", "utf8");
+    writeFileSync(
+      join(root, "package.json"),
+      JSON.stringify({ name: PACKAGE_NAME, version: "2.0.0" }),
+      "utf8",
+    );
+
+    assert.equal(findPackageIdentity(root)?.version, "2.0.0");
+    assert.equal(packageVersion(root), "2.0.0");
+  });
+
+  test("the flattened TS5-era shape is not recognized", () => {
     const root = tmpRoot();
     mkdirSync(join(root, "src", "frontDoor"), { recursive: true });
     writeFileSync(join(root, "src", "frontDoor", "cli.ts"), "// entry\n", "utf8");
@@ -70,8 +87,7 @@ describe("findPackageIdentity", () => {
       "utf8",
     );
 
-    assert.equal(findPackageIdentity(root)?.version, "2.0.0");
-    assert.equal(packageVersion(root), "2.0.0");
+    assert.equal(findPackageIdentity(root), null);
   });
 
   test("stops at the first structural candidate, whatever it answers", () => {
@@ -94,7 +110,7 @@ describe("findPackageIdentity", () => {
     const outer = stageMirrorPackage(tmpRoot());
     const inner = join(outer, "broken");
     mkdirSync(join(inner, "ts", "src", "frontDoor"), { recursive: true });
-    writeFileSync(join(inner, "ts", "package.json"), "{ not json", "utf8");
+    writeFileSync(join(inner, "package.json"), "{ not json", "utf8");
     writeFileSync(join(inner, "ts", "src", "frontDoor", "cli.ts"), "// entry\n", "utf8");
 
     assert.equal(findPackageIdentity(inner)?.isMirrorMind, false);
@@ -109,18 +125,18 @@ describe("findPackageIdentity", () => {
   test("a manifest with no version reports null, not a crash", () => {
     const root = tmpRoot();
     mkdirSync(join(root, "ts", "src", "frontDoor"), { recursive: true });
-    writeFileSync(join(root, "ts", "package.json"), JSON.stringify({ name: PACKAGE_NAME }), "utf8");
+    writeFileSync(join(root, "package.json"), JSON.stringify({ name: PACKAGE_NAME }), "utf8");
     writeFileSync(join(root, "ts", "src", "frontDoor", "cli.ts"), "// entry\n", "utf8");
 
     assert.equal(packageVersion(root), null);
   });
 });
 
-describe("the one constant US3 changes", () => {
-  test("PACKAGE_NAME is what ts/package.json actually declares", () => {
+describe("the one constant US3 changed", () => {
+  test("PACKAGE_NAME is what package.json actually declares", () => {
     // If these drift, every consumer -- version, checkout guard, plugin
     // builder -- silently stops recognizing this repository.
-    const manifest = JSON.parse(readFileSync(join(REPO_ROOT, "ts", "package.json"), "utf8")) as {
+    const manifest = JSON.parse(readFileSync(join(REPO_ROOT, "package.json"), "utf8")) as {
       name: string;
     };
     assert.equal(manifest.name, PACKAGE_NAME);

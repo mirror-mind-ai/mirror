@@ -189,7 +189,7 @@ identity architecture.
 **Live state (version and roadmap status) is not duplicated here** — it
 drifts. Read it from the source of truth:
 
-- Version: `ts/package.json`
+- Version: `package.json` (repository root)
 - CV/Epic/Story status: [docs/project/roadmap/index.md](docs/project/roadmap/index.md)
 
 Builder Mode load also injects the live, database-backed journey status at

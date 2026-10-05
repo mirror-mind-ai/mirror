@@ -29,12 +29,13 @@ export interface MirrorTreeOptions {
 }
 
 /**
- * Write `ts/package.json` and `ts/src/frontDoor/cli.ts` under `root`.
+ * Write `package.json` and `ts/src/frontDoor/cli.ts` under `root` -- the one
+ * layout a checkout and an installed package share since CV22.DS10.US3 (D2).
  *
  * Returns `root` so it can be used inline in a fixture builder.
  */
 export function stageMirrorPackage(root: string, options: MirrorTreeOptions = {}): string {
-  const manifest = join(root, "ts", "package.json");
+  const manifest = join(root, "package.json");
   mkdirSync(dirname(manifest), { recursive: true });
   writeFileSync(
     manifest,
@@ -42,7 +43,6 @@ export function stageMirrorPackage(root: string, options: MirrorTreeOptions = {}
       {
         name: options.name ?? PACKAGE_NAME,
         version: options.version ?? "9.9.9",
-        private: true,
       },
       null,
       2,

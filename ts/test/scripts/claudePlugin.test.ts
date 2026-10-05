@@ -95,7 +95,7 @@ describe("version", () => {
   test("comes from the single body that answers it for the whole core", () => {
     // US2 decision D2: one function, read by the updater, the release doctor,
     // the welcome card, the MCP server -- and now this builder. Slice C
-    // re-points that body at ts/package.json and the builder follows with no
+    // re-points that body at package.json and the builder follows with no
     // edit, which is the entire reason there is one body.
     assert.equal(readVersion(REPO_ROOT), readVersion(REPO_ROOT));
     assert.match(readVersion(REPO_ROOT), /^\d+\.\d+\.\d+$/);

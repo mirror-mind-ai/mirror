@@ -240,15 +240,13 @@ Between checkpoints, the Driver can work without asking permission for every fil
 
 ## Verification Checklist
 
-Mirror Mind is one TypeScript package, run directly by Node.js 24+ with no build step. Every story starts by installing the pinned development dependencies and ends with the commands every change needs:
+Mirror Mind is one TypeScript package, run directly by Node.js 24+ with no build step. The manifest sits at the repository root (CV22.DS10.US3, D2: the repository is the package), so every `npm` command runs from there. Every story starts by installing the pinned development dependencies and ends with the commands every change needs:
 
 ```bash
-cd ts
 npm ci               # pinned dependencies: yaml at runtime; TypeScript and Biome for the checks
 npm run typecheck    # tsc --noEmit
 npm run lint         # Biome
 npm test             # node:test, the whole suite
-cd ..
 git diff --check
 ```
 
@@ -265,7 +263,7 @@ It builds a scratch origin, clone, mirror home, and env-file, and shadows `pytho
 **The checklist above is not the full gate.** CI's list in `.github/workflows/` is the authority, and it includes work `npm test` does not touch. Before a push, run the rest of it from the repository root:
 
 ```bash
-# The repository checks. The retired-surface sweep reads the git INDEX:
+# The repository checks, also from the root. The retired-surface sweep reads the git INDEX:
 # stage new files first, or they are invisible to it and a green run proves
 # nothing about the commit.
 node ts/scripts/checkRetiredSurfaces.ts

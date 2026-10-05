@@ -4,12 +4,13 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
+import { fileURLToPath } from "node:url";
 import { openDatabaseCopyForWrite } from "#db/database.ts";
 import { createIdentityTable, seedKnownMigrations } from "#helpers/identitySchema.ts";
 import { buildRenderFixture } from "#helpers/renderFixture.ts";
 
-const CLI = "src/frontDoor/cli.ts";
-const GOLDEN_DIR = "test/goldens/render";
+const CLI = fileURLToPath(new URL("../../src/frontDoor/cli.ts", import.meta.url));
+const GOLDEN_DIR = fileURLToPath(new URL("../goldens/render", import.meta.url));
 const UPDATE = process.env.UPDATE_GOLDENS === "1";
 
 // The database is passed via DB_PATH env, not --db-path, so no flag token can

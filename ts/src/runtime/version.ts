@@ -23,7 +23,7 @@ import { findPackageIdentity } from "./packageIdentity.ts";
  * render as `unknown` in the updater, the release doctor, the welcome card,
  * and the MCP handshake.
  *
- * `ts/package.json` therefore carries the real version from now on. US3 still
+ * `package.json` therefore carries the real version from now on. US3 still
  * changes exactly one place, which was US2's intent: `PACKAGE_NAME` and the
  * `private` flag.
  */

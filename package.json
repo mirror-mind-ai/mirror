@@ -1,0 +1,101 @@
+{
+  "name": "mirror-mind",
+  "version": "0.31.14",
+  "description": "Mirror Mind: a local-first memory and identity framework for agentic AI runtimes (Pi, Claude Code, Gemini CLI, Codex)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mirror-mind-ai/mirror.git"
+  },
+  "homepage": "https://github.com/mirror-mind-ai/mirror#readme",
+  "keywords": [
+    "mirror-mind",
+    "memory",
+    "identity",
+    "agent",
+    "pi-package",
+    "claude-code",
+    "gemini-cli",
+    "codex",
+    "sqlite",
+    "local-first"
+  ],
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "bin": {
+    "mirror": "ts/src/frontDoor/cli.ts"
+  },
+  "files": [
+    "ts/src",
+    "templates",
+    "docs/releases",
+    ".pi/extensions",
+    ".pi/skills",
+    ".claude/hooks",
+    ".gemini/hooks",
+    "plugins/mirror-mind",
+    "scripts/codex-hooks",
+    "scripts/codex-mirror.sh",
+    "README.md",
+    "LICENSE"
+  ],
+  "imports": {
+    "#backup/*": "./ts/src/backup/*",
+    "#builder/*": "./ts/src/builder/*",
+    "#consult/*": "./ts/src/consult/*",
+    "#conversation/*": "./ts/src/conversation/*",
+    "#cultivation/*": "./ts/src/cultivation/*",
+    "#db/*": "./ts/src/db/*",
+    "#descriptor/*": "./ts/src/descriptor/*",
+    "#docs/*": "./ts/src/docs/*",
+    "#evals/*": "./ts/evals/*",
+    "#explorer/*": "./ts/src/explorer/*",
+    "#extensions/*": "./ts/src/extensions/*",
+    "#extraction/*": "./ts/src/extraction/*",
+    "#fixtures/*": "./ts/test/fixtures/*",
+    "#frontDoor/*": "./ts/src/frontDoor/*",
+    "#goldens/*": "./ts/test/goldens/*",
+    "#guards/*": "./ts/src/guards/*",
+    "#helpers/*": "./ts/test/helpers/*",
+    "#hooks/*": "./ts/src/hooks/*",
+    "#identity/*": "./ts/src/identity/*",
+    "#init/*": "./ts/src/init/*",
+    "#journey/*": "./ts/src/journey/*",
+    "#mcp/*": "./ts/src/mcp/*",
+    "#memory/*": "./ts/src/memory/*",
+    "#mirror/*": "./ts/src/mirror/*",
+    "#mode/*": "./ts/src/mode/*",
+    "#observability/*": "./ts/src/observability/*",
+    "#persona/*": "./ts/src/persona/*",
+    "#planning/*": "./ts/src/planning/*",
+    "#providers/*": "./ts/src/providers/*",
+    "#repair/*": "./ts/src/repair/*",
+    "#runtime/*": "./ts/src/runtime/*",
+    "#search/*": "./ts/src/search/*",
+    "#seed/*": "./ts/src/seed/*",
+    "#smoke/*": "./ts/smoke/*",
+    "#soul/*": "./ts/src/soul/*",
+    "#tasks/*": "./ts/src/tasks/*",
+    "#util/*": "./ts/src/util/*",
+    "#welcome/*": "./ts/src/welcome/*"
+  },
+  "scripts": {
+    "release:doctor": "node ts/scripts/releaseDoctor.ts",
+    "release:promote": "node ts/scripts/releasePromote.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test \"ts/test/**/*.test.ts\"",
+    "eval": "node --env-file-if-exists=.env ts/evals/harness/cli.ts",
+    "lint": "biome check .",
+    "format": "biome format --write ."
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.2.0",
+    "@types/node": "^24.0.0",
+    "typescript": "^5.8.0"
+  },
+  "dependencies": {
+    "yaml": "^2.9.0"
+  }
+}

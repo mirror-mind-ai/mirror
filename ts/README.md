@@ -19,8 +19,9 @@ tag.
 
 ## Getting started
 
+From the repository root (the manifest lives there since CV22.DS10.US3, D2):
+
 ```bash
-cd ts
 npm ci          # install pinned dev dependencies (use `npm install` to refresh the lockfile)
 npm run typecheck   # tsc --noEmit
 npm run lint        # Biome check

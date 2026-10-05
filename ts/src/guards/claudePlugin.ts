@@ -57,7 +57,7 @@ export interface GeneratedFile {
  * Read from source rather than from installed metadata, so the build is
  * deterministic. `packageVersion` is the single body that answers this for the
  * whole core (US2 decision D2); CV22.DS10.TS5 re-pointed it at
- * `ts/package.json` and this builder followed with no edit, which is the point
+ * `package.json` and this builder followed with no edit, which is the point
  * of there being one body.
  */
 export function readVersion(repoRoot: string): string {

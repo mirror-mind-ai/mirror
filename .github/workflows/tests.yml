@@ -17,9 +17,6 @@ jobs:
         # macOS coverage guards the environment-dependent tmpdir/permission
         # behavior that a Linux-only matrix cannot catch.
         os: [ubuntu-latest, macos-latest]
-    defaults:
-      run:
-        working-directory: ts
 
     steps:
       - uses: actions/checkout@v6
@@ -32,6 +29,10 @@ jobs:
       # No Python and no uv (CV22.DS10.TS5 slice G). The last thing this job
       # installed them for was the updater smoke's demo database, and that
       # generator is TypeScript now (`ts/smoke/generate_demo_memory_db.ts`).
+      #
+      # From the repository root since CV22.DS10.US3 (D2): the manifest moved
+      # there so that the repository is the package and an installed tree has
+      # the same paths as a checkout.
       - name: Install dependencies
         run: npm ci
 
@@ -111,7 +112,7 @@ jobs:
       # regressions -- before it was deleted, because a guard must OUTLIVE the
       # deletion it proves, and one written in the language it forbids cannot.
       - name: Retired-surface tripwire (DS10 deletions must stay deleted)
-        run: node scripts/checkRetiredSurfaces.ts
+        run: node ts/scripts/checkRetiredSurfaces.ts
 
       # The custody proof (CV22.DS10.TS5, the panel's blocking amendment). Both
       # scripts grade the TypeScript engine against COMMITTED fixtures -- every
@@ -123,10 +124,10 @@ jobs:
       # CR051/CR052: wired here because both had silently drifted from the tests
       # they duplicate while nothing ran them.
       - name: Migration custody (every step against its committed fixture)
-        run: node smoke/migration_structural_parity.ts
+        run: node ts/smoke/migration_structural_parity.ts
 
       - name: Bootstrap custody (fresh database, concurrent bootstrap race)
-        run: node smoke/bootstrap_custody_parity.ts
+        run: node ts/smoke/bootstrap_custody_parity.ts
 
       # CV22.DS10.US2 — the updater's first operational coverage since v0.8.0.
       # Runs in the `ts` job because it needs Node and a git checkout, and it
@@ -134,7 +135,7 @@ jobs:
       # rather than passing unnoticed. Everything it touches is a scratch
       # clone, a scratch home, and a scratch env-file.
       - name: Runtime updater smoke (CV22.DS10.US2)
-        run: bash ../scripts/smoke_runtime_update.sh "${RUNNER_TEMP}/mirror-update-smoke"
+        run: bash scripts/smoke_runtime_update.sh "${RUNNER_TEMP}/mirror-update-smoke"
 
   smoke:
     # End-to-end through the real front-door process, as SEQUENCES: the unit
@@ -157,7 +158,6 @@ jobs:
       # The smokes spawn the real front door, which needs its npm dependencies
       # (yaml, for the seed route).
       - name: Install dependencies
-        working-directory: ts
         run: npm ci
 
       # Synthetic rows only; the generator is TypeScript since TS5 slice G.

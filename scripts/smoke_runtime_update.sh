@@ -80,7 +80,7 @@ TARGET="$(cd "$WORK/origin" && "$REAL_GIT" rev-parse --short HEAD)"
   printf 'main\n' > .mirror-update-channel
 )
 # node_modules is gitignored, so copying it leaves the tree clean.
-cp -R "$ROOT_DIR/ts/node_modules" "$WORK/clone/ts/node_modules"
+cp -R "$ROOT_DIR/node_modules" "$WORK/clone/node_modules"
 
 HOME_DIR="$WORK/home"
 mkdir -p "$HOME_DIR"
@@ -227,12 +227,12 @@ if [ -z "$REAL_NPM" ]; then
 else
   PREFIX="$WORK/npm-prefix"
   mkdir -p "$PREFIX"
-  TARBALL="$(cd "$ROOT_DIR/ts" && "$REAL_NPM" pack --pack-destination "$WORK" 2>/dev/null | tail -1)"
+  TARBALL="$(cd "$ROOT_DIR" && "$REAL_NPM" pack --pack-destination "$WORK" 2>/dev/null | tail -1)"
   if [ -n "$TARBALL" ] && [ -f "$WORK/$TARBALL" ]; then
     ok "npm pack produced $TARBALL"
     if "$REAL_NPM" install -g --prefix "$PREFIX" "$WORK/$TARBALL" >/dev/null 2>&1; then
       ok "the tarball installs into an isolated prefix"
-      INSTALLED="$(find "$PREFIX" -path '*/mirror-core/package.json' | head -1)"
+      INSTALLED="$(find "$PREFIX" -path '*/mirror-mind/package.json' | head -1)"
       if [ -n "$INSTALLED" ]; then ok "the installed package is discoverable"; else bad "no installed package found"; fi
     else
       printf '  \033[33m-\033[0m install into the isolated prefix failed; recorded, not fatal\n'

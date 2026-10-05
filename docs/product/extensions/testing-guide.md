@@ -167,8 +167,7 @@ extensions.
 Inside the mirror repo, the core's extension tests:
 
 ```bash
-cd ts
-node --test test/extensions/
+node --test ts/test/extensions/
 ```
 
 Inside an extension repo, with whatever runner its language uses —
