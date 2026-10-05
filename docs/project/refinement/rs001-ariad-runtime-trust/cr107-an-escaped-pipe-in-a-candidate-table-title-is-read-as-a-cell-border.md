@@ -476,4 +476,31 @@ the route still prints its recorded output exactly.
 
 ## Outcome
 
-Pending.
+Done 2026-10-05. A table row is read by one reader, `tableRowCells` in
+`roadmapGrammar.ts`, as GFM reads it: `\|` is a pipe inside the cell, a code span
+included, `\\` is a backslash, and an unescaped pipe closes a cell. The roadmap index's
+CV and DS tables, a Delivery Story's candidate table, and the Done preflight's status
+tables read through it (D1). The Delivery Story scaffold writes a title into its two
+cells through `tableCell`, every backslash doubled and every pipe escaped, so the row
+reads back as written (D2); the title goes unescaped into the heading, the cards, and
+the folder's slug. The authoring contract in the Builder skill says a pipe inside a cell
+is written `\|`.
+
+Expand now recommends ``Read `a | b` input``, heads the child with it, and names the
+folder `cv1-ds1-us1-read-a-b-input`; the index row `Checkout, cash \| card` reaches the
+focus row whole and marked `◉ active`; a Delivery Story pulled with the title `Pay by
+cash | card` writes a row a second Pull reads back whole; and `done-delivery-story`
+proceeds past the preflight on a Done row with an escape. `CV20.DS13.TS1`'s row, this
+roadmap's one, reads as `✅ Done`. No golden moved. The plan's backslash rule, before a
+pipe only, did not survive the writer's round trip and was widened to GFM's at plateau 1.
+
+Delivered on `mirror-ts-core` in `fbb9a676` (the reader and the writer), `422ec315` (the
+skill), and `b308cd8e` (debt). CI was green on every push. Next in floor order: CR117,
+the last change on the floor before US3.
+
+## Provenance
+
+Found on 2026-09-27 while characterizing CR018, by pulling a Delivery Story whose
+candidate table held ``Read `a \| b` input`` and reading the fragment Expand wrote.
+Captured without fixing, by the floor's rule, and taken onto the floor on 2026-09-30
+with every open RS001 request when US3's Pull and Plan reopened it.

@@ -3705,3 +3705,45 @@ in `statusClause.test.ts`, and `statusWalk.test.ts` runs every command that prin
 status on a roadmap whose every line carries a sentinel after its separator, and
 fails on the sentinel inside any marked surface. The skill says a row's status is the
 clause, and where the rest of the line is.
+
+### A table cell is read as GFM reads it, and what Ariad writes into one reads back as written
+
+**Date:** 2026-10-05 · **Context:** [CR107](refinement/rs001-ariad-runtime-trust/cr107-an-escaped-pipe-in-a-candidate-table-title-is-read-as-a-cell-border.md),
+the seventh change on the reopened
+[Ariad trust floor](#the-cv22-release-is-gated-on-an-ariad-trust-floor-worked-before-us3).
+Three readers split a roadmap table row on every pipe: the index's CV and DS tables, a
+Delivery Story's candidate table, and the Done preflight's status tables. None read
+`\|`, GFM's one way to put a pipe in a cell, so a cell with one split in two and every
+column after it shifted. Expand recommended ``Read `a \`` and wrote the fragment into a
+heading and a folder; the index read a CV's status from its title's second half and
+marked it `○ card`; the preflight read a Done row's status from the cell the escape
+pushed into it and refused the Delivery Story's Done. The one writer, the scaffold
+Expand leaves for a Delivery Story with no package, escaped nothing, so a piped title it
+wrote read back cut. This roadmap had one such row, `CV20.DS13.TS1`'s, Done since July
+and read as pending.
+
+**The decision: a table row is read by one reader, `tableRowCells`, as GFM reads it.
+`\|` is a pipe inside the cell, a code span included, `\\` is a backslash, and an
+unescaped pipe closes a cell; every other character is itself. Ariad writes a title
+into a cell through `tableCell`, every backslash doubled and every pipe escaped, so the
+row reads back exactly as written. The title goes unescaped into the heading, the
+cards, and the folder's slug.**
+
+**Why GFM's rule and not Ariad's own.** The tables are Markdown a person reads rendered,
+and GFM is what renders them; a cell that renders with a pipe must read with one.
+Nothing short of the escape lets an author name a pipeline or a union type in a story.
+
+**Why one reader.** Three readers had one rule written three times, and the one that
+mattered for closing a Delivery Story was the one nobody had run. The reader is the
+inverse of the writer for the two characters it interprets, which the round trip of
+``a \| b`` as a title proves; the plan had the backslash rule only before a pipe, and
+that round trip is what overturned it.
+
+**Why the fragment packages stay.** A child already written with a fragment heading is
+authored content, found by its code (CR018) and never rewritten (CR079). None exists
+here.
+
+**The rule that follows.** A reader that splits a roadmap table row calls
+`tableRowCells`; a writer that puts text into a cell calls `tableCell`; and a pipe
+inside a cell is written `\|`, which the Builder skill's authoring contract now says.
+A new table reader or writer joins `escapedPipe.test.ts`.

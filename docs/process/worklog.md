@@ -12,6 +12,30 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-10-05 — CR107 done: a table cell is read as GFM reads it
+
+This is the seventh change of the reopened trust floor. Three readers split a roadmap
+table row on every pipe, so `\|`, GFM's one way to put a pipe in a cell, cut the cell
+and shifted every column after it: Expand recommended and wrote a fragment, the
+roadmap index read a CV's status from the wrong cell, and the Done preflight refused a
+Done row. The scaffold Ariad writes escaped nothing, so what Ariad wrote, Ariad could
+not read. The capture called it rare; this roadmap had a Done story reading as pending
+for three months.
+
+Now one reader splits a row on unescaped pipes only, with `\|` a pipe and `\\` a
+backslash, and one writer is its inverse, so a title with a pipe reaches the
+recommendation, the heading, and the folder whole and the scaffold's row reads back as
+written. The authoring contract in the Builder skill says how a pipe is written. No
+golden moved.
+
+The persona panel reviewed the plan twice; the writer's inverse was its finding, and the
+round trip it asked for overturned the plan's backslash rule at plateau 1. Each plateau
+waited for its CI run, and every run was green. The Navigator validated the route in
+their own shell, line for line. The handoff review found no blocker and three debts,
+all paid: one comment, one name, and a test that no longer opens a roadmap document.
+
+Next: CR117, a Delivery Story's flow unit outliving it; then US3.
+
 ### 2026-10-04 — CR103 done: a roadmap status enters Ariad as its first clause
 
 This is the sixth change of the reopened trust floor. Several packages on this
