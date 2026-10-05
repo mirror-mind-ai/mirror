@@ -467,6 +467,41 @@ steps 2, 6, 7, and 8; the CR105 refusal on step 3; `PLAN_CHECKPOINT`,
 `PLAN_APPROVED` and the cursor at `plan_approved` on step 6. The Navigator accepted the
 validation the same day.
 
+### Handoff review (2026-10-05)
+
+After the Navigator's walk, per the collaboration strategy. The nine lenses reviewed the
+delivered code, tests, words, safety posture, operational cost, and resumability,
+against the diff from `3bac0124` to `0360b972`: one predicate in Pull, one field fewer
+in `carriedForward`, one refusal reworded, one test file.
+
+Synthesis: the change is the size of its rule, the walk proves both preauthorized
+routes on the story after a Delivery Story, and the one cursor in the real database
+clears on its next Pull. No finding is in the code.
+
+| # | Lens | Finding | Class | Recommendation |
+|---|---|---|---|---|
+| — | — | No blocker and no debt in the delivered code | — | — |
+
+Checked and dropped:
+
+- The route's "before" output was recorded once on a fixture an edit to the script had
+  broken, and read only when "after" failed step 1 (quality-assurance). The document's
+  script was byte-equal to the one run each time, so the authority was never wrong,
+  but a recorded output is evidence only once it is read. Not a code debt; the lesson
+  is in this review and in the plateau handoff.
+- `carriedForward` keeps its name with one field fewer (engineer). It still names what
+  Pull carries unchanged, and the comment says what left it and why.
+- The D2 refusal stays an `Error:` line rather than a `CHECKPOINT_REFUSED` surface
+  (engineer): an exclusion the plan made, and after D1 the line is reachable only
+  through a cursor older than the rule.
+- The `finances` cursor still holds `delivery_story` on a closed story (devops-engineer):
+  it is cleared by that journey's next Pull, which is of another item, and no migration
+  touches a cursor for one field one write would fix.
+
+The other lenses were silent: nothing stored changes shape; no model; a story after a
+Delivery Story behaves as every story did before one ran; the refusal's sentence names
+the fact, the cause, and the remedy.
+
 ## Outcome
 
 Pending.
