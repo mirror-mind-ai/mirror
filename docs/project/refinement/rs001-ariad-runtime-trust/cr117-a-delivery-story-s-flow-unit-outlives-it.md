@@ -457,6 +457,16 @@ At the plateau 1 commit:
     flow unit: story_by_story
 ```
 
+### Navigator validation (2026-10-05)
+
+The Navigator ran the route from the repository root at `0360b972`, in their own shell
+(`bash <(awk …)` over this document's script). The output matched the Driver's run above
+line for line: step 1 unchanged, with the three closure surfaces; `story_by_story` on
+steps 2, 6, 7, and 8; the CR105 refusal on step 3; `PLAN_CHECKPOINT`,
+`PLAN_PREAUTHORIZATION_RECORDED`, and `ARTIFACTS_MATERIALIZED` on steps 4 and 5;
+`PLAN_APPROVED` and the cursor at `plan_approved` on step 6. The Navigator accepted the
+validation the same day.
+
 ## Outcome
 
 Pending.
