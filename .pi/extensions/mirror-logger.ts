@@ -196,7 +196,28 @@ type MirrorStatusContext = {
 	};
 };
 
+/**
+ * One registration per Pi process. Pi can reach this file twice -- as the
+ * project's `.pi/extensions/` inside the checkout and as a personal package
+ * installed from `npm root -g`, which `npm link` makes the same file under
+ * two paths -- and two registrations would log every turn twice. The guard is
+ * process-scoped, not module-scoped, because two paths are two module
+ * instances (CV22.DS10.US3 plateau 2, the quality-assurance finding).
+ */
+const LOADED_KEY = "__mirrorLoggerRegistered";
+
 export default function (pi: ExtensionAPI) {
+	const globals = globalThis as Record<string, unknown>;
+	if (globals[LOADED_KEY]) {
+		try {
+			appendFileSync(LOG_FILE, `${new Date().toISOString()} [INFO] second registration skipped: ${import.meta.url}\n`);
+		} catch {
+			// never block Pi
+		}
+		return;
+	}
+	globals[LOADED_KEY] = import.meta.url;
+
 	// --- Helpers ---
 
 	/**

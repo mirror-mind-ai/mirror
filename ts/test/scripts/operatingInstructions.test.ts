@@ -46,6 +46,7 @@ test("the Pi extension runs the core it ships with and carries the instructions 
   assert.match(extension, /join\(TREE_ROOT, "AGENTS\.md"\)/);
   assert.match(extension, /contextFiles/);
   assert.match(extension, /_mirrorOnPath\(\)/);
+  assert.match(extension, /__mirrorLoggerRegistered/, "the one-registration-per-process guard");
   assert.doesNotMatch(extension, /ts\/src\/frontDoor\/cli\.ts"/);
   assert.doesNotMatch(extension, /--env-file/);
   assert.doesNotMatch(extension, /_readDotenv\(process\.cwd\(\)\)/);
