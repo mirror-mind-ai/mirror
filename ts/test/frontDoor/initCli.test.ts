@@ -13,7 +13,9 @@ function fakeHome(): { home: string; cleanup: () => void } {
 // The shell sets neither MIRROR_USER nor MIRROR_HOME, and the empty strings
 // shadow the checkout's own `.env` (the front door reads it from its entry
 // path since CV22.DS10.US3 D3, so an unset variable would be filled from it).
-const NO_USER = { MIRROR_USER: "", MIRROR_HOME: "" };
+// XDG_CONFIG_HOME too: GitHub's runners set it, and the config file would land
+// there instead of under the fake HOME.
+const NO_USER = { MIRROR_USER: "", MIRROR_HOME: "", XDG_CONFIG_HOME: "" };
 
 test("front door `init <user>` bootstraps a real user home end to end (no DB involved)", () => {
   const { home, cleanup } = fakeHome();
@@ -69,6 +71,7 @@ test("`init` with a user already configured leaves the config file alone", () =>
       HOME: home,
       MIRROR_USER: "first",
       MIRROR_HOME: "",
+      XDG_CONFIG_HOME: "",
     });
     assert.equal(result.status, 0, result.stderr);
     assert.ok(!existsSync(join(home, ".config", "mirror", "env")));

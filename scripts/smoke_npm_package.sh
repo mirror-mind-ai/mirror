@@ -106,8 +106,11 @@ contains "init created the modern home" "$INIT_OUT" "Created user home: $HOME/.m
 CONFIG="$HOME/.config/mirror/env"
 [ -f "$CONFIG" ] && ok "config file written at $CONFIG" || bad "no config file at $CONFIG"
 check "config file holds MIRROR_USER" "$(cat "$CONFIG")" "MIRROR_USER=smokeuser"
-check "config file is 0600" "$(stat -f '%Lp' "$CONFIG" 2>/dev/null || stat -c '%a' "$CONFIG")" "600"
-check "config directory is 0700" "$(stat -f '%Lp' "$HOME/.config/mirror" 2>/dev/null || stat -c '%a' "$HOME/.config/mirror")" "700"
+# GNU stat first: on BSD `stat -c` fails and the `-f '%Lp'` form answers; on GNU
+# `stat -f` is FILESYSTEM status, exits 0, and would answer the wrong thing.
+mode_of() { stat -c '%a' "$1" 2>/dev/null || stat -f '%Lp' "$1"; }
+check "config file is 0600" "$(mode_of "$CONFIG")" "600"
+check "config directory is 0700" "$(mode_of "$HOME/.config/mirror")" "700"
 contains "init says where the key goes" "$INIT_OUT" "OPENROUTER_API_KEY"
 [ -f "$HOME/.mirror-minds/smokeuser/identity/self/soul.yaml" ] && ok "identity templates copied" || bad "identity not copied"
 
