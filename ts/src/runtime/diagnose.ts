@@ -29,6 +29,7 @@ import { dirname, join } from "node:path";
 import { openDatabaseReadOnly } from "#db/database.ts";
 import { identityKeyBreaksGrammar, SLUG_KEYED_LAYERS } from "#identity/identityKey.ts";
 import { pyRepr, sortByCodePoint } from "#util/pythonText.ts";
+import { configFilePath } from "./config.ts";
 import type { GitWorktreeEntry } from "./git.ts";
 import type { RuntimeStatusReport } from "./status.ts";
 
@@ -123,14 +124,21 @@ export function rootStateFindings(homesRoot: string): DriftFinding[] {
  * identity, memories, and conversations; the expected posture is owner-only.
  * Creation points enforce it -- this only reports drift on installs that
  * predate the rule. POSIX only, as in the oracle: Windows ACLs are out of scope.
+ *
+ * Since CV22.DS10.US3 (D3) the user's config file is a target too: it is where
+ * `OPENROUTER_API_KEY` lives. `init` creates it 0600; a hand-made one may not be.
  */
-export function loosePermissionFindings(report: RuntimeStatusReport): DriftFinding[] {
+export function loosePermissionFindings(
+  report: RuntimeStatusReport,
+  configFile: string | null = configFilePath(),
+): DriftFinding[] {
   if (process.platform === "win32") return [];
   const targets: [string, string][] = [];
   if (report.mirror_home !== null && report.mirror_home_error === null) {
     targets.push(["mirror home", report.mirror_home]);
   }
   if (report.db_path !== null && report.db_exists) targets.push(["database", report.db_path]);
+  if (configFile !== null && existsSync(configFile)) targets.push(["config file", configFile]);
 
   const findings: DriftFinding[] = [];
   for (const [area, path] of targets) {
@@ -314,6 +322,8 @@ export function ftsConsistencyFindings(report: RuntimeStatusReport): DriftFindin
 export interface DiagnoseOptions {
   /** Injected only so the 24h boundary is testable; production passes none. */
   now?: Date;
+  /** The user's config file; `null` skips it. Tests pin it so a developer's own file never enters a golden. */
+  configFile?: string | null;
 }
 
 /**
@@ -326,7 +336,7 @@ export function diagnoseRuntime(
   options: DiagnoseOptions = {},
 ): DriftFinding[] {
   const findings: DriftFinding[] = [];
-  findings.push(...loosePermissionFindings(report));
+  findings.push(...loosePermissionFindings(report, options.configFile));
   findings.push(...frontDoorErrorFindings(report, options.now));
   findings.push(...ftsConsistencyFindings(report));
   findings.push(...identityKeyFindings(report));

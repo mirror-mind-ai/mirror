@@ -13,8 +13,11 @@
 // itself are gone. A name nothing answers gets the front door's own usage
 // answer.
 //
-// node:sqlite emits an ExperimentalWarning at import; the skills pass
-// NODE_OPTIONS=--no-warnings to keep it off stdout/stderr.
+// Configuration and the node:sqlite ExperimentalWarning are both handled
+// in-process, inside the entry guard (CV22.DS10.US3, D3): the program reads
+// its own `.env` and `~/.config/mirror/env` and silences the warning itself,
+// so neither a `bin` shim nor a skill line needs `--env-file` or
+// `NODE_OPTIONS=--no-warnings`. Importing this module does neither.
 
 import { existsSync, readFileSync } from "node:fs";
 import { basename, dirname } from "node:path";
@@ -65,6 +68,12 @@ import {
   JOURNAL_TRANSPORT,
   WEEK_PLAN_TRANSPORT,
 } from "#providers/transport.ts";
+import {
+  configFilePath,
+  loadConfiguration,
+  silenceExperimentalWarnings,
+  writeConfigValue,
+} from "#runtime/config.ts";
 import { runSeed } from "#seed/seed.ts";
 import { getTasksForWeek, listTasks } from "#tasks/taskStore.ts";
 import { computeWeekRange } from "#tasks/weekView.ts";
@@ -858,8 +867,15 @@ function isInit(argv: readonly string[]): boolean {
  * templates root are uncaught exceptions in Python (a raw traceback, exit 1) --
  * not a designed message. This preserves the contract (exit 1, a stderr
  * message naming the failure) without fabricating a fake traceback.
+ *
+ * CV22.DS10.US3 (D3): when no source configured a user, `init` writes
+ * `MIRROR_USER=<user>` into `~/.config/mirror/env` (0600 in 0700) and says
+ * where to add `OPENROUTER_API_KEY` by hand. The key is never read from argv.
+ * When a user IS configured -- the checkout's `.env`, or a shell running a
+ * second mirror -- the file is left alone and the person is told how to
+ * select the new home.
  */
-function runInit(argv: readonly string[]): number {
+function runInit(argv: readonly string[], env: NodeJS.ProcessEnv = process.env): number {
   const user = argv[1];
   if (!user) {
     console.error("Usage: init <user>");
@@ -868,11 +884,23 @@ function runInit(argv: readonly string[]): number {
   try {
     const identityRoot = initUserHome(user);
     const mirrorHome = dirname(identityRoot);
+    const configured = Boolean(env.MIRROR_USER || env.MIRROR_HOME);
+    const configuration = configured
+      ? [
+          `  1. This machine already selects a user; to use this one, run with MIRROR_USER=${user}`,
+          `     or set it in ${configFilePath(env)}`,
+        ]
+      : [
+          `Configuration: ${writeConfigValue("MIRROR_USER", user, { env })} (MIRROR_USER=${user})`,
+          "",
+          "Next steps:",
+          "  1. Add OPENROUTER_API_KEY=<your key> to that file (it is created readable by you only)",
+        ];
     const prints = [
       `Created user home: ${mirrorHome}`,
       `Identity ready at: ${identityRoot}`,
-      "\nNext steps:",
-      `  1. Add to your .env: MIRROR_HOME=${mirrorHome}`,
+      ...(configured ? ["", "Next steps:"] : []),
+      ...configuration,
       `  2. Run: ${PROGRAM} seed`,
       "\nYour identity is ready to use. Deepen it over time with:",
       `  ${PROGRAM} identity edit user identity`,
@@ -1795,7 +1823,9 @@ export async function main(rawArgv = process.argv.slice(2)): Promise<number> {
 }
 
 // Run only when invoked as the CLI entry, not when imported (keeps the module
-// importable for tests and tooling).
+// importable for tests and tooling, and keeps `process.env` untouched there).
 if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
+  silenceExperimentalWarnings();
+  loadConfiguration({ entryPath: import.meta.filename });
   process.exitCode = await main();
 }

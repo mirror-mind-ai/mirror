@@ -49,10 +49,17 @@ export function findTemplatesIdentityRoot(startFileUrl: string): string {
   throw new TemplatesNotFoundError("Could not find templates/identity in the repository.");
 }
 
-/** Port of `default_user_home`: `<home>/.mirror/<user>` — the legacy `.mirror`
- * path (not `.mirror-minds`), exactly as the Python source hardcodes it. */
+/**
+ * Where `init` creates a user's home: `<home>/.mirror-minds/<user>`, the path
+ * `MIRROR_USER=<user>` resolves to.
+ *
+ * Python's `default_user_home` hardcoded the legacy `~/.mirror/<user>` and told
+ * the person to set MIRROR_HOME by hand. CV22.DS10.US3 (D3) has `init` write
+ * `MIRROR_USER` into the config file instead, and a legacy home would then
+ * make every later command print the legacy-path warning (D14).
+ */
 export function defaultUserHome(user: string, home: string = homedir()): string {
-  return join(home, ".mirror", user);
+  return join(home, ".mirror-minds", user);
 }
 
 /** Every `.yaml` file under `root`, recursively (mirrors `Path.rglob("*.yaml")`). */

@@ -29,6 +29,7 @@ import {
   diagnoseRuntime,
   frontDoorErrorFindings,
   identityKeyFindings,
+  loosePermissionFindings,
   probeModelPins,
   ReplayModelCatalogProvider,
   renderRuntimeDiagnosis,
@@ -282,7 +283,7 @@ async function diagnoseScenario(
           { status: "??", path: "pi-session-2026-09-08.html" },
         ]
       : [];
-  let findings = diagnoseRuntime(report, entries, { now });
+  let findings = diagnoseRuntime(report, entries, { now, configFile: null });
   if (label === "root_state") findings = [...findings, ...rootStateFindings(f.homesRoot)];
   // No provider: inconclusive, matching the oracle without a key.
   findings = [...findings, ...(await probeModelPins(null, "google/gemini-2.5-flash-lite"))];
@@ -479,5 +480,29 @@ test("CR104: a database without such a key, or without an identity table, report
     assert.deepEqual(identityKeyFindings({ db_path: bare, db_exists: true }), []);
   } finally {
     clean.cleanup();
+  }
+});
+
+test("US3 D3: a group-readable config file is a loose_permissions finding, an owner-only one is not", () => {
+  const root = mkdtempSync("/tmp/runtime-diagnose-config-");
+  try {
+    const config = join(root, "env");
+    writeFileSync(config, "OPENROUTER_API_KEY=x\n");
+    chmodSync(config, 0o644);
+    const report = {
+      mirror_home: null,
+      mirror_home_error: "unset",
+      db_path: null,
+      db_exists: false,
+    };
+    const loose = loosePermissionFindings(report as unknown as RuntimeStatusReport, config);
+    assert.equal(loose.length, 1);
+    assert.equal(loose[0]?.subject, "config file");
+    assert.equal(loose[0]?.repair_route, `chmod 600 ${config}`);
+    chmodSync(config, 0o600);
+    assert.deepEqual(loosePermissionFindings(report as unknown as RuntimeStatusReport, config), []);
+    assert.deepEqual(loosePermissionFindings(report as unknown as RuntimeStatusReport, null), []);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
   }
 });

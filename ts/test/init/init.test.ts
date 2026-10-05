@@ -17,8 +17,12 @@ function tempDir(prefix: string): { dir: string; cleanup: () => void } {
   return { dir, cleanup: () => rmSync(dir, { recursive: true, force: true }) };
 }
 
-test("defaultUserHome joins the legacy .mirror path (not .mirror-minds), matching Python exactly", () => {
-  assert.equal(defaultUserHome("alice", "/home/alice"), "/home/alice/.mirror/alice");
+test("defaultUserHome is the modern .mirror-minds path, the one MIRROR_USER resolves to (US3 D14)", () => {
+  // Python wrote `~/.mirror/<user>` -- the pre-.mirror-minds layout -- and
+  // told the person to set MIRROR_HOME by hand. With init writing
+  // MIRROR_USER into the config file (D3), a legacy home would make every
+  // later command print the legacy-path warning.
+  assert.equal(defaultUserHome("alice", "/home/alice"), "/home/alice/.mirror-minds/alice");
 });
 
 test("findTemplatesIdentityRoot walks up from a starting file to find templates/identity", () => {
