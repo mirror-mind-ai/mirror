@@ -23,6 +23,7 @@ import test from "node:test";
 import { bootstrapDatabase } from "#db/bootstrap.ts";
 import { openDatabaseForBootstrap } from "#db/database.ts";
 import { assertNamesNoInterpreter } from "#helpers/noInterpreter.ts";
+import { packageVersion } from "#runtime/version.ts";
 import { stageMirrorPackage } from "../support/mirrorTree.ts";
 
 const CLI = new URL("../../src/frontDoor/cli.ts", import.meta.url).pathname;
@@ -207,11 +208,16 @@ test("runtime version and release-notes answer from TS with exit 0", () => {
     assert.match(version.stdout, /Git branch: stable\n/);
     assert.match(version.stdout, /Update channel: stable\n/);
 
+    // The notes come from the tree that holds the running front door -- this
+    // checkout -- not from the cwd's fixture repository (US3 D8: the notes
+    // ship in the package, and a skill's cwd is the user's project).
     const latest = runCli(f, ["runtime", "release-notes"], env);
     assert.equal(latest.status, 0, latest.stderr);
-    assert.match(latest.stdout, /Fixture release/);
+    assert.doesNotMatch(latest.stdout, /Fixture release/);
+    const shipped = packageVersion(REPO_ROOT) ?? "";
+    assert.match(latest.stdout, new RegExp(`v${shipped.replaceAll(".", "\\.")}`));
     // An explicit version and the `latest` default resolve to the same note.
-    assert.equal(runCli(f, ["runtime", "release-notes", "v9.9.9"], env).stdout, latest.stdout);
+    assert.equal(runCli(f, ["runtime", "release-notes", `v${shipped}`], env).stdout, latest.stdout);
     assert.equal(runCli(f, ["runtime", "release-notes", "latest"], env).stdout, latest.stdout);
     // A version with no note is "not found", not a crash.
     const missing = runCli(f, ["runtime", "release-notes", "v0.0.1"], env);
@@ -308,9 +314,13 @@ test("no runtime render tells a user to run Python", () => {
   // deleting. Graded against every shape the retired-surface guard forbids.
   const f = fixture();
   try {
+    // `release-notes` is graded on a version with no note: the renderer's own
+    // words. Since US3 the notes come from this tree, and the shipped ones are
+    // history -- the retired-surface guard treats `docs/releases/` the same
+    // way, and a 0.31.x note legitimately records the invocation it retired.
     for (const argv of [
       ["runtime", "version"],
-      ["runtime", "release-notes"],
+      ["runtime", "release-notes", "v0.0.1"],
       ["runtime", "status", "--mirror-home", f.home],
       ["welcome", "--mirror-home", f.home],
     ]) {

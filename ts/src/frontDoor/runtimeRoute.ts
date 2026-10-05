@@ -50,6 +50,7 @@ import {
 } from "#runtime/releaseNotes.ts";
 import { buildRuntimeStatus, renderRuntimeStatus, statusVerdict } from "#runtime/status.ts";
 import { npmRootGlobal, readPackageChannel } from "#runtime/strategies/package.ts";
+import { runningTreeRoot } from "#runtime/treeRoot.ts";
 import { frontDoorSpawner, runUpdate, type UpdateSpawn } from "#runtime/update.ts";
 import { statusAllowsUpdatePreflight } from "#runtime/updateGate.ts";
 import { renderUpdateResult, updateLogDetail } from "#runtime/updatePipeline.ts";
@@ -173,6 +174,7 @@ export function runWelcomeRoute(argv: readonly string[], io: RuntimeRouteIo = {}
   const card = composeWelcome({
     mirrorHome: home,
     cwd,
+    treeRoot: runningTreeRoot(),
     env,
     version,
     updateChannel: inspectUpdateChannel(cwd, null),
@@ -268,7 +270,10 @@ export async function runRuntimeReadRoute(
         ),
       );
     } else {
-      writeOut(io, renderReleaseNote(readReleaseNote(target, cwd)));
+      // The notes ship in the package at the same path as in the checkout
+      // (US3 D8), read from the tree that holds the running front door --
+      // never from the cwd, which for a skill is the user's project.
+      writeOut(io, renderReleaseNote(readReleaseNote(target, runningTreeRoot())));
     }
     return 0;
   }

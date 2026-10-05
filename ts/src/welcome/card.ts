@@ -200,12 +200,18 @@ export function remoteTagForCommit(
   return matches.sort((a, b) => compareSemver(b, a))[0] as string;
 }
 
-/** Port of `_local_release_title`: the headline of a note already on disk. */
-export function localReleaseTitle(version: string | null, cwd: string): string | null {
+/**
+ * Port of `_local_release_title`: the headline of a note already on disk,
+ * under `<treeRoot>/docs/releases`. The oracle read `<cwd>/docs/releases`;
+ * since CV22.DS10.US3 the caller passes the tree that holds the running front
+ * door, so the title is the installed package's own and not whatever
+ * directory the person is in.
+ */
+export function localReleaseTitle(version: string | null, treeRoot: string): string | null {
   if (!version) return null;
   let text: string;
   try {
-    text = readFileSync(join(cwd, "docs", "releases", `${version}.md`), "utf8");
+    text = readFileSync(join(treeRoot, "docs", "releases", `${version}.md`), "utf8");
   } catch {
     return null;
   }
@@ -219,7 +225,10 @@ export function localReleaseTitle(version: string | null, cwd: string): string |
 export interface WelcomeOptions {
   /** The resolved mirror home. Null renders "", as in the oracle. */
   mirrorHome: string | null;
+  /** Where git is inspected for the update check (a clone's working tree). */
   cwd?: string;
+  /** The tree holding the running program, where `docs/releases` is read. Defaults to `cwd`. */
+  treeRoot?: string;
   env?: NodeJS.ProcessEnv;
   version: string;
   updateChannel: MarkerValue;
@@ -237,6 +246,7 @@ function refreshUpdateCache(
   homePath: string,
   channel: MarkerValue,
   cwd: string,
+  treeRoot: string,
   version: string,
   now: () => string,
 ): UpdateAwareness | null {
@@ -250,7 +260,7 @@ function refreshUpdateCache(
   let title: string | null = null;
   if (report.status === "update_available" && report.remote_commit && report.upstream) {
     tag = remoteTagForCommit(report.upstream, report.remote_commit, inspectGit(cwd).repository);
-    title = localReleaseTitle(tag, cwd);
+    title = localReleaseTitle(tag, treeRoot);
   }
   const awareness: UpdateAwareness = {
     availability: report.status,
@@ -276,11 +286,12 @@ export function updateAwareness(
   version: string,
   env: NodeJS.ProcessEnv,
   now: () => string,
+  treeRoot: string = cwd,
 ): UpdateAwareness | null {
   const cached = readUpdateCache(homePath);
   if (cached && !cacheIsStale(cached) && !cacheShouldRefresh(cached, channel)) return cached;
   if (remoteUpdateCheckDisabled(env) || channel.value !== "stable") return cached;
-  return refreshUpdateCache(homePath, channel, cwd, version, now) ?? cached;
+  return refreshUpdateCache(homePath, channel, cwd, treeRoot, version, now) ?? cached;
 }
 
 /** Port of `_update_line`. */
@@ -337,6 +348,7 @@ export function composeWelcome(options: WelcomeOptions): string {
     options.version,
     env,
     now,
+    options.treeRoot ?? cwd,
   );
   const update = updateLine(options.updateChannel, awareness, inspectGit(cwd));
   return renderWelcome(basename(homePath), stats, versionLine, update);

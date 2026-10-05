@@ -3,14 +3,14 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
-import { pathToFileURL } from "node:url";
 import {
   defaultUserHome,
-  findTemplatesIdentityRoot,
   IdentityRootExistsError,
   initUserHome,
   TemplatesNotFoundError,
+  templatesIdentityRoot,
 } from "#init/init.ts";
+import { runningTreeRoot } from "#runtime/treeRoot.ts";
 
 function tempDir(prefix: string): { dir: string; cleanup: () => void } {
   const dir = mkdtempSync(join(tmpdir(), prefix));
@@ -25,35 +25,27 @@ test("defaultUserHome is the modern .mirror-minds path, the one MIRROR_USER reso
   assert.equal(defaultUserHome("alice", "/home/alice"), "/home/alice/.mirror-minds/alice");
 });
 
-test("findTemplatesIdentityRoot walks up from a starting file to find templates/identity", () => {
+test("templatesIdentityRoot is <tree root>/templates/identity (US3: one resolver for the tree)", () => {
   const { dir, cleanup } = tempDir("mirror-core-findtemplates-");
   try {
-    const nested = join(dir, "a", "b", "c");
-    mkdirSync(nested, { recursive: true });
     mkdirSync(join(dir, "templates", "identity"), { recursive: true });
-    const startFile = join(nested, "fake-module.ts");
-    writeFileSync(startFile, "");
-    assert.equal(
-      findTemplatesIdentityRoot(pathToFileURL(startFile).href),
-      join(dir, "templates", "identity"),
-    );
+    assert.equal(templatesIdentityRoot(dir), join(dir, "templates", "identity"));
   } finally {
     cleanup();
   }
 });
 
-test("findTemplatesIdentityRoot throws TemplatesNotFoundError when no ancestor has one", () => {
+test("templatesIdentityRoot throws TemplatesNotFoundError when the tree has none", () => {
   const { dir, cleanup } = tempDir("mirror-core-findtemplates-missing-");
   try {
-    const startFile = join(dir, "fake-module.ts");
-    writeFileSync(startFile, "");
-    assert.throws(
-      () => findTemplatesIdentityRoot(pathToFileURL(startFile).href),
-      TemplatesNotFoundError,
-    );
+    assert.throws(() => templatesIdentityRoot(dir), TemplatesNotFoundError);
   } finally {
     cleanup();
   }
+});
+
+test("by default the templates come from the running tree, never from the cwd", () => {
+  assert.equal(templatesIdentityRoot(), join(runningTreeRoot(), "templates", "identity"));
 });
 
 function buildFakeTemplates(root: string): void {

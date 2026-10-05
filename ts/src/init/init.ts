@@ -14,8 +14,8 @@
 
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
+import { runningTreeRoot } from "#runtime/treeRoot.ts";
 
 /** Port of Python's uncaught `FileNotFoundError` for a missing templates root. */
 export class TemplatesNotFoundError extends Error {}
@@ -30,23 +30,15 @@ export class IdentityRootExistsError extends Error {
 }
 
 /**
- * Port of `find_templates_identity_root`: walk up from `startFileUrl`'s
- * directory (and every ancestor, to the filesystem root) for a
- * `templates/identity` directory. Python's first checked candidate is the
- * starting file's own path with `templates/identity` appended, which can
- * never exist and is a harmless no-op — so starting the walk at the file's
- * containing directory (skipping that no-op) is behaviorally identical.
+ * `<tree root>/templates/identity`. Python's `find_templates_identity_root`
+ * walked up from its own file for the directory; since CV22.DS10.US3 the tree
+ * root is one resolver shared with release notes and the welcome card, and
+ * the templates ship in the package at the same path as in the checkout.
  */
-export function findTemplatesIdentityRoot(startFileUrl: string): string {
-  let dir = dirname(fileURLToPath(startFileUrl));
-  for (;;) {
-    const candidate = join(dir, "templates", "identity");
-    if (existsSync(candidate)) return candidate;
-    const parent = dirname(dir);
-    if (parent === dir) break;
-    dir = parent;
-  }
-  throw new TemplatesNotFoundError("Could not find templates/identity in the repository.");
+export function templatesIdentityRoot(treeRoot: string = runningTreeRoot()): string {
+  const candidate = join(treeRoot, "templates", "identity");
+  if (existsSync(candidate)) return candidate;
+  throw new TemplatesNotFoundError(`Could not find templates/identity under ${treeRoot}.`);
 }
 
 /**
@@ -101,7 +93,7 @@ export interface InitUserHomeOptions {
  * every `.yaml` file, and return the destination identity root.
  */
 export function initUserHome(user: string, options: InitUserHomeOptions = {}): string {
-  const templatesRoot = options.templatesIdentityRoot ?? findTemplatesIdentityRoot(import.meta.url);
+  const templatesRoot = options.templatesIdentityRoot ?? templatesIdentityRoot();
   if (!existsSync(templatesRoot)) {
     throw new TemplatesNotFoundError(`Identity templates not found: ${templatesRoot}`);
   }
