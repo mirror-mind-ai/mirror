@@ -436,7 +436,7 @@ describe("the twelve wrappers", () => {
   test("the generator reproduces exactly what is committed", () => {
     const result = execFileSync(
       "bash",
-      [join(REPO_ROOT, "scripts/ts5/generate_hook_wrappers.sh"), "--check"],
+      [join(REPO_ROOT, "scripts/generate_hook_wrappers.sh"), "--check"],
       { encoding: "utf8" },
     );
     assert.match(result, /in sync/);

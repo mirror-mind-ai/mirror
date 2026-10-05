@@ -49,7 +49,7 @@ as a content-free category such as `backup=database_missing`.
 **The in-repo hook runtimes do all of this in one process per event.** Claude
 Code, Gemini CLI, and the packaged Claude plugin register short shell wrappers
 (`.claude/hooks/`, `.gemini/hooks/`, `plugins/mirror-mind/hooks/`, generated
-by `scripts/ts5/generate_hook_wrappers.sh`). Each wrapper resolves the
+by `scripts/generate_hook_wrappers.sh`). Each wrapper resolves the
 repository from its own path, finds Node, and runs a single entry,
 `ts/src/hooks/main.ts <runtime>:<event>`, which reads the runtime's JSON
 payload from stdin once and runs the sequence above in-process over the front

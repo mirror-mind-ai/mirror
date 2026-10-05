@@ -293,7 +293,7 @@ export const RETIRED: readonly RetiredSurface[] = [
       "ts/test/frontDoor/retiredSurfaces.test.ts": "the test of those refusals",
       "ts/test/frontDoor/routing.test.ts":
         "asserts the flags are retired whatever the lifecycle gate says",
-      "scripts/ts5/capture_family_outputs.sh":
+      "scripts/capture_family_outputs.sh":
         "CV22.DS10.TS5 captures the refusal itself as a command family: the cutoff answer is a user-visible surface, so it is hashed before the deletion and replayed after it",
     },
   },
@@ -325,7 +325,7 @@ export const RETIRED: readonly RetiredSurface[] = [
     ],
     exemptions: {
       "ts/test/frontDoor/retiredSurfaces.test.ts": "the test of those refusals",
-      "scripts/ts5/capture_family_outputs.sh":
+      "scripts/capture_family_outputs.sh":
         "CV22.DS10.TS5 captures the refusal itself as a command family: the cutoff answer is a user-visible surface, so it is hashed before the deletion and replayed after it",
     },
   },

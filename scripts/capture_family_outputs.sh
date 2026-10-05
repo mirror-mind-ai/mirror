@@ -13,8 +13,8 @@
 # conversations — which never enter a story package.
 #
 # Usage:
-#   bash scripts/ts5/capture_family_outputs.sh tmp/ts5/pristine.db > out.tsv
-#   bash scripts/ts5/capture_family_outputs.sh tmp/ts5/pristine.db --selftest
+#   bash scripts/capture_family_outputs.sh tmp/us3/pristine.db > out.tsv
+#   bash scripts/capture_family_outputs.sh tmp/us3/pristine.db --selftest
 #
 # --selftest runs every family twice on two fresh copies and reports the ones
 # whose normalized output differs from itself. A family that cannot match
@@ -47,8 +47,8 @@ MODE="${2:-capture}"
 # front door resolves the repository path before printing it. With the logical
 # form the mask misses by exactly the `/private` prefix, which is how three
 # families looked changed when nothing had changed.
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)"
-WORK="$REPO_ROOT/tmp/ts5/capture-work"
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+WORK="$REPO_ROOT/tmp/capture-work"
 SOURCE_HOME="${MIRROR_SOURCE_HOME:-$HOME/.mirror-minds/vinicius-ts}"
 
 [ -f "$PRISTINE" ] || { echo "no pristine database at $PRISTINE" >&2; exit 2; }

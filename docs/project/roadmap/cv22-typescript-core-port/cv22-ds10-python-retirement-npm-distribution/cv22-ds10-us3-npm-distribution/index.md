@@ -101,7 +101,19 @@ All thirteen approved 2026-10-05.
 
 ## Plateau Progress
 
-_None yet. The Plan is approved; plateau 0 (§A) is next._
+- **Plateau 0 — baseline and names (done 2026-10-05).** No behavior change. The two
+  TS5 instruments took their permanent names: `scripts/generate_hook_wrappers.sh` and
+  `scripts/capture_family_outputs.sh` (`git mv`; `scripts/ts5/` is gone, item 10). Each
+  script's root walk shortened by one level; the fourteen wrappers regenerated, header
+  line only, and the generator's `--check` is in sync; the three referrers followed
+  (`hooks.test.ts`, the two `retiredSurfaces.ts` exemptions, the runtime-interface
+  spec). The capture's scratch moved to `tmp/capture-work`. The **"before" capture**
+  was taken on a `.backup` copy of the real database at commit `79d7bb3d`, after CR008
+  (item 13): 29 families, every one self-consistent under `--selftest`, saved as
+  `tmp/us3/before.tsv` beside `before.commit` and `pristine.db` — never committed.
+  Plateau 6 replays it through `mirror` and expects an empty diff. Verified: typecheck,
+  lint, the 2952-test suite, the four repository checks, the four runtime smokes.
+  Next: plateau 1 (§B), the package.
 
 ## Where To Resume
 
