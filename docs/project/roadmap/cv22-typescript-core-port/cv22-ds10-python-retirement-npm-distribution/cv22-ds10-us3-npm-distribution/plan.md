@@ -3,7 +3,9 @@
 # Plan — CV22.DS10.US3
 
 **Status:** drafted 2026-09-30 at the Plan checkpoint; **panel review done 2026-09-30, its
-findings folded below**; awaiting Navigator approval of the Plan and D1–D12.
+findings folded below**; **second panel pass done 2026-10-05 (the four lenses the first
+left out), its findings folded below the same day**; **approved by the Navigator on
+2026-10-05 with D1–D13.**
 **Driver:** Vinícius. **Delivery:** the `mirror-ts-core` branch.
 
 ---
@@ -91,6 +93,13 @@ alone:
   history into it. Any validation route that opens Pi on a scratch home must point
   `PI_SESSIONS_DIR` at a scratch directory too.
 - **There is no `LICENSE` file at the repository root.** The README says MIT.
+- **The operating instructions are a project-root file.** `CLAUDE.md` (with `AGENTS.md`
+  a symlink to it) carries both Mirror's Operating Instructions — the four modes and
+  their automatic selection, the `◇ persona` signature, the Builder Activation Boundary,
+  the Ariad surface transport invariant, the mode-ambiguity rule — and this repository's
+  Project Context. The runtime-interface spec says context is "a static `AGENTS.md` in
+  the project root"; the `pi` manifest key has no slot for it. A skill answering from an
+  installed package is not a Mirror session until those instructions reach the model.
 
 ## The Design
 
@@ -152,7 +161,25 @@ own file (`../../ts/src/frontDoor/cli.ts`), so the extension always runs the cor
 with. Inside the checkout, Pi keeps discovering the same files as project resources, as
 today; a developer who has also installed the personal package is told to pick one, and
 plateau 2 verifies what Pi does when both are present (see the QA finding). Developers put
-`mirror` on the `PATH` with `npm link` from the repository root.
+`mirror` on the `PATH` with `npm link` from the repository root. The extension also
+checks, once per session start, that `mirror` resolves (`command -v`, then the same
+short list of global bin directories the hook wrappers search); when it does not, it
+prints one visible line naming `npm link` from the repository root or the global bin
+directory to add to the `PATH`. Without that line an agent whose skills say `mirror`
+meets `command not found` and improvises the checkout form the parity guard forbids.
+
+**The operating instructions ship, and each runtime is told how to load them (D13).**
+`CLAUDE.md` is split. `AGENTS.md` becomes a real file holding only Mirror's
+runtime-independent Operating Instructions, listed in `files`, so it sits at the root of
+the installed package as it does in the checkout; `CLAUDE.md` keeps the Project Context
+and includes `AGENTS.md` by reference, so the checkout's behavior is unchanged. For an
+installed package, each runtime gets its instructions by a mechanism named and verified
+at plateau 3 against that runtime's own docs: Pi reads `<pkg>/AGENTS.md` through the
+extension, which injects it from its own tree so the instructions always match the core
+they ship with; Claude Code through the plugin, or the user-level `CLAUDE.md` including
+the package path; Gemini CLI and Codex through their user-level instructions file. A
+session that answers `/mm-mirror` but cannot route modes or sign a persona is not a
+Mirror session, and route 2 asserts the difference.
 
 **Every tree reader asks one resolver.** `init`, `runtime release-notes`, and the welcome
 card's local release title read from the tree that holds the running front door — the
@@ -168,13 +195,30 @@ resolve on the `PATH`, the updater prints one line naming `npm link` — the sea
 existing clone user crosses once (QA finding). The newer-database refusal names the route
 for its install kind: `mirror runtime update` (item 12). `npm run release:promote` gains
 the publish steps as **dry-run-only** entries in this story: `npm publish --dry-run` and
-the `dist-tag` plan are printed; nothing reaches the registry.
+the `dist-tag` plan are printed; nothing reaches the registry. `runtime diagnose` gains
+a `hooks` check: it reads the tail of `<home>/hooks.log` and reports how many wrapper
+failures landed there since the last successful hook, because "never fail the turn" is
+right for the turn and wrong for the product — when the plugin's wrapper cannot find
+`mirror-hook`, the agent keeps answering and memory silently stops, and nobody reads
+`hooks.log`.
 
 **The Frame and the installer are retired with a cutoff (D4, recommended).** `frame/`,
 `installer/`, `docs/installer/`, and `.github/workflows/windows-installer.yml` are deleted;
 the cutoff names the last Python-bearing release (`v0.31.14`, tag
-`cv22-last-python-bearing`) as where they still work, and a Windows product over the npm
-package as a new story with its own Windows CI. The nine `python-core-mentions` exemptions
+`cv22-last-python-bearing`) as where they still work. Before the deletion, plateau 5
+records in D4 how many people installed the Inno Setup artifact, from the release
+assets' download counts and the Navigator's knowledge; if none, the cutoff promises no
+Windows story, and a Windows product over the npm package waits for a request; if some,
+the cutoff and the release note address them by name.
+
+**The first seconds are an orientation, not a usage dump.** `mirror` with no arguments
+and no resolved user prints three lines — no user configured, run `mirror init <user>`,
+where the config file will live — and after `init` the welcome card the product already
+has. The README's first lines name `mirror-mind` (install) and `mirror` (run) once
+together, so the two names read as intended rather than as drift. `mirror init` ends by
+printing the wiring step for each runtime it can detect on the machine (`pi`, `claude`,
+`gemini`, `codex` on the `PATH`), the same step the getting-started page documents —
+printing is not automating, and the `runtime install <runtime>` non-goal stands. The nine `python-core-mentions` exemptions
 expire with the files. The alternative (re-home onto the Node core in its clone shape) is
 in D4.
 
@@ -211,7 +255,10 @@ before `PATH` is replaced (US2's lesson). Interpreters are shadowed throughout.
   `bin`, `files`, `engines`, `license`, `repository`, `keywords` (`pi-package`), `pi`
   manifest; `#`-imports re-rooted; lockfile, `tsconfig`, Biome config, `node_modules`,
   and `npm run` scripts at the root; CI's `working-directory` and the development guide
-  follow (D2). `LICENSE` added.
+  follow (D2). `LICENSE` added. `AGENTS.md` split out of `CLAUDE.md` as a real file
+  holding the Operating Instructions, listed in `files`; `CLAUDE.md` includes it (D13).
+- Bare `mirror` with no resolved user prints the three-line orientation; `init` ends with
+  the detected runtimes' wiring steps.
 - `PACKAGE_NAME = "mirror-mind"` (item 3). `MANIFEST_CANDIDATES` reduced to the one layout
   that now exists in both worlds; `installKind`'s clone marker becomes root
   `package.json` + `.git`. Tests pin a linked clone (`npm link`) as `clone`, a copy under
@@ -228,7 +275,11 @@ before `PATH` is replaced (US2's lesson). Interpreters are shadowed throughout.
 - All 135 Pi invocations, their Claude copies, and the plugin regenerated: `mirror …`.
   `mm-build` loses its `NODE_OPTIONS=… cli.ts build` lines the same way (D7).
 - `checkSkillCommandParity.ts`: the new absence assertion.
-- The extension resolves the front door from its own file and drops the cwd comment (D6).
+- The extension resolves the front door from its own file and drops the cwd comment (D6);
+  checks at session start that `mirror` resolves and prints the `npm link` line when it
+  does not; and injects `<pkg>/AGENTS.md` from its own tree for installed-package
+  sessions (D13). Before the check exists, route 1 is run once without `npm link` and
+  what the agent does is recorded in the story index.
 - Verification of Pi's behavior with a personal package and project discovery of the same
   files; if it double-loads, the extension refuses its second registration (one pid-scoped
   guard), and the outcome is recorded.
@@ -244,7 +295,11 @@ before `PATH` is replaced (US2's lesson). Interpreters are shadowed throughout.
 - The per-runtime wiring step for Gemini CLI and Codex npm users (user-level hook settings
   pointing at `<pkg>/.gemini/hooks/*.sh` and the shipped `codex-mirror.sh`; skills linked
   into each runtime's user-level skills directory, verified against each runtime's own docs
-  at this plateau).
+  at this plateau). The steps are counted honestly per runtime and the count recorded; the
+  Operating Instructions' delivery for Claude Code, Gemini CLI, and Codex is named and
+  verified here too (D13).
+- `runtime diagnose`'s `hooks` check over `hooks.log`, asserted by `smoke_claude_plugin.sh`
+  in package mode with `mirror-hook` removed from the `PATH`.
 
 ### E. Updater and release tooling (plateau 4)
 
@@ -254,7 +309,7 @@ before `PATH` is replaced (US2's lesson). Interpreters are shadowed throughout.
 
 ### F. The Frame, the installer, and the artifact claim (plateau 5)
 
-- Per D4. If retired: the deletions, the `windows-installer.yml` workflow, a
+- Per D4. The installer's user count recorded in D4 first. If retired: the deletions, the `windows-installer.yml` workflow, a
   `frame-installer` row in `checkRetiredSurfaces.ts`, the cutoff in
   `docs/releases/pending-cutoffs.md`, the nine exemptions removed, the platform envelope in
   `REFERENCE.md` rewritten. If re-homed: the nine call sites, the four root-detection
@@ -359,13 +414,23 @@ Given that install and Pi
 When  the user runs `pi install "$(npm root -g)/mirror-mind"` and opens Pi in any directory
 Then  /mm-mirror, /mm-journeys, and /mm-build <slug> answer from the installed package,
       the status line renders, and the session's messages are logged through the extension
+And   a prompt whose correct answer depends on the Operating Instructions, not on a skill
+      (a Mirror Mode question answered under a persona signature, or a Builder load
+      that stops at the Activation Boundary), is answered as the checkout would answer it
 And   no skill, hook, or extension names ts/src/frontDoor/cli.ts, NODE_OPTIONS, or --env-file
+
+Given the checkout, Pi opened inside it, and no `mirror` on the PATH
+When  the session starts
+Then  the extension prints one line naming `npm link` from the repository root, and the
+      agent is not left to improvise an invocation
 
 Given the plugin copied into a directory that is not the package
 When  Claude Code fires SessionStart, UserPromptSubmit, and SessionEnd
 Then  each wrapper finds mirror-hook on the PATH (or through MIRROR_BIN) and the hook runs
 And   the MCP launcher starts the server through `mirror mcp`
 And   when neither can be found, the turn is not failed and one line lands in hooks.log
+And   `mirror runtime diagnose` then reports the hook failures from hooks.log by count and
+      date, so the silent stop is visible where the person looks
 
 Given the checkout, `npm link` run once at its root, and Pi opened inside it
 When  the Navigator runs the skills used daily (/mm-mirror, /mm-build mirror-ts-core, the
@@ -393,7 +458,14 @@ Then  the runtime subset is present and nothing else: no tests, goldens, evals, 
 
 Given `git ls-files` and the tarball, if D4 retires the Frame
 Then  neither holds frame/, installer/, docs/installer/, or the Windows workflow; the
-      cutoff names v0.31.14 as where they work; the retired-surface guard has their row
+      cutoff names v0.31.14 as where they work; the retired-surface guard has their row;
+      D4 records how many people installed the artifact and the cutoff speaks to them
+
+Given a package install with no user configured
+When  `mirror` runs with no arguments
+Then  it prints three lines: no user configured, run `mirror init <user>`, where the config
+      file will live
+And   `mirror init <user>` ends with the wiring step for each runtime found on the PATH
 
 Given REFERENCE.md, docs/getting-started.md, and the skills after plateau 6
 Then  no bridge paragraph remains, `mirror` is the only invocation a reader is told to
@@ -414,7 +486,8 @@ The test guide carries the commands. In outline:
 3. **Navigator-visible, plateau 2, route 2 — outside the checkout.** A scratch prefix, a
    scratch home, a scratch `PI_SESSIONS_DIR` (CR106); `npm pack`, install, `init`, `seed`,
    `pi install <scratch package path>`, then Pi opened in `/tmp`: `/mm-mirror`,
-   `/mm-journeys`, `/mm-build <slug>`, and the status line. No checkout is on the `PATH`
+   `/mm-journeys`, `/mm-build <slug>`, the status line, and one prompt that only the
+   Operating Instructions can answer correctly (D13). No checkout is on the `PATH`
    or in the cwd.
 4. **Navigator-visible, plateau 3:** Claude Code with the plugin copied out of the tree, if
    the Navigator uses Claude Code; otherwise `smoke_claude_plugin.sh` in package mode is
@@ -429,7 +502,9 @@ The test guide carries the commands. In outline:
 - TDD: config resolution and its precedence, the tree-root resolver, install-kind for a
   linked clone, both wrapper forms against their templates, the pack-contents assertions,
   `runtime channel` per kind, the clone post-update line, `init`'s config write and its
-  permissions, the newer-database route — each a failing test before the source changes.
+  permissions, the newer-database route, the extension's `mirror`-resolves check, the
+  `AGENTS.md` injection, `diagnose`'s `hooks` check, and the bare-`mirror` orientation —
+  each a failing test before the source changes.
 - One module for configuration; one for the tree root; one generator for wrappers. No
   entry point keeps a private copy of any of the three.
 - `git mv` for every relocation; no file is deleted and recreated.
@@ -477,6 +552,9 @@ The test guide carries the commands. In outline:
    as the web console and Mirror Desktop had their own decisions. Alternative: re-home onto
    the Node core in its clone shape (nine call sites, four root sites, `uv sync` → `npm
    ci`, Node 24) — ships a Windows product on a core that is not tested on Windows.
+   **Amended 2026-10-05 (second panel pass):** plateau 5 records how many people installed
+   the artifact before deleting it; with none, the cutoff promises no Windows story; with
+   some, the cutoff and the release note address them.
 5. **D5 — Two bins, two wrapper forms.** `mirror-hook` for the hook entry; in-tree
    wrappers keep `$BASH_SOURCE`, the plugin's find the bin. Alternative: a `mirror hook`
    front-door route — puts a runtime entry in the user's usage and three lines per turn in
@@ -500,8 +578,16 @@ The test guide carries the commands. In outline:
 12. **D12 — The Python-era updater's last hop is a release-gate item.** This story writes
     the cutoff and the "Upgrading from a clone" section; the gate checks the hop on the
     production clone (F20's closing check) before promotion.
+13. **D13 — The Operating Instructions ship, and each runtime is told how to load them.**
+    `AGENTS.md` becomes a real file holding only Mirror's runtime-independent Operating
+    Instructions, in `files`; `CLAUDE.md` keeps the Project Context and includes it. Pi
+    reads it through the extension from its own tree; Claude Code, Gemini CLI, and Codex
+    through a mechanism named and verified at plateau 3 against each runtime's docs.
+    Route 2 asserts a mode-routed behavior, not only a skill. Alternative: ship skills
+    only and document the file for the person to copy — a session that answers
+    `/mm-mirror` without routing modes or signing personas is not a Mirror session.
 
-Approving the Plan approves these twelve as recorded; amendments re-open Plan.
+Approving the Plan approves these thirteen as recorded; amendments re-open Plan.
 
 ## Review
 
@@ -558,12 +644,75 @@ Python gate.
   - **item 2 predicts a golden edit that will not happen** (engineer) — recorded as
     closed by D1 rather than left for a reader to look for.
 
-  Not requested by the Navigator and therefore not run: ai-engineer, prompt-engineer,
-  experience-designer, product-designer.
-- **Handoff review, after plateau 6 validation:** same panel.
+  Not requested by the Navigator and therefore not run on 2026-09-30: ai-engineer,
+  prompt-engineer, experience-designer, product-designer.
+- **Second plan review, before approval — done 2026-10-05.** Panel: the four lenses the
+  first pass left out — prompt-engineer, ai-engineer, product-designer,
+  experience-designer — chosen because the story's subject is Mirror's front door for a
+  stranger with no checkout, and it rewrites every word an agent is told to run.
+  Premises re-checked first: the nine changes since 2026-09-30 (CR112, CR111, CR113,
+  CR114, CR115, CR082, CR009, CR103, CR107, CR117) are all RS001 Ariad-runtime fixes and
+  touch no packaging, hook, or skill invocation; the counts still read 135 / 132 / 132.
+  Synthesis: the engineering shape is settled; what the Plan had not looked at is the
+  gap between *the package installs and runs* and *the product arrives* — for an npm
+  user, Mirror is the core, the skills, **and the operating instructions that make a
+  session behave as a mirror**, and the third is not in the tarball. The second
+  concentration of risk is silence: the human and the agent can each land where `mirror`
+  is missing or hooks stopped, and nothing says so where they are looking. Findings, all
+  six accepted by the Navigator on 2026-10-05 and **folded above** (D13, §B, §C, §D, §E,
+  §F, the acceptance behavior, route 2, and the implementation contract):
+  - **the operating instructions do not ship** (prompt-engineer, product-designer) —
+    `files` does not list `CLAUDE.md`/`AGENTS.md`, the `pi` manifest key has no slot for
+    project instructions, and the runtime-interface spec says context is "a static
+    `AGENTS.md` in the project root". Route 2 will pass — `/mm-mirror` answers — and the
+    session in `/tmp` will still not route modes, sign personas, hold the Builder
+    Activation Boundary, or preserve Ariad blocks verbatim. Proposed: split `CLAUDE.md`
+    into Mirror's runtime-independent Operating Instructions (shipped) and this
+    repository's Project Context (not shipped); name a delivery mechanism per runtime in
+    §D (Pi: the extension or `~/.pi/agent/AGENTS.md`; Claude Code: the plugin; Gemini and
+    Codex: the user-level instructions file); add to route 2 one prompt whose correct
+    answer depends on the Operating Instructions, not on a skill. Offered as **D13**;
+  - **the agent with no `mirror` has no sanctioned move** (ai-engineer) — after plateau
+    2 the skills say `mirror …` and the parity guard forbids the checkout form; a clone
+    without `npm link`, or a GUI-launched Pi whose `PATH` lacks the global bin, gives the
+    agent `command not found`, and it improvises `node ts/src/frontDoor/cli.ts`, the
+    grammar the guard just forbade. The human got a post-update line on 2026-09-30; the
+    agent got nothing. Proposed for §C: the extension runs `command -v mirror` at session
+    start and emits one visible line naming `npm link` (or the global bin) when it does
+    not resolve. Measure first: run route 1 once without `npm link` and record what the
+    agent does;
+  - **hook degradation is too graceful** (ai-engineer) — "never fail the turn, one line
+    in `hooks.log`" is right for the turn and wrong for a memory product: when the
+    plugin's wrapper cannot find `mirror-hook`, the agent keeps answering and memory
+    silently stops, and nobody reads `hooks.log`. Proposed for §D/§E: `runtime diagnose`
+    reads the tail of `hooks.log` and reports failures since a date; asserted by the
+    plugin smoke in package mode;
+  - **D4 names no user** (product-designer) — retiring the Frame and installer is argued
+    from premise, never from how many people installed the Inno Setup artifact. Record
+    the number in D4. If zero, drop "a new story with its own Windows CI" as a promise
+    with no demand; if not zero, the cutoff strands real people on a Python core and the
+    release note must address them;
+  - **"one documented step per runtime" is proven for Pi and untested for the rest**
+    (product-designer) — §D's Gemini and Codex step is a settings edit *and* a directory
+    link, with a path computed from `npm root -g`. Count the steps honestly at plateau 3;
+    if any runtime exceeds one, `mirror init` prints that runtime's wiring step rather
+    than sending the person to a page. The `runtime install <runtime>` non-goal stands —
+    printing is not automating;
+  - **the first seconds are a usage dump** (experience-designer) — `mirror` with no
+    arguments and no configured user should print three lines (no user yet, run
+    `mirror init <user>`, where the config will live), and after `init` the welcome card
+    the product already has; the README's first line names both `mirror-mind` (install)
+    and `mirror` (run) once, so the two names read as intended rather than as drift.
+    Calibration, not layout.
+
+  Actionable read, as given before approval: **add** the operating-instructions delivery
+  (first finding, D13) to §B/§D and route 2; **amend** §C with the `mirror`-resolves check
+  and §D/§E with the diagnose surface and D4's user count; the last two were
+  calibration the Navigator could decline. He accepted all six.
+- **Handoff review, after plateau 6 validation:** same panel as the first pass.
 
 ## Approval Gate
 
-- active checkpoint: `after_plan`
-- pending confirmation: `navigator_approval`
-- Implementation is blocked until the Navigator approves this Plan and D1–D12.
+- **Approved by the Navigator on 2026-10-05**, with D1–D13 as recorded, after the second
+  panel pass's six findings were folded in.
+- Implementation begins at plateau 0 (§A).

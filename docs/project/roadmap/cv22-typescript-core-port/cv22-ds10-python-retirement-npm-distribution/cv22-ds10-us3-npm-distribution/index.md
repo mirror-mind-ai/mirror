@@ -2,8 +2,11 @@
 
 # CV22.DS10.US3 — npm distribution
 
-**Status:** 🟡 Planned — pulled 2026-09-30, [Plan](plan.md) drafted and panel-reviewed the
-same day, awaiting Navigator approval of the Plan and decisions D1–D12.
+**Status:** 🟡 Plan approved — pulled 2026-09-30, [Plan](plan.md) drafted and
+panel-reviewed the same day; a second panel pass on 2026-10-05 (prompt-engineer,
+ai-engineer, product-designer, experience-designer) found six things, the sharpest that
+the operating instructions did not ship in the tarball; all six folded, and the Plan
+**approved by the Navigator on 2026-10-05 with D1–D13**. Implementation starts at plateau 0.
 **Type:** User Story
 **Depends on:** every other DS10 story (done); the release gate (done 2026-09-28).
 
@@ -87,18 +90,20 @@ with where it is recorded: [inherited.md](inherited.md). Their dispositions in t
 
 ## Decisions This Story Asks The Navigator To Take
 
-Twelve, listed with alternatives in the [plan](plan.md#decisions-this-plan-asks-the-navigator-to-take):
+Thirteen, listed with alternatives in the [plan](plan.md#decisions-this-plan-asks-the-navigator-to-take):
 package name and bin (D1); the repository as the package (D2); configuration order (D3);
 the Frame and installer (D4); two bins and two wrapper forms (D5); Pi wiring by local path
 (D6); every skill copy says `mirror` (D7); release notes ship in the package (D8);
 `runtime channel` (D9); item 11 recorded (D10); the briefing rewritten here (D11); the
-Python-era updater's last hop as a release-gate item (D12).
+Python-era updater's last hop as a release-gate item (D12); the Operating Instructions
+ship and each runtime is told how to load them (D13, added by the 2026-10-05 panel pass).
+All thirteen approved 2026-10-05.
 
 ## Plateau Progress
 
-_None yet. Implementation is blocked until the Plan is approved._
+_None yet. The Plan is approved; plateau 0 (§A) is next._
 
 ## Where To Resume
 
-Read the [plan](plan.md) and its Review section; the Navigator's answers to D1–D12 are
-recorded there when given. The first plateau is §A: two renames and one capture.
+Read the [plan](plan.md) and its Review section; D1–D13 are approved as recorded there.
+The first plateau is §A: two renames and one capture.
