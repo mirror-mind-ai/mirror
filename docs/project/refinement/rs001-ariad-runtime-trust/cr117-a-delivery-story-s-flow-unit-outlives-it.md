@@ -502,6 +502,30 @@ The other lenses were silent: nothing stored changes shape; no model; a story af
 Delivery Story behaves as every story did before one ran; the refusal's sentence names
 the fact, the cause, and the remedy.
 
+### Debt review (2026-10-05)
+
+The handoff review found no debt, and the Navigator decided no action.
+
 ## Outcome
 
-Pending.
+Done 2026-10-05. Pull keeps a flow unit only when the pulled code equals the cursor's
+active item and the level is `delivery_story`, and writes the default otherwise (D1):
+a story pulled after a Delivery Story ran in Delivery Story flow starts story by story,
+can be planned and preauthorized under `accelerated` and under the Navigator's explicit
+delegation, and a Delivery Story pulled after other items is back at its flow decision.
+`carriedForward` carries the cadence alone. The refusal a cursor written before this
+rule still meets names where the unit came from and the Pull that clears it (D2); the
+`finances` journey's cursor, the one such cursor, clears on its next Pull. One golden
+field moved, the refusal's recorded words. The route's eight steps pass, and the
+Navigator walked them.
+
+Delivered on `mirror-ts-core` in `0360b972`. CI was green on every push. With CR117
+every change on the Ariad trust floor is done, and US3 is next, where it has waited
+since 2026-09-30 at its Plan checkpoint.
+
+## Provenance
+
+Found on 2026-10-01 while characterizing CR115, in a scratch home, by pulling a story
+after a Delivery Story had run in Delivery Story flow and reading the flow unit it
+held. Captured the same day, and put on the floor last by the Navigator's decision
+(CR114, D5).

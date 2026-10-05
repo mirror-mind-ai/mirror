@@ -12,6 +12,28 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-10-05 — CR117 done: a flow unit belongs to the Delivery Story it was chosen for
+
+This is the last change of the reopened trust floor. Pull carried a Delivery Story's
+flow unit to whatever item came next, so after a Delivery Story ran in Delivery Story
+flow every story pulled after it held `delivery_story`, could not choose otherwise, and
+was refused a preauthorized Plan under `accelerated` and under the Navigator's explicit
+delegation, with a remedy the runtime refused; pulling the story again kept it. One
+journey's cursor in the real database held the case.
+
+Now Pull keeps a flow unit only for the same Delivery Story re-pulled as the cursor's
+item, and writes the default otherwise; the refusal an older cursor still meets names
+where the unit came from and the Pull that clears it. One golden field moved, the
+refusal's words. The persona panel reviewed the plan twice; its engineer found that the
+predicate the plan had borrowed was false for a cursor with no item, and the rule got
+its own. Each plateau waited for its CI run, and every run was green. The Navigator
+validated the eight-step route in their own shell, line for line. The handoff review
+found no blocker and no debt; the Navigator decided no action.
+
+With CR117, every change on the floor is done: the eight of 2026-09-25, the three and
+the backups of 2026-09-27, and the nine US3's Pull and Plan put back on 2026-09-30.
+Next: US3, npm distribution, waiting at its Plan checkpoint since 2026-09-30.
+
 ### 2026-10-05 — CR107 done: a table cell is read as GFM reads it
 
 This is the seventh change of the reopened trust floor. Three readers split a roadmap

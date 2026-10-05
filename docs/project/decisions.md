@@ -3747,3 +3747,41 @@ here.
 `tableRowCells`; a writer that puts text into a cell calls `tableCell`; and a pipe
 inside a cell is written `\|`, which the Builder skill's authoring contract now says.
 A new table reader or writer joins `escapedPipe.test.ts`.
+
+### A flow unit belongs to the Delivery Story it was chosen for
+
+**Date:** 2026-10-05 · **Context:** [CR117](refinement/rs001-ariad-runtime-trust/cr117-a-delivery-story-s-flow-unit-outlives-it.md),
+the last change on the reopened
+[Ariad trust floor](#the-cv22-release-is-gated-on-an-ariad-trust-floor-worked-before-us3).
+A flow unit is chosen at a Delivery Story's flow decision and nowhere else (CR105), but
+Pull carried `navigator_flow_unit` with the cadence to whatever item came next. After a
+Delivery Story ran in Delivery Story flow, every story pulled after it held
+`delivery_story`: `set-flow-unit` would not let a story change it, `plan-item` under
+`accelerated` and under the Navigator's explicit delegation refused with a remedy the
+runtime refused, and pulling the story again kept it. The `finances` journey's cursor
+held the case on a closed Technical Story.
+
+**The decision: Pull keeps a flow unit only when the pulled code equals the cursor's
+active item and the level is `delivery_story`; any other Pull writes `null`, the
+default, `story_by_story`. The refusal a cursor written before this rule still meets
+names where the unit came from and the Pull that clears it.**
+
+**Why the same Delivery Story only.** The unit says the Delivery Story is the lifecycle
+unit. A story cursor is not one, and a Delivery Story pulled after other items is back
+at the flow decision where the unit is chosen; carrying the old one past that decision
+is the same carry one item later. The one Pull where keeping is right is the Delivery
+Story re-pulled mid-flow as the item the cursor already holds, where its children and
+its aggregate status are kept too.
+
+**Why a predicate of its own.** `itemChanged`, the predicate that keeps the children, is
+false for a cursor with no item, and would let a stale unit through a Delivery Story's
+first Pull. The flow unit asks a different question and reads it directly.
+
+**Why no migration.** The one real cursor clears on its journey's next Pull, which is
+of another item; a migration would touch a cursor for one field one write fixes.
+
+**The rule that follows.** A cursor field that belongs to an item is decided by Pull,
+not carried: `carriedForward` carries the cadence, which belongs to the journey, and
+nothing else. A field that belongs to an item names the item it belongs to, and Pull
+keeps it only for that item. `flowUnitCarry.test.ts` grades Pull at every case and
+walks both preauthorized Plan routes on the story after a Delivery Story.
