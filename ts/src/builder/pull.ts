@@ -115,6 +115,11 @@ export function pullLifecycleItem(
   }
 
   const itemChanged = existing.activeItem !== null && existing.activeItem !== item.code;
+  // A flow unit belongs to the Delivery Story it was chosen for (CR117): it survives Pull
+  // only when that Delivery Story is pulled again as the item the cursor already holds.
+  // Any other item starts at the default. Not `itemChanged`, which is false for a cursor
+  // with no item and would let a stale unit through a Delivery Story's first Pull.
+  const keepsFlowUnit = existing.activeItem === item.code && item.level === "delivery_story";
   const preserveReleaseIntent =
     existing.releaseIntentDeliveryStory === deliveryStoryCodeForItem(item.code);
 
@@ -130,6 +135,7 @@ export function pullLifecycleItem(
       pendingConfirmation: null,
       lastDeliveryEvent: "pull",
       ...carriedForward(existing),
+      navigatorFlowUnit: keepsFlowUnit ? existing.navigatorFlowUnit : null,
       childWorkItems: itemChanged ? [] : existing.childWorkItems,
       aggregateCheckpointStatus: itemChanged ? [] : existing.aggregateCheckpointStatus,
       cursorGeneration: existing.cursorGeneration + 1,

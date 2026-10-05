@@ -151,8 +151,10 @@ refuses with D2's words, and whose re-pull clears it.
 Story's flow decision and nowhere else; the carry was the runtime's, and the runtime
 no longer carries.
 
-**Goldens.** None change: the prototype passed every test, and no recorded sequence
-pulls another item after a Delivery Story in Delivery Story flow.
+**Goldens.** One field: the refusal's words are recorded in `builder-lifecycle`'s
+`authority_requires_story_by_story_flow`, and D2 changes them; found at plateau 1, the
+plan having counted the prototype's D1 and not D2's words. No recorded sequence pulls
+another item after a Delivery Story in Delivery Story flow.
 
 ### Decisions this plan asks the Navigator to take
 
@@ -185,7 +187,8 @@ Each closes with a commit, a push, and a green CI run that finishes before the n
 plateau begins.
 
 0. **Characterize and count.** The route before the change, recorded below. Counted:
-   one write carries, one refusal to reword, one real cursor, no golden.
+   one write carries, one refusal to reword, one real cursor, one golden field (counted
+   as none until plateau 1 reworded the refusal).
 1. **The carry and the words (D1, D2).** Red first: the Pull table and the walk. Then
    `pull.ts`, `cursorTransitions.ts`, and `plan.ts`. Green; no golden moves.
 2. **Validation and handoff.** The route after the change, the Navigator's walk, the
@@ -206,7 +209,8 @@ plateau begins.
 3. A cursor holding a story with `delivery_story`, written directly as `finances`
    stands, is refused by `plan-item` under `accelerated` with D2's words, and a Pull of
    that story clears the unit, after which `plan-item` proceeds.
-4. Every golden is byte-identical.
+4. The golden diff is one field, the refusal's words in `builder-lifecycle`, listed in
+   `ts/test/goldens/README.md`; every other byte is identical.
 5. The route after the change meets its pass conditions.
 
 ### Validation route
@@ -226,7 +230,7 @@ cursor() { b show 2>&1 | sed -n '/<<<ARIAD:ACTIVE_CHECKPOINT>>>/,/<<<END/p' | aw
 author() { awk '/^## /{print; print ""; print substr($0,4) ", as the Driver wrote it for this story."; print ""; s=1; next} !s{print}' "$1" > "$1.new" && mv "$1.new" "$1"; }
 R="$V/p/docs/project/roadmap" && mkdir -p "$R/cv1/ds1" "$R/cv1/ds2" && printf '# Roadmap\n' > "$R/index.md" && git -C "$V/p" init -q
 printf '# CV1 — Checkout\n\n**Status:** 🟢 Active\n' > "$R/cv1/index.md"
-for n in 1 2; do printf '# CV1.DS%s — Delivery %s\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n\n## Candidate Stories\n\n| Code | Story | Type | Status |\n|------|-------|------|--------|\n| CV1.DS%s.US1 | Story %s | User Story | 🟡 Planned |\n| CV1.DS%s.US2 | Story %s b | User Story | 🟡 Planned |\n| CV1.DS%s.US3 | Story %s c | User Story | 🟡 Planned |\n'         > "$R/cv1/ds$n/index.md"; done
+for n in 1 2; do printf '# CV1.DS%s — Delivery %s\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n\n## Candidate Stories\n\n| Code | Story | Type | Status |\n|------|-------|------|--------|\n| CV1.DS%s.US1 | Story %s | User Story | 🟡 Planned |\n| CV1.DS%s.US2 | Story %s b | User Story | 🟡 Planned |\n| CV1.DS%s.US3 | Story %s c | User Story | 🟡 Planned |\n' $n $n $n $n $n $n $n $n > "$R/cv1/ds$n/index.md"; done
 printf '# j\n' | cr117 identity set journey j > /dev/null && cr117 journey set-path j "$V/p" > /dev/null 2>&1 && b adopt > /dev/null && b sync-cursor > /dev/null && b set-cadence --profile checkpoint > /dev/null
 echo '--- 1. CV1.DS1 in Delivery Story flow, through Done'
 b pull-item --item-code CV1.DS1 --item-level delivery_story --item-title 'Delivery 1' --why-now now > /dev/null 2>&1
@@ -370,8 +374,8 @@ At `1bec9856`:
 ```text
 --- 1. CV1.DS1 in Delivery Story flow, through Done
     flow unit: delivery_story
-    answer: Error: authored roadmap is not ready for Delivery Story Done: docs/project/roadmap/cv1/cv1-ds1-delivery-1/index.md: package status is not Done; docs/project/roadmap/cv1/cv1-ds1-delivery-1/cv1-ds1-us1-delivery-1/index.md: package status is not Done; docs/project/roadmap/cv1/cv1-ds1-delivery-1/index.md: table row CV1.DS1.US1 is not Done
-    cursor: item=CV1.DS1 — Delivery 1 event=delivery_story_review_complete
+    answer: <<<ARIAD:DELIVERY_STORY_CLOSURE_CHECKPOINT>>> <<<ARIAD:ARTIFACTS_MATERIALIZED>>> <<<ARIAD:PROJECT_POSITION>>>
+    cursor: item=CV1.DS1 — Delivery 1 event=delivery_story_done_complete
 --- 2. a story in CV1.DS2 pulled: the flow unit it holds
     answer: <<<ARIAD:ITEM_ACTIVATED>>> <<<ARIAD:PREPARE_FIELD_READING>>>
     cursor: item=CV1.DS2.US1 — Story 2 event=prepare
@@ -399,6 +403,59 @@ Steps 2 to 6 are the capture, each Plan route on its own story. Step 7 is the re
 that does not work: the story pulled again keeps the unit. Step 8 is the one keep that
 is right today, and will not be after the change: a Delivery Story pulled after other
 items starts at its flow decision, where the unit is chosen.
+
+### Plateau 1 handoff (2026-10-05)
+
+Now true: Pull keeps a flow unit only when the pulled code equals the cursor's active
+item and the level is `delivery_story`, by `keepsFlowUnit` in `pull.ts`; `carriedForward`
+carries the cadence alone, and its comment says why; the preauthorization refusal in
+`plan.ts` names where the unit came from and the Pull that clears it. Red first:
+`flowUnitCarry.test.ts`, the five-case table plus the same story pulled again, the walk
+through both preauthorized routes and the child of the closed Delivery Story, and the
+cursor seeded as `finances` stands, failed on `delivery_story` where `null` was due and
+on the old refusal; then passed. Two things the plan did not foresee. The refusal's old
+words are recorded once, in `builder-lifecycle`'s `authority_requires_story_by_story_flow`,
+so one golden field moves, by script, with its ledger row; the plan said none, counting
+the prototype's D1 and not D2's words. And the route as first recorded had a broken
+fixture: an edit to its script had dropped the `printf` arguments that number the
+Delivery Stories, so both read `CV1.DS —`, Expand scaffolded a second package, and step
+1's Done refused on it; the fixture is fixed, and the route before the change was
+re-recorded on `1bec9856` before the change was applied. 2952 tests pass, 3 of them new.
+The route after the change meets every pass condition; its output is under
+[The route after the change](#the-route-after-the-change-2026-10-05). Plateau 2 is the
+Navigator's walk, the handoff review, and the ledger.
+
+### The route after the change (2026-10-05)
+
+At the plateau 1 commit:
+
+```text
+--- 1. CV1.DS1 in Delivery Story flow, through Done
+    flow unit: delivery_story
+    answer: <<<ARIAD:DELIVERY_STORY_CLOSURE_CHECKPOINT>>> <<<ARIAD:ARTIFACTS_MATERIALIZED>>> <<<ARIAD:PROJECT_POSITION>>>
+    cursor: item=CV1.DS1 — Delivery 1 event=delivery_story_done_complete
+--- 2. a story in CV1.DS2 pulled: the flow unit it holds
+    answer: <<<ARIAD:ITEM_ACTIVATED>>> <<<ARIAD:PREPARE_FIELD_READING>>>
+    cursor: item=CV1.DS2.US1 — Story 2 event=prepare
+    flow unit: story_by_story
+--- 3. the remedy the refusal will name: choose story by story on the story
+    answer: Error: no flow unit was chosen: the active item, CV1.DS2.US1, is a user story. The flow unit is chosen for its Delivery Story, CV1.DS2, before that Delivery Story's Plan.
+--- 4. accelerated: plan-item on the story
+    answer: <<<ARIAD:PLAN_CHECKPOINT>>> <<<ARIAD:PLAN_PREAUTHORIZATION_RECORDED>>> <<<ARIAD:ARTIFACTS_MATERIALIZED>>>
+--- 5. the natural explicit delegation, under checkpoint, on the next story
+    answer: <<<ARIAD:PLAN_CHECKPOINT>>> <<<ARIAD:PLAN_PREAUTHORIZATION_RECORDED>>> <<<ARIAD:ARTIFACTS_MATERIALIZED>>>
+--- 6. an ordinary Plan, then its approval, on a third story
+    answer: <<<ARIAD:PLAN_CHECKPOINT>>> <<<ARIAD:ARTIFACTS_MATERIALIZED>>>
+    answer: <<<ARIAD:PLAN_APPROVED>>>
+    cursor: item=CV1.DS2.US3 — Story 2 c event=plan_approved
+    flow unit: story_by_story
+--- 7. the same story pulled again: what Pull carries
+    answer: <<<ARIAD:ITEM_ACTIVATED>>> <<<ARIAD:PREPARE_FIELD_READING>>>
+    flow unit: story_by_story
+--- 8. CV1.DS1 pulled again, the Delivery Story the unit was chosen for
+    answer: <<<ARIAD:DELIVERY_STORY_READY>>> <<<ARIAD:ARTIFACTS_MATERIALIZED>>>
+    flow unit: story_by_story
+```
 
 ## Outcome
 

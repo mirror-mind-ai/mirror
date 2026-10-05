@@ -201,7 +201,13 @@ export function planLifecycleItem(
   if (preauthorizationRecorded) {
     flowUnit = effectiveNavigatorFlowUnit(existing).flowUnit;
     if (flowUnit !== FLOW_UNIT_STORY_BY_STORY) {
-      throw new Error("story Plan preauthorization requires story_by_story flow");
+      // Reachable only through a cursor written before CR117, when Pull carried a Delivery
+      // Story's unit to the story after it: the remedy is the Pull that no longer carries.
+      throw new Error(
+        "story Plan preauthorization requires story_by_story flow; the cursor holds " +
+          "delivery_story from a Delivery Story pulled before this story. Pull the story " +
+          "again to start it in story_by_story flow.",
+      );
     }
     receipt = createPlanPreauthorizationReceipt(
       { ...existing, navigatorFlowUnit: flowUnit },

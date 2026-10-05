@@ -57,20 +57,21 @@ export function deliveryStoryCodeForItem(itemCode: string | null): string | null
 }
 
 /**
- * The cursor fields every lifecycle write carries forward unchanged.
+ * The cursor fields Pull carries forward unchanged: the cadence, which belongs to the
+ * journey and not to any item.
  *
- * Python repeats these five arguments at each call site, and the repetition is
- * where a port silently drops one: omitting `cadence_profile` does not fail, it
- * quietly resets the Navigator's cadence to null on the next Pull.
+ * Python repeated these arguments at each call site, and the repetition is where a
+ * port silently drops one: omitting `cadence_profile` does not fail, it quietly resets
+ * the Navigator's cadence to null on the next Pull. The flow unit was carried here too,
+ * to whatever item came next; it belongs to the Delivery Story it was chosen for, and
+ * Pull decides it by that rule (CR117).
  */
 export function carriedForward(cursor: BuilderDeliveryCursor): {
   cadenceProfile: string | null;
   cadenceLimits: readonly string[];
-  navigatorFlowUnit: string | null;
 } {
   return {
     cadenceProfile: cursor.cadenceProfile,
     cadenceLimits: cursor.cadenceLimits,
-    navigatorFlowUnit: cursor.navigatorFlowUnit,
   };
 }

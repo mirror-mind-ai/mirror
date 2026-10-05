@@ -6687,7 +6687,7 @@
             "release_intent": null,
             "release_intent_delivery_story": null
           },
-          "error": "ValueError: story Plan preauthorization requires story_by_story flow",
+          "error": "ValueError: story Plan preauthorization requires story_by_story flow; the cursor holds delivery_story from a Delivery Story pulled before this story. Pull the story again to start it in story_by_story flow.",
           "files": {},
           "index": 1,
           "input": {
