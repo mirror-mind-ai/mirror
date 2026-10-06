@@ -172,5 +172,16 @@ home (D14); the `mirror` bin is a type-stripping loader shim (D15).
 
 ## Where To Resume
 
-Read the [plan](plan.md) and its Review section; D1–D13 are approved as recorded there.
-The first plateau is §A: two renames and one capture.
+Read the [plan](plan.md) (D1–D15 approved and recorded) and the *Plateau Progress* above:
+plateaus 0, 1, and 2 are done and validated; the Ariad cursor is at `implement` for
+CV22.DS10.US3 under the approved Plan. **Next is plateau 3 (§D)**: the `mirror-hook` bin on the
+same loader shim as `mirror` (D5, D15); the generator's second wrapper form for the plugin
+(`MIRROR_BIN`, then the `PATH`, then the global bin dirs), in-tree wrappers unchanged;
+`launch.sh` → `exec mirror mcp`; `hooks.test.ts` for both forms; `smoke_claude_plugin.sh`
+with `mirror-hook` on a scratch `PATH`; the package smoke's second half; the Gemini CLI and
+Codex wiring steps counted and verified against each runtime's docs, and how Claude Code,
+Gemini CLI, and Codex receive `AGENTS.md` (D13); `runtime diagnose`'s `hooks` check; and
+the `init` wiring-step print deferred from plateau 1. It ends with route 3. Working state to
+know: the developer machine has `npm link` in place (`mirror` → this checkout); the
+plateau-0 capture lives in `tmp/us3/before.tsv` (gitignored) for plateau 6's replay; F1
+(empty `ego/constraints` template makes a fresh `seed` exit 1) is open for the Navigator.
