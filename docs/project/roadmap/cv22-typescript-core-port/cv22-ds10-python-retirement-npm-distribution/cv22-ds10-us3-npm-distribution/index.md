@@ -138,8 +138,8 @@ home (D14); the `mirror` bin is a type-stripping loader shim (D15).
   `scripts/smoke_npm_package.sh` (40 checks, in CI) proves init, seed, list, status, and a
   migrating open through the `mirror` bin from a scratch global install. Verified: typecheck,
   lint, 2980 tests, the repository checks, every smoke. Next: plateau 2 (§C), skills and Pi.
-- **Plateau 2 — skills and Pi (implemented 2026-10-05, `86d9014b`, `fb22e2fa`; awaiting the
-  Navigator's first walk).** All 399 invocation lines (135 / 132 / 132) say `mirror`, rewritten by
+- **Plateau 2 — skills and Pi (implemented 2026-10-05, `86d9014b`, `fb22e2fa`; validated by the
+  Navigator 2026-10-06).** All 399 invocation lines (135 / 132 / 132) say `mirror`, rewritten by
   a script with asserted counts and reviewed as a diff; the plugin regenerated; the parity guard
   forbids `cli.ts`, `NODE_OPTIONS`, and `--env-file` in every skill copy (D7); `AGENTS.md`'s one
   prose invocation followed. The extension spawns `bin/mirror.js` from its own file (D6, D15),
@@ -165,8 +165,10 @@ home (D14); the `mirror` bin is a type-stripping loader shim (D15).
   the route pins `MIRROR_HOME` in the scratch config file. The real-homes diff showed only
   `~/.mirror-minds/vinicius` touched at 12:08 and 12:21 — a second Pi session the Navigator had
   open on that user, logging its own turns; the scratch session wrote to `route2` alone.
-  Open from the walk: the Builder-boundary prompt (`/mm-build personal-growth`), which the
-  Navigator did not report.
+  The second D13 proof followed: `/mm-build personal-growth` from `/private/tmp` rendered the
+  `■ BUILDER MODE ACTIVE` surface, named the absent project path, and **stopped at "What do you
+  want to work on?"** — the Activation Boundary holding in a session whose only source of that
+  rule is the appended `AGENTS.md`. **Plateau 2 validated by the Navigator, 2026-10-06.**
 
 ## Where To Resume
 

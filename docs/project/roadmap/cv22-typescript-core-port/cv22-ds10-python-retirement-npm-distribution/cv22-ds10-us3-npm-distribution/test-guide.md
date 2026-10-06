@@ -218,4 +218,9 @@ diff tmp/us3/before.tsv tmp/us3/after.tsv && echo IDENTICAL
 
 ## Validation Evidence
 
-Pending implementation and validation.
+- **Routes 1, 1b, 2a, 2b — walked by the Navigator on 2026-10-06, all passed.** Evidence and
+  the two findings the walk produced (the manifest's `pi` key; route 2b pinning `MIRROR_HOME`)
+  are in the story index's plateau-2 record. Observed: the agent without `mirror` improvised
+  onto `node bin/mirror.js`, the sanctioned entry; the D13 prompt answered under `◇ financial`;
+  Builder load stopped at the boundary; Pi loaded the package extension once.
+- Routes 3 and 4: pending plateaus 3 and 6.
