@@ -1,41 +1,65 @@
 #!/usr/bin/env bash
-# Generate every Mirror hook wrapper from one template (CV22.DS10.TS5, D4).
+# Generate every Mirror hook wrapper from one template (CV22.DS10.TS5, D4;
+# CV22.DS10.US3 plateau 3, D5).
 #
-# The wrappers differ by exactly two things -- the hook name and the depth
-# from the wrapper to the repository root -- and `hooks.test.ts` asserts that,
-# because copies that can differ in only one place cannot drift the way the
-# skill copies did (CR071: eleven skills reaching the front door on Pi while
-# still calling Python on Claude Code and the published plugin, for commands
-# flipped as far back as DS3, and nothing failed because Python answered
-# correctly).
+# A wrapper differs from the others by the hook name and by ONE of two forms,
+# and `hooks.test.ts` asserts that, because copies that can differ in only one
+# place cannot drift the way the skill copies did (CR071: eleven skills
+# reaching the front door on Pi while still calling Python on Claude Code and
+# the published plugin, for commands flipped as far back as DS3, and nothing
+# failed because Python answered correctly).
 #
-# The template is a QUOTED heredoc with two placeholders, @HOOK@ and @DEPTH@,
-# so the shell it contains is written exactly as it runs, with no escaping.
+# The two forms (US3, D5):
+#
+#   tree  -- the wrapper lives inside the Mirror tree (`.claude/hooks`,
+#            `.gemini/hooks`, `scripts/codex-hooks`), in a checkout or under
+#            `npm root -g` alike, so it resolves the tree from ITS OWN FILE by
+#            a fixed depth and runs that tree's `bin/mirror-hook.js`.
+#   bin   -- the wrapper is the Claude plugin's, and its location is Claude
+#            Code's (a plugin is copied into the runtime's cache), so no
+#            relative path reaches the tree. It finds the installed
+#            `mirror-hook` bin instead: MIRROR_BIN, then the PATH, then the
+#            global bin directories a GUI launch does not put on the PATH.
+#
+# Both run the SAME entry through the SAME Node search, and both keep the
+# contract: never fail the turn, one line in <mirror home>/hooks.log when
+# they cannot run. The entry is the bin, not `ts/src/hooks/main.ts`, for the
+# tree form too: under `npm root -g` the tree sits below `node_modules`, where
+# Node will not strip types (D15).
+#
+# The template is a QUOTED heredoc with placeholders -- @HOOK@, @LOCATE@,
+# @ENTRY@ -- so the shell it contains is written exactly as it runs, with no
+# escaping. @LOCATE@ and @ENTRY@ are filled from the per-form fragments below,
+# where @DEPTH@ is the tree form's depth to the root.
 #
 # Usage:
 #   bash scripts/generate_hook_wrappers.sh          # write
 #   bash scripts/generate_hook_wrappers.sh --check  # report drift, exit 1
 
 set -uo pipefail
+# bash 5.2 turned `patsub_replacement` on: `&` in a `${var//pat/rep}` replacement
+# then stands for the match, and the fragments below contain `&&`. Off, so the
+# wrappers are the same bytes from bash 3.2 (macOS) and bash 5 (CI).
+shopt -u patsub_replacement 2>/dev/null || true
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 CHECK="${1:-}"
 
-# wrapper path | hook name | depth from the wrapper to the repository root
+# wrapper path | hook name | form | depth from the wrapper to the tree root (tree form)
 WRAPPERS=$(cat <<'EOF'
-.claude/hooks/session-start.sh|claude:session-start|../..
-.claude/hooks/log-user-prompt.sh|claude:user-prompt|../..
-.claude/hooks/log-session-end.sh|claude:session-end|../..
-.claude/hooks/mirror-inject.sh|claude:inject|../..
-.gemini/hooks/session-start.sh|gemini:session-start|../..
-.gemini/hooks/log-user.sh|gemini:log-user|../..
-.gemini/hooks/log-assistant.sh|gemini:log-assistant|../..
-.gemini/hooks/session-end.sh|gemini:session-end|../..
-plugins/mirror-mind/hooks/session-start.sh|claude:session-start|../../..
-plugins/mirror-mind/hooks/log-user-prompt.sh|claude:user-prompt|../../..
-plugins/mirror-mind/hooks/log-session-end.sh|claude:session-end|../../..
-plugins/mirror-mind/hooks/mirror-inject.sh|claude:inject|../../..
-scripts/codex-hooks/session-start.sh|codex:session-start|../..
-scripts/codex-hooks/session-end.sh|codex:session-end|../..
+.claude/hooks/session-start.sh|claude:session-start|tree|../..
+.claude/hooks/log-user-prompt.sh|claude:user-prompt|tree|../..
+.claude/hooks/log-session-end.sh|claude:session-end|tree|../..
+.claude/hooks/mirror-inject.sh|claude:inject|tree|../..
+.gemini/hooks/session-start.sh|gemini:session-start|tree|../..
+.gemini/hooks/log-user.sh|gemini:log-user|tree|../..
+.gemini/hooks/log-assistant.sh|gemini:log-assistant|tree|../..
+.gemini/hooks/session-end.sh|gemini:session-end|tree|../..
+plugins/mirror-mind/hooks/session-start.sh|claude:session-start|bin|
+plugins/mirror-mind/hooks/log-user-prompt.sh|claude:user-prompt|bin|
+plugins/mirror-mind/hooks/log-session-end.sh|claude:session-end|bin|
+plugins/mirror-mind/hooks/mirror-inject.sh|claude:inject|bin|
+scripts/codex-hooks/session-start.sh|codex:session-start|tree|../..
+scripts/codex-hooks/session-end.sh|codex:session-end|tree|../..
 EOF
 )
 
@@ -48,27 +72,31 @@ IFS= read -r -d '' TEMPLATE <<'EOF' || true
 #!/usr/bin/env bash
 # Mirror Mind hook wrapper — GENERATED by scripts/generate_hook_wrappers.sh.
 # Edit the generator, never this file: every wrapper shares these bytes and
-# differs only in the hook name and its depth to the repository root
-# (CV22.DS10.TS5, decision D4).
-#
-# Resolve the repository from THIS FILE, never from the cwd: a runtime spawns
-# hooks from whatever directory the session is in.
+# differs only in the hook name and in how it finds the Mirror entry
+# (CV22.DS10.TS5 decision D4; CV22.DS10.US3 decision D5).
 set -uo pipefail
-HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
-REPO_ROOT="$(cd "$HERE/@DEPTH@" && pwd -P)"
 HOOK="@HOOK@"
+
+@LOCATE@
 
 # A hook never fails the user's turn, and never fails in silence: when it
 # cannot do its job it appends ONE line to <mirror home>/hooks.log and exits 0.
 # The home is found the way the core finds it -- MIRROR_HOME, else
-# MIRROR_USER -- each from the environment when set there, else from this
-# checkout's .env, as Node's --env-file reads it. A GUI launch carries neither
-# variable, and the first wrappers then wrote to a home nobody reads.
-env_value() {
-  if [ -n "${!1+set}" ]; then printf '%s' "${!1}"; return; fi
-  [ -f "$REPO_ROOT/.env" ] || return 0
-  sed -n -E "s/^[[:space:]]*(export[[:space:]]+)?$1[[:space:]]*=[[:space:]]*//p" "$REPO_ROOT/.env" \
+# MIRROR_USER -- from the environment when set there, else from the tree's
+# .env when the wrapper is in a tree, else from the user's config file
+# (~/.config/mirror/env), in the core's order (US3, D3). A GUI launch carries
+# neither variable, and the first wrappers then wrote to a home nobody reads.
+env_file_value() {
+  [ -f "$2" ] || return 0
+  sed -n -E "s/^[[:space:]]*(export[[:space:]]+)?$1[[:space:]]*=[[:space:]]*//p" "$2" \
     | tail -n 1 | tr -d "\"'\r"
+}
+env_value() {
+  local value=""
+  if [ -n "${!1+set}" ]; then printf '%s' "${!1}"; return; fi
+  [ -z "$REPO_ROOT" ] || value="$(env_file_value "$1" "$REPO_ROOT/.env")"
+  [ -n "$value" ] || value="$(env_file_value "$1" "${XDG_CONFIG_HOME:-$HOME/.config}/mirror/env")"
+  printf '%s' "$value"
 }
 note() {
   local home user
@@ -86,17 +114,21 @@ note() {
     && printf '%s %s: %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$HOOK" "$1" >> "$home/hooks.log" 2>/dev/null
 }
 
+@ENTRY@
+
 # Find Node. /usr/bin/python3 exists on every macOS; node usually lives under
 # nvm or Homebrew and is NOT on the PATH of a GUI-launched runtime. The Python
 # hooks could end in `|| true` because they always found their interpreter;
 # the same silence here would hide a new failure — no logging, no inject, no
 # close tail — that a user would meet weeks later as "Mirror stopped
-# remembering". So an unresolvable Node is RECORDED, never swallowed.
+# remembering". So an unresolvable Node is RECORDED, never swallowed. The
+# directory the entry was found in is searched last: an npm global bin holds
+# `node` beside `mirror-hook`.
 NODE="${MIRROR_NODE:-}"
 if [ -z "$NODE" ] || [ ! -x "$NODE" ]; then
   NODE="$(command -v node 2>/dev/null || true)"
 fi
-for candidate in "$HOME/.nvm/current/bin/node" /opt/homebrew/bin/node /usr/local/bin/node; do
+for candidate in "$HOME/.nvm/current/bin/node" /opt/homebrew/bin/node /usr/local/bin/node "$(dirname "$ENTRY")/node"; do
   [ -n "$NODE" ] && break
   [ -x "$candidate" ] && NODE="$candidate"
 done
@@ -106,12 +138,12 @@ if [ -z "$NODE" ]; then
   exit 0
 fi
 
-# Not `exec`: main.ts exits 0 whatever happens inside it, so a non-zero exit
-# means Node itself could not run the hook -- too old for a .ts entry point or
-# for --env-file-if-exists, or it crashed. That used to vanish into a stderr no
-# runtime shows (TS5 handoff review, finding N1).
-"$NODE" --no-warnings --env-file-if-exists="$REPO_ROOT/.env" \
-  "$REPO_ROOT/ts/src/hooks/main.ts" "$HOOK" "$@"
+# Not `exec`: the entry exits 0 whatever happens inside it, so a non-zero exit
+# means Node itself could not run the hook -- too old for the loader shim, or
+# it crashed. That used to vanish into a stderr no runtime shows (TS5 handoff
+# review, finding N1). No flags: the entry reads configuration and silences
+# its own warnings (US3, D3).
+"$NODE" "$ENTRY" "$HOOK" "$@"
 status=$?
 if [ "$status" -ne 0 ]; then
   note "node exited $status before the hook finished ($NODE, $("$NODE" --version 2>/dev/null || echo 'version unknown')); Mirror needs Node 24 or later. Set MIRROR_NODE."
@@ -119,18 +151,64 @@ fi
 exit 0
 EOF
 
+# --- the tree form: resolve the tree from THIS FILE, never from the cwd ------
+IFS= read -r -d '' LOCATE_TREE <<'EOF' || true
+# Resolve the tree from THIS FILE, never from the cwd: a runtime spawns hooks
+# from whatever directory the session is in. The tree is a checkout or the
+# installed package; the wrapper's depth to its root is the same in both.
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+REPO_ROOT="$(cd "$HERE/@DEPTH@" && pwd -P)"
+EOF
+IFS= read -r -d '' ENTRY_TREE <<'EOF' || true
+ENTRY="$REPO_ROOT/bin/mirror-hook.js"
+EOF
+
+# --- the bin form: find the installed `mirror-hook` ---------------------------
+IFS= read -r -d '' LOCATE_BIN <<'EOF' || true
+# This wrapper is the Claude plugin's, and a plugin is copied into Claude
+# Code's own cache: no relative path from here reaches the Mirror tree. It
+# runs the installed `mirror-hook` bin instead, and reads no tree .env.
+REPO_ROOT=""
+EOF
+IFS= read -r -d '' ENTRY_BIN <<'EOF' || true
+# Find the bin. MIRROR_BIN names the directory holding `mirror` and
+# `mirror-hook` (`$(npm prefix -g)/bin`), the same trust class as MIRROR_NODE;
+# then the PATH; then the global bin directories a GUI launch leaves off it.
+ENTRY=""
+[ -n "${MIRROR_BIN:-}" ] && [ -x "$MIRROR_BIN/mirror-hook" ] && ENTRY="$MIRROR_BIN/mirror-hook"
+[ -n "$ENTRY" ] || ENTRY="$(command -v mirror-hook 2>/dev/null || true)"
+for candidate in "$HOME/.nvm/current/bin" /opt/homebrew/bin /usr/local/bin; do
+  [ -n "$ENTRY" ] && break
+  [ -x "$candidate/mirror-hook" ] && ENTRY="$candidate/mirror-hook"
+done
+
+if [ -z "$ENTRY" ]; then
+  note "mirror-hook not found on PATH; hook skipped. Install mirror-mind (npm install -g mirror-mind) or set MIRROR_BIN to its bin directory."
+  exit 0
+fi
+EOF
+
 render() {
-  local hook="$1" depth="$2" out="$TEMPLATE"
+  local hook="$1" form="$2" depth="$3" out="$TEMPLATE" locate entry
+  case "$form" in
+    tree) locate="$LOCATE_TREE"; entry="$ENTRY_TREE" ;;
+    bin) locate="$LOCATE_BIN"; entry="$ENTRY_BIN" ;;
+    *) echo "unknown wrapper form: $form" >&2; exit 2 ;;
+  esac
+  locate="${locate%$'\n'}"
+  entry="${entry%$'\n'}"
+  out="${out//@LOCATE@/$locate}"
+  out="${out//@ENTRY@/$entry}"
   out="${out//@HOOK@/$hook}"
   out="${out//@DEPTH@/$depth}"
   printf '%s\n' "$out"
 }
 
 status=0
-while IFS='|' read -r path hook depth; do
+while IFS='|' read -r path hook form depth; do
   [ -z "$path" ] && continue
   target="$REPO_ROOT/$path"
-  rendered="$(render "$hook" "$depth")"
+  rendered="$(render "$hook" "$form" "$depth")"
   if [ "$CHECK" = "--check" ]; then
     if [ ! -f "$target" ] || [ "$(cat "$target")" != "$rendered" ]; then
       echo "drift: $path"

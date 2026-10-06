@@ -332,12 +332,16 @@ describe("a hook that cannot run is recorded, never silent (N1)", () => {
 
   test("the wrappers and diagnose search the same places for Node", () => {
     // Two copies of one list had already drifted: diagnose counted
-    // /usr/bin/node as resolvable, the wrappers never looked there.
+    // /usr/bin/node as resolvable, the wrappers never looked there. The
+    // wrappers look in one more place diagnose cannot know: beside the entry
+    // they found, since an npm global bin holds `node` next to `mirror-hook`.
     const body = readFileSync(join(REPO_ROOT, ".claude/hooks/session-start.sh"), "utf8");
-    const listed = (body.match(/^for candidate in (.*); do$/m)?.[1] ?? "")
-      .split(/\s+/)
-      .map((candidate) => candidate.replace(/^"|"$/g, ""));
-    assert.deepEqual(listed, [...HOOK_NODE_CANDIDATES]);
+    const listed = body.match(/^for candidate in (.*); do$/m)?.[1] ?? "";
+    const quoted = (candidate: string) => (candidate.includes("$") ? `"${candidate}"` : candidate);
+    assert.equal(
+      listed,
+      [...HOOK_NODE_CANDIDATES.map(quoted), '"$(dirname "$ENTRY")/node"'].join(" "),
+    );
   });
 
   test("diagnose reports recent hook failures from hooks.log, never their reasons", () => {
@@ -375,8 +379,11 @@ describe("a hook that cannot run is recorded, never silent (N1)", () => {
   });
 });
 
-describe("the twelve wrappers", () => {
-  const WRAPPERS = [
+describe("the fourteen wrappers", () => {
+  // Two forms (US3, D5): the ten in-tree wrappers resolve the tree from their
+  // own file; the plugin's four find the installed `mirror-hook` bin, because
+  // Claude Code copies a plugin into its own cache.
+  const TREE_WRAPPERS = [
     ".claude/hooks/session-start.sh",
     ".claude/hooks/log-user-prompt.sh",
     ".claude/hooks/log-session-end.sh",
@@ -385,27 +392,63 @@ describe("the twelve wrappers", () => {
     ".gemini/hooks/log-user.sh",
     ".gemini/hooks/log-assistant.sh",
     ".gemini/hooks/session-end.sh",
+    "scripts/codex-hooks/session-start.sh",
+    "scripts/codex-hooks/session-end.sh",
+  ];
+  const BIN_WRAPPERS = [
     "plugins/mirror-mind/hooks/session-start.sh",
     "plugins/mirror-mind/hooks/log-user-prompt.sh",
     "plugins/mirror-mind/hooks/log-session-end.sh",
     "plugins/mirror-mind/hooks/mirror-inject.sh",
-    "scripts/codex-hooks/session-start.sh",
-    "scripts/codex-hooks/session-end.sh",
   ];
+  const WRAPPERS = [...TREE_WRAPPERS, ...BIN_WRAPPERS];
 
-  test("differ only in the hook name and the depth to the repository root", () => {
+  const normalized = (path: string) =>
+    readFileSync(join(REPO_ROOT, path), "utf8")
+      .replace(/^HOOK=".*"$/m, 'HOOK="<NAME>"')
+      .replace(/\$HERE\/\.\.[./]*/g, "$HERE/<DEPTH>");
+
+  test("within a form, differ only in the hook name and the depth to the tree root", () => {
     // CR071 is why this is asserted rather than trusted: eleven skills reached
     // the front door on Pi while still calling Python on Claude Code and the
     // published plugin, for commands flipped as far back as DS3, and nothing
     // failed -- because Python answered correctly. Copies drift silently.
-    // These can only differ in two lines, and the generator writes both.
-    const normalized = WRAPPERS.map((path) =>
-      readFileSync(join(REPO_ROOT, path), "utf8")
-        .replace(/^HOOK=".*"$/m, 'HOOK="<NAME>"')
-        .replace(/\$HERE\/\.\.[./]*/g, "$HERE/<DEPTH>"),
-    );
-    for (const [index, body] of normalized.entries()) {
-      assert.equal(body, normalized[0], `${WRAPPERS[index]} differs beyond its hook name`);
+    for (const group of [TREE_WRAPPERS, BIN_WRAPPERS]) {
+      const bodies = group.map(normalized);
+      for (const [index, body] of bodies.entries()) {
+        assert.equal(body, bodies[0], `${group[index]} differs beyond its hook name`);
+      }
+    }
+  });
+
+  test("the two forms share everything but how the entry is found", () => {
+    // The generator fills two placeholders per form; nothing else may differ.
+    // Both forms run the same entry the same way, so a fix to the Node search
+    // or the hooks.log contract reaches the plugin and the tree alike.
+    const strip = (body: string) =>
+      body
+        .replace(/^# Resolve the tree from THIS FILE[\s\S]*?^REPO_ROOT=.*$/m, "<LOCATE>")
+        .replace(/^# This wrapper is the Claude plugin's[\s\S]*?^REPO_ROOT=""$/m, "<LOCATE>")
+        .replace(/^ENTRY="\$REPO_ROOT\/bin\/mirror-hook\.js"$/m, "<ENTRY>")
+        .replace(/^# Find the bin\.[\s\S]*?^fi$/m, "<ENTRY>");
+    const tree = strip(normalized(TREE_WRAPPERS[0] ?? ""));
+    const bin = strip(normalized(BIN_WRAPPERS[0] ?? ""));
+    assert.match(tree, /<LOCATE>[\s\S]*<ENTRY>/);
+    assert.equal(tree, bin);
+  });
+
+  test("both forms run the bin, never ts/src/hooks/main.ts, and pass no flag", () => {
+    // Under `npm root -g` every wrapper sits below node_modules, where Node
+    // will not strip types (D15); and `--env-file` could only ever name a
+    // checkout's .env (D3).
+    for (const path of WRAPPERS) {
+      const body = readFileSync(join(REPO_ROOT, path), "utf8")
+        .split("\n")
+        .filter((line) => !line.trimStart().startsWith("#"))
+        .join("\n");
+      assert.doesNotMatch(body, /hooks\/main\.ts/, path);
+      assert.doesNotMatch(body, /--env-file|--no-warnings|NODE_OPTIONS/, path);
+      assert.match(body, /"\$NODE" "\$ENTRY" "\$HOOK" "\$@"/, path);
     }
   });
 
@@ -425,11 +468,27 @@ describe("the twelve wrappers", () => {
     }
   });
 
-  test("each resolves the repository from its own file, never the cwd", () => {
+  test("the tree form resolves the tree from its own file, never the cwd", () => {
     // A runtime spawns hooks from whatever directory the session is in.
-    for (const path of WRAPPERS) {
+    for (const path of TREE_WRAPPERS) {
       const body = readFileSync(join(REPO_ROOT, path), "utf8");
       assert.match(body, /BASH_SOURCE/, path);
+      assert.match(body, /ENTRY="\$REPO_ROOT\/bin\/mirror-hook\.js"/, path);
+    }
+  });
+
+  test("the bin form takes no relative path to any tree, and reads no tree .env", () => {
+    // Claude Code copies a plugin into its cache; `../../..` from there is
+    // nothing. The TS5 "hook window" was exactly this, and the bin form closes it.
+    for (const path of BIN_WRAPPERS) {
+      const body = readFileSync(join(REPO_ROOT, path), "utf8")
+        .split("\n")
+        .filter((line) => !line.trimStart().startsWith("#"))
+        .join("\n");
+      assert.doesNotMatch(body, /BASH_SOURCE|\.\.\//, path);
+      assert.match(body, /^REPO_ROOT=""$/m, path);
+      assert.match(body, /MIRROR_BIN/, path);
+      assert.match(body, /command -v mirror-hook/, path);
     }
   });
 
@@ -486,6 +545,7 @@ describe("the Codex wrapper", () => {
     cpSync(join(REPO_ROOT, "scripts/codex-hooks"), join(checkout, "scripts/codex-hooks"), {
       recursive: true,
     });
+    cpSync(join(REPO_ROOT, "bin"), join(checkout, "bin"), { recursive: true });
     cpSync(join(REPO_ROOT, "ts/src"), join(checkout, "ts/src"), { recursive: true });
     symlinkSync(join(REPO_ROOT, "node_modules"), join(checkout, "node_modules"));
 
@@ -552,11 +612,32 @@ describe("the Codex wrapper", () => {
 });
 
 describe("the MCP launcher", () => {
+  const body = readFileSync(join(REPO_ROOT, "plugins/mirror-mind/mcp/launch.sh"), "utf8");
+  const code = body
+    .split("\n")
+    .filter((line) => !line.trimStart().startsWith("#"))
+    .join("\n");
+
   test("has no Python branch and no engine gate left", () => {
-    const body = readFileSync(join(REPO_ROOT, "plugins/mirror-mind/mcp/launch.sh"), "utf8");
-    assert.doesNotMatch(body, /exec python3/);
-    assert.doesNotMatch(body, /MIRROR_TS_MCP[^ ]*=/);
-    assert.match(body, /exec node/);
+    assert.doesNotMatch(code, /exec python3/);
+    assert.doesNotMatch(code, /MIRROR_TS_MCP[^ ]*=/);
+  });
+
+  test("starts the server through the installed `mirror` bin, found as the wrappers find theirs", () => {
+    // The plugin's launcher has the plugin's problem: no relative path to the
+    // tree. Same search as the bin-form wrappers, same variable, same places.
+    assert.doesNotMatch(code, /BASH_SOURCE|\.\.\/|ts\/src\/mcp\/main\.ts|--env-file/);
+    assert.match(code, /exec "\$NODE" "\$ENTRY" mcp$/m);
+    const wrapper = readFileSync(
+      join(REPO_ROOT, "plugins/mirror-mind/hooks/session-start.sh"),
+      "utf8",
+    );
+    const binDirs = (text: string) => text.match(/^for candidate in (.*); do$/gm) ?? [];
+    assert.deepEqual(
+      binDirs(code),
+      binDirs(wrapper),
+      "the launcher and the wrappers search the same places",
+    );
   });
 });
 
@@ -683,6 +764,50 @@ describe("the entry point runs", () => {
     } finally {
       db.close();
     }
+  });
+
+  test("SessionStart hands the runtime the Operating Instructions, unless the project is this tree (D13)", () => {
+    // An installed package reaches Claude Code and Gemini CLI through hooks,
+    // skills, and an MCP server -- nothing that reads a CLAUDE.md. Without
+    // this a session wired to the package answers /mm-mirror and still routes
+    // no mode and signs no persona (US3's second panel pass). Both runtimes
+    // read SessionStart's `hookSpecificOutput.additionalContext`, so the
+    // session-start hook hands over AGENTS.md from its own tree, where it
+    // matches the core it ships with -- and stays quiet inside the checkout,
+    // whose CLAUDE.md imports that same file.
+    const home = tmpHome();
+    const run = (hook: string, projectDir: string) =>
+      execFileSync(process.execPath, [join(REPO_ROOT, "ts/src/hooks/main.ts"), hook], {
+        encoding: "utf8",
+        env: {
+          ...process.env,
+          MEMORY_ENV: "production",
+          MIRROR_HOME: home,
+          MIRROR_USER: "",
+          CLAUDE_PROJECT_DIR: projectDir,
+          GEMINI_PROJECT_DIR: projectDir,
+          NODE_OPTIONS: "--no-warnings",
+        },
+        input: "{}",
+        timeout: 30_000,
+      });
+    const agents = readFileSync(join(REPO_ROOT, "AGENTS.md"), "utf8");
+    const context = (output: string) =>
+      (
+        JSON.parse(output) as {
+          hookSpecificOutput: { hookEventName: string; additionalContext: string };
+        }
+      ).hookSpecificOutput;
+
+    for (const hook of ["claude:session-start", "gemini:session-start"]) {
+      const elsewhere = context(run(hook, join(home, "some-project")));
+      assert.equal(elsewhere.hookEventName, "SessionStart", hook);
+      assert.equal(elsewhere.additionalContext, agents, hook);
+    }
+
+    // Inside the checkout the project already carries the file.
+    assert.equal(run("claude:session-start", REPO_ROOT), "", "Claude printed nothing before D13");
+    assert.equal(run("gemini:session-start", REPO_ROOT), "{}\n", "Gemini printed {} before D13");
   });
 
   test("a hook with no stdin at all does not hang or throw", () => {

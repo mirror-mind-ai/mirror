@@ -25,7 +25,8 @@
     "node": ">=24"
   },
   "bin": {
-    "mirror": "bin/mirror.js"
+    "mirror": "bin/mirror.js",
+    "mirror-hook": "bin/mirror-hook.js"
   },
   "files": [
     "bin",

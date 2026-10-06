@@ -4,9 +4,10 @@
 // plugin", because a revert that requires editing an installed plugin is not one
 // a user can perform under pressure. This grades that bridge.
 //
-// Every case runs from a cwd that is NOT the repository and against a FAKE repo
-// layout (`ts` symlinked to the real one), so the launcher's own path
-// resolution is under test and the real `.env` is never read or written.
+// Every case runs from a cwd that is NOT the repository, with the launcher
+// copied where Claude Code would copy a plugin -- a directory that is no
+// Mirror tree -- and the `mirror` bin first on a scratch PATH, so the
+// launcher's own resolution is under test (CV22.DS10.US3 plateau 3, D5).
 //
 // Which engine answered is graded by observation, not by `serverInfo`: D4 makes
 // the two engines report the same version on purpose, so the Python branch is
@@ -54,8 +55,10 @@ interface Harness {
 }
 
 /**
- * A fake repository: the real launcher, a `ts` symlink to the real core, a
- * `.env` under test control, and a stub `python3` first on PATH.
+ * A plugin cache: the real launcher copied into it, a `.env` beside the
+ * plugin under test control (which the launcher must NOT read), the `mirror`
+ * bin on a scratch PATH as npm's global bin links it, and a stub `python3`
+ * first on that PATH.
  *
  * The stub matters beyond convenience: `memory` is NOT importable from a bare
  * `python3` on this machine, so a real Python branch would fail with
@@ -67,13 +70,11 @@ function harness(envFile: string | null): Harness {
   const launcher = join(dir, "plugins", "mirror-mind", "mcp", "launch.sh");
   copyFileSync(REAL_LAUNCHER, launcher);
   chmodSync(launcher, 0o755);
-  symlinkSync(TS_ROOT, join(dir, "ts"));
-  // The version walk resolves from the real `ts` through the symlink, so the
-  // fake repo needs no pyproject of its own.
   if (envFile !== null) writeFileSync(join(dir, ".env"), envFile, "utf-8");
 
   const binDir = join(dir, "bin");
   mkdirSync(binDir);
+  symlinkSync(join(REPO_ROOT, "bin", "mirror.js"), join(binDir, "mirror"));
   const pythonMarker = join(dir, "python-argv.txt");
   writeFileSync(
     join(binDir, "python3"),
@@ -194,24 +195,31 @@ test("a commented, similarly-named, or absent gate leaves TypeScript serving", a
   }
 });
 
-test(".env reaches the server process, and the environment still outranks it", async () => {
+test("the environment reaches the server, and a .env beside the plugin is NOT read", async () => {
   // The client's environment is not the skill's: no `.env`, no NODE_OPTIONS,
-  // any cwd. Python survives that by walking up from its own file with
-  // setdefault semantics; the launcher's --env-file-if-exists must match.
-  const fromFile = harness("MIRROR_MCP_VERSION=3.3.3\n");
-  try {
-    const run = await runLauncher(fromFile);
-    assert.equal(serverInfo(run.stdout).version, "3.3.3", ".env must reach the process");
-  } finally {
-    fromFile.cleanup();
-  }
-
+  // any cwd. Until CV22.DS10.US3 the launcher passed --env-file-if-exists for
+  // the .env three levels up from itself; a plugin copied into Claude Code's
+  // cache has no such file, and a file that happened to be there would belong
+  // to whoever owns that directory. Configuration is the entry's job now (D3):
+  // its own tree's .env and the user's config file, never the plugin's.
   const both = harness("MIRROR_MCP_VERSION=1.1.1\n");
   try {
     const run = await runLauncher(both, { MIRROR_MCP_VERSION: "2.2.2" });
-    assert.equal(serverInfo(run.stdout).version, "2.2.2", "the environment must win");
+    assert.equal(serverInfo(run.stdout).version, "2.2.2", "the environment must reach the server");
   } finally {
     both.cleanup();
+  }
+
+  const fromFile = harness("MIRROR_MCP_VERSION=3.3.3\n");
+  try {
+    const run = await runLauncher(fromFile);
+    assert.notEqual(
+      serverInfo(run.stdout).version,
+      "3.3.3",
+      "a plugin-local .env must not be read",
+    );
+  } finally {
+    fromFile.cleanup();
   }
 });
 

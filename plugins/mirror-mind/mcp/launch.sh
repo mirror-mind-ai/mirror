@@ -1,31 +1,52 @@
-#!/bin/bash
-# Mirror Mind plugin — MCP server launcher (CV22.DS9.TS2, DS9 decision D5).
+#!/usr/bin/env bash
+# Mirror Mind plugin — MCP server launcher (CV22.DS9.TS2, DS9 decision D5;
+# CV22.DS10.US3 plateau 3, decision D5).
 #
 # The manifest points here instead of at an engine, so the entry point can
 # change without editing a plugin inside someone's runtime.
 #
-# CV22.DS10.TS5 removed the MIRROR_TS_MCP gate and the Python branch it chose
-# between. The gate existed so DS9's cutover could be reverted to the Python
-# server without editing an installed plugin; there is no Python server to
-# revert to any more, and a gate that can only select a missing engine is worse
-# than no gate -- it turns a stale value in someone's .env into a dead server.
+# A plugin is copied into Claude Code's own cache, so no relative path from
+# this file reaches the Mirror tree. The launcher finds the installed `mirror`
+# bin the way the plugin's hook wrappers find `mirror-hook`: MIRROR_BIN (the
+# directory holding both, `$(npm prefix -g)/bin`), then the PATH, then the
+# global bin directories a GUI launch leaves off it. Node is found the same
+# way the wrappers find it, MIRROR_NODE first.
 #
-# `runtime diagnose` reports any leftover MIRROR_TS_* variable as inert.
+# Unlike a hook, a server that cannot start has no turn to protect: it says
+# why on stderr, which is the client's log for this server, and exits 1.
+# `runtime diagnose` reports a missing `mirror` from the caller's shell.
 #
-# US3 replaces this file with the npm entry point the manifest can name
-# directly.
+# No flags: `mirror mcp` reads configuration and silences `node:sqlite`'s
+# ExperimentalWarning in-process (US3, D3), precisely because no MCP client
+# will pass --no-warnings and stderr must stay the client's log.
 
 set -u
 
-# Resolve the repository from THIS FILE, never from the cwd. An MCP client
-# spawns the server from whatever directory the session is in, and CV21's
-# plugin contract forbids a repo-cwd assumption.
-HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
-REPO_ROOT="$(cd "$HERE/../../.." && pwd -P)"
-ENV_FILE="$REPO_ROOT/.env"
+ENTRY=""
+[ -n "${MIRROR_BIN:-}" ] && [ -x "$MIRROR_BIN/mirror" ] && ENTRY="$MIRROR_BIN/mirror"
+[ -n "$ENTRY" ] || ENTRY="$(command -v mirror 2>/dev/null || true)"
+for candidate in "$HOME/.nvm/current/bin" /opt/homebrew/bin /usr/local/bin; do
+  [ -n "$ENTRY" ] && break
+  [ -x "$candidate/mirror" ] && ENTRY="$candidate/mirror"
+done
 
-# --env-file-if-exists: a fresh clone without .env still starts, and variables
-# already in the client's environment outrank the file. NODE_OPTIONS is
-# deliberately not set -- main.ts suppresses node:sqlite's ExperimentalWarning
-# in-process precisely because no MCP client will pass --no-warnings.
-exec node --env-file-if-exists="$ENV_FILE" "$REPO_ROOT/ts/src/mcp/main.ts"
+if [ -z "$ENTRY" ]; then
+  echo "mirror-mind: \`mirror\` not found on PATH; the MCP server cannot start. Install mirror-mind (npm install -g mirror-mind) or set MIRROR_BIN to its bin directory." >&2
+  exit 1
+fi
+
+NODE="${MIRROR_NODE:-}"
+if [ -z "$NODE" ] || [ ! -x "$NODE" ]; then
+  NODE="$(command -v node 2>/dev/null || true)"
+fi
+for candidate in "$HOME/.nvm/current/bin/node" /opt/homebrew/bin/node /usr/local/bin/node "$(dirname "$ENTRY")/node"; do
+  [ -n "$NODE" ] && break
+  [ -x "$candidate" ] && NODE="$candidate"
+done
+
+if [ -z "$NODE" ]; then
+  echo "mirror-mind: node not found on PATH; the MCP server cannot start. Set MIRROR_NODE." >&2
+  exit 1
+fi
+
+exec "$NODE" "$ENTRY" mcp
