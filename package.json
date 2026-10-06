@@ -43,6 +43,14 @@
     "README.md",
     "LICENSE"
   ],
+  "pi": {
+    "extensions": [
+      "./.pi/extensions/mirror-logger.ts"
+    ],
+    "skills": [
+      "./.pi/skills"
+    ]
+  },
   "imports": {
     "#backup/*": "./ts/src/backup/*",
     "#builder/*": "./ts/src/builder/*",

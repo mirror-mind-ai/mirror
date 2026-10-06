@@ -150,15 +150,19 @@ env -i PATH="$SCRATCH/prefix/bin:/usr/bin:/bin:$(dirname "$(command -v node)")" 
 
 ```bash
 # 2b — Pi, from the same install, real Pi auth, scratch Mirror state
-# The config file from 2a selects the scratch user; add the key to it by hand:
+# Pi runs with the REAL HOME (its auth lives there), so `MIRROR_USER=route2` alone
+# would resolve to ~/.mirror-minds/route2 in the real homes root. Pin the scratch
+# home in the scratch config file, and add the key by hand -- never on a command line:
+printf 'MIRROR_HOME=%s\n' "$SCRATCH/home/.mirror-minds/route2" >> "$SCRATCH/home/.config/mirror/env"
 #   echo 'OPENROUTER_API_KEY=…' >> "$SCRATCH/home/.config/mirror/env"
-# The route never passes the key on a command line.
 pi install "$PKG"             # personal package, real ~/.pi/agent/settings.json; removed below
-ls -la ~/.mirror-minds/vinicius-ts > "$SCRATCH/real-home-before.txt"
+ls -la ~/.mirror-minds > "$SCRATCH/real-homes-before.txt"
 cd /tmp
-env -u MIRROR_USER -u MIRROR_HOME \
-  PATH="$SCRATCH/prefix/bin:$PATH" XDG_CONFIG_HOME="$SCRATCH/home/.config" PI_SESSIONS_DIR="$SCRATCH/pi-sessions" pi
+env -u MIRROR_USER -u MIRROR_HOME PATH="$SCRATCH/prefix/bin:$PATH" XDG_CONFIG_HOME="$SCRATCH/home/.config" PI_SESSIONS_DIR="$SCRATCH/pi-sessions" pi
 ```
+
+One line, so a terminal wrap does not split `env` from `pi` (an `env` with no command prints
+the environment -- secrets included -- and `pi` then runs with the real configuration).
 
 Do **not** blank `MIRROR_USER=`/`MIRROR_HOME=` in the shell: an empty variable is
 "defined" to the core's loader and would block the config file. `env -u` unsets them.
@@ -181,8 +185,9 @@ Inside Pi, in this order:
   lists the session, and `$SCRATCH/home/.mirror-minds/route2/mirror-logger.log` holds
   `operating instructions appended from …/mirror-mind/AGENTS.md` and, if Pi reached the
   extension twice, one `second registration skipped` line (record which).
-- Pass: all of the above; `diff <(ls -la ~/.mirror-minds/vinicius-ts) "$SCRATCH/real-home-before.txt"`
-  is empty; `$SCRATCH/pi-sessions` holds the session and `~/.pi/agent/sessions` gained nothing.
+- Pass: all of the above; `diff <(ls -la ~/.mirror-minds) "$SCRATCH/real-homes-before.txt"`
+  is empty (no new home appeared beside the real ones); `$SCRATCH/pi-sessions` holds the
+  session and `~/.pi/agent/sessions` gained nothing.
 - Fail: a skill that names the checkout; no persona signature on the D13 prompt; Builder
   load that starts work; the real Mirror home or the real Pi sessions touched; the
   extension logging to a home other than the scratch one.
