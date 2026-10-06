@@ -149,8 +149,24 @@ home (D14); the `mirror` bin is a type-stripping loader shim (D15).
   load it from the cwd (D13), and registers once per process. The dev guide names `npm link`.
   The test guide's routes 1 and 2 were rewritten to what the tree does: route 2b must `env -u`
   the two variables rather than blank them, since an empty variable blocks the config file.
-  Deferred: `init`'s wiring-step print (plateau 3). **Waiting on:** route 1, 1b, and 2 — the
-  D13 prompt and the double-load observation are the walk's.
+  Deferred: `init`'s wiring-step print (plateau 3). **The Navigator's first walk, 2026-10-06
+  (routes 1, 1b, 2a, 2b):** route 1 passed; **1b** — the session-start notice rendered, the agent
+  met `command not found` on `/mm-journeys`, read `package.json`, found `bin/mirror.js`, and ran
+  `node bin/mirror.js journeys`: it improvised, onto the sanctioned entry (D15), never the
+  forbidden checkout form; **2a** passed line for line (orientation, `init`, F1, twelve personas,
+  0600/0700, `MIRROR_USER=route2`); **2b** first failed — `pi install <path>` needs the manifest's
+  `pi` key, which this plateau had deferred; added (`22798551`), verified with `pi -e` from `/tmp`,
+  and the walk resumed: the status line rendered, `/mm-journeys` ran `mirror journeys`, the D13
+  prompt answered under **`◇ financial`** (the Operating Instructions reached a session opened
+  in `/tmp` from the installed package), the logger recorded `operating instructions appended`
+  once per prompt and **no** `second registration skipped` (Pi loads the package extension
+  once; the guard stays as insurance), and no `not on the PATH` line. The walk also found route
+  2b's own flaw: with the real `HOME`, `MIRROR_USER` alone resolves into the real homes root, so
+  the route pins `MIRROR_HOME` in the scratch config file. The real-homes diff showed only
+  `~/.mirror-minds/vinicius` touched at 12:08 and 12:21 — a second Pi session the Navigator had
+  open on that user, logging its own turns; the scratch session wrote to `route2` alone.
+  Open from the walk: the Builder-boundary prompt (`/mm-build personal-growth`), which the
+  Navigator did not report.
 
 ## Where To Resume
 
