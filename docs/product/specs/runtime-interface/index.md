@@ -374,9 +374,10 @@ shared native skill surface at `.agents/skills/mm-*/SKILL.md` (symlinked from
 A runtime spawns its hooks with the `PATH` it was launched with, and a runtime
 launched from the desktop often does not have the one that holds `node`. Each
 hook wrapper therefore resolves Node explicitly, in this order: `$MIRROR_NODE`,
-`command -v node`, `~/.nvm/current/bin/node`, `/opt/homebrew/bin/node`,
-`/usr/local/bin/node`, and last the directory the Mirror entry was found in
-(an npm global bin holds `node` beside `mirror-hook`). A wrapper that finds
+`command -v node`, the directory the Mirror entry was found in (an npm global
+bin holds the `node` that installed the package beside `mirror-hook`, while a
+system `/usr/local/bin/node` can be years older), `~/.nvm/current/bin/node`,
+`/opt/homebrew/bin/node`, `/usr/local/bin/node`. A wrapper that finds
 none writes one line to `<mirror home>/hooks.log` and exits 0: it skips the
 hook, never fails the turn, and is never silent. The Node it finds must be 24
 or later. An older one fails before the hook starts, and the wrapper records

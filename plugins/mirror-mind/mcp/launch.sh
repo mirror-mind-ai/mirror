@@ -39,7 +39,7 @@ NODE="${MIRROR_NODE:-}"
 if [ -z "$NODE" ] || [ ! -x "$NODE" ]; then
   NODE="$(command -v node 2>/dev/null || true)"
 fi
-for candidate in "$HOME/.nvm/current/bin/node" /opt/homebrew/bin/node /usr/local/bin/node "$(dirname "$ENTRY")/node"; do
+for candidate in "$(dirname "$ENTRY")/node" "$HOME/.nvm/current/bin/node" /opt/homebrew/bin/node /usr/local/bin/node; do
   [ -n "$NODE" ] && break
   [ -x "$candidate" ] && NODE="$candidate"
 done

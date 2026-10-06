@@ -55,13 +55,14 @@ ENTRY="$REPO_ROOT/bin/mirror-hook.js"
 # the same silence here would hide a new failure — no logging, no inject, no
 # close tail — that a user would meet weeks later as "Mirror stopped
 # remembering". So an unresolvable Node is RECORDED, never swallowed. The
-# directory the entry was found in is searched last: an npm global bin holds
-# `node` beside `mirror-hook`.
+# directory the entry was found in is searched first: an npm global bin holds
+# the `node` that installed the package beside `mirror-hook`, while a system
+# `/usr/local/bin/node` can be years older (CI's Ubuntu runner has one).
 NODE="${MIRROR_NODE:-}"
 if [ -z "$NODE" ] || [ ! -x "$NODE" ]; then
   NODE="$(command -v node 2>/dev/null || true)"
 fi
-for candidate in "$HOME/.nvm/current/bin/node" /opt/homebrew/bin/node /usr/local/bin/node "$(dirname "$ENTRY")/node"; do
+for candidate in "$(dirname "$ENTRY")/node" "$HOME/.nvm/current/bin/node" /opt/homebrew/bin/node /usr/local/bin/node; do
   [ -n "$NODE" ] && break
   [ -x "$candidate" ] && NODE="$candidate"
 done

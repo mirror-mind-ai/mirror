@@ -10,9 +10,11 @@ set -euo pipefail
 # production database.
 #
 # The server is TypeScript since CV22.DS9, and the launcher lost its Python
-# branch at CV22.DS10.TS5 plateau 1; this smoke drove the Python server until
-# TS5 plateau 3 deleted it. It runs the launcher from THIS checkout --
-# resolving the server from an installed plugin is CV22.DS10.US3's npm `bin`.
+# branch at CV22.DS10.TS5 plateau 1. Since CV22.DS10.US3 plateau 3 the launcher
+# finds the installed `mirror` bin rather than a tree, so this smoke puts THIS
+# checkout's `bin/mirror.js` on a scratch PATH the way npm's global bin links
+# it -- a machine with no `npm link` (CI) must not fail here, and a machine
+# with one must not pass on the linked copy.
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
@@ -37,6 +39,13 @@ unset MIRROR_HOME MIRROR_USER 2>/dev/null || true
 
 MARKER="mcp-smoke-$$"
 echo "Isolated DB: $DB_PATH"
+
+BIN="$SANDBOX/bin"
+mkdir -p "$BIN"
+ln -s "$REPO_ROOT/bin/mirror.js" "$BIN/mirror"
+ln -s "$(command -v node)" "$BIN/node"
+export PATH="$BIN:$PATH"   # first, so the checkout copy wins over any npm-linked one
+unset MIRROR_BIN MIRROR_NODE 2>/dev/null || true
 
 # Drive a full round-trip; capture stdout (pure JSON-RPC) to a file.
 printf '%s\n' \

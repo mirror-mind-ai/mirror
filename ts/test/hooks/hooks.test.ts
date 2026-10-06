@@ -333,14 +333,16 @@ describe("a hook that cannot run is recorded, never silent (N1)", () => {
   test("the wrappers and diagnose search the same places for Node", () => {
     // Two copies of one list had already drifted: diagnose counted
     // /usr/bin/node as resolvable, the wrappers never looked there. The
-    // wrappers look in one more place diagnose cannot know: beside the entry
-    // they found, since an npm global bin holds `node` next to `mirror-hook`.
+    // wrappers look first in one place diagnose cannot know: beside the entry
+    // they found, since an npm global bin holds the `node` that installed the
+    // package next to `mirror-hook` -- and a system /usr/local/bin/node can be
+    // years older (CI's Ubuntu runner has one that cannot run the shim).
     const body = readFileSync(join(REPO_ROOT, ".claude/hooks/session-start.sh"), "utf8");
     const listed = body.match(/^for candidate in (.*); do$/m)?.[1] ?? "";
     const quoted = (candidate: string) => (candidate.includes("$") ? `"${candidate}"` : candidate);
     assert.equal(
       listed,
-      [...HOOK_NODE_CANDIDATES.map(quoted), '"$(dirname "$ENTRY")/node"'].join(" "),
+      ['"$(dirname "$ENTRY")/node"', ...HOOK_NODE_CANDIDATES.map(quoted)].join(" "),
     );
   });
 
