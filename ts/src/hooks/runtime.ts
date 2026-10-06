@@ -17,10 +17,11 @@
 // writes one line to `<mirror-home>/hooks.log`, and `runtime diagnose` reports
 // whether Node is resolvable from hook context.
 
-import { appendFileSync, mkdirSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, readFileSync, realpathSync } from "node:fs";
 import { dirname, join } from "node:path";
 
 import { resolveMirrorHome } from "#frontDoor/dbPath.ts";
+import { runningTreeRoot } from "#runtime/treeRoot.ts";
 
 /** Where a hook records that it could not do its job. */
 export function hookLogPath(env: NodeJS.ProcessEnv = process.env): string | null {
@@ -53,6 +54,51 @@ export function noteHookFailure(hook: string, reason: string, env = process.env)
   } catch {
     // A hook cannot report that it could not report. Stop here.
   }
+}
+
+/**
+ * The Operating Instructions a SessionStart hook should hand its runtime, or
+ * null when the project already carries this same file.
+ *
+ * CV22.DS10.US3, decision D13. An installed package reaches Claude Code and
+ * Gemini CLI through hooks, skills, and an MCP server; none of those reads a
+ * CLAUDE.md or GEMINI.md, so a session wired to the package would answer
+ * `/mm-mirror` and still route no mode, sign no persona, and hold no Builder
+ * boundary. Both runtimes read SessionStart's
+ * `hookSpecificOutput.additionalContext`, so the session-start hook returns
+ * `AGENTS.md` from the tree THIS code runs from -- the instructions always
+ * match the core they ship with -- unless the project the session opened in
+ * is that same tree (the checkout, whose CLAUDE.md imports the same file), in
+ * which case a second copy is noise. A file that cannot be read is recorded:
+ * a Mirror session without its instructions is not a Mirror session.
+ */
+export function operatingInstructionsFor(
+  hook: string,
+  projectDir: string | undefined,
+): string | null {
+  try {
+    const ours = join(runningTreeRoot(), "AGENTS.md");
+    const theirs = projectDir ? join(projectDir, "AGENTS.md") : "";
+    if (theirs && existsSync(theirs) && realpathSync(theirs) === realpathSync(ours)) return null;
+    return readFileSync(ours, "utf8");
+  } catch (error) {
+    noteHookFailure(
+      hook,
+      `operating instructions not delivered: ${error instanceof Error ? error.message : String(error)}`,
+    );
+    return null;
+  }
+}
+
+/**
+ * The SessionStart answer both runtimes read: context as JSON, or `nothing`
+ * -- what each runtime's hook printed before D13 (Gemini `{}`, Claude none).
+ */
+export function sessionStartOutput(instructions: string | null, nothing = ""): string {
+  if (instructions === null) return nothing;
+  return `${JSON.stringify({
+    hookSpecificOutput: { hookEventName: "SessionStart", additionalContext: instructions },
+  })}\n`;
 }
 
 export interface FrontDoorRun {

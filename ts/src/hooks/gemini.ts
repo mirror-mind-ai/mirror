@@ -15,7 +15,12 @@
 // runtime sets it and the payload is the fallback.
 
 import { parseHookPayload } from "./payload.ts";
-import { runFrontDoor, runFrontDoorQuietly } from "./runtime.ts";
+import {
+  operatingInstructionsFor,
+  runFrontDoor,
+  runFrontDoorQuietly,
+  sessionStartOutput,
+} from "./runtime.ts";
 
 function sessionIdFrom(payloadSessionId: string, env = process.env): string {
   return env.GEMINI_SESSION_ID || payloadSessionId;
@@ -107,8 +112,15 @@ export async function geminiSessionEnd(stdin: string): Promise<number> {
  * same template as the other eleven so it cannot drift away from them, which
  * is the failure CR071 recorded for the skill copies.
  */
-export async function geminiSessionStart(): Promise<number> {
+export async function geminiSessionStart(env: NodeJS.ProcessEnv = process.env): Promise<number> {
   await runFrontDoorQuietly("gemini:session-start", ["conversation-logger", "session-start"]);
-  process.stdout.write("{}\n");
+  // US3, D13: the Operating Instructions as SessionStart context, unless the
+  // project is this tree -- the checkout's GEMINI/CLAUDE.md import the file.
+  process.stdout.write(
+    sessionStartOutput(
+      operatingInstructionsFor("gemini:session-start", env.GEMINI_PROJECT_DIR),
+      "{}\n",
+    ),
+  );
   return 0;
 }

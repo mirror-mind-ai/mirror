@@ -19,7 +19,7 @@
 // so neither a `bin` shim nor a skill line needs `--env-file` or
 // `NODE_OPTIONS=--no-warnings`. Importing this module does neither.
 
-import { existsSync, readFileSync } from "node:fs";
+import { accessSync, existsSync, constants as fsConstants, readFileSync } from "node:fs";
 import { basename, dirname } from "node:path";
 import { pathToFileURL } from "node:url";
 import {
@@ -74,6 +74,8 @@ import {
   silenceExperimentalWarnings,
   writeConfigValue,
 } from "#runtime/config.ts";
+import { runningTreeRoot } from "#runtime/treeRoot.ts";
+import { detectRuntimes, runtimeWiringLines } from "#runtime/wiring.ts";
 import { runSeed } from "#seed/seed.ts";
 import { getTasksForWeek, listTasks } from "#tasks/taskStore.ts";
 import { computeWeekRange } from "#tasks/weekView.ts";
@@ -874,6 +876,10 @@ function isInit(argv: readonly string[]): boolean {
  * When a user IS configured -- the checkout's `.env`, or a shell running a
  * second mirror -- the file is left alone and the person is told how to
  * select the new home.
+ *
+ * Plateau 3: it ends with the wiring step for each runtime found on the PATH
+ * (`#runtime/wiring.ts`), with this tree's path in it, so the person is handed
+ * the next line rather than a page. Printing is not automating.
  */
 function runInit(argv: readonly string[], env: NodeJS.ProcessEnv = process.env): number {
   const user = argv[1];
@@ -904,6 +910,7 @@ function runInit(argv: readonly string[], env: NodeJS.ProcessEnv = process.env):
       `  2. Run: ${PROGRAM} seed`,
       "\nYour identity is ready to use. Deepen it over time with:",
       `  ${PROGRAM} identity edit user identity`,
+      ...runtimeWiringSection(env),
     ];
     process.stdout.write(prints.map((line) => `${line}\n`).join(""));
     return 0;
@@ -914,6 +921,25 @@ function runInit(argv: readonly string[], env: NodeJS.ProcessEnv = process.env):
     }
     throw error;
   }
+}
+
+/** The "Wire your runtime" tail of `init`, empty when no runtime is on the PATH. */
+function runtimeWiringSection(env: NodeJS.ProcessEnv): string[] {
+  const isExecutable = (path: string): boolean => {
+    try {
+      accessSync(path, fsConstants.X_OK);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+  const detected = detectRuntimes(env, isExecutable);
+  if (detected.length === 0) return [];
+  const root = runningTreeRoot();
+  return [
+    "\nWire your runtime to this install (each step is one you run and can read first):",
+    ...detected.flatMap((runtime) => ["", ...runtimeWiringLines(runtime, root)]),
+  ];
 }
 
 function isSeed(argv: readonly string[]): boolean {

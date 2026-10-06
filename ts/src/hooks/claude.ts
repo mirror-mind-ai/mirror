@@ -15,11 +15,26 @@ import { resolveDbPath } from "#frontDoor/dbPath.ts";
 import { openLiveWriteDatabase } from "#frontDoor/liveBackup.ts";
 import { markInjected, needsInject, readMirrorState } from "./mirrorState.ts";
 import { parseHookPayload, readStdin } from "./payload.ts";
-import { noteHookFailure, runFrontDoor, runFrontDoorQuietly } from "./runtime.ts";
+import {
+  noteHookFailure,
+  operatingInstructionsFor,
+  runFrontDoor,
+  runFrontDoorQuietly,
+  sessionStartOutput,
+} from "./runtime.ts";
 
-/** `session-start.sh`: make sure logging is on for this session. */
-export async function claudeSessionStart(): Promise<number> {
+/**
+ * `session-start.sh`: make sure logging is on for this session, and hand
+ * Claude Code the Operating Instructions unless the project it opened in is
+ * this same tree (US3, D13 -- `operatingInstructionsFor`). The plugin in
+ * Claude Code's cache delivers them this way; the checkout's own wrappers
+ * find the project already carrying the file and stay quiet, as before.
+ */
+export async function claudeSessionStart(env: NodeJS.ProcessEnv = process.env): Promise<number> {
   await runFrontDoorQuietly("claude:session-start", ["conversation-logger", "session-start"]);
+  process.stdout.write(
+    sessionStartOutput(operatingInstructionsFor("claude:session-start", env.CLAUDE_PROJECT_DIR)),
+  );
   return 0;
 }
 
