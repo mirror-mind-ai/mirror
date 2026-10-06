@@ -7,7 +7,8 @@ panel-reviewed the same day; a second panel pass on 2026-10-05 (prompt-engineer,
 ai-engineer, product-designer, experience-designer) found six things, the sharpest that
 the operating instructions did not ship in the tarball; all six folded, and the Plan
 **approved by the Navigator on 2026-10-05 with D1–D13**; D14 and D15 taken during plateau 1.
-Plateaus 0 and 1 done the same day.
+Plateaus 0 and 1 done the same day; plateau 2 validated 2026-10-06; plateau 3 implemented
+2026-10-06, its Navigator route (3b–3d) pending.
 **Type:** User Story
 **Depends on:** every other DS10 story (done); the release gate (done 2026-09-28).
 
@@ -170,18 +171,73 @@ home (D14); the `mirror` bin is a type-stripping loader shim (D15).
   want to work on?"** — the Activation Boundary holding in a session whose only source of that
   rule is the appended `AGENTS.md`. **Plateau 2 validated by the Navigator, 2026-10-06.**
 
+- **Plateau 3 — hooks, plugin, MCP, Gemini, Codex (implemented 2026-10-06; route 3a run by
+  machine, routes 3b–3d await the Navigator).** The TS5 hook window is closed. **The second bin,
+  `mirror-hook`** (D5), runs on the loader shim `mirror` already had, now one shared `bin/loader.js`
+  (D15: neither bin carries the shim; `hooks.test.ts` forbids a second copy); `hooks/main.ts` gained
+  `runAsEntry()`, reading configuration and silencing warnings itself (D3), so **no wrapper passes
+  a flag any more** and the entry is importable without dispatching. **Two wrapper forms from one
+  generator**: the ten in-tree wrappers keep `$BASH_SOURCE` resolution and run their tree's
+  `bin/mirror-hook.js`; the plugin's four find the installed `mirror-hook` — `MIRROR_BIN` (a
+  directory, the one holding both bins, chosen over a per-executable variable so one setting
+  covers the four wrappers and the launcher), then the `PATH`, then the three global bin dirs —
+  and read no tree `.env`; `note()` resolves the home in the core's order, the user's config file
+  last. The forms share every other byte, asserted. **A finding the plan did not foresee:** the
+  in-tree wrappers ship in the tarball under `node_modules`, where Node refuses to strip types, so
+  the tree form had to run the bin too, not `ts/src/hooks/main.ts` — D15's reach. The generator
+  turns `patsub_replacement` off: bash 5.2 would have rewritten the fragments' `&&`. **The
+  launcher** finds `mirror` the same way and `exec`s `mirror mcp`; a server that cannot start
+  says why on stderr and exits 1 (no turn to protect). One pre-existing launcher test encoded the
+  retired behaviour (reading a `.env` beside the plugin) and now asserts its absence. **D13 for
+  Claude Code and Gemini CLI needs no step**: both runtimes read SessionStart's
+  `hookSpecificOutput.additionalContext` (verified in Claude Code's binary and Gemini's bundled
+  docs), so the session-start hook hands over `AGENTS.md` from its own tree unless the project it
+  opened in *is* that tree — the checkout, whose CLAUDE.md imports the file. One rule, both
+  runtimes, keyed on the project directory alone; the checkout's output is unchanged (Claude
+  nothing, Gemini `{}`). **The per-runtime wiring, verified against each runtime itself from a
+  scratch config dir, counted honestly: Pi 1, Claude Code 1, Gemini CLI 2, Codex 2.** Claude Code
+  2.1.283 loads a plugin directory under `~/.claude/skills/` every session as
+  `mirror-mind@skills-dir` — 25 skills, 3 hooks, the MCP server (`claude plugin details`). Gemini
+  0.61.0: `gemini skills link --consent <dir>` links all 25 (a nested directory symlink is NOT
+  discovered); hooks go in `~/.gemini/settings.json`. Codex 0.157.0: `~/.codex/skills/<dir>` is
+  discovered recursively and `~/.codex/AGENTS.md` is the global instructions file, both proven
+  with `codex debug prompt-input` (no model call). `mirror init` now ends with those steps for the
+  runtimes on the `PATH` (`#runtime/wiring.ts`), paths filled in — printing, not automating.
+  **`runtime diagnose`'s hooks check already existed** (`hook_failures_recorded`, TS5 handoff
+  N1); the plateau asserts it rather than building a second: `smoke_claude_plugin.sh` now runs
+  the plugin copied out of the tree with `mirror-hook` on a scratch `PATH`, the launcher, and
+  then the removal case — turn not failed, one `hooks.log` line, diagnose reports it without the
+  prompt. `smoke_npm_package.sh` (64 checks) runs the four runtimes against the real
+  `npm install -g`: the plugin from a cache copy, the Gemini and Codex wrappers from under
+  `npm root -g`, `mirror mcp` through the launcher and directly, D13 delivered, no `hooks.log`.
+  The Pi extension's `mirror`-resolves check **stays PATH-only** on purpose: skills run from Pi's
+  shell, so a `mirror` that exists in `/opt/homebrew/bin` but is off that `PATH` *will* fail, and
+  the plan's "same short list" would have made the check lie. **Two options recorded for the
+  Navigator, not built:** (a) a Gemini *extension* (`gemini-extension.json` + `hooks/hooks.json` +
+  `skills/` + `contextFileName`) would make Gemini one step like Claude's plugin — a new shipped
+  artifact, parallel to `plugins/mirror-mind`, outside this plan; (b) Codex 0.157 has hooks
+  (`hooks.json`, SessionStart/UserPromptSubmit), which could replace the wrapper script — a new
+  integration, a later story. Docs: the runtime-interface spec (two forms, `MIRROR_BIN`, an
+  "Installed package wiring" table), REFERENCE (`MIRROR_NODE`, `MIRROR_BIN`, the launcher),
+  getting-started (a pointer; the rewrite is plateau 6), the test guide (route 3a–3d). Verified:
+  typecheck, lint (one pre-existing warning in `update.ts`), 3005 tests, the five repository
+  checks, the generator in sync under bash 3.2 and 5, the custody proofs, all six smokes.
+  Next: the Navigator's route 3b–3d, then plateau 4 (§E).
+
 ## Where To Resume
 
 Read the [plan](plan.md) (D1–D15 approved and recorded) and the *Plateau Progress* above:
-plateaus 0, 1, and 2 are done and validated; the Ariad cursor is at `implement` for
-CV22.DS10.US3 under the approved Plan. **Next is plateau 3 (§D)**: the `mirror-hook` bin on the
-same loader shim as `mirror` (D5, D15); the generator's second wrapper form for the plugin
-(`MIRROR_BIN`, then the `PATH`, then the global bin dirs), in-tree wrappers unchanged;
-`launch.sh` → `exec mirror mcp`; `hooks.test.ts` for both forms; `smoke_claude_plugin.sh`
-with `mirror-hook` on a scratch `PATH`; the package smoke's second half; the Gemini CLI and
-Codex wiring steps counted and verified against each runtime's docs, and how Claude Code,
-Gemini CLI, and Codex receive `AGENTS.md` (D13); `runtime diagnose`'s `hooks` check; and
-the `init` wiring-step print deferred from plateau 1. It ends with route 3. Working state to
-know: the developer machine has `npm link` in place (`mirror` → this checkout); the
-plateau-0 capture lives in `tmp/us3/before.tsv` (gitignored) for plateau 6's replay; F1
-(empty `ego/constraints` template makes a fresh `seed` exit 1) is open for the Navigator.
+plateaus 0, 1, and 2 are done and validated; plateau 3 is implemented and its machine route
+(3a) passed; the Ariad cursor is at `implement` for CV22.DS10.US3 under the approved Plan.
+**Next: the Navigator walks route 3b (the wiring `init` prints), 3c if he wants a real Claude
+Code session, and 3d (Gemini and Codex discovery), from the test guide; then plateau 4 (§E)**:
+D-026 paid (one updater pipeline body, two apply strategies); `mirror runtime channel
+[stable|main]` per install kind (D9); the install kind in `runtime status`/`version`; the clone
+post-update `npm link` line; the newer-database refusal naming `mirror runtime update` (item
+12); `release:promote`'s dry-run publish steps; `smoke_runtime_update.sh` extended. Two
+Navigator options wait in the plateau-3 record (a Gemini extension; Codex hooks). Working state
+to know: the developer machine has `npm link` in place (`mirror` → this checkout; re-run it once
+so `mirror-hook` links too — two `hookBin` tests skip while a global `mirror`/`mirror-hook`
+exists in a candidate dir, by design); the plateau-0 capture lives in `tmp/us3/before.tsv`
+(gitignored) for plateau 6's replay; F1 (empty `ego/constraints` template makes a fresh `seed`
+exit 1) is open for the Navigator.

@@ -46,17 +46,19 @@ The Pi extension logs that line as a WARN in `mirror-logger.log`, the hook
 wrappers record the exit in `hooks.log`, and the front-door log records why,
 as a content-free category such as `backup=database_missing`.
 
-**The in-repo hook runtimes do all of this in one process per event.** Claude
-Code, Gemini CLI, and the packaged Claude plugin register short shell wrappers
+**The hook runtimes do all of this in one process per event.** Claude Code,
+Gemini CLI, and the packaged Claude plugin register short shell wrappers
 (`.claude/hooks/`, `.gemini/hooks/`, `plugins/mirror-mind/hooks/`, generated
-by `scripts/generate_hook_wrappers.sh`). Each wrapper resolves the
-repository from its own path, finds Node, and runs a single entry,
-`ts/src/hooks/main.ts <runtime>:<event>`, which reads the runtime's JSON
-payload from stdin once and runs the sequence above in-process over the front
-door's own modules. A hook never fails the user's turn: every path exits 0,
-and a failure is recorded in `<mirror home>/hooks.log` instead. That includes
-a wrapper that cannot find `node`, and a `node` that cannot run the hook. See
-[Node resolution](#node-resolution-for-hook-runtimes).
+by `scripts/generate_hook_wrappers.sh`). Each wrapper finds Node and runs a
+single entry, the `mirror-hook` bin (`bin/mirror-hook.js`, running
+`ts/src/hooks/main.ts <runtime>:<event>`), which reads configuration itself,
+reads the runtime's JSON payload from stdin once, and runs the sequence above
+in-process over the front door's own modules. A hook never fails the user's
+turn: every path exits 0, and a failure is recorded in `<mirror home>/hooks.log`
+instead. That includes a wrapper that cannot find `node` or `mirror-hook`, and
+a `node` that cannot run the hook. See
+[Node resolution](#node-resolution-for-hook-runtimes) and
+[Installed package wiring](#installed-package-wiring).
 
 Optional runtime hygiene command:
 
@@ -271,10 +273,15 @@ processes the prompt.
 | Session end + backup | `.claude/hooks/log-session-end.sh` | `claude:session-end` | `SessionEnd` |
 
 Hook wrappers are registered in `.claude/settings.json`, whose allowlist grants
-the two Node entries **by path** — never a bare `node *`, which would be an
+nothing under `ts/src/hooks` and never a bare `node *`, which would be an
 auto-approved arbitrary-execution grant. The packaged plugin carries the same
-four wrappers under `plugins/mirror-mind/hooks/`, registered in its
-`hooks.json`.
+four hooks under `plugins/mirror-mind/hooks/`, registered in its `hooks.json`,
+in the wrapper form that finds the installed `mirror-hook` instead of a tree
+(see [Installed package wiring](#installed-package-wiring)). Its
+`SessionStart` hook also returns the Operating Instructions (`AGENTS.md` from
+the tree the hook runs from) as `hookSpecificOutput.additionalContext`, unless
+the project the session opened in is that same tree — the checkout, whose
+`CLAUDE.md` imports the file (US3, D13).
 
 Current external-skill surfacing path:
 - keep the installed source/runtime artifacts under `~/.mirror-minds/<user>/...`
@@ -326,11 +333,14 @@ Claude no longer relies on a repo-local `mm:review-copy` compatibility skill;
 | Assistant response | `.gemini/hooks/log-assistant.sh` | `gemini:log-assistant` | `AfterAgent` |
 | Session end + backup | `.gemini/hooks/session-end.sh` | `gemini:session-end` | `SessionEnd` (best-effort) |
 
-Hook files are registered in `.gemini/settings.json`. Session ID is available
-in hook stdin and may also be available as `$GEMINI_SESSION_ID` depending on the
-installed Gemini CLI version. Hooks must support both. Mirror Mode injection
-uses `BeforeAgent` `hookSpecificOutput.additionalContext` — automatic per-turn
-injection without explicit user invocation.
+Hook files are registered in `.gemini/settings.json` (project) or
+`~/.gemini/settings.json` (user, absolute paths — the installed-package
+route). Session ID is available in hook stdin and may also be available as
+`$GEMINI_SESSION_ID` depending on the installed Gemini CLI version. Hooks must
+support both. Mirror Mode injection uses `BeforeAgent`
+`hookSpecificOutput.additionalContext` — automatic per-turn injection without
+explicit user invocation. `SessionStart` returns the Operating Instructions
+the same way, unless the project is the tree the hook runs from (US3, D13).
 
 Skills are discovered from the shared `.agents/skills/mm-*/SKILL.md` surface
 (symlinked from `.pi/skills/mm-*/`). `.gemini/skills/` is intentionally absent
@@ -347,7 +357,8 @@ conflicting duplicate skills.
 | Session end + backup | `scripts/codex-mirror.sh` | Wrapper exit |
 | Mirror load | `AGENTS.md` + `$mm-mirror` skill | Explicit invocation |
 
-Codex has no hook system. It uses a **wrapper script** (`scripts/codex-mirror.sh`)
+Codex hooks are not used by this integration (0.157 added them; a later story
+may adopt them). It uses a **wrapper script** (`scripts/codex-mirror.sh`)
 that handles the lifecycle around the `codex` command. For each step it calls
 one of two generated hook wrappers, `scripts/codex-hooks/session-start.sh` and
 `session-end.sh` (`codex:session-start`, `codex:session-end <transcript>
@@ -364,12 +375,16 @@ A runtime spawns its hooks with the `PATH` it was launched with, and a runtime
 launched from the desktop often does not have the one that holds `node`. Each
 hook wrapper therefore resolves Node explicitly, in this order: `$MIRROR_NODE`,
 `command -v node`, `~/.nvm/current/bin/node`, `/opt/homebrew/bin/node`,
-`/usr/local/bin/node`. A wrapper that finds none writes one line to
-`<mirror home>/hooks.log` and exits 0: it skips the hook, never fails the
-turn, and is never silent. The Node it finds must be 24 or later. An older one
-fails before the hook starts, and the wrapper records that exit the same way.
-The log's home is resolved as the core resolves it: `MIRROR_HOME`, else
-`MIRROR_USER`, each from the environment or else from this checkout's `.env`.
+`/usr/local/bin/node`, and last the directory the Mirror entry was found in
+(an npm global bin holds `node` beside `mirror-hook`). A wrapper that finds
+none writes one line to `<mirror home>/hooks.log` and exits 0: it skips the
+hook, never fails the turn, and is never silent. The Node it finds must be 24
+or later. An older one fails before the hook starts, and the wrapper records
+that exit the same way. The wrapper passes no flag: the entry reads
+configuration and silences its own warnings (US3, D3). The log's home is
+resolved as the core resolves it: `MIRROR_HOME`, else `MIRROR_USER`, from the
+environment, else from the tree's `.env` when the wrapper is in a tree, else
+from `~/.config/mirror/env`.
 
 `runtime diagnose` reports when Node is not resolvable from its own
 environment. That environment is a terminal's, not the runtime's, so it also
@@ -378,10 +393,51 @@ reports the failures `hooks.log` recorded in the last seven days
 because `/usr/bin/python3` is on every macOS; the same silence here would hide
 a new failure.)
 
-A wrapper resolves the repository from its own file (`$BASH_SOURCE`), never
-from the working directory, because a runtime spawns hooks from wherever the
-session is. The npm package (CV22.DS10.US3) replaces that resolution with an
-installed entry point.
+The generator writes two wrapper forms (US3, D5), which differ only in how
+the entry is found and `hooks.test.ts` asserts that:
+
+- **tree** — `.claude/hooks/`, `.gemini/hooks/`, `scripts/codex-hooks/`: the
+  wrapper resolves its tree from its own file (`$BASH_SOURCE`) by a fixed
+  depth, never from the working directory, and runs that tree's
+  `bin/mirror-hook.js`. The tree is a checkout or the installed package; the
+  depth is the same in both.
+- **bin** — `plugins/mirror-mind/hooks/`: Claude Code copies a plugin into its
+  own cache, so no relative path reaches a tree. The wrapper finds the
+  installed `mirror-hook`: `$MIRROR_BIN/mirror-hook` (the directory holding
+  Mirror's bins, `$(npm prefix -g)/bin`, the same trust class as
+  `MIRROR_NODE`), then `command -v mirror-hook`, then `~/.nvm/current/bin`,
+  `/opt/homebrew/bin`, `/usr/local/bin`. None found: one `hooks.log` line
+  naming `npm install -g mirror-mind` and `MIRROR_BIN`, exit 0. The plugin's
+  MCP launcher (`plugins/mirror-mind/mcp/launch.sh`) finds `mirror` the same
+  way and runs `mirror mcp`; a server that cannot start has no turn to
+  protect, so it says why on stderr and exits 1.
+
+Both forms run the bin rather than `ts/src/hooks/main.ts` directly: under
+`npm root -g` every wrapper sits below `node_modules`, where Node will not
+strip types (US3, D15).
+
+### Installed package wiring
+
+An `npm install -g mirror-mind` puts `mirror` and `mirror-hook` on the `PATH`
+and the whole runtime subset under `$(npm root -g)/mirror-mind`, with the same
+paths as a checkout (US3, D2). `mirror init` prints the steps below for each
+runtime it finds on the `PATH`, with that path filled in; each was verified at
+US3 plateau 3 against the runtime's own documentation or, where the docs were
+silent, against the runtime itself from a scratch configuration directory.
+
+| Runtime | Steps | Wiring | Operating Instructions (D13) |
+|---------|-------|--------|------------------------------|
+| Pi | 1 | `pi install "<pkg>"` — a local-path package, loaded in place (D6) | the extension appends `<pkg>/AGENTS.md` to the system prompt's context files when Pi did not load it from the cwd |
+| Claude Code | 1 | `ln -s "<pkg>/plugins/mirror-mind" ~/.claude/skills/mirror-mind` — a skills-directory plugin, loaded every session with its skills, hooks, and MCP server (`claude plugin list`, 2.1.283) | the plugin's `SessionStart` hook, as `additionalContext` |
+| Gemini CLI | 2 | `gemini skills link --consent "<pkg>/.pi/skills"` (links every skill into `~/.gemini/skills/`; a nested directory symlink is not discovered, 0.61.0), then the four hooks in `~/.gemini/settings.json` with absolute paths to `<pkg>/.gemini/hooks/*.sh` | the `SessionStart` hook, as `additionalContext` |
+| Codex | 2 | `ln -s "<pkg>/.pi/skills" ~/.codex/skills/mirror-mind` (discovered recursively, 0.157.0), then `~/.codex/AGENTS.md` as a link to, or holding, `<pkg>/AGENTS.md`; sessions run through `<pkg>/scripts/codex-mirror.sh` | `~/.codex/AGENTS.md`, Codex's global instructions file |
+
+Inside the checkout none of this applies: Pi discovers `.pi/` as project
+resources, `.claude/settings.json` and `.gemini/settings.json` register the
+tree wrappers, `.agents/skills/` carries the skills, and `CLAUDE.md` imports
+`AGENTS.md`. A developer puts `mirror` on the `PATH` with `npm link` once at
+the repository root; the Pi extension says so at session start when it does
+not resolve.
 
 ---
 

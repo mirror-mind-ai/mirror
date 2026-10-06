@@ -681,11 +681,14 @@ to the homes root (`~/.mirror-minds`).
 | `MIRROR_SESSION_ID` | (unset) | Session id for CLIs called without `--session-id`: the conversation logger's fallback when no hook payload is present, and a named session for Builder lifecycle commands, which otherwise require `--journey` and never guess one. Do not set it in a shared `.env`: every window would then name the same session, and a Builder command without `--journey` would follow whichever window loaded last. Rarely set by humans. |
 | `MIRROR_WELCOME` | (unset) | Set to `off`, `0`, `false`, or `no` to suppress the welcome card emitted by `mirror welcome`. See `docs/product/specs/welcome/index.md`. |
 | `MIRROR_TS_MCP_GUARDS` | (unset) | Set to `0` to remove the MCP wallet and abuse guards (rate limit, spend ceiling, argument caps). See [Configuration](docs/reference/configuration.md#mcp-wallet-and-abuse-guards-cv22ds9ts1). |
+| `MIRROR_NODE` | (unset) | The `node` binary the hook wrappers and the plugin's MCP launcher run, when the runtime's `PATH` does not hold one (a GUI launch). Searched after it: `PATH`, `~/.nvm/current/bin`, `/opt/homebrew/bin`, `/usr/local/bin`, the directory the Mirror entry was found in. |
+| `MIRROR_BIN` | (unset) | The directory holding `mirror` and `mirror-hook` (`$(npm prefix -g)/bin`), for the Claude plugin's hook wrappers and MCP launcher, which live in Claude Code's cache and cannot reach the tree by a relative path. Searched after it: `PATH`, `~/.nvm/current/bin`, `/opt/homebrew/bin`, `/usr/local/bin`. Same trust class as `MIRROR_NODE`: whoever sets it chooses what runs. |
 
 The plugin manifest launches `${CLAUDE_PLUGIN_ROOT}/mcp/launch.sh`, which
-`exec`s the TypeScript server, so the entry point can change without editing a
-plugin installed inside a runtime. The server requires `node` ≥ 24 on the
-PATH the MCP client spawns it with. The `MIRROR_TS_*` revert variables of the
+finds the installed `mirror` (as above) and `exec`s `mirror mcp`, so the entry
+point can change without editing a plugin installed inside a runtime. A
+launcher that finds neither `mirror` nor `node` says so on stderr, the MCP
+client's log, and exits 1. The `MIRROR_TS_*` revert variables of the
 migration, `MIRROR_TS_MCP` among them, are inert since CV22.DS10.TS5: nothing
 reads them, and `runtime diagnose` names any still set.
 

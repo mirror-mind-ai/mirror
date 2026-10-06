@@ -23,9 +23,13 @@
 # The real npm, node, sqlite3 paths are captured BEFORE PATH is replaced
 # (US2's lesson: the stubs would otherwise shadow the tools the smoke needs).
 #
-# Plateau 1 ships the first half (install, init, seed, list, status, the
-# migrating open). Plateau 3 adds the four runtime smokes' payloads against
-# the INSTALLED wrappers and `mirror mcp`.
+# Plateau 1 shipped the first half (install, init, seed, list, status, the
+# migrating open). Plateau 3 adds the four runtimes' payloads against the
+# INSTALLED wrappers and `mirror mcp`: the Claude plugin copied out of the
+# package as Claude Code copies it, the Gemini wrappers and the Codex wrapper
+# run from under `npm root -g` -- below node_modules, where only the loader
+# shim can run the TypeScript entry (D15) -- and the MCP server through the
+# plugin's launcher and through `mirror mcp` directly.
 #
 # Usage:  scripts/smoke_npm_package.sh [workdir]
 
@@ -162,7 +166,86 @@ else
   grep -q migrate_on_open "$HOME/.mirror-minds/legacy/front-door.log" 2>/dev/null && ok "front-door log records migrate_on_open" || bad "front-door log lacks migrate_on_open"
 fi
 
-say "7. nothing reached for an interpreter"
+# --- the four runtimes, against the installed package -------------------------
+# Each hook resolves the home from the config file `init` wrote (MIRROR_USER=
+# smokeuser): the environment carries no Mirror variable, and the package has
+# no .env to read. Every row below lands in smokeuser's memory.db.
+SMOKE_DB="$HOME/.mirror-minds/smokeuser/memory.db"
+HOOKS_LOG="$HOME/.mirror-minds/smokeuser/hooks.log"
+rows() { [ -n "$REAL_SQLITE" ] && sqlite3 "$SMOKE_DB" "$1" || echo "n/a"; }
+
+say "8. the Claude plugin, copied out of the package, through mirror-hook on the PATH"
+CLAUDE_PLUGIN="$WORK/claude-cache/plugins/mirror-mind"
+mkdir -p "$(dirname "$CLAUDE_PLUGIN")" && cp -R "$PKG/plugins/mirror-mind" "$CLAUDE_PLUGIN"
+check "command -v mirror-hook" "$(command -v mirror-hook)" "$WORK/prefix/bin/mirror-hook"
+bash "$CLAUDE_PLUGIN/hooks/session-start.sh" </dev/null >"$WORK/claude-start.out" 2>"$WORK/claude.err" && ok "plugin session-start exited 0" || bad "plugin session-start failed"
+printf '{"session_id":"npm-claude","prompt":"Hello from the installed plugin"}' \
+  | bash "$CLAUDE_PLUGIN/hooks/log-user-prompt.sh" >/dev/null 2>>"$WORK/claude.err" && ok "plugin log-user-prompt exited 0" || bad "plugin log-user-prompt failed"
+printf '{"session_id":"npm-claude","prompt":"anything"}' \
+  | bash "$CLAUDE_PLUGIN/hooks/mirror-inject.sh" >"$WORK/claude-inject.out" 2>>"$WORK/claude.err" && ok "plugin mirror-inject exited 0" || bad "plugin mirror-inject failed"
+printf '{"session_id":"npm-claude","transcript_path":"%s"}' "$WORK/none.jsonl" \
+  | bash "$CLAUDE_PLUGIN/hooks/log-session-end.sh" >/dev/null 2>>"$WORK/claude.err" && ok "plugin log-session-end exited 0" || bad "plugin log-session-end failed"
+check "the plugin's hooks wrote nothing to stderr" "$(wc -c <"$WORK/claude.err" | tr -d ' ')" "0"
+# D13: the session opened in a project that is not this tree, so SessionStart
+# hands Claude Code the Operating Instructions from the installed package.
+contains "plugin session-start delivers the Operating Instructions as context (D13)" "$(cat "$WORK/claude-start.out")" '"hookEventName":"SessionStart","additionalContext":"'
+contains "and they are the package's AGENTS.md" "$(cat "$WORK/claude-start.out")" "$(head -1 "$PKG/AGENTS.md")"
+[ -n "$REAL_SQLITE" ] && check "the user turn reached smokeuser's database as claude_code" \
+  "$(rows "SELECT c.interface || '|' || m.content FROM messages m JOIN conversations c ON c.id = m.conversation_id WHERE m.content = 'Hello from the installed plugin'")" \
+  "claude_code|Hello from the installed plugin"
+
+say "9. the Gemini CLI wrappers, run from under npm root -g"
+GEMINI_HOOKS="$PKG/.gemini/hooks"
+GEMINI_ENV="GEMINI_PROJECT_DIR=$WORK/home GEMINI_SESSION_ID="
+env $GEMINI_ENV bash "$GEMINI_HOOKS/session-start.sh" </dev/null >"$WORK/gemini-start.out" 2>"$WORK/gemini.err" && ok "gemini session-start exited 0" || bad "gemini session-start failed"
+contains "gemini session-start delivers the Operating Instructions as context (D13)" "$(cat "$WORK/gemini-start.out")" '"hookEventName":"SessionStart","additionalContext":"'
+printf '{"session_id":"npm-gemini","hook_event_name":"BeforeAgent","prompt":"Hello from the installed Gemini wrappers"}' \
+  | env $GEMINI_ENV bash "$GEMINI_HOOKS/log-user.sh" >"$WORK/gemini-user.out" 2>>"$WORK/gemini.err" && ok "gemini log-user exited 0" || bad "gemini log-user failed"
+printf '{"session_id":"npm-gemini","hook_event_name":"AfterAgent","prompt":"Hello from the installed Gemini wrappers","prompt_response":"Answered from the package","stop_hook_active":false}' \
+  | env $GEMINI_ENV bash "$GEMINI_HOOKS/log-assistant.sh" >"$WORK/gemini-assistant.out" 2>>"$WORK/gemini.err" && ok "gemini log-assistant exited 0" || bad "gemini log-assistant failed"
+check "gemini AfterAgent answers the empty hook object" "$(cat "$WORK/gemini-assistant.out")" "{}"
+printf '{"session_id":"npm-gemini","hook_event_name":"SessionEnd"}' \
+  | env $GEMINI_ENV bash "$GEMINI_HOOKS/session-end.sh" >/dev/null 2>>"$WORK/gemini.err" && ok "gemini session-end exited 0" || bad "gemini session-end failed"
+# Gemini's stderr is "logs only; never parsed": the Mirror Mode status line
+# from `mirror load` lands there by design. What must not is a warning or an error.
+if grep -qiE "warning|error" "$WORK/gemini.err"; then bad "the gemini wrappers wrote a warning or error to stderr: $(cat "$WORK/gemini.err")"; else ok "the gemini wrappers wrote no warning or error to stderr"; fi
+[ -n "$REAL_SQLITE" ] && check "both Gemini turns reached the database as gemini_cli" \
+  "$(rows "SELECT group_concat(c.interface || '|' || m.role, ',') FROM messages m JOIN conversations c ON c.id = m.conversation_id WHERE m.content IN ('Hello from the installed Gemini wrappers','Answered from the package') ORDER BY m.created_at")" \
+  "gemini_cli|user,gemini_cli|assistant"
+
+say "10. the Codex wrapper, run from under npm root -g, around a stand-in codex"
+CODEX_SESSION="019d3b75-0462-7762-ac7c-4852a85ce725"
+cat > "$WORK/bin/codex" <<STUB
+#!/bin/sh
+dir="\$HOME/.codex/sessions/2026/10/06"
+mkdir -p "\$dir"
+cat > "\$dir/rollout-2026-10-06T10-00-00-$CODEX_SESSION.jsonl" <<EOF
+{"timestamp":"2026-10-06T10:00:00.000Z","type":"session_meta","payload":{"id":"$CODEX_SESSION","timestamp":"2026-10-06T10:00:00.000Z","cwd":"\$PWD"}}
+{"timestamp":"2026-10-06T10:00:01.000Z","type":"event_msg","payload":{"type":"user_message","message":"Hello from the installed Codex wrapper"}}
+{"timestamp":"2026-10-06T10:00:02.000Z","type":"event_msg","payload":{"type":"agent_message","message":"Codex answered from the package"}}
+EOF
+exit 0
+STUB
+chmod +x "$WORK/bin/codex"
+mkdir -p "$WORK/project"
+(cd "$WORK/project" && bash "$PKG/scripts/codex-mirror.sh" >/dev/null 2>"$WORK/codex.err") && ok "codex-mirror.sh exited with codex's 0" || bad "codex-mirror.sh failed: $(cat "$WORK/codex.err")"
+[ -n "$REAL_SQLITE" ] && check "both Codex turns reached the database as codex" \
+  "$(rows "SELECT group_concat(c.interface || '|' || m.role, ',') FROM messages m JOIN conversations c ON c.id = m.conversation_id WHERE m.content IN ('Hello from the installed Codex wrapper','Codex answered from the package') ORDER BY m.created_at")" \
+  "codex|user,codex|assistant"
+
+say "11. the MCP server, through the plugin's launcher and through mirror mcp"
+MCP_INIT='{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"npm-smoke","version":"0"}}}'
+LAUNCH_REPLY="$(printf '%s\n' "$MCP_INIT" | bash "$CLAUDE_PLUGIN/mcp/launch.sh" 2>"$WORK/mcp-launch.err" | head -1)"
+contains "the installed plugin's launcher started the server" "$LAUNCH_REPLY" '"name": "mirror-mind"'
+check "the launcher's server wrote nothing to stderr" "$(wc -c <"$WORK/mcp-launch.err" | tr -d ' ')" "0"
+DIRECT_REPLY="$(printf '%s\n' "$MCP_INIT" | mirror mcp 2>"$WORK/mcp-direct.err" | head -1)"
+contains "mirror mcp answers initialize" "$DIRECT_REPLY" '"name": "mirror-mind"'
+check "mirror mcp wrote nothing to stderr" "$(wc -c <"$WORK/mcp-direct.err" | tr -d ' ')" "0"
+
+say "12. no hook recorded a failure"
+if [ -f "$HOOKS_LOG" ]; then bad "hooks.log exists: $(cat "$HOOKS_LOG")"; else ok "no hooks.log in smokeuser's home"; fi
+
+say "13. nothing reached for an interpreter"
 if grep -rq "INTERPRETER SPAWNED" "$WORK"/*.err 2>/dev/null; then
   bad "an interpreter was spawned"; grep -rh "INTERPRETER SPAWNED" "$WORK"/*.err
 else

@@ -184,6 +184,14 @@ If you are already inside a runtime:
 
 ## 7. Start Your First Session
 
+The sections below describe a session opened **inside this checkout**, where each
+runtime discovers Mirror as project resources. From an **npm install** there is no
+checkout: `mirror init` ends by printing, for each runtime found on your `PATH`, the
+step that wires it to the installed package — Pi and Claude Code one step each, Gemini
+CLI and Codex two — with the install's path filled in. The same steps, with what each
+runtime's documentation says about them, are in the
+[runtime interface spec](product/specs/runtime-interface/index.md#installed-package-wiring).
+
 ### Pi (preferred)
 
 Open Pi in this project directory:

@@ -43,9 +43,9 @@ for smoke in smoke_codex smoke_gemini_cli smoke_claude_plugin smoke_mirror_mcp; 
 done
 ```
 
-Expected: every command exits 0; `smoke_npm_package.sh` prints `passed: 40 failed: 0`
-(plateau 4 adds the install kind `package (mirror-mind@<version>)`; plateau 3 the runtime
-smokes against the installed wrappers), twelve seeded personas, a migrating open that
+Expected: every command exits 0; `smoke_npm_package.sh` prints `passed: 64 failed: 0`
+(plateau 4 adds the install kind `package (mirror-mind@<version>)`; since plateau 3 the four
+runtimes run against the installed wrappers and `mirror mcp`, sections 8–12), twelve seeded personas, a migrating open that
 applies `017` from the package location, and `no python, python3, or uv process was spawned`.
 `seed` inside it exits 1 by **F1** (the empty `ego/constraints` template), named in the smoke. CI runs the same set twice, the
 second time with `python`, `python3`, and `uv` shadowed.
@@ -60,7 +60,10 @@ second time with `python`, `python3`, and `uv` shadowed.
 | 1 | `ts/test/scripts/packContents.test.ts` | the whitelist; the forbidden list; no lifecycle scripts |
 | 1 | `ts/test/init/init.test.ts` | `init` writes `MIRROR_USER` only when no source resolved a user; `0600`/`0700`; never a key from argv |
 | 2 | `ts/scripts/checkSkillCommandParity.ts` self-test | a seeded `ts/src/frontDoor/cli.ts` line in any copy fails with the path and line |
-| 3 | `ts/test/hooks/hooks.test.ts` | both wrapper forms match their templates; the bin form's search order; the skip note when nothing resolves |
+| 3 | `ts/test/hooks/hooks.test.ts` | the two wrapper forms share everything but how the entry is found; both run the bin and pass no flag; the launcher searches where the wrappers do; `SessionStart` hands Claude Code and Gemini CLI the Operating Instructions unless the project is this tree (D13) |
+| 3 | `ts/test/hooks/hookBin.test.ts` | `mirror-hook` on the shared loader shim; the hook entry reads the user's config file itself, from a tree with no `.env`; the plugin's wrappers copied out of the tree find `mirror-hook` on the `PATH` or through `MIRROR_BIN`, and with nothing anywhere exit 0 with one `hooks.log` line; the launcher copied out of the tree starts the server, or says why not on stderr |
+| 3 | `ts/test/runtime/wiring.test.ts`, `initCli.test.ts` | the per-runtime steps and their honest counts (1 / 1 / 2 / 2); `init` prints them for the runtimes on the `PATH` and only those |
+| 3 | `ts/test/mcp/launcher.test.ts` | a `.env` beside the plugin is NOT read (the launcher has no tree); the environment still reaches the server |
 | 4 | `ts/test/runtime/channel.test.ts` | `runtime channel` reads and writes the marker for a clone and the XDG file for a package; the post-update `npm link` line appears only for a clone with no `mirror` on the `PATH` |
 | 5 | `ts/test/guards/retiredSurfaces.test.ts` | the `frame-installer` row (if D4 retires) |
 
@@ -194,13 +197,57 @@ Inside Pi, in this order:
 
 Clean up: `pi remove "$PKG"`, then `rm -rf "$SCRATCH"`.
 
-### Route 3 — the plugin outside the tree, plateau 3
+### Route 3 — the runtimes outside the tree, plateau 3
 
-If the Navigator uses Claude Code: copy `plugins/mirror-mind` to a scratch directory, point
-Claude Code at it, and start a session with the scratch install's `PATH` from route 2.
-Expected: SessionStart injects, a prompt is logged, SessionEnd closes the conversation; the
-MCP server answers `initialize`. Otherwise `bash scripts/smoke_claude_plugin.sh` in
-package mode is the evidence, and Validation records that the Navigator did not walk it.
+**3a — without a session (no auth, no tokens): the plugin and the launcher from Claude
+Code's cache.** `bash scripts/smoke_claude_plugin.sh` is this route run by machine: the
+plugin copied to a scratch directory, `mirror-hook` and `mirror` on a scratch `PATH` as
+npm's global bin links them, the home named by a scratch `~/.config/mirror/env`. It
+proves the three hooks reach that home through `mirror-hook` and log `claude_code`, the
+launcher answers `initialize` with an empty stderr, and then — `mirror-hook` removed —
+a hook still exits 0, lands one line in `hooks.log`, and `mirror runtime diagnose`
+reports `hook_failures_recorded` without the prompt. `scripts/smoke_npm_package.sh`
+sections 8–12 do the same from a real `npm install -g` for all four runtimes.
+
+**3b — the wiring, as `mirror init` prints it.** From route 2a's scratch install, with
+`PATH` holding the runtimes you have:
+
+```bash
+env PATH="$SCRATCH/prefix/bin:$PATH" HOME="$SCRATCH/home" mirror init route3 | sed -n '/Wire your runtime/,$p'
+```
+
+Expected: a block per runtime found on the `PATH` and none for the others — Pi (1 step),
+Claude Code (1), Gemini CLI (2), Codex (2) — every path inside `$SCRATCH/prefix/lib/node_modules/mirror-mind`.
+
+**3c — Claude Code, if the Navigator uses it (a real session; tokens).** With the scratch
+install's bin first on the `PATH` and a scratch config dir so nothing of yours is touched:
+
+```bash
+mkdir -p "$SCRATCH/claude/skills"
+ln -s "$PKG/plugins/mirror-mind" "$SCRATCH/claude/skills/mirror-mind"
+CLAUDE_CONFIG_DIR="$SCRATCH/claude" claude plugin list          # mirror-mind@skills-dir, loaded
+CLAUDE_CONFIG_DIR="$SCRATCH/claude" claude plugin details mirror-mind   # 25 skills, 3 hooks, 1 MCP server
+cd /tmp && env PATH="$SCRATCH/prefix/bin:$PATH" HOME="$SCRATCH/home" CLAUDE_CONFIG_DIR="$SCRATCH/claude" claude
+```
+
+(`CLAUDE_CONFIG_DIR` moves auth too; log in once in the scratch dir, or skip 3c and let 3a
+stand as the evidence, recorded as such.) In the session: `/mm:journeys` answers from the
+install; a Mirror Mode question is answered under a `◇ persona` signature — the Operating
+Instructions arrived through the plugin's SessionStart hook, not a CLAUDE.md (D13); after
+the session, `$SCRATCH/home/.mirror-minds/route3/memory.db` holds the turns as
+`claude_code`, and no `hooks.log` exists beside it.
+
+**3d — Gemini CLI and Codex, discovery only (no session).** Verified at plateau 3 from
+scratch configuration directories; rerun if wanted:
+
+```bash
+# Gemini: link the skills; a nested directory symlink is NOT discovered (0.61.0).
+mkdir -p "$SCRATCH/gemini-home" && HOME="$SCRATCH/gemini-home" gemini skills link --consent "$PKG/.pi/skills"
+HOME="$SCRATCH/gemini-home" gemini skills list | grep -c '^mm-'      # 25
+# Codex: skills recursively, AGENTS.md globally; the prompt rendered without a model call.
+mkdir -p "$SCRATCH/codex-home/skills" && ln -s "$PKG/.pi/skills" "$SCRATCH/codex-home/skills/mirror-mind" && ln -s "$PKG/AGENTS.md" "$SCRATCH/codex-home/AGENTS.md"
+cd /tmp && CODEX_HOME="$SCRATCH/codex-home" codex debug prompt-input hello | grep -c 'mm-journeys\|Ego-Persona Model'   # ≥ 2
+```
 
 ### Route 4 — the capture replay, plateau 6
 
@@ -223,4 +270,4 @@ diff tmp/us3/before.tsv tmp/us3/after.tsv && echo IDENTICAL
   are in the story index's plateau-2 record. Observed: the agent without `mirror` improvised
   onto `node bin/mirror.js`, the sanctioned entry; the D13 prompt answered under `◇ financial`;
   Builder load stopped at the boundary; Pi loaded the package extension once.
-- Routes 3 and 4: pending plateaus 3 and 6.
+- Route 3a: run by machine on 2026-10-06 (`smoke_claude_plugin.sh`, `smoke_npm_package.sh` 64/64). Routes 3b–3d and 4: pending the Navigator's walk and plateau 6.
