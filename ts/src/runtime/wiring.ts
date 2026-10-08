@@ -72,7 +72,7 @@ export const RUNTIME_WIRING: Readonly<Record<RuntimeName, RuntimeWiring>> = {
     steps: [
       (root) => [
         `ln -s "${join(root, "plugins/mirror-mind")}" ~/.claude/skills/mirror-mind`,
-        "(the plugin loads every session: skills under /mm:, the hooks, and the MCP server)",
+        "(the plugin loads every session: its skills, the hooks, and the MCP server)",
       ],
     ],
   },
