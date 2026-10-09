@@ -26,8 +26,10 @@ import { inspectMigrationFiles } from "#extensions/migrations.ts";
 import { type DbPathEnv, dbNameForEnv, resolveMirrorHome } from "#frontDoor/dbPath.ts";
 import { DEFAULT_EMBEDDING_MODEL, DEFAULT_EXTRACTION_MODEL } from "#providers/config.ts";
 import { sortByCodePoint } from "#util/pythonText.ts";
+import { channelFor } from "./channel.ts";
 import type { MarkerValue } from "./git.ts";
 import { type GitStatus, inspectCloneRole, inspectGit, inspectUpdateChannel } from "./git.ts";
+import { detectInstallKind, type InstallKind, renderInstallLines } from "./installKind.ts";
 
 export interface CoreMigrationHealth {
   ready: boolean;
@@ -49,6 +51,8 @@ export interface ExtensionHealth {
 
 export interface RuntimeStatusReport {
   version: string;
+  /** How the running front door is installed (CV22.DS10.US3 plateau 4; US2 D3). */
+  install: InstallKind;
   git: GitStatus;
   mirror_home: string | null;
   mirror_home_error: string | null;
@@ -336,6 +340,27 @@ export interface BuildStatusOptions {
   /** Test/golden seam: the oracle pins `package_version()` the same way. */
   version?: string;
   nodeVersion?: string | null;
+  /**
+   * The running front door's install, detected by the caller; the golden
+   * tests pin it like `version`. Absent, it is read from this tree's own
+   * front door with no npm probe (see `installKind.ts`).
+   */
+  install?: InstallKind;
+}
+
+/**
+ * The channel the report shows. A clone is inspected at `start`, as the
+ * oracle did and `version --start PATH` still means; a package has no tree at
+ * `start` and keeps its channel in the user's config file (US3 D9).
+ */
+function channelForStatus(
+  install: InstallKind,
+  startPath: string,
+  override: string | null,
+  env: NodeJS.ProcessEnv,
+): MarkerValue {
+  if (install.kind === "package") return channelFor(install, env, undefined, override);
+  return inspectUpdateChannel(startPath, override);
 }
 
 /**
@@ -365,6 +390,9 @@ function mirrorHomeForStatus(env: DbPathEnv): { home: string | null; error: stri
 export function buildRuntimeStatus(options: BuildStatusOptions = {}): RuntimeStatusReport {
   const startPath = resolve(options.start ?? process.cwd());
   const env = options.env ?? process.env;
+  const install =
+    options.install ??
+    detectInstallKind({ frontDoorPath: new URL("../frontDoor/cli.ts", import.meta.url).pathname });
   const git = inspectGit(startPath);
 
   let mirrorHome: string | null;
@@ -383,6 +411,7 @@ export function buildRuntimeStatus(options: BuildStatusOptions = {}): RuntimeSta
 
   return {
     version: options.version ?? "unknown",
+    install,
     git,
     mirror_home: mirrorHome,
     mirror_home_error: mirrorHomeError,
@@ -393,7 +422,7 @@ export function buildRuntimeStatus(options: BuildStatusOptions = {}): RuntimeSta
     extension_health: inspectExtensionHealth(mirrorHome, dbPath, dbExists),
     clone_role: inspectCloneRole(startPath),
     memory_env: memoryEnv,
-    update_channel: inspectUpdateChannel(startPath, options.channel ?? null),
+    update_channel: channelForStatus(install, startPath, options.channel ?? null, env),
     node_version: options.nodeVersion === undefined ? detectNodeVersion() : options.nodeVersion,
   };
 }
@@ -479,6 +508,7 @@ export function renderRuntimeStatus(
 ): string {
   const lines: string[] = ["Mirror runtime status", ""];
   lines.push(`Version: ${report.version}`);
+  lines.push(...renderInstallLines(report.install));
   lines.push(`Repository: ${report.git.repository ?? "unknown"}`);
   lines.push(`Git branch: ${report.git.branch || "unknown"}`);
   lines.push(`Git commit: ${report.git.commit || "unknown"}`);

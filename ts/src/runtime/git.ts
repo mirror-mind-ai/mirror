@@ -18,6 +18,7 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { join, resolve } from "node:path";
+import { type InstallKind, renderInstallLines } from "#runtime/installKind.ts";
 import { DEFAULT_CHANNEL, KNOWN_CHANNELS } from "#runtime/updatePipeline.ts";
 
 export const GIT_LOCAL_TIMEOUT_MS = 2_000;
@@ -54,6 +55,8 @@ export interface MarkerValue {
 
 export interface RuntimeVersionReport {
   version: string;
+  /** How the running front door is installed (CV22.DS10.US3 plateau 4; US2 D3). */
+  install: InstallKind;
   git: GitStatus;
   cloneRole: MarkerValue;
   updateChannel: MarkerValue;
@@ -420,6 +423,7 @@ export function inspectGitUpdatePlan(
 export function renderRuntimeVersion(report: RuntimeVersionReport): string {
   const lines = ["Mirror runtime version", ""];
   lines.push(`Version: ${report.version}`);
+  lines.push(...renderInstallLines(report.install));
   lines.push(`Repository: ${report.git.repository ? report.git.repository : "unknown"}`);
   lines.push(`Git branch: ${report.git.branch || "unknown"}`);
   lines.push(`Git commit: ${report.git.commit || "unknown"}`);

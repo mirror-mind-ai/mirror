@@ -7,7 +7,11 @@
 import assert from "node:assert/strict";
 import { join } from "node:path";
 import test from "node:test";
-import { describeInstallKind, detectInstallKind } from "#runtime/installKind.ts";
+import {
+  describeInstallKind,
+  detectInstallKind,
+  renderInstallLines,
+} from "#runtime/installKind.ts";
 
 /** A filesystem that exists only as a set of paths. */
 function fs(paths: readonly string[]) {
@@ -92,6 +96,120 @@ test("without npm, a non-checkout is unknown and says npm is why", () => {
   });
   assert.equal(kind.kind, "unknown");
   assert.match(kind.kind === "unknown" ? kind.reason : "", /npm is unavailable/);
+});
+
+// --- CV22.DS10.US3 plateau 4: a package is known by its layout, without npm --
+//
+// `runtime status` and `version` read the install kind too, and they run in
+// GUI-launched runtimes whose PATH may not reach npm, and in the package
+// smoke, which keeps npm off the PATH on purpose. A subprocess there would
+// answer `unknown` for an install that is plainly a package, and that is the
+// line a person reads to decide between `npm install -g` and `git pull`.
+// `npm root -g` stays the update lane's corroboration that `-g` addresses
+// THIS prefix; the read routes do not probe it.
+
+const GLOBAL_MANIFEST = JSON.stringify({
+  name: "mirror-mind",
+  version: "1.2.3",
+  bin: { mirror: "bin/mirror.js", "mirror-hook": "bin/mirror-hook.js" },
+});
+
+test("a global prefix layout with the bin linked into the package is a package, with no npm probe", () => {
+  const prefix = "/opt/homebrew";
+  const pkg = join(prefix, "lib/node_modules/mirror-mind");
+  const binLink = join(prefix, "bin/mirror");
+  const kind = detectInstallKind({
+    frontDoorPath: join(pkg, "ts/src/frontDoor/cli.ts"),
+    // No `npmRootGlobal` at all: the probe was not made.
+    exists: fs([join(pkg, "package.json"), binLink]),
+    readFile: () => GLOBAL_MANIFEST,
+    realpath: (path) => (path === binLink ? join(pkg, "bin/mirror.js") : path),
+  });
+  assert.deepEqual(kind, { kind: "package", root: pkg, name: "mirror-mind", version: "1.2.3" });
+});
+
+test("the layout alone is not enough: the prefix's bin must resolve into the package", () => {
+  // A project that happens to live at `<x>/lib` has `<x>/lib/node_modules/…`
+  // too. What makes a global install global is the bin npm linked beside it.
+  const pkg = "/home/dev/lib/node_modules/mirror-mind";
+  const kind = detectInstallKind({
+    frontDoorPath: join(pkg, "ts/src/frontDoor/cli.ts"),
+    exists: fs([join(pkg, "package.json")]),
+    readFile: () => GLOBAL_MANIFEST,
+  });
+  assert.equal(kind.kind, "unknown");
+
+  // And a bin that resolves ELSEWHERE (another install's) does not count.
+  const elsewhere = detectInstallKind({
+    frontDoorPath: join(pkg, "ts/src/frontDoor/cli.ts"),
+    exists: fs([join(pkg, "package.json"), "/home/dev/bin/mirror"]),
+    readFile: () => GLOBAL_MANIFEST,
+    realpath: (path) =>
+      path === "/home/dev/bin/mirror"
+        ? "/usr/local/lib/node_modules/mirror-mind/bin/mirror.js"
+        : path,
+  });
+  assert.equal(elsewhere.kind, "unknown");
+});
+
+test("when npm's global root IS known, containment in it is still required", () => {
+  // The update lane's rule, unchanged: a package outside npm's own global
+  // root would not be the one `npm install -g` replaces.
+  const pkg = "/opt/homebrew/lib/node_modules/mirror-mind";
+  const binLink = "/opt/homebrew/bin/mirror";
+  const kind = detectInstallKind({
+    frontDoorPath: join(pkg, "ts/src/frontDoor/cli.ts"),
+    npmRootGlobal: "/usr/local/lib/node_modules",
+    exists: fs([join(pkg, "package.json"), binLink]),
+    readFile: () => GLOBAL_MANIFEST,
+    realpath: (path) => (path === binLink ? join(pkg, "bin/mirror.js") : path),
+  });
+  assert.equal(kind.kind, "unknown");
+  assert.match(kind.kind === "unknown" ? kind.reason : "", /global npm root/);
+});
+
+test("an npm-linked checkout reached through the global bin is still a clone", () => {
+  // `npm link`: `<prefix>/bin/mirror` resolves into the checkout, whose root
+  // is not under a `lib/node_modules`, so the layout evidence does not apply
+  // and the `.git` beside the manifest decides.
+  const checkout = "/home/dev/mirror";
+  const kind = detectInstallKind({
+    frontDoorPath: "/opt/homebrew/lib/node_modules/mirror-mind/ts/src/frontDoor/cli.ts",
+    exists: fs([
+      join(checkout, ".git"),
+      join(checkout, "package.json"),
+      "/opt/homebrew/bin/mirror",
+    ]),
+    readFile: () => GLOBAL_MANIFEST,
+    realpath: (path) =>
+      path.startsWith("/opt/homebrew/lib/node_modules/mirror-mind/")
+        ? path.replace("/opt/homebrew/lib/node_modules/mirror-mind", checkout)
+        : path === "/opt/homebrew/bin/mirror"
+          ? join(checkout, "bin/mirror.js")
+          : path,
+  });
+  assert.deepEqual(kind, { kind: "clone", repository: checkout });
+});
+
+test("the install lines name the kind, and a package's root", () => {
+  assert.deepEqual(renderInstallLines({ kind: "clone", repository: "/home/dev/mirror" }), [
+    "Install: clone (/home/dev/mirror)",
+  ]);
+  assert.deepEqual(
+    renderInstallLines({
+      kind: "package",
+      root: "/opt/homebrew/lib/node_modules/mirror-mind",
+      name: "mirror-mind",
+      version: "1.2.3",
+    }),
+    [
+      "Install: package (mirror-mind@1.2.3)",
+      "Install root: /opt/homebrew/lib/node_modules/mirror-mind",
+    ],
+  );
+  assert.deepEqual(renderInstallLines({ kind: "unknown", reason: "not a git checkout" }), [
+    "Install: unknown (not a git checkout)",
+  ]);
 });
 
 test("a checkout without a root package.json is not this project's clone", () => {

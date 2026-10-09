@@ -264,6 +264,7 @@ function reportFor(f: Fixture, home: string | null): RuntimeStatusReport {
     env: home === null ? { MIRROR_HOME: undefined, MIRROR_USER: undefined } : ENV,
     version: golden.meta.fixture_version,
     nodeVersion: "<node-version>",
+    install: { kind: "clone", repository: f.repo },
   });
 }
 

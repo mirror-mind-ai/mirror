@@ -140,6 +140,10 @@ function checkScenario(label: string, start: string, root: string, channel?: str
     normalize(
       renderRuntimeVersion({
         version: golden.meta.fixture_version,
+        // The install is where the FRONT DOOR lives, not where `--start`
+        // points: pinned as the fixture's clone, as the golden records it
+        // (CV22.DS10.US3 plateau 4), for `not_a_repository` too.
+        install: { kind: "clone", repository: join(root, "clone") },
         git: gitStatus,
         cloneRole: inspectCloneRole(start),
         updateChannel,

@@ -329,6 +329,9 @@ function renderScenario(f: Fixture, home: string | null): { render: string; verd
     env: ENV,
     version: golden.meta.fixture_version,
     nodeVersion: "<node-version>",
+    // Pinned like the version: the golden records the fixture's own clone
+    // (CV22.DS10.US3 plateau 4).
+    install: { kind: "clone", repository: f.repo },
   });
   return {
     render: renderRuntimeStatus(report, ENV).replaceAll(f.root, "<root>"),
@@ -468,6 +471,7 @@ test("an unconfigured mirror home reports the oracle's sentence", () => {
       env: { MEMORY_ENV: undefined, MIRROR_HOME: undefined, MIRROR_USER: undefined },
       version: golden.meta.fixture_version,
       nodeVersion: "<node-version>",
+      install: { kind: "clone", repository: f.repo },
     });
     const render = renderRuntimeStatus(report, ENV).replaceAll(f.root, "<root>");
     assert.equal(render, (golden.scenarios.home_not_configured as Scenario).render);

@@ -214,13 +214,18 @@ export async function runRuntimeReadRoute(
   if (subcommand === "version") {
     const startArg = optionValue(args, "--start");
     const start = startArg ? expandHome(startArg) : cwd;
+    const install = detectThisInstall();
     writeOut(
       io,
       renderRuntimeVersion({
         version,
+        install,
         git: inspectGit(start),
         cloneRole: inspectCloneRole(start),
-        updateChannel: inspectUpdateChannel(start, optionValue(args, "--channel")),
+        updateChannel:
+          install.kind === "package"
+            ? channelFor(install, env, homedir(), optionValue(args, "--channel"))
+            : inspectUpdateChannel(start, optionValue(args, "--channel")),
       }),
     );
     return 0;
@@ -233,6 +238,7 @@ export async function runRuntimeReadRoute(
       channel: optionValue(args, "--channel"),
       env,
       version,
+      install: detectThisInstall(),
     });
     writeOut(io, renderRuntimeStatus(report, env));
     return statusVerdict(report) === "ready" ? 0 : 1;
@@ -244,6 +250,7 @@ export async function runRuntimeReadRoute(
       mirrorHome: optionValue(args, "--mirror-home"),
       env,
       version,
+      install: detectThisInstall(),
     });
     const findings = [
       ...diagnoseRuntime(report, inspectGitWorktree(report.git.repository)),
@@ -415,6 +422,8 @@ function runRuntimeChannel(
 ): number {
   const install = detectThisInstall();
   const requested = args.find((arg) => !arg.startsWith("-")) ?? null;
+  // (A channel is read and written by layout evidence alone: a package user
+  // with npm off the PATH can still choose one.)
   if (requested === null) {
     writeOut(io, renderChannel({ install, channel: channelFor(install, env), written: null }));
     return 0;
@@ -447,7 +456,13 @@ function runRuntimeUpdate(
 ): number {
   const version = packageVersion(runningTreeRoot()) ?? "unknown";
   const channelOverride = optionValue(args, "--channel");
-  const install = detectThisInstall();
+  // The update lane asks npm, once, whether `-g` addresses this install: a
+  // package outside npm's own global root is not the one `npm install -g`
+  // would replace. The read routes do not pay for the probe.
+  const install = detectInstallKind({
+    frontDoorPath: frontDoorSelfPath(),
+    npmRootGlobal: npmRootGlobal(),
+  });
   const start = install.kind === "clone" ? install.repository : cwd;
   const channel = channelFor(install, env, homedir(), channelOverride);
 
@@ -491,6 +506,7 @@ function runRuntimeUpdate(
       channel: channelOverride,
       env,
       version,
+      install,
     });
     const verdict = statusAllowsUpdatePreflight(report);
     return { ready: statusVerdict(report) === "ready", ...verdict };
@@ -562,12 +578,13 @@ function frontDoorSelfPath(): string {
 }
 
 /**
- * How THIS front door is installed. `npm root -g` is resolved once per call
- * and only matters for identifying a package install: a clone never pays for
- * it beyond the one probe.
+ * How THIS front door is installed, by what the filesystem shows and nothing
+ * spawned: a checkout by its `.git`, a package by npm's global layout and the
+ * bin linked into it. The one place that needs npm's own word, the update
+ * lane, probes `npm root -g` itself.
  */
 function detectThisInstall(): InstallKind {
-  return detectInstallKind({ frontDoorPath: frontDoorSelfPath(), npmRootGlobal: npmRootGlobal() });
+  return detectInstallKind({ frontDoorPath: frontDoorSelfPath() });
 }
 
 /**
