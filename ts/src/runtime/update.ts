@@ -1,11 +1,13 @@
-// `runtime update` — the pipeline, driven for a concrete install kind.
-// (CV22.DS10.US2)
+// `runtime update` — the pipeline body, run once for either install kind.
+// (CV22.DS10.US2; one body over two strategies since CV22.DS10.US3 plateau 4,
+// debt D-026.)
 //
-// Everything structural lives elsewhere: the stage vocabulary and render in
-// `updatePipeline.ts`, the gate in `updateGate.ts`, the git verbs in
-// `strategies/clone.ts`, the install answer in `installKind.ts`. This module
-// is the ORDER those are used in, and the two places the redesign departs from
-// the oracle:
+// Everything structural lives elsewhere: the stage vocabulary, the render, and
+// the strategy seam in `updatePipeline.ts`, the gate in `updateGate.ts`, the
+// git verbs and the clone strategy in `strategies/clone.ts`, the npm verbs and
+// the package strategy in `strategies/package.ts`, the install answer in
+// `installKind.ts`. This module is the ORDER those are used in, and the two
+// places the redesign departs from the oracle:
 //
 //   1. `capture` is a stage. The oracle reads `previous_commit` as a side
 //      effect of the status report; here it is recorded deliberately, before
@@ -16,37 +18,36 @@
 //      just installed. The oracle migrates in-process, with the modules it
 //      imported before the fast-forward -- so a migration authored in the new
 //      commit is invisible to the very run that installed it.
+//
+// A LANE is a list of steps. The ordinary lane is the whole promise; the
+// repair lane is the smallest safe act that can make a broken updater usable
+// again -- no status gate (the status is what is broken), no backup, no
+// migrations (the new code owns those on the next ordinary run). The lane is
+// chosen once, below; no step asks which lane it is in.
 
 import { spawnSync } from "node:child_process";
 import { verifyBackupArchive } from "#runtime/backup.ts";
 import type { InstallKind } from "#runtime/installKind.ts";
-import {
-  captureCommit,
-  cloneRecoveryCommand,
-  defaultGitRunner,
-  fastForward,
-  fetchUpstream,
-  type GitRunner,
-  installedChanges,
-} from "#runtime/strategies/clone.ts";
-import {
-  defaultNpmRunner,
-  installGlobal,
-  type NpmRunner,
-  packageRecoveryCommand,
-  resolveDistTag,
-} from "#runtime/strategies/package.ts";
+import { cloneStrategy, defaultGitRunner, type GitRunner } from "#runtime/strategies/clone.ts";
+import { defaultNpmRunner, type NpmRunner, packageStrategy } from "#runtime/strategies/package.ts";
 import type { statusAllowsUpdatePreflight } from "#runtime/updateGate.ts";
-import { stage, type UpdateResult, type UpdateStage } from "#runtime/updatePipeline.ts";
+import {
+  type ApplyStrategy,
+  stage,
+  type UpdateResult,
+  type UpdateStage,
+} from "#runtime/updatePipeline.ts";
 
-export interface UpdateSpawn {
-  /** Runs the FRONT DOOR again, on the code now installed. */
-  (argv: readonly string[]): { code: number; stdout: string; stderr: string };
-}
+/** Runs the FRONT DOOR again, on the code now installed. */
+export type UpdateSpawn = (argv: readonly string[]) => {
+  code: number;
+  stdout: string;
+  stderr: string;
+};
 
 export interface UpdateDeps {
   install: InstallKind;
-  /** `origin/<channel>` for a clone. */
+  /** `origin/<channel>` for a clone; null for a package, which has no upstream. */
   upstream: string | null;
   channel: string;
   mirrorHome: string | null;
@@ -80,517 +81,310 @@ export interface UpdateDeps {
   npm?: NpmRunner;
 }
 
-function failed(
-  stages: UpdateStage[],
-  previousRef: string | null,
-  backupPath: string | null,
-  recovery: string[],
-): UpdateResult {
+/** One update in flight: what the steps have learned so far. */
+interface Run {
+  readonly deps: UpdateDeps;
+  readonly strategy: ApplyStrategy;
+  readonly stages: UpdateStage[];
+  previousRef: string | null;
+  /** What `plan` found to apply; set only on an `ahead` outcome. */
+  target: string | null;
+  dryRunDetail: string | null;
+  backupPath: string | null;
+  newRef: string | null;
+  changes: string[];
+}
+
+/** A step either ends the run with a result or lets the next step run. */
+type Step = (run: Run) => UpdateResult | null;
+
+function failed(run: Run, recovery: string[]): UpdateResult {
   return {
-    stages,
-    previousRef,
-    newRef: null,
-    backupPath,
+    stages: run.stages,
+    previousRef: run.previousRef,
+    newRef: run.newRef,
+    backupPath: run.backupPath,
     success: false,
     recovery,
     installedChanges: [],
   };
 }
 
-export function runUpdate(deps: UpdateDeps): UpdateResult {
-  const git = deps.git ?? defaultGitRunner;
-  const stages: UpdateStage[] = [];
-  const doFetch = deps.fetch !== false;
-  const doMigrate = deps.migrate !== false;
+function succeeded(run: Run): UpdateResult {
+  return {
+    stages: run.stages,
+    previousRef: run.previousRef,
+    newRef: run.newRef,
+    backupPath: run.backupPath,
+    success: true,
+    recovery: [],
+    installedChanges: run.changes,
+  };
+}
 
-  if (deps.install.kind === "unknown") {
-    stages.push(stage("status gate", "fail", `install kind unknown: ${deps.install.reason}`));
-    return failed(stages, null, null, [
-      "Mirror could not identify how it is installed, so it will not update itself.",
-      "A git checkout updates in place; a global npm install updates through npm.",
+/** The ref `capture` recorded. A step that needs it runs after `capture` by construction. */
+function captured(run: Run): string {
+  if (run.previousRef === null) throw new Error("capture must run before this stage");
+  return run.previousRef;
+}
+
+function backupLine(run: Run): string[] {
+  return run.backupPath ? [`Backup: ${run.backupPath}`] : [];
+}
+
+// --- the steps ---------------------------------------------------------------
+
+const statusGate: Step = (run) => {
+  const verdict = run.deps.gate();
+  if (verdict.ready) {
+    run.stages.push(stage("status gate", "pass"));
+    return null;
+  }
+  if (!verdict.allowed) {
+    run.stages.push(stage("status gate", "fail", "runtime status is not ready"));
+    return failed(run, [
+      "Run: runtime diagnose",
+      "Resolve the reported drift, then retry runtime update.",
     ]);
   }
-  if (deps.install.kind === "package") return runPackageUpdate(deps, deps.install, stages);
+  run.stages.push(stage("status gate", "pass", `update-safe preflight drift (${verdict.detail})`));
+  return null;
+};
 
-  const repository = deps.install.repository;
+const repairPreflight: Step = (run) => {
+  run.stages.push(
+    stage("repair preflight", "pass", run.deps.repairReason ?? "requested with --repair-updater"),
+  );
+  const verdict = run.strategy.repairGate();
+  if (verdict.ok) return null;
+  run.stages.push(stage("repair preflight", "fail", verdict.detail));
+  return failed(run, verdict.recovery);
+};
 
-  if (deps.repair === true) return runRepairLane(deps, repository, git, stages);
-
-  // --- gate ---------------------------------------------------------------
-  const verdict = deps.gate();
-  if (!verdict.ready) {
-    if (!verdict.allowed) {
-      stages.push(stage("status gate", "fail", "runtime status is not ready"));
-      return failed(stages, null, null, [
-        "Run: runtime diagnose",
-        "Resolve the reported drift, then retry runtime update.",
-      ]);
-    }
-    stages.push(stage("status gate", "pass", `update-safe preflight drift (${verdict.detail})`));
-  } else {
-    stages.push(stage("status gate", "pass"));
+const capture: Step = (run) => {
+  const outcome = run.strategy.capture();
+  if (!outcome.ok) {
+    run.stages.push(stage("capture", "fail", outcome.detail));
+    return failed(run, outcome.recovery);
   }
+  run.previousRef = outcome.ref;
+  run.stages.push(stage("capture", "pass", outcome.detail));
+  return null;
+};
 
-  // --- capture ------------------------------------------------------------
-  const previousRef = captureCommit(repository, git);
-  if (previousRef === null) {
-    stages.push(stage("capture", "fail", "could not read the current commit"));
-    return failed(stages, null, null, [
-      "Mirror must be a readable git checkout to update in place.",
-    ]);
+const fetch: Step = (run) => {
+  const fetchUpstream = run.strategy.fetch;
+  if (fetchUpstream === undefined) return null;
+  if (run.deps.fetch === false) {
+    run.stages.push(stage("fetch", "skip", "--no-fetch"));
+    return null;
   }
-  stages.push(stage("capture", "pass", previousRef));
+  const outcome = fetchUpstream();
+  if (!outcome.ok) {
+    run.stages.push(stage("fetch", "fail", outcome.detail));
+    return failed(run, outcome.recovery);
+  }
+  run.stages.push(stage("fetch", "pass", outcome.detail));
+  return null;
+};
 
-  if (deps.upstream === null) {
-    stages.push(stage("plan", "fail", "no upstream configured"));
-    return failed(stages, previousRef, null, [
-      "Configure an upstream branch with git, then retry runtime update.",
-    ]);
+const plan: Step = (run) => {
+  const outcome = run.strategy.plan(captured(run));
+  if (outcome.kind === "blocked") {
+    run.stages.push(stage("plan", "fail", outcome.detail));
+    return failed(run, outcome.recovery);
   }
-  const upstream = deps.upstream;
+  run.stages.push(stage("plan", "pass", outcome.detail));
+  if (outcome.kind === "current") {
+    // Nothing to do, and nothing was archived to find that out.
+    run.newRef = run.previousRef;
+    return succeeded(run);
+  }
+  run.target = outcome.target;
+  run.dryRunDetail = outcome.dryRun;
+  return null;
+};
 
-  // --- fetch --------------------------------------------------------------
-  if (doFetch) {
-    const fetched = fetchUpstream(repository, upstream, git);
-    if (!fetched.ok) {
-      stages.push(stage("fetch", "fail", fetched.detail));
-      return failed(stages, previousRef, null, [
-        "Check network connectivity and remote access.",
-        "Retry runtime update, or use --no-fetch to plan from local refs only.",
-      ]);
-    }
-    stages.push(stage("fetch", "pass", fetched.detail));
-  } else {
-    stages.push(stage("fetch", "skip", "--no-fetch"));
-  }
+const dryRunStop: Step = (run) => {
+  if (run.deps.dryRun !== true) return null;
+  // Everything above this line is read-only. Stopping here is the whole
+  // promise of a dry run: the stages a real run would take next are named,
+  // not performed.
+  run.stages.push(stage("backup", "skip", "dry run"));
+  run.stages.push(stage("verify backup", "skip", "dry run"));
+  run.stages.push(stage(run.strategy.applyStage, "skip", run.dryRunDetail ?? "dry run"));
+  run.stages.push(stage("migrate", "skip", "dry run"));
+  run.stages.push(stage("post-update status", "skip", "dry run"));
+  return succeeded(run);
+};
 
-  // --- plan ---------------------------------------------------------------
-  const ahead = countCommits(repository, `${upstream}..HEAD`, git);
-  const behind = countCommits(repository, `HEAD..${upstream}`, git);
-  if (ahead === null || behind === null) {
-    stages.push(stage("plan", "fail", `cannot compare against ${upstream}`));
-    return failed(stages, previousRef, null, [
-      `Resolve upstream tracking for ${upstream}, then retry runtime update.`,
-    ]);
-  }
-  if (ahead === 0 && behind === 0) {
-    stages.push(stage("plan", "pass", "already up to date"));
-    return {
-      stages,
-      previousRef,
-      newRef: previousRef,
-      backupPath: null,
-      success: true,
-      recovery: [],
-      installedChanges: [],
-    };
-  }
-  if (ahead > 0) {
-    const note = behind > 0 ? "branch diverged" : "local commits present";
-    stages.push(stage("plan", "fail", note));
-    return failed(stages, previousRef, null, [
-      behind > 0
-        ? "Branch diverged; reconcile local and upstream commits manually."
-        : "Local branch is ahead of upstream; push or reset before updating.",
-      "The working tree and the database are unchanged.",
-      `Current commit: ${previousRef}`,
-    ]);
-  }
-  stages.push(stage("plan", "pass", `pull ${behind} remote commit(s)`));
-
-  if (deps.dryRun === true) {
-    // Everything above this line is read-only. Stopping here is the whole
-    // promise of a dry run: the stages a real run would take next are named,
-    // not performed.
-    stages.push(stage("backup", "skip", "dry run"));
-    stages.push(stage("verify backup", "skip", "dry run"));
-    stages.push(stage("fast-forward", "skip", `would pull ${behind} commit(s) from ${upstream}`));
-    stages.push(stage("migrate", "skip", "dry run"));
-    stages.push(stage("post-update status", "skip", "dry run"));
-    return {
-      stages,
-      previousRef,
-      newRef: null,
-      backupPath: null,
-      success: true,
-      recovery: [],
-      installedChanges: [],
-    };
-  }
-
-  // --- backup + verify ----------------------------------------------------
+const backupAndVerify: Step = (run) => {
+  const home = run.deps.mirrorHome ?? "<mirror home>";
   let backupPath: string | null;
   try {
-    backupPath = deps.createBackup();
+    backupPath = run.deps.createBackup();
   } catch (error) {
-    stages.push(stage("backup", "fail", error instanceof Error ? error.message : String(error)));
-    return failed(stages, previousRef, null, [
-      `Backup directory must be writable: ${deps.mirrorHome ?? "<mirror home>"}`,
-    ]);
+    run.stages.push(
+      stage("backup", "fail", error instanceof Error ? error.message : String(error)),
+    );
+    return failed(run, [`Backup directory must be writable: ${home}`]);
   }
   if (backupPath === null) {
-    stages.push(stage("backup", "fail", "database not found"));
-    return failed(stages, previousRef, null, [
-      `Expected a database under: ${deps.mirrorHome ?? "<mirror home>"}`,
-    ]);
+    run.stages.push(stage("backup", "fail", "database not found"));
+    return failed(run, [`Expected a database under: ${home}`]);
   }
-  stages.push(stage("backup", "pass", backupPath));
+  run.backupPath = backupPath;
+  run.stages.push(stage("backup", "pass", backupPath));
 
-  const verification = (deps.verifyBackup ?? verifyBackupArchive)(backupPath);
+  const verification = (run.deps.verifyBackup ?? verifyBackupArchive)(backupPath);
   if (!verification.valid) {
-    stages.push(stage("verify backup", "fail", verification.note ?? "invalid backup"));
-    return failed(stages, previousRef, backupPath, [
+    run.stages.push(stage("verify backup", "fail", verification.note ?? "invalid backup"));
+    return failed(run, [
       `Backup created but failed verification: ${backupPath}`,
-      "Inspect the archive before retrying runtime update; the tree has not moved.",
+      "Inspect the archive before retrying runtime update; nothing has moved.",
     ]);
   }
-  stages.push(stage("verify backup", "pass"));
+  run.stages.push(stage("verify backup", "pass"));
+  return null;
+};
 
-  // --- apply (the first irreversible step) --------------------------------
-  const applied = fastForward(repository, upstream, git);
-  if (!applied.ok) {
-    stages.push(stage("fast-forward", "fail", applied.detail));
-    return failed(stages, previousRef, backupPath, [
-      "Working tree is unchanged because fast-forward refused.",
-      `Backup: ${backupPath}`,
-      `Recover with: ${cloneRecoveryCommand(previousRef)}`,
+const skipBackup: Step = (run) => {
+  run.stages.push(stage("backup", "skip", "repair lane"));
+  return null;
+};
+
+/** The first irreversible step. */
+const apply: Step = (run) => {
+  const previousRef = captured(run);
+  if (run.target === null) throw new Error("plan must name a target before apply");
+  const outcome = run.strategy.apply(previousRef, run.target);
+  if (!outcome.ok) {
+    run.stages.push(stage(run.strategy.applyStage, "fail", outcome.detail));
+    return failed(run, [
+      ...outcome.recovery,
+      ...backupLine(run),
+      `Recover with: ${run.strategy.recoveryCommand(previousRef)}`,
     ]);
   }
-  const newRef = captureCommit(repository, git);
-  stages.push(stage("fast-forward", "pass", `${previousRef} -> ${newRef ?? "unknown"}`));
-  const changes = installedChanges(repository, previousRef, newRef, git);
+  run.newRef = outcome.newRef;
+  run.changes = outcome.changes;
+  run.stages.push(stage(run.strategy.applyStage, "pass", outcome.detail));
+  return null;
+};
 
-  // --- migrate (fresh process, NEW code) ----------------------------------
-  if (doMigrate) {
-    const result = deps.spawnFrontDoor(
-      deps.mirrorHome
-        ? ["runtime", "migrate", "--mirror-home", deps.mirrorHome]
-        : ["runtime", "migrate"],
-    );
-    if (result.code !== 0) {
-      stages.push(stage("migrate", "fail", firstLine(result.stderr || result.stdout)));
-      return {
-        ...failed(stages, previousRef, backupPath, [
-          `Backup: ${backupPath}`,
-          `Code is on ${newRef ?? "the new commit"}; the database may be partly migrated.`,
-          `Restore the database from the backup, then: ${cloneRecoveryCommand(previousRef)}`,
-        ]),
-        newRef,
-      };
-    }
-    stages.push(stage("migrate", "pass", migrateSummary(result.stdout)));
-  } else {
-    stages.push(stage("migrate", "skip", "--skip-migrations"));
+/** Fresh process, NEW code. */
+const migrate: Step = (run) => {
+  if (run.deps.migrate === false) {
+    run.stages.push(stage("migrate", "skip", "--skip-migrations"));
+    return null;
   }
+  const home = run.deps.mirrorHome;
+  const result = run.deps.spawnFrontDoor(
+    home ? ["runtime", "migrate", "--mirror-home", home] : ["runtime", "migrate"],
+  );
+  if (result.code !== 0) {
+    run.stages.push(stage("migrate", "fail", firstLine(result.stderr || result.stdout)));
+    return failed(run, [
+      ...backupLine(run),
+      `${run.strategy.installedState(run.newRef)}; the database may be partly migrated.`,
+      `Restore the database from the backup, then: ${run.strategy.recoveryCommand(captured(run))}`,
+    ]);
+  }
+  run.stages.push(stage("migrate", "pass", migrateSummary(result.stdout)));
+  return null;
+};
 
-  // --- validate (fresh process) -------------------------------------------
-  const post = deps.statusReady();
+const skipMigrate: Step = (run) => {
+  run.stages.push(stage("migrate", "skip", "repair lane: the ordinary update owns migrations"));
+  return null;
+};
+
+/** Fresh process: the verdict comes from the code that was just installed. */
+const validate: Step = (run) => {
+  const post = run.deps.statusReady();
   if (!post.ready) {
-    stages.push(stage("post-update status", "fail", post.detail));
-    return {
-      ...failed(stages, previousRef, backupPath, [
-        `Code is on ${newRef ?? "the new commit"} and the database may be migrated.`,
-        `Backup: ${backupPath}`,
-        "Run: runtime diagnose",
-      ]),
-      newRef,
-    };
+    run.stages.push(stage("post-update status", "fail", post.detail));
+    return failed(run, [
+      `${run.strategy.installedState(run.newRef)} and the database may be migrated.`,
+      ...backupLine(run),
+      "Run: runtime diagnose",
+    ]);
   }
-  stages.push(stage("post-update status", "pass"));
+  run.stages.push(stage("post-update status", "pass"));
+  return null;
+};
 
-  return {
-    stages,
-    previousRef,
-    newRef,
-    backupPath,
-    success: true,
-    recovery: [],
-    installedChanges: changes,
-  };
+// --- the lanes ---------------------------------------------------------------
+
+const ORDINARY_LANE: readonly Step[] = [
+  statusGate,
+  capture,
+  fetch,
+  plan,
+  dryRunStop,
+  backupAndVerify,
+  apply,
+  migrate,
+  validate,
+];
+
+const REPAIR_LANE: readonly Step[] = [
+  repairPreflight,
+  capture,
+  fetch,
+  plan,
+  dryRunStop,
+  skipBackup,
+  apply,
+  skipMigrate,
+];
+
+function strategyFor(deps: UpdateDeps, install: Exclude<InstallKind, { kind: "unknown" }>) {
+  if (install.kind === "package") {
+    return packageStrategy(install, deps.channel, deps.npm ?? defaultNpmRunner);
+  }
+  return cloneStrategy(
+    install.repository,
+    deps.upstream ?? `origin/${deps.channel}`,
+    deps.git ?? defaultGitRunner,
+  );
 }
 
-/**
- * The `package` pipeline. Same promise as the clone's, same order, and the
- * same rule that `apply` waits for `capture` and `verify backup`. What differs
- * is only what those stages mean: the ref is a version rather than a commit,
- * and the apply is an install rather than a fast-forward.
- */
-function runPackageUpdate(
-  deps: UpdateDeps,
-  install: Extract<InstallKind, { kind: "package" }>,
-  stages: UpdateStage[],
-): UpdateResult {
-  const npm = deps.npm ?? defaultNpmRunner;
-  const repairing = deps.repair === true;
-
-  if (!repairing) {
-    const verdict = deps.gate();
-    if (!verdict.ready) {
-      if (!verdict.allowed) {
-        stages.push(stage("status gate", "fail", "runtime status is not ready"));
-        return failed(stages, install.version, null, [
-          "Run: runtime diagnose",
-          "Resolve the reported drift, then retry runtime update.",
-        ]);
-      }
-      stages.push(stage("status gate", "pass", `update-safe preflight drift (${verdict.detail})`));
-    } else {
-      stages.push(stage("status gate", "pass"));
-    }
-  } else {
-    stages.push(
-      stage("repair preflight", "pass", deps.repairReason ?? "requested with --repair-updater"),
-    );
-  }
-
-  // The installed version, read BEFORE anything is installed over it. npm's
-  // global install is not atomic, so a pinned reinstall is the only rollback
-  // there is, and it needs this value.
-  const previousRef = install.version;
-  stages.push(stage("capture", "pass", `${install.name}@${previousRef}`));
-
-  const resolved = resolveDistTag(install.name, deps.channel, npm);
-  if (!resolved.ok || resolved.version === null) {
-    stages.push(stage("plan", "fail", resolved.detail));
-    return failed(stages, previousRef, null, [
-      `Could not resolve the '${deps.channel}' dist-tag for ${install.name}.`,
-      "Check network access to the npm registry, then retry runtime update.",
-    ]);
-  }
-  if (resolved.version === previousRef) {
-    stages.push(stage("plan", "pass", `already up to date (${resolved.version})`));
+export function runUpdate(deps: UpdateDeps): UpdateResult {
+  const stages: UpdateStage[] = [];
+  if (deps.install.kind === "unknown") {
+    stages.push(stage("status gate", "fail", `install kind unknown: ${deps.install.reason}`));
     return {
       stages,
-      previousRef,
-      newRef: previousRef,
-      backupPath: null,
-      success: true,
-      recovery: [],
-      installedChanges: [],
-    };
-  }
-  stages.push(stage("plan", "pass", `${previousRef} -> ${resolved.version}`));
-
-  if (deps.dryRun === true) {
-    stages.push(stage("backup", "skip", "dry run"));
-    stages.push(stage("verify backup", "skip", "dry run"));
-    stages.push(stage("apply", "skip", `would install ${install.name}@${resolved.version}`));
-    stages.push(stage("migrate", "skip", "dry run"));
-    stages.push(stage("post-update status", "skip", "dry run"));
-    return {
-      stages,
-      previousRef,
+      previousRef: null,
       newRef: null,
       backupPath: null,
-      success: true,
-      recovery: [],
+      success: false,
+      recovery: [
+        "Mirror could not identify how it is installed, so it will not update itself.",
+        "A git checkout updates in place; a global npm install updates through npm.",
+      ],
       installedChanges: [],
     };
   }
 
-  let backupPath: string | null = null;
-  if (!repairing) {
-    try {
-      backupPath = deps.createBackup();
-    } catch (error) {
-      stages.push(stage("backup", "fail", error instanceof Error ? error.message : String(error)));
-      return failed(stages, previousRef, null, [
-        `Backup directory must be writable: ${deps.mirrorHome ?? "<mirror home>"}`,
-      ]);
-    }
-    if (backupPath === null) {
-      stages.push(stage("backup", "fail", "database not found"));
-      return failed(stages, previousRef, null, [
-        `Expected a database under: ${deps.mirrorHome ?? "<mirror home>"}`,
-      ]);
-    }
-    stages.push(stage("backup", "pass", backupPath));
-
-    const verification = (deps.verifyBackup ?? verifyBackupArchive)(backupPath);
-    if (!verification.valid) {
-      stages.push(stage("verify backup", "fail", verification.note ?? "invalid backup"));
-      return failed(stages, previousRef, backupPath, [
-        `Backup created but failed verification: ${backupPath}`,
-        "Inspect the archive before retrying runtime update; nothing was installed.",
-      ]);
-    }
-    stages.push(stage("verify backup", "pass"));
-  } else {
-    stages.push(stage("backup", "skip", "repair lane"));
-  }
-
-  const applied = installGlobal(install.name, resolved.version, npm);
-  if (!applied.ok) {
-    stages.push(stage("apply", "fail", applied.detail));
-    return failed(stages, previousRef, backupPath, [
-      "A global npm install is not atomic; this one did not complete.",
-      `Recover with: ${packageRecoveryCommand(install.name, previousRef)}`,
-      ...(backupPath ? [`Backup: ${backupPath}`] : []),
-    ]);
-  }
-  stages.push(stage("apply", "pass", applied.detail));
-
-  if (repairing) {
-    stages.push(stage("migrate", "skip", "repair lane: the ordinary update owns migrations"));
-    return {
-      stages,
-      previousRef,
-      newRef: resolved.version,
-      backupPath,
-      success: true,
-      recovery: [],
-      installedChanges: [],
-    };
-  }
-
-  if (deps.migrate !== false) {
-    const result = deps.spawnFrontDoor(
-      deps.mirrorHome
-        ? ["runtime", "migrate", "--mirror-home", deps.mirrorHome]
-        : ["runtime", "migrate"],
-    );
-    if (result.code !== 0) {
-      stages.push(stage("migrate", "fail", firstLine(result.stderr || result.stdout)));
-      return {
-        ...failed(stages, previousRef, backupPath, [
-          ...(backupPath ? [`Backup: ${backupPath}`] : []),
-          `${install.name}@${resolved.version} is installed; the database may be partly migrated.`,
-          `Restore the database from the backup, then: ${packageRecoveryCommand(install.name, previousRef)}`,
-        ]),
-        newRef: resolved.version,
-      };
-    }
-    stages.push(stage("migrate", "pass", migrateSummary(result.stdout)));
-  } else {
-    stages.push(stage("migrate", "skip", "--skip-migrations"));
-  }
-
-  const post = deps.statusReady();
-  if (!post.ready) {
-    stages.push(stage("post-update status", "fail", post.detail));
-    return {
-      ...failed(stages, previousRef, backupPath, [
-        `${install.name}@${resolved.version} is installed and the database may be migrated.`,
-        ...(backupPath ? [`Backup: ${backupPath}`] : []),
-        "Run: runtime diagnose",
-      ]),
-      newRef: resolved.version,
-    };
-  }
-  stages.push(stage("post-update status", "pass"));
-
-  return {
+  const run: Run = {
+    deps,
+    strategy: strategyFor(deps, deps.install),
     stages,
-    previousRef,
-    newRef: resolved.version,
-    backupPath,
-    success: true,
-    recovery: [],
-    installedChanges: [],
-  };
-}
-
-/**
- * The repair lane: the smallest safe act that can make a broken updater
- * usable again. No status gate (the status is what is broken), no migrations
- * (the new code owns those on the next ordinary run), and the same
- * fast-forward-only discipline.
- */
-function runRepairLane(
-  deps: UpdateDeps,
-  repository: string,
-  git: GitRunner,
-  stages: UpdateStage[],
-): UpdateResult {
-  stages.push(
-    stage("repair preflight", "pass", deps.repairReason ?? "requested with --repair-updater"),
-  );
-
-  const previousRef = captureCommit(repository, git);
-  if (previousRef === null) {
-    stages.push(stage("capture", "fail", "could not read the current commit"));
-    return failed(stages, null, null, ["Mirror must be a readable git checkout to repair."]);
-  }
-  stages.push(stage("capture", "pass", previousRef));
-
-  const dirty = git(["status", "--porcelain"], repository);
-  if (dirty.code !== 0 || dirty.stdout.trim() !== "") {
-    stages.push(stage("repair preflight", "fail", "git tree is dirty"));
-    return failed(stages, previousRef, null, [
-      "Commit or stash local changes, then retry runtime update --repair-updater.",
-    ]);
-  }
-  if (deps.upstream === null) {
-    stages.push(stage("plan", "fail", "no upstream configured"));
-    return failed(stages, previousRef, null, [
-      "Configure an upstream branch with git, then retry.",
-    ]);
-  }
-
-  if (deps.fetch !== false) {
-    const fetched = fetchUpstream(repository, deps.upstream, git);
-    stages.push(stage("fetch", fetched.ok ? "pass" : "fail", fetched.detail));
-    if (!fetched.ok) {
-      return failed(stages, previousRef, null, [
-        "Check network connectivity, or retry with --no-fetch to repair from local refs.",
-      ]);
-    }
-  } else {
-    stages.push(stage("fetch", "skip", "--no-fetch"));
-  }
-
-  const behind = countCommits(repository, `HEAD..${deps.upstream}`, git);
-  const ahead = countCommits(repository, `${deps.upstream}..HEAD`, git);
-  if (behind === null || ahead === null || ahead > 0) {
-    stages.push(stage("plan", "fail", ahead && ahead > 0 ? "branch diverged" : "cannot compare"));
-    return failed(stages, previousRef, null, [
-      "Reconcile local and upstream commits manually, then retry.",
-      `Current commit: ${previousRef}`,
-    ]);
-  }
-  if (behind === 0) {
-    stages.push(stage("plan", "pass", "already up to date"));
-    stages.push(stage("migrate", "skip", "repair lane"));
-    return {
-      stages,
-      previousRef,
-      newRef: previousRef,
-      backupPath: null,
-      success: true,
-      recovery: [],
-      installedChanges: [],
-    };
-  }
-  stages.push(stage("plan", "pass", `pull ${behind} remote commit(s)`));
-
-  const applied = fastForward(repository, deps.upstream, git);
-  if (!applied.ok) {
-    stages.push(stage("fast-forward", "fail", applied.detail));
-    return failed(stages, previousRef, null, [
-      "Working tree is unchanged because fast-forward refused.",
-      `Recover with: ${cloneRecoveryCommand(previousRef)}`,
-    ]);
-  }
-  const newRef = captureCommit(repository, git);
-  stages.push(stage("fast-forward", "pass", `${previousRef} -> ${newRef ?? "unknown"}`));
-  stages.push(stage("migrate", "skip", "repair lane: the ordinary update owns migrations"));
-
-  return {
-    stages,
-    previousRef,
-    newRef,
+    previousRef: null,
+    target: null,
+    dryRunDetail: null,
     backupPath: null,
-    success: true,
-    recovery: [],
-    installedChanges: installedChanges(repository, previousRef, newRef, git),
+    newRef: null,
+    changes: [],
   };
-}
-
-function countCommits(repository: string, range: string, git: GitRunner): number | null {
-  const result = git(["rev-list", "--count", range], repository);
-  if (result.code !== 0) return null;
-  const value = Number.parseInt(result.stdout.trim(), 10);
-  return Number.isNaN(value) ? null : value;
+  const lane = deps.repair === true ? REPAIR_LANE : ORDINARY_LANE;
+  for (const step of lane) {
+    const result = step(run);
+    if (result !== null) return result;
+  }
+  return succeeded(run);
 }
 
 function firstLine(text: string): string {

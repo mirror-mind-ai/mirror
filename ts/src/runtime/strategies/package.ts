@@ -13,6 +13,7 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import type { ApplyStrategy } from "#runtime/updatePipeline.ts";
 
 export type NpmRunner = (args: readonly string[]) => {
   code: number;
@@ -148,6 +149,73 @@ export function packageRecoveryCommand(name: string, previousVersion: string | n
   return previousVersion === null
     ? `npm install -g ${name}@<previous version>`
     : `npm install -g ${name}@${previousVersion}`;
+}
+
+/**
+ * The package's answers to the pipeline's questions. A ref is an installed
+ * version, read from the manifest before anything is installed over it (npm's
+ * global install is not atomic, so a pinned reinstall is the only rollback
+ * there is); the channel is a dist-tag resolved to a concrete version at plan
+ * time; moving is one global install of exactly that version; the way back is
+ * the same install of the captured one. Nothing is fetched: the registry is
+ * asked once, at plan.
+ */
+export function packageStrategy(
+  install: { name: string; version: string },
+  channel: string,
+  npm: NpmRunner,
+): ApplyStrategy {
+  return {
+    kind: "package",
+    applyStage: "apply",
+
+    // A package has no tree to be dirty: the status gate is the only gate, and
+    // the repair lane simply forgoes it.
+    repairGate: () => ({ ok: true }),
+
+    capture: () => ({
+      ok: true,
+      ref: install.version,
+      detail: `${install.name}@${install.version}`,
+    }),
+
+    plan: (previousRef) => {
+      const resolved = resolveDistTag(install.name, channel, npm);
+      if (!resolved.ok || resolved.version === null) {
+        return {
+          kind: "blocked",
+          detail: resolved.detail,
+          recovery: [
+            `Could not resolve the '${channel}' dist-tag for ${install.name}.`,
+            "Check network access to the npm registry, then retry runtime update.",
+          ],
+        };
+      }
+      if (resolved.version === previousRef) {
+        return { kind: "current", detail: `already up to date (${resolved.version})` };
+      }
+      return {
+        kind: "ahead",
+        target: resolved.version,
+        detail: `${previousRef} -> ${resolved.version}`,
+        dryRun: `would install ${install.name}@${resolved.version}`,
+      };
+    },
+
+    apply: (_previousRef, target) => {
+      const applied = installGlobal(install.name, target, npm);
+      return applied.ok
+        ? { ok: true, newRef: target, detail: applied.detail, changes: [] }
+        : {
+            ok: false,
+            detail: applied.detail,
+            recovery: ["A global npm install is not atomic; this one did not complete."],
+          };
+    },
+
+    recoveryCommand: (previousRef) => packageRecoveryCommand(install.name, previousRef),
+    installedState: (newRef) => `${install.name}@${newRef ?? "<unknown>"} is installed`,
+  };
 }
 
 function firstLine(text: string): string {

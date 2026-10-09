@@ -353,6 +353,99 @@ test("the render and the log line report the same run", () => {
   assert.match(line, /status gate=pass/);
 });
 
+// --- the repair lane (CV22.DS10.US3 plateau 4, D-026) -----------------------
+//
+// Until the body was one pipeline over two strategies, the repair lane was a
+// third copy of the order with no unit test of its own; the update smoke's
+// happy path was its only evidence. What it skips is the point of it, so what
+// it skips is pinned.
+
+test("the repair lane has no status gate, no backup, and no migration", () => {
+  const git = scriptGit({
+    "status --porcelain": { stdout: "" },
+    "rev-parse --short HEAD": { stdout: "aaaaaaa\n" },
+    "rev-list --count origin/main..HEAD": { stdout: "0\n" },
+    "rev-list --count HEAD..origin/main": { stdout: "2\n" },
+  });
+  let gated = 0;
+  let backups = 0;
+  const spawned: string[][] = [];
+  const result = runUpdate(
+    deps({
+      git: git.runner,
+      repair: true,
+      repairReason: "runtime status crashed before update planning",
+      gate: () => {
+        gated += 1;
+        throw new Error("the status is what is broken");
+      },
+      createBackup: () => {
+        backups += 1;
+        return "/should/not/happen.zip";
+      },
+      spawnFrontDoor: (argv) => {
+        spawned.push([...argv]);
+        return { code: 0, stdout: "", stderr: "" };
+      },
+    }),
+  );
+  assert.equal(result.success, true, JSON.stringify(result.stages));
+  assert.deepEqual(stageNames(result), [
+    "repair preflight=pass",
+    "capture=pass",
+    "fetch=pass",
+    "plan=pass",
+    "backup=skip",
+    "fast-forward=pass",
+    "migrate=skip",
+  ]);
+  assert.equal(gated, 0, "the repair lane must not consult the status gate");
+  assert.equal(backups, 0, "the repair lane takes no backup");
+  assert.deepEqual(spawned, [], "the repair lane runs no migration");
+  assert.match(result.stages[0]?.detail ?? "", /crashed before update planning/);
+});
+
+test("the repair lane's gate is the tree itself, checked before anything is read", () => {
+  const git = scriptGit({
+    "status --porcelain": { stdout: " M ts/src/runtime/update.ts\n" },
+    "rev-parse --short HEAD": { stdout: "aaaaaaa\n" },
+  });
+  const result = runUpdate(deps({ git: git.runner, repair: true }));
+  assert.equal(result.success, false);
+  assert.deepEqual(stageNames(result), ["repair preflight=pass", "repair preflight=fail"]);
+  assert.equal(result.previousRef, null, "a refused gate reads nothing");
+  assert.ok(result.recovery.some((line) => line.includes("--repair-updater")));
+  assert.ok(!git.calls.some((call) => call[0] === "merge"));
+});
+
+test("a package has no tree, so its repair lane forgoes the gate and installs", () => {
+  const npm = scriptNpm({
+    "view mirror-core dist-tags": { stdout: JSON.stringify({ stable: "1.3.0" }) },
+    "install -g": { stdout: "added 1 package\n" },
+  });
+  const result = runUpdate(
+    deps({
+      install: PACKAGE,
+      channel: "stable",
+      npm: npm.runner,
+      repair: true,
+      gate: () => {
+        throw new Error("not consulted");
+      },
+    }),
+  );
+  assert.equal(result.success, true, JSON.stringify(result.stages));
+  assert.deepEqual(stageNames(result), [
+    "repair preflight=pass",
+    "capture=pass",
+    "plan=pass",
+    "backup=skip",
+    "apply=pass",
+    "migrate=skip",
+  ]);
+  assert.equal(result.newRef, "1.3.0");
+});
+
 // --- CV22.DS10.TS5, debt D-025 ---------------------------------------------
 
 test("a declined migration FAILS the update instead of passing it", () => {

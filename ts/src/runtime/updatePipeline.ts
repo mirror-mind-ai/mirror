@@ -12,7 +12,10 @@
 //
 // Only `apply` differs between a clone and a package. Everything here is the
 // same for both, which is why it lives in its own module rather than inside
-// either strategy.
+// either strategy -- and why the seam between the body and a strategy is
+// declared here too (CV22.DS10.US3 plateau 4, debt D-026): the body in
+// `update.ts` runs the order above once, and a strategy answers only the
+// questions whose answer depends on how Mirror was installed.
 
 export type StageState = "pass" | "fail" | "skip";
 
@@ -40,6 +43,60 @@ export interface UpdateResult {
 
 export function stage(name: string, state: StageState, detail?: string): UpdateStage {
   return detail === undefined ? { name, state } : { name, state, detail };
+}
+
+// --- the strategy seam -------------------------------------------------------
+
+/** A step that could not be taken, with the stage detail and the route back. */
+export interface Refusal {
+  ok: false;
+  detail: string;
+  recovery: string[];
+}
+
+export type CaptureOutcome = { ok: true; ref: string; detail: string } | Refusal;
+export type FetchOutcome = { ok: true; detail: string } | Refusal;
+export type GateOutcome = { ok: true } | Refusal;
+
+export type PlanOutcome =
+  /** Nothing to do; the update ends here without archiving anything. */
+  | { kind: "current"; detail: string }
+  /** Something to apply: `target` is what apply moves to, `dryRun` what a dry run says it would do. */
+  | { kind: "ahead"; target: string; detail: string; dryRun: string }
+  | { kind: "blocked"; detail: string; recovery: string[] };
+
+export type ApplyOutcome =
+  | { ok: true; newRef: string | null; detail: string; changes: string[] }
+  | Refusal;
+
+/**
+ * What differs between a clone and a package, and nothing else.
+ *
+ * The body owns the order, the gate, the dry run, the backup and its
+ * verification, the fresh-process migrate and validate, and the recovery
+ * block's shape. A strategy owns the meaning of a ref (a commit, a version),
+ * how to read it, how to learn whether the channel is ahead, how to move, and
+ * the words that name its own apply stage and its way back.
+ */
+export interface ApplyStrategy {
+  readonly kind: "clone" | "package";
+  /** What the render calls the irreversible step: `fast-forward` or `apply`. */
+  readonly applyStage: string;
+  /**
+   * The minimal gate the repair lane runs INSTEAD of the status gate: what
+   * must be true of the install itself when the status cannot be trusted.
+   */
+  repairGate(): GateOutcome;
+  /** The ref to go back to, read before anything moves. */
+  capture(): CaptureOutcome;
+  /** Absent when there is nothing to fetch: a registry is asked at plan time. */
+  fetch?(): FetchOutcome;
+  plan(previousRef: string): PlanOutcome;
+  apply(previousRef: string, target: string): ApplyOutcome;
+  /** The pasteable route back, with the captured ref in it. */
+  recoveryCommand(previousRef: string): string;
+  /** Where the code stands after apply, for the recovery block. */
+  installedState(newRef: string | null): string;
 }
 
 /** Port of `render_runtime_update_result`, in the redesign's vocabulary. */
