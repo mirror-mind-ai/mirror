@@ -9,7 +9,9 @@ the operating instructions did not ship in the tarball; all six folded, and the 
 **approved by the Navigator on 2026-10-05 with D1–D13**; D14 and D15 taken during plateau 1.
 Plateaus 0 and 1 done the same day; plateau 2 validated 2026-10-06; plateau 3 implemented
 2026-10-06 and validated by the Navigator 2026-10-09; plateau 4 implemented and validated
-2026-10-09, after a persona-panel review of its plan whose three findings it took.
+2026-10-09, after a persona-panel review of its plan whose three findings it took; plateau 5
+implemented 2026-10-09 (the Windows Frame and installer retired, the artifact half of the
+Zero Python gate in CI).
 **Type:** User Story
 **Depends on:** every other DS10 story (done); the release gate (done 2026-09-28).
 
@@ -374,28 +376,76 @@ home (D14); the `mirror` bin is a type-stripping loader shim (D15).
   `passed: 86 failed: 0`, and nothing written to `~/.config/mirror/` or the tree. Next:
   plateau 5 (§F).
 
+- **Plateau 5 — the Frame, the installer, and the artifact claim (implemented 2026-10-09).**
+  D4's retirement path, as the number recorded that morning decided it (three downloads ever,
+  none since August, nobody known to run it). In the plan's order:
+  - **The deletion.** `frame/` (the Electron shell), `installer/` (the Inno Setup wizard and
+    its PowerShell), `docs/installer/`, `.github/workflows/windows-installer.yml`, and one file
+    the plan had not named, `scripts/ci-nonascii-profile-smoke.ps1` — the profile smoke only
+    that workflow ran, invoked with the Frame's payload (59 files, `git rm`). They stay readable
+    at `cv22-last-python-bearing` (`b0d34254`). Left in place: `spikes/windows-frame-mockup/`,
+    ES-004 Experiment 1's static mockup, which touches no core and is that exploration's
+    evidence; it names two installer scripts, so the new row exempts its two files with that
+    reason. Deleting it with the Frame is the Navigator's call, not this plateau's.
+  - **The `frame-installer` row** in the retired-surface guard: absence by path (the five
+    above) and **by suffix** — no `.ps1`, `.psm1`, `.iss`, or `.cmd` anywhere in the tree, the
+    claim a path list cannot make, as TS5's `.py` was; residue by file name (the workflow, the
+    installer's scripts, the Frame's modules, the artifact's name), never by vocabulary, since
+    "Windows" and "installer" are living words. The **eleven** `python-core-mentions`
+    exemptions that said "until US3" expired with their files (the plan counted nine; the
+    table held eleven, `docs/installer/`'s five among them), and the test that asserted them
+    now asserts their absence. Residue the row found: the engineering-principles line that
+    said the Windows installer rides its own workflow (now names the package smoke), the
+    architecture listing's `frame/, installer/` row, two comments naming `frame/package.json`
+    as a stray manifest, and a test walking `frame` and `installer` by name for session-naming
+    residue (CR008 C) — the one caller a path grep for `frame/` could not see.
+  - **The artifact half of the Zero Python gate.** `FORBIDDEN_CONTENT` in the pack guard
+    gained the interpreter-invocation forms as a second rule, **imported from
+    `INTERPRETER_INVOCATIONS`** so the tree half and the artifact half cannot drift. Measured
+    before the rule was written: of 467 packed files, the forms appear only in `docs/releases/`
+    (each version's record of what it said and what was removed, shown by `runtime
+    release-notes` as written) and in the retired-surface guard itself (its patterns are the
+    data). Both are allowed by name — `allowedIn` learned a trailing-slash prefix for the
+    first — and every skill, template, hook, and the Operating Instructions are clean. The
+    rule tripped twice while being written, on its own test: the retired-surface guard caught
+    the seeded `uv run python` (now an exemption with the parity guard's reason) and, by
+    accident, `memory web` and `memory eval` in the fixtures (reworded to a living command).
+  - **The record.** The cutoff in `pending-cutoffs.md` (what was removed, why with D4's number,
+    `npm install -g mirror-mind` on macOS and Linux, no Windows route and WSL named as untested
+    rather than promised, and two things an installed Frame's user must know: its `stable`
+    fast-forward now lands on a tree with no engine for it, and the home it wrote at
+    `.mirror\<user>` is an ordinary home the package can open — both read from the deleted
+    installer, not assumed); the python-core cutoff's last paragraph points at it; REFERENCE's
+    platform envelope rewritten (POSIX, no Windows product, what a Windows story would have to
+    carry, none promised); the DS10 gate table's `frame/`/`installer/` row and its artifact
+    verdict closed.
+
+  Verified: typecheck, lint, 3046 tests (2 skipped by design, the global link), the five
+  repository checks (retired surfaces with eleven rows, pack contents at 467 files, skill
+  parity, doc links, wrappers in sync), `smoke_npm_package.sh` from a real `npm install -g`
+  at `passed: 68 failed: 0` with no interpreter spawned. Next: plateau 6 (§G).
+
 ## Where To Resume
 
 Read the [plan](plan.md) (D1–D15 approved and recorded) and the *Plateau Progress* above.
-- **Plateaus 0, 1, 2, and 3 are done and validated.** Plateau 3 was validated by the
-  Navigator on 2026-10-09. **Plateau 4 is done and validated** (2026-10-09, route 3e).
+- **Plateaus 0 through 4 are done and validated.** Plateau 3 was validated by the
+  Navigator on 2026-10-09; plateau 4 the same day (route 3e). **Plateau 5 is implemented**
+  (2026-10-09): it has no Navigator route of its own — its evidence is the two guards in CI
+  and the package smoke, and the cutoff is a text for the Navigator to read.
 - **The Ariad cursor** is at `implement` for CV22.DS10.US3 under the approved Plan.
 
-**Next: plateau 5 (§F), in a fresh session.** D4's number is recorded in the
-[plan](plan.md#decisions-this-plan-asks-the-navigator-to-take) (2026-10-09): three
-downloads of the Inno Setup artifact ever, none since August, no user the Navigator knows
-of. So plateau 5 takes D4's approved retirement path, and its cutoff promises no Windows
-story. In the plan's order:
-- delete `frame/`, `installer/`, `docs/installer/`, and `.github/workflows/windows-installer.yml`
-  (`git rm`; they stay readable at `cv22-last-python-bearing`, `b0d34254`);
-- add a `frame-installer` row to `checkRetiredSurfaces.ts`, and remove the nine
-  `python-core-mentions` exemptions that expire with the files;
-- write the cutoff in `docs/releases/pending-cutoffs.md`, naming `v0.31.14` as where they
-  still work, and rewrite the platform envelope in `REFERENCE.md`;
-- add the Python invocation forms (`*.py`, `uv`, `python -m memory`) to the pack guard's
-  forbidden content: the artifact half of the Zero Python gate;
-- update that gate's table in the [DS10 index](../index.md), whose `frame/`/`installer/` row
-  still says the shipped artifact is not yet satisfied.
+**Next: plateau 6 (§G), docs, records, replay, review.** In the plan's order: the bridge
+paragraphs out of `REFERENCE.md` and `docs/getting-started.md` (item 1) and out of the
+compat-host and python-core cutoffs, which still print the checkout invocation; getting
+started rewritten around `npm install -g` with "Upgrading from a clone"; REFERENCE's
+running-a-command and configuration sections (the configuration section still says `.env` is
+read by Node); architecture; the runtime-interface spec; the extension authoring guide
+(CR093's half); troubleshooting; the Claude Code skill naming for a plugin install
+(`/mirror-mind:mm:<skill>`); the `automation` handoff (item 8); the briefing's D2/D6/D8 and
+Builder baseline (D11); the "after" capture through `mirror` diffed against
+`tmp/us3/before.tsv`; the DS10 and CV22 indexes, the journey path, worklog, decisions (the
+Frame's retirement deserves its own decision entry: plateau 5 wrote the cutoff and D4's
+record, not the entry); `handoff.md`; the panel's handoff review; then Validation.
 
 **Open for the Navigator:**
 - F1 (the empty `ego/constraints` template makes a fresh `seed` exit 1);

@@ -449,11 +449,57 @@ breaks — the hook is skipped and one line is written to
 
 **Mirror Desktop, the Windows installer, and the Frame.** Desktop pins to the
 last Python-bearing release, as the [journey projections cutoff](#journey-projections-and-mirrorjourney-projections10)
-says. The Windows installer and the Frame still install and call the Python
-engine in this tree; CV22.DS10.US3 re-homes them onto the npm package and adds
-its own cutoff here.
+says. The Windows installer and the Frame installed and called the Python
+engine; they are retired by CV22.DS10.US3, with [their own cutoff](#the-windows-frame-and-installer)
+below.
 
 ---
 
-<!-- CV22.DS10.US3 (npm distribution) adds its cutoff here, including what the
-     Windows installer and the Frame become. -->
+## The Windows Frame and installer
+
+**Story:** [CV22.DS10.US3](../project/roadmap/cv22-typescript-core-port/cv22-ds10-python-retirement-npm-distribution/cv22-ds10-us3-npm-distribution/index.md) ·
+**Decision:** US3 [D4](../project/roadmap/cv22-typescript-core-port/cv22-ds10-python-retirement-npm-distribution/cv22-ds10-us3-npm-distribution/plan.md#decisions-this-plan-asks-the-navigator-to-take)
+
+**Removed.** The Windows installer — the `MirrorMind-Setup-<version>.exe` wizard
+that GitHub Releases carried for v0.30.0 and v0.31.8 — and the Windows Frame, the
+desktop shell it installed, with its first-run wizard, its setup lights, and its
+tabbed Pi sessions. With them go their documentation, the CI workflow that built
+and smoked the artifact, and the profile smoke that workflow ran. Nothing on the
+npm package replaces them: this release has no Windows product.
+
+**Why.** Both were built on a premise this release deletes. The installer put
+Git, Node, `uv`, and Pi on the machine, cloned the repository, and ran `uv sync`;
+the Frame ran Mirror's commands by spawning the Python interpreter, and both
+found the tree by the `pyproject.toml` that went with the
+[Python core](#the-python-core). Re-homing them onto the npm package would have
+shipped a Windows product over a core that is tested on macOS and Linux only,
+with no Windows CI and one known Windows-breaking path (a snapshot promotion by
+rename that fails while another process holds the database). The artifact was
+downloaded three times in all — once on v0.30.0, twice on v0.31.8, none since
+August 2026 — and no one is known to run it. A Windows product deserves its own
+story and its own CI, and with no user asking, none is promised.
+
+**What to do instead.** On macOS or Linux, install the npm package:
+`npm install -g mirror-mind`, then `mirror init <user>` and the one wiring step
+`init` prints for each runtime it finds. On Windows there is no supported route
+in this release. A Linux environment on Windows (WSL) is where the POSIX core
+would run, but it is not tested and not claimed.
+
+**What still works if you do nothing.** An installed Frame keeps working exactly
+as it is: it runs the clone it installed, and that clone carries the Python
+engine. The installer and the Frame remain in the
+[`cv22-last-python-bearing`](https://github.com/mirror-mind-ai/mirror/tree/cv22-last-python-bearing)
+tree and in the v0.30.0 and v0.31.8 release assets. Two things to know:
+
+- **Do not update from inside the Frame.** Its clone updates by fast-forwarding
+  `stable`, and `stable` now points at a tree with no Python engine for the
+  Frame to call. The update would complete and the Frame's commands would stop
+  answering. Stay on v0.31.14 in the Frame, or move to the npm package on a
+  supported platform.
+- **Your mirror home is untouched.** The installer's `init` wrote it at
+  `.mirror\<user>` under your user profile, and nothing deletes it. It is an
+  ordinary home: copied to a supported machine and named by `MIRROR_HOME`, the
+  npm package opens it, migrates it on first open with a backup first, and
+  carries on.
+
+---

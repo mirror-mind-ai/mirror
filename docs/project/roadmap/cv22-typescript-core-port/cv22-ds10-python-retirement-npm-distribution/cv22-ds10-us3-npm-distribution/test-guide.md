@@ -79,7 +79,8 @@ second time with `python`, `python3`, and `uv` shadowed.
 | 4 | `ts/test/runtime/release.test.ts` | `npm publish --dry-run --tag stable` before the tag, injected and recorded; a promotion dry run runs no npm; an artifact that cannot pack stops before any tag; `--push` still publishes nothing; the printed plan names both forms |
 | 4 | `ts/test/util/semver.test.ts`, `paths.test.ts` | one semver reader (the oracle's refusals sort below everything; the strict form a registry answer must take); `commandOnPath` as a shell's `command -v` |
 | 4 | `ts/test/db/schemaState.test.ts`, `migrateOnOpen.test.ts` | the newer-database refusal ends in `mirror runtime update` (item 12) |
-| 5 | `ts/test/guards/retiredSurfaces.test.ts` | the `frame-installer` row (if D4 retires) |
+| 5 | `ts/test/scripts/retiredSurfaces.test.ts` | the `frame-installer` row is enforced; every deleted path fails it if it comes back; a `.ps1`, `.psm1`, `.iss`, or `.cmd` anywhere fails it; a file naming the product's scripts outside the record is reported with its line; the eleven "until US3" exemptions are gone from `python-core-mentions`; the sweep is clean against this tree |
+| 5 | `ts/test/scripts/packContents.test.ts` | a shipped file carrying any interpreter-invocation form is named by file and line; `docs/releases/` and the retired-surface guard may; the rule cannot trip on its own source; this repository packs clean on both axes |
 
 ## E2E Decision
 

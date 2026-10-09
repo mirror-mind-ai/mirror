@@ -581,14 +581,16 @@ runtime: the Python engine was deleted in CV22.DS10.TS5. `runtime status`
 reports the Node version; the front door refuses to run on Node below 24 with
 an actionable message.
 
-**Supported today: POSIX (macOS, Linux).** The documented skill invocation uses
-POSIX shell syntax (`NODE_OPTIONS=--no-warnings node ts/src/frontDoor/cli.ts …`),
-which native Windows PowerShell does not parse. The PowerShell installer and
-the Windows Frame still install and call the Python engine, and are re-homed
-by CV22.DS10.US3; a native-Windows story for the front door (invocation syntax,
-path handling, ACL-based data-at-rest posture) is explicitly deferred. The
-front door must be invoked from the repository root (the relative-path
-invocation enforces this).
+**Supported today: POSIX (macOS, Linux).** The hook wrappers, the MCP launcher,
+and the Codex wrapper are POSIX shell scripts, CI runs on Linux, and the
+data-at-rest posture below is POSIX file modes. **There is no Windows product.**
+The PowerShell installer and the Windows Frame were retired by CV22.DS10.US3
+(decision D4): they installed and called the Python engine, and they still do at
+`v0.31.14`, as their [cutoff](docs/releases/pending-cutoffs.md#the-windows-frame-and-installer)
+says. A Windows story over the npm package — invocation, path handling, an
+ACL-based data-at-rest posture, a snapshot promotion that survives an open
+database, and Windows CI — is its own story, and none is promised while nobody
+asks for it.
 
 ### Data at rest
 
