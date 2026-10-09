@@ -284,6 +284,13 @@ diff tmp/us3/before.tsv tmp/us3/after.tsv && echo IDENTICAL
 
 ## Validation Evidence
 
+- **Route 3e — walked by the Navigator on 2026-10-09, all seven steps passed** (under `bash`
+  3.2): `Install: clone (<this path>)`; the channel `main` from this checkout's marker; `beta`
+  refused with exit 2 and the marker untouched; the clone's check unchanged; the promotion dry
+  run stopping at the doctor with one failure (the absent `v0.31.14` note — a release-gate
+  item, not this plateau's); the update smoke at `passed: 86 failed: 0`; no `~/.config/mirror/`
+  and a clean tree afterwards.
+
 - **Routes 1, 1b, 2a, 2b — walked by the Navigator on 2026-10-06, all passed.** Evidence and
   the two findings the walk produced (the manifest's `pi` key; route 2b pinning `MIRROR_HOME`)
   are in the story index's plateau-2 record. Observed: the agent without `mirror` improvised

@@ -8,8 +8,8 @@ ai-engineer, product-designer, experience-designer) found six things, the sharpe
 the operating instructions did not ship in the tarball; all six folded, and the Plan
 **approved by the Navigator on 2026-10-05 with D1–D13**; D14 and D15 taken during plateau 1.
 Plateaus 0 and 1 done the same day; plateau 2 validated 2026-10-06; plateau 3 implemented
-2026-10-06 and validated by the Navigator 2026-10-09; plateau 4 implemented 2026-10-09,
-after a persona-panel review of its plan whose three findings it took.
+2026-10-06 and validated by the Navigator 2026-10-09; plateau 4 implemented and validated
+2026-10-09, after a persona-panel review of its plan whose three findings it took.
 **Type:** User Story
 **Depends on:** every other DS10 story (done); the release gate (done 2026-09-28).
 
@@ -367,14 +367,18 @@ home (D14); the `mirror` bin is a type-stripping loader shim (D15).
   wrote the channel outside the scratch home; the lane unsets the variable (not blanks
   it), as the package smoke already did. Verified: typecheck, lint with no warnings, 3042
   tests, the five repository checks, the custody proofs, all six smokes (the plugin smoke
-  as above), CI green (`37989064796`). Next: route 3e by the Navigator, then plateau 5 (§F).
+  as above), CI green (`37989064796`). **Plateau 4 validated by the Navigator, 2026-10-09**
+  (route 3e, steps 1–7, under `bash` 3.2): the install line, the channel and its source,
+  `beta` refused with exit 2, the clone's check unchanged, the promotion dry run stopping at
+  the doctor (one failure, the absent `v0.31.14` note — the release gate's), the smoke at
+  `passed: 86 failed: 0`, and nothing written to `~/.config/mirror/` or the tree. Next:
+  plateau 5 (§F).
 
 ## Where To Resume
 
 Read the [plan](plan.md) (D1–D15 approved and recorded) and the *Plateau Progress* above.
 - **Plateaus 0, 1, 2, and 3 are done and validated.** Plateau 3 was validated by the
-  Navigator on 2026-10-09. **Plateau 4 is implemented and machine-validated** (2026-10-09);
-  the Navigator's route 3e in the test guide is one minute on this checkout.
+  Navigator on 2026-10-09. **Plateau 4 is done and validated** (2026-10-09, route 3e).
 - **The Ariad cursor** is at `implement` for CV22.DS10.US3 under the approved Plan.
 
 **Next: plateau 5 (§F):** D4 — record how many people installed the Inno Setup artifact
