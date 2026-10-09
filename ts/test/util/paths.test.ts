@@ -49,7 +49,10 @@ test("commandOnPath answers what a shell's `command -v` would, for the PATH give
   assert.equal(commandOnPath("git", { PATH: "/usr/bin:/opt/bin" }, can), "/usr/bin/git");
   // First hit wins, as it does for the shell.
   const twice = new Set(["/a/mirror", "/b/mirror"]);
-  assert.equal(commandOnPath("mirror", { PATH: "/b:/a" }, (p) => twice.has(p)), "/b/mirror");
+  assert.equal(
+    commandOnPath("mirror", { PATH: "/b:/a" }, (p) => twice.has(p)),
+    "/b/mirror",
+  );
   assert.equal(commandOnPath("mirror", { PATH: "/usr/bin" }, can), null);
   assert.equal(commandOnPath("mirror", {}, can), null);
   // Empty segments (`PATH=:/opt/bin`) are skipped, not read as the cwd.
