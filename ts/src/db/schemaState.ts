@@ -17,6 +17,7 @@
 // list to stay a prefix of. The remedies below name `runtime migrate` rather
 // than an interpreter, for the same reason.
 
+import { PROGRAM } from "#util/program.ts";
 import type { Database } from "./database.ts";
 
 /** Raised when the database's migration state does not match this TS build. */
@@ -53,7 +54,8 @@ export const KNOWN_MIGRATION_IDS: readonly string[] = [
  * failure modes, each named in the error: `_migrations` absent (not a
  * bootstrapped Mirror database), a known id missing (database older than this
  * core — `runtime migrate` brings it forward), an unknown id present (database
- * migrated by a newer core than the running one — update this installation).
+ * migrated by a newer core than the running one — `runtime update` brings the
+ * core forward, for a clone and a package alike).
  */
 export function assertSchemaState(db: Database): void {
   let rows: { id: string }[];
@@ -83,7 +85,7 @@ export function assertSchemaState(db: Database): void {
   if (unknown.length > 0) {
     throw new SchemaStateError(
       `database schema is newer than this TS core (unknown migrations: ${unknown.join(", ")}). ` +
-        "Update this Mirror installation so its core matches the database.",
+        `Update this Mirror installation so its core matches the database; run: ${PROGRAM} runtime update`,
     );
   }
 }

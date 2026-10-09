@@ -586,7 +586,8 @@ command is a bug to report, and a bad write is undone from a backup.
 - Schema-guard messages name migrations explicitly: `database schema is older
   than this TS core (pending migrations: …)` → run `mirror runtime migrate`;
   `… newer than this TS core (unknown migrations: …)` → update this Mirror
-  installation so its core matches the database (in a clone, `git pull`).
+  installation so its core matches the database: `mirror runtime update`, for
+  a clone and a package alike.
 - A name the front door does not own answers with its own usage error (exit 1
   for an unknown command, exit 2 for an unknown subcommand), and a retired
   command answers in one line naming its

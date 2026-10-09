@@ -43,6 +43,7 @@
 
 import { chmodSync, existsSync, mkdirSync, rmSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { PROGRAM } from "#util/program.ts";
 
 import { acquireBootstrapLock, type BootstrapLockOptions } from "./bootstrapLock.ts";
 import {
@@ -179,7 +180,8 @@ export function ensureMigratedOnOpen(
     // with older code against a newer schema; declining is the safe answer,
     // and saying so is the honest one.
     return declined(
-      `database carries migrations this core does not know (${unknown.join(", ")}) — update this Mirror installation`,
+      `database carries migrations this core does not know (${unknown.join(", ")}) — ` +
+        `update this Mirror installation: ${PROGRAM} runtime update`,
     );
   }
   if (pendingMigrations(applied).length === 0) return NOTHING_PENDING;

@@ -120,6 +120,9 @@ test("assertSchemaState names unknown migrations when the DB is newer than the T
       () => assertSchemaState(ws.db),
       (error: Error) => !error.message.includes("git pull"),
     );
+    // And the remedy is a command, the same one for a clone and a package
+    // (CV22.DS10.US3 plateau 4, TS5's item 12).
+    assert.throws(() => assertSchemaState(ws.db), /run: mirror runtime update/);
   } finally {
     ws.db.close();
     ws.cleanup();

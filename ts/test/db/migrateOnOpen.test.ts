@@ -210,6 +210,8 @@ test("a database from a newer core is declined rather than migrated backwards", 
     assert.equal(result.verdict, "declined");
     assert.match(result.declinedReason ?? "", /999_from_the_future/u);
     assert.match(result.declinedReason ?? "", /update this Mirror installation/u);
+    // The one remedy, as a command (CV22.DS10.US3 plateau 4, TS5's item 12).
+    assert.match(result.declinedReason ?? "", /mirror runtime update/u);
   } finally {
     ws.cleanup();
   }
