@@ -3,17 +3,22 @@
 // Maintainer tooling, not a product command: it needs a checkout, tags, and
 // push rights. `npm run release:promote`.
 //
-// The steps are an ORDERED ARRAY on purpose. US3 appends `npm publish` and
-// `npm dist-tag add` to this list; it should not have to restructure a
-// control-flow tangle to do it, and the shape is what makes "publication is a
-// separate Navigator gate" enforceable -- the steps that touch a remote are
-// all behind `--push`, and every one of them is skipped by `--dry-run`.
+// The steps are an ORDERED ARRAY on purpose. CV22.DS10.US3 (plateau 4)
+// appended the publish steps as what they are until the release gate decides
+// otherwise: `npm publish --dry-run`, run BEFORE the tag so history does not
+// move for a tarball that cannot be built, and a printed plan for the
+// publication itself. The shape is what makes "publication is a separate
+// Navigator gate" enforceable -- the steps that touch a remote are all behind
+// `--push`, every one of them is skipped by `--dry-run`, and nothing in this
+// script reaches the registry: the one npm call it makes is a dry run.
 //
 // It never moves an existing tag. A tag that points somewhere other than HEAD
 // is a fact about release history, and rewriting it silently is how a release
 // becomes unreproducible.
 
 import { runGit } from "#runtime/git.ts";
+import { findPackageIdentity } from "#runtime/packageIdentity.ts";
+import { defaultNpmRunner, type NpmRunner } from "#runtime/strategies/package.ts";
 import {
   buildReleaseDoctorReport,
   hasFailures,
@@ -54,6 +59,16 @@ export interface PromoteOptions {
   remote?: string;
   dryRun?: boolean;
   push?: boolean;
+  /** The npm seam, injected so a test can prove what the script asks npm for. */
+  npm?: NpmRunner;
+}
+
+/** `mirror-mind-1.2.3.tgz, 467 files`: the two notices worth carrying into a step. */
+function packSummary(output: string): string {
+  const filename = /^npm notice filename: (\S+)$/m.exec(output)?.[1];
+  const files = /^npm notice total files: (\d+)$/m.exec(output)?.[1];
+  if (filename && files) return `${filename}, ${files} files`;
+  return filename ?? "packed";
 }
 
 export function runReleasePromotion(options: PromoteOptions): PromotionResult {
@@ -95,6 +110,25 @@ export function runReleasePromotion(options: PromoteOptions): PromotionResult {
   if (head === null) {
     steps.push(step("HEAD", "fail", "HEAD unavailable"));
     return done(false);
+  }
+
+  // --- the artifact (CV22.DS10.US3): proven before history moves ----------
+  // `npm publish --dry-run` packs and reports, and reaches no registry (npm
+  // warns that publishing would need a login, and stops there). A tarball
+  // that cannot be built is found here, before a tag exists for it.
+  const publishDryRun = ["publish", "--dry-run", "--tag", stableBranch];
+  if (dryRun) {
+    steps.push(step("publish dry run", "skip", `would run: npm ${publishDryRun.join(" ")}`));
+  } else {
+    const packed = (options.npm ?? defaultNpmRunner)(publishDryRun, repository);
+    if (packed.code !== 0) {
+      const reason = packed.stderr.trim().split("\n").at(-1) ?? "npm publish --dry-run failed";
+      steps.push(step("publish dry run", "fail", reason));
+      recovery.push(`Run: npm publish --dry-run --tag ${stableBranch}`);
+      recovery.push("Fix what it reports before release promotion; no tag was created.");
+      return done(false);
+    }
+    steps.push(step("publish dry run", "pass", packSummary(`${packed.stdout}\n${packed.stderr}`)));
   }
 
   // --- tag ----------------------------------------------------------------
@@ -155,11 +189,13 @@ export function runReleasePromotion(options: PromoteOptions): PromotionResult {
   // --- push (the only steps that reach a remote) --------------------------
   if (!options.push) {
     steps.push(step("push", "skip", "use --push to publish tag and stable"));
+    steps.push(publicationPlan(repository, target, stableBranch));
     return done(true);
   }
   if (dryRun) {
     steps.push(step("push tag", "skip", `would push ${target}`));
     steps.push(step("push stable", "skip", `would push ${stableBranch}`));
+    steps.push(publicationPlan(repository, target, stableBranch));
     return done(true);
   }
   for (const [name, ref] of [
@@ -173,7 +209,26 @@ export function runReleasePromotion(options: PromoteOptions): PromotionResult {
     }
     steps.push(step(name, "pass", ref));
   }
+  steps.push(publicationPlan(repository, target, stableBranch));
   return done(true);
+}
+
+/**
+ * The publication, printed and never run (CV22.DS10.US3 non-goal: `npm
+ * publish`, dist-tags, and the release are separate Navigator gates). Two
+ * forms, because a version may already be on the registry under another tag:
+ * `publish --tag <channel>` sets the dist-tag as it publishes, and
+ * `dist-tag add` moves it for a version that is already there. An explicit
+ * `--tag` keeps npm from moving `latest` on its own.
+ */
+function publicationPlan(repository: string, target: string, channel: string): PromotionStep {
+  const name = findPackageIdentity(repository)?.name ?? "<package>";
+  const version = target.replace(/^v/, "");
+  return step(
+    "publish",
+    "skip",
+    `separate gate: npm publish --tag ${channel}, or npm dist-tag add ${name}@${version} ${channel} if the version is already published`,
+  );
 }
 
 export function renderPromotion(result: PromotionResult): string {

@@ -6,11 +6,12 @@
 
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { assertNamesNoInterpreter } from "#helpers/noInterpreter.ts";
+import type { NpmRunner } from "#runtime/strategies/package.ts";
 import {
   buildReleaseDoctorReport,
   hasFailures,
@@ -143,7 +144,7 @@ test("a dry-run promotion names every step and performs none of them", () => {
 test("promotion tags HEAD and fast-forwards stable, without pushing", () => {
   const f = fixture();
   try {
-    const result = runReleasePromotion({ target: "v1.2.3", start: f.repo });
+    const result = runReleasePromotion({ target: "v1.2.3", start: f.repo, npm: packsFine() });
     assert.equal(result.success, true, JSON.stringify(result.steps));
     assert.equal(git(f.repo, "tag", "--list").trim(), "v1.2.3");
     assert.match(git(f.repo, "branch", "--list"), /stable/);
@@ -176,7 +177,7 @@ test("a tag that points somewhere else stops promotion at the doctor", () => {
     assert.equal(tagCheck?.state, "fail");
     assert.match(tagCheck?.detail ?? "", /points to [0-9a-f]{7}/);
 
-    const result = runReleasePromotion({ target: "v1.2.3", start: f.repo });
+    const result = runReleasePromotion({ target: "v1.2.3", start: f.repo, npm: packsFine() });
     assert.equal(result.success, false);
     assert.equal(result.steps[0]?.name, "release doctor");
     assert.equal(result.steps[0]?.state, "fail");
@@ -218,11 +219,140 @@ test("stable is refused when it is not an ancestor of HEAD", () => {
     git(f.repo, "commit", "-qm", "work only on stable");
     git(f.repo, "checkout", "-q", "main");
 
-    const result = runReleasePromotion({ target: "v1.2.3", start: f.repo });
+    const result = runReleasePromotion({ target: "v1.2.3", start: f.repo, npm: packsFine() });
     assert.equal(result.success, false);
     const stableStep = result.steps.find((s) => s.name === "stable branch");
     assert.equal(stableStep?.state, "fail");
     assert.ok(result.recovery.some((line) => line.includes("Reconcile stable branch")));
+  } finally {
+    f.cleanup();
+  }
+});
+
+// --- CV22.DS10.US3 plateau 4: the publish steps, dry-run only --------------
+//
+// The step array's header invited US3 to append `npm publish` and `npm
+// dist-tag add`. This story appends them as what they are until the release
+// gate decides otherwise: a `publish --dry-run` that proves the artifact
+// packs, run before the tag so history does not move for a tarball that
+// cannot be built, and a printed plan for the publication itself, which
+// stays a separate Navigator gate.
+
+/** An npm that answers from a table, records what it was asked, and where. */
+function scriptNpm(answers: Record<string, { code?: number; stdout?: string; stderr?: string }>) {
+  const calls: { args: string[]; cwd: string | undefined }[] = [];
+  const runner: NpmRunner = (args, cwd) => {
+    calls.push({ args: [...args], cwd });
+    const key = args.join(" ");
+    for (const [pattern, answer] of Object.entries(answers)) {
+      if (key.startsWith(pattern)) {
+        return { code: answer.code ?? 0, stdout: answer.stdout ?? "", stderr: answer.stderr ?? "" };
+      }
+    }
+    return { code: 1, stdout: "", stderr: `unscripted npm call: ${key}\n` };
+  };
+  return { runner, calls };
+}
+
+/** The npm every execute-mode test gets: packs fine, records nothing else. */
+function packsFine(): NpmRunner {
+  return scriptNpm({ "publish --dry-run": { stderr: PUBLISH_DRY_RUN_NOTICE } }).runner;
+}
+
+const PUBLISH_DRY_RUN_NOTICE =
+  "npm notice filename: mirror-mind-1.2.3.tgz\nnpm notice total files: 467\n" +
+  "npm notice Publishing to https://registry.npmjs.org/ with tag stable and default access (dry-run)\n";
+
+test("promotion proves the artifact packs with `npm publish --dry-run`, before the tag", () => {
+  const f = fixture();
+  try {
+    const npm = scriptNpm({ "publish --dry-run": { stderr: PUBLISH_DRY_RUN_NOTICE } });
+    const result = runReleasePromotion({ target: "v1.2.3", start: f.repo, npm: npm.runner });
+    assert.equal(result.success, true, JSON.stringify(result.steps));
+    assert.deepEqual(npm.calls, [
+      { args: ["publish", "--dry-run", "--tag", "stable"], cwd: realpathSync(f.repo) },
+    ]);
+    const names = result.steps.map((s) => s.name);
+    assert.ok(
+      names.indexOf("publish dry run") < names.indexOf("tag"),
+      `the artifact is proven before history moves: ${names.join(" > ")}`,
+    );
+    const step = result.steps.find((s) => s.name === "publish dry run");
+    assert.equal(step?.state, "pass");
+    assert.match(step?.detail ?? "", /mirror-mind-1\.2\.3\.tgz, 467 files/);
+    // The publication itself is printed as the gate's command, never run.
+    const plan = result.steps.find((s) => s.name === "publish");
+    assert.equal(plan?.state, "skip");
+    assert.match(plan?.detail ?? "", /npm publish --tag stable/);
+    assert.match(plan?.detail ?? "", /npm dist-tag add mirror-mind@1\.2\.3 stable/);
+    assertNamesNoInterpreter(renderPromotion(result));
+  } finally {
+    f.cleanup();
+  }
+});
+
+test("a dry-run promotion runs no npm at all, and still names the publish steps", () => {
+  const f = fixture();
+  try {
+    const npm = scriptNpm({});
+    const result = runReleasePromotion({
+      target: "v1.2.3",
+      start: f.repo,
+      dryRun: true,
+      npm: npm.runner,
+    });
+    assert.equal(result.success, true);
+    assert.deepEqual(npm.calls, [], "a dry run reaches no tool that could reach a registry");
+    const states = new Map(result.steps.map((s) => [s.name, s]));
+    assert.equal(states.get("publish dry run")?.state, "skip");
+    assert.match(states.get("publish dry run")?.detail ?? "", /would run: npm publish --dry-run/);
+    assert.equal(states.get("publish")?.state, "skip");
+  } finally {
+    f.cleanup();
+  }
+});
+
+test("an artifact that cannot be packed stops promotion before any tag exists", () => {
+  const f = fixture();
+  try {
+    const npm = scriptNpm({
+      "publish --dry-run": { code: 1, stderr: "npm ERR! code ENOENT\nnpm ERR! LICENSE missing\n" },
+    });
+    const result = runReleasePromotion({ target: "v1.2.3", start: f.repo, npm: npm.runner });
+    assert.equal(result.success, false);
+    assert.equal(result.steps.find((s) => s.name === "publish dry run")?.state, "fail");
+    assert.equal(
+      git(f.repo, "tag", "--list").trim(),
+      "",
+      "no tag for an artifact that does not pack",
+    );
+    assert.ok(!result.steps.some((s) => s.name === "tag"));
+    assert.ok(result.recovery.some((line) => /npm publish --dry-run/.test(line)));
+  } finally {
+    f.cleanup();
+  }
+});
+
+test("under --push, publication is still not performed", () => {
+  // The gate the plan keeps: tag and stable reach the remote under --push;
+  // the registry is reached by nothing in this story.
+  const f = fixture();
+  try {
+    const remote = mkdtempSync(join(tmpdir(), "us2-release-remote-"));
+    git(f.repo, "init", "-q", "--bare", remote);
+    git(f.repo, "remote", "add", "origin", remote);
+    const npm = scriptNpm({ "publish --dry-run": { stderr: PUBLISH_DRY_RUN_NOTICE } });
+    const result = runReleasePromotion({
+      target: "v1.2.3",
+      start: f.repo,
+      push: true,
+      npm: npm.runner,
+    });
+    assert.equal(result.success, true, JSON.stringify(result.steps));
+    assert.ok(
+      npm.calls.every((call) => call.args[0] === "publish" && call.args[1] === "--dry-run"),
+    );
+    assert.equal(result.steps.find((s) => s.name === "publish")?.state, "skip");
   } finally {
     f.cleanup();
   }

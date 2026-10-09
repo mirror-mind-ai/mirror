@@ -14,17 +14,22 @@ import { execFileSync } from "node:child_process";
 import { type ApplyStrategy, KNOWN_CHANNELS } from "#runtime/updatePipeline.ts";
 import { compareSemver, isPlainSemver } from "#util/semver.ts";
 
-export type NpmRunner = (args: readonly string[]) => {
+/** `cwd` matters to the one npm command that reads a tree, `publish`; the rest ignore it. */
+export type NpmRunner = (
+  args: readonly string[],
+  cwd?: string,
+) => {
   code: number;
   stdout: string;
   stderr: string;
 };
 
-export const defaultNpmRunner: NpmRunner = (args) => {
+export const defaultNpmRunner: NpmRunner = (args, cwd) => {
   try {
     const stdout = execFileSync("npm", [...args], {
       encoding: "utf8",
       stdio: ["ignore", "pipe", "pipe"],
+      ...(cwd === undefined ? {} : { cwd }),
     });
     return { code: 0, stdout, stderr: "" };
   } catch (error) {
