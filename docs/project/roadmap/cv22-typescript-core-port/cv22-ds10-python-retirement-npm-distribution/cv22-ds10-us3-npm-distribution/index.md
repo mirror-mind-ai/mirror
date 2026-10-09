@@ -381,23 +381,41 @@ Read the [plan](plan.md) (D1–D15 approved and recorded) and the *Plateau Progr
   Navigator on 2026-10-09. **Plateau 4 is done and validated** (2026-10-09, route 3e).
 - **The Ariad cursor** is at `implement` for CV22.DS10.US3 under the approved Plan.
 
-**Next: plateau 5 (§F):** D4 — record how many people installed the Inno Setup artifact
-(release assets' download counts and the Navigator's knowledge), then the Frame and the
-installer retire with a cutoff or are re-homed; the `frame-installer` row in
-`checkRetiredSurfaces.ts`; the nine `python-core-mentions` exemptions; the Windows workflow;
-the pack guard's Python forms as the artifact half of the Zero Python gate.
+**Next: plateau 5 (§F), in a fresh session.** D4's number is recorded in the
+[plan](plan.md#decisions-this-plan-asks-the-navigator-to-take) (2026-10-09): three
+downloads of the Inno Setup artifact ever, none since August, no user the Navigator knows
+of. So plateau 5 takes D4's approved retirement path, and its cutoff promises no Windows
+story. In the plan's order:
+- delete `frame/`, `installer/`, `docs/installer/`, and `.github/workflows/windows-installer.yml`
+  (`git rm`; they stay readable at `cv22-last-python-bearing`, `b0d34254`);
+- add a `frame-installer` row to `checkRetiredSurfaces.ts`, and remove the nine
+  `python-core-mentions` exemptions that expire with the files;
+- write the cutoff in `docs/releases/pending-cutoffs.md`, naming `v0.31.14` as where they
+  still work, and rewrite the platform envelope in `REFERENCE.md`;
+- add the Python invocation forms (`*.py`, `uv`, `python -m memory`) to the pack guard's
+  forbidden content: the artifact half of the Zero Python gate;
+- update that gate's table in the [DS10 index](../index.md), whose `frame/`/`installer/` row
+  still says the shipped artifact is not yet satisfied.
 
 **Open for the Navigator:**
 - F1 (the empty `ego/constraints` template makes a fresh `seed` exit 1);
 - CR121's decision: keep, ask first, or only sessions newer than the home. A CV22
   release precondition since 2026-10-09, recorded with the release gate in
   [decisions](../../../../decisions.md#the-cv22-release-is-gated-on-an-ariad-trust-floor-worked-before-us3);
-- the two plateau-3 options (a Gemini extension; Codex hooks).
+- the two plateau-3 options (a Gemini extension; Codex hooks);
+- a small CR, not yet captured: `smoke_claude_plugin.sh`'s "mirror-hook gone" case cannot
+  fail-safe on a machine with a global `mirror-hook` (the wrapper's global-bin fallback
+  finds it), so the smoke should isolate the global bin directories;
+- for the release gate: the real `npm publish` runs with `--provenance` and a granular
+  token (plateau 4's security finding).
 
 **Working state:**
 - `npm link` is in place: `mirror` and `mirror-hook` point at this checkout. Two
   `hookBin` tests skip while a global `mirror`/`mirror-hook` exists in a candidate
-  directory, by design.
+  directory, by design; and for the same reason `smoke_claude_plugin.sh` fails its last
+  case **on this machine only** ("no hooks.log line after mirror-hook went missing"), as it
+  did before plateau 4. CI has no global link and passes it. Do not read that local
+  failure as plateau 5's.
 - The plateau-0 capture lives in `tmp/us3/before.tsv` (gitignored) for plateau 6's replay.
 - Plateau 6 also owns the Claude Code skill naming (`/mirror-mind:mm:<skill>` for a plugin
   install).
