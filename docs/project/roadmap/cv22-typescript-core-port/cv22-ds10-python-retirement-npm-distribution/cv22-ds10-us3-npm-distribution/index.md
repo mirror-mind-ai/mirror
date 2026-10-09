@@ -316,8 +316,9 @@ Read the [plan](plan.md) (D1–D15 approved and recorded) and the *Plateau Progr
 
 **Open for the Navigator:**
 - F1 (the empty `ego/constraints` template makes a fresh `seed` exit 1);
-- F4 (two shipped skills address the author);
-- CR121's release relevance;
+- CR121's decision: keep, ask first, or only sessions newer than the home. A CV22
+  release precondition since 2026-10-09, recorded with the release gate in
+  [decisions](../../../../decisions.md#the-cv22-release-is-gated-on-an-ariad-trust-floor-worked-before-us3);
 - the two plateau-3 options (a Gemini extension; Codex hooks).
 
 **Working state:**

@@ -58,6 +58,12 @@ CR106 and this CR together, so decide them together. Whether the decision must l
 before the CV22 release is part of it: this reaches every npm user who has used Pi.
 Captured without selecting; Current Focus unchanged.
 
+**Navigator, 2026-10-09: this must be decided before the CV22 release.** It is a
+release precondition, recorded with the
+[release gate](../../decisions.md#the-cv22-release-is-gated-on-an-ariad-trust-floor-worked-before-us3).
+Which option is still open, and so is what the chosen one requires before the
+release.
+
 ## Evidence
 
 - **Reproduced on 2026-10-08 while writing CV22.DS10.US3's route 3.** The run was step 4's

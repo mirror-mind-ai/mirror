@@ -3261,6 +3261,32 @@ runtime refuses for a story. That is captured as
 and joins the floor last, after CR107 (decision D5). The floor is now twenty
 changes and twenty-three identifiers, fourteen of them done.
 
+**Amended 2026-10-09: CR121 joins the release gate as a decision, not on the
+floor.** Found while proving US3's route 3. On an install from nothing, the
+first maintenance run imports the person's whole Pi history: every project,
+every chat from before Mirror. That run may come from Pi, Claude Code, or
+Gemini CLI, and later runs spend on extracting what it imported
+([CR121](refinement/rs010-cv22-oracle-and-port-hygiene/cr121-a-new-home-s-first-maintenance-imports-the-whole-pi-history.md)).
+It reaches every npm user who has used Pi, Mirror's recommended harness, and no
+clone user, so it is a property of this release, not of Ariad. The Navigator
+decided it must be decided before the CV22 release. The options:
+- keep the import and document it;
+- ask first;
+- import only sessions newer than the home.
+
+CR106's behavior option would close CR106 with it. What the decision requires
+before the release is decided with it.
+
+The floor is unchanged: CR121 is not an Ariad change, and the floor is a list.
+The release now waits for:
+- US3;
+- the floor (done 2026-10-05);
+- the Python-era updater's last hop on the production clone (US3 D12);
+- this decision.
+
+[CR120](refinement/rs010-cv22-oracle-and-port-hygiene/cr120-a-failed-pi-session-import-aborts-the-rest-of-session-maintenance.md)
+(a failed import aborts the rest of maintenance) stays captured.
+
 ### A Builder journey's position is its cursor's active item, never a roadmap scan
 
 **Date:** 2026-09-26 · **Context:** [CR002](refinement/rs001-ariad-runtime-trust/cr002-cursor-sync-roadmap-selection.md),

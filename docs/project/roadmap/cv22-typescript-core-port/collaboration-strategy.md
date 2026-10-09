@@ -180,7 +180,8 @@ and green CI on every push.
 → DS10.US3 — npm distribution                      ← current; pulled and planned
                                                      2026-09-30, waits at its Plan
                                                      checkpoint
-  release — once, when US3 is done
+  release — once, when US3 is done, the production clone's last hop is checked (D12),
+            and CR121 is decided (a release precondition since 2026-10-09)
 ```
 
 Reopened 2026-09-30 — see the amendment to
