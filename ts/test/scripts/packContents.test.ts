@@ -113,6 +113,46 @@ test("a shipped file that names the author is named, by file and line; LICENSE a
   assert.match(problems[0]?.message ?? "", /names the author/);
 });
 
+test("a shipped file that tells anyone to run the Python core is named; the record may", () => {
+  // US3 plateau 5, the artifact half of DS10's Zero Python gate: the
+  // retired-surface guard proves the TREE spawns no interpreter and the path
+  // rules above prove the tarball carries no `.py`; this proves no shipped
+  // file -- a skill, a template, the operating instructions -- tells an agent
+  // or a person to run the deleted core. The forms are the retired-surface
+  // guard's own list, so the two halves cannot drift. Two places may still
+  // carry them: `docs/releases/`, each version's record of what it said and
+  // what was removed, and the guard whose patterns ARE the data.
+  const problems = checkPackedContent([
+    {
+      path: ".pi/skills/mm-update/SKILL.md",
+      content: "run\nuv run python -m memory runtime update\n",
+    },
+    {
+      path: "templates/identity/user/identity.yaml",
+      content: "edit: python3 -m memory identity edit\n",
+    },
+    { path: "AGENTS.md", content: "then `uv sync` once\n" },
+    { path: "ts/src/hooks/main.ts", content: "import { x } from 'memory.hooks';\n" },
+    { path: "docs/releases/v0.10.15.md", content: "uv run python -m memory runtime update\n" },
+    {
+      path: "docs/releases/pending-cutoffs.md",
+      content: "**Removed.** `python -m memory journeys`\n",
+    },
+    { path: "ts/src/guards/retiredSurfaces.ts", content: '  "uv run python",\n' },
+    { path: ".pi/skills/mm-mirror/SKILL.md", content: "mirror mirror load\n" },
+  ]);
+  assert.deepEqual(
+    problems.map((p) => `${p.code}:${p.message.split(": ")[0]}`),
+    [
+      "forbidden_content:.pi/skills/mm-update/SKILL.md:2",
+      "forbidden_content:AGENTS.md:1",
+      "forbidden_content:templates/identity/user/identity.yaml:1",
+      "forbidden_content:ts/src/hooks/main.ts:1",
+    ],
+  );
+  assert.match(problems[0]?.message ?? "", /Python core/);
+});
+
 test("the rule cannot trip on its own source, which ships in the tarball", () => {
   const source = readFileSync(join(REPO_ROOT, "ts/src/guards/packContents.ts"), "utf8");
   assert.deepEqual(

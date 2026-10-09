@@ -393,6 +393,8 @@ export const RETIRED: readonly RetiredSurface[] = [
       // history for the same reason (HISTORY_PREFIXES).
       "ts/scripts/checkSkillCommandParity.ts":
         "a guard: its pattern IS the retired invocation it forbids in the skills, as this table's own patterns are here",
+      "ts/test/scripts/packContents.test.ts":
+        "the test of the pack guard's content rule (US3 plateau 5): it seeds the retired invocation into a synthetic shipped file to prove the artifact half of the Zero Python gate fires",
       "scripts/smoke_runtime_update.sh":
         "a negative check: the smoke FAILS if the updater's output still tells a user to run the interpreter",
       // A Done user story is a record of what was run, when. Rewriting its

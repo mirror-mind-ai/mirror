@@ -14,6 +14,7 @@
 // Pure over an inventory, so it can be graded on synthetic lists; the script
 // feeds it `npm pack --dry-run --json`.
 
+import { INTERPRETER_INVOCATIONS } from "#guards/retiredSurfaces.ts";
 import { PACKAGE_NAME } from "#runtime/packageIdentity.ts";
 
 /** Directory prefixes (with trailing slash) and exact files the tarball may contain. */
@@ -121,9 +122,17 @@ export interface PackInventory {
  * proposals to the author by first name. The author is credited where that is
  * the point, the license and the README.
  *
- * The pattern is written so that this file, which ships too, never matches it.
- * Plateau 5 adds the Python invocation forms here (the artifact half of the
- * Zero Python gate).
+ * The second rule is the artifact half of DS10's Zero Python gate (US3
+ * plateau 5). The retired-surface guard proves the TREE spawns no interpreter,
+ * and the path rules above prove the tarball carries no Python file; this
+ * proves no shipped file tells an agent or a person to run the deleted core.
+ * The forms are the retired-surface guard's own list, imported, so the two
+ * halves cannot drift. Two places may still carry them: `docs/releases/`, each
+ * version's record of what it said and what was removed, which `runtime
+ * release-notes` shows as written; and the guard whose patterns ARE the data.
+ *
+ * Each pattern is written so that this file, which ships too, never matches
+ * it. An `allowedIn` entry ending in `/` is a prefix.
  */
 export const FORBIDDEN_CONTENT: readonly {
   pattern: RegExp;
@@ -135,7 +144,18 @@ export const FORBIDDEN_CONTENT: readonly {
     why: "names the author; shipped instructions address whoever installed Mirror",
     allowedIn: ["LICENSE", "README.md"],
   },
+  {
+    pattern: new RegExp(INTERPRETER_INVOCATIONS.join("|")),
+    why: "tells someone to run the Python core, deleted by CV22.DS10.TS5; the artifact carries none",
+    allowedIn: ["docs/releases/", "ts/src/guards/retiredSurfaces.ts"],
+  },
 ];
+
+function allowedToSay(rule: { allowedIn: readonly string[] }, path: string): boolean {
+  return rule.allowedIn.some((entry) =>
+    entry.endsWith("/") ? path.startsWith(entry) : path === entry,
+  );
+}
 
 /** One shipped file, as the content check reads it. */
 export interface PackedFile {
@@ -231,7 +251,7 @@ export function checkPackedContent(files: readonly PackedFile[]): PackProblem[] 
   const problems: PackProblem[] = [];
   for (const file of [...files].sort((a, b) => a.path.localeCompare(b.path))) {
     for (const rule of FORBIDDEN_CONTENT) {
-      if (rule.allowedIn.includes(file.path)) continue;
+      if (allowedToSay(rule, file.path)) continue;
       file.content.split("\n").forEach((line, index) => {
         if (rule.pattern.test(line)) {
           problems.push({
