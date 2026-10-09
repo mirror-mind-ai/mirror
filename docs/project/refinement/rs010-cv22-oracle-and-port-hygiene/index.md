@@ -65,3 +65,5 @@ evidence stays honest as both cores move.
 - [CR106 — A Pi session started against a scratch Mirror home copies the whole Pi history into it](cr106-a-pi-session-in-a-scratch-mirror-home-copies-the-whole-pi-history-into-it.md)
 - [CR108 — The Claude Code copies of other skills drift from Pi in behavior, and no guard compares them](cr108-the-claude-code-copies-of-other-skills-drift-from-pi-in-behavior.md)
 - [CR110 — The doc-link checker reads a link inside inline code as a real link](cr110-the-doc-link-checker-reads-a-link-inside-inline-code-as-a-real-link.md)
+- [CR120 — A failed Pi session import aborts the rest of session maintenance](cr120-a-failed-pi-session-import-aborts-the-rest-of-session-maintenance.md)
+- [CR121 — A new home's first maintenance run imports the person's whole Pi history](cr121-a-new-home-s-first-maintenance-imports-the-whole-pi-history.md)
