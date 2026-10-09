@@ -423,7 +423,9 @@ home (D14); the `mirror` bin is a type-stripping loader shim (D15).
   Verified: typecheck, lint, 3046 tests (2 skipped by design, the global link), the five
   repository checks (retired surfaces with eleven rows, pack contents at 467 files, skill
   parity, doc links, wrappers in sync), `smoke_npm_package.sh` from a real `npm install -g`
-  at `passed: 68 failed: 0` with no interpreter spawned. Next: plateau 6 (§G).
+  at `passed: 68 failed: 0` with no interpreter spawned; three commits
+  `42f2277b`..`b05c84c5`, CI green on both legs and the smoke job (`37995518948`). Next:
+  plateau 6 (§G).
 
 ## Where To Resume
 
