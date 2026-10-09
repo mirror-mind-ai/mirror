@@ -4,9 +4,9 @@
 // canonicalize a path the way Python's _normalize_project_path does
 // (`Path(value).expanduser().resolve()`).
 
-import { realpathSync } from "node:fs";
+import { accessSync, constants, realpathSync } from "node:fs";
 import { homedir } from "node:os";
-import { join, resolve } from "node:path";
+import { delimiter, join, resolve } from "node:path";
 
 /**
  * Expand a leading `~` or `~/` to the home directory. A `~user` path passes
@@ -18,6 +18,33 @@ export function expandHome(path: string): string {
   if (path === "~") return homedir();
   if (path.startsWith("~/")) return join(homedir(), path.slice(2));
   return path;
+}
+
+/** Can this process execute the file at `path`? */
+export function isExecutable(path: string): boolean {
+  try {
+    accessSync(path, constants.X_OK);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Where `command` resolves on `env.PATH`, or null: what a shell's `command -v`
+ * answers, for the PATH this process was given. The one rule for "is `mirror`
+ * reachable", "which runtimes are installed", and the hook wrappers' Node.
+ */
+export function commandOnPath(
+  command: string,
+  env: NodeJS.ProcessEnv,
+  canExecute: (path: string) => boolean = isExecutable,
+): string | null {
+  for (const dir of (env.PATH ?? "").split(delimiter).filter(Boolean)) {
+    const candidate = join(dir, command);
+    if (canExecute(candidate)) return candidate;
+  }
+  return null;
 }
 
 /**

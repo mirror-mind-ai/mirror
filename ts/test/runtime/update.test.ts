@@ -9,7 +9,7 @@ import test from "node:test";
 import { assertNamesNoInterpreter } from "#helpers/noInterpreter.ts";
 import type { InstallKind } from "#runtime/installKind.ts";
 import type { GitRunner } from "#runtime/strategies/clone.ts";
-import { runUpdate, type UpdateDeps } from "#runtime/update.ts";
+import { postUpdateHints, runUpdate, type UpdateDeps } from "#runtime/update.ts";
 import { renderUpdateResult, updateLogDetail } from "#runtime/updatePipeline.ts";
 
 const CLONE: InstallKind = { kind: "clone", repository: "/scratch/repo" };
@@ -502,6 +502,57 @@ test("a package has no tree, so its repair lane forgoes the gate and installs", 
     "migrate=skip",
   ]);
   assert.equal(result.newRef, "1.3.0");
+});
+
+// --- the clone seam (CV22.DS10.US3 plateau 4) --------------------------------
+//
+// After the CV22 release every skill says `mirror`, and a clone that updated
+// into that tree provides nothing by that name until `npm link` has run once
+// at its root. The updater is the one place every clone user passes through,
+// so it says so there -- once, after the stages, and only when `mirror` does
+// not resolve on the PATH the person actually has.
+
+test("a clone update whose PATH lacks `mirror` ends by naming `npm link` at the repository root", () => {
+  const result = runUpdate(deps());
+  assert.equal(result.success, true);
+  const hints = postUpdateHints(CLONE, result, { PATH: "/scratch/bin" }, () => false);
+  assert.equal(hints.length, 1, JSON.stringify(hints));
+  assert.match(hints[0] ?? "", /`mirror` is not on the PATH/);
+  assert.match(hints[0] ?? "", /npm link/);
+  assert.match(hints[0] ?? "", /\/scratch\/repo/);
+  assertNamesNoInterpreter(hints.join("\n"));
+});
+
+test("the line is for a clone that succeeded, and only while `mirror` is missing", () => {
+  const ok = runUpdate(deps());
+  // Resolvable: nothing to say.
+  assert.deepEqual(
+    postUpdateHints(CLONE, ok, { PATH: "/usr/local/bin" }, () => true),
+    [],
+  );
+  // A package put `mirror` on the PATH by being installed; the seam is the clone's.
+  assert.deepEqual(
+    postUpdateHints(PACKAGE, ok, { PATH: "/x" }, () => false),
+    [],
+  );
+  // A failed update's last words are its recovery block.
+  const failed = runUpdate(
+    deps({ gate: () => ({ ready: false, allowed: false, detail: "git tree is dirty" }) }),
+  );
+  assert.deepEqual(
+    postUpdateHints(CLONE, failed, { PATH: "/x" }, () => false),
+    [],
+  );
+  // An up-to-date clone still hears it: the skills are broken until it is done.
+  const current = runUpdate(
+    deps({
+      git: scriptGit({
+        "rev-parse --short HEAD": { stdout: "aaaaaaa\n" },
+        "rev-list --count": { stdout: "0\n" },
+      }).runner,
+    }),
+  );
+  assert.equal(postUpdateHints(CLONE, current, { PATH: "/x" }, () => false).length, 1);
 });
 
 // --- CV22.DS10.TS5, debt D-025 ---------------------------------------------

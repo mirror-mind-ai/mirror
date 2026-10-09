@@ -19,7 +19,7 @@
 // so neither a `bin` shim nor a skill line needs `--env-file` or
 // `NODE_OPTIONS=--no-warnings`. Importing this module does neither.
 
-import { accessSync, existsSync, constants as fsConstants, readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { basename, dirname } from "node:path";
 import { pathToFileURL } from "node:url";
 import {
@@ -79,6 +79,7 @@ import { detectRuntimes, runtimeWiringLines } from "#runtime/wiring.ts";
 import { runSeed } from "#seed/seed.ts";
 import { getTasksForWeek, listTasks } from "#tasks/taskStore.ts";
 import { computeWeekRange } from "#tasks/weekView.ts";
+import { isExecutable } from "#util/paths.ts";
 import { PROGRAM } from "#util/program.ts";
 import { newId, nowIso } from "#util/pyGenerators.ts";
 import { hasOption, optionValue, stripOptionWithValue } from "./args.ts";
@@ -925,14 +926,6 @@ function runInit(argv: readonly string[], env: NodeJS.ProcessEnv = process.env):
 
 /** The "Wire your runtime" tail of `init`, empty when no runtime is on the PATH. */
 function runtimeWiringSection(env: NodeJS.ProcessEnv): string[] {
-  const isExecutable = (path: string): boolean => {
-    try {
-      accessSync(path, fsConstants.X_OK);
-      return true;
-    } catch {
-      return false;
-    }
-  };
   const detected = detectRuntimes(env, isExecutable);
   if (detected.length === 0) return [];
   const root = runningTreeRoot();

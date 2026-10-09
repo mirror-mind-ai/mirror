@@ -57,7 +57,7 @@ import {
   renderPackageUpdateAvailability,
 } from "#runtime/strategies/package.ts";
 import { runningTreeRoot } from "#runtime/treeRoot.ts";
-import { frontDoorSpawner, runUpdate, type UpdateSpawn } from "#runtime/update.ts";
+import { frontDoorSpawner, postUpdateHints, runUpdate, type UpdateSpawn } from "#runtime/update.ts";
 import { statusAllowsUpdatePreflight } from "#runtime/updateGate.ts";
 import { renderUpdateResult, updateLogDetail } from "#runtime/updatePipeline.ts";
 import { expandHome } from "#util/paths.ts";
@@ -556,6 +556,7 @@ function runRuntimeUpdate(
       "\nThe updater was repaired. Run `runtime update` again to complete the update.\n",
     );
   }
+  for (const hint of postUpdateHints(install, result, env)) writeOut(io, `\n${hint}\n`);
   // The log takes the install KIND word and the short refs, never the
   // repository path: this file's contract is "never argument values", and the
   // migrate_on_open entry beside it records a basename for the same reason.

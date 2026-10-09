@@ -37,6 +37,9 @@ import {
   type UpdateResult,
   type UpdateStage,
 } from "#runtime/updatePipeline.ts";
+import { commandOnPath } from "#util/paths.ts";
+import { PROGRAM } from "#util/program.ts";
+import { shellWord } from "#util/shellWord.ts";
 
 /** Runs the FRONT DOOR again, on the code now installed. */
 export type UpdateSpawn = (argv: readonly string[]) => {
@@ -385,6 +388,29 @@ export function runUpdate(deps: UpdateDeps): UpdateResult {
     if (result !== null) return result;
   }
   return succeeded(run);
+}
+
+/**
+ * What to say after the stages, when the update itself has nothing more to
+ * say. One case today (CV22.DS10.US3 plateau 4): a clone whose PATH does not
+ * reach `mirror`. Every skill invokes that name, and a checkout provides it
+ * only after `npm link` has run once at its root -- the seam every clone user
+ * crosses once, at the update that brought the skills saying it. A package
+ * put `mirror` on the PATH by being installed; a failed update's last words
+ * are its recovery block.
+ */
+export function postUpdateHints(
+  install: InstallKind,
+  result: UpdateResult,
+  env: NodeJS.ProcessEnv,
+  canExecute?: (path: string) => boolean,
+): string[] {
+  if (install.kind !== "clone" || !result.success) return [];
+  if (commandOnPath(PROGRAM, env, canExecute) !== null) return [];
+  // A command the person will paste: the path is one shell word (CR104).
+  return [
+    `\`${PROGRAM}\` is not on the PATH: run \`npm link\` once in ${shellWord(install.repository)}, so the skills can call it.`,
+  ];
 }
 
 function firstLine(text: string): string {

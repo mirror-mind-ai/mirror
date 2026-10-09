@@ -30,6 +30,7 @@
 //               no hooks this integration uses.
 
 import { join } from "node:path";
+import { commandOnPath } from "#util/paths.ts";
 
 export type RuntimeName = "pi" | "claude" | "gemini" | "codex";
 
@@ -110,9 +111,8 @@ export function detectRuntimes(
   env: NodeJS.ProcessEnv,
   isExecutable: (path: string) => boolean,
 ): RuntimeName[] {
-  const dirs = (env.PATH ?? "").split(":").filter(Boolean);
-  return ORDER.filter((runtime) =>
-    dirs.some((dir) => isExecutable(join(dir, RUNTIME_WIRING[runtime].command))),
+  return ORDER.filter(
+    (runtime) => commandOnPath(RUNTIME_WIRING[runtime].command, env, isExecutable) !== null,
   );
 }
 
