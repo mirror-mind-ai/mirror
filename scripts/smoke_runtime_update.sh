@@ -312,9 +312,13 @@ SHIM
   PREFIX_REAL="$(cd "$PREFIX" && pwd -P)"
 
   # From here on: the installed bin, the shim, no checkout, a scratch HOME.
+  # XDG_CONFIG_HOME is unset, not blanked (an empty value is not "unset" to
+  # the core): the GitHub runner sets it to the runner's own ~/.config, and a
+  # channel written there is written outside the smoke.
   run_pkg() {
     (
       cd "$PKG_HOME"
+      unset XDG_CONFIG_HOME
       PATH="$WORK/npmshim:$WORK/stubs:$PREFIX/bin:$WORK/bin:/usr/bin:/bin" \
       HOME="$PKG_HOME" \
       MIRROR_HOME="$PKG_MIRROR_HOME" \
