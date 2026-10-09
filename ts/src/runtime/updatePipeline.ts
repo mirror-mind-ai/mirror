@@ -17,6 +17,14 @@
 // `update.ts` runs the order above once, and a strategy answers only the
 // questions whose answer depends on how Mirror was installed.
 
+/**
+ * The channels an update may follow, for either install kind: `stable` is the
+ * promoted release, `main` the development branch. A clone follows
+ * `origin/<channel>`; a package follows the dist-tag of the same name.
+ */
+export const KNOWN_CHANNELS: ReadonlySet<string> = new Set(["stable", "main"]);
+export const DEFAULT_CHANNEL = "stable";
+
 export type StageState = "pass" | "fail" | "skip";
 
 export interface UpdateStage {

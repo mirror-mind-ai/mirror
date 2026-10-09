@@ -825,9 +825,8 @@ export function routeByFamily(
     // must not acquire a TS route because `runtime` already has one.
     if (!TS_RUNTIME_READ_SUBCOMMANDS.has(subcommand)) {
       // CV22.DS10.US2: the updater family.
-      if (TS_RUNTIME_UPDATE_SUBCOMMANDS.has(subcommand)) {
-        return { command, engine: "ts", reason: `DS10.US2 runtime ${subcommand} ported to TS` };
-      }
+      const reason = TS_RUNTIME_UPDATE_SUBCOMMANDS.get(subcommand);
+      if (reason !== undefined) return { command, engine: "ts", reason };
       // CV22.DS10.US2 made the unknown answer TypeScript's own, rendered by
       // the runtime route; CV22.DS10.TS5 moved it to the shared usage answer
       // (D2), which renders the same bytes for every family.

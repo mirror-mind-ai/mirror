@@ -18,6 +18,7 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { join, resolve } from "node:path";
+import { DEFAULT_CHANNEL, KNOWN_CHANNELS } from "#runtime/updatePipeline.ts";
 
 export const GIT_LOCAL_TIMEOUT_MS = 2_000;
 export const GIT_NETWORK_TIMEOUT_MS = 120_000;
@@ -26,8 +27,10 @@ const CLONE_ROLE_FILENAME = ".mirror-clone-role";
 const UPDATE_CHANNEL_FILENAME = ".mirror-update-channel";
 const DEFAULT_CLONE_ROLE = "production";
 const KNOWN_CLONE_ROLES = new Set(["production", "dev"]);
-const DEFAULT_UPDATE_CHANNEL = "stable";
-const KNOWN_UPDATE_CHANNELS = new Set(["stable", "main"]);
+// The channel vocabulary is the pipeline's (one set for both install kinds
+// since CV22.DS10.US3 plateau 4); these are the names this module used.
+const DEFAULT_UPDATE_CHANNEL = DEFAULT_CHANNEL;
+const KNOWN_UPDATE_CHANNELS = KNOWN_CHANNELS;
 
 export interface GitStatus {
   repository: string | null;

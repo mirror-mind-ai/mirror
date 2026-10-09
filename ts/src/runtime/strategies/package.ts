@@ -11,12 +11,8 @@
 // the pipeline's decisions are testable without a registry.
 
 import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
-import type { ApplyStrategy } from "#runtime/updatePipeline.ts";
+import { type ApplyStrategy, KNOWN_CHANNELS } from "#runtime/updatePipeline.ts";
 import { compareSemver, isPlainSemver } from "#util/semver.ts";
-
-const KNOWN_CHANNELS = new Set(["stable", "main"]);
 
 export type NpmRunner = (args: readonly string[]) => {
   code: number;
@@ -48,51 +44,8 @@ export function npmRootGlobal(npm: NpmRunner = defaultNpmRunner): string | null 
   return result.code === 0 && value ? value : null;
 }
 
-/**
- * The channel for a package install, scoped the way the INSTALL is scoped.
- *
- * `npm install -g` is one install per OS user; a Mirror home is not. Reading
- * the channel from `<mirror-home>/…` would let two homes over one global
- * install re-tag each other on alternating updates, so it lives in the user's
- * own config directory instead. A clone keeps its tracked
- * `.mirror-update-channel` marker, which is correctly per-checkout.
- */
-export function packageChannelPath(env: NodeJS.ProcessEnv): string {
-  const base =
-    env.XDG_CONFIG_HOME && env.XDG_CONFIG_HOME.trim() !== ""
-      ? env.XDG_CONFIG_HOME
-      : join(env.HOME ?? env.USERPROFILE ?? "", ".config");
-  return join(base, "mirror", "update-channel");
-}
-
-export function readPackageChannel(
-  env: NodeJS.ProcessEnv,
-  override: string | null = null,
-): { value: string; source: string | null; note: string | null } {
-  const known = KNOWN_CHANNELS;
-  if (override) {
-    const value = override.trim().toLowerCase();
-    if (known.has(value)) return { value, source: null, note: "command override" };
-    return {
-      value: "stable",
-      source: null,
-      note: `unknown channel '${value}', defaulting to stable`,
-    };
-  }
-  const path = packageChannelPath(env);
-  if (!existsSync(path)) return { value: "stable", source: null, note: null };
-  try {
-    const raw = readFileSync(path, "utf8").trim().toLowerCase();
-    if (known.has(raw)) return { value: raw, source: path, note: null };
-    return {
-      value: "stable",
-      source: path,
-      note: `unknown channel '${raw}', defaulting to stable`,
-    };
-  } catch {
-    return { value: "stable", source: null, note: null };
-  }
-}
+// The package channel's location and reader live in `#runtime/channel.ts`
+// with the clone's, since CV22.DS10.US3 plateau 4 gave both a writer.
 
 export type DistTags = { ok: true; tags: Record<string, string> } | { ok: false; detail: string };
 

@@ -10,6 +10,7 @@
 // because the command name already had one.
 
 import { accessSync, constants } from "node:fs";
+import { homedir } from "node:os";
 import { join } from "node:path";
 import { createZipBackup } from "#backup/zipBackup.ts";
 import { dbNameForEnv, resolveMirrorHome } from "#frontDoor/dbPath.ts";
@@ -20,6 +21,7 @@ import {
   renderRuntimeBackupCreated,
   verifyBackupArchive,
 } from "#runtime/backup.ts";
+import { channelFor, renderChannel, setChannel } from "#runtime/channel.ts";
 import {
   diagnoseRuntime,
   hookFailureFindings,
@@ -40,7 +42,7 @@ import {
   renderRuntimeVersion,
   upstreamFor,
 } from "#runtime/git.ts";
-import { detectInstallKind } from "#runtime/installKind.ts";
+import { detectInstallKind, type InstallKind } from "#runtime/installKind.ts";
 import { MIGRATE_DECLINED_EXIT, renderMigrate, runMigrate } from "#runtime/migrate.ts";
 import {
   buildPendingReleaseNotes,
@@ -52,7 +54,6 @@ import { buildRuntimeStatus, renderRuntimeStatus, statusVerdict } from "#runtime
 import {
   checkPackageUpdateAvailability,
   npmRootGlobal,
-  readPackageChannel,
   renderPackageUpdateAvailability,
 } from "#runtime/strategies/package.ts";
 import { runningTreeRoot } from "#runtime/treeRoot.ts";
@@ -88,6 +89,9 @@ export const RUNTIME_SUBCOMMANDS = [
   // CV22.DS10.US2 (D8): not on the oracle. The updater spawns it in a fresh
   // process so the code that migrates is the code that was just installed.
   "migrate",
+  // CV22.DS10.US3 (D9): not on the oracle. Shows or sets the channel this
+  // install follows, in the file its install kind keeps it in.
+  "channel",
 ] as const;
 
 /**
@@ -114,7 +118,12 @@ export const RUNTIME_SUBCOMMANDS = [
  * (Its own revert, `MIRROR_TS_RUNTIME_UPDATE=0`, left with the Python engine at
  * CV22.DS10.TS5.)
  */
-export const TS_RUNTIME_UPDATE_SUBCOMMANDS = new Set(["backup", "update", "migrate"]);
+export const TS_RUNTIME_UPDATE_SUBCOMMANDS: ReadonlyMap<string, string> = new Map([
+  ["backup", "DS10.US2 runtime backup ported to TS"],
+  ["update", "DS10.US2 runtime update ported to TS"],
+  ["migrate", "DS10.US2 runtime migrate ported to TS"],
+  ["channel", "DS10.US3 runtime channel (D9), TS-native"],
+]);
 
 function optionValue(args: readonly string[], name: string): string | null {
   const index = args.indexOf(name);
@@ -289,6 +298,7 @@ export async function runRuntimeReadRoute(
   if (subcommand === "backup") return runRuntimeBackup(args.slice(1), io, env);
   if (subcommand === "migrate") return runRuntimeMigrate(args.slice(1), io, env);
   if (subcommand === "update") return runRuntimeUpdate(args.slice(1), io, env, cwd);
+  if (subcommand === "channel") return runRuntimeChannel(args.slice(1), io, env);
 
   // Routing answers every name it does not recognize before dispatch (the
   // shared usage answer, CV22.DS10.TS5 D2 -- the shape US2 gave `runtime`
@@ -394,6 +404,38 @@ function runRuntimeMigrate(
 }
 
 /**
+ * `runtime channel [stable|main]` (CV22.DS10.US3, D9): show the channel this
+ * install follows, or set it. The file is the install kind's own; the
+ * vocabulary is the pipeline's; nothing else is touched.
+ */
+function runRuntimeChannel(
+  args: readonly string[],
+  io: RuntimeRouteIo,
+  env: NodeJS.ProcessEnv,
+): number {
+  const install = detectThisInstall();
+  const requested = args.find((arg) => !arg.startsWith("-")) ?? null;
+  if (requested === null) {
+    writeOut(io, renderChannel({ install, channel: channelFor(install, env), written: null }));
+    return 0;
+  }
+  const written = setChannel(install, requested, env);
+  if (!written.ok) {
+    writeErr(io, `Error: ${written.reason}\n`);
+    return written.exitCode;
+  }
+  writeOut(
+    io,
+    renderChannel({
+      install,
+      channel: channelFor(install, env),
+      written: { previous: written.previous },
+    }),
+  );
+  return 0;
+}
+
+/**
  * `runtime update [--check|--dry-run|--repair-updater] [--no-fetch]
  * [--skip-migrations] [--mirror-home PATH] [--channel stable|main]`.
  */
@@ -405,21 +447,9 @@ function runRuntimeUpdate(
 ): number {
   const version = packageVersion(runningTreeRoot()) ?? "unknown";
   const channelOverride = optionValue(args, "--channel");
-  // `npm root -g` is resolved once, and only matters for identifying a
-  // package install: a clone never pays for it.
-  const install = detectInstallKind({
-    frontDoorPath: frontDoorSelfPath(),
-    npmRootGlobal: npmRootGlobal(),
-  });
+  const install = detectThisInstall();
   const start = install.kind === "clone" ? install.repository : cwd;
-  // The channel is scoped like the install: a clone's marker is per-checkout
-  // and correctly tracked in git; a global npm install is per OS user, so its
-  // channel lives in the user's config rather than in a Mirror home that one
-  // of several could own.
-  const channel =
-    install.kind === "package"
-      ? readPackageChannel(env, channelOverride)
-      : inspectUpdateChannel(start, channelOverride);
+  const channel = channelFor(install, env, homedir(), channelOverride);
 
   if (args.includes("--check")) {
     // A package asks the registry the question the pipeline's plan stage
@@ -529,6 +559,15 @@ function spawner(env: NodeJS.ProcessEnv): UpdateSpawn {
 /** This front door's own path, which is also how the install kind is read. */
 function frontDoorSelfPath(): string {
   return new URL("./cli.ts", import.meta.url).pathname;
+}
+
+/**
+ * How THIS front door is installed. `npm root -g` is resolved once per call
+ * and only matters for identifying a package install: a clone never pays for
+ * it beyond the one probe.
+ */
+function detectThisInstall(): InstallKind {
+  return detectInstallKind({ frontDoorPath: frontDoorSelfPath(), npmRootGlobal: npmRootGlobal() });
 }
 
 /**

@@ -565,6 +565,15 @@ test("the updater family answers from TS", () => {
   );
 });
 
+test("runtime channel answers from TS, as US3's own subcommand", () => {
+  // CV22.DS10.US3 plateau 4 (D9). Not on the oracle: the Python updater read
+  // the clone marker and nothing wrote the package one (US2's D-027).
+  const decision = routeMemoryCommand(["runtime", "channel"], {});
+  assert.equal(decision.engine, "ts");
+  assert.match(decision.reason, /DS10\.US3/);
+  assert.equal(routeMemoryCommand(["runtime", "channel", "main"], {}).engine, "ts");
+});
+
 test("an unknown runtime subcommand is answered by TypeScript, not inherited", () => {
   // The allowlist's original purpose stands: a name this build has never heard
   // of must not acquire a TS route because `runtime` already has one. US2 made
