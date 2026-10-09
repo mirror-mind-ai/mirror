@@ -569,8 +569,16 @@ function runRuntimeUpdate(
   return result.success ? 0 : 1;
 }
 
+/**
+ * The front door, spawned again on the code now installed. Through the bin
+ * (`bin/mirror.js`, D15), never `cli.ts` itself: under `node_modules` Node
+ * refuses to strip types, so a package's fresh-process migrate and validate
+ * crashed at the first `.ts` import -- found by the update smoke's package
+ * lane (CV22.DS10.US3 plateau 4). A checkout runs the same bin, as `npm link`
+ * does.
+ */
 function spawner(env: NodeJS.ProcessEnv): UpdateSpawn {
-  return frontDoorSpawner(frontDoorSelfPath(), env);
+  return frontDoorSpawner(join(runningTreeRoot(), "bin", "mirror.js"), env);
 }
 
 /** This front door's own path, which is also how the install kind is read. */

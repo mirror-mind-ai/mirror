@@ -16,8 +16,18 @@
 #   * python/python3/uv shadowed on PATH with stubs that exit 66, so any
 #     interpreter spawn FAILS THE SMOKE rather than passing unnoticed
 #
-# The real git and npm paths are captured BEFORE the shadowing, because the
-# stubs would otherwise shadow the tools the smoke itself needs.
+# The real git, npm, and node paths are captured BEFORE the shadowing, because
+# the stubs would otherwise shadow the tools the smoke itself needs. The PATH
+# the clone runs under is built from scratch (stubs, a node symlink, the
+# system directories), so what `mirror` resolves to is the smoke's decision
+# and not the machine's: the clone seam (section 3) is graded both ways.
+#
+# Section 6 (CV22.DS10.US3 plateau 4) is the package lane end to end: a
+# tarball installed into a scratch prefix, an `npm` shim ahead on the PATH
+# that answers `root -g` with that prefix, `view … dist-tags` from a file the
+# smoke writes, and `install -g <name>@<version>` by installing a second
+# tarball packed at a bumped version -- and records every call, so a `publish`
+# or anything unscripted fails the smoke. The registry is never reached.
 #
 # Usage:  scripts/smoke_runtime_update.sh [workdir]
 
@@ -31,6 +41,7 @@ FAIL=0
 # Captured before PATH is shadowed.
 REAL_GIT="$(command -v git)"
 REAL_NPM="$(command -v npm || true)"
+REAL_NODE="$(command -v node)"
 REAL_SQLITE="$(command -v sqlite3 || true)"
 
 say() { printf '\n\033[1m%s\033[0m\n' "$*"; }
@@ -42,7 +53,10 @@ cleanup() { [ "${KEEP_SMOKE_WORKDIR:-0}" = "1" ] || rm -rf "$WORK"; }
 trap cleanup EXIT
 
 rm -rf "$WORK"
-mkdir -p "$WORK/stubs"
+mkdir -p "$WORK/stubs" "$WORK/bin" "$WORK/withmirror"
+ln -s "$REAL_NODE" "$WORK/bin/node"
+# A `mirror` that exists, for the PATH that has one (section 3b).
+printf '#!/bin/sh\nexit 0\n' > "$WORK/withmirror/mirror"; chmod +x "$WORK/withmirror/mirror"
 
 # --- the interpreter stubs -------------------------------------------------
 for bin in python python3 uv; do
@@ -108,10 +122,13 @@ node --no-warnings -e '
   db.close();' "$HOME_DIR/memory.db" "$REGRESS_017"
 
 CLI="ts/src/frontDoor/cli.ts"
+# The clone's PATH holds the stubs, node, and the system directories (git
+# lives there on both CI runners), and NOT the machine's own `mirror`.
+CLONE_PATH="$WORK/stubs:$WORK/bin:/usr/bin:/bin"
 run_cli() {
   (
     cd "$WORK/clone"
-    PATH="$WORK/stubs:$PATH" \
+    PATH="${CLI_PATH:-$CLONE_PATH}" \
     MIRROR_HOME="$HOME_DIR" \
     NODE_OPTIONS=--no-warnings \
     node "$CLI" "$@"
@@ -182,6 +199,22 @@ if grep -q "update install=clone" "$HOME_DIR/front-door.log" 2>/dev/null; then
 else
   bad "no update line in front-door.log"
 fi
+# The clone seam (CV22.DS10.US3 plateau 4): every skill says `mirror`, and
+# this clone provides it only after `npm link`. The PATH above has none.
+case "$OUT" in
+  *'`mirror` is not on the PATH: run `npm link` once in '*) ok "ends by naming npm link at the repository root" ;;
+  *) bad "no npm link line for a PATH without mirror" ;;
+esac
+check "the line is printed once" "$(printf '%s\n' "$OUT" | grep -c 'npm link')" "1"
+
+# --- 3b. the same clone, with a mirror on the PATH ---------------------------
+say "3b. an up-to-date clone with mirror on the PATH hears nothing about npm link"
+set +e
+OUT="$(CLI_PATH="$WORK/withmirror:$CLONE_PATH" run_cli runtime update --no-fetch --mirror-home "$HOME_DIR" 2>&1)"; CODE=$?
+set -e
+check "exit code" "$CODE" "0"
+case "$OUT" in *"already up to date"*) ok "nothing to pull" ;; *) bad "expected already up to date" ;; esac
+case "$OUT" in *"npm link"*) bad "npm link named although mirror resolves" ;; *) ok "no npm link line" ;; esac
 
 # --- 4. the diverged failure path ------------------------------------------
 say "4. a diverged clone fails without touching anything"
@@ -220,26 +253,167 @@ case "$OUT" in
   *) bad "no rerun instruction" ;;
 esac
 
-# --- 6. the package kind, against a packed tarball -------------------------
-say "6. package install detection against a real npm pack"
+# --- 6. the package lane, against a packed tarball ---------------------------
+say "6. the package lane: install, check, channel, dry run, update, and a refused downgrade"
 if [ -z "$REAL_NPM" ]; then
-  printf '  \033[33m-\033[0m npm unavailable; package half skipped\n'
+  printf '  \033[33m-\033[0m npm unavailable; package lane skipped\n'
 else
   PREFIX="$WORK/npm-prefix"
-  mkdir -p "$PREFIX"
-  TARBALL="$(cd "$ROOT_DIR" && "$REAL_NPM" pack --pack-destination "$WORK" 2>/dev/null | tail -1)"
-  if [ -n "$TARBALL" ] && [ -f "$WORK/$TARBALL" ]; then
-    ok "npm pack produced $TARBALL"
-    if "$REAL_NPM" install -g --prefix "$PREFIX" "$WORK/$TARBALL" >/dev/null 2>&1; then
-      ok "the tarball installs into an isolated prefix"
-      INSTALLED="$(find "$PREFIX" -path '*/mirror-mind/package.json' | head -1)"
-      if [ -n "$INSTALLED" ]; then ok "the installed package is discoverable"; else bad "no installed package found"; fi
-    else
-      printf '  \033[33m-\033[0m install into the isolated prefix failed; recorded, not fatal\n'
-    fi
+  PKG_HOME="$WORK/pkg-home"
+  PKG_MIRROR_HOME="$WORK/pkg-mirror-home"
+  mkdir -p "$PREFIX" "$PKG_HOME" "$PKG_MIRROR_HOME" "$WORK/npmshim"
+  chmod 700 "$PKG_HOME"
+
+  # Two tarballs from the WORKING tree (not the scratch origin, which holds
+  # HEAD: a fix made for this lane must be the code the lane runs): the tree
+  # as it is, and a copy of it at the next patch version. The copy is every
+  # tracked and untracked-unignored file, so no node_modules and no tmp/.
+  VERSION_A="$(node -p 'require(process.argv[1]).version' "$ROOT_DIR/package.json")"
+  TARBALL_A="$(cd "$ROOT_DIR" && "$REAL_NPM" pack --pack-destination "$WORK" 2>/dev/null | tail -1)"
+  mkdir -p "$WORK/pkgsrc"
+  (cd "$ROOT_DIR" && "$REAL_GIT" ls-files -z --cached --others --exclude-standard | tar --null -T - -cf - 2>/dev/null) | tar -C "$WORK/pkgsrc" -xf -
+  VERSION_B="$(cd "$WORK/pkgsrc" && "$REAL_NPM" version patch --no-git-tag-version 2>/dev/null | tr -d v)"
+  TARBALL_B="$(cd "$WORK/pkgsrc" && "$REAL_NPM" pack --pack-destination "$WORK" 2>/dev/null | tail -1)"
+  if [ -f "$WORK/$TARBALL_A" ] && [ -f "$WORK/$TARBALL_B" ]; then
+    ok "packed $TARBALL_A and $TARBALL_B"
   else
-    printf '  \033[33m-\033[0m npm pack produced nothing; package half skipped\n'
+    bad "npm pack produced nothing"
   fi
+
+  # The npm shim: answers the updater's three questions from the scratch
+  # prefix and the smoke's own files, records every call, and fails on
+  # anything else -- a `publish` above all.
+  cat > "$WORK/dist-tags.json" <<TAGS
+{"stable": "$VERSION_B", "main": "$VERSION_B"}
+TAGS
+  cat > "$WORK/npmshim/npm" <<SHIM
+#!/bin/sh
+echo "\$*" >> "$WORK/npm-calls.log"
+case "\$*" in
+  "root -g") echo "$PREFIX/lib/node_modules" ;;
+  "view mirror-mind dist-tags --json") cat "$WORK/dist-tags.json" ;;
+  "install -g mirror-mind@$VERSION_A") exec "$REAL_NPM" install -g --prefix "$PREFIX" "$WORK/$TARBALL_A" ;;
+  "install -g mirror-mind@$VERSION_B") exec "$REAL_NPM" install -g --prefix "$PREFIX" "$WORK/$TARBALL_B" ;;
+  *) echo "unscripted npm call: \$*" >> "$WORK/npm-unexpected.log"; exit 1 ;;
+esac
+SHIM
+  chmod +x "$WORK/npmshim/npm"
+
+  "$REAL_NPM" install -g --prefix "$PREFIX" "$WORK/$TARBALL_A" >"$WORK/install.log" 2>&1 \
+    && ok "version $VERSION_A installed into the scratch prefix" \
+    || bad "install failed: $(tail -3 "$WORK/install.log")"
+
+  # A current database first (status is graded on it), regressed to need 017
+  # before the update, as the clone lane's was.
+  (cd "$ROOT_DIR" && node --no-warnings ts/smoke/generate_demo_memory_db.ts --out "$PKG_MIRROR_HOME/memory.db" >/dev/null)
+  pkg_ledger() { "$REAL_SQLITE" "$PKG_MIRROR_HOME/memory.db" "select count(*) from _migrations;"; }
+  # The prefix as the filesystem resolves it: on macOS /tmp is a symlink, and
+  # the install root a package reports is the resolved path.
+  PREFIX_REAL="$(cd "$PREFIX" && pwd -P)"
+
+  # From here on: the installed bin, the shim, no checkout, a scratch HOME.
+  run_pkg() {
+    (
+      cd "$PKG_HOME"
+      PATH="$WORK/npmshim:$WORK/stubs:$PREFIX/bin:$WORK/bin:/usr/bin:/bin" \
+      HOME="$PKG_HOME" \
+      MIRROR_HOME="$PKG_MIRROR_HOME" \
+      mirror "$@"
+    )
+  }
+  check "mirror resolves from the prefix" "$(cd "$PKG_HOME" && PATH="$PREFIX/bin:/usr/bin:/bin" command -v mirror)" "$PREFIX/bin/mirror"
+
+  # status: the install, without asking npm
+  : > "$WORK/npm-calls.log"
+  OUT="$(run_pkg runtime status 2>&1 || true)"
+  case "$OUT" in *"Install: package (mirror-mind@$VERSION_A)"*) ok "status names the package and its version" ;; *) bad "status lacks the install line: $(echo "$OUT" | head -5)" ;; esac
+  case "$OUT" in *"Install root: $PREFIX_REAL/lib/node_modules/mirror-mind"*) ok "status names the install root" ;; *) bad "status lacks the install root" ;; esac
+  case "$OUT" in *"Repository: none (package install)"*) ok "status grades no repository for a package" ;; *) bad "status graded the cwd as a repository" ;; esac
+  case "$OUT" in *"Status: ready"*) ok "status is ready on a current database, from a directory that is no repository" ;; *) bad "status not ready: $(echo "$OUT" | tail -3)" ;; esac
+  check "status asked npm nothing" "$(wc -l < "$WORK/npm-calls.log" | tr -d ' ')" "0"
+
+  # Now the database needs 017, so the update has a migration to apply.
+  node --no-warnings -e '
+    const { DatabaseSync } = require("node:sqlite");
+    const db = new DatabaseSync(process.argv[1]);
+    db.exec(process.argv[2]);
+    db.close();' "$PKG_MIRROR_HOME/memory.db" "$REGRESS_017"
+
+  # channel: default, set, read back
+  OUT="$(run_pkg runtime channel 2>&1 || true)"
+  case "$OUT" in *"Update channel: stable"*"Source: default"*) ok "channel defaults to stable from nowhere" ;; *) bad "unexpected channel render: $OUT" ;; esac
+  OUT="$(run_pkg runtime channel main 2>&1)"; CODE=$?
+  check "channel main exit code" "$CODE" "0"
+  case "$OUT" in *"Update channel: main (was stable)"*) ok "channel set to main, says what it was" ;; *) bad "unexpected set render: $OUT" ;; esac
+  check "the channel file holds main" "$(cat "$PKG_HOME/.config/mirror/update-channel")" "main"
+  mode_of() { stat -c '%a' "$1" 2>/dev/null || stat -f '%Lp' "$1"; }
+  check "the config directory it created is 0700" "$(mode_of "$PKG_HOME/.config/mirror")" "700"
+  set +e
+  run_pkg runtime channel beta >/dev/null 2>"$WORK/channel.err"; CODE=$?
+  set -e
+  check "an unknown channel is refused with exit 2" "$CODE" "2"
+  check "and nothing was written" "$(cat "$PKG_HOME/.config/mirror/update-channel")" "main"
+
+  # check: the registry's answer, through the shim
+  OUT="$(run_pkg runtime update --check 2>&1 || true)"
+  case "$OUT" in *"Availability: update_available"*) ok "--check reports update_available" ;; *) bad "--check: $OUT" ;; esac
+  case "$OUT" in *"Channel version: $VERSION_B"*) ok "--check names the channel's version" ;; *) bad "--check lacks the channel version" ;; esac
+  case "$OUT" in *"Update channel: main"*) ok "--check reads the channel it was set to" ;; *) bad "--check read the wrong channel" ;; esac
+
+  # dry run: nothing moves
+  BEFORE_LEDGER="$(pkg_ledger)"
+  OUT="$(run_pkg runtime update --dry-run 2>&1 || true)"
+  case "$OUT" in *"[✓] capture: mirror-mind@$VERSION_A"*) ok "dry run captures the installed version" ;; *) bad "dry run capture: $OUT" ;; esac
+  case "$OUT" in *"[✓] plan: $VERSION_A -> $VERSION_B"*) ok "dry run plans A -> B" ;; *) bad "dry run plan missing" ;; esac
+  case "$OUT" in *"[-] apply: would install mirror-mind@$VERSION_B"*) ok "dry run names the install it would make" ;; *) bad "dry run apply line missing" ;; esac
+  check "dry run installed nothing" "$(run_pkg runtime version 2>/dev/null | sed -n 's/^Version: //p')" "$VERSION_A"
+  check "dry run migrated nothing" "$(pkg_ledger)" "$BEFORE_LEDGER"
+
+  # the real update, with interpreters shadowed
+  set +e
+  OUT="$(run_pkg runtime update 2>&1)"; CODE=$?
+  set -e
+  echo "$OUT" | sed 's/^/    /'
+  check "update exit code" "$CODE" "0"
+  case "$OUT" in *"INTERPRETER SPAWNED"*) bad "an interpreter was spawned" ;; *) ok "no interpreter was spawned" ;; esac
+  for stage in "status gate" "capture: mirror-mind@$VERSION_A" "plan: $VERSION_A -> $VERSION_B" "backup" "verify backup" "apply: mirror-mind@$VERSION_B" "migrate" "post-update status"; do
+    case "$OUT" in *"[✓] $stage"*) ok "stage passed: $stage" ;; *) bad "stage missing or failed: $stage" ;; esac
+  done
+  check "the installed version moved to B" "$(run_pkg runtime version 2>/dev/null | sed -n 's/^Version: //p')" "$VERSION_B"
+  if [ "$(pkg_ledger)" -gt "$BEFORE_LEDGER" ]; then ok "the migration applied in a fresh process ($BEFORE_LEDGER -> $(pkg_ledger))"; else bad "ledger did not move"; fi
+  ARCHIVE="$(printf '%s\n' "$OUT" | sed -n 's/^Backup: //p' | head -1)"
+  [ -n "$ARCHIVE" ] && [ -f "$ARCHIVE" ] && ok "an archive was written before apply" || bad "no archive"
+  grep -q "update install=package channel=main $VERSION_A->$VERSION_B" "$PKG_MIRROR_HOME/front-door.log" 2>/dev/null \
+    && ok "the run is recorded in front-door.log with both versions" || bad "no package update line in front-door.log"
+  case "$OUT" in *"npm link"*) bad "a package was told to npm link" ;; *) ok "no npm link line for a package" ;; esac
+
+  # up to date now
+  OUT="$(run_pkg runtime update --check 2>&1 || true)"
+  case "$OUT" in *"Availability: up_to_date"*) ok "--check now reports up_to_date" ;; *) bad "--check after update: $OUT" ;; esac
+
+  # the refused downgrade: stable falls behind the install
+  cat > "$WORK/dist-tags.json" <<TAGS
+{"stable": "$VERSION_A", "main": "$VERSION_B"}
+TAGS
+  run_pkg runtime channel stable >/dev/null 2>&1
+  OUT="$(run_pkg runtime update --check 2>&1 || true)"
+  case "$OUT" in *"Availability: channel_behind"*) ok "--check reports the channel behind the install" ;; *) bad "--check downgrade: $OUT" ;; esac
+  case "$OUT" in *"Next: runtime channel main"*) ok "--check names the channel that carries the install" ;; *) bad "--check lacks the carrier" ;; esac
+  BEFORE_LEDGER="$(pkg_ledger)"
+  set +e
+  OUT="$(run_pkg runtime update 2>&1)"; CODE=$?
+  set -e
+  check "a downgrade is refused with exit 1" "$CODE" "1"
+  case "$OUT" in *"[✗] plan: 'stable' is behind the installed version ($VERSION_A < $VERSION_B)"*) ok "refused at plan, naming both versions" ;; *) bad "wrong refusal: $(echo "$OUT" | grep plan)" ;; esac
+  case "$OUT" in *"migrations do not run backwards"*) ok "says why" ;; *) bad "no reason" ;; esac
+  case "$OUT" in *"[✓] backup"*) bad "a backup was taken for a refused plan" ;; *) ok "no backup for a refused plan" ;; esac
+  check "nothing was installed" "$(run_pkg runtime version 2>/dev/null | sed -n 's/^Version: //p')" "$VERSION_B"
+  check "nothing was migrated" "$(pkg_ledger)" "$BEFORE_LEDGER"
+
+  # what npm was asked, in total
+  if [ -f "$WORK/npm-unexpected.log" ]; then bad "npm was asked something unscripted: $(cat "$WORK/npm-unexpected.log")"; else ok "npm was asked nothing unscripted"; fi
+  if grep -q "^publish" "$WORK/npm-calls.log"; then bad "npm publish was called"; else ok "npm publish was never called"; fi
+  check "the one install npm made is the exact version" "$(grep -c "^install -g mirror-mind@$VERSION_B\$" "$WORK/npm-calls.log")" "1"
 fi
 
 say "Result"

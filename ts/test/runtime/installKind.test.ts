@@ -168,6 +168,22 @@ test("when npm's global root IS known, containment in it is still required", () 
   assert.match(kind.kind === "unknown" ? kind.reason : "", /global npm root/);
 });
 
+test("npm's global root is resolved through symlinks before containment is judged", () => {
+  // Found by the update smoke on macOS, where /tmp is a symlink to
+  // /private/tmp: the front door's path is resolved, `npm root -g` answered
+  // the unresolved form, and the install under it read as not inside it.
+  const resolvedRoot = "/private/tmp/prefix/lib/node_modules";
+  const pkg = join(resolvedRoot, "mirror-mind");
+  const kind = detectInstallKind({
+    frontDoorPath: join(pkg, "ts/src/frontDoor/cli.ts"),
+    npmRootGlobal: "/tmp/prefix/lib/node_modules",
+    exists: fs([join(pkg, "package.json")]),
+    readFile: () => GLOBAL_MANIFEST,
+    realpath: (path) => path.replace(/^\/tmp\//, "/private/tmp/"),
+  });
+  assert.deepEqual(kind, { kind: "package", root: pkg, name: "mirror-mind", version: "1.2.3" });
+});
+
 test("an npm-linked checkout reached through the global bin is still a clone", () => {
   // `npm link`: `<prefix>/bin/mirror` resolves into the checkout, whose root
   // is not under a `lib/node_modules`, so the layout evidence does not apply

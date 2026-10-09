@@ -126,9 +126,13 @@ function packageUnderNpmRoot(
   npmRootGlobal: string,
   exists: (path: string) => boolean,
   readFile: (path: string) => string,
+  realpath: (path: string) => string,
 ): InstallKind | null {
-  if (!isInside(npmRootGlobal, frontDoorPath)) return null;
-  const manifest = nearestManifest(frontDoorPath, npmRootGlobal, exists, readFile);
+  // Both sides resolved: the front door already is, and npm answers with
+  // the prefix as configured, symlinks and all (/tmp on macOS is one).
+  const root = realpath(resolve(npmRootGlobal));
+  if (!isInside(root, frontDoorPath)) return null;
+  const manifest = nearestManifest(frontDoorPath, root, exists, readFile);
   if (manifest === null) return null;
   return { kind: "package", root: manifest.root, name: manifest.name, version: manifest.version };
 }
@@ -179,7 +183,7 @@ export function detectInstallKind(probe: InstallKindProbe): InstallKind {
   const frontDoorPath = realpath(resolve(probe.frontDoorPath));
 
   const asPackage = probe.npmRootGlobal
-    ? packageUnderNpmRoot(frontDoorPath, probe.npmRootGlobal, exists, readFile)
+    ? packageUnderNpmRoot(frontDoorPath, probe.npmRootGlobal, exists, readFile, realpath)
     : packageByLayout(frontDoorPath, exists, readFile, realpath);
   if (asPackage !== null) return asPackage;
 

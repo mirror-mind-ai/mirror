@@ -145,8 +145,13 @@ STATUS_OUT="$(mirror runtime status 2>&1 || true)"
 contains "status names the version" "$STATUS_OUT" "Version: "
 contains "status names the home" "$STATUS_OUT" "Mirror home: $HOME/.mirror-minds/smokeuser"
 contains "status sees the database" "$STATUS_OUT" "Database exists: yes"
-# Plateau 4 (§E) makes status print `Install kind: package (mirror-mind@<version>)`;
-# the assertion joins this smoke there.
+# Plateau 4 (§E): the install, read from the layout with npm off this PATH,
+# and no repository graded for a package -- the cwd was read as a git tree
+# and its absence as an error, which left every package `attention needed`.
+contains "status names the install (no npm on this PATH)" "$STATUS_OUT" "Install: package (mirror-mind@"
+contains "status names the install root" "$STATUS_OUT" "Install root: $(cd "$PKG" && pwd -P)"
+contains "status grades no repository for a package" "$STATUS_OUT" "Repository: none (package install)"
+[ -z "$(printf '%s' "$STATUS_OUT" | grep '^Git status note:')" ] && ok "no git note for a package" || bad "a package was graded as a git tree"
 
 say "6. a database that needs migration 017, opened through the installed package"
 if [ -z "$REAL_SQLITE" ]; then

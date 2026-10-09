@@ -423,10 +423,13 @@ function migrateSummary(stdout: string): string {
   return match?.[1] ?? "completed";
 }
 
-/** Spawn the front door again, inheriting the environment explicitly. */
-export function frontDoorSpawner(cliPath: string, env: NodeJS.ProcessEnv): UpdateSpawn {
+/**
+ * Spawn the front door again, inheriting the environment explicitly. `entry`
+ * is the bin that loads it, not the `.ts` file: see the route's `spawner`.
+ */
+export function frontDoorSpawner(entry: string, env: NodeJS.ProcessEnv): UpdateSpawn {
   return (argv) => {
-    const result = spawnSync(process.execPath, [cliPath, ...argv], {
+    const result = spawnSync(process.execPath, [entry, ...argv], {
       encoding: "utf8",
       // A spawned front door does NOT inherit `--env-file`; the variables it
       // needs are passed explicitly or it resolves a different home than the
