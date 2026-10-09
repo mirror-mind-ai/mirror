@@ -36,15 +36,22 @@ node --no-warnings ts/smoke/builder_lifecycle_smoke.ts
 MEMORY_ENV=test node --no-warnings ts/smoke/extension_catalog_smoke.ts
 
 # The operational smokes.
-bash scripts/smoke_runtime_update.sh            # + runtime channel, + the clone post-update line
+bash scripts/smoke_runtime_update.sh            # plateau 4: the clone line both ways; section 6 is the package lane end to end, registry shadowed
 bash scripts/smoke_npm_package.sh               # new: pack → scratch install → init/seed/status → migrating open → runtime smokes
 for smoke in smoke_codex smoke_gemini_cli smoke_claude_plugin smoke_mirror_mcp; do
   bash "scripts/$smoke.sh" || break             # smoke_claude_plugin runs the plugin's hooks through mirror-hook on a scratch PATH
 done
 ```
 
-Expected: every command exits 0; `smoke_npm_package.sh` prints `passed: 64 failed: 0`
-(plateau 4 adds the install kind `package (mirror-mind@<version>)`; since plateau 3 the four
+Expected: every command exits 0; `smoke_runtime_update.sh` prints `passed: 86 failed: 0`
+(plateau 4: sections 3 and 3b grade the `npm link` line with and without a `mirror` on the
+PATH; section 6 installs a tarball into a scratch prefix and, through an `npm` shim that
+answers `root -g`, `view … dist-tags`, and `install -g <name>@<version>` from the smoke's own
+files, runs status, channel, `--check`, dry run, the real update through migrate and
+validate in fresh processes, and the refused downgrade — recording every npm call, so a
+`publish` or anything unscripted fails it); `smoke_npm_package.sh` prints `passed: 68
+failed: 0` (plateau 4 asserts `Install: package (mirror-mind@<version>)`, its `Install root:`,
+and `Repository: none (package install)` with npm off the PATH; since plateau 3 the four
 runtimes run against the installed wrappers and `mirror mcp`, sections 8–12), twelve seeded personas, a migrating open that
 applies `017` from the package location, and `no python, python3, or uv process was spawned`.
 `seed` inside it exits 1 by **F1** (the empty `ego/constraints` template), named in the smoke. CI runs the same set twice, the
@@ -64,7 +71,14 @@ second time with `python`, `python3`, and `uv` shadowed.
 | 3 | `ts/test/hooks/hookBin.test.ts` | `mirror-hook` on the shared loader shim; the hook entry reads the user's config file itself, from a tree with no `.env`; the plugin's wrappers copied out of the tree find `mirror-hook` on the `PATH` or through `MIRROR_BIN`, and with nothing anywhere exit 0 with one `hooks.log` line; the launcher copied out of the tree starts the server, or says why not on stderr |
 | 3 | `ts/test/runtime/wiring.test.ts`, `initCli.test.ts` | the per-runtime steps and their honest counts (1 / 1 / 2 / 2); `init` prints them for the runtimes on the `PATH` and only those |
 | 3 | `ts/test/mcp/launcher.test.ts` | a `.env` beside the plugin is NOT read (the launcher has no tree); the environment still reaches the server |
-| 4 | `ts/test/runtime/channel.test.ts` | `runtime channel` reads and writes the marker for a clone and the XDG file for a package; the post-update `npm link` line appears only for a clone with no `mirror` on the `PATH` |
+| 4 | `ts/test/runtime/update.test.ts` | the 15 US2 pipeline tests unchanged across the D-026 refactor; the repair lane's stages, what it skips, and its gate before capture; a channel behind the install refused at plan with the carrier named; a dist-tag value that is not a version refused before install; the `npm link` line for a successful clone only, while `mirror` is missing |
+| 4 | `ts/test/runtime/packageStrategy.test.ts` | `--check` for a package: `update_available`, `up_to_date`, `channel_behind` with `Next: runtime channel main`, `unresolved` with the reason; the channel's note travels |
+| 4 | `ts/test/runtime/channel.test.ts` | `runtime channel` reads and writes the clone marker and the package file beside the config (its directory created `0700`); normalization; refusal before any write; an unknown install has nowhere |
+| 4 | `ts/test/runtime/installKind.test.ts` | a package known by its layout with no npm probe; the layout alone is not enough (the prefix's bin must resolve into it); containment in npm's root still required when it is known, after resolving its symlinks; `renderInstallLines` |
+| 4 | `ts/test/runtime/status.test.ts`, `git.test.ts` | the `Install:` line in the two frozen goldens (hand-edited, 27 + 11); a package graded without git: `Repository: none (package install)`, verdict `ready`, the gate open |
+| 4 | `ts/test/runtime/release.test.ts` | `npm publish --dry-run --tag stable` before the tag, injected and recorded; a promotion dry run runs no npm; an artifact that cannot pack stops before any tag; `--push` still publishes nothing; the printed plan names both forms |
+| 4 | `ts/test/util/semver.test.ts`, `paths.test.ts` | one semver reader (the oracle's refusals sort below everything; the strict form a registry answer must take); `commandOnPath` as a shell's `command -v` |
+| 4 | `ts/test/db/schemaState.test.ts`, `migrateOnOpen.test.ts` | the newer-database refusal ends in `mirror runtime update` (item 12) |
 | 5 | `ts/test/guards/retiredSurfaces.test.ts` | the `frame-installer` row (if D4 retires) |
 
 ## E2E Decision
@@ -235,6 +249,24 @@ bash $R clean
 - **Step 5 passes** when the scratch mirror holds the session's `claude_code` turns with the
   marker, `journeys` and `mirror` ran through the install, `hooks.log` is empty, and no real
   mirror database holds a `claude_code` message with the marker.
+
+### Route 3e — the checkout's own updater surface, plateau 4
+
+Machine evidence carries plateau 4 (the package lane runs only where a scratch prefix and a
+shadowed registry exist). What the Navigator can see on this checkout, in one minute:
+
+```bash
+cd ~/dev/workspace/mirror-ts-core
+mirror runtime version | head -5          # Install: clone (<this path>)
+mirror runtime channel                    # Update channel: main, Source: <this path>/.mirror-update-channel
+mirror runtime channel beta; echo "exit=$?"   # Error: unknown channel "beta": choose stable or main, exit=2
+mirror runtime update --check | head -4   # the clone's check, unchanged
+npm run release:promote -- --target v0.31.14 --dry-run   # the doctor fails on this tree (no v0.31.14 note): expected
+bash scripts/smoke_runtime_update.sh | tail -3           # passed: 86   failed: 0
+```
+
+- Pass: the lines as commented; the smoke's `Result` line reads `passed: 86   failed: 0`.
+- Fail: `Install:` missing or `unknown`; a channel written for `beta`; a smoke check marked ✗.
 
 ### Route 4 — the capture replay, plateau 6
 

@@ -69,7 +69,7 @@ Codex uses the `$mm-` prefix. All runtimes call the same core.
 | `/mm-release-notes` | `$mm-release-notes` | `/mm:release-notes` | Shows Mirror Mind release notes | `[latest|vX.Y.Z]`, `pending` |
 | `/mm-update` | `$mm-update` | `/mm:update` | Updates the local Mirror runtime through the safe updater | no arguments |
 | `/mm-help` | `$mm-help` | `/mm:help` | Lists available commands | no arguments |
-| `mirror runtime` | — | — | Inspects Mirror runtime status, version, drift, backups, release notes, release promotion readiness, plans updates, and executes safe updates | `status [--mirror-home PATH] [--channel stable|main]`, `version [--start PATH] [--channel stable|main]`, `diagnose [--mirror-home PATH]`, `backup [--mirror-home PATH]`, `backup --verify PATH`, `release-notes [latest|vX.Y.Z]`, `release-notes pending [--from vX.Y.Z] [--ref REF] [--no-fetch]`, `migrate [--mirror-home PATH]`, `update --dry-run [--mirror-home PATH] [--channel stable|main]`, `update --check [--channel stable|main]`, `update [--no-fetch] [--skip-migrations] [--mirror-home PATH] [--channel stable|main]`, `update --repair-updater [--no-fetch] [--mirror-home PATH] [--channel stable|main]` |
+| `mirror runtime` | — | — | Inspects Mirror runtime status, version, drift, backups, release notes, release promotion readiness, plans updates, and executes safe updates | `status [--mirror-home PATH] [--channel stable|main]`, `version [--start PATH] [--channel stable|main]`, `diagnose [--mirror-home PATH]`, `backup [--mirror-home PATH]`, `backup --verify PATH`, `release-notes [latest|vX.Y.Z]`, `release-notes pending [--from vX.Y.Z] [--ref REF] [--no-fetch]`, `migrate [--mirror-home PATH]`, `update --dry-run [--mirror-home PATH] [--channel stable|main]`, `update --check [--channel stable|main]`, `update [--no-fetch] [--skip-migrations] [--mirror-home PATH] [--channel stable|main]`, `update --repair-updater [--no-fetch] [--mirror-home PATH] [--channel stable|main]`, `channel [stable|main]` |
 | `mirror conversation-logger` | — | — | Runtime conversation logging and repair utilities | `discard-current [--interface pi] [--session-id ID]`, `repair-journeys [--limit N] [--apply]` |
 | `ext-review-copy` | — | `ext:review-copy` | External multi-LLM copy review skill; install and expose it before use | skill-driven workflow |
 
@@ -253,7 +253,7 @@ Each command exits non-zero when state is not safe enough for the next step.
 mirror runtime status [--mirror-home PATH] [--channel stable|main]
 ```
 
-Reports version, repository, git state, mirror home, database, core migration health, installed extensions, extension health, clone role, update channel, Node version, and environment. Exits `attention needed` when the git tree is dirty, the mirror home is not configured, core migrations are missing or unknown, or installed extension migrations are pending, drifted, or unknown.
+Reports version, how Mirror is installed (`Install: clone (<path>)`, or `Install: package (mirror-mind@<version>)` with its `Install root:`), repository and git state for a clone (`Repository: none (package install)` for a package, which is not graded as a git tree), mirror home, database, core migration health, installed extensions, extension health, clone role, update channel, Node version, and environment. Exits `attention needed` when the git tree is dirty, the mirror home is not configured, core migrations are missing or unknown, or installed extension migrations are pending, drifted, or unknown. The install kind is read from where the front door lives, with nothing spawned: a checkout by its `.git`, a package by the global layout (`<prefix>/lib/node_modules/mirror-mind` with `<prefix>/bin/mirror` linked into it).
 
 #### `runtime version`
 
@@ -261,7 +261,7 @@ Reports version, repository, git state, mirror home, database, core migration he
 mirror runtime version [--start PATH] [--channel stable|main]
 ```
 
-Reports the installed version, repository, branch, commit, clone role, and update channel. Local and offline. `--start` inspects a repository from a chosen path instead of the current working directory.
+Reports the installed version, the install (as `runtime status` does), repository, branch, commit, clone role, and update channel. Local and offline. `--start` inspects a repository from a chosen path instead of the current working directory; the install is where the front door lives regardless of `--start`.
 
 #### `runtime diagnose`
 
@@ -288,9 +288,11 @@ A backup archive holds one member, `memory.db`: a consistent snapshot of the dat
 mirror runtime update --check [--channel stable|main]
 ```
 
-Queries the configured upstream branch through `git ls-remote`. May contact the network, but does not fetch, pull, change refs, back up, migrate, or modify files. Reports `up_to_date`, `update_available`, `local_ahead`, `diverged`, `no_upstream`, or `unknown`.
+For a clone, queries the configured upstream branch through `git ls-remote`. May contact the network, but does not fetch, pull, change refs, back up, migrate, or modify files. Reports `up_to_date`, `update_available`, `local_ahead`, `diverged`, `no_upstream`, or `unknown`.
 
 On the `stable` channel, this check remains intentionally conservative: it can know a remote commit is available, but it does not fetch release-note files. When release details are not already available from local refs, the output says so and points to the preview and update commands.
+
+For a package, asks the registry for the package's dist-tags (`npm view mirror-mind dist-tags`) and reports the installed version, the channel's version, and the availability: `up_to_date`, `update_available`, `channel_behind` (the channel's version is lower than the installed one — a downgrade, which `runtime update` refuses because migrations do not run backwards; the check names the channel that carries the installed version), or `unresolved` (no registry, no such tag, or a tag whose value is not a plain version). Nothing is installed.
 
 #### `runtime update --dry-run`
 
@@ -301,6 +303,15 @@ mirror runtime update --dry-run [--channel stable|main]
 Plans an update from local refs only. Reuses `runtime status` as the safety gate. Reports whether a real update would be a no-op, pull known remote commits, or require manual reconciliation because the branch is ahead, diverged, dirty, or missing an upstream. Does not contact the network.
 
 When the channel is `stable` and the local upstream ref contains release notes newer than the installed version, the dry-run shows a release-aware notice with version, title, digest, and the concrete preview/update commands. If release notes are unavailable locally, the dry-run falls back to commit-oriented wording.
+
+#### `runtime channel`
+
+```bash
+mirror runtime channel
+mirror runtime channel stable|main
+```
+
+Shows the channel this install follows, with its source, or sets it. The file is the install kind's own: a clone's `.mirror-update-channel` at the checkout root (gitignored, so the tree stays clean), a package's `update-channel` beside the user's config file (`${XDG_CONFIG_HOME:-~/.config}/mirror/`, created `0700` if `init` has not run). Anything other than `stable` or `main` is refused with exit 2 and nothing is written; an install the updater cannot identify has nowhere to keep a channel and says so with exit 1. Setting the channel does not update: it decides what the next `runtime update` follows.
 
 ### Release notes
 
@@ -347,7 +358,7 @@ npm run release:promote -- --target vX.Y.Z
 npm run release:promote -- --target vX.Y.Z --push
 ```
 
-Promotes a release to the stable channel through a controlled path. The command runs the release doctor first and blocks on failures. Dry-run prints planned stages without creating tags, moving branches, or pushing. Local promotion creates the missing target tag at `HEAD` or reuses an existing tag already at `HEAD`, then creates or fast-forwards the local `stable` branch to `HEAD`. Remote publication happens only with `--push`, which pushes the tag and stable branch to `origin`. The command does not fetch, force-push, rewrite existing tags, bump versions, write release notes, create GitHub Releases, back up, migrate, or update production clones.
+Promotes a release to the stable channel through a controlled path. The command runs the release doctor first and blocks on failures, then runs `npm publish --dry-run --tag stable` **before the tag**: it packs the tree and reports what would be published, reaches no registry (npm warns that a login would be needed and stops there), and a tarball that cannot be built stops the promotion before a tag exists for it. Dry-run prints planned stages without creating tags, moving branches, pushing, or running npm at all. Local promotion creates the missing target tag at `HEAD` or reuses an existing tag already at `HEAD`, then creates or fast-forwards the local `stable` branch to `HEAD`. Remote publication happens only with `--push`, which pushes the tag and stable branch to `origin`. The last step is always a printed plan for the npm publication — `npm publish --tag stable`, or `npm dist-tag add mirror-mind@<version> stable` for a version already on the registry — which the command never runs: publication is a separate gate. The command does not fetch, force-push, rewrite existing tags, bump versions, write release notes, create GitHub Releases, publish to npm, back up, migrate, or update production clones.
 
 After `npm run release:promote -- --push` succeeds and CI is green, publish the matching GitHub Release on the same tag:
 
@@ -387,7 +398,7 @@ running.
 8. **migrate** — spawns `runtime migrate` in a **fresh process**, so the code that migrates is the code that was just installed, and prints the `_migrations` ledger before and after. Skipped with `--skip-migrations`.
 9. **post-update status** — reruns `runtime status` in a fresh process and expects `ready`.
 
-Failures print a recovery block with the backup path and previous commit when relevant. Successful installs that move to a new commit include an `Installed changes` summary generated from `git log <previous>..<new>`. On the `stable` channel, successful installs also include an `Installed release` block when the new checkout contains narrative release notes. The pipeline does not roll back automatically: recovery is documented manual work.
+Failures print a recovery block with the backup path and previous commit when relevant. For a package, `plan` also refuses a channel whose version is **lower** than the installed one: migrations do not run backwards, so a downgrade is not an update, and the refusal names the channel that carries the installed version (`runtime channel main`). After a successful clone update, when `mirror` does not resolve on the `PATH`, one last line names `npm link` at the repository root: every skill says `mirror`, and a checkout provides it only after that. Successful installs that move to a new commit include an `Installed changes` summary generated from `git log <previous>..<new>`. On the `stable` channel, successful installs also include an `Installed release` block when the new checkout contains narrative release notes. The pipeline does not roll back automatically: recovery is documented manual work.
 
 If the status gate crashes before update planning, `runtime update` automatically falls back to updater self-repair. The repair lane uses a minimal safety gate — readable checkout, clean tree, configured upstream, optional fetch — applies a fast-forward-only code update, and skips migrations, which the next ordinary update owns. It then asks the user to rerun `runtime update` with the repaired updater. The same lane can be invoked explicitly with `runtime update --repair-updater`. Older production clones whose updater is blocked before they receive the latest recovery behavior may need this explicit repair lane once.
 
@@ -511,34 +522,28 @@ See [Runtime Repair Policy](docs/process/runtime-repair-policy.md) and [Decision
 
 ### Update channel
 
-Each clone declares its update channel through `.mirror-update-channel`. Valid values are `stable` and `main`; missing, unreadable, or unknown values default to `stable`.
+Each install declares its update channel: a clone through `.mirror-update-channel` at the checkout root, a package through `update-channel` beside the user's config file. `mirror runtime channel [stable|main]` shows or sets it for either kind. Valid values are `stable` and `main`; missing, unreadable, or unknown values default to `stable`.
 
 - `stable` is the user-facing release channel.
 - `main` is the integration/dogfooding channel.
 - A push to `main` is not a release.
 - `stable` advances only through release promotion after versioning, release notes, CI, smoke validation, tagging, fast-forward, and GitHub Release publication.
 
-Change a clone to stable releases:
+Change to stable releases:
 
 ```bash
-printf 'stable\n' > .mirror-update-channel
-mirror runtime version
+mirror runtime channel stable
 mirror runtime update --check
 ```
 
-Change a clone to dogfooding/main:
+Change to dogfooding/main:
 
 ```bash
-printf 'main\n' > .mirror-update-channel
-mirror runtime version
+mirror runtime channel main
 mirror runtime update --check
 ```
 
-Remove the marker to return to the safe default (`stable`):
-
-```bash
-rm .mirror-update-channel
-```
+Remove the file (`rm .mirror-update-channel` in a clone) to return to the safe default (`stable`). A package install that switches from `main` to `stable` before `stable` has caught up sees `channel_behind` on `--check`, and `runtime update` refuses the downgrade.
 
 The local git branch and the update channel are related but not identical. A checkout may report `Git branch: main` and `Update channel: stable`. In that state, `runtime update` still compares and fast-forwards against `origin/stable`; the channel controls the update target even if the local branch name remains `main`.
 

@@ -8,7 +8,8 @@ ai-engineer, product-designer, experience-designer) found six things, the sharpe
 the operating instructions did not ship in the tarball; all six folded, and the Plan
 **approved by the Navigator on 2026-10-05 with D1–D13**; D14 and D15 taken during plateau 1.
 Plateaus 0 and 1 done the same day; plateau 2 validated 2026-10-06; plateau 3 implemented
-2026-10-06 and validated by the Navigator 2026-10-09.
+2026-10-06 and validated by the Navigator 2026-10-09; plateau 4 implemented 2026-10-09,
+after a persona-panel review of its plan whose three findings it took.
 **Type:** User Story
 **Depends on:** every other DS10 story (done); the release gate (done 2026-09-28).
 
@@ -298,21 +299,83 @@ home (D14); the `mirror` bin is a type-stripping loader shim (D15).
     and it changes whom the text names, not what the skill does.
   - After the route the Navigator ran `npm link`; `mirror-hook` is now linked.
 
+- **Plateau 4 — updater and release tooling (implemented 2026-10-09, nine commits
+  `895bef57`..`c503b590`; machine-validated; route 3e for the Navigator).** Before the first
+  test, the plateau's plan was reviewed by the baseline panel (quality-assurance drafting;
+  engineer, devops-engineer, security-engineer, database-architect dissenting) and took
+  three findings as additions inside §E: **a channel can lie behind the install** (the
+  database-architect: migrations run one way, and `runtime channel stable` on a `main`
+  install would have installed a lower version and then refused at the post-update status
+  on a database the old code already owned — now refused at plan, before any backup, naming
+  the channel that carries the installed version); **a dist-tag answer is an `npm install`
+  spec** (the security-engineer: a tag, range, URL, or path there installs something other
+  than a version — refused before it is printed or used, one strict regex, the same parse
+  the direction check needs); and **install detection must not need npm where status is
+  read** (the devops-engineer: GUI-launched runtimes and the package smoke keep npm off the
+  PATH, so `Install:` would have read `unknown` on the one line a person uses to pick
+  `npm install -g` over `git pull` — a package is known by its layout, `<prefix>/lib/
+  node_modules/<name>` with `<prefix>/bin/<bin>` resolving into it; the update lane still
+  asks `npm root -g` for npm's own word). The engineer shaped the refactor: the strategy
+  owns its apply stage's name, ref label, and recovery; the lane is a list of steps chosen
+  once. Done, in §E's order:
+  - **D-026 paid.** `update.ts` is one body over two `ApplyStrategy` implementations, the
+    seam declared beside the stage vocabulary; the repair lane is the ordinary lane minus the
+    gate, the backup, and the migration, its gate the strategy's own and run before capture;
+    the 15 US2 tests and the update smoke passed unchanged, and the repair lane gained the
+    unit tests it never had.
+  - **`--check` for a package** asks the registry the plan stage's question and renders its
+    own report (`up_to_date`, `update_available`, `channel_behind`, `unresolved`); until now
+    it ran `ls-remote` on the cwd for every install kind. One semver reader replaced three
+    copies (release notes, the welcome card, now the strategy).
+  - **D9, D-027 paid.** `runtime channel [stable|main]` shows or sets the channel in the
+    install kind's own file; the config directory it may create is `0700` as `init`'s is;
+    an unknown value is refused before a byte is written. One vocabulary for both kinds, in
+    the pipeline module; `channelFor` is the one read.
+  - **The install in `status` and `version`** (US2 D3), `Install:` and a package's `Install
+    root:`; two frozen goldens hand-edited by script (27 + 11 renders, README row).
+  - **The clone seam.** After a successful clone update, when `mirror` is off the PATH, one
+    pasteable line names `npm link` at the repository root (the CR104 guard caught the path
+    printed raw; it goes through `shellWord`). `commandOnPath` replaced three PATH walks.
+  - **Item 12.** The newer-database refusal ends in `run: mirror runtime update`.
+  - **`release:promote`** runs `npm publish --dry-run --tag stable` before the tag (the
+    artifact proven before history moves; nothing reaches the registry) and prints the
+    publication as its last step, never run under `--push` or without it; a promotion dry run
+    runs no npm. Two execute-mode tests had been running the real npm for 1.6 s each.
+  - **The smokes.** `smoke_runtime_update.sh` grades the `npm link` line both ways and runs
+    the package lane end to end (86 checks); `smoke_npm_package.sh` asserts the install line
+    (68 checks).
+  **Three defects the package lane found, each fixed with a unit test first:** (1) **a
+  package could never update** — `runtime status` graded the cwd as a git tree, read "not a
+  git repository" as a git error, said `attention needed`, and the gate refused; a package
+  reports no repository now, and neither the verdict nor the gate hold its absence against
+  it; (2) **a package's update installed the new version and crashed at migrate** — the
+  fresh-process migrate and validate spawned `cli.ts`, which Node will not type-strip under
+  `node_modules` (D15's reach, again); the spawner runs `bin/mirror.js`; (3) **a symlinked
+  prefix read as not under npm's root** — the front door's path was resolved and `npm root
+  -g`'s answer was not (`/tmp` on macOS); both sides are resolved. **Left as found:**
+  `smoke_claude_plugin.sh`'s "mirror-hook gone" case fails on this machine since the
+  Navigator's `npm link` on 2026-10-09 (the wrapper's global-bin fallback finds the linked
+  `mirror-hook`), at `d11f5698` as much as now; CI has no global link. A smoke that
+  isolates the global bin directories is a small CR, not this plateau's. One pre-existing
+  Biome warning (`launcher.test.ts`, an unused import) stands. For the release gate, from
+  the security lens: the real `npm publish` should run with `--provenance` and a granular
+  token; the printed plan names the command, not the credentials. Verified: typecheck,
+  lint, 3042 tests, the five repository checks, the custody proofs, all six smokes (the
+  plugin smoke as above). Next: route 3e by the Navigator, then plateau 5 (§F).
+
 ## Where To Resume
 
 Read the [plan](plan.md) (D1–D15 approved and recorded) and the *Plateau Progress* above.
 - **Plateaus 0, 1, 2, and 3 are done and validated.** Plateau 3 was validated by the
-  Navigator on 2026-10-09.
+  Navigator on 2026-10-09. **Plateau 4 is implemented and machine-validated** (2026-10-09);
+  the Navigator's route 3e in the test guide is one minute on this checkout.
 - **The Ariad cursor** is at `implement` for CV22.DS10.US3 under the approved Plan.
 
-**Next: plateau 4 (§E):**
-- D-026 paid (one updater pipeline body, two apply strategies);
-- `mirror runtime channel [stable|main]` per install kind (D9);
-- the install kind in `runtime status`/`version`;
-- the clone post-update `npm link` line;
-- the newer-database refusal naming `mirror runtime update` (item 12);
-- `release:promote`'s dry-run publish steps;
-- `smoke_runtime_update.sh` extended.
+**Next: plateau 5 (§F):** D4 — record how many people installed the Inno Setup artifact
+(release assets' download counts and the Navigator's knowledge), then the Frame and the
+installer retire with a cutoff or are re-homed; the `frame-installer` row in
+`checkRetiredSurfaces.ts`; the nine `python-core-mentions` exemptions; the Windows workflow;
+the pack guard's Python forms as the artifact half of the Zero Python gate.
 
 **Open for the Navigator:**
 - F1 (the empty `ego/constraints` template makes a fresh `seed` exit 1);
