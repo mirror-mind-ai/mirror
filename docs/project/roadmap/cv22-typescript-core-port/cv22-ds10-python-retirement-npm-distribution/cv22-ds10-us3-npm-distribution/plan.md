@@ -555,6 +555,13 @@ The test guide carries the commands. In outline:
    **Amended 2026-10-05 (second panel pass):** plateau 5 records how many people installed
    the artifact before deleting it; with none, the cutoff promises no Windows story; with
    some, the cutoff and the release note address them.
+   **Recorded 2026-10-09 (plateau 5, first act):** two releases ever carried the Inno Setup
+   artifact — `MirrorMind-Setup-0.30.0.exe` on v0.30.0 (1 download, 2026-07-05) and
+   `MirrorMind-Setup-0.31.0.exe` on v0.31.8 (2 downloads, 2026-08-07; the asset's name
+   never matched its release) — three downloads in total, none since August, read from the
+   GitHub release assets with `gh api`. The Navigator knows of nobody running the Windows
+   Frame. **Zero known users: the cutoff promises no Windows story**, and the release note
+   need address no one by name.
 5. **D5 — Two bins, two wrapper forms.** `mirror-hook` for the hook entry; in-tree
    wrappers keep `$BASH_SOURCE`, the plugin's find the bin. Alternative: a `mirror hook`
    front-door route — puts a runtime entry in the user's usage and three lines per turn in
