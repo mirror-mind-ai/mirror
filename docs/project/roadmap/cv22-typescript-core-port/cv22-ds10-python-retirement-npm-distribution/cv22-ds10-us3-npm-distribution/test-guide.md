@@ -257,6 +257,13 @@ diff tmp/us3/before.tsv tmp/us3/after.tsv && echo IDENTICAL
   are in the story index's plateau-2 record. Observed: the agent without `mirror` improvised
   onto `node bin/mirror.js`, the sanctioned entry; the D13 prompt answered under `◇ financial`;
   Builder load stopped at the boundary; Pi loaded the package extension once.
-- Route 3: steps 1–3 run by the Builder on 2026-10-08 (12/12, 12/12, 7/7); step 5's logic proven
-  on a simulated session (its hooks fired in step 4's exact environment, no model). Steps 1–5 by the
-  Navigator: pending. Route 4: pending plateau 6.
+- **Route 3 — walked by the Navigator on 2026-10-09, all passed.** Steps 1–3 gave 12/12, 12/12, 7/7.
+  Step 4, the Claude Code session:
+  - "list my journeys" showed only `personal-growth`, from the scratch install;
+  - the pricing question entered Mirror Mode unasked, under `◇ financial` (D13).
+
+  Step 5 gave 7/7: the turns are in the scratch home, there is no `hooks.log`, the real homes
+  are untouched, and the transcript carries the Operating Instructions. The Builder had run
+  steps 1–3 and simulated step 5 on 2026-10-08. Findings F2–F4 are in the story index; F2 and
+  F3 became CR120 and CR121.
+- Route 4: pending plateau 6.

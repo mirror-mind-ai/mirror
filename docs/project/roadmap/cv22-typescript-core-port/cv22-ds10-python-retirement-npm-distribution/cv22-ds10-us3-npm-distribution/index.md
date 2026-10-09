@@ -8,7 +8,7 @@ ai-engineer, product-designer, experience-designer) found six things, the sharpe
 the operating instructions did not ship in the tarball; all six folded, and the Plan
 **approved by the Navigator on 2026-10-05 with D1–D13**; D14 and D15 taken during plateau 1.
 Plateaus 0 and 1 done the same day; plateau 2 validated 2026-10-06; plateau 3 implemented
-2026-10-06, its Navigator route (3b–3d) pending.
+2026-10-06 and validated by the Navigator 2026-10-09.
 **Type:** User Story
 **Depends on:** every other DS10 story (done); the release gate (done 2026-09-28).
 
@@ -232,40 +232,92 @@ home (D14); the `mirror` bin is a type-stripping loader shim (D15).
   ("skills under /mm:" — how Claude Code names a plugin's skills is unconfirmed; step 4 asks the
   Navigator to note it). **Two findings, from simulating step 4's environment (real `HOME` for
   Claude's login, scratch Mirror home):**
-  - **F2 — the Pi backfill aborts Claude Code and Gemini CLI session start.** The full
-    `conversation-logger session-start` the Claude and Gemini SessionStart hooks run includes
-    maintenance (close stale, **backfill Pi sessions**, retitle, extract). The backfill throws
-    `UNIQUE constraint failed: messages.id` and the rest never runs. Not hypothetical: the
-    Navigator's real `vinicius-ts` `hooks.log` holds **9** of these, every Claude Code and Gemini
-    CLI session start since 2026-09-24 (the last two on 2026-10-05), so retitling and extraction
-    have not run from those runtimes there; Pi starts with `--fast` and is unaffected.
-    Pre-existing (the backfill is the Python-era port); visible only since TS5 put hook
-    failures in `hooks.log`, and `runtime diagnose` reports it. Cause not yet established — a
-    Pi session whose entries reuse ids already stored (a fork, or a session the extension
-    logged live) is the likely shape. Not fixed here: a CR for the Navigator.
-  - **F3 — on an install from nothing, the first non-Pi session start imports the person's whole
-    Pi history.** Reproduced: a fresh home received 430 Pi conversations, 26,036 messages,
-    before F2 stopped it; with F2 fixed and a key present, extraction would then spend on them,
-    budgeted per run. For a clone user that history is already tracked; for an npm user who
-    used Pi before Mirror it is a first-run surprise (pre-Mirror chats become Mirror
-    conversations). CR106's class, widened from Pi to every runtime that runs full
-    maintenance. A product decision for the Navigator (keep, ask first, or only sessions after
-    `init`); route 3 pins `PI_SESSIONS_DIR` to a scratch directory so it cannot happen there.
+  - **F2 → [CR120](../../../../refinement/rs010-cv22-oracle-and-port-hygiene/cr120-a-failed-pi-session-import-aborts-the-rest-of-session-maintenance.md):
+    one failed Pi session import aborts the rest of session maintenance.** The full
+    `conversation-logger session-start` that the Claude and Gemini SessionStart hooks run, like
+    Pi's background `session-maintenance`, backfills untracked Pi sessions and then retitles and
+    extracts. The backfill catches only a parse error, so an insert that throws
+    (`UNIQUE constraint failed: messages.id`) ends the loop and every step after it. The
+    Navigator's real `vinicius-ts` `hooks.log` holds 9 such lines between 2026-09-24 and
+    2026-10-05 (5 Claude Code, 4 Gemini CLI session starts); a successful start leaves no line,
+    so the failure *rate* is unknown. *Corrected 2026-10-09:* the first version of this record
+    said every session start in that period failed, which 9 lines cannot show, and guessed at
+    reused ids. Each backfilled message draws a fresh random 32-bit id, so the collision is
+    [CR097](../../../../refinement/rs010-cv22-oracle-and-port-hygiene/cr097-new-ids-are-32-bits-because-the-oracle-s-were.md)'s mechanism; CR120
+    is about its cost. Captured 2026-10-09 at the Navigator's direction.
+  - **F3 → [CR121](../../../../refinement/rs010-cv22-oracle-and-port-hygiene/cr121-a-new-home-s-first-maintenance-imports-the-whole-pi-history.md):
+    a new home's first maintenance run imports the person's whole Pi history**, in Pi's
+    background maintenance as much as in Claude Code's and Gemini CLI's SessionStart hooks.
+    *Corrected 2026-10-09:* the first version said "the first non-Pi session start";
+    [CR106](../../../../refinement/rs010-cv22-oracle-and-port-hygiene/cr106-a-pi-session-in-a-scratch-mirror-home-copies-the-whole-pi-history-into-it.md)
+    shows Pi's own maintenance does it. Reproduced: a fresh home received 430 Pi conversations
+    (26,036 messages) before F2 stopped it; with a key, extraction would then spend on them.
+    For a clone user that history is already tracked; for an npm user who used Pi before Mirror
+    it is a silent first-run import. A product decision: keep it, ask first, or import only
+    sessions newer than the home. CR106's behavior option would close both. Route 3 pins
+    `PI_SESSIONS_DIR` to an empty directory. Captured 2026-10-09 at the Navigator's direction.
+- **Plateau 3 validated by the Navigator, 2026-10-09** ([route 3](route3.sh), steps 1–5:
+  12/12, 12/12, 7/7, the session, 7/7).
+  - **Step 4, a real Claude Code session on the scratch install.**
+    - A plain "list my journeys" loaded `mirror-mind:mm-journeys`, ran `mirror journeys`
+      from the install, and showed only `personal-growth`.
+    - The pricing question entered Mirror Mode unasked and answered under
+      **`◇ financial`**. That signature format exists only in the Operating Instructions,
+      which reached the session through the plugin's SessionStart hook (D13).
+  - **Step 5.** The turns are in the scratch home; there is no `hooks.log`; the real homes
+    hold nothing from the session. The session's own transcript carries the Operating
+    Instructions, so Claude Code 2.1.283 records hook context there.
+  - **How Claude Code names a plugin's skills** (step 4's question, read from the Navigator's
+    screenshots):
+    - the slash menu shows `/mirror-mind:mm:journeys`, `/mirror-mind:mm:mirror`, …: the
+      plugin's name, then each skill's own `name`;
+    - typing `/mm` lists them all;
+    - the model's tool calls use `mirror-mind:mm-journeys`.
+
+    `AGENTS.md`, getting-started, and REFERENCE say `/mm:<skill>` for Claude Code. That
+    holds in the checkout, not for a plugin install: a plateau-6 docs item.
+  - **The answer addressed the Navigator by name, yet the name did not come from Mirror.**
+    The scratch identity names `route3`, and nothing the session loaded from the package names
+    him: `AGENTS.md`, `mm-journeys`, `mm-mirror`, the skill descriptions, and the scratch
+    identity.
+  - **F4 — two shipped skills address the author.** `mm-consolidate` and `mm-shadow` carry
+    three lines naming Vinícius, in the Pi source and the plugin copy alike:
+    - "Present each proposal to Vinícius";
+    - "the mirror has an across-conversation view that Vinícius doesn't";
+    - "Present each observation to Vinícius".
+
+    An npm user's agent would be told to present to someone else. It is pre-existing, and
+    changing a skill's text is a plan non-goal, so it waits for the Navigator: fold it into
+    plateau 5's artifact claim with a pack-guard line, or capture a CR. `LICENSE` and
+    `README.md` naming the author is expected.
+  - After the route the Navigator ran `npm link`; `mirror-hook` is now linked.
 
 ## Where To Resume
 
-Read the [plan](plan.md) (D1–D15 approved and recorded) and the *Plateau Progress* above:
-plateaus 0, 1, and 2 are done and validated; plateau 3 is implemented and its machine route
-(3a) passed; the Ariad cursor is at `implement` for CV22.DS10.US3 under the approved Plan.
-**Next: the Navigator runs [`route3.sh`](route3.sh) steps 1–5 (before `npm link`), and decides F2
-and F3; then plateau 4 (§E)**:
-D-026 paid (one updater pipeline body, two apply strategies); `mirror runtime channel
-[stable|main]` per install kind (D9); the install kind in `runtime status`/`version`; the clone
-post-update `npm link` line; the newer-database refusal naming `mirror runtime update` (item
-12); `release:promote`'s dry-run publish steps; `smoke_runtime_update.sh` extended. Two
-Navigator options wait in the plateau-3 record (a Gemini extension; Codex hooks). Working state
-to know: the developer machine has `npm link` in place (`mirror` → this checkout; re-run it once
-so `mirror-hook` links too — two `hookBin` tests skip while a global `mirror`/`mirror-hook`
-exists in a candidate dir, by design); the plateau-0 capture lives in `tmp/us3/before.tsv`
-(gitignored) for plateau 6's replay; F1 (empty `ego/constraints` template makes a fresh `seed`
-exit 1) is open for the Navigator.
+Read the [plan](plan.md) (D1–D15 approved and recorded) and the *Plateau Progress* above.
+- **Plateaus 0, 1, 2, and 3 are done and validated.** Plateau 3 was validated by the
+  Navigator on 2026-10-09.
+- **The Ariad cursor** is at `implement` for CV22.DS10.US3 under the approved Plan.
+
+**Next: plateau 4 (§E):**
+- D-026 paid (one updater pipeline body, two apply strategies);
+- `mirror runtime channel [stable|main]` per install kind (D9);
+- the install kind in `runtime status`/`version`;
+- the clone post-update `npm link` line;
+- the newer-database refusal naming `mirror runtime update` (item 12);
+- `release:promote`'s dry-run publish steps;
+- `smoke_runtime_update.sh` extended.
+
+**Open for the Navigator:**
+- F1 (the empty `ego/constraints` template makes a fresh `seed` exit 1);
+- F4 (two shipped skills address the author);
+- CR121's release relevance;
+- the two plateau-3 options (a Gemini extension; Codex hooks).
+
+**Working state:**
+- `npm link` is in place: `mirror` and `mirror-hook` point at this checkout. Two
+  `hookBin` tests skip while a global `mirror`/`mirror-hook` exists in a candidate
+  directory, by design.
+- The plateau-0 capture lives in `tmp/us3/before.tsv` (gitignored) for plateau 6's replay.
+- Plateau 6 also owns the Claude Code skill naming (`/mirror-mind:mm:<skill>` for a plugin
+  install).
