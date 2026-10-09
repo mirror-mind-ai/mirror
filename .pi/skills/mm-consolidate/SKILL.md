@@ -55,7 +55,7 @@ Each proposal is printed and stored with `status='pending'`.
 
 ---
 
-## 2. Present each proposal to Vinícius
+## 2. Present each proposal to the user
 
 For each proposal, show:
 - The source memories (title, type, date)

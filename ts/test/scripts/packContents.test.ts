@@ -1,11 +1,12 @@
 // CV22.DS10.US3 plateau 1 -- the tarball is checked, not trusted.
 
 import assert from "node:assert/strict";
-import { resolve } from "node:path";
+import { readFileSync } from "node:fs";
+import { join, resolve } from "node:path";
 import test from "node:test";
 
-import { checkPackContents, REQUIRED_FILES } from "#guards/packContents.ts";
-import { packInventory } from "../../scripts/checkPackContents.ts";
+import { checkPackContents, checkPackedContent, REQUIRED_FILES } from "#guards/packContents.ts";
+import { packedContents, packInventory } from "../../scripts/checkPackContents.ts";
 
 const REPO_ROOT = resolve(import.meta.dirname, "..", "..", "..");
 
@@ -87,11 +88,46 @@ test("the manifest is graded: name, private, files, bin, and install lifecycle s
   ]);
 });
 
+test("a shipped file that names the author is named, by file and line; LICENSE and README may", () => {
+  // US3 F4: two skills told every user's agent to "present each proposal to
+  // Vinícius". Whatever ships is read by whoever installed Mirror, so it
+  // addresses them, never its first owner. The author is credited where that
+  // is the point: the license and the README.
+  const problems = checkPackedContent([
+    {
+      path: ".pi/skills/mm-shadow/SKILL.md",
+      content: "intro\n## 3. Present each observation to Vinícius\n",
+    },
+    { path: "plugins/mirror-mind/skills/mm-consolidate/SKILL.md", content: "Ask Vinicius first\n" },
+    { path: "LICENSE", content: "Copyright (c) Vinícius Teles\n" },
+    { path: "README.md", content: "Created by Vinícius\n" },
+    { path: "AGENTS.md", content: "Present each proposal to the user.\n" },
+  ]);
+  assert.deepEqual(
+    problems.map((p) => `${p.code}:${p.message.split(": ")[0]}`),
+    [
+      "forbidden_content:.pi/skills/mm-shadow/SKILL.md:2",
+      "forbidden_content:plugins/mirror-mind/skills/mm-consolidate/SKILL.md:1",
+    ],
+  );
+  assert.match(problems[0]?.message ?? "", /names the author/);
+});
+
+test("the rule cannot trip on its own source, which ships in the tarball", () => {
+  const source = readFileSync(join(REPO_ROOT, "ts/src/guards/packContents.ts"), "utf8");
+  assert.deepEqual(
+    checkPackedContent([{ path: "ts/src/guards/packContents.ts", content: source }]),
+    [],
+  );
+});
+
 test("this repository packs clean", () => {
   // The one test that runs npm: a dry run, nothing written. It is what CI
   // runs, so a change to `files` that leaks a test or a database fails here
-  // before it fails there.
+  // before it fails there -- and so does a shipped file that carries what no
+  // shipped file may.
   const inventory = packInventory(REPO_ROOT);
   assert.ok(inventory.files.length > 300, `only ${inventory.files.length} files packed`);
   assert.deepEqual(checkPackContents(inventory), []);
+  assert.deepEqual(checkPackedContent(packedContents(REPO_ROOT, inventory.files)), []);
 });

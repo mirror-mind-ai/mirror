@@ -23,7 +23,7 @@ node ts/scripts/checkRetiredSurfaces.ts
 node ts/scripts/checkDocLinks.ts
 node ts/scripts/checkSkillCommandParity.ts      # now also: no checkout invocation in any skill copy
 node ts/scripts/buildClaudePlugin.ts --check
-node ts/scripts/checkPackContents.ts            # new: the tarball holds the runtime subset and nothing else
+node ts/scripts/checkPackContents.ts            # new: the tarball holds the runtime subset and nothing else; no shipped file names the author (F4)
 bash scripts/generate_hook_wrappers.sh --check  # renamed from scripts/ts5/ (item 10)
 
 # Custody proofs and the end-to-end smokes, unchanged.

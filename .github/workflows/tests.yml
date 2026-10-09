@@ -119,8 +119,10 @@ jobs:
       # runtime subset and nothing else -- no test, golden, smoke, scratch,
       # environment file, database, Python, or Windows product -- and the
       # manifest must declare no install lifecycle script. Installing Mirror
-      # is a file copy.
-      - name: Pack contents (the tarball is the runtime subset, with no install script)
+      # is a file copy. Content is graded too: no shipped file may name the
+      # author outside LICENSE and README (US3 F4), since every user's agent
+      # reads the skills.
+      - name: Pack contents (the runtime subset, no install script, no forbidden content)
         run: node ts/scripts/checkPackContents.ts
 
       # The custody proof (CV22.DS10.TS5, the panel's blocking amendment). Both

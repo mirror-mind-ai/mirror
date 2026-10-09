@@ -110,9 +110,43 @@ export interface PackInventory {
   readonly manifest: PackManifest;
 }
 
+/**
+ * What no shipped file may say, wherever it sits. Paths are graded above; this
+ * grades content, because a file can be in the runtime subset and still carry
+ * something that must not reach another person's machine.
+ *
+ * The runtime subset is read by whoever installed Mirror -- their agent loads
+ * the skills and AGENTS.md -- so it addresses them, never the mirror's first
+ * owner. US3 F4 found two skills telling every user's agent to present its
+ * proposals to the author by first name. The author is credited where that is
+ * the point, the license and the README.
+ *
+ * The pattern is written so that this file, which ships too, never matches it.
+ * Plateau 5 adds the Python invocation forms here (the artifact half of the
+ * Zero Python gate).
+ */
+export const FORBIDDEN_CONTENT: readonly {
+  pattern: RegExp;
+  why: string;
+  allowedIn: readonly string[];
+}[] = [
+  {
+    pattern: /Vin[ií]cius/i,
+    why: "names the author; shipped instructions address whoever installed Mirror",
+    allowedIn: ["LICENSE", "README.md"],
+  },
+];
+
+/** One shipped file, as the content check reads it. */
+export interface PackedFile {
+  readonly path: string;
+  readonly content: string;
+}
+
 export interface PackProblem {
   readonly code:
     | "forbidden_path"
+    | "forbidden_content"
     | "unlisted_path"
     | "missing_file"
     | "missing_prefix"
@@ -192,9 +226,28 @@ export function checkPackContents(inventory: PackInventory): PackProblem[] {
   return problems;
 }
 
+/** Every forbidden line in the shipped files, as `path:line: why`, in a stable order. */
+export function checkPackedContent(files: readonly PackedFile[]): PackProblem[] {
+  const problems: PackProblem[] = [];
+  for (const file of [...files].sort((a, b) => a.path.localeCompare(b.path))) {
+    for (const rule of FORBIDDEN_CONTENT) {
+      if (rule.allowedIn.includes(file.path)) continue;
+      file.content.split("\n").forEach((line, index) => {
+        if (rule.pattern.test(line)) {
+          problems.push({
+            code: "forbidden_content",
+            message: `${file.path}:${index + 1}: ${rule.why}`,
+          });
+        }
+      });
+    }
+  }
+  return problems;
+}
+
 export function renderPackVerdict(problems: readonly PackProblem[], fileCount: number): string {
   if (problems.length === 0) {
-    return `pack contents: clean -- ${fileCount} files, the runtime subset and nothing else; no install script.\n`;
+    return `pack contents: clean -- ${fileCount} files, the runtime subset and nothing else; no install script; no forbidden content.\n`;
   }
   const lines = problems.map((problem) => `  ${problem.code}: ${problem.message}`);
   return `pack contents: ${problems.length} problem(s)\n${lines.join("\n")}\n`;

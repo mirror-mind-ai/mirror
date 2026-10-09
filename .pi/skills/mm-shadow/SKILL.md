@@ -8,7 +8,7 @@ user-invocable: true
 
 Shadow as structural cultivation — CV7.E4.S4.
 
-The mirror has an across-conversation view that Vinícius doesn't. Shadow work is where
+The mirror has an across-conversation view that the user doesn't. Shadow work is where
 that view becomes useful: recurring tensions, avoidances, contradictions, and blind spots
 that repeat across conversations but haven't been seen from the outside. This skill
 surfaces them with provenance, grounds each observation in specific memories, and writes
@@ -60,7 +60,7 @@ Each observation is stored as a pending `shadow_observation` in the `consolidati
 
 ---
 
-## 3. Present each observation to Vinícius
+## 3. Present each observation to the user
 
 For each observation, show:
 - The pattern name (title)

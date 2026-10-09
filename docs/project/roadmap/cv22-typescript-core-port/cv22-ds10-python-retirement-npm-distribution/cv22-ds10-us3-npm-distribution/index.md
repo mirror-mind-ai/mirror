@@ -286,10 +286,16 @@ home (D14); the `mirror` bin is a type-stripping loader shim (D15).
     - "the mirror has an across-conversation view that Vinícius doesn't";
     - "Present each observation to Vinícius".
 
-    An npm user's agent would be told to present to someone else. It is pre-existing, and
-    changing a skill's text is a plan non-goal, so it waits for the Navigator: fold it into
-    plateau 5's artifact claim with a pack-guard line, or capture a CR. `LICENSE` and
-    `README.md` naming the author is expected.
+    An npm user's agent would be told to present to someone else. **Fixed 2026-10-09 at the
+    Navigator's direction**, pulled forward from plateau 5's artifact claim:
+    - the three lines say "the user" in the Pi source, the Claude copy, and the regenerated
+      plugin;
+    - the pack guard grades content now as well as paths: any shipped file naming the author
+      outside `LICENSE` and `README.md` fails CI (`FORBIDDEN_CONTENT`), and plateau 5 adds
+      the Python invocation forms to the same list.
+
+    Changing a skill's text is a plan non-goal; this is the Navigator's explicit exception,
+    and it changes whom the text names, not what the skill does.
   - After the route the Navigator ran `npm link`; `mirror-hook` is now linked.
 
 ## Where To Resume
