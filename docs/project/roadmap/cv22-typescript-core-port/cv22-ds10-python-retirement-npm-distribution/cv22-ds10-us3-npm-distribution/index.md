@@ -299,8 +299,9 @@ home (D14); the `mirror` bin is a type-stripping loader shim (D15).
     and it changes whom the text names, not what the skill does.
   - After the route the Navigator ran `npm link`; `mirror-hook` is now linked.
 
-- **Plateau 4 — updater and release tooling (implemented 2026-10-09, nine commits
-  `895bef57`..`c503b590`; machine-validated; route 3e for the Navigator).** Before the first
+- **Plateau 4 — updater and release tooling (implemented 2026-10-09, twelve commits
+  `895bef57`..`7adf8f1a`, CI green on both legs and the smoke job; route 3e for the
+  Navigator).** Before the first
   test, the plateau's plan was reviewed by the baseline panel (quality-assurance drafting;
   engineer, devops-engineer, security-engineer, database-architect dissenting) and took
   three findings as additions inside §E: **a channel can lie behind the install** (the
@@ -359,9 +360,14 @@ home (D14); the `mirror` bin is a type-stripping loader shim (D15).
   isolates the global bin directories is a small CR, not this plateau's. One pre-existing
   Biome warning (`launcher.test.ts`, an unused import) stands. For the release gate, from
   the security lens: the real `npm publish` should run with `--provenance` and a granular
-  token; the printed plan names the command, not the credentials. Verified: typecheck,
-  lint, 3042 tests, the five repository checks, the custody proofs, all six smokes (the
-  plugin smoke as above). Next: route 3e by the Navigator, then plateau 5 (§F).
+  token; the printed plan names the command, not the credentials. **CI found two things
+  the local run had not:** a test appended by heredoc had never met the formatter (the
+  local check's last line was blank and was read as clean), and the Ubuntu runner sets
+  `XDG_CONFIG_HOME` to its own `~/.config`, so the package lane's `runtime channel main`
+  wrote the channel outside the scratch home; the lane unsets the variable (not blanks
+  it), as the package smoke already did. Verified: typecheck, lint with no warnings, 3042
+  tests, the five repository checks, the custody proofs, all six smokes (the plugin smoke
+  as above), CI green (`37989064796`). Next: route 3e by the Navigator, then plateau 5 (§F).
 
 ## Where To Resume
 
