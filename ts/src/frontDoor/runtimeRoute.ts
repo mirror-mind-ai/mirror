@@ -34,7 +34,7 @@ import {
 import {
   checkUpdateAvailability,
   inspectCloneRole,
-  inspectGit,
+  inspectGitFor,
   inspectGitWorktree,
   inspectUpdateChannel,
   packageVersion,
@@ -220,7 +220,7 @@ export async function runRuntimeReadRoute(
       renderRuntimeVersion({
         version,
         install,
-        git: inspectGit(start),
+        git: inspectGitFor(install, start),
         cloneRole: inspectCloneRole(start),
         updateChannel:
           install.kind === "package"

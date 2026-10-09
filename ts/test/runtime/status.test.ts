@@ -27,6 +27,7 @@ import {
   renderRuntimeStatus,
   statusVerdict,
 } from "#runtime/status.ts";
+import { statusAllowsUpdatePreflight } from "#runtime/updateGate.ts";
 
 const GOLDEN_PATH = new URL("../goldens/runtime-status.golden.json", import.meta.url);
 
@@ -486,4 +487,67 @@ test("the Node version is read from the process, never spawned", () => {
   // -- the one interpreter spawn TypeScript itself made. It left with the Python engine
   // at CV22.DS10.TS5, finding F7.)
   assert.equal(detectNodeVersion(), process.version.replace(/^v/, ""));
+});
+
+// --- CV22.DS10.US3 plateau 4: a package has no repository to grade ----------
+//
+// Found by the plateau's smoke: `runtime status` on a package install graded
+// the cwd as a git tree, read "not a git repository" as a git ERROR, and said
+// `attention needed` -- which the update gate refuses. A package could never
+// update. The git facts are a clone's; a package reports none, and neither
+// the verdict nor the gate hold their absence against it.
+
+test("a package install is graded without git, and the gate lets it through", () => {
+  const f = fixture();
+  try {
+    const home = f.homes.get("ext_clean");
+    assert.ok(home !== undefined);
+    const outside = join(f.root, "not-a-repo");
+    mkdirSync(outside, { recursive: true });
+    const install = {
+      kind: "package" as const,
+      root: "/prefix/lib/node_modules/mirror-mind",
+      name: "mirror-mind",
+      version: "9.9.9",
+    };
+    const report = buildRuntimeStatus({
+      start: outside,
+      mirrorHome: home,
+      env: ENV,
+      version: golden.meta.fixture_version,
+      nodeVersion: "<node-version>",
+      install,
+    });
+    assert.deepEqual(report.git, {
+      repository: null,
+      branch: null,
+      commit: null,
+      dirty: null,
+      error: null,
+    });
+    assert.equal(statusVerdict(report), "ready");
+    assert.equal(statusAllowsUpdatePreflight(report).allowed, true);
+
+    const render = renderRuntimeStatus(report, ENV);
+    assert.match(render, /^Install: package \(mirror-mind@9\.9\.9\)$/m);
+    assert.match(render, /^Install root: \/prefix\/lib\/node_modules\/mirror-mind$/m);
+    assert.match(render, /^Repository: none \(package install\)$/m);
+    assert.doesNotMatch(render, /^Git (branch|commit|dirty|status note):/m);
+    assert.match(render, /^Status: ready$/m);
+
+    // And the same home, graded as a clone from the same non-repository
+    // directory, is the oracle's answer: attention needed, with the note.
+    const asClone = buildRuntimeStatus({
+      start: outside,
+      mirrorHome: home,
+      env: ENV,
+      version: golden.meta.fixture_version,
+      nodeVersion: "<node-version>",
+      install: { kind: "clone", repository: f.repo },
+    });
+    assert.equal(statusVerdict(asClone), "attention needed");
+    assert.match(renderRuntimeStatus(asClone, ENV), /^Git status note: /m);
+  } finally {
+    f.cleanup();
+  }
 });

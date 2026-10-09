@@ -420,14 +420,50 @@ export function inspectGitUpdatePlan(
   return { upstream, ahead, behind, ready: false, action: "blocked", note: "branch diverged" };
 }
 
+/** A package's git facts: it has none, and none is not an error. */
+export const NO_REPOSITORY: GitStatus = {
+  repository: null,
+  branch: null,
+  commit: null,
+  dirty: null,
+  error: null,
+};
+
+/**
+ * The git facts of `start`, for the install's kind: a clone's are inspected,
+ * a package's are `NO_REPOSITORY` (CV22.DS10.US3 plateau 4). Grading the cwd
+ * of a package install as a tree read "not a git repository" as a git error.
+ */
+export function inspectGitFor(install: InstallKind, start: string): GitStatus {
+  return install.kind === "package" ? NO_REPOSITORY : inspectGit(start);
+}
+
+/**
+ * The repository rows of `status` and `version`: the oracle's four for a
+ * clone (dirty only where the report carries it), one honest row for a package.
+ */
+export function renderRepositoryLines(
+  install: InstallKind,
+  git: GitStatus,
+  withDirty: boolean,
+): string[] {
+  if (install.kind === "package") return ["Repository: none (package install)"];
+  const lines = [
+    `Repository: ${git.repository ?? "unknown"}`,
+    `Git branch: ${git.branch || "unknown"}`,
+    `Git commit: ${git.commit || "unknown"}`,
+  ];
+  if (withDirty)
+    lines.push(`Git dirty: ${git.dirty === null ? "unknown" : git.dirty ? "yes" : "no"}`);
+  if (git.error) lines.push(`Git status note: ${git.error}`);
+  return lines;
+}
+
 export function renderRuntimeVersion(report: RuntimeVersionReport): string {
   const lines = ["Mirror runtime version", ""];
   lines.push(`Version: ${report.version}`);
   lines.push(...renderInstallLines(report.install));
-  lines.push(`Repository: ${report.git.repository ? report.git.repository : "unknown"}`);
-  lines.push(`Git branch: ${report.git.branch || "unknown"}`);
-  lines.push(`Git commit: ${report.git.commit || "unknown"}`);
-  if (report.git.error) lines.push(`Git status note: ${report.git.error}`);
+  lines.push(...renderRepositoryLines(report.install, report.git, false));
   lines.push(`Clone role: ${report.cloneRole.value}`);
   if (report.cloneRole.note) lines.push(`Clone role note: ${report.cloneRole.note}`);
   lines.push(`Update channel: ${report.updateChannel.value}`);

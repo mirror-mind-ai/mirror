@@ -28,7 +28,13 @@ import { DEFAULT_EMBEDDING_MODEL, DEFAULT_EXTRACTION_MODEL } from "#providers/co
 import { sortByCodePoint } from "#util/pythonText.ts";
 import { channelFor } from "./channel.ts";
 import type { MarkerValue } from "./git.ts";
-import { type GitStatus, inspectCloneRole, inspectGit, inspectUpdateChannel } from "./git.ts";
+import {
+  type GitStatus,
+  inspectCloneRole,
+  inspectGitFor,
+  inspectUpdateChannel,
+  renderRepositoryLines,
+} from "./git.ts";
 import { detectInstallKind, type InstallKind, renderInstallLines } from "./installKind.ts";
 
 export interface CoreMigrationHealth {
@@ -393,7 +399,11 @@ export function buildRuntimeStatus(options: BuildStatusOptions = {}): RuntimeSta
   const install =
     options.install ??
     detectInstallKind({ frontDoorPath: new URL("../frontDoor/cli.ts", import.meta.url).pathname });
-  const git = inspectGit(startPath);
+  // The git facts are a clone's. A package has no repository, and grading the
+  // cwd as one read "not a git repository" as a git error, said `attention
+  // needed`, and so refused every package update at the gate (CV22.DS10.US3
+  // plateau 4, found by the package lane of the update smoke).
+  const git = inspectGitFor(install, startPath);
 
   let mirrorHome: string | null;
   let mirrorHomeError: string | null;
@@ -509,11 +519,7 @@ export function renderRuntimeStatus(
   const lines: string[] = ["Mirror runtime status", ""];
   lines.push(`Version: ${report.version}`);
   lines.push(...renderInstallLines(report.install));
-  lines.push(`Repository: ${report.git.repository ?? "unknown"}`);
-  lines.push(`Git branch: ${report.git.branch || "unknown"}`);
-  lines.push(`Git commit: ${report.git.commit || "unknown"}`);
-  lines.push(`Git dirty: ${yesNo(report.git.dirty)}`);
-  if (report.git.error) lines.push(`Git status note: ${report.git.error}`);
+  lines.push(...renderRepositoryLines(report.install, report.git, true));
   lines.push(`Mirror home: ${report.mirror_home ? report.mirror_home : "not configured"}`);
   if (report.mirror_home_error) lines.push(`Mirror home note: ${report.mirror_home_error}`);
   lines.push(`Database: ${report.db_path ? report.db_path : "unknown"}`);
