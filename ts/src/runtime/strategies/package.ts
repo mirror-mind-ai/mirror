@@ -14,6 +14,9 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { ApplyStrategy } from "#runtime/updatePipeline.ts";
+import { compareSemver, isPlainSemver } from "#util/semver.ts";
+
+const KNOWN_CHANNELS = new Set(["stable", "main"]);
 
 export type NpmRunner = (args: readonly string[]) => {
   code: number;
@@ -66,7 +69,7 @@ export function readPackageChannel(
   env: NodeJS.ProcessEnv,
   override: string | null = null,
 ): { value: string; source: string | null; note: string | null } {
-  const known = new Set(["stable", "main"]);
+  const known = KNOWN_CHANNELS;
   if (override) {
     const value = override.trim().toLowerCase();
     if (known.has(value)) return { value, source: null, note: "command override" };
@@ -91,10 +94,27 @@ export function readPackageChannel(
   }
 }
 
-export interface DistTagResolution {
-  ok: boolean;
-  version: string | null;
-  detail: string;
+export type DistTags = { ok: true; tags: Record<string, string> } | { ok: false; detail: string };
+
+/** `npm view <name> dist-tags --json`, read once per run. */
+export function readDistTags(name: string, npm: NpmRunner = defaultNpmRunner): DistTags {
+  const result = npm(["view", name, "dist-tags", "--json"]);
+  if (result.code !== 0)
+    return { ok: false, detail: firstLine(result.stderr) || "npm view failed" };
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(result.stdout);
+  } catch {
+    return { ok: false, detail: "npm view returned unreadable JSON" };
+  }
+  if (typeof parsed !== "object" || parsed === null) {
+    return { ok: false, detail: "npm view returned no dist-tags" };
+  }
+  const tags: Record<string, string> = {};
+  for (const [tag, value] of Object.entries(parsed as Record<string, unknown>)) {
+    if (typeof value === "string") tags[tag] = value;
+  }
+  return { ok: true, tags };
 }
 
 /**
@@ -106,30 +126,140 @@ export interface DistTagResolution {
  * the log, and available as the value the recovery route needs. Following a
  * mutable tag is the normal posture of `npm update -g`; being able to say what
  * you got is the proportional control.
+ *
+ * The registry is a boundary. Its answer becomes the spec of
+ * `npm install -g <name>@<value>`, and npm's spec grammar admits tags, ranges,
+ * URLs, and paths beside versions, so a value that is not a plain version is
+ * refused here, before it is printed or installed (CV22.DS10.US3 plateau 4).
  */
-export function resolveDistTag(
+function resolveFrom(
+  tags: Record<string, string>,
   name: string,
   channel: string,
+): { ok: true; version: string } | { ok: false; detail: string } {
+  const version = tags[channel];
+  if (version === undefined || version === "") {
+    return { ok: false, detail: `no dist-tag '${channel}' for ${name}` };
+  }
+  if (!isPlainSemver(version)) {
+    return { ok: false, detail: `dist-tag '${channel}' is not a version: ${version}` };
+  }
+  return { ok: true, version };
+}
+
+/**
+ * Which way the channel lies from the installed version. Migrations run one
+ * way, so a channel BEHIND the install is not an update to take: it is a
+ * downgrade, refused at plan, and the person is told which channel carries
+ * what they have.
+ */
+export type ChannelDirection =
+  | { kind: "current"; version: string }
+  | { kind: "ahead"; version: string }
+  | { kind: "behind"; version: string; detail: string; carriedBy: string | null }
+  | { kind: "unresolved"; detail: string };
+
+export function channelDirection(
+  install: { name: string; version: string },
+  channel: string,
   npm: NpmRunner = defaultNpmRunner,
-): DistTagResolution {
-  const result = npm(["view", name, "dist-tags", "--json"]);
-  if (result.code !== 0) {
-    return { ok: false, version: null, detail: firstLine(result.stderr) || "npm view failed" };
+): ChannelDirection {
+  const read = readDistTags(install.name, npm);
+  if (!read.ok) return { kind: "unresolved", detail: read.detail };
+  const resolved = resolveFrom(read.tags, install.name, channel);
+  if (!resolved.ok) return { kind: "unresolved", detail: resolved.detail };
+  const order = compareSemver(resolved.version, install.version);
+  if (order === 0) return { kind: "current", version: resolved.version };
+  if (order > 0) return { kind: "ahead", version: resolved.version };
+  const carriedBy =
+    Object.entries(read.tags).find(
+      ([tag, version]) =>
+        tag !== channel &&
+        KNOWN_CHANNELS.has(tag) &&
+        isPlainSemver(version) &&
+        compareSemver(version, install.version) >= 0,
+    )?.[0] ?? null;
+  return {
+    kind: "behind",
+    version: resolved.version,
+    detail: `'${channel}' is behind the installed version (${resolved.version} < ${install.version})`,
+    carriedBy,
+  };
+}
+
+// --- `runtime update --check` for a package ----------------------------------
+
+export type PackageAvailabilityStatus =
+  | "up_to_date"
+  | "update_available"
+  | "channel_behind"
+  | "unresolved";
+
+export interface PackageUpdateAvailability {
+  name: string;
+  installed: string;
+  channel: { value: string; note: string | null };
+  resolved: string | null;
+  status: PackageAvailabilityStatus;
+  note: string | null;
+  /** The known channel at or past the installed version, when this one is behind. */
+  carriedBy: string | null;
+}
+
+export function checkPackageUpdateAvailability(
+  install: { name: string; version: string },
+  channel: { value: string; note: string | null },
+  npm: NpmRunner = defaultNpmRunner,
+): PackageUpdateAvailability {
+  const base = { name: install.name, installed: install.version, channel, carriedBy: null };
+  const direction = channelDirection(install, channel.value, npm);
+  switch (direction.kind) {
+    case "current":
+      return { ...base, resolved: direction.version, status: "up_to_date", note: null };
+    case "ahead":
+      return { ...base, resolved: direction.version, status: "update_available", note: null };
+    case "behind":
+      return {
+        ...base,
+        resolved: direction.version,
+        status: "channel_behind",
+        note: direction.detail,
+        carriedBy: direction.carriedBy,
+      };
+    case "unresolved":
+      return { ...base, resolved: null, status: "unresolved", note: direction.detail };
   }
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(result.stdout);
-  } catch {
-    return { ok: false, version: null, detail: "npm view returned unreadable JSON" };
+}
+
+/** The package's counterpart of `renderRuntimeUpdateAvailability`, same shape. */
+export function renderPackageUpdateAvailability(report: PackageUpdateAvailability): string {
+  const lines = ["Mirror runtime update check", ""];
+  lines.push(`Version: ${report.installed}`);
+  lines.push(`Install: package (${report.name}@${report.installed})`);
+  lines.push(`Update channel: ${report.channel.value}`);
+  if (report.channel.note) lines.push(`Update channel note: ${report.channel.note}`);
+  lines.push(`Channel version: ${report.resolved ?? "unresolved"}`);
+  lines.push(`Availability: ${report.status}`);
+  if (report.note) lines.push(`Reason: ${report.note}`);
+  if (report.status === "update_available") {
+    lines.push("");
+    lines.push("Preview:");
+    lines.push("runtime update --dry-run");
+    lines.push("");
+    lines.push("Update:");
+    lines.push("runtime update");
+  } else if (report.status === "up_to_date") {
+    lines.push("");
+    lines.push("Next: no update needed");
+  } else if (report.status === "channel_behind") {
+    lines.push("");
+    lines.push(
+      report.carriedBy
+        ? `Next: runtime channel ${report.carriedBy}`
+        : `Next: stay on ${report.installed} until '${report.channel.value}' reaches it`,
+    );
   }
-  if (typeof parsed !== "object" || parsed === null) {
-    return { ok: false, version: null, detail: "npm view returned no dist-tags" };
-  }
-  const version = (parsed as Record<string, unknown>)[channel];
-  if (typeof version !== "string" || version === "") {
-    return { ok: false, version: null, detail: `no dist-tag '${channel}' for ${name}` };
-  }
-  return { ok: true, version, detail: version };
+  return `${lines.join("\n")}\n`;
 }
 
 /** Install one exact version globally. Never a bare tag. */
@@ -180,26 +310,43 @@ export function packageStrategy(
     }),
 
     plan: (previousRef) => {
-      const resolved = resolveDistTag(install.name, channel, npm);
-      if (!resolved.ok || resolved.version === null) {
-        return {
-          kind: "blocked",
-          detail: resolved.detail,
-          recovery: [
-            `Could not resolve the '${channel}' dist-tag for ${install.name}.`,
-            "Check network access to the npm registry, then retry runtime update.",
-          ],
-        };
+      const direction = channelDirection(
+        { name: install.name, version: previousRef },
+        channel,
+        npm,
+      );
+      switch (direction.kind) {
+        case "unresolved":
+          return {
+            kind: "blocked",
+            detail: direction.detail,
+            recovery: [
+              `Could not resolve the '${channel}' dist-tag for ${install.name}.`,
+              "Check network access to the npm registry, then retry runtime update.",
+            ],
+          };
+        case "current":
+          return { kind: "current", detail: `already up to date (${direction.version})` };
+        case "behind":
+          return {
+            kind: "blocked",
+            detail: direction.detail,
+            recovery: [
+              "A downgrade is refused: migrations do not run backwards.",
+              direction.carriedBy
+                ? `Follow the channel that carries ${previousRef}: runtime channel ${direction.carriedBy}`
+                : `Stay on ${previousRef} until '${channel}' reaches it.`,
+              "Nothing was installed and the database is unchanged.",
+            ],
+          };
+        case "ahead":
+          return {
+            kind: "ahead",
+            target: direction.version,
+            detail: `${previousRef} -> ${direction.version}`,
+            dryRun: `would install ${install.name}@${direction.version}`,
+          };
       }
-      if (resolved.version === previousRef) {
-        return { kind: "current", detail: `already up to date (${resolved.version})` };
-      }
-      return {
-        kind: "ahead",
-        target: resolved.version,
-        detail: `${previousRef} -> ${resolved.version}`,
-        dryRun: `would install ${install.name}@${resolved.version}`,
-      };
     },
 
     apply: (_previousRef, target) => {

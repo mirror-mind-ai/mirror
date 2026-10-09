@@ -25,7 +25,7 @@ import {
   type MarkerValue,
   runGit,
 } from "#runtime/git.ts";
-import { parseSemver } from "#runtime/releaseNotes.ts";
+import { compareSemver } from "#util/semver.ts";
 import { SEPARATOR } from "./statusLine.ts";
 import {
   cacheIsStale,
@@ -151,25 +151,9 @@ function commitsMatch(candidate: string, target: string): boolean {
   return candidate === target || candidate.startsWith(target) || target.startsWith(candidate);
 }
 
-/** Port of `_semver_key`: an unparseable tag sorts below every real one. */
-function semverKey(version: string): [number, number, number] {
-  const raw = version.startsWith("v") ? version.slice(1) : version;
-  const parts = raw.split(".");
-  if (parts.length < 3) return [-1, -1, -1];
-  const [major, minor, patch] = parseSemver(raw);
-  if (![major, minor, patch].every(Number.isInteger)) return [-1, -1, -1];
-  return [major, minor, patch];
-}
-
-function compareSemver(a: string, b: string): number {
-  const left = semverKey(a);
-  const right = semverKey(b);
-  for (let index = 0; index < 3; index += 1) {
-    const delta = (left[index] as number) - (right[index] as number);
-    if (delta !== 0) return delta;
-  }
-  return 0;
-}
+// The oracle's `_semver_key` was `_parse_semver` under a second name; both
+// are `#util/semver.ts` now, and an unparseable tag still sorts below every
+// real one.
 
 /**
  * Port of `_remote_tag_for_commit`: which published tag names the commit the

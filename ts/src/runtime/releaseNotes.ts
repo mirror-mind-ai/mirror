@@ -14,6 +14,7 @@
 
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
+import { compareSemver } from "#util/semver.ts";
 import { GIT_NETWORK_TIMEOUT_MS, runGit } from "./git.ts";
 
 export interface ReleaseNote {
@@ -35,22 +36,9 @@ const REF_NOTE_PATH = /docs\/releases\/v\d+\.\d+\.\d+\.md$/;
 // The heading separator is an em dash, as the oracle's regex requires.
 const TITLE = /^#\s+(v\d+\.\d+\.\d+)\s+—\s+(.+)$/m;
 
-/** Port of `_parse_semver`: unparseable versions sort below everything. */
-export function parseSemver(version: string): [number, number, number] {
-  const match = /^v?(\d+)\.(\d+)\.(\d+)$/.exec(version.trim());
-  if (!match) return [-1, -1, -1];
-  return [Number(match[1]), Number(match[2]), Number(match[3])];
-}
-
-function compareSemver(a: string, b: string): number {
-  const left = parseSemver(a);
-  const right = parseSemver(b);
-  for (let index = 0; index < 3; index += 1) {
-    const diff = (left[index] as number) - (right[index] as number);
-    if (diff !== 0) return diff;
-  }
-  return 0;
-}
+// `parseSemver` lived here as the port of `_parse_semver`; it is the one in
+// `#util/semver.ts` now, re-exported so its callers and its test do not move.
+export { parseSemver } from "#util/semver.ts";
 
 function isNewer(candidate: string, current: string): boolean {
   return compareSemver(candidate, current) > 0;

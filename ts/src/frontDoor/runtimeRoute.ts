@@ -49,7 +49,12 @@ import {
   renderReleaseNotesBundle,
 } from "#runtime/releaseNotes.ts";
 import { buildRuntimeStatus, renderRuntimeStatus, statusVerdict } from "#runtime/status.ts";
-import { npmRootGlobal, readPackageChannel } from "#runtime/strategies/package.ts";
+import {
+  checkPackageUpdateAvailability,
+  npmRootGlobal,
+  readPackageChannel,
+  renderPackageUpdateAvailability,
+} from "#runtime/strategies/package.ts";
 import { runningTreeRoot } from "#runtime/treeRoot.ts";
 import { frontDoorSpawner, runUpdate, type UpdateSpawn } from "#runtime/update.ts";
 import { statusAllowsUpdatePreflight } from "#runtime/updateGate.ts";
@@ -417,6 +422,16 @@ function runRuntimeUpdate(
       : inspectUpdateChannel(start, channelOverride);
 
   if (args.includes("--check")) {
+    // A package asks the registry the question the pipeline's plan stage
+    // asks, and says which way the channel lies; a clone asks its remote.
+    // Until CV22.DS10.US3 plateau 4 both asked git, from the cwd.
+    if (install.kind === "package") {
+      const availability = checkPackageUpdateAvailability(install, channel);
+      writeOut(io, renderPackageUpdateAvailability(availability));
+      return availability.status === "up_to_date" || availability.status === "update_available"
+        ? 0
+        : 1;
+    }
     const availability = checkUpdateAvailability(start, channelOverride, version);
     writeOut(io, renderRuntimeUpdateAvailability(availability));
     return availability.status === "up_to_date" || availability.status === "update_available"

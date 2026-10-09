@@ -353,6 +353,64 @@ test("the render and the log line report the same run", () => {
   assert.match(line, /status gate=pass/);
 });
 
+// --- the direction of the channel (CV22.DS10.US3 plateau 4) -----------------
+
+test("a channel behind the installed version is refused at plan: migrations do not run backwards", () => {
+  // `runtime channel stable` on a `main` install makes this reachable: the
+  // tag resolves to a LOWER version, and before this check the pipeline
+  // backed up, verified, and installed it -- then the post-update status
+  // refused with 'database schema is newer than this TS core', on a database
+  // the old code already owned. An induced failure the plan can see coming.
+  const npm = scriptNpm({
+    "view mirror-core dist-tags": { stdout: JSON.stringify({ stable: "1.1.0", main: "1.2.3" }) },
+    "install -g": { stdout: "added 1 package\n" },
+  });
+  let backups = 0;
+  const result = runUpdate(
+    deps({
+      install: PACKAGE,
+      channel: "stable",
+      npm: npm.runner,
+      createBackup: () => {
+        backups += 1;
+        return "/should/not/happen.zip";
+      },
+    }),
+  );
+  assert.equal(result.success, false);
+  assert.deepEqual(stageNames(result), ["status gate=pass", "capture=pass", "plan=fail"]);
+  assert.match(result.stages.at(-1)?.detail ?? "", /'stable' is behind the installed version/);
+  assert.match(result.stages.at(-1)?.detail ?? "", /1\.1\.0 < 1\.2\.3/);
+  assert.equal(backups, 0);
+  assert.ok(!npm.calls.some((call) => call[0] === "install"), "nothing is installed");
+  assert.ok(
+    result.recovery.some((line) => /migrations do not run backwards/.test(line)),
+    JSON.stringify(result.recovery),
+  );
+  // And the way out is named: the channel that carries the installed version.
+  assert.ok(
+    result.recovery.some((line) => line.includes("runtime channel main")),
+    JSON.stringify(result.recovery),
+  );
+});
+
+test("a dist-tag whose value is not a version is refused at plan, before any install", () => {
+  // The value is the spec of `npm install -g <name>@<value>`: a tag, range,
+  // URL, or path there installs something other than a version. The registry
+  // is a boundary; its answer is checked before it is printed or used.
+  for (const value of ["file:/tmp/x", "latest", "^1.2.3", "1.2.3-beta.1", "v1.3.0"]) {
+    const npm = scriptNpm({
+      "view mirror-core dist-tags": { stdout: JSON.stringify({ stable: value }) },
+      "install -g": { stdout: "added 1 package\n" },
+    });
+    const result = runUpdate(deps({ install: PACKAGE, channel: "stable", npm: npm.runner }));
+    assert.equal(result.success, false, value);
+    assert.ok(stageNames(result).includes("plan=fail"), value);
+    assert.match(result.stages.at(-1)?.detail ?? "", /is not a version/, value);
+    assert.ok(!npm.calls.some((call) => call[0] === "install"), value);
+  }
+});
+
 // --- the repair lane (CV22.DS10.US3 plateau 4, D-026) -----------------------
 //
 // Until the body was one pipeline over two strategies, the repair lane was a
