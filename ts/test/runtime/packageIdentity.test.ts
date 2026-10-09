@@ -45,9 +45,9 @@ describe("this repository", () => {
 
 describe("findPackageIdentity", () => {
   test("requires a manifest AND a front door, never a manifest alone", () => {
-    // A package.json is a file anyone can have -- `.pi/` and `frame/` both
-    // carry one inside this very repository. The front door is what makes the
-    // tree this program.
+    // A package.json is a file anyone can have -- `.pi/` carries one inside
+    // this very repository. The front door is what makes the tree this
+    // program.
     const root = tmpRoot();
     writeFileSync(
       join(root, "package.json"),

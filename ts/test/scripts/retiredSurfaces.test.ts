@@ -237,7 +237,7 @@ describe("the table itself", () => {
     }
   });
 
-  test("the enforced rows are TS1 through TS4's retirements, and TS5's Python core", () => {
+  test("the enforced rows are TS1 through TS4's retirements, TS5's Python core, and US3's Windows product", () => {
     assert.deepEqual(
       ENFORCED.map((surface) => surface.surfaceId),
       [
@@ -251,6 +251,7 @@ describe("the table itself", () => {
         "sqlite-refinement-workbench",
         "python-core",
         "python-core-mentions",
+        "frame-installer",
       ],
     );
   });
@@ -383,14 +384,17 @@ describe("the live python-core-mentions row (plateau 4, decision D12)", () => {
     }
   });
 
-  test("exempts the US3 re-homed callers by name, with the reason", () => {
-    // `frame/` and `installer/` keep their interpreter spawns until US3 gives
-    // them an npm entry point. The exemption is what keeps TS5 from claiming
-    // zero Python for the shipped artifact -- a claim only US3 can make.
-    const exemptions = row.exemptions;
-    assert.match(exemptions["installer/configure.ps1"] ?? "", /US3/);
-    for (const path of ["installer/health-check.ps1", "frame/main/session-gate.js"]) {
-      assert.match(exemptions[path] ?? "", /US3/, path);
+  test("no longer exempts the Windows product -- US3 plateau 5 retired it", () => {
+    // Until plateau 5, eleven exemptions named `frame/`, `installer/`,
+    // `docs/installer/`, and the installer's CI smoke "until US3": the
+    // interpreter spawns that kept TS5 from claiming zero Python for the
+    // shipped artifact. They expired with the files. An exemption that
+    // outlives its file is a hole pre-approving whatever lands there next.
+    for (const path of Object.keys(row.exemptions)) {
+      assert.ok(
+        !/^(frame|installer|docs\/installer)\//.test(path) && !path.includes("ci-nonascii"),
+        `${path} is still exempted, but the Windows product is retired`,
+      );
     }
   });
 
@@ -408,5 +412,66 @@ describe("the live python-core-mentions row (plateau 4, decision D12)", () => {
     });
     assert.deepEqual(checkResidue(row, trackedFiles(root), root), []);
     assert.ok(!("docs/product/extensions/authoring-guide.md" in row.exemptions));
+  });
+});
+
+describe("the live frame-installer row (CV22.DS10.US3 plateau 5, decision D4)", () => {
+  const row = RETIRED.find((surface) => surface.surfaceId === "frame-installer") as RetiredSurface;
+
+  test("is enforced", () => {
+    assert.ok(row, "the frame-installer row exists");
+    assert.equal(row.stagedUntil, undefined);
+    assert.ok(ENFORCED.includes(row));
+  });
+
+  // One seed per thing plateau 5 deleted: the Frame, the installer, its
+  // documentation, the workflow that built the Inno Setup artifact, and the
+  // profile smoke that workflow ran. Any of them coming back must fail the row.
+  const SEEDS = [
+    "frame/main/command-registry.js",
+    "frame/package.json",
+    "installer/bootstrap.ps1",
+    "installer/mirror.iss",
+    "installer/launcher/mirror.cmd",
+    "docs/installer/README.md",
+    ".github/workflows/windows-installer.yml",
+    "scripts/ci-nonascii-profile-smoke.ps1",
+  ];
+
+  test("fails on every path the deletion removed, if it comes back", () => {
+    for (const path of SEEDS) {
+      assert.equal(checkAbsent(row, [path]).length, 1, path);
+    }
+  });
+
+  test("fails on PowerShell or an Inno Setup script anywhere, not only where the product lived", () => {
+    // The product was PowerShell and Inno Setup; nothing else in the tree is.
+    // A Windows story that adds either does so by amending this row, which is
+    // the point: a conscious decision, not a file that drifted back.
+    for (const path of ["scripts/setup.ps1", "ts/src/lib/Install.psm1", "build/mirror.iss"]) {
+      assert.equal(checkAbsent(row, [path]).length, 1, path);
+    }
+    assert.deepEqual(checkAbsent(row, ["ts/src/frontDoor/cli.ts", "scripts/codex-mirror.sh"]), []);
+  });
+
+  test("fails on a file that still names the product's scripts, outside the record", () => {
+    const root = gitRepo({
+      "docs/getting-started.md": "On Windows, run installer/bootstrap.ps1 first.\n",
+      ".github/workflows/tests.yml":
+        "      - run: pwsh -File scripts/ci-nonascii-profile-smoke.ps1\n",
+      "docs/process/worklog.md": "The windows-installer.yml workflow was retired by US3.\n",
+    });
+    const problems = checkResidue(row, trackedFiles(root), root);
+    assert.deepEqual(
+      problems.map((problem) => problem.message.split(" mentions")[0]?.trim()),
+      [
+        "frame-installer: .github/workflows/tests.yml:1",
+        "frame-installer: docs/getting-started.md:1",
+      ],
+    );
+  });
+
+  test("is clean against this repository", () => {
+    assert.deepEqual(sweep(REPO_ROOT, RETIRED, { only: "frame-installer" }), []);
   });
 });

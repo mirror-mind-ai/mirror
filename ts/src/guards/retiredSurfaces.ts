@@ -382,36 +382,13 @@ export const RETIRED: readonly RetiredSurface[] = [
     // name, the module by any import shape, and `uv` itself.
     absentPaths: [],
     forbiddenPatterns: INTERPRETER_INVOCATIONS,
+    // Until US3 plateau 5 this table also exempted eleven files of the Windows
+    // product -- `installer/`, `frame/`, `docs/installer/`, and the installer's
+    // CI smoke -- "until US3 re-homes them": the interpreter spawns that kept
+    // TS5 from claiming zero Python for the shipped artifact. US3 retired the
+    // product instead (decision D4; the `frame-installer` row below), and the
+    // exemptions expired with the files.
     exemptions: {
-      // Re-homed to US3 by US2 decision D4, because their new shape depends on
-      // the npm artifact's `bin` and install path. Named here so the
-      // zero-Python claim cannot be made for the shipped artifact while they
-      // stand -- an exemption that expires, not one that hides.
-      //
-      // Not the only US3 residue: `frame/main/command-registry.js` spawns the
-      // interpreter eight times, but builds each argv as an array, so no
-      // pattern here matches it and it needs no exemption. The DS10 gate
-      // table and TS5's known risks carry it by name.
-      "installer/configure.ps1":
-        "interpreter calls re-homed to CV22.DS10.US3 (US2 decision D4): the installer assumes a uv-bearing clone. TS5 claims zero Python for the REPOSITORY, US3 claims it for the ARTIFACT",
-      "installer/health-check.ps1": "same US3 re-homing",
-      "installer/bootstrap.ps1":
-        "same US3 re-homing: the bootstrap installs uv and syncs the clone",
-      "installer/lib/MirrorInstall.psm1":
-        "same US3 re-homing: the install library syncs the clone with uv",
-      "frame/main/session-gate.js":
-        "same US3 re-homing: the Frame's update gate describes the uv-bearing install it orchestrates",
-      "scripts/ci-nonascii-profile-smoke.ps1":
-        "same US3 re-homing: the Windows installer's profile smoke drives the uv-bearing install end to end",
-      // The installer's own design record describes the installer as it still
-      // is. Rewriting it before US3 decides what the installer becomes would
-      // make it describe nothing.
-      "docs/installer/README.md":
-        "documents the Windows installer, which installs a uv-bearing clone until CV22.DS10.US3 re-homes it",
-      "docs/installer/RESUME.md": "same installer documentation, same US3 re-homing",
-      "docs/installer/analysis-two-routes.md": "same installer documentation, same US3 re-homing",
-      "docs/installer/plan.md": "same installer documentation, same US3 re-homing",
-      "docs/installer/windows-compatibility.md": "same installer documentation, same US3 re-homing",
       // Checks whose job is to name what they forbid. The table's own file is
       // history for the same reason (HISTORY_PREFIXES).
       "ts/scripts/checkSkillCommandParity.ts":
@@ -429,6 +406,61 @@ export const RETIRED: readonly RetiredSurface[] = [
         "recorded fixture INPUT, not product output: a scenario passes `validate-item --check` a caller's own check command, and the golden records the argv and the validation artifact that echoes it",
       "ts/test/goldens/builder-lifecycle.golden.json":
         "the same caller-supplied check command, recorded as `automated_checks` input across the lifecycle scenarios",
+    },
+  },
+  {
+    surfaceId: "frame-installer",
+    story: "CV22.DS10.US3",
+    // The Windows Frame (an Electron shell over Pi) and the Inno Setup
+    // installer, retired at US3 plateau 5 by decision D4 rather than re-homed
+    // onto the npm package. Their premise was a `uv`-bearing git clone: the
+    // installer cloned the repository and ran `uv sync`, the Frame spawned the
+    // interpreter for eight commands, and both found their root by the
+    // `pyproject.toml` TS5 deleted. Three downloads of the artifact ever, none
+    // since August, no known user. They still work at the last Python-bearing
+    // release, `cv22-last-python-bearing`, which is what the cutoff says.
+    //
+    // The row is what lets the DS10 Zero Python gate close for the shipped
+    // artifact: with these gone, no tracked file spawns the interpreter from
+    // JavaScript or PowerShell, where neither the skill guard nor the
+    // `python-core-mentions` patterns could see it (the Frame built each argv
+    // as an array).
+    absentPaths: [
+      "frame/",
+      "installer/",
+      "docs/installer/",
+      ".github/workflows/windows-installer.yml",
+      "scripts/ci-nonascii-profile-smoke.ps1",
+    ],
+    // The product was PowerShell and Inno Setup, and nothing else in the tree
+    // is. A Windows story that adds either amends this row on purpose.
+    absentSuffixes: [".ps1", ".psm1", ".iss", ".cmd"],
+    // File names, never vocabulary: "Windows" and "installer" are living words
+    // (the npm install, the per-runtime wiring); these are the scripts a
+    // document could still tell someone to run.
+    forbiddenPatterns: [
+      "windows-installer\\.yml",
+      "bootstrap\\.ps1",
+      "configure\\.ps1",
+      "health-check\\.ps1",
+      "MirrorInstall\\.psm1",
+      "mirror\\.iss",
+      "MirrorMind-Setup",
+      "launcher/mirror\\.cmd",
+      "command-registry\\.js",
+      "root-resolve\\.js",
+      "smoke-electron",
+      "ci-nonascii-profile-smoke",
+    ],
+    exemptions: {
+      // ES-004's Experiment 1: the static mockup the Frame was designed from,
+      // deployed on its own and touching no core. It is that exploration's
+      // evidence, as `docs/project/exploration/es-004-*.md` is its record, and
+      // it names the installer scripts its panels were drawn to map onto.
+      "spikes/windows-frame-mockup/README.md":
+        "ES-004 Experiment 1's mockup: the exploration record of what the Frame was designed from, naming the installer scripts its panels mapped onto",
+      "spikes/windows-frame-mockup/index.html":
+        "the same ES-004 mockup: its setup panel lists the installer scripts it simulated",
     },
   },
 ];

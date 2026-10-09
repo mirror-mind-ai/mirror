@@ -27,17 +27,12 @@ const REPO = fileURLToPath(new URL("../../..", import.meta.url));
 const CR008 =
   "docs/project/refinement/rs001-ariad-runtime-trust/cr008-bind-lifecycle-commands-to-active-journey.md";
 
-/** Where a runtime would start naming its session: integrations, hooks, installers, skills. */
-const INTEGRATION_ROOTS = [
-  ".pi",
-  ".claude",
-  ".gemini",
-  "plugins",
-  "frame",
-  "installer",
-  "scripts",
-  "templates",
-];
+/**
+ * Where a runtime would start naming its session: integrations, hooks, skills.
+ * The Windows Frame and installer were in this list until CV22.DS10.US3
+ * plateau 5 retired them.
+ */
+const INTEGRATION_ROOTS = [".pi", ".claude", ".gemini", "plugins", "scripts", "templates"];
 const ROOT_FILES = [".env.example", ".env.example.advanced"];
 const SKIPPED_DIRECTORIES = new Set(["node_modules", ".git", "dist", "out"]);
 

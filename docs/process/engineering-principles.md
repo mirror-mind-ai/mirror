@@ -567,8 +567,10 @@ grounded starting set: fresh install → `memory seed` → `mm-mirror` load →
 conversation logged → extraction fires (journey set, ≥4 messages —
 [`D7`](../project/briefing.md#d7--automatic-extraction-requires-a-journey-and-at-least-four-messages))
 → search returns → `runtime backup --verify` → `runtime update` vN→vN+1. The
-Windows installer path rides its own tag-triggered CI workflow
-([`.github/workflows/windows-installer.yml`](../../.github/workflows/windows-installer.yml)).
+npm install path has its own proof: `scripts/smoke_npm_package.sh` packs the
+tarball, installs it into a scratch prefix with no checkout in sight, and runs
+`init`, `seed`, a migrating open, the updater's package lane, and the four
+runtimes' wrappers against it.
 
 **Runtime skill surfaces are the honest gap in this list.** CI gates the
 core ([`tests.yml`](../../.github/workflows/tests.yml): `tsc`, Biome,

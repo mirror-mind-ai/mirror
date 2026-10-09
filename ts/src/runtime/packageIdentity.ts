@@ -29,8 +29,8 @@ import { dirname, join, resolve } from "node:path";
  * The npm package name that identifies this codebase, and the name
  * `npm install -g` takes (CV22.DS10.US3, D1).
  *
- * It is checked rather than assumed so a stray `package.json` -- `.pi/`,
- * `frame/`, a user's own project -- is never mistaken for Mirror Mind.
+ * It is checked rather than assumed so a stray `package.json` -- `.pi/`, a
+ * user's own project -- is never mistaken for Mirror Mind.
  */
 export const PACKAGE_NAME = "mirror-mind";
 
