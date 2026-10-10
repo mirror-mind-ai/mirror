@@ -186,7 +186,7 @@ portable). No action unless a request arrives.
 | Finding | Class | Owner | Where it lives |
 |---|---|---|---|
 | P1 empty constraints template | **paid 2026-10-10** at the Debt Review (one language rule, prompt-engineer's choice; the smoke now expects a clean seed) | Navigator | `62de848c` |
-| P2 unpublished name | **deferred** to the release gate's publish step | release gate | this review; plateau 4's `--provenance` note |
+| P2 unpublished name | **closed 2026-10-10**: the Navigator published a placeholder `mirror-mind@0.0.1` (README, LICENSE, manifest; no `bin`, no code) from a scratch directory, with his OTP; the name is owned, and trusted publishing can now be configured for the real release | Navigator | this review; the story index |
 | N1 BSD `sed` masks | captured as [CR122](../../../../refinement/rs010-cv22-oracle-and-port-hygiene/cr122-the-capture-normalizer-s-word-boundary-masks-are-inert-under-bsd-sed.md) | RS010 | route 4 |
 | N2 plugin smoke isolation | captured as [CR123](../../../../refinement/rs010-cv22-oracle-and-port-hygiene/cr123-the-plugin-smoke-s-missing-bin-case-cannot-run-on-a-machine-with-a-global-link.md) | RS010 | story index |
 | N3 skipped `hookBin` tests | with CR123 | RS010 | story index |

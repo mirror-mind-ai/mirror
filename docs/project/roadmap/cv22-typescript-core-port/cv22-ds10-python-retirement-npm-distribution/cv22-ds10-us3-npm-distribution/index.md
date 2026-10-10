@@ -467,6 +467,8 @@ Read the [plan](plan.md) (D1–D15 approved and recorded) and the *Plateau Progr
   by the Builder and awaits the Navigator.
 - **The Ariad cursor** is at `implement` for CV22.DS10.US3 under the approved Plan.
 
+**After Done, the same day:** the Navigator published a placeholder `mirror-mind@0.0.1` to the registry (three files, no `bin`; shasum `6d6b1120`, identical to the dry run), closing the handoff review's P2: the name is owned, `npm install -g mirror-mind` resolves, and the package now exists for trusted publishing to be configured against `mirror-mind-ai/mirror`. The real release still comes through the release gate.
+
 **The story is Done (2026-10-10).** Validation (`validation.md`), Debt Review (`review.md`),
 Coherence, and Done are sealed records in this package. What is next is DS10's collapse
 (8/8) and the CV22 release gate: publication with `--provenance` (P2), CR121's decision, the
