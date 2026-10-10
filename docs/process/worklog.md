@@ -12,6 +12,28 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-10-10 — CV22.DS10 done (8/8): the Python core is retired and Mirror Mind is an npm package; CV22 is at its release gate
+
+The last Delivery Story of the TypeScript Core Port closes with its eighth child. Pulled
+2026-09-19 with eight approved stories, done in twenty-one days: TS1 retired the projection
+seam (no TypeScript write spawns Python), US1 the web console, TS2 the extension
+compatibility host, TS3 moved the eval harness to `ts/evals/`, TS4 retired the unported
+surfaces behind cutoffs, US2 replaced the updater and release tooling for the npm era, TS5
+deleted the Python core and made the TypeScript engine the sole migration custodian, and US3
+made the repository the npm package `mirror-mind` with the four runtimes wired from it.
+Every gate in the DS10 index is satisfied — the Zero Python gate for both the repository
+(`git ls-files '*.py'` empty, CI installs no Python) and the shipped artifact (the pack
+guard, by path and content). Closed under `story_by_story` flow in the roadmap and the
+worklog, as DS7, DS8, and DS9 were; no Ariad DS-level record, because none was planned at
+that level.
+
+With DS10 done, every CV22 Delivery Story is done and the Capability Value has no
+candidates left. What remains is the release gate CV22 [releases once through](../project/decisions.md#cv22-releases-once-when-the-migration-is-complete):
+F20/D12 (the production clone's last Python-era hop), CR121's decision (a release
+precondition), the v0.31.14 release note the doctor asked for, the release note carrying the
+pending cutoffs, CR093's substitutions in the extension repositories, and the real publish
+through the staged route rehearsed today. Each stays a separate Navigator-authorized step.
+
 ### 2026-10-10 — CV22.DS10.US3 done, DS10 at 8/8; the package name owned and its publication route rehearsed
 
 US3 closed through the full Ariad lifecycle: Validation passed on routes 1–4 (route 4, the

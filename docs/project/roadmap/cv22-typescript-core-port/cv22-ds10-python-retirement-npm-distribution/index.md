@@ -2,12 +2,17 @@
 
 # CV22.DS10 — Python Retirement And npm Distribution
 
-**Status:** 🟢 In Progress — pulled 2026-09-19 with eight approved child stories (**8/8**; TS1
+**Status:** ✅ **Done — 2026-10-10 (8/8).** Pulled 2026-09-19 with eight approved child stories: TS1
 and US1 done 2026-09-19, TS2 2026-09-21, TS3 2026-09-22, TS4 and US2 2026-09-23, TS5
-2026-09-25, **US3 2026-10-10**). Every child story is done; the Delivery Story's own
-closure — its Done record and CV22's release gate — follows US3's Done as the next Ariad
-movement. What TS5 left US3 is listed in its [inheritance](cv22-ds10-us3-npm-distribution/inherited.md),
-each item closed or recorded.
+2026-09-25, US3 2026-10-10. Every gate below is satisfied and every bullet of the Done
+condition is met by the child that owns it: the web console, the compatibility host, the
+projection subsystem, the eval harness, and the unported surfaces are gone behind cutoffs;
+the repository holds no Python and the shipped artifact none (the Zero Python gate, both
+halves); the updater is npm-era; and Mirror Mind installs with `npm install -g mirror-mind`
+and no checkout. Closed under `story_by_story` flow in the roadmap and the worklog, as DS7,
+DS8, and DS9 were; the last Done-condition bullet — publication, stable promotion, tag, and
+release — is CV22's release gate, which this closure opens. What TS5 left US3 is listed in
+its [inheritance](cv22-ds10-us3-npm-distribution/inherited.md), each item closed or recorded.
 *(Count corrected 2026-09-23 at US2's Pull: it read `3/8` while the candidate table below
 already recorded TS3 and TS4 as done — the third instance of the lesson TS4 paid for in US1's
 row, and it would have blocked this package's closure preflight.)*
