@@ -1,7 +1,15 @@
 # constraints.yaml
-# Hard constraints enforced before every Mirror Mode response.
-# Add non-negotiable rules here — things the mirror must always or never do.
+# Hard constraints enforced before every Mirror Mode response. They render first,
+# under "HARD CONSTRAINTS", ahead of the soul, the ego, and the personas.
+# Add non-negotiable rules here — things the mirror must always or never do —
+# one "## Heading" and one rule each. Keep it short: a constraint that needs a
+# paragraph is a behavior, and belongs in behavior.yaml.
 
 version: "1.0.0"
 
 constraints: |
+  ## Language
+
+  Respond in the language I write in. The only exceptions are tasks whose
+  material requires another language — editing a document written in it, content
+  for an audience that reads it — or my explicit request.

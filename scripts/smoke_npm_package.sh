@@ -126,14 +126,14 @@ set +e
 SEED_OUT="$(mirror seed 2>"$WORK/seed.err")"; SEED_CODE=$?
 set -e
 [ -f "$HOME/.mirror-minds/smokeuser/memory.db" ] && ok "memory.db created in the user's home" || bad "no memory.db"
-contains "seed created the 19 template entries" "$SEED_OUT" "Result: 19 created"
-# Known finding (US3 F1), named here so the day it is fixed this line fails
-# and gets updated: the shipped `ego/constraints.yaml` template is empty on
-# purpose, and seed reports empty content as an error, so a fresh seed exits 1
-# with exactly that one error on every machine, checkout or package alike.
-contains "seed's only error is the known empty ego/constraints template (F1)" "$SEED_OUT" "Errors: 1
-  - ego/constraints: empty content"
-check "seed exit code is 1 because of F1 alone" "$SEED_CODE" "1"
+contains "seed created the 20 template entries" "$SEED_OUT" "Result: 20 created"
+# US3 F1, paid at the Debt Review (2026-10-10): until then the shipped
+# `ego/constraints.yaml` template was empty, seed reported empty content as an
+# error, and a stranger's first seed exited 1 on every machine. The template
+# now carries one constraint, so a fresh seed is clean -- and this is the line
+# that says so, the day a template goes empty again.
+[[ "$SEED_OUT" != *"Errors:"* ]] && ok "seed reports no errors" || bad "seed reported errors: $(printf '%s' "$SEED_OUT" | grep -A3 'Errors:')"
+check "seed exit code" "$SEED_CODE" "0"
 check "seed writes nothing to stderr" "$(wc -c <"$WORK/seed.err" | tr -d ' ')" "0"
 LIST_OUT="$(mirror list personas 2>"$WORK/list.err")"
 PERSONAS="$(printf '%s\n' "$LIST_OUT" | grep -c '^  [a-z]' || true)"

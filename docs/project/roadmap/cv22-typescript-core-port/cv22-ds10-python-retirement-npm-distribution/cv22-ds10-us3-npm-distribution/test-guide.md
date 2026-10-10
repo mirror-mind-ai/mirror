@@ -54,7 +54,8 @@ failed: 0` (plateau 4 asserts `Install: package (mirror-mind@<version>)`, its `I
 and `Repository: none (package install)` with npm off the PATH; since plateau 3 the four
 runtimes run against the installed wrappers and `mirror mcp`, sections 8–12), twelve seeded personas, a migrating open that
 applies `017` from the package location, and `no python, python3, or uv process was spawned`.
-`seed` inside it exits 1 by **F1** (the empty `ego/constraints` template), named in the smoke. CI runs the same set twice, the
+`seed` inside it creates 20 entries and exits 0 since **F1** was paid at the Debt Review (until 2026-10-10 the empty
+`ego/constraints` template made it exit 1, and the smoke said so). CI runs the same set twice, the
 second time with `python`, `python3`, and `uv` shadowed.
 
 ### New unit coverage (plateau by plateau)
@@ -147,7 +148,7 @@ env -i PATH="$SCRATCH/prefix/bin:/usr/bin:/bin:$(dirname "$(command -v node)")" 
   command -v mirror
   mirror                                    # the orientation: three lines
   mirror init route2
-  mirror seed || echo "exit $? — F1, expected"
+  mirror seed                               # 20 created, exit 0 (F1 paid 2026-10-10; it was 19 and exit 1 on the walk)
   mirror list personas | head -5
   mirror runtime status | sed -n "3,8p"
   stat -f "%Sp" "$HOME/.config/mirror/env" "$HOME/.config/mirror"
@@ -157,7 +158,7 @@ env -i PATH="$SCRATCH/prefix/bin:/usr/bin:/bin:$(dirname "$(command -v node)")" 
 
 - Expected observation: `mirror` resolves under `$SCRATCH/prefix/bin`; bare `mirror` prints
   `No user configured yet.` and two lines; `init` prints `Configuration: …/.config/mirror/env
-  (MIRROR_USER=route2)` and where the key goes; `seed` creates 19 entries and exits 1 by F1;
+  (MIRROR_USER=route2)` and where the key goes; `seed` creates 20 entries and exits 0 (19 and exit 1 on the 2026-10-06 walk, before F1 was paid);
   twelve personas; `status` names the version, `Mirror home: $SCRATCH/home/.mirror-minds/route2`,
   and `Database exists: yes`; the two `stat` lines read `-rw-------` and `drwx------`; the
   config file holds exactly `MIRROR_USER=route2`.
