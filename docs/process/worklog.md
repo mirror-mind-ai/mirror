@@ -12,6 +12,30 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-10-10 — CV22.DS10.US3 done, DS10 at 8/8; the package name owned and its publication route rehearsed
+
+US3 closed through the full Ariad lifecycle: Validation passed on routes 1–4 (route 4, the
+plateau-0 capture replayed through `mirror`, run by the Navigator on 2026-10-10: 28/29, the
+one `Install:` line); Debt Review paid P1 (the empty `ego/constraints` template made a fresh
+`seed` exit 1 — one language rule, the package smoke now expects a clean seed), deferred P2 to
+the release gate, and captured CR122 (the capture normalizer's `\b` masks under BSD `sed`)
+and CR123 (the plugin smoke's missing-bin case on a linked machine); Coherence and Done
+sealed. Every DS10 child is done; the Delivery Story's own Done record is the next Ariad
+movement, then CV22's release gate.
+
+The same day, outside Ariad: the Navigator published a placeholder `mirror-mind@0.0.1`
+(README, LICENSE, manifest; no `bin`) from a scratch directory with his OTP, closing P2 — the
+name is owned. Alisson joined as the second maintainer; publishing access requires 2FA with
+no bypass tokens; npm's trusted publisher was configured for `mirror-mind-ai/mirror` →
+`.github/workflows/publish.yml` → environment `release`, stage-only. A rehearsal
+(`0.0.2-rehearsal.0`) first stopped at the pack guard — npm 12's `pack --dry-run --json`
+prints an object where npm 11 printed an array, and the guard graded an empty inventory as
+twenty missing files; the guard now reads both shapes and throws on empty, the workflow
+pins npm 12 — then staged with a signed provenance statement and was rejected by the
+Navigator with 2FA: the pipeline proven end to end, nothing public. `release:promote` prints
+that route and runs none of it. Decision:
+[the npm package is published by staging from CI with provenance](../project/decisions.md#the-npm-package-is-published-by-staging-from-ci-with-provenance-and-a-maintainer-approves-with-2fa).
+
 ### 2026-10-09 — CV22.DS10.US3 implemented: Mirror Mind installs with one command and no checkout
 
 Seven plateaus between 2026-10-05 and 2026-10-09, under a Plan two panel passes reviewed
