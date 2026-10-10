@@ -21,6 +21,7 @@ import {
   checkPackedContent,
   type PackedFile,
   type PackManifest,
+  parsePackDryRun,
   renderPackVerdict,
 } from "#guards/packContents.ts";
 
@@ -32,8 +33,7 @@ export function packInventory(root: string): { files: string[]; manifest: PackMa
     encoding: "utf8",
     stdio: ["ignore", "pipe", "ignore"],
   });
-  const parsed = JSON.parse(raw) as { files: { path: string }[] }[];
-  const files = (parsed[0]?.files ?? []).map((entry) => entry.path);
+  const files = parsePackDryRun(raw);
   const manifest = JSON.parse(readFileSync(join(root, "package.json"), "utf8")) as PackManifest;
   return { files, manifest };
 }

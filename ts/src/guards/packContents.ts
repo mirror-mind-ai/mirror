@@ -112,6 +112,38 @@ export interface PackInventory {
 }
 
 /**
+ * The file list in `npm pack --dry-run --json`'s output, whichever shape npm
+ * printed it in: npm 11 prints an array of packed packages, npm 12 an object
+ * keyed by package name. The release workflow's first run (2026-10-10) met
+ * the second with a reader written for the first and graded an EMPTY
+ * inventory -- every required file "missing" -- which is at least loud; an
+ * inventory with no files is never a valid answer, so it throws rather than
+ * letting a future reader grade nothing as clean.
+ */
+export function parsePackDryRun(raw: string): string[] {
+  const parsed: unknown = JSON.parse(raw);
+  const entries: unknown[] = Array.isArray(parsed)
+    ? parsed
+    : parsed !== null && typeof parsed === "object"
+      ? Object.values(parsed)
+      : [];
+  const first = entries[0];
+  const files =
+    first !== null &&
+    typeof first === "object" &&
+    Array.isArray((first as { files?: unknown }).files)
+      ? ((first as { files: { path?: unknown }[] }).files ?? [])
+      : [];
+  const paths = files
+    .map((entry) => entry.path)
+    .filter((path): path is string => typeof path === "string");
+  if (paths.length === 0) {
+    throw new Error("npm pack --dry-run --json listed no files; the inventory cannot be graded");
+  }
+  return paths;
+}
+
+/**
  * What no shipped file may say, wherever it sits. Paths are graded above; this
  * grades content, because a file can be in the runtime subset and still carry
  * something that must not reach another person's machine.

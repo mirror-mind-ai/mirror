@@ -5,7 +5,12 @@ import { readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import test from "node:test";
 
-import { checkPackContents, checkPackedContent, REQUIRED_FILES } from "#guards/packContents.ts";
+import {
+  checkPackContents,
+  checkPackedContent,
+  parsePackDryRun,
+  REQUIRED_FILES,
+} from "#guards/packContents.ts";
 import { packedContents, packInventory } from "../../scripts/checkPackContents.ts";
 
 const REPO_ROOT = resolve(import.meta.dirname, "..", "..", "..");
@@ -159,6 +164,22 @@ test("the rule cannot trip on its own source, which ships in the tarball", () =>
     checkPackedContent([{ path: "ts/src/guards/packContents.ts", content: source }]),
     [],
   );
+});
+
+test("the pack inventory is read from both shapes npm prints: npm 11's array, npm 12's object", () => {
+  // The release workflow's first run (2026-10-10, `npm@latest` = 12.2.0)
+  // reported every required file missing: npm 12 prints
+  // `{ "<name>": { files } }` where npm 11 printed `[ { files } ]`, and the
+  // guard read `parsed[0]` of an object. An empty inventory must never read as
+  // "clean" either, so the parser throws rather than returning [].
+  const files = [{ path: "package.json" }, { path: "bin/mirror.js" }];
+  const eleven = JSON.stringify([{ name: "mirror-mind", files }]);
+  const twelve = JSON.stringify({ "mirror-mind": { name: "mirror-mind", files } });
+  assert.deepEqual(parsePackDryRun(eleven), ["package.json", "bin/mirror.js"]);
+  assert.deepEqual(parsePackDryRun(twelve), ["package.json", "bin/mirror.js"]);
+  for (const raw of ["[]", "{}", '{"mirror-mind":{}}', '[{"files":[]}]', "null"]) {
+    assert.throws(() => parsePackDryRun(raw), /no files/, raw);
+  }
 });
 
 test("this repository packs clean", () => {
