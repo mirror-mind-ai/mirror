@@ -185,11 +185,11 @@ portable). No action unless a request arrives.
 
 | Finding | Class | Owner | Where it lives |
 |---|---|---|---|
-| P1 empty constraints template | pay now, release | Navigator | this review; F1 in the story index |
-| P2 unpublished name | pay now, release | release gate | this review; plateau 4's `--provenance` note |
-| N1 BSD `sed` masks | debt | RS010 CR candidate | route 4 |
-| N2 plugin smoke isolation | debt | RS010 CR candidate | story index |
-| N3 skipped `hookBin` tests | debt | with N2 | story index |
+| P1 empty constraints template | **paid 2026-10-10** at the Debt Review (one language rule, prompt-engineer's choice; the smoke now expects a clean seed) | Navigator | `62de848c` |
+| P2 unpublished name | **deferred** to the release gate's publish step | release gate | this review; plateau 4's `--provenance` note |
+| N1 BSD `sed` masks | captured as [CR122](../../../../refinement/rs010-cv22-oracle-and-port-hygiene/cr122-the-capture-normalizer-s-word-boundary-masks-are-inert-under-bsd-sed.md) | RS010 | route 4 |
+| N2 plugin smoke isolation | captured as [CR123](../../../../refinement/rs010-cv22-oracle-and-port-hygiene/cr123-the-plugin-smoke-s-missing-bin-case-cannot-run-on-a-machine-with-a-global-link.md) | RS010 | story index |
+| N3 skipped `hookBin` tests | with CR123 | RS010 | story index |
 | N4 old release notes name Python | accepted | — | pack guard's `allowedIn` |
 | N5 Pi path per prefix | documented | — | troubleshooting |
 | Q1 CR121 | release precondition | Navigator | decisions |

@@ -67,3 +67,5 @@ evidence stays honest as both cores move.
 - [CR110 — The doc-link checker reads a link inside inline code as a real link](cr110-the-doc-link-checker-reads-a-link-inside-inline-code-as-a-real-link.md)
 - [CR120 — A failed Pi session import aborts the rest of session maintenance](cr120-a-failed-pi-session-import-aborts-the-rest-of-session-maintenance.md)
 - [CR121 — A new home's first maintenance run imports the person's whole Pi history](cr121-a-new-home-s-first-maintenance-imports-the-whole-pi-history.md)
+- [CR122 — The capture normalizer's word-boundary masks are inert under BSD `sed`](cr122-the-capture-normalizer-s-word-boundary-masks-are-inert-under-bsd-sed.md)
+- [CR123 — The plugin smoke's missing-bin case cannot run on a machine with a global link](cr123-the-plugin-smoke-s-missing-bin-case-cannot-run-on-a-machine-with-a-global-link.md)
