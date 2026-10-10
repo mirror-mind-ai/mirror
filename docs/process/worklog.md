@@ -12,6 +12,23 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-10-09 — CV22.DS10.US3 implemented: Mirror Mind installs with one command and no checkout
+
+Seven plateaus between 2026-10-05 and 2026-10-09, under a Plan two panel passes reviewed
+and the Navigator approved with D1–D13 (D14, D15 taken at plateau 1). The repository is
+the npm package `mirror-mind` (467 packed files, same paths as a checkout); `mirror` and
+`mirror-hook` are bins on a loader shim that strips types for its own package only;
+the core reads its configuration from two files in one order; all 399 skill lines say
+`mirror` under a guard; Pi, Claude Code, Gemini CLI, and Codex each wire by a counted
+step (1/1/2/2) and receive the Operating Instructions their own way; the updater's
+package lane is complete; the Windows Frame and installer are retired (three downloads
+ever) with a cutoff that promises no Windows story; the DS10 Zero Python gate is
+satisfied for the shipped artifact by a guard that imports the tree guard's list; the
+docs say `mirror` and nothing else, with "Upgrading from a clone". Routes 1–3 walked
+and accepted by the Navigator; the capture replay through `mirror` 28/29 identical,
+the one line added on purpose. The handoff review finds no blocker and two pay-now
+items for the release. Validation next; nothing published.
+
 ### 2026-10-05 — CR117 done: a flow unit belongs to the Delivery Story it was chosen for
 
 This is the last change of the reopened trust floor. Pull carried a Delivery Story's

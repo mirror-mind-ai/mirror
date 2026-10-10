@@ -271,17 +271,26 @@ bash scripts/smoke_runtime_update.sh | tail -3           # passed: 86   failed: 
 
 ### Route 4 — the capture replay, plateau 6
 
+The plateau-0 capture (`tmp/us3/before.tsv`, commit `79d7bb3d`) was taken on
+`tmp/us3/pristine.db`, a copy of the real database made that day. The replay runs on the
+**same copy** — not a fresh one, whose data has moved since — through the `mirror` bin
+(`FRONT_DOOR=mirror`; the script's default is the checkout form repository tooling uses):
+
 ```bash
 cd ~/dev/workspace/mirror-ts-core
-cp ~/.mirror-minds/vinicius-ts/memory.db tmp/us3/replay.db     # a COPY; the script never opens the live file
-bash scripts/capture_family_outputs.sh tmp/us3/replay.db --through-bin > tmp/us3/after.tsv
-diff tmp/us3/before.tsv tmp/us3/after.tsv && echo IDENTICAL
+command -v mirror                      # the linked clone's bin/mirror.js
+FRONT_DOOR=mirror bash scripts/capture_family_outputs.sh tmp/us3/pristine.db > tmp/us3/after.tsv
+diff tmp/us3/before.tsv tmp/us3/after.tsv
 ```
 
-- Pass: `IDENTICAL`. (The plateau-0 capture is taken after CR008, so item 13's expected
-  difference does not apply.)
-- Fail: any family whose hash moved; the family is named, and the diff is investigated
-  before Validation.
+- Pass: the diff names **one** family, `runtime-version`, whose stdout went from 8 lines to
+  9 — the `Install:` line plateau 4 added to `runtime version` on purpose (US2 D3, plan
+  §E); every other family's hash is unchanged. (The plan wrote "identical" before §E added
+  the line; the plateau-0 capture is after CR008, so item 13's expected difference does not
+  apply.)
+- Fail: any other family whose hash moved; the family is named
+  (`--dump <family>` prints its normalized streams), and the diff is investigated before
+  Validation.
 
 ## Validation Evidence
 
@@ -306,4 +315,10 @@ diff tmp/us3/before.tsv tmp/us3/after.tsv && echo IDENTICAL
   are untouched, and the transcript carries the Operating Instructions. The Builder had run
   steps 1–3 and simulated step 5 on 2026-10-08. Findings F2–F4 are in the story index; F2 and
   F3 became CR120 and CR121.
-- Route 4: pending plateau 6.
+- **Route 4 — run by the Builder on 2026-10-09 (plateau 6), through `mirror` from the
+  linked clone at `ccf8b1cc`:** 28 of 29 families identical to the plateau-0 capture; the
+  one difference is `runtime-version`'s ninth line, `Install: clone (<REPO>)`, confirmed by
+  `--dump`. Awaits the Navigator's run. One instrument finding: the normalizer's `<TIME>`,
+  `<AGO>`, `<UUID>`, and `<VERSION>` masks use `\b`, which BSD `sed` does not support,
+  so they never apply on macOS — harmless here (same machine, same version both times),
+  and a false diff on every family the day the version bumps between captures.

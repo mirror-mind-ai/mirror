@@ -11,7 +11,8 @@ Plateaus 0 and 1 done the same day; plateau 2 validated 2026-10-06; plateau 3 im
 2026-10-06 and validated by the Navigator 2026-10-09; plateau 4 implemented and validated
 2026-10-09, after a persona-panel review of its plan whose three findings it took; plateau 5
 implemented 2026-10-09 (the Windows Frame and installer retired, the artifact half of the
-Zero Python gate in CI).
+Zero Python gate in CI); plateau 6 implemented 2026-10-09 (the docs say `mirror`, the
+replay 28/29 with the one named line, the handoff review). **Awaiting Validation.**
 **Type:** User Story
 **Depends on:** every other DS10 story (done); the release gate (done 2026-09-28).
 
@@ -428,27 +429,50 @@ home (D14); the `mirror` bin is a type-stripping loader shim (D15).
   `42f2277b`..`b05c84c5`, CI green on both legs and the smoke job (`37995518948`). Next:
   plateau 6 (§G).
 
+- **Plateau 6 — docs, records, replay, review (implemented 2026-10-09, `ccf8b1cc` and the
+  records commit).** The bridge is gone: twenty-six invocation lines remained outside the
+  project record (the plan counted 137 at drafting; plateaus 2–4 took the rest), and the ones
+  a reader is told to type now say `mirror <command>` — REFERENCE, getting started, the
+  runtime-interface spec, the extension authoring guide and the `review-copy` example, the
+  compat-host and python-core cutoffs, `ts/README`; module names in architecture prose stay.
+  **Getting started** is rewritten for a stranger with no checkout (install, init, configure,
+  wire by the honest step count, seed, a first session in any directory) with "Upgrading from
+  a clone"; **REFERENCE** names the two install kinds and the two-file configuration order;
+  **AGENTS.md** and REFERENCE carry Claude Code's plugin naming (`/mirror-mind:mm:<skill>`)
+  beside the checkout's; **troubleshooting** gains the nvm-prefix entry the first plan review
+  asked for, and its hooks entry covers the plugin wrapper form and `MIRROR_BIN`;
+  **configuration.md**'s safety model says the core reads two files and one command writes
+  one value. **D11:** the briefing's D2 (TypeScript, run by Node), D6 (four runtimes over one
+  core), D8 (a skill is a prompt naming a command), and the Builder baseline rewritten, each
+  saying what it replaced and when; the Frame's retirement has its **decision entry**.
+  **Item 8:** CR093's other half recorded as a handoff — the exact `sed` over 93 + 28
+  occurrences in the two extension repositories, re-measured today, not performed. **Route
+  4:** the capture instrument takes `FRONT_DOOR`, and the plateau-0 capture replayed through
+  `mirror` on the same `pristine.db` is **28/29 identical**, the one difference
+  `runtime-version`'s `Install:` line (§E, by design); the test guide's route 4 was
+  corrected (it copied the live database and named a flag that did not exist) and records the
+  instrument's BSD-`sed` finding. The **[handoff review](handoff-review.md)** (the first
+  pass's panel) finds no blocker to Validation, two pay-now items for the release (P1, the
+  empty constraints template; P2, the unpublished name), five debts, three questions for the
+  release gate, and closes the second pass's six findings by name; the
+  **[handoff](handoff.md)** states what is true, what is undone, and what is next. Verified:
+  typecheck, lint, 3046 tests, the five repository checks. Next: Validation.
+
 ## Where To Resume
 
 Read the [plan](plan.md) (D1–D15 approved and recorded) and the *Plateau Progress* above.
-- **Plateaus 0 through 4 are done and validated.** Plateau 3 was validated by the
-  Navigator on 2026-10-09; plateau 4 the same day (route 3e). **Plateau 5 is implemented**
-  (2026-10-09): it has no Navigator route of its own — its evidence is the two guards in CI
-  and the package smoke, and the cutoff is a text for the Navigator to read.
+- **All seven plateaus are implemented** (0–6, 2026-10-05 to 2026-10-09); plateaus 2, 3,
+  and 4 were validated by the Navigator on their routes; plateau 5 has no route of its own
+  (the two guards in CI and the package smoke are its evidence); plateau 6's route 4 was run
+  by the Builder and awaits the Navigator.
 - **The Ariad cursor** is at `implement` for CV22.DS10.US3 under the approved Plan.
 
-**Next: plateau 6 (§G), docs, records, replay, review.** In the plan's order: the bridge
-paragraphs out of `REFERENCE.md` and `docs/getting-started.md` (item 1) and out of the
-compat-host and python-core cutoffs, which still print the checkout invocation; getting
-started rewritten around `npm install -g` with "Upgrading from a clone"; REFERENCE's
-running-a-command and configuration sections (the configuration section still says `.env` is
-read by Node); architecture; the runtime-interface spec; the extension authoring guide
-(CR093's half); troubleshooting; the Claude Code skill naming for a plugin install
-(`/mirror-mind:mm:<skill>`); the `automation` handoff (item 8); the briefing's D2/D6/D8 and
-Builder baseline (D11); the "after" capture through `mirror` diffed against
-`tmp/us3/before.tsv`; the DS10 and CV22 indexes, the journey path, worklog, decisions (the
-Frame's retirement deserves its own decision entry: plateau 5 wrote the cutoff and D4's
-record, not the entry); `handoff.md`; the panel's handoff review; then Validation.
+**Next: Validation.** Route 4 is the Navigator's to run (the [test guide](test-guide.md)
+has the three lines and the pass condition); routes 1–3 are accepted. Then `validate-item`
+with the Navigator's acceptance, Debt Review with the [handoff review](handoff-review.md)'s
+dispositions (P1 is the Navigator's template line, before the release; N1 and N2 are CR
+candidates), Coherence, and Done — after which DS10 collapses and CV22 reaches its release
+gate. The [handoff](handoff.md) is the resume statement.
 
 **Open for the Navigator:**
 - F1 (the empty `ego/constraints` template makes a fresh `seed` exit 1);
