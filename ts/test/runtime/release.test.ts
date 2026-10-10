@@ -280,10 +280,17 @@ test("promotion proves the artifact packs with `npm publish --dry-run`, before t
     const step = result.steps.find((s) => s.name === "publish dry run");
     assert.equal(step?.state, "pass");
     assert.match(step?.detail ?? "", /mirror-mind-1\.2\.3\.tgz, 467 files/);
-    // The publication itself is printed as the gate's command, never run.
+    // The publication itself is printed as the gate's route, never run. Since
+    // the 2026-10-10 rehearsal it is the trusted publisher's: CI stages with
+    // provenance through publish.yml, and a maintainer approves with 2FA.
     const plan = result.steps.find((s) => s.name === "publish");
     assert.equal(plan?.state, "skip");
-    assert.match(plan?.detail ?? "", /npm publish --tag stable/);
+    assert.match(
+      plan?.detail ?? "",
+      /gh workflow run publish\.yml --ref v1\.2\.3 -f dist_tag=stable/,
+    );
+    assert.match(plan?.detail ?? "", /npm stage approve <id>/);
+    assert.doesNotMatch(plan?.detail ?? "", /npm publish/);
     assert.match(plan?.detail ?? "", /npm dist-tag add mirror-mind@1\.2\.3 stable/);
     assertNamesNoInterpreter(renderPromotion(result));
   } finally {

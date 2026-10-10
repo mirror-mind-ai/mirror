@@ -2478,6 +2478,51 @@ shipped artifact the same day: the pack guard forbids the interpreter-invocation
 shipped content, importing the retired-surface guard's own list so the two halves cannot
 drift.
 
+### The npm package is published by staging from CI with provenance, and a maintainer approves with 2FA
+
+**Date:** 2026-10-10 · **Context:** the CV22 release gate, the day after
+[CV22.DS10.US3](roadmap/cv22-typescript-core-port/cv22-ds10-python-retirement-npm-distribution/cv22-ds10-us3-npm-distribution/index.md)
+closed; its handoff review's P2 (the unpublished name) and plateau 4's note that the real
+publish should carry provenance and never a long-lived token.
+
+**The decision: `mirror-mind` is unscoped, owned by two maintainers, and published only
+through npm's trusted publisher for `mirror-mind-ai/mirror` → `.github/workflows/publish.yml`
+→ GitHub environment `release`. The workflow holds no token: it stages the committed tree
+with provenance (`npm stage publish --provenance`), and a maintainer makes the version public
+with `npm stage approve <id>` and a one-time code, or drops it with `npm stage reject`. The
+package's publishing access requires 2FA and disallows bypass tokens.**
+
+**Why unscoped.** A scoped `@mirror-mind-ai/mirror-mind` would say the organization in the
+install line at the cost of reopening an implemented decision (US3 D1: `PACKAGE_NAME`, the
+pack guard, the install-kind layout, the wiring step, every doc page). The collaboration shows
+where people look — two maintainers on the package, the organization's repository in
+`repository`, and the provenance attestation naming `github.com/mirror-mind-ai/mirror` —
+and the npm organization can be created later for anything that wants a scope.
+
+**Why stage rather than publish.** The trusted publisher was granted `npm stage publish`
+alone. A stage reaches the registry in a state no install can see; approval needs a human
+with 2FA. That is the project's rule — publication is a Navigator-authorized hard gate —
+in npm's own vocabulary, with two human steps before the registry: the `release`
+environment's required reviewer before the job runs, and the approve after it.
+`release:promote` prints that route as its last step and runs none of it.
+
+**What proved it.** The name was taken with a placeholder `0.0.1` (README, LICENSE,
+manifest; no `bin`) published from a scratch directory with the Navigator's OTP, which also
+let the trusted publisher be configured — npm requires the package to exist first. The
+connection then had 48 hours to see one publish. A rehearsal branch at `0.0.2-rehearsal.0`
+was dispatched through the workflow: the first run **stopped at the pack guard**, because
+`npm@latest` had become 12.2.0, whose `pack --dry-run --json` prints an object where npm
+11 printed an array, and the guard graded an empty inventory as twenty missing files. The
+guard now reads both shapes and throws on an empty inventory; the workflow pins npm 12. The
+second run staged with a signed provenance statement in the transparency log, and the
+Navigator rejected it: nothing public, the pipeline run end to end once, the trusted
+publisher validated.
+
+**One commit on `main`.** GitHub finds a `workflow_dispatch` workflow by its file on the
+default branch, and `main` is 864 commits behind the delivery branch; a copy of
+`publish.yml` was committed there alone (`90686b41`) so the button exists. Every dispatch
+runs the file from the chosen ref. The CV22 release merge will meet the same bytes.
+
 ## Open Discussions
 
 ### Migration rehearsal — long-term status

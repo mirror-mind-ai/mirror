@@ -368,8 +368,10 @@ instead.
 
 **One thing to know.** The chain is unchanged in shape — release note →
 doctor → promote → `stable` + GitHub Release — and push, tag, stable promotion
-and publication all remain separate, explicitly authorized steps. US3 appends
-npm publication and the dist-tag move to the same ordered step list.
+and publication all remain separate, explicitly authorized steps. US3 appended
+npm publication to the same ordered step list, as a printed route: the package is
+staged from CI with provenance by npm's trusted publisher for this repository, and a
+maintainer approves it with 2FA (`npm stage approve`); the script runs none of it.
 
 ---
 

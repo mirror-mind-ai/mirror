@@ -10,7 +10,10 @@
 // publication itself. The shape is what makes "publication is a separate
 // Navigator gate" enforceable -- the steps that touch a remote are all behind
 // `--push`, every one of them is skipped by `--dry-run`, and nothing in this
-// script reaches the registry: the one npm call it makes is a dry run.
+// script reaches the registry: the one npm call it makes is a dry run. The
+// release gate decided (2026-10-10): publication is the trusted publisher's
+// route -- `.github/workflows/publish.yml` stages from CI with provenance, a
+// maintainer approves with 2FA -- and the printed plan names that route.
 //
 // It never moves an existing tag. A tag that points somewhere other than HEAD
 // is a fact about release history, and rewriting it silently is how a release
@@ -215,11 +218,14 @@ export function runReleasePromotion(options: PromoteOptions): PromotionResult {
 
 /**
  * The publication, printed and never run (CV22.DS10.US3 non-goal: `npm
- * publish`, dist-tags, and the release are separate Navigator gates). Two
- * forms, because a version may already be on the registry under another tag:
- * `publish --tag <channel>` sets the dist-tag as it publishes, and
- * `dist-tag add` moves it for a version that is already there. An explicit
- * `--tag` keeps npm from moving `latest` on its own.
+ * publish`, dist-tags, and the release are separate Navigator gates). Since
+ * the 2026-10-10 rehearsal the route is the trusted publisher's, not a local
+ * `npm publish`: `.github/workflows/publish.yml`, dispatched on the release
+ * tag, stages the committed tree with provenance under the `release`
+ * environment's reviewer, and a maintainer makes it public with `npm stage
+ * approve` and a one-time code. `dist-tag add` remains for a version already
+ * on the registry under another tag. An explicit tag keeps npm from moving
+ * `latest` on its own.
  */
 function publicationPlan(repository: string, target: string, channel: string): PromotionStep {
   const name = findPackageIdentity(repository)?.name ?? "<package>";
@@ -227,7 +233,7 @@ function publicationPlan(repository: string, target: string, channel: string): P
   return step(
     "publish",
     "skip",
-    `separate gate: npm publish --tag ${channel}, or npm dist-tag add ${name}@${version} ${channel} if the version is already published`,
+    `separate gate: gh workflow run publish.yml --ref ${target} -f dist_tag=${channel}, approve the release environment, then npm stage approve <id> with 2FA; or npm dist-tag add ${name}@${version} ${channel} if the version is already published`,
   );
 }
 
