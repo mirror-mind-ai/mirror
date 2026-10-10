@@ -59,7 +59,7 @@ deterministic run, point it at scrubbed replay fixtures instead:
 ```bash
 MIRROR_TS_MIRROR_LLM_REPLAY=/path/to/reception.json \
 MIRROR_TS_MIRROR_EMBEDDING_REPLAY=/path/to/embedding.json \
-node ts/src/frontDoor/cli.ts mirror load --query "..."
+mirror mirror load --query "..."
 ```
 
 Both fixtures are required together. If `MEMORY_RECEPTION=0`, the LLM replay is not

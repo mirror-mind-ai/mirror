@@ -121,3 +121,26 @@ change.
 ## Outcome
 
 **Promoted 2026-09-25 to CV22.DS10.US3**, by the Navigator in [CV22.DS10.TS5's Debt Review](../../roadmap/cv22-typescript-core-port/cv22-ds10-python-retirement-npm-distribution/cv22-ds10-ts5-python-core-deletion/review.md). This repository's half was done at TS5 plateau 4: every documented invocation in Mirror Mind's own docs names `mirror`, `REFERENCE.md`'s 56 Python invocations are 0, and the `python-core-mentions` guard enforces it in CI. The extension repositories' half depends on the npm entry point, which US3 defines. It is item 8 of US3's [inheritance list](../../roadmap/cv22-typescript-core-port/cv22-ds10-python-retirement-npm-distribution/cv22-ds10-us3-npm-distribution/inherited.md).
+
+**The extension repositories' half, as a handoff (2026-10-09, CV22.DS10.US3 plateau 6).**
+The entry point exists: `mirror`, on the `PATH` from `npm install -g mirror-mind` or from
+`npm link` at a clone's root (US3 D1, D7). Re-measured the same day, the surface is what
+CR093 counted: **93** occurrences in 8 files under `automation/mirror-extensions/*/SKILL.md`
+(76 `python -m memory`, 17 `uv run python -m memory`) and **28** in 3 files under
+`extensions/*/SKILL.md` (16 and 12). No line prefixes the invocation with a `cd` into the
+Mirror clone, so the substitution is one mechanical pass, longer form first, and nothing
+after the program name changes:
+
+```bash
+# in each extension repository
+git grep -l -E '(uv run )?python -m memory' -- '*/SKILL.md' \
+  | xargs sed -i '' -e 's/uv run python -m memory/mirror/g' -e 's/python -m memory/mirror/g'
+git grep -c -E '(uv run )?python -m memory' -- '*/SKILL.md'   # must print nothing
+```
+
+Then `mirror extensions sync` for each runtime, so the materialized copies under
+`~/.mirror-minds/<user>/runtime/skills/<runtime>/ext-*/` are regenerated from the sources;
+the [compatibility-host cutoff](../../../releases/pending-cutoffs.md#the-extension-compatibility-host-and-registerapi-as-a-core-served-contract)
+says the same to every extension author. **Recorded, not performed:** those repositories are
+outside this one (US3 non-goal), and the edit is the Navigator's, in each of them, reviewed as
+a diff with the counts above.

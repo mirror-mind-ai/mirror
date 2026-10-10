@@ -15,13 +15,16 @@ end, so a leftover line in a `.env` can be recognized rather than trusted.
 
 ## Safety model
 
-Mirror reads configuration; no command writes it. Values come from the process
-environment and from the repository `.env`, which Node loads for every
-invocation (`--env-file` in the skills, `--env-file-if-exists` in the hook
-wrappers and the MCP launcher). A value already set in the environment wins
-over the same value in `.env`. Secrets are read from the environment only,
-never accepted as a command-line argument, never logged, and never included in
-an error message.
+Mirror reads configuration itself, at every entry (the front door, the hooks,
+the MCP server), in one order and without overriding: the process environment
+first; then a clone's own `.env`, located from the running front door's tree;
+then the OS user's `~/.config/mirror/env` (`$XDG_CONFIG_HOME/mirror/env`).
+A package install ships no `.env` and reads none. One command writes one
+value: `mirror init <user>` records `MIRROR_USER` in the user's file when no
+other source configured a user, creating the file `0600` in a `0700`
+directory; `mirror runtime channel` writes the update channel beside it. Secrets
+are read from the environment and these files only, never accepted as a
+command-line argument, never logged, and never included in an error message.
 
 ## Mirror home
 

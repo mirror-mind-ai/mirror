@@ -145,14 +145,17 @@ Those lines work today and stop working when the interpreter is deleted. They li
 extension's repository, not in Mirror's, so Mirror's own skill-parity guard cannot see or
 fix them: it scans `.pi/skills/`, `.claude/skills/`, and the packaged plugin.
 
-**What to do:** before the CV22 release, rewrite the invocations in your extension's
-`SKILL.md` to enter the front door, exactly as Mirror's own skills do:
+**What to do:** rewrite the invocations in your extension's `SKILL.md` to enter
+the front door by the name every Mirror skill uses, which `npm install -g
+mirror-mind` (or `npm link` in a clone) puts on the `PATH`:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts ext <id> <subcommand>
+mirror ext <id> <subcommand>
 ```
 
 then re-run `extensions sync` for each runtime so installed copies are refreshed.
+The substitution is mechanical: every `uv run python -m memory` becomes `mirror`,
+and nothing after it changes.
 
 ---
 
@@ -401,13 +404,13 @@ tag.
 **What to do instead.**
 
 - **Run commands through the front door.** Every command, its arguments, and
-  its output are what they were; only the program in front changed. The
-  program names itself `mirror`; until the npm package installs it, `mirror`
-  is this invocation, from the repository
+  its output are what they were; only the program in front changed. It is
+  `mirror`, on your `PATH` from `npm install -g mirror-mind` or, in a clone,
+  from `npm link` once at the root
   ([Running a command](../../REFERENCE.md#running-a-command)):
 
   ```bash
-  NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts <command>
+  mirror <command>
   ```
 
 - **Clean your `.env`.** Remove any `MIRROR_TS_<FAMILY>=0` line and the three

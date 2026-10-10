@@ -143,7 +143,7 @@ one file. Full model in [Architecture](../product/architecture.md#3-module-model
 agent which front-door command to run, and they do not own behavior. Hook
 wrappers are short shell scripts that exec one Node entry
 (`ts/src/hooks/main.ts`). Logic belongs in the domain module
-([`D8`](../project/briefing.md#d8--skill-logic-belongs-in-srcmemoryskills)
+([`D8`](../project/briefing.md#d8--a-skill-is-a-prompt-that-names-a-front-door-command)
 and "Skill layer principle: Python/CLI owns DB; Agent owns filesystem; no
 `run.py`" in
 [Decisions](../project/decisions.md#skill-layer-principle-pythoncli-owns-db-agent-owns-filesystem-no-runpy)

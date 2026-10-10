@@ -81,7 +81,8 @@ Every invocation is one process, and every process enters the same way:
 
 ```text
 runtime — a skill, a hook wrapper, the Pi extension, the MCP launcher
-    ↓   node ts/src/frontDoor/cli.ts <command> …   (or ts/src/hooks/main.ts, ts/src/mcp/main.ts)
+    ↓   mirror <command> …   — bin/mirror.js, a loader shim over ts/src/frontDoor/cli.ts
+    ↓   (hooks: bin/mirror-hook.js over ts/src/hooks/main.ts; MCP: mirror mcp)
 front door — routing.ts resolves the command to a route module
     ↓
 domain modules — ts/src/<domain>/: the behavior

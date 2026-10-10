@@ -19,7 +19,7 @@ user-invocable: true
 > Concrete migration flow:
 >
 > ```bash
-> NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts extensions install \
+> mirror extensions install \
 >   review-copy \
 >   --extensions-root examples/extensions \
 >   --mirror-home ~/.mirror-minds/<user>
@@ -31,15 +31,15 @@ user-invocable: true
 > mkdir -p ~/.mirror-minds/<user>/extensions
 > cp -R examples/extensions/review-copy ~/.mirror-minds/<user>/extensions/
 >
-> NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts extensions validate --mirror-home ~/.mirror-minds/<user>
-> NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts inspect extension review-copy --mirror-home ~/.mirror-minds/<user>
+> mirror extensions validate --mirror-home ~/.mirror-minds/<user>
+> mirror inspect extension review-copy --mirror-home ~/.mirror-minds/<user>
 >
-> NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts extensions sync \
+> mirror extensions sync \
 >   --mirror-home ~/.mirror-minds/<user> \
 >   --runtime pi \
 >   --target-root ~/.mirror-minds/<user>/runtime/skills/pi
 >
-> NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts extensions sync \
+> mirror extensions sync \
 >   --mirror-home ~/.mirror-minds/<user> \
 >   --runtime claude \
 >   --target-root ~/.mirror-minds/<user>/runtime/skills/claude
@@ -111,7 +111,7 @@ COPY:
 For each requested model, run:
 
 ```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts consult FAMILY TIER "PROMPT" [--journey JOURNEY_ID]
+mirror consult FAMILY TIER "PROMPT" [--journey JOURNEY_ID]
 ```
 
 Run consult calls in parallel where possible and capture each full response.
@@ -143,7 +143,7 @@ After saving the HTML, tell the user the full generated file path.
 ## Boundary contract
 
 This extension should orchestrate stable Mirror commands such as:
-- `NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts consult`
+- `mirror consult`
 - file reads/writes
 
 It should not depend on internal Mirror modules.

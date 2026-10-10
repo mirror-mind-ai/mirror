@@ -11,34 +11,37 @@ Command reference, configuration, and legacy migration workflow.
 ## Running a command
 
 Every command in this document runs through the front door, the one entry into
-Mirror Mind's core. It names itself `mirror` in its own usage lines, and this
-document does the same:
+Mirror Mind's core. `npm install -g mirror-mind` puts it on your `PATH` as
+`mirror`, the name it gives itself in its own usage lines:
 
 ```bash
 mirror runtime status
 ```
 
-There is no `mirror` on your `PATH` yet: the npm package that installs it is
-[CV22.DS10.US3](docs/project/roadmap/cv22-typescript-core-port/cv22-ds10-python-retirement-npm-distribution/index.md).
-Until then `mirror` stands for this invocation, run from the repository root:
+The skills say the same thing, so what an agent runs is what you run. Two
+install kinds provide the name, and `runtime status` reports which one you
+have:
 
-```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts runtime status
-```
+- **`package`** — a global npm install. The package holds the runtime subset of
+  this repository with the same paths, under `$(npm root -g)/mirror-mind`;
+  `npm install -g mirror-mind@<version>` and `mirror runtime update` both
+  replace it in place.
+- **`clone`** — a git checkout, after `npm link` once at its root. That is how
+  the repository's own developers run it; the
+  [development guide](docs/process/development-guide.md) has the setup.
 
-To make every command here runnable as written, define it once per shell:
-
-```bash
-alias mirror='NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts'
-```
-
-The skills use the full invocation, not the alias: an agent runs them in a
-non-interactive shell, where an alias does not exist.
+A second command, `mirror-hook`, is installed beside it for the runtimes' hooks;
+you never run it yourself. Repository tooling — tests, smokes, CI — calls
+`node ts/src/frontDoor/cli.ts` directly, which is a statement about scripts, not
+about what anyone is told to type.
 
 ## Commands
 
 Claude Code uses the `/mm:` prefix. Pi and Gemini CLI use the `/mm-` prefix.
-Codex uses the `$mm-` prefix. All runtimes call the same core.
+Codex uses the `$mm-` prefix. All runtimes call the same core. A Claude Code
+**plugin** install (the npm package's wiring) prefixes the plugin's name:
+`/mirror-mind:mm:<skill>` in the slash menu, `mirror-mind:mm-<skill>` as the
+skill's own name; the `/mm:` column below is the checkout's form.
 
 | Pi / Gemini CLI | Codex | Claude Code | Purpose | Main Arguments |
 |---------|-------|-------------|---------|----------------|
@@ -562,13 +565,28 @@ static table; `list personas --verbose` reflects the current seeded state.
 
 ## Configuration
 
-`.env` is read by Node, not by Mirror: every invocation passes it. The skills
-and the `mirror` alias use `node --env-file=.env`; the hook wrappers and the
-MCP launcher use `--env-file-if-exists`, so a fresh clone without one still
-starts. Values already present in the real environment take precedence over
-the file.
+Mirror reads its configuration itself, on every command, from every entry (the
+front door, the hooks, the MCP server). Nothing passes a flag. Two files, one
+order, and nothing is overridden: a value set in your shell wins over both
+files, and the first file to set a variable keeps it.
 
-Two starter files live at the repo root:
+1. the real environment;
+2. `<clone>/.env` — only for a clone, located from the running front door's
+   own tree, never from the working directory. A package install ships no
+   `.env` and reads none;
+3. `${XDG_CONFIG_HOME:-~/.config}/mirror/env` — the OS user's Mirror
+   configuration. `mirror init <user>` creates it with `MIRROR_USER=<user>`
+   when no other source configured a user, readable by you only (`0600` in a
+   `0700` directory; `runtime diagnose` grades the mode), and tells you to add
+   `OPENROUTER_API_KEY` to it by hand. The key is never read from the command
+   line.
+
+A second mirror on the same machine runs with `MIRROR_USER=<other>` set in the
+shell, as before. The per-install update channel lives beside the configuration
+for a package (`~/.config/mirror/update-channel`) and in the tree for a clone
+(`.mirror-update-channel`); `mirror runtime channel` reads and writes it.
+
+Two starter files live at the repository root, for a clone's `.env`:
 
 - `.env.example` — minimal template (identity + API keys)
 - `.env.example.advanced` — canonical reference with every variable documented

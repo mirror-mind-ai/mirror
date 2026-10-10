@@ -266,8 +266,8 @@ user-invocable: true
 
 A minimal extension. Supported commands:
 
-- `NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts ext hello ping [text]` — record a ping.
-- `NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts ext hello list` — list recent pings.
+- `mirror ext hello ping [text]` — record a ping.
+- `mirror ext hello list` — list recent pings.
 ```
 
 ### 7. Install

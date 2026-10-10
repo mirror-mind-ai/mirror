@@ -49,6 +49,11 @@ MODE="${2:-capture}"
 # families looked changed when nothing had changed.
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 WORK="$REPO_ROOT/tmp/capture-work"
+# The program under capture. The checkout form by default, as repository
+# tooling runs it; CV22.DS10.US3 plateau 6 replays the plateau-0 capture
+# THROUGH THE BIN (`FRONT_DOOR=mirror`), so the diff proves that the loader
+# shim, the config module, and the npm layout changed no answer either.
+FRONT_DOOR="${FRONT_DOOR:-node ts/src/frontDoor/cli.ts}"
 SOURCE_HOME="${MIRROR_SOURCE_HOME:-$HOME/.mirror-minds/vinicius-ts}"
 
 [ -f "$PRISTINE" ] || { echo "no pristine database at $PRISTINE" >&2; exit 2; }
@@ -143,8 +148,9 @@ run_family() {
   # D2's new unknown-subcommand answer. A capture blind to stderr is blind to
   # exactly the surfaces this story is most likely to change.
   cd "$REPO_ROOT" || return 127
+  # shellcheck disable=SC2086 -- FRONT_DOOR and argv are word lists on purpose
   MIRROR_HOME="$home" MIRROR_USER=vinicius-ts NODE_OPTIONS=--no-warnings \
-    node ts/src/frontDoor/cli.ts $argv >"$WORK/$tag.out" 2>"$WORK/$tag.err"
+    $FRONT_DOOR $argv >"$WORK/$tag.out" 2>"$WORK/$tag.err"
   local exit_code=$?
   normalize < "$WORK/$tag.out"
   printf '\n--- stderr ---\n'

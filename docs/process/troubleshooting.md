@@ -32,6 +32,7 @@ but no fix yet are also welcome (mark them `Status: mitigated`).
 - [`approve-plan` or `done-item` refuses with "Still to author"](#approve-plan-or-done-item-refuses-with-still-to-author)
 - [Concurrent writes fail with `table conversations already exists` or `disk I/O error`](#concurrent-writes-fail-with-table-conversations-already-exists-or-disk-io-error)
 - [Hooks skip when a runtime cannot find `node`](#hooks-skip-when-a-runtime-cannot-find-node)
+- [`mirror` or `mirror-hook` is not found after installing, or after a Node switch](#mirror-or-mirror-hook-is-not-found-after-installing-or-after-a-node-switch)
 - [Pi logger fails silently when `python3` resolves outside the project venv](#pi-logger-fails-silently-when-python3-resolves-outside-the-project-venv)
 - [The front door misbehaves: telling it apart, restoring data](#the-front-door-misbehaves-telling-it-apart-restoring-data)
 - [`extensions install` writes migrations to the wrong database outside production](#extensions-install-writes-migrations-to-the-wrong-database-outside-production)
@@ -738,6 +739,19 @@ Without it, a wrapper tries `command -v node`, then `~/.nvm/current/bin/node`,
 none skips the hook, exits 0 so the user's turn is never broken, and writes
 the line above instead of failing silently.
 
+The Claude Code plugin's wrappers, which run from wherever Claude Code copied
+or linked the plugin, first have to find the hook entry itself: `mirror-hook`,
+which `npm install -g mirror-mind` puts beside `mirror`. They look in
+`$MIRROR_BIN` (the directory holding both bins), then on the `PATH`, then in
+the three directories above. The log line for that case names its own fix:
+
+```text
+claude:session-start: mirror-hook not found on PATH; hook skipped. Install mirror-mind (npm install -g mirror-mind) or set MIRROR_BIN to its bin directory.
+```
+
+`MIRROR_BIN` is the same trust class as `MIRROR_NODE`: an executable path the
+environment names, honored as given.
+
 ### Recovery of affected sessions
 
 The turns a skipped hook never saw are not in the database, and Mirror has no
@@ -745,6 +759,60 @@ backfill for Claude Code or Gemini CLI transcripts: fix the Node resolution and
 logging resumes from the next session. Pi and the Codex wrapper do not go
 through these wrappers: both spawn `node` from the terminal they were started
 in, which normally has it on its `PATH`.
+
+---
+
+## `mirror` or `mirror-hook` is not found after installing, or after a Node switch
+
+**Date:** 2026-10-09
+**Status:** documented; by design of global npm installs
+**Affected component:** the `mirror` and `mirror-hook` bins; the Pi package installed by local path
+**Severity:** every skill fails with `command not found`; the plugin's hooks skip
+
+### Symptom
+
+Right after `npm install -g mirror-mind`, or after switching Node versions, a
+skill answers `mirror: command not found`; inside Pi the extension says at
+session start that `mirror` is not on the `PATH`; the Claude Code plugin's
+hooks write `mirror-hook not found` to `hooks.log`. In a clone, the same
+symptom appears on the first session after pulling the release whose skills
+say `mirror`.
+
+### Root cause
+
+A global npm install lives under one Node's prefix (`npm prefix -g`), and its
+bins under that prefix's `bin`. With **nvm**, each Node version has its own
+prefix, so switching versions (`nvm use 22`) makes `mirror`, `mirror-hook`,
+and the package directory Pi was pointed at vanish from the active environment
+— nothing was uninstalled, it is just under another prefix. A GUI-launched
+runtime may not have the prefix's `bin` on its `PATH` at all. In a clone,
+nothing provides the name until `npm link` runs once at the root.
+
+### Diagnosis
+
+```bash
+command -v mirror            # empty: not on this PATH
+npm prefix -g                # where the active Node installs global packages
+ls "$(npm prefix -g)/bin"    # is mirror here?
+mirror runtime status        # Install: package (...) or clone (...)
+```
+
+### Fix
+
+- **nvm:** install Mirror under the Node version you use (`nvm use 24 && npm
+  install -g mirror-mind`), and make that version the default (`nvm alias
+  default 24`) so a new shell and a GUI launch find the same prefix. If you keep
+  several versions, install under each, or put one prefix's `bin` on your
+  `PATH` explicitly. Pi was given a path under one prefix (`pi install
+  "$(npm root -g)/mirror-mind"`); after an install under another, point it at
+  the new path.
+- **GUI-launched runtimes:** set `MIRROR_BIN` to the directory holding the two
+  bins (`$(npm prefix -g)/bin`) in the environment the runtime starts with;
+  the plugin's wrappers and the MCP launcher honor it. `MIRROR_NODE` is the
+  same idea for `node` itself.
+- **A clone:** `npm link` once at the repository root. The Pi extension prints
+  that line at session start while `mirror` does not resolve, and so does
+  `runtime update` after a successful clone update.
 
 ---
 

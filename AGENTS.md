@@ -17,6 +17,12 @@ Applies to all sessions, regardless of project.
 The mirror operates in four modes, chosen automatically based on context:
 Mirror, Builder, Explorer, and Soul.
 
+Each skill below is named three ways: `/mm-<skill>` in Pi and Gemini CLI,
+`$mm-<skill>` in Codex, `/mm:<skill>` in Claude Code. A Claude Code **plugin**
+install prefixes the plugin's name — `/mirror-mind:mm:<skill>` in the menu,
+`mirror-mind:mm-<skill>` as the skill's own name — and the forms below refer to
+the same skill.
+
 **Mirror Mode** — activate for: life decisions, feelings, business strategy,
 writing, mentoring, health, existential questions, sensemaking, psychological
 tensions, class preparation, product launches, or any topic asking for personal

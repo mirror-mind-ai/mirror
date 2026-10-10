@@ -8,13 +8,18 @@ four runtimes exist: Claude Code (hooks), Pi (TypeScript extension), Gemini CLI
 runtime must implement to integrate correctly with Mirror Mind's core.
 
 The front door is the stable interface: one process per command, entered as
-`node ts/src/frontDoor/cli.ts <command> …` from the repository. It names itself
-`mirror`, and this document uses that name for readability. A hook or a skill
-must spell the invocation out — a runtime runs them in a non-interactive shell,
-where no alias exists:
+`mirror <command> …` — the `bin` the npm package installs (`bin/mirror.js`,
+a loader shim over `ts/src/frontDoor/cli.ts`; US3 D15), on the `PATH` from
+`npm install -g mirror-mind` or from `npm link` at a clone's root. A skill says
+exactly that, in every runtime's copy, and a guard forbids any other form. The
+hooks do not go through the `PATH`: the in-tree wrappers run their own tree's
+`bin/mirror-hook.js`, and the plugin's find the installed `mirror-hook`
+([Node resolution for hook runtimes](#node-resolution-for-hook-runtimes)). The front door reads its configuration
+itself — the clone's `.env` when there is one, then the user's
+`~/.config/mirror/env` — so no invocation passes a flag:
 
 ```bash
-node --no-warnings --env-file-if-exists=<repo>/.env <repo>/ts/src/frontDoor/cli.ts <command> …
+mirror <command> …
 ```
 
 Runtimes are thin dispatchers — they translate lifecycle events into front-door
@@ -632,14 +637,12 @@ depending on the runtime.
 never to stdout.
 
 ```bash
-MIRROR="node --no-warnings --env-file-if-exists=$REPO/.env $REPO/ts/src/frontDoor/cli.ts"
-
 # Correct
-$MIRROR conversation-logger session-start >/dev/null 2>&1 || true
+mirror conversation-logger session-start >/dev/null 2>&1 || true
 echo '{}'
 
 # Wrong — status line leaks to stdout before the JSON
-$MIRROR conversation-logger session-start 2>/dev/null
+mirror conversation-logger session-start 2>/dev/null
 echo '{}'
 ```
 

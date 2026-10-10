@@ -2432,6 +2432,52 @@ being acceptable if the console became load-bearing again before DS10 executes.
 app does not cover — or a DS10 finding that something outside `src/memory/web/`
 depends on the console. Either reopens the question *before* deletion, not after.
 
+### The Windows Frame and installer are retired, not re-homed, and no Windows story is promised
+
+**Date:** 2026-10-09 · **Context:** [CV22.DS10.US3](roadmap/cv22-typescript-core-port/cv22-ds10-python-retirement-npm-distribution/cv22-ds10-us3-npm-distribution/index.md)
+plateau 5, decision D4 of its [plan](roadmap/cv22-typescript-core-port/cv22-ds10-python-retirement-npm-distribution/cv22-ds10-us3-npm-distribution/plan.md#decisions-this-plan-asks-the-navigator-to-take);
+the [cutoff](../releases/pending-cutoffs.md#the-windows-frame-and-installer). US2 re-homed
+both to US3 on 2026-09-23 because their new shape would depend on the npm artifact's `bin`
+and install path; TS5 left them as the last Python callers in the tree and exempted their
+files by name "until US3".
+
+**The decision: `frame/`, `installer/`, `docs/installer/`, the `windows-installer.yml`
+workflow, its profile smoke, and the ES-004 mockup are deleted; they remain at
+`cv22-last-python-bearing` and in the v0.30.0 and v0.31.8 release assets; the cutoff names
+`v0.31.14` as where they work; and no Windows product over the npm package is promised.**
+
+**Why retire rather than re-home.** Their premise was a `uv`-bearing git clone: the
+installer put Git, Node, `uv`, and Pi on the machine, cloned the repository, and ran
+`uv sync`; the Frame spawned the interpreter for eight commands; both found the tree by
+the deleted `pyproject.toml`. Re-homing — nine call sites, four root-detection sites,
+`uv sync` → `npm ci`, Node 24 in the workflow — would have shipped a Windows product over
+a core that is tested on macOS and Linux only, with no Windows CI and one known
+Windows-breaking path (the snapshot promotion by rename, US3 D10). A Windows product
+deserves its own story and its own CI, as the web console and Mirror Desktop had their
+own decisions.
+
+**Why no story is promised.** The second plan review (2026-10-05) found D4 argued from
+premise and asked for the number. Read from the GitHub release assets with `gh api` on
+2026-10-09: `MirrorMind-Setup-0.30.0.exe` on v0.30.0, one download (2026-07-05);
+`MirrorMind-Setup-0.31.0.exe` on v0.31.8, two downloads (2026-08-07); three in all, none
+since August, and nobody the Navigator knows of runs it. A promise with no demand behind
+it is a roadmap entry nobody asked for; a Windows product waits for a request.
+
+**What the cutoff tells a Frame user.** Read from the deleted installer, not assumed: its
+clone tracks `stable`, which the CV22 release will point at a tree with no engine for the
+Frame, so updating from inside the Frame would complete and break — stay on `v0.31.14`
+there, or move to the npm package on a supported platform; and the home `init` wrote at
+`.mirror\<user>` under the profile is an ordinary home the package can open. The cutoff
+does not mention WSL: a sentence shaped like a claim about something nobody has run does
+not belong in a release note.
+
+**What holds it.** The `frame-installer` row in the retired-surface guard: absence by
+path and by suffix (no `.ps1`, `.psm1`, `.iss`, or `.cmd` anywhere), residue by the
+product's file names. With the Frame gone, the DS10 Zero Python gate closed for the
+shipped artifact the same day: the pack guard forbids the interpreter-invocation forms in
+shipped content, importing the retired-surface guard's own list so the two halves cannot
+drift.
+
 ## Open Discussions
 
 ### Migration rehearsal — long-term status
