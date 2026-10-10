@@ -318,7 +318,8 @@ diff tmp/us3/before.tsv tmp/us3/after.tsv
 - **Route 4 — run by the Builder on 2026-10-09 (plateau 6), through `mirror` from the
   linked clone at `ccf8b1cc`:** 28 of 29 families identical to the plateau-0 capture; the
   one difference is `runtime-version`'s ninth line, `Install: clone (<REPO>)`, confirmed by
-  `--dump`. Awaits the Navigator's run. One instrument finding: the normalizer's `<TIME>`,
+  `--dump`. **Run by the Navigator on 2026-10-10 at 12:31, under `bash`: the same diff, the
+  same two hashes — pass.** One instrument finding: the normalizer's `<TIME>`,
   `<AGO>`, `<UUID>`, and `<VERSION>` masks use `\b`, which BSD `sed` does not support,
   so they never apply on macOS — harmless here (same machine, same version both times),
   and a false diff on every family the day the version bumps between captures.
