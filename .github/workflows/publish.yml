@@ -1,0 +1,84 @@
+# Stage the npm package from this repository, with provenance, for a human to
+# approve. CV22.DS10.US3's release gate (2026-10-10).
+#
+# This workflow is the trusted publisher npm knows for `mirror-mind`:
+# `mirror-mind-ai/mirror`, this file, environment `release`. It holds no
+# token. GitHub gives the job a short-lived OIDC identity (`id-token: write`),
+# npm checks that identity against the three facts above, and the tarball
+# carries a provenance attestation naming this repository and commit.
+#
+# It publishes what is COMMITTED. The version is the one in package.json at
+# the dispatched ref; nothing here edits it, so the attestation and the
+# tarball agree about what was built.
+#
+# It STAGES, it does not publish. The trusted publisher is allowed `npm stage
+# publish` only: the version lands on the registry in a staged state that no
+# install can see, and a maintainer with 2FA finishes it --
+#
+#   npm stage list mirror-mind
+#   npm stage download <stage-id>     # inspect the tarball first, if you like
+#   npm stage approve  <stage-id>     # public
+#   npm stage reject   <stage-id>     # gone
+#
+# -- which is the project's rule (publication is a Navigator-authorized hard
+# gate) in npm's own vocabulary. Two human steps stand before the registry:
+# the `release` environment's required reviewer before the job runs, and the
+# approve with a one-time code after it.
+#
+# Dispatch it only on a commit whose Tests workflow is green.
+
+name: Publish
+
+on:
+  workflow_dispatch:
+    inputs:
+      dist_tag:
+        description: "dist-tag for the staged version (the updater reads `stable`; use `next` for a rehearsal)"
+        required: true
+        default: next
+        type: string
+
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  stage:
+    name: stage ${{ github.ref_name }} as ${{ inputs.dist_tag }}
+    runs-on: ubuntu-latest
+    environment: release
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      # Trusted publishing and `npm stage` need a recent npm; the one bundled
+      # with the runner's Node may be older than the registry's features.
+      - name: npm at latest
+        run: npm install -g npm@latest && npm --version
+
+      - run: npm ci
+
+      - name: What this commit would ship
+        run: |
+          echo "version: $(node -p 'require("./package.json").version')"
+          echo "dist-tag: ${{ inputs.dist_tag }}"
+          npm pack --dry-run 2>&1 | tail -8
+
+      # The two guards that make the Zero Python claim for the artifact: the
+      # tree holds no retired surface, and the tarball holds the runtime
+      # subset and nothing else, with no forbidden content.
+      - name: Retired-surface tripwire
+        run: node ts/scripts/checkRetiredSurfaces.ts
+      - name: Pack contents
+        run: node ts/scripts/checkPackContents.ts
+
+      - name: Stage with provenance
+        run: npm stage publish . --provenance --tag "${{ inputs.dist_tag }}"
