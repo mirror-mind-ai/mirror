@@ -431,6 +431,7 @@ export const RETIRED: readonly RetiredSurface[] = [
       "frame/",
       "installer/",
       "docs/installer/",
+      "spikes/windows-frame-mockup/",
       ".github/workflows/windows-installer.yml",
       "scripts/ci-nonascii-profile-smoke.ps1",
     ],
@@ -454,16 +455,10 @@ export const RETIRED: readonly RetiredSurface[] = [
       "smoke-electron",
       "ci-nonascii-profile-smoke",
     ],
-    exemptions: {
-      // ES-004's Experiment 1: the static mockup the Frame was designed from,
-      // deployed on its own and touching no core. It is that exploration's
-      // evidence, as `docs/project/exploration/es-004-*.md` is its record, and
-      // it names the installer scripts its panels were drawn to map onto.
-      "spikes/windows-frame-mockup/README.md":
-        "ES-004 Experiment 1's mockup: the exploration record of what the Frame was designed from, naming the installer scripts its panels mapped onto",
-      "spikes/windows-frame-mockup/index.html":
-        "the same ES-004 mockup: its setup panel lists the installer scripts it simulated",
-    },
+    // ES-004 Experiment 1's static mockup (`spikes/windows-frame-mockup/`)
+    // went with the Frame it was drawn for, at the Navigator's direction; the
+    // exploration's record is `docs/project/exploration/es-004-*.md`.
+    exemptions: {},
   },
 ];
 

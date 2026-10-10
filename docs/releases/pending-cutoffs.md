@@ -482,8 +482,7 @@ story and its own CI, and with no user asking, none is promised.
 **What to do instead.** On macOS or Linux, install the npm package:
 `npm install -g mirror-mind`, then `mirror init <user>` and the one wiring step
 `init` prints for each runtime it finds. On Windows there is no supported route
-in this release. A Linux environment on Windows (WSL) is where the POSIX core
-would run, but it is not tested and not claimed.
+in this release.
 
 **What still works if you do nothing.** An installed Frame keeps working exactly
 as it is: it runs the clone it installed, and that clone carries the Python

@@ -434,6 +434,7 @@ describe("the live frame-installer row (CV22.DS10.US3 plateau 5, decision D4)", 
     "installer/mirror.iss",
     "installer/launcher/mirror.cmd",
     "docs/installer/README.md",
+    "spikes/windows-frame-mockup/index.html",
     ".github/workflows/windows-installer.yml",
     "scripts/ci-nonascii-profile-smoke.ps1",
   ];

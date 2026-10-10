@@ -383,10 +383,12 @@ home (D14); the `mirror` bin is a type-stripping loader shim (D15).
     its PowerShell), `docs/installer/`, `.github/workflows/windows-installer.yml`, and one file
     the plan had not named, `scripts/ci-nonascii-profile-smoke.ps1` — the profile smoke only
     that workflow ran, invoked with the Frame's payload (59 files, `git rm`). They stay readable
-    at `cv22-last-python-bearing` (`b0d34254`). Left in place: `spikes/windows-frame-mockup/`,
-    ES-004 Experiment 1's static mockup, which touches no core and is that exploration's
-    evidence; it names two installer scripts, so the new row exempts its two files with that
-    reason. Deleting it with the Frame is the Navigator's call, not this plateau's.
+    at `cv22-last-python-bearing` (`b0d34254`). `spikes/windows-frame-mockup/`, ES-004
+    Experiment 1's static mockup, was first left in place as that exploration's evidence (its
+    two files exempted, since they name installer scripts); **the Navigator chose to delete it
+    with the Frame** the same day, and it joined the row's absent paths. He also cut the
+    cutoff's line naming WSL as untested: a sentence shaped like a claim about something
+    nobody has run does not belong in a release note.
   - **The `frame-installer` row** in the retired-surface guard: absence by path (the five
     above) and **by suffix** — no `.ps1`, `.psm1`, `.iss`, or `.cmd` anywhere in the tree, the
     claim a path list cannot make, as TS5's `.py` was; residue by file name (the workflow, the
@@ -411,8 +413,7 @@ home (D14); the `mirror` bin is a type-stripping loader shim (D15).
     the seeded `uv run python` (now an exemption with the parity guard's reason) and, by
     accident, `memory web` and `memory eval` in the fixtures (reworded to a living command).
   - **The record.** The cutoff in `pending-cutoffs.md` (what was removed, why with D4's number,
-    `npm install -g mirror-mind` on macOS and Linux, no Windows route and WSL named as untested
-    rather than promised, and two things an installed Frame's user must know: its `stable`
+    `npm install -g mirror-mind` on macOS and Linux, no Windows route, and two things an installed Frame's user must know: its `stable`
     fast-forward now lands on a tree with no engine for it, and the home it wrote at
     `.mirror\<user>` is an ordinary home the package can open — both read from the deleted
     installer, not assumed); the python-core cutoff's last paragraph points at it; REFERENCE's
