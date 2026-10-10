@@ -2,7 +2,7 @@
 
 # CV22.DS10.US3 — npm distribution
 
-**Status:** 🟡 Plan approved — pulled 2026-09-30, [Plan](plan.md) drafted and
+**Status:** ✅ Done — 2026-10-10. Pulled 2026-09-30, [Plan](plan.md) drafted and
 panel-reviewed the same day; a second panel pass on 2026-10-05 (prompt-engineer,
 ai-engineer, product-designer, experience-designer) found six things, the sharpest that
 the operating instructions did not ship in the tarball; all six folded, and the Plan
@@ -12,7 +12,7 @@ Plateaus 0 and 1 done the same day; plateau 2 validated 2026-10-06; plateau 3 im
 2026-10-09, after a persona-panel review of its plan whose three findings it took; plateau 5
 implemented 2026-10-09 (the Windows Frame and installer retired, the artifact half of the
 Zero Python gate in CI); plateau 6 implemented 2026-10-09 (the docs say `mirror`, the
-replay 28/29 with the one named line, the handoff review). **Awaiting Validation.**
+replay 28/29 with the one named line, the handoff review). Validation accepted 2026-10-10 (routes 1–4, E2E required and met); Debt Review the same day (P1 paid, P2 deferred, CR122 and CR123 captured); Coherence and Done 2026-10-10.
 **Type:** User Story
 **Depends on:** every other DS10 story (done); the release gate (done 2026-09-28).
 
@@ -467,12 +467,11 @@ Read the [plan](plan.md) (D1–D15 approved and recorded) and the *Plateau Progr
   by the Builder and awaits the Navigator.
 - **The Ariad cursor** is at `implement` for CV22.DS10.US3 under the approved Plan.
 
-**Next: Validation.** Route 4 is the Navigator's to run (the [test guide](test-guide.md)
-has the three lines and the pass condition); routes 1–3 are accepted. Then `validate-item`
-with the Navigator's acceptance, Debt Review with the [handoff review](handoff-review.md)'s
-dispositions (P1 is the Navigator's template line, before the release; N1 and N2 are CR
-candidates), Coherence, and Done — after which DS10 collapses and CV22 reaches its release
-gate. The [handoff](handoff.md) is the resume statement.
+**The story is Done (2026-10-10).** Validation (`validation.md`), Debt Review (`review.md`),
+Coherence, and Done are sealed records in this package. What is next is DS10's collapse
+(8/8) and the CV22 release gate: publication with `--provenance` (P2), CR121's decision, the
+production clone's last Python-era hop (F20/D12), and the release note that carries the
+cutoffs. The [handoff](handoff.md) is the resume statement.
 
 **Open for the Navigator:**
 - F1 (the empty `ego/constraints` template makes a fresh `seed` exit 1);
