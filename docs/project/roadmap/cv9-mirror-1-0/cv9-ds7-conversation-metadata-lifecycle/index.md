@@ -2,7 +2,7 @@
 
 # CV9.DS7 — Conversation Metadata Lifecycle
 
-**Status:** Active Delivery Story; expansion accepted  
+**Status:** ✅ Done  
 **Source:** [ES-001 Conversation Metadata Lifecycle](../../../exploration/es-001-conversation-metadata-lifecycle.md)  
 **Exploration summary:** [exploration-summary.md](exploration-summary.md)
 
@@ -38,8 +38,8 @@ The Delivery Story expansion has been accepted. No implementation plan has been 
 |------|------|-------|--------|
 | [CV9.DS7.TS1](cv9-ds7-ts1-metadata-lifecycle-decision-policy/index.md) | Technical Story | Metadata Lifecycle Decision Policy | Done |
 | [CV9.DS7.US1](cv9-ds7-us1-dry-run-metadata-lifecycle-decision-path/index.md) | User Story | Dry-run Metadata Lifecycle Decision Path | Done |
-| [CV9.DS7.TS2](cv9-ds7-ts2-extract-metadata-lifecycle-policy-boundary/index.md) | Technical Story | Extract Metadata Lifecycle Policy Boundary | Validated |
-| [CV9.DS7.TS3](cv9-ds7-ts3-bounded-metadata-lifecycle-apply-service/index.md) | Technical Story | Bounded Metadata Lifecycle Apply Service | Validated |
+| [CV9.DS7.TS2](cv9-ds7-ts2-extract-metadata-lifecycle-policy-boundary/index.md) | Technical Story | Extract Metadata Lifecycle Policy Boundary | Done |
+| [CV9.DS7.TS3](cv9-ds7-ts3-bounded-metadata-lifecycle-apply-service/index.md) | Technical Story | Bounded Metadata Lifecycle Apply Service | Done |
 | [CV9.DS7.US2](cv9-ds7-us2-apply-metadata-lifecycle-decisions/index.md) | User Story | Apply Metadata Lifecycle Decisions Safely | Done |
 | [CV9.DS7.US3](cv9-ds7-us3-metadata-lifecycle-operation-report/index.md) | User Story | Metadata Lifecycle Operation Report | Done |
 | [CV9.DS7.US4](cv9-ds7-us4-contextual-conversation-metadata-maintenance/index.md) | User Story | Contextual Conversation Metadata Maintenance | Done |
@@ -98,6 +98,21 @@ Sequence:
 2. [CV9.DS7.US8](cv9-ds7-us8-historical-metadata-backfill-preview/index.md) — preview old conversations.
 3. [CV9.DS7.US9](cv9-ds7-us9-historical-metadata-backfill-apply/index.md) — apply reviewed backfill with safe/force modes.
 4. [CV9.DS7.US10](cv9-ds7-us10-web-historical-metadata-backfill-operation/index.md) — expose web preview/apply, resume scopes, production progress, and orphan cleanup.
+
+---
+
+## Closure
+
+Closed on 2026-09-26 by the Navigator's decision, after
+[CR002](../../../refinement/rs001-ariad-runtime-trust/cr002-cursor-sync-roadmap-selection.md)
+showed this package's status reading as Active to every Builder journey on the project.
+Ten children were Done. TS2 and TS3 had been validated and never formally closed:
+TS2 paid the debt it existed for (D-001, below), and TS3 records its verification.
+The lifecycle they built shipped, was ported to TypeScript by
+[CV22.DS7.US10](../../cv22-typescript-core-port/cv22-ds7-command-burn-down/cv22-ds7-us10-extraction-lifecycle-session-composites/index.md)
+(`ts/src/conversation/metadataLifecycle.ts`), and the Python both stories touched was
+deleted in CV22.DS10.TS5. Nothing remained to deliver here; the evidence-ranking
+improvement under Follow-up and Debt stays a possible future improvement.
 
 ---
 

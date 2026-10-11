@@ -38,7 +38,7 @@ The mirror supports two `kind`s of extensions, declared in `skill.yaml`:
 
 - **`command-skill`** — extensions with state. They own SQLite tables (under a
   forced `ext_<id>_*` prefix), expose subcommands through
-  `python -m memory ext <id> <subcommand>`, can register Mirror Mode context
+  `mirror ext <id> <subcommand>`, can register Mirror Mode context
   providers, and run their own SQL migrations. Example: a finance extension
   that tracks accounts, transactions, and runway.
 
@@ -48,16 +48,25 @@ involved contract. `prompt-skill` is covered briefly in the
 
 ## What the mirror provides
 
-When the mirror loads a `command-skill` extension, it offers a stable API:
+A `command-skill` extension is a set of programs, in any language, that the
+mirror runs through two language-neutral process contracts:
 
-- a shared SQLite connection (the same `memory.db` the rest of the system
-  uses), restricted to the extension's table prefix for writes,
-- read-only access to other tables (identity, journeys, memories, etc.),
-- embedding generation (`text-embedding-3-small`),
-- LLM access through the project's router,
-- a way to register CLI subcommands,
-- a way to register Mirror Mode context providers bound to a persona,
-- a SQL migration runner with checksum tracking.
+- `mirror-cli-v1` for each subcommand: the user's arguments and streams, with
+  the database path, the mirror home, and the extension's table prefix in the
+  environment,
+- `mirror-context-v1` for each Mirror Mode context provider: one JSON request
+  in, one JSON object out.
+
+Around them the mirror provides:
+
+- the shared SQLite database (the same `memory.db` the rest of the system
+  uses), with the extension's own `ext_<id>_*` prefix for its tables,
+- a SQL migration runner with checksum tracking,
+- persona and journey bindings that decide when a context provider runs.
+
+Until CV22.DS10.TS2 the mirror instead imported a Python `extension.py` and
+handed its `register(api)` an `ExtensionAPI` with database, embedding, and LLM
+handles. That contract is retired.
 
 See the [API Reference](api-reference.md) for the full contract.
 
@@ -74,7 +83,7 @@ extension source trees. The mirror never ships extension source code.
 Extensions are installed explicitly:
 
 ```bash
-python -m memory extensions install <id> \
+mirror extensions install <id> \
   --extensions-root <extensions-root>
 ```
 
@@ -82,8 +91,12 @@ The target mirror home is resolved from `MIRROR_HOME` or `MIRROR_USER`
 in the active `.env` (or shell environment). Pass `--mirror-home <path>`
 explicitly when working against a non-default home, otherwise omit it.
 
-Installation copies the source tree, runs the extension's SQL migrations,
-imports `extension.py`, and calls its `register(api)` entrypoint.
+Installation copies the source tree, validates the runtimes the manifest declares, and
+runs the extension's SQL migrations. **Since CV22.DS10.TS2 it does not import
+`extension.py` or call `register(api)`** — the Mirror core no longer loads extension code
+at any point. Install warns about capabilities that declare no runtime and still succeeds,
+so an extension can migrate one capability at a time. Mirror dispatches declared
+`mirror-cli-v1` commands and `mirror-context-v1` providers through the TS core.
 
 ## Reading order
 
@@ -92,7 +105,8 @@ imports `extension.py`, and calls its `register(api)` entrypoint.
    and journeys (this is the conceptually trickiest part).
 3. [Journey-Bound Context](journey-bound-context.md) — how `journey -> project_path`
    and `extension capability -> journey` combine during Mirror Mode.
-4. [API Reference](api-reference.md) — the full `ExtensionAPI` contract.
+4. [API Reference](api-reference.md) — the manifest and the two runtime
+   protocols.
 5. [Migrations](migrations.md) — SQL migrations contract.
 6. [Authoring Guide](authoring-guide.md) — step-by-step authoring of a new
    extension, including the recommended documentation layout for the extension's
@@ -108,12 +122,13 @@ in each extension's own repository, not here.
 
 - **The mirror does not know about specific extensions.** It loads whatever is
   installed. No hardcoded extension names anywhere in the core.
-- **Extensions cannot reach into core internals.** They use `ExtensionAPI` and
-  nothing else. The API may grow; internal modules are not part of the
-  contract.
-- **Schema isolation is enforced.** Writes outside `ext_<id>_*` raise
-  `ExtensionPermissionError`. Reads outside the prefix go through a read-only
-  view.
+- **Extensions cannot reach into core internals.** They talk to the mirror
+  through the manifest and the two runtime protocols, and nothing else.
+  Internal modules are not part of the contract.
+- **Schema isolation is a convention the mirror checks where it can.**
+  Migration SQL that touches a table outside `ext_<id>_*` is refused at
+  install. A running extension process holds its own connection and is
+  trusted to write only under its prefix.
 - **Failures in extensions never break the mirror.** Errors in extension
   callbacks are caught, logged, and skipped — the mirror keeps responding.
 - **Avoid proper nouns in names.** CLI subcommands, table names, and

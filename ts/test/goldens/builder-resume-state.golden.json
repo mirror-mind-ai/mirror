@@ -1,0 +1,319 @@
+{
+  "frozen_now": "2026-01-01T00:00:00+00:00",
+  "guards": [
+    {
+      "cursor": null,
+      "name": "no_cursor",
+      "outcome": "blocked",
+      "reason": "Implementation requires a Builder delivery cursor",
+      "surface": "<<<ARIAD:IMPLEMENTATION_GUARD>>>\nDelivery\nDelivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ✓ Plan → ◉ Implement → ○ Validate → ○ Debt Review → ○ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🟧■  IMPLEMENTATION GUARD                       │\n│                                                        │\n│ status                                                 │\n│ blocked                                                │\n│                                                        │\n│ missing checkpoint                                     │\n│ Implementation requires a Builder delivery cursor      │\n│                                                        │\n│ boundary                                               │\n│ No implementation files may be mutated until the guard │\n│ allows Implement.                                      │\n╰────────────────────────────────────────────────────────╯\n<<<END:IMPLEMENTATION_GUARD>>>\n"
+    },
+    {
+      "cursor": {
+        "active_item": "CV1.US1",
+        "last_delivery_event": "plan_approved"
+      },
+      "name": "plan_approved",
+      "outcome": "allowed",
+      "surface": "<<<ARIAD:IMPLEMENTATION_GUARD>>>\nDelivery\nDelivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ✓ Plan → ◉ Implement → ○ Validate → ○ Debt Review → ○ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🟧■  IMPLEMENTATION GUARD                       │\n│                                                        │\n│ status                                                 │\n│ allowed                                                │\n│                                                        │\n│ active item                                            │\n│ CV1.US1                                                │\n│                                                        │\n│ last delivery event                                    │\n│ plan_approved                                          │\n│                                                        │\n│ boundary                                               │\n│ Implementation may begin under the approved Plan       │\n│ contract.                                              │\n╰────────────────────────────────────────────────────────╯\n<<<END:IMPLEMENTATION_GUARD>>>\n"
+    },
+    {
+      "cursor": {
+        "active_item": "CV1.US1",
+        "last_delivery_event": "plan_approved",
+        "pending_confirmation": "navigator_approval"
+      },
+      "name": "pending_confirmation_blocks_even_when_approved",
+      "outcome": "blocked",
+      "reason": "Implementation is blocked: pending confirmation navigator_approval.",
+      "surface": "<<<ARIAD:IMPLEMENTATION_GUARD>>>\nDelivery\nDelivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ✓ Plan → ◉ Implement → ○ Validate → ○ Debt Review → ○ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🟧■  IMPLEMENTATION GUARD                       │\n│                                                        │\n│ status                                                 │\n│ blocked                                                │\n│                                                        │\n│ missing checkpoint                                     │\n│ Implementation is blocked: pending confirmation        │\n│ navigator_approval.                                    │\n│                                                        │\n│ boundary                                               │\n│ No implementation files may be mutated until the guard │\n│ allows Implement.                                      │\n╰────────────────────────────────────────────────────────╯\n<<<END:IMPLEMENTATION_GUARD>>>\n"
+    },
+    {
+      "cursor": {
+        "active_item": "CV1.US1",
+        "last_delivery_event": "prepared"
+      },
+      "name": "no_approved_plan",
+      "outcome": "blocked",
+      "reason": "Implementation is blocked: approved Plan is required before Implement.",
+      "surface": "<<<ARIAD:IMPLEMENTATION_GUARD>>>\nDelivery\nDelivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ✓ Plan → ◉ Implement → ○ Validate → ○ Debt Review → ○ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🟧■  IMPLEMENTATION GUARD                       │\n│                                                        │\n│ status                                                 │\n│ blocked                                                │\n│                                                        │\n│ missing checkpoint                                     │\n│ Implementation is blocked: approved Plan is required   │\n│ before Implement.                                      │\n│                                                        │\n│ boundary                                               │\n│ No implementation files may be mutated until the guard │\n│ allows Implement.                                      │\n╰────────────────────────────────────────────────────────╯\n<<<END:IMPLEMENTATION_GUARD>>>\n"
+    },
+    {
+      "cursor": {
+        "active_item": "CV1.US1"
+      },
+      "name": "no_event_at_all",
+      "outcome": "blocked",
+      "reason": "Implementation is blocked: approved Plan is required before Implement.",
+      "surface": "<<<ARIAD:IMPLEMENTATION_GUARD>>>\nDelivery\nDelivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ✓ Plan → ◉ Implement → ○ Validate → ○ Debt Review → ○ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🟧■  IMPLEMENTATION GUARD                       │\n│                                                        │\n│ status                                                 │\n│ blocked                                                │\n│                                                        │\n│ missing checkpoint                                     │\n│ Implementation is blocked: approved Plan is required   │\n│ before Implement.                                      │\n│                                                        │\n│ boundary                                               │\n│ No implementation files may be mutated until the guard │\n│ allows Implement.                                      │\n╰────────────────────────────────────────────────────────╯\n<<<END:IMPLEMENTATION_GUARD>>>\n"
+    },
+    {
+      "cursor": {
+        "active_item": "CV1.DS1",
+        "active_item_level": "delivery_story",
+        "aggregate_checkpoint_status": [
+          "plan:approved"
+        ],
+        "last_delivery_event": "delivery_story_plan_approved",
+        "navigator_flow_unit": "delivery_story"
+      },
+      "name": "ds_plan_approved_complete",
+      "outcome": "allowed",
+      "surface": "<<<ARIAD:IMPLEMENTATION_GUARD>>>\nDelivery\nDelivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ✓ Plan → ◉ Implement → ○ Validate → ○ Debt Review → ○ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🟧■  IMPLEMENTATION GUARD                       │\n│                                                        │\n│ status                                                 │\n│ allowed                                                │\n│                                                        │\n│ active item                                            │\n│ CV1.DS1                                                │\n│                                                        │\n│ last delivery event                                    │\n│ delivery_story_plan_approved                           │\n│                                                        │\n│ boundary                                               │\n│ Implementation may begin under the approved Plan       │\n│ contract.                                              │\n╰────────────────────────────────────────────────────────╯\n<<<END:IMPLEMENTATION_GUARD>>>\n"
+    },
+    {
+      "cursor": {
+        "active_item": "CV1.DS1",
+        "active_item_level": "user_story",
+        "aggregate_checkpoint_status": [
+          "plan:approved"
+        ],
+        "last_delivery_event": "delivery_story_plan_approved",
+        "navigator_flow_unit": "delivery_story"
+      },
+      "name": "ds_plan_wrong_level",
+      "outcome": "blocked",
+      "reason": "Implementation is blocked: approved Plan is required before Implement.",
+      "surface": "<<<ARIAD:IMPLEMENTATION_GUARD>>>\nDelivery\nDelivery Flow: ✓ Pull → ✓ Prepare → – Expand → ✓ Plan → ◉ Implement → ○ Validate → ○ Debt Review → ○ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🟧■  IMPLEMENTATION GUARD                       │\n│                                                        │\n│ status                                                 │\n│ blocked                                                │\n│                                                        │\n│ missing checkpoint                                     │\n│ Implementation is blocked: approved Plan is required   │\n│ before Implement.                                      │\n│                                                        │\n│ boundary                                               │\n│ No implementation files may be mutated until the guard │\n│ allows Implement.                                      │\n╰────────────────────────────────────────────────────────╯\n<<<END:IMPLEMENTATION_GUARD>>>\n"
+    },
+    {
+      "cursor": {
+        "active_item": "CV1.DS1",
+        "active_item_level": "delivery_story",
+        "aggregate_checkpoint_status": [
+          "plan:approved"
+        ],
+        "last_delivery_event": "delivery_story_plan_approved",
+        "navigator_flow_unit": "story_by_story"
+      },
+      "name": "ds_plan_wrong_flow_unit",
+      "outcome": "blocked",
+      "reason": "Implementation is blocked: approved Plan is required before Implement.",
+      "surface": "<<<ARIAD:IMPLEMENTATION_GUARD>>>\nDelivery\nDelivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ✓ Plan → ◉ Implement → ○ Validate → ○ Debt Review → ○ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🟧■  IMPLEMENTATION GUARD                       │\n│                                                        │\n│ status                                                 │\n│ blocked                                                │\n│                                                        │\n│ missing checkpoint                                     │\n│ Implementation is blocked: approved Plan is required   │\n│ before Implement.                                      │\n│                                                        │\n│ boundary                                               │\n│ No implementation files may be mutated until the guard │\n│ allows Implement.                                      │\n╰────────────────────────────────────────────────────────╯\n<<<END:IMPLEMENTATION_GUARD>>>\n"
+    },
+    {
+      "cursor": {
+        "active_item": "CV1.DS1",
+        "active_item_level": "delivery_story",
+        "aggregate_checkpoint_status": [],
+        "last_delivery_event": "delivery_story_plan_approved",
+        "navigator_flow_unit": "delivery_story"
+      },
+      "name": "ds_plan_without_aggregate_status",
+      "outcome": "blocked",
+      "reason": "Implementation is blocked: approved Plan is required before Implement.",
+      "surface": "<<<ARIAD:IMPLEMENTATION_GUARD>>>\nDelivery\nDelivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ✓ Plan → ◉ Implement → ○ Validate → ○ Debt Review → ○ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🟧■  IMPLEMENTATION GUARD                       │\n│                                                        │\n│ status                                                 │\n│ blocked                                                │\n│                                                        │\n│ missing checkpoint                                     │\n│ Implementation is blocked: approved Plan is required   │\n│ before Implement.                                      │\n│                                                        │\n│ boundary                                               │\n│ No implementation files may be mutated until the guard │\n│ allows Implement.                                      │\n╰────────────────────────────────────────────────────────╯\n<<<END:IMPLEMENTATION_GUARD>>>\n"
+    },
+    {
+      "cursor": {
+        "active_item": "CV1.DS1",
+        "active_item_level": "delivery_story",
+        "aggregate_checkpoint_status": [
+          "validation:passed"
+        ],
+        "last_delivery_event": "delivery_story_plan_approved",
+        "navigator_flow_unit": "delivery_story"
+      },
+      "name": "ds_plan_other_aggregate_status",
+      "outcome": "blocked",
+      "reason": "Implementation is blocked: approved Plan is required before Implement.",
+      "surface": "<<<ARIAD:IMPLEMENTATION_GUARD>>>\nDelivery\nDelivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ✓ Plan → ◉ Implement → ○ Validate → ○ Debt Review → ○ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🟧■  IMPLEMENTATION GUARD                       │\n│                                                        │\n│ status                                                 │\n│ blocked                                                │\n│                                                        │\n│ missing checkpoint                                     │\n│ Implementation is blocked: approved Plan is required   │\n│ before Implement.                                      │\n│                                                        │\n│ boundary                                               │\n│ No implementation files may be mutated until the guard │\n│ allows Implement.                                      │\n╰────────────────────────────────────────────────────────╯\n<<<END:IMPLEMENTATION_GUARD>>>\n"
+    },
+    {
+      "cursor": {
+        "last_delivery_event": "plan_approved"
+      },
+      "name": "plan_approved_without_active_item",
+      "outcome": "allowed",
+      "surface": "<<<ARIAD:IMPLEMENTATION_GUARD>>>\nDelivery\nDelivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ✓ Plan → ◉ Implement → ○ Validate → ○ Debt Review → ○ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🟧■  IMPLEMENTATION GUARD                       │\n│                                                        │\n│ status                                                 │\n│ allowed                                                │\n│                                                        │\n│ active item                                            │\n│ none                                                   │\n│                                                        │\n│ last delivery event                                    │\n│ plan_approved                                          │\n│                                                        │\n│ boundary                                               │\n│ Implementation may begin under the approved Plan       │\n│ contract.                                              │\n╰────────────────────────────────────────────────────────╯\n<<<END:IMPLEMENTATION_GUARD>>>\n"
+    }
+  ],
+  "journey": "demo",
+  "resume": [
+    {
+      "expected": {
+        "adopted_method": null,
+        "allowed_next_actions": [
+          "adopt_method",
+          "inspect_method"
+        ],
+        "cursor_active_item": null,
+        "cursor_present": false,
+        "journey": "demo",
+        "reason": "adoption_required",
+        "resumable": false
+      },
+      "name": "not_adopted",
+      "seed": {
+        "adopt": false,
+        "cursor": null,
+        "include_refinement": true
+      }
+    },
+    {
+      "expected": {
+        "adopted_method": "ariad",
+        "allowed_next_actions": [
+          "sync_cursor",
+          "inspect_method"
+        ],
+        "cursor_active_item": null,
+        "cursor_present": false,
+        "journey": "demo",
+        "reason": "cursor_sync_required",
+        "resumable": false
+      },
+      "name": "adopted_without_cursor",
+      "seed": {
+        "adopt": true,
+        "cursor": null,
+        "include_refinement": true
+      }
+    },
+    {
+      "expected": {
+        "adopted_method": "ariad",
+        "allowed_next_actions": [
+          "inspect_roadmap",
+          "pull_candidate_if_known",
+          "inspect_method"
+        ],
+        "cursor_active_item": null,
+        "cursor_present": true,
+        "journey": "demo",
+        "reason": null,
+        "resumable": true
+      },
+      "name": "adopted_with_cursor_no_active_item",
+      "seed": {
+        "adopt": true,
+        "cursor": {},
+        "include_refinement": true
+      }
+    },
+    {
+      "expected": {
+        "adopted_method": "ariad",
+        "allowed_next_actions": [
+          "inspect_roadmap",
+          "inspect_method"
+        ],
+        "cursor_active_item": "CV1.US1",
+        "cursor_present": true,
+        "journey": "demo",
+        "reason": null,
+        "resumable": true
+      },
+      "name": "active_item",
+      "seed": {
+        "adopt": true,
+        "cursor": {
+          "active_item": "CV1.US1",
+          "last_delivery_event": "pulled"
+        }
+      }
+    },
+    {
+      "expected": {
+        "adopted_method": "ariad",
+        "allowed_next_actions": [
+          "answer_pending_confirmation",
+          "inspect_method"
+        ],
+        "cursor_active_item": "CV1.US1",
+        "cursor_present": true,
+        "journey": "demo",
+        "reason": null,
+        "resumable": true
+      },
+      "name": "pending_confirmation",
+      "seed": {
+        "adopt": true,
+        "cursor": {
+          "active_checkpoint": "after_plan",
+          "active_item": "CV1.US1",
+          "pending_confirmation": "navigator_approval"
+        }
+      }
+    },
+    {
+      "expected": {
+        "adopted_method": "ariad",
+        "allowed_next_actions": [
+          "answer_pending_confirmation",
+          "inspect_method"
+        ],
+        "cursor_active_item": null,
+        "cursor_present": true,
+        "journey": "demo",
+        "reason": null,
+        "resumable": true
+      },
+      "name": "pending_confirmation_without_active_item",
+      "seed": {
+        "adopt": true,
+        "cursor": {
+          "pending_confirmation": "navigator_approval"
+        }
+      }
+    }
+  ],
+  "resume_empty_journey": {
+    "expected_error": "ValueError: journey must not be empty"
+  },
+  "resume_missing_tables": {
+    "expected": {
+      "adopted_method": "ariad",
+      "allowed_next_actions": [
+        "inspect_roadmap",
+        "inspect_method"
+      ],
+      "cursor_active_item": "CV1",
+      "cursor_present": true,
+      "journey": "demo",
+      "reason": null,
+      "resumable": true
+    }
+  },
+  "ribbon_refusals": [
+    {
+      "expected_error": "ValueError: unknown Ariad lifecycle stage: bogus",
+      "kind": "delivery"
+    },
+    {
+      "expected_error": "ValueError: unknown Ariad Refinement Story stage: bogus",
+      "kind": "refinement"
+    },
+    {
+      "expected_error": "ValueError: unknown Ariad Change Request stage: bogus",
+      "kind": "change_request"
+    }
+  ],
+  "ribbons": {
+    "change_request": {
+      "confirm": "CR Cycle: ◉ Confirm → ○ Plan → ○ Implement → ○ Validate → ○ Done Note",
+      "done_note": "CR Cycle: ✓ Confirm → ✓ Plan → ✓ Implement → ✓ Validate → ◉ Done Note",
+      "implement": "CR Cycle: ✓ Confirm → ✓ Plan → ◉ Implement → ○ Validate → ○ Done Note",
+      "plan": "CR Cycle: ✓ Confirm → ◉ Plan → ○ Implement → ○ Validate → ○ Done Note",
+      "validate": "CR Cycle: ✓ Confirm → ✓ Plan → ✓ Implement → ◉ Validate → ○ Done Note"
+    },
+    "delivery": {
+      "debt_review": "Delivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ✓ Plan → ✓ Implement → ✓ Validate → ◉ Debt Review → ○ Done",
+      "done": "Delivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ✓ Plan → ✓ Implement → ✓ Validate → ✓ Debt Review → ◉ Done",
+      "expand": "Delivery Flow: ✓ Pull → ✓ Prepare → ◉ Expand → ○ Plan → ○ Implement → ○ Validate → ○ Debt Review → ○ Done",
+      "implement": "Delivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ✓ Plan → ◉ Implement → ○ Validate → ○ Debt Review → ○ Done",
+      "plan": "Delivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ◉ Plan → ○ Implement → ○ Validate → ○ Debt Review → ○ Done",
+      "prepare": "Delivery Flow: ✓ Pull → ◉ Prepare → ○ Expand → ○ Plan → ○ Implement → ○ Validate → ○ Debt Review → ○ Done",
+      "pull": "Delivery Flow: ◉ Pull → ○ Prepare → ○ Expand → ○ Plan → ○ Implement → ○ Validate → ○ Debt Review → ○ Done",
+      "validate": "Delivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ✓ Plan → ✓ Implement → ◉ Validate → ○ Debt Review → ○ Done"
+    },
+    "refinement": {
+      "close": "RS Flow: ✓ Pull → ✓ Select CR → ✓ CR Cycle → ✓ Review → ✓ Coherence → ◉ Close",
+      "coherence": "RS Flow: ✓ Pull → ✓ Select CR → ✓ CR Cycle → ✓ Review → ◉ Coherence → ○ Close",
+      "cr_cycle": "RS Flow: ✓ Pull → ✓ Select CR → ◉ CR Cycle → ○ Review → ○ Coherence → ○ Close",
+      "pull": "RS Flow: ◉ Pull → ○ Select CR → ○ CR Cycle → ○ Review → ○ Coherence → ○ Close",
+      "review": "RS Flow: ✓ Pull → ✓ Select CR → ✓ CR Cycle → ◉ Review → ○ Coherence → ○ Close",
+      "select_cr": "RS Flow: ✓ Pull → ◉ Select CR → ○ CR Cycle → ○ Review → ○ Coherence → ○ Close"
+    }
+  }
+}

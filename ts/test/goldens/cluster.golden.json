@@ -1,0 +1,160 @@
+{
+  "expected_clusters": [
+    [
+      "m1",
+      "m2",
+      "m3"
+    ],
+    [
+      "m4",
+      "m5"
+    ],
+    [
+      "m9",
+      "m10",
+      "m11",
+      "m12",
+      "m13"
+    ]
+  ],
+  "memories": [
+    {
+      "embedding": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "id": "m1",
+      "readiness_state": "observed"
+    },
+    {
+      "embedding": [
+        0.949999988079071,
+        0.05000000074505806,
+        0.0,
+        0.0
+      ],
+      "id": "m2",
+      "readiness_state": "observed"
+    },
+    {
+      "embedding": [
+        0.8999999761581421,
+        0.0,
+        0.05000000074505806,
+        0.0
+      ],
+      "id": "m3",
+      "readiness_state": "observed"
+    },
+    {
+      "embedding": [
+        0.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      "id": "m4",
+      "readiness_state": "observed"
+    },
+    {
+      "embedding": [
+        0.0,
+        0.949999988079071,
+        0.05000000074505806,
+        0.0
+      ],
+      "id": "m5",
+      "readiness_state": "observed"
+    },
+    {
+      "embedding": [
+        0.0,
+        0.0,
+        1.0,
+        0.0
+      ],
+      "id": "m6",
+      "readiness_state": "observed"
+    },
+    {
+      "embedding": [
+        0.9900000095367432,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "id": "m7",
+      "readiness_state": "integrated"
+    },
+    {
+      "embedding": null,
+      "id": "m8",
+      "readiness_state": "observed"
+    },
+    {
+      "embedding": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "id": "m9",
+      "readiness_state": "observed"
+    },
+    {
+      "embedding": [
+        0.019999999552965164,
+        0.0,
+        0.0,
+        0.9800000190734863
+      ],
+      "id": "m10",
+      "readiness_state": "observed"
+    },
+    {
+      "embedding": [
+        0.0,
+        0.019999999552965164,
+        0.0,
+        0.9700000286102295
+      ],
+      "id": "m11",
+      "readiness_state": "observed"
+    },
+    {
+      "embedding": [
+        0.0,
+        0.0,
+        0.019999999552965164,
+        0.9599999785423279
+      ],
+      "id": "m12",
+      "readiness_state": "observed"
+    },
+    {
+      "embedding": [
+        0.009999999776482582,
+        0.009999999776482582,
+        0.0,
+        0.949999988079071
+      ],
+      "id": "m13",
+      "readiness_state": "observed"
+    },
+    {
+      "embedding": [
+        0.0,
+        0.009999999776482582,
+        0.009999999776482582,
+        0.9399999976158142
+      ],
+      "id": "m14",
+      "readiness_state": "observed"
+    }
+  ],
+  "meta": {
+    "threshold": 0.75
+  }
+}

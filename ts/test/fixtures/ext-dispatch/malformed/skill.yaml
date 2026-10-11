@@ -1,0 +1,13 @@
+id: malformed
+name: Malformed Extension
+category: extension
+kind: command-skill
+
+entrypoint:
+  module: extension
+  function: register
+
+runtimes:
+  pi:
+    command_name: ext-malformed
+    skill_file: SKILL.md

@@ -1,0 +1,228 @@
+{
+  "provenance": {
+    "source": "evals/reception.py",
+    "story": "CV22.DS10.TS3",
+    "method": "captured by executing each probe against recording stand-ins"
+  },
+  "threshold": 0.8,
+  "eval_model_pinned": true,
+  "prompt_count": 1,
+  "probes": [
+    {
+      "id": "clear-engineer",
+      "description": "code/software query → engineer",
+      "blocking": false,
+      "calls": [
+        {
+          "function": "reception",
+          "args": [
+            "I have a bug in my Python code and I can't figure out what's wrong"
+          ],
+          "kwargs": {},
+          "redacted": [
+            "personas",
+            "journeys"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "clear-writer",
+      "description": "article/writing query → writer",
+      "blocking": false,
+      "calls": [
+        {
+          "function": "reception",
+          "args": [
+            "I want to write an article about the freedom of working remotely"
+          ],
+          "kwargs": {},
+          "redacted": [
+            "personas",
+            "journeys"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "clear-doctor",
+      "description": "health/symptom query → doctor",
+      "blocking": false,
+      "calls": [
+        {
+          "function": "reception",
+          "args": [
+            "I've been having headaches every morning for the past week"
+          ],
+          "kwargs": {},
+          "redacted": [
+            "personas",
+            "journeys"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "clear-traveler",
+      "description": "trip planning query → traveler",
+      "blocking": false,
+      "calls": [
+        {
+          "function": "reception",
+          "args": [
+            "I'm planning a two-week trip through Southeast Asia next month"
+          ],
+          "kwargs": {},
+          "redacted": [
+            "personas",
+            "journeys"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "action-verb-writer",
+      "description": "'write a post about X' → writer, not X-domain persona",
+      "blocking": false,
+      "calls": [
+        {
+          "function": "reception",
+          "args": [
+            "write a post about the psychological benefits of digital nomadism"
+          ],
+          "kwargs": {},
+          "redacted": [
+            "personas",
+            "journeys"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "action-verb-engineer",
+      "description": "'help me think through this code structure' → engineer over thinker",
+      "blocking": false,
+      "calls": [
+        {
+          "function": "reception",
+          "args": [
+            "help me think through the architecture of this Python module"
+          ],
+          "kwargs": {},
+          "redacted": [
+            "personas",
+            "journeys"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "open-existential-no-persona",
+      "description": "open existential question → ego responds alone",
+      "blocking": false,
+      "calls": [
+        {
+          "function": "reception",
+          "args": [
+            "what does it mean to live a life that is truly your own"
+          ],
+          "kwargs": {},
+          "redacted": [
+            "personas",
+            "journeys"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "identity-touch-purpose",
+      "description": "explicit purpose/values reflection → touches_identity=True",
+      "blocking": false,
+      "calls": [
+        {
+          "function": "reception",
+          "args": [
+            "I keep questioning whether the work I'm doing actually aligns with who I am and what I value"
+          ],
+          "kwargs": {},
+          "redacted": [
+            "personas",
+            "journeys"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "identity-touch-operational",
+      "description": "operational task → touches_identity=False",
+      "blocking": false,
+      "calls": [
+        {
+          "function": "reception",
+          "args": [
+            "can you review this pull request description and suggest improvements"
+          ],
+          "kwargs": {},
+          "redacted": [
+            "personas",
+            "journeys"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "shadow-touch-avoidance",
+      "description": "explicit avoidance pattern → touches_shadow=True",
+      "blocking": false,
+      "calls": [
+        {
+          "function": "reception",
+          "args": [
+            "I keep postponing a conversation with my business partner about our direction and I realize I've been doing this for months — I know I'm avoiding something"
+          ],
+          "kwargs": {},
+          "redacted": [
+            "personas",
+            "journeys"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "shadow-touch-vague-discomfort",
+      "description": "vague discomfort without named pattern → touches_shadow=False",
+      "blocking": false,
+      "calls": [
+        {
+          "function": "reception",
+          "args": [
+            "I'm feeling a bit off today, not sure why, just not in the best mood"
+          ],
+          "kwargs": {},
+          "redacted": [
+            "personas",
+            "journeys"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mirror-journey-context",
+      "description": "mirror/infrastructure query → engineer (journey detection secondary check)",
+      "blocking": false,
+      "calls": [
+        {
+          "function": "reception",
+          "args": [
+            "I want to work on the mirror mind codebase and add a new feature"
+          ],
+          "kwargs": {},
+          "redacted": [
+            "personas",
+            "journeys"
+          ]
+        }
+      ]
+    }
+  ]
+}

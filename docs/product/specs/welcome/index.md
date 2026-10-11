@@ -7,7 +7,7 @@ Replaces nothing essential — it is not a banner or a menu. It exists to make
 the mirror feel **continuous** across sessions: when you open it, you should
 sense that something already lives there.
 
-The welcome is computed by the Python core and rendered by each runtime as a
+The welcome is computed by the core and rendered by each runtime as a
 single block. One source, four interfaces, one voice.
 
 ---
@@ -49,8 +49,8 @@ Version <version> · channel <stable|main>
 
 | Line | When it appears | Source |
 |------|-----------------|--------|
-| Header (`◇ Mirror · <user>`) | Always, if a Mirror home is resolvable | `resolve_mirror_home().name` |
-| Version (`Version <version> · channel <channel>`) | Always, when header renders | installed package / `pyproject.toml` fallback plus local update channel |
+| Header (`◇ Mirror · <user>`) | Always, if a Mirror home is resolvable | the resolved Mirror home's name |
+| Version (`Version <version> · channel <channel>`) | Always, when header renders | the product version (`ts/package.json`) plus local update channel |
 | Stats | Always, when header renders | counts from the database |
 | Update notice | Only when local refs or lightweight remote check show a stable update | update-awareness cache, `git ls-remote`, local release notes when available |
 | Invitation (`→ Where shall we begin?`) | Always, when header renders | constant |
@@ -120,13 +120,13 @@ below that render bare (`5 journeys`). Values of zero render literally
 
 ---
 
-## Contract: `python -m memory welcome`
+## Contract: `mirror welcome`
 
 Prints the composed welcome to stdout and exits 0. Always exits 0 even when
 no welcome is produced (empty output).
 
 ```
-Usage: python -m memory welcome [--mirror-home PATH] [--status-line]
+Usage: mirror welcome [--mirror-home PATH] [--status-line]
 ```
 
 Behaviour:
@@ -147,12 +147,12 @@ they just display the string verbatim.
 
 ## Runtime integration
 
-Each runtime calls `python -m memory welcome` once at session start. The
+Each runtime calls `mirror welcome` once at session start. The
 display rules are:
 
 | Runtime | Render | Notes |
 |---------|--------|-------|
-| Pi | `ctx.ui.notify(welcome, "info")` once if non-empty | Status bar calls `python -m memory welcome --status-line` and shows `◇ <user> · <indicator>` |
+| Pi | `ctx.ui.notify(welcome, "info")` once if non-empty | Status bar calls `mirror welcome --status-line` and shows `◇ <user> · <indicator>` |
 | Codex | `printf` to terminal once if non-empty | Same string |
 | Gemini CLI | `printf` to terminal once if non-empty | Same string |
 | Claude Code | `/mm:welcome` skill prints it on demand | No automatic injection |

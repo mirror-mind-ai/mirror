@@ -1,0 +1,7 @@
+id: ext-broken
+name: Broken Extension
+category: extension
+kind: prompt-skill
+runtimes:
+  pi:
+    command_name: ext-broken

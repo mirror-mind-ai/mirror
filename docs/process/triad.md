@@ -34,12 +34,11 @@ Canonical project documents:
 
 ### Product
 
-Product is the thing itself: the Python core, SQLite schema, runtime integrations, skills, templates, identity model, web console, extension system, documentation consumed by users, and observable behavior.
+Product is the thing itself: the core, SQLite schema, runtime integrations, skills, templates, identity model, extension system, documentation consumed by users, and observable behavior.
 
 Canonical product surfaces:
 
-- `src/memory/`
-- `tests/` and `evals/`
+- `ts/` — the core, its tests, smokes, and evals
 - Runtime surfaces: `.pi/`, `.agents/`, `.claude/`, `.gemini/`
 - [Product docs](../product/index.md)
 - [Architecture](../product/architecture.md)

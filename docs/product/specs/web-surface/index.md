@@ -1,8 +1,16 @@
 [< Specs](../index.md)
 
-> **Status: Draft specification.** This document defines the intended
-> architecture for the Mirror Mind web visibility surface. It should guide the
-> 1.0 implementation, but method names may still change during story planning.
+> **Retired 2026-09-19.** The web console this document describes was deleted by
+> [CV22.DS10.US1](../../../project/roadmap/cv22-typescript-core-port/cv22-ds10-python-retirement-npm-distribution/cv22-ds10-us1-web-console-retirement/index.md);
+> the [decision](../../../project/decisions.md#the-web-console-is-retired-not-ported-and-ds7-closes-at-1414)
+> retires it rather than porting it to TypeScript, and `mirror-gui` owns any future
+> graphical surface. Kept as the record of a surface that existed and the thinking
+> behind it — not as a description of Mirror today.
+
+> **Status: Retired draft specification.** It was never fully implemented, and the
+> surface it specified no longer exists. As originally written, it defined the
+> intended architecture for the Mirror Mind web visibility surface and was meant to
+> guide the 1.0 implementation.
 
 # Web Surface Specification
 

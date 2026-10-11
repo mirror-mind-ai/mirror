@@ -1,0 +1,2 @@
+{"type":"message","message":{"role":"user","content":"not a jsonl file","timestamp":"2026-04-28T07:00:00Z"}}
+{"type":"message","message":{"role":"assistant","content":"ignored by the glob","timestamp":"2026-04-28T07:00:01Z"}}

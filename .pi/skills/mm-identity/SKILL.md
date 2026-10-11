@@ -24,15 +24,15 @@ Use these commands to inspect and edit identity directly — no YAML files neede
 
 ### list
 
-List all identity entries currently stored in the database.
+List all identity entries currently stored in the database. Answered by the TS core (CV22.DS7.US1).
 
 ```bash
-uv run python -m memory identity list [--layer LAYER] [--mirror-home PATH]
+mirror identity list [--layer LAYER] [--mirror-home PATH]
 ```
 
 **Examples:**
-- `uv run python -m memory identity list` — all entries
-- `uv run python -m memory identity list --layer ego` — only ego layer
+- `mirror identity list` — all entries
+- `mirror identity list --layer ego` — only ego layer
 
 Layers: `self`, `ego`, `user`, `organization`, `persona`, `journey`, `journey_path`
 
@@ -40,16 +40,16 @@ Layers: `self`, `ego`, `user`, `organization`, `persona`, `journey`, `journey_pa
 
 ### get
 
-Print the full content of one identity entry.
+Print the full content of one identity entry. Answered by the TS core (CV22.DS7.US1).
 
 ```bash
-uv run python -m memory identity get <layer> <key> [--mirror-home PATH]
+mirror identity get <layer> <key> [--mirror-home PATH]
 ```
 
 **Examples:**
-- `uv run python -m memory identity get ego behavior`
-- `uv run python -m memory identity get self soul`
-- `uv run python -m memory identity get persona engineer`
+- `mirror identity get ego behavior`
+- `mirror identity get self soul`
+- `mirror identity get persona engineer`
 
 ---
 
@@ -58,14 +58,19 @@ uv run python -m memory identity get <layer> <key> [--mirror-home PATH]
 Update identity content directly in the database.
 
 ```bash
-uv run python -m memory identity set <layer> <key> --content "..." [--mirror-home PATH]
+mirror identity set <layer> <key> --content "..." [--mirror-home PATH]
 ```
 
 If `--content` is omitted, content is read from stdin.
 
+A new `journey` or `persona` key must be kebab-case: lowercase letters, digits,
+and single hyphens, up to 80 characters, such as `product-launch`. Agents put
+these keys into commands, so `set` and `edit` refuse any other new key and name
+one that would work. A key created before this rule keeps working.
+
 **Examples:**
-- `uv run python -m memory identity set ego behavior --content "Be direct."`
-- `cat new-soul.md | uv run python -m memory identity set self soul`
+- `mirror identity set ego behavior --content "Be direct."`
+- `cat new-soul.md | mirror identity set self soul`
 
 ---
 
@@ -74,13 +79,13 @@ If `--content` is omitted, content is read from stdin.
 Open the current content in `$EDITOR`, edit it, and save back to the database on close.
 
 ```bash
-uv run python -m memory identity edit <layer> <key> [--mirror-home PATH]
+mirror identity edit <layer> <key> [--mirror-home PATH]
 ```
 
 **Examples:**
-- `uv run python -m memory identity edit ego behavior`
-- `uv run python -m memory identity edit self soul`
-- `uv run python -m memory identity edit persona engineer`
+- `mirror identity edit ego behavior`
+- `mirror identity edit self soul`
+- `mirror identity edit persona engineer`
 
 If no changes are detected, nothing is written. If the file is left empty, the edit is aborted.
 

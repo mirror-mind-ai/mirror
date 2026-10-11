@@ -1,0 +1,2 @@
+{"type":"message","message":{"role":"assistant","content":"Welcome back. What are we building today?","timestamp":"2026-04-18T08:00:00Z"}}
+{"type":"message","message":{"role":"user","content":"the title comes from the first USER line even when the assistant spoke first","timestamp":"2026-04-18T08:00:01Z"}}

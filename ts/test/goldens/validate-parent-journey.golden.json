@@ -1,0 +1,105 @@
+{
+  "cases": [
+    {
+      "error": null,
+      "journey": "solo",
+      "outcome": "ok",
+      "parent_journey": ""
+    },
+    {
+      "error": "parent_journey cannot be the journey itself",
+      "journey": "solo",
+      "outcome": "error",
+      "parent_journey": "solo"
+    },
+    {
+      "error": "Parent journey 'ghost' not found",
+      "journey": "solo",
+      "outcome": "error",
+      "parent_journey": "ghost"
+    },
+    {
+      "error": null,
+      "journey": "solo",
+      "outcome": "ok",
+      "parent_journey": "deep-level"
+    },
+    {
+      "error": null,
+      "journey": "parent-with-child",
+      "outcome": "ok",
+      "parent_journey": "deep-level"
+    },
+    {
+      "error": "parent_journey would create a cycle",
+      "journey": "grandparent",
+      "outcome": "error",
+      "parent_journey": "deep-level"
+    },
+    {
+      "error": "Parent lineage contains an existing cycle",
+      "journey": "solo",
+      "outcome": "error",
+      "parent_journey": "loop-a"
+    },
+    {
+      "error": null,
+      "journey": "solo",
+      "outcome": "ok",
+      "parent_journey": "orphan-parent"
+    },
+    {
+      "error": null,
+      "journey": "new-journey",
+      "outcome": "ok",
+      "parent_journey": "parent-with-child"
+    }
+  ],
+  "journey_rows": [
+    {
+      "content": "# Deep Level\n**Status:** active",
+      "key": "deep-level",
+      "metadata": "{\"parent_journey\": \"mid-level\"}"
+    },
+    {
+      "content": "# Grandparent\n**Status:** active",
+      "key": "grandparent",
+      "metadata": null
+    },
+    {
+      "content": "# Loop A\n**Status:** active",
+      "key": "loop-a",
+      "metadata": "{\"parent_journey\": \"loop-b\"}"
+    },
+    {
+      "content": "# Loop B\n**Status:** active",
+      "key": "loop-b",
+      "metadata": "{\"parent_journey\": \"loop-a\"}"
+    },
+    {
+      "content": "# Mid Level\n**Status:** active",
+      "key": "mid-level",
+      "metadata": "{\"parent_journey\": \"grandparent\"}"
+    },
+    {
+      "content": "# Only Child\n**Status:** active",
+      "key": "only-child",
+      "metadata": "{\"parent_journey\": \"parent-with-child\"}"
+    },
+    {
+      "content": "# Orphan Parent\n**Status:** active",
+      "key": "orphan-parent",
+      "metadata": "{\"parent_journey\": \"missing-ancestor\"}"
+    },
+    {
+      "content": "# Parent With Child\n**Status:** active",
+      "key": "parent-with-child",
+      "metadata": null
+    },
+    {
+      "content": "# Root\n**Status:** active",
+      "key": "root",
+      "metadata": null
+    }
+  ]
+}

@@ -9,8 +9,8 @@ user-invocable: true
 When receiving `/mm-new`:
 
 ```bash
-uv run python -m memory conversation-logger switch
-uv run python -m memory mirror deactivate
+mirror conversation-logger switch
+mirror mirror deactivate
 ```
 
 Tell the user:

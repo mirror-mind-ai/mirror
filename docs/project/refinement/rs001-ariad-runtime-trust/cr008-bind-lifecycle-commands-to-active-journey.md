@@ -42,10 +42,330 @@ promise RS001 exists to protect.
 
 ## Plan Or Decision
 
-Pending. Capture does not authorize a resolver change. First characterize where
-journey fallback lives (conversation session, most-recent runtime session, or
-per-command resolution) and why `prepare-item` and `plan-item` disagreed within
-one chain.
+**2026-09-25 — first change of the Ariad trust floor** ([decision](../../decisions.md#the-cv22-release-is-gated-on-an-ariad-trust-floor-worked-before-us3)).
+Plan approved by the Navigator on 2026-09-25 (`planned`) and started the same
+day (`in_progress`; Driver `@viniciusteles`, Delivery `mirror-ts-core`).
+Validated by the Navigator the same day (`validated`) after route step 2 ran
+live, reviewed for debt (below), and closed (`done`).
+
+### Characterization (read-only, 2026-09-25, TypeScript engine)
+
+The capture asked where the fallback lives. It lives in two hops, and both are
+silent:
+
+1. **Session hop** — `resolveRuntimeSessionId` (`ts/src/mirror/runtimeSession.ts`):
+   explicit `--session-id`, else `MIRROR_SESSION_ID`, else **the most recently
+   updated active `runtime_sessions` row in the whole database** whose
+   `interface` is set and is not `global_defaults`. An agent's tool shell does
+   not carry `MIRROR_SESSION_ID` (verified: unset in the Builder session that
+   wrote this), so every `build` command without `--journey` takes the third
+   branch, and "the session" is whichever window or pseudo-session touched the
+   table last. Delivery-cursor rows (`__builder_delivery_cursor__:<journey>`,
+   `interface = builder_delivery_cursor`, `active = 1`) qualify.
+2. **Mode hop** — `getActiveOperatingMode` (`ts/src/mode/operatingMode.ts`):
+   that session's operating-mode metadata, else **the global operating-mode
+   row** (`__global_operating_mode__`), which holds the last `build load` from
+   any window.
+
+`resolveBuilderJourney` (`ts/src/builder/commands.ts`) composes the two: explicit
+`--journey`, else the Builder journey of whatever the hops return. Nine `build`
+subcommands go through it, plus `inspect-method`'s no-argument branch.
+
+This explains every observation in the Evidence:
+
+- *Cross-journey binding* — the hops return another window's session (still
+  stamped Builder Mode for kia-desktop) or the global row (last loaded by
+  another window).
+- *`prepare-item` succeeds, `plan-item` refuses, same chain* — `prepare-item`
+  wrote journey X's cursor row, which became the most recently updated session;
+  it carries no operating mode; the global row was empty or deactivated;
+  `plan-item` therefore resolved nothing and refused.
+- *Files written into another repository* — Expand and Plan resolve
+  `project_path` from the journey the hops returned.
+
+**The write side has the same defect.** `build load <slug>` (`ts/src/builder/load.ts`)
+resolves the session through the same hops and stamps `Builder Mode · <slug>`
+onto whatever row they return — in an agent shell, the most recently touched
+session of *any* window. So a load in window A can rewrite window B's mode, and
+B's next lifecycle command binds to A's journey with a surface that names it
+truthfully. `explore load` does the same for Explorer Mode (out of scope here;
+see Exclusions).
+
+The goldens in `ts/test/goldens/builder-command.golden.json` that exercise
+"via active mode" (`pull_candidates_via_active_mode`, `adopt_via_active_mode`,
+`inspect_method_active_builder_journey`) all pass an explicit `--session-id`.
+The pinned behavior is the known-session path; the two hops are not what the
+goldens protect.
+
+### Decision
+
+A Builder command binds to a journey through exactly one of:
+
+- explicit `--journey <slug>`; or
+- the Builder Mode of a **known** session — one named by `--session-id` or by
+  `MIRROR_SESSION_ID`.
+
+Nothing else. No most-recent-session guess, no global-row fallback. With
+neither, the command refuses with the existing Class B text (`Error: Builder
+method <action> requires a journey. Activate Builder Mode for a journey or pass
+--journey.`), before any read of the cursor or write to disk. `inspect-method`
+with no argument and no known session renders the existing no-active-journey
+card (never an error, unchanged).
+
+The same rule on the write side: `build load` stamps Builder Mode onto a known
+session only; with none it writes the global row, which remains what the
+welcome card and `mirror mode status` read. The global row becomes a display
+fact, never a binding source for lifecycle commands.
+
+The consequence is deliberate: in an agent shell, where no session is known,
+every lifecycle command must carry `--journey`. The Builder skill already knows
+the slug — `build load` printed it — so the skill text changes from "pass
+`--journey` if the user names a journey" to "always pass `--journey <active
+slug>`". The runtime refusal is the defense; the skill change is the
+ergonomics. A forgotten `--journey` now costs one refused command instead of
+another journey's cursor.
+
+Rejected alternative: fall back to the global row only (drop the session hop,
+keep the mode hop). Deterministic within one window, but two windows on two
+journeys still bind the later `build load` to both — the exact Evidence
+scenario. It does not meet the Expected Behavior's "never fall back silently".
+
+### Scope
+
+- `ts/src/builder/commands.ts` — `resolveBuilderJourney` and `inspect-method`'s
+  no-argument branch use a Builder-specific session resolver that accepts only a
+  known session; today the six lines are duplicated. The refusal text changes,
+  because its first half becomes false in an agent shell: `Activate Builder
+  Mode for a journey` no longer makes a command bind unless the session is
+  known. New text names both real routes, e.g. `Error: Builder method <action>
+  requires a journey. Pass --journey <slug>, or run with a known session
+  (--session-id or MIRROR_SESSION_ID) that has Builder Mode active.` Parity is
+  gone; the goldens that pin the old sentence are hand-edited with intent, not
+  copied.
+- `ts/src/mode/operatingMode.ts` — a session-only reader
+  (`getSessionOperatingMode`) with no global fallback, for the Builder path.
+  `getActiveOperatingMode` falls back to the global row internally, so without
+  this the plan's "no global fallback" would not be true. It keeps that
+  fallback for the welcome status line and `mode status`, which are display,
+  not binding.
+- `ts/src/builder/load.ts` — **not implemented: Navigator decision C
+  (2026-09-25), see Found During Implementation.** As planned: `build load` stamps a known session or the global
+  row; never a guessed session. `switchConversation` receives the same resolved
+  value it does today for a known session and `null` otherwise (verify what the
+  conversation switch does with `null` before relying on it — see Validation).
+- `ts/src/mirror/runtimeSession.ts` — add `resolveNamedRuntimeSessionId` (explicit,
+  else environment, else `null`). `resolveRuntimeSessionId` keeps its current
+  behavior for its other callers (conversation logger, soul, explore,
+  orchestration); changing it is not this CR.
+- `.pi/skills/mm-build/SKILL.md` (`.agents/skills/mm-build` is a symlink to it;
+  the `.claude/` and `plugins/` copies are older, shorter variants with no
+  Ariad section — their drift is a separate observation, not this CR) — the
+  rule is stated once, **and every command block carries `--journey <slug>`**.
+  A model follows the examples over the rule sentence; a rule stated once above
+  examples that omit it would not hold. The eleven "if the user names a
+  specific journey" clauses go. After a refusal, the skill names the read-only
+  recovery: `mode status` prints `Builder Mode · <slug>` for the last load in
+  this database, and the `■ BUILDER MODE ACTIVE` surface already named it.
+- `REFERENCE.md` — the `MIRROR_SESSION_ID` row says Builder commands honor it
+  as a binding source and nothing else is guessed; the troubleshooting guide
+  gets the refusal and its two remedies.
+
+### Acceptance Behavior
+
+```text
+Given two active runtime sessions, A stamped Builder Mode for journey X and
+  B stamped Builder Mode for journey Y, with B updated more recently
+When any lifecycle command runs with --session-id A and no --journey
+Then it binds to X, its surface names X, and only X's cursor changes
+
+Given the same database
+When any lifecycle command runs with no --journey, no --session-id, and no
+  MIRROR_SESSION_ID
+Then it refuses with "requires a journey", exit 1, and no cursor row and no
+  project file changes — regardless of the global operating-mode row
+
+Given the same database and MIRROR_SESSION_ID=A
+When the command runs with no --journey
+Then it binds to X (the environment names a known session)
+
+Given the same database and MIRROR_SESSION_ID naming a session that does not
+  exist, or one whose mode is not Builder Mode with a journey
+When the command runs with no --journey
+Then it refuses — a stale environment is not a license to guess
+
+Given any database
+When `build load Y` runs with no known session
+Then the global row reads Builder Mode · Y, `mode status` prints it, and no
+  other runtime_sessions row's metadata changes
+
+Given any database
+When `build load Y` runs with a known session A
+Then A's metadata reads Builder Mode · Y and the global row is untouched
+
+Given a database whose only Builder Mode is on the global row
+When `inspect-method` runs with no argument and no known session
+Then it renders the no-active-journey card, exit 0
+```
+
+Every "no cursor row changes" line is asserted over **all** cursor rows in the
+database, not the target's alone — the defect wrote to the wrong one. The
+existing goldens that pass `--session-id` continue to pass unchanged; the
+goldens pinning the old refusal sentence are hand-edited under the freeze rule.
+
+The two `build load` lines are the write side. The first is withdrawn by
+decision C (see Found During Implementation). The second holds as before:
+`build load` resolves a named session before it guesses. That is by
+construction in `ts/src/builder/load.ts`, and it is not separately tested.
+
+### Validation Route
+
+Automated: `npm test`, `npm run typecheck`, `npm run lint` from `ts/`; new
+cases in `ts/test/builder/commands.test.ts` and `ts/test/builder/loadSurfaces.test.ts`
+(or a sibling) for each acceptance line above, written first.
+
+Navigator-visible, on a copy of the real database (never live): activate two
+journeys from two shells, run `pull-candidates` without `--journey` in each and
+observe the refusal; run with `--journey` and observe the right roadmap; read
+both cursor rows before and after and observe no cross-writes. Then one
+ordinary Builder session on this journey with the updated skill, to observe
+that the ergonomics hold: `build load`, then a read-only lifecycle command with
+`--journey mirror-ts-core`.
+
+Checked 2026-09-25: `switchConversation` (`ts/src/conversation/logger.ts`)
+re-resolves the session itself through `resolveRuntimeSessionId`, so passing
+`null` from `build load` changes nothing there — the conversation attaches
+exactly as today. The logger's own guess is the captured exclusion below, not
+this CR's dependency.
+
+### Exclusions
+
+- `runtime_sessions` carries three kinds of row — real sessions, delivery-cursor
+  pseudo-sessions, and the two global pseudo-sessions — told apart only by id
+  prefix and `interface`. The most-recent-session heuristic in
+  `resolveRuntimeSessionId` (used by the conversation logger, Soul, Explorer,
+  and orchestration) and cursor rows qualifying as "the session" are symptoms
+  of that overloading. Captured as one model-level CR, so it is fixed at the
+  shape and not by one more `interface !=` exclusion. Not fixed here.
+- `explore load` stamping Explorer Mode onto a guessed session — the write-side
+  twin for Explorer Mode. Captured separately.
+- Naming the target project in artifact surfaces — CR009, which this change
+  narrows but does not close.
+- Making the Pi extension export `MIRROR_SESSION_ID` into the agent's tool
+  shell, which would make `--journey` unnecessary again. A runtime-integration
+  question with its own boundary; recorded as a question for the next plateau.
+
+### Panel Plan Review (2026-09-25)
+
+Single-pass review through the technical persona panel. Synthesis: the plan
+is sound and small; the risk concentrates in the seam between the runtime
+refusal and the agent that must now supply `--journey` on every call. Six
+lenses dissented and each finding is folded in above: the Builder path needed
+its own mode reader (`getActiveOperatingMode` falls back to the global row
+internally, so "no global fallback" was not yet true); the refusal sentence
+would have become half-false and is rewritten; a stale `MIRROR_SESSION_ID` is
+an acceptance case; "no cursor changes" is asserted over every cursor row; the
+skill's examples carry `--journey`, not only its rule; the agent has a named
+read-only recovery after a refusal; and the `runtime_sessions` overloading is
+captured at the model level. Security, experience, and product lenses raised
+nothing: `--journey` binds only to a registered journey and its recorded
+project path, so the change narrows the blast radius rather than opening one.
+
+### Found During Implementation (2026-09-25)
+
+The read side shipped as planned. Four things differ from the approved text.
+Each is recorded here for the Navigator to accept or reject at validation.
+
+1. **The no-journey card was half-false, like the refusal.** `inspect-method`
+   with no argument said "No Builder journey is active yet" and suggested
+   `build load`. In an agent shell that is false right after a load, and
+   loading again does not change the answer. It now says "No Builder journey
+   was named" and gives the refusal's two remedies. The function is renamed
+   `renderNoJourneyNamed`, so that its name matches what it renders.
+2. **The recovery after a refusal is not `mode status`.** The plan named it,
+   following the ai-engineer finding. With no session, `mode status` reads the
+   global row, which is the last load in *any* window. In a multi-window setup
+   it would send the agent back to the wrong journey, the exact failure this
+   CR removes. The skill says to ask the Navigator, and never to take the slug
+   from `mode status` or the status line.
+3. **A named session must still be active.** `MIRROR_SESSION_ID` naming a
+   session that has ended (`active = 0`) names no journey. This is the stale
+   environment line, made explicit and tested.
+4. **The write side is not implemented, and it needs a Navigator decision.**
+   The approved plan has `build load`, with no named session, write the global
+   row instead of the guessed one. That regresses documented behavior.
+   [REFERENCE](../../../../REFERENCE.md#operating-mode-lifecycle) says
+   per-session operating mode exists so "simultaneous Pi sessions do not
+   overwrite each other's footer state". In an agent shell, the guess is how
+   `build load` reaches the window's own row: the Pi extension touches it at
+   `before_agent_start`, and the guess was introduced on purpose for that
+   ([troubleshooting](../../../process/troubleshooting.md#pi-builder-conversations-appear-without-journeys)).
+   Writing the global row instead would make a window that went Explorer →
+   Builder keep showing Explorer (its own stamp shadows the global row), and
+   every window without a stamp would show the last load anywhere.
+
+   The residual hazard the write-side change was meant to close is narrower
+   than planned. A guessed Builder stamp, whether legacy or from another
+   window's load, can bind a lifecycle command only through a *named* session,
+   and no runtime names its session today (`MIRROR_SESSION_ID` is set by
+   none).
+
+   Options:
+
+   - **A. As approved:** write the global row. This regresses the footer as
+     above, and leaves existing guessed stamps as latent binding sources.
+   - **B. Provenance:** `build load` keeps writing where it does today, and
+     records whether its session was named. A lifecycle command binds from a
+     named session's stamp only if that stamp was itself written under the
+     name. This adds one key to the operating-mode payload, with no schema
+     change. It closes the latent path now.
+   - **C. Leave the write side as it is:** display is unchanged. B becomes the
+     recorded precondition of the excluded open question, whether a runtime
+     should export `MIRROR_SESSION_ID`. That is the first moment the latent
+     path can fire.
+
+   Driver recommendation: **C**. The binding defect in the Evidence is closed
+   by the read side, which the real-data smoke below shows. B protects a path
+   nothing uses yet, and it belongs to the change that would start using it.
+
+   **Navigator decision (2026-09-25): C.** The write side stays as it is. The
+   precondition is recorded where its trigger would fire:
+
+   - `namedSessionBuilderJourney`'s comment in `ts/src/builder/commands.ts`;
+   - a tripwire, `ts/test/builder/namedSessionPrecondition.test.ts`, that fails
+     the day a runtime integration, hook, script, or skill names its session.
+     It was proven by a probe file that made it fail and name the file;
+   - the `MIRROR_SESSION_ID` warnings in REFERENCE and `.env.example.advanced`.
+     A value in a shared `.env` would name one session for every window, which
+     is the global row under another name;
+   - a constraint on [CR100](../rs010-cv22-oracle-and-port-hygiene/cr100-the-session-resolver-guesses-from-a-table-of-three-row-kinds.md).
+
+### Debt Review (2026-09-25)
+
+Every finding has a disposition the Navigator decided in this CR's session, and
+none is left undecided.
+
+| Finding | Disposition |
+|---|---|
+| A guessed Builder stamp can bind through a named session once a runtime names its session | Deferred with an enforced trigger (decision C): `namedSessionPrecondition.test.ts` fails on that day, and option B is the fix |
+| The session resolver guesses among three kinds of `runtime_sessions` row | Captured: [CR100](../rs010-cv22-oracle-and-port-hygiene/cr100-the-session-resolver-guesses-from-a-table-of-three-row-kinds.md) |
+| Explorer and Soul activation stamp a guessed session | Captured: [CR101](../rs010-cv22-oracle-and-port-hygiene/cr101-explorer-and-soul-activation-stamp-a-guessed-session.md), moved to RS010 |
+| Claude Code's `mm-build` skill has no Builder or Ariad sections, so this CR's skill change never reached it | Captured: [CR102](../rs010-cv22-oracle-and-port-hygiene/cr102-the-claude-code-mm-build-skill-lacks-the-builder-and-ariad-sections.md) |
+| `build inspect-method` with no argument changes its output, which US3's before/after instrument records | Handed to US3 as inherited item 13 |
+
+Proportionality: in `ts/src`, four files, 107 lines added and 41 removed.
+That buys two primitives, one shared helper, and two rewritten sentences, and
+about a third of the added lines are the comments that carry decision C. The
+defect it fixes silently wrote other journeys' state. The rest is tests (a
+table over the whole corpus, the tripwire) and documentation. No refactor was
+deferred: the resolution logic that the plan found duplicated now lives in one
+helper.
+
+### Authority Boundary
+
+This plan authorizes nothing. Implementation starts after Navigator approval
+(`planned`), with Driver `@viniciusteles` and Delivery
+`mirror-ts-core` recorded at `in_progress`. No commit, push, or release is
+granted by any part of it.
 
 ## Evidence
 
@@ -122,6 +442,78 @@ Two aggravating details from this occurrence:
 2026-08-14 — Re-verified against `origin/main` @ `688271f`: no commit since 12 Aug touches
 `src/memory/cli/build.py` or `src/memory/builder/`; journey resolution is unchanged. Still valid.
 
+**2026-09-25 — implementation evidence (read side).** Commits `8481a2f4`
+(code, tests, hand-edited goldens) and `0924c1dc` (skill and docs) on
+`mirror-ts-core`.
+
+- Automated: `npm test` 2666/2666, `npm run typecheck` clean, `npm run lint`
+  with no errors (its one warning and one info were already there). CI's
+  Builder Ariad lifecycle smoke 54/54, conversation lifecycle smoke,
+  retired-surface tripwire, skill command parity (25 skills), and doc links:
+  all clean.
+- Tests written first. Every `--journey` case in the corpus, with the journey
+  stripped, must refuse and write nothing against five decoys: a window
+  touched later, the global row, and `MIRROR_SESSION_ID` naming no session, a
+  closed session, or another mode. That is every leaf that resolves a
+  journey. Before the change it failed because it bound the decoy. The
+  no-argument `inspect-method` test failed the same way, rendering the
+  decoy's journey. Every demo case bound through a named session, by flag or
+  by environment, reproduces its recorded bytes and leaves the decoy
+  untouched.
+- Real-data smoke, on a byte copy of the production database (integrity
+  check `ok`; deleted afterwards) with no provider key loaded. Window A was
+  in Builder Mode for `mirror-ts-core`; window B, touched later, and the
+  global row were in Builder Mode for `finances`. From a shell that names no
+  session:
+
+  ```text
+  pre-CR008 (fe32e9eb)  build pull-candidates --method ariad  -> exit 0, finances' roadmap
+                        build inspect-method                   -> journey: finances
+  CR008                 build pull-candidates --method ariad  -> exit 1, "requires a journey"
+                        build sync-cursor / set-cadence        -> exit 1, "requires a journey"
+                        build inspect-method                   -> "No Builder journey was named."
+                        --journey mirror-ts-core               -> exit 0, mirror-ts-core
+                        MIRROR_SESSION_ID=<window A>           -> exit 0, byte-identical to --journey
+                        inspect-method --session-id <window B> -> journey: finances
+                        delivery-cursor rows                   -> unchanged (hash before = after)
+  ```
+
+  The live database was only read: one `PRAGMA journal_mode` and a file
+  copy. SQLite created its usual `-wal`/`-shm` files on that open; no data
+  changed.
+
+**Navigator validation route.** (1) Read the smoke above. (2) In a live
+Builder session on this journey, run `mirror build pull-candidates --method
+ariad` and observe the refusal, then run it with `--journey mirror-ts-core`
+and observe this journey's roadmap. Both are read-only. (3) Optional: open a
+second window, `/mm-build` another journey, come back here, and run any
+lifecycle command through the skill. It binds this window's journey, and the
+other journey's cursor does not change.
+
+**2026-09-25: route step 2, run in the live Builder session at the
+Navigator's request** (commit `29077e91`; `MIRROR_SESSION_ID` unset in the
+shell; production database, read-only commands):
+
+```text
+build pull-candidates --method ariad                          -> exit 1, "requires a journey. Pass --journey <slug>, ..."
+build pull-candidates --journey mirror-ts-core --method ariad -> exit 0, ROADMAP_SNAPSHOT + PULL_CANDIDATES for mirror-ts-core
+```
+
+Accepted by the Navigator on 2026-09-25. Step 3 (two windows) is optional and
+was not run.
+
 ## Outcome
 
-Pending.
+Done 2026-09-25. A Builder lifecycle command binds only a journey it was given:
+`--journey`, or the Builder Mode of an active session named with
+`--session-id` or `MIRROR_SESSION_ID`. With neither, it refuses before it
+reads a cursor or writes a file, and `inspect-method` with no argument names
+no journey. The `mm-build` skill passes `--journey` on every command in Pi,
+Codex, and Gemini CLI; Claude Code is CR102. Decision C left the write side
+unchanged, and a tripwire enforces its precondition.
+
+Proven on a copy of the production database, where the pre-CR008 code bound
+another window's journey and the new code did not. Validated live by the
+Navigator. CI green at `42de1b55`:
+[Tests](https://github.com/mirror-mind-ai/mirror/actions/runs/36192183003),
+[Docs](https://github.com/mirror-mind-ai/mirror/actions/runs/36192182804).

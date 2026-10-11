@@ -1,0 +1,84 @@
+// CV22.DS7.US6 plateau 6 — the `soul` routing contract.
+//
+// Three properties, in rising order of consequence:
+//   1. the family answers from TS (flipped 2026-09-08; its revert,
+//      `MIRROR_TS_SOUL=0`, left with the Python engine at CV22.DS10.TS5);
+//   2. subcommands are allowlisted BY NAME, so a subcommand the route never
+//      implemented gets the family's usage answer instead of inheriting the
+//      route (RS009/CR055 — the `conversations append` defect exited 0 and
+//      discarded the payload);
+//   3. `harvest save` takes its own transport decision, because it is the one
+//      leaf that crosses the provider seam.
+
+import assert from "node:assert/strict";
+import test from "node:test";
+import { routeMemoryCommand } from "#frontDoor/routing.ts";
+import { SOUL_SUBCOMMANDS } from "#frontDoor/soulRoute.ts";
+
+// The SHIPPED environment: no gate set at all. Every assertion below that uses
+// `ON` would also pass with the gate forced on, which is exactly why the
+// default-route test uses an empty environment instead.
+const ON = {};
+
+test("soul answers from TS with NO gate in the environment (the shipped default)", () => {
+  for (const subcommand of SOUL_SUBCOMMANDS) {
+    if (subcommand === "harvest") continue; // its `save` action is asserted separately
+    const decision = routeMemoryCommand(["soul", subcommand], {});
+    assert.equal(decision.engine, "ts", `${subcommand} must answer from TS by default`);
+  }
+});
+
+test("an unknown subcommand is answered by the family BY NAME, never by inheritance", () => {
+  // The regression this allowlist exists for: a subcommand the route has never
+  // implemented must not be answered by it. Since CV22.DS10.TS5 (D2) the family
+  // answers itself instead of Python.
+  for (const unknown of ["publish", "rite-v2", "listen-all", ""]) {
+    const decision = routeMemoryCommand(["soul", unknown], ON);
+    assert.equal(decision.engine, "usage", `soul ${unknown}`);
+    assert.match(decision.reason, /soul/);
+  }
+  assert.equal(routeMemoryCommand(["soul"], ON).engine, "usage", "bare `soul`");
+});
+
+test("the allowlist and the route's own subcommand list agree", () => {
+  // Two lists that must not drift: routing decides, the route dispatches.
+  for (const subcommand of SOUL_SUBCOMMANDS) {
+    assert.equal(routeMemoryCommand(["soul", subcommand], ON).engine, "ts", subcommand);
+  }
+});
+
+test("harvest save is live like the rest of the family, and says so", () => {
+  // CV22.DS8.US3: before this, `save` was the one Soul leaf held on Python --
+  // it crosses the provider seam through the embedding, and the front door
+  // supplied no provider at all, so a replay variable nobody sets was the only
+  // way to reach the TypeScript path.
+  for (const action of ["set", "show", "decline"]) {
+    assert.equal(routeMemoryCommand(["soul", "harvest", action], ON).engine, "ts", action);
+  }
+  const save = routeMemoryCommand(["soul", "harvest", "save"], ON);
+  assert.equal(save.engine, "ts");
+  assert.match(save.reason, /DS8\.US3 soul harvest save live/);
+  assert.equal(
+    routeMemoryCommand(["soul", "harvest", "save"], {
+      ...ON,
+      MIRROR_TS_SOUL_EMBEDDING_REPLAY: "/tmp/embedding.json",
+    }).engine,
+    "ts",
+    "a fixture still selects replay",
+  );
+});
+
+test("harvest save is recognized behind the options argparse strips first", () => {
+  // The action must be found PAST the options, or `save` would inherit the
+  // generic soul route and skip its own transport decision entirely.
+  const decision = routeMemoryCommand(
+    ["soul", "harvest", "--session-id", "s1", "--journey", "j", "save"],
+    { ...ON, MIRROR_TS_SOUL_EMBEDDING_REPLAY: "/tmp/embedding.json" },
+  );
+  assert.equal(decision.engine, "ts");
+  assert.match(
+    decision.reason,
+    /replay transport/,
+    "the save leaf's own decision, not the family's",
+  );
+});

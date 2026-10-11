@@ -1,0 +1,12 @@
+id: ext-alpha
+name: Alpha Prompt Skill
+category: extension
+kind: prompt-skill
+summary: A prompt skill exercised by the catalog golden.
+runtimes:
+  pi:
+    command_name: ext-alpha
+    skill_file: skills/pi/SKILL.md
+  claude:
+    command_name: "ext:alpha"
+    skill_file: skills/claude/SKILL.md

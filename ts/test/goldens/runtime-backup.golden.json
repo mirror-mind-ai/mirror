@@ -1,0 +1,167 @@
+{
+  "meta": {
+    "story": "CV22.DS10.US2",
+    "oracle": "src/memory/cli/runtime.py",
+    "archive_token": "<ARCHIVE>",
+    "home_token": "<HOME>",
+    "payload_kinds": {
+      "database": "a real WAL-mode SQLite database, built by the reading engine",
+      "corrupt-database": "b\"SQLite format 3\\x00\" + 4000 zero bytes",
+      "<anything else>": "the literal string, UTF-8 encoded"
+    }
+  },
+  "scenarios": {
+    "valid": {
+      "members": [
+        {
+          "name": "memory.db",
+          "payload": "database"
+        }
+      ],
+      "raw_text": null,
+      "absent": false,
+      "entries": [
+        "memory.db"
+      ],
+      "valid": true,
+      "note": null,
+      "verify_render": "Mirror runtime backup verification\n\nBackup: <ARCHIVE>\nEntries: memory.db\nVerification result: valid\n",
+      "verify_exit": 0
+    },
+    "valid_with_sidecars": {
+      "members": [
+        {
+          "name": "memory.db",
+          "payload": "database"
+        },
+        {
+          "name": "memory.db-wal",
+          "payload": "wal"
+        },
+        {
+          "name": "memory.db-shm",
+          "payload": "shm"
+        }
+      ],
+      "raw_text": null,
+      "absent": false,
+      "entries": [
+        "memory.db",
+        "memory.db-shm",
+        "memory.db-wal"
+      ],
+      "valid": true,
+      "note": null,
+      "verify_render": "Mirror runtime backup verification\n\nBackup: <ARCHIVE>\nEntries: memory.db, memory.db-shm, memory.db-wal\nVerification result: valid\n",
+      "verify_exit": 0
+    },
+    "traversal_entry": {
+      "members": [
+        {
+          "name": "../memory.db",
+          "payload": "database"
+        }
+      ],
+      "raw_text": null,
+      "absent": false,
+      "entries": [
+        "../memory.db"
+      ],
+      "valid": false,
+      "note": "unsafe archive entry: ../memory.db",
+      "verify_render": "Mirror runtime backup verification\n\nBackup: <ARCHIVE>\nEntries: ../memory.db\nVerification note: unsafe archive entry: ../memory.db\nVerification result: invalid\n",
+      "verify_exit": 1
+    },
+    "absolute_entry": {
+      "members": [
+        {
+          "name": "/tmp/memory.db",
+          "payload": "database"
+        }
+      ],
+      "raw_text": null,
+      "absent": false,
+      "entries": [
+        "/tmp/memory.db"
+      ],
+      "valid": false,
+      "note": "unsafe archive entry: /tmp/memory.db",
+      "verify_render": "Mirror runtime backup verification\n\nBackup: <ARCHIVE>\nEntries: /tmp/memory.db\nVerification note: unsafe archive entry: /tmp/memory.db\nVerification result: invalid\n",
+      "verify_exit": 1
+    },
+    "unexpected_entry": {
+      "members": [
+        {
+          "name": "memory.db",
+          "payload": "database"
+        },
+        {
+          "name": "notes.txt",
+          "payload": "hi"
+        }
+      ],
+      "raw_text": null,
+      "absent": false,
+      "entries": [
+        "memory.db",
+        "notes.txt"
+      ],
+      "valid": false,
+      "note": "unexpected archive entries: notes.txt",
+      "verify_render": "Mirror runtime backup verification\n\nBackup: <ARCHIVE>\nEntries: memory.db, notes.txt\nVerification note: unexpected archive entries: notes.txt\nVerification result: invalid\n",
+      "verify_exit": 1
+    },
+    "missing_member": {
+      "members": [
+        {
+          "name": "other.db",
+          "payload": "database"
+        }
+      ],
+      "raw_text": null,
+      "absent": false,
+      "entries": [
+        "other.db"
+      ],
+      "valid": false,
+      "note": "memory.db missing from backup",
+      "verify_render": "Mirror runtime backup verification\n\nBackup: <ARCHIVE>\nEntries: other.db\nVerification note: memory.db missing from backup\nVerification result: invalid\n",
+      "verify_exit": 1
+    },
+    "not_a_zip": {
+      "members": null,
+      "raw_text": "this is not a zip file\n",
+      "absent": false,
+      "entries": [],
+      "valid": false,
+      "note": "backup file is not a readable zip",
+      "verify_render": "Mirror runtime backup verification\n\nBackup: <ARCHIVE>\nVerification note: backup file is not a readable zip\nVerification result: invalid\n",
+      "verify_exit": 1
+    },
+    "absent": {
+      "members": null,
+      "raw_text": null,
+      "absent": true,
+      "entries": [],
+      "valid": false,
+      "note": "backup file not found",
+      "verify_render": "Mirror runtime backup verification\n\nBackup: <ARCHIVE>\nVerification note: backup file not found\nVerification result: invalid\n",
+      "verify_exit": 1
+    }
+  },
+  "created": {
+    "created_render": "Mirror runtime backup\n\nMirror home: <HOME>\nBackup: <ARCHIVE>\nVerification result: valid\nEntries: memory.db\n\nManual recovery route:\n  1. Stop active runtime sessions that could write to the database.\n  2. Move current memory.db, memory.db-wal, and memory.db-shm aside.\n  3. Extract memory.db and sidecars from this backup into the Mirror home.\n  4. Run runtime status against the Mirror home.\n  5. Do not retry update execution until status is ready.\n\nRecovery is manual in this version; no files were restored.\n",
+    "created_exit": 0
+  },
+  "documented_deviation": {
+    "why": "Python verifies entry NAMES; this archive holds 4 KB of zeros named memory.db and the oracle calls it valid. The TypeScript port extracts and runs PRAGMA quick_check, so it refuses. Asserted by a TS-only test.",
+    "members": [
+      {
+        "name": "memory.db",
+        "payload": "corrupt-database"
+      }
+    ],
+    "python_valid": true,
+    "typescript_valid": false
+  }
+}

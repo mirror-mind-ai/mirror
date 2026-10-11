@@ -186,4 +186,4 @@ in `src/memory/`. Still valid.
 
 ## Outcome
 
-Pending.
+**Rejected 2026-09-27**, by the Navigator's decision after the Workbench inspection that followed the Ariad trust floor: overtaken, not declined. Both defects belonged to the SQLite Workbench's state machine (`src/memory/builder/workbench.py`), and CV22.DS10.TS4 deleted it (`72ca4776`). In the file-first Workbench, a Change Request's plan is a section of its own Markdown document. Re-planning is an edit, Git keeps every earlier plan, and status is document vocabulary rather than a transition table.

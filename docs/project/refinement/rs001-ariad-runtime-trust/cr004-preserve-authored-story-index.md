@@ -33,6 +33,14 @@ implementation.
 
 ## Plan Or Decision
 
+**2026-09-25 — folds into CR079.** This is the Plan-stage instance of the one rule
+[CR079](cr079-preserve-authored-content-in-every-lifecycle-artifact.md) states
+for every lifecycle artifact. Per
+[the trust-floor decision](../../decisions.md#the-cv22-release-is-gated-on-an-ariad-trust-floor-worked-before-us3),
+this CR is not fixed separately: it closes when CR079's delivery preserves
+`index.md`, with that delivery as its evidence. The characterization below
+still applies and is CR079's to do.
+
 Pending. Before changing code, characterize create-versus-existing behavior and identify
 which, if any, fields are genuinely runtime-owned. Prefer insert-if-absent or a
 no-clobber policy over Markdown merging.
@@ -67,4 +75,17 @@ keeping.
 
 ## Outcome
 
-Pending.
+Done 2026-09-25, closed with CR079. The overwrite this CR recorded (Python,
+2026-08-08) had already been fixed before the TypeScript port: Plan writes each
+package file only when it is absent (Python's `_write_story_package`, ported as
+`writeStoryPackage`).
+
+Evidence:
+
+- the oracle-recorded lifecycle sequence `plan_preserves_authored_plan`, in
+  which an authored `index.md` and `plan.md` come through Plan byte for byte;
+- CR079's direct test, in which an authored `index.md`, `plan.md`, and
+  `test-guide.md` survive both `plan-item` and `plan-delivery-story`.
+
+CR079 routed the Plan package through the one writer (`create-only`), and its
+structural guard keeps it there.

@@ -1,0 +1,9 @@
+id: ext-claude-only
+name: Claude Only Skill
+category: extension
+kind: prompt-skill
+summary: Present for the runtime filter, absent from a pi-filtered listing.
+runtimes:
+  claude:
+    command_name: "ext:claude-only"
+    skill_file: skills/claude/SKILL.md

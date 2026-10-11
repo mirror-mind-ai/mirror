@@ -1,0 +1,46 @@
+[< Refinement Workbench](../index.md)
+
+# RS009 — CV22 Front-Door Routing Correctness
+
+## Framing
+
+The front-door routing table decides, per command, whether the TypeScript core
+or the frozen Python engine answers. Its entries were authored family by family
+as CV22 progressed, and each entry matches on the top-level command. That was
+correct when written, but it makes an implicit claim that ages badly: *this
+family's argv shapes are the ones that existed when I claimed it.*
+
+On 2026-09-02 that claim broke in production shape. `conversations append`,
+added by v0.31.13, inherited DS7.US1's listing route: the request reached
+TypeScript, rendered a conversation listing, exited 0, and silently discarded
+the caller's messages. It was caught only because DS7.US5 happened to inspect
+that route while porting the same boundary.
+
+## Outcome
+
+Every claimed command family in `ts/src/frontDoor/routing.ts` has an explicit,
+audited position on subcommands it does not implement — allowlist, refusal, or
+documented full coverage — so a subcommand added upstream cannot silently
+inherit a TS route it was never ported into.
+
+## Boundaries
+
+- Audit and correctness only; this is not a licence to port new subcommands.
+- Preserve every currently correct route; the goal is closing an inheritance
+  hole, not re-litigating flip decisions.
+- Fixes land as routing guards plus regression tests, in the same shape as the
+  `conversations append` fix that motivated this story.
+
+## Change Requests
+
+- [CR055 — Audit subcommand inheritance across claimed command families](cr055-audit-subcommand-inheritance-in-claimed-families.md)
+- [CR059 — Route the Pi extension and Gemini hook calls through the front door](cr059-route-extension-and-hook-calls-through-the-front-door.md)
+- [CR064 — Log the engine that answered, not the engine that was chosen](cr064-log-the-engine-that-answered-not-the-engine-that-was-chosen.md)
+- [CR068 — Stop reporting unported LLM-gated leaves as burned down](cr068-stop-reporting-unported-llm-gated-leaves-as-burned-down.md)
+- [CR072 — Route every skill through the front door](cr072-route-every-skill-through-the-front-door.md)
+- [CR077 — The route and the runtime disagree on a half-configured replay fixture](cr077-route-and-runtime-disagree-on-a-half-replay-fixture.md)
+- [CR085 — The TypeScript front door does not read the `.env` Python reads](cr085-the-ts-front-door-does-not-read-the-env-python-reads.md)
+- [CR089 — The `journey` route swallows `export-registry` and `mutate` as journey slugs](cr089-the-journey-route-swallows-export-registry-and-mutate.md)
+- [CR095 — `journey <slug>` renders an empty status document, exit 0, for a journey that does not exist — on both engines](cr095-journey-status-renders-an-empty-document-for-an-unknown-slug.md)
+- [CR096 — `conversations <options> append` renders the listing, exit 0, and drops the payload on stdin](cr096-conversations-lists-instead-of-appending-when-options-come-first.md)
+- [CR109 — `mirror log --help` records `--help` as the response and renames the conversation to it](cr109-mirror-log-help-records-help-and-renames-the-conversation.md)

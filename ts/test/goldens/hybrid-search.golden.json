@@ -1,0 +1,223 @@
+{
+  "expected_order": [
+    "m1",
+    "m6",
+    "m3",
+    "m7",
+    "m8"
+  ],
+  "memories": [
+    {
+      "access_count": 2,
+      "content": "Freedom and the digital nomad business model",
+      "created_at": "2026-06-20T12:00:00Z",
+      "created_at_ms": 1781956800000,
+      "embedding": [
+        1.0,
+        0.44999998807907104,
+        0.05000000074505806,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "embedding_b64": "AACAP2Zm5j7NzEw9AAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+      "id": "m1",
+      "last_accessed_at": "2026-06-22T12:00:00Z",
+      "last_accessed_at_ms": 1782129600000,
+      "lexical_score": 1.0,
+      "relevance_score": 0.8,
+      "use_count": 3
+    },
+    {
+      "access_count": 0,
+      "content": "Freedom is a nomad lifestyle of independence",
+      "created_at": "2026-06-21T12:00:00Z",
+      "created_at_ms": 1782043200000,
+      "embedding": [
+        0.9900000095367432,
+        0.46000000834465027,
+        0.05000000074505806,
+        0.009999999776482582,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "embedding_b64": "pHB9Px+F6z7NzEw9CtcjPAAAAAAAAAAAAAAAAAAAAAA=",
+      "id": "m2",
+      "last_accessed_at": null,
+      "last_accessed_at_ms": null,
+      "lexical_score": 0.0,
+      "relevance_score": 0.5,
+      "use_count": 0
+    },
+    {
+      "access_count": 1,
+      "content": "Building a digital business and finding freedom as a nomad",
+      "created_at": "2026-05-01T12:00:00Z",
+      "created_at_ms": 1777636800000,
+      "embedding": [
+        0.0,
+        0.0,
+        1.0,
+        0.5,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "embedding_b64": "AAAAAAAAAAAAAIA/AAAAPwAAAAAAAAAAAAAAAAAAAAA=",
+      "id": "m3",
+      "last_accessed_at": "2026-05-15T12:00:00Z",
+      "last_accessed_at_ms": 1778846400000,
+      "lexical_score": 0.5,
+      "relevance_score": 0.5,
+      "use_count": 1
+    },
+    {
+      "access_count": 0,
+      "content": "Living where I want and shaping my own time",
+      "created_at": "2026-06-23T11:00:00Z",
+      "created_at_ms": 1782212400000,
+      "embedding": [
+        0.8999999761581421,
+        0.5,
+        0.10000000149011612,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "embedding_b64": "ZmZmPwAAAD/NzMw9AAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+      "id": "m4",
+      "last_accessed_at": null,
+      "last_accessed_at_ms": null,
+      "lexical_score": 0.0,
+      "relevance_score": 0.5,
+      "use_count": 0
+    },
+    {
+      "access_count": 0,
+      "content": "Notes on a rainy afternoon in an old cafe",
+      "created_at": "2025-01-01T12:00:00Z",
+      "created_at_ms": 1735732800000,
+      "embedding": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "embedding_b64": "AAAAAAAAAAAAAAAAAAAAAAAAgD8AAAAAAAAAAAAAAAA=",
+      "id": "m5",
+      "last_accessed_at": null,
+      "last_accessed_at_ms": null,
+      "lexical_score": 0.0,
+      "relevance_score": 0.5,
+      "use_count": 0
+    },
+    {
+      "access_count": 10,
+      "content": "A reminder I keep returning to about discipline",
+      "created_at": "2026-03-01T12:00:00Z",
+      "created_at_ms": 1772366400000,
+      "embedding": [
+        0.20000000298023224,
+        0.10000000149011612,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      "embedding_b64": "zcxMPs3MzD0AAAAAAAAAAAAAAAAAAIA/AAAAAAAAAAA=",
+      "id": "m6",
+      "last_accessed_at": "2026-06-23T10:00:00Z",
+      "last_accessed_at_ms": 1782208800000,
+      "lexical_score": 0.0,
+      "relevance_score": 0.5,
+      "use_count": 5
+    },
+    {
+      "access_count": 0,
+      "content": "A pinned principle marked highly relevant",
+      "created_at": "2026-06-01T12:00:00Z",
+      "created_at_ms": 1780315200000,
+      "embedding": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0
+      ],
+      "embedding_b64": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAPwAAAAA=",
+      "id": "m7",
+      "last_accessed_at": null,
+      "last_accessed_at_ms": null,
+      "lexical_score": 0.0,
+      "relevance_score": 1.0,
+      "use_count": 0
+    },
+    {
+      "access_count": 0,
+      "content": "Random grocery list for the week",
+      "created_at": "2026-06-10T12:00:00Z",
+      "created_at_ms": 1781092800000,
+      "embedding": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "embedding_b64": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgD8=",
+      "id": "m8",
+      "last_accessed_at": null,
+      "last_accessed_at_ms": null,
+      "lexical_score": 0.0,
+      "relevance_score": 0.5,
+      "use_count": 0
+    }
+  ],
+  "meta": {
+    "frozen_now": "2026-06-23T12:00:00Z",
+    "frozen_now_ms": 1782216000000,
+    "limit": 5,
+    "mmr_threshold": 0.92,
+    "query": "freedom and digital nomad business",
+    "query_embedding": [
+      1.0,
+      0.5,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "recency_half_life_days": 90,
+    "reinforcement_decay_days": 180,
+    "reinforcement_retrieval_weight": 0.3,
+    "reinforcement_use_weight": 0.7,
+    "weights": {
+      "lexical": 0.15,
+      "recency": 0.15,
+      "reinforcement": 0.1,
+      "relevance": 0.1,
+      "semantic": 0.5
+    }
+  }
+}

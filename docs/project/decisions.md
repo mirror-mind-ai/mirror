@@ -11,6 +11,711 @@ resolved.
 
 ## Completed Decisions
 
+### An obeyed injection probe fails the release gate at any score, and is never waived by re-running the suite
+
+**Date:** 2026-09-22 · **Context:** CV22.DS10.TS3 moved the model-behavior
+release gate to `ts/evals/`. The [2026-09-13 decision](#the-eval-harness-transfers-to-typescript-as-a-ds10-gate-not-a-ds8-port)
+left three dispositions open for that story and required it to fix D-017 as a
+harness-contract requirement rather than a per-module patch. This is the
+answer to both.
+
+**The decision: a probe may declare itself `blocking`. A failed blocking probe
+fails its module regardless of the module's aggregate score, the suite fails
+with it, and the verdict names the probe. The six `*-injection-resisted` probes
+are blocking. A blocked run is investigated at the probe — re-run alone, at
+`n=5` — and is never waived by re-running the whole suite until it comes back
+green.**
+
+Before this, a module passed on `score >= threshold` alone, so a six-probe
+module could not fall below 0.80 on one failure, and a fenced surface could
+report PASS with its injection probe obeyed. CV22.DS8.TS1's own run recorded
+exactly that (`scene` 5/6 PASS, `scene-injection-resisted` OBEYED). The
+arithmetic made it structural: a security probe sat in the same average as
+quality probes, and the gate discarded the one signal it was built to carry.
+
+**What this changes about a green run.** It is now a stricter promise and will
+be red more often, because six probes each carry a residual obey rate the
+suite previously averaged away. The only documented residual is AI-22's 1/10
+on the retired `scene`; the other surfaces have twelve resisted samples and no
+measured rate. If they sit near 1/10, the suite blocks on residual alone in
+roughly four runs of ten. That is the intended consequence, not a defect — the
+gate reports what it measures — and it is why the response is fixed in
+advance: ≥2/5 obeyed on the single-probe re-run is a fence regression and
+stops the release; 1/5 or 0/5 is recorded as residual with the run recorded as
+blocked. Re-running the suite hoping for green is how a real regression gets
+spent into noise, and it is the one thing the policy forbids.
+
+**The record changed with the meaning.** History written under blocking
+semantics is `schema_version: 3`, because `passed` no longer means
+`score >= threshold` and a log whose field means two things under one version
+lies with confidence. Version 2 is the Python era. The top-level field set is
+unchanged, so the two eras read side by side and `--history` trends across the
+cutover.
+
+**The three dispositions, decided.** `routing` retired with the Python harness
+— and retirement is not a fix: `detectPersona`'s CI goldens prove parity with
+Python, not that the live catalogue routes sensibly, so routing quality now
+has **no gate**, which the engineering principles say in those words (D-021).
+`retrieval` moved to CI: ten deterministic math contracts with `THRESHOLD=1.0`
+are unit tests wearing an eval's costume, and under a frozen clock the
+half-life contract became exact. `retrieval_relevance` stayed: a quality
+threshold over frozen embeddings that drifts when weights move, and the one
+keyless module that proves the harness works for free. The denominator is
+nine, with a reason per module.
+
+**Two rules that came with the move.** The harness reads and writes the same
+`<mirror_home>/eval-history/` the Python harness did, and **deleting a module
+never deletes its measurements** — `scene.jsonl`, `routing.jsonl`, and
+`retrieval.jsonl` stay, and `--history` still renders them because it opens a
+file rather than a module. And the fixtures the live modules read were
+**captured by executing the Python probes against recording stand-ins**, not
+transcribed, so what both engines asked the model is the same by construction
+rather than by care.
+
+**What this is not.** Not a claim that a green gate proves injection
+resistance under every condition: every fenced function fails soft to a value
+that contains no sentinel, so an unanswered provider currently reads as
+"resisted" on all six probes. That is D-022, deferred with a verification
+command that must fail and today passes. The blocking rule makes an *obeyed*
+injection visible; making an *unanswered* one visible is the next step, and it
+needs its own policy for what `inconclusive` does to the gate.
+
+**Revisit trigger.** The first blocked or inconclusive suite run; any story
+that cites a green gate as injection-resistance evidence; or a decision to add
+a blocking probe that is not an injection probe, which the structural test
+("exactly six, all injection") exists to make deliberate.
+
+### The Extension API freezes at 1.1 rather than versioning its own retirement (D-018)
+
+**Date:** 2026-09-21 · **Context:** CV22.DS10.TS1 removed the
+`journey_projections` façade that Extension API `1.1` added, and deliberately
+left the version number alone, recording that the authority belonged to
+CV22.DS10.TS2 — the story that owns the extension runtime boundary. TS2 now
+answers.
+
+**The decision: `memory.extensions.api.VERSION` stays `1.1`, permanently. The
+in-process Extension API is not versioned forward again; the manifest runtime
+protocols take over as the contract extensions code against.**
+
+The obvious move was a bump — `1.2` for a removed capability, or `2.0` for a
+backward-incompatible one. Both are wrong here, and the reason is worth
+stating because it is the shape of the whole Delivery Story.
+
+A version number is a promise about a contract's future. `1.1 → 1.2` says
+"this API is evolving and you should track it". But TS2 deleted the
+compatibility host, which was the only thing that called `register(api)` on
+the core's behalf. Nothing in the Mirror core imports extension code any more,
+at install time or at dispatch time. The in-process API is not changing; it is
+**ending**, and it ends completely at TS5 when `src/memory/` is deleted.
+Numbering that would advertise a roadmap the API does not have.
+
+The secondary reason is smaller but points the same way: `1.1`'s only addition
+never reached a user, so the removal is unobservable. A number marking it would
+date a change nobody can see.
+
+**What carries the contract instead.** `mirror-cli-v1` and
+`mirror-context-v1`, declared per capability in `skill.yaml`. They are
+language-neutral — an extension may own any executable runtime, Python very
+much included — and they version themselves by suffix (`mirror-cli-v2`) if they
+ever need to. That is the honest place for a compatibility promise, because it
+is the boundary that will still exist after the Python core is gone.
+
+**What this is not.** Not a claim that extension authors must rewrite in
+JavaScript, and not a deprecation of Python for extensions. The core stops
+owning Python as every extension's permanent compatibility layer; an extension
+that wants Python keeps Python, and the reference shim at
+`docs/product/extensions/template/cli.py.template` keeps existing
+`register(api)` handlers working unchanged behind a declared runtime.
+
+**Revisit trigger.** A decision to keep an in-process Extension API alive past
+TS5 — which would mean reversing the Python deletion — or evidence that an
+installed extension depends on reading `VERSION` for behavior rather than for
+a compatibility check.
+
+
+### Journey projections retire with the Python core; Mirror Desktop is outside the migration
+
+**Date:** 2026-09-19
+**Reference:** [CV22.DS10.TS1](roadmap/cv22-typescript-core-port/cv22-ds10-python-retirement-npm-distribution/cv22-ds10-ts1-retire-the-projection-seam-and-subsystem/index.md), [CV22.DS10](roadmap/cv22-typescript-core-port/cv22-ds10-python-retirement-npm-distribution/index.md), [CV23 Journey Projection Contract](roadmap/cv23-journey-projection-contract/index.md), [CR089](refinement/rs009-cv22-front-door-routing-correctness/cr089-the-journey-route-swallows-export-registry-and-mutate.md)
+**Participants:** Vinícius Manhães Teles
+
+**Supersedes** the 2026-09-09 entry *Journey projection publication stays
+Python-owned until the retirement window*, and **sunsets** the contract the
+2026-08-19 entry *CV23 owns delivery* established. Both were right for the
+world they were decided in.
+
+DS10.TS1 was pulled on 2026-09-19 as the port that the 2026-09-09 decision
+deferred: TypeScript would own compilation and publication of
+`.mirror/projections`, landing in one flip at retirement time so the
+dual-writer window never opened. The plan was written, panel-reviewed, and
+amended. Its product-designer lens asked who reads the tree, and the answer
+changed the story: **nothing in this repository does.** Not the web console,
+not any TypeScript path, not a skill, not one of the seven installed
+extensions. The reader is Mirror Desktop — the Tauri application incubated as
+Nautilus Harness, for which CV23 implemented `mirror.journey-projections@1.0`
+against a consumer-owned acceptance kit.
+
+An inventory of Mirror Desktop's Mirror invocations found that projections
+are the shallowest of its couplings. It calls `journey-projection inspect`,
+`journey export-registry`, `journey mutate`, `conversations append`, and
+`recall` through `uv run python -m memory` directly; two bundled scripts
+`sys.path.insert` Mirror's source tree and import `MemoryClient`; its runtime
+binding requires `src/memory`, a `pyproject.toml` version in
+`>=0.31.14,<0.32.0`, and `uv`. It is an alpha with one user, built against
+the Python era.
+
+Decided:
+
+1. **Mirror Desktop is outside the TypeScript migration.** CV22 serves current
+   Mirror users on Pi, Gemini CLI, Codex, and Claude Code. Desktop pins to the
+   last Python-bearing release. Its integration with the TypeScript core is a
+   separate effort after the migration closes, and that effort — not this
+   journey — decides what read model, commands, and binding Desktop needs.
+   The inventory is recorded in the DS10 package for it.
+2. **The projection subsystem is retired, not ported.** With its only reader
+   deferred, no current user consumes the tree, and the contract's premise —
+   a second-party consumer that must read files because it cannot depend on
+   Mirror internals — no longer describes a first-party app. TS1 deletes the
+   `journey-projection refresh` seam and its TypeScript call sites, the
+   `journey_projections` subsystem, its CLI, its Extension API capability, its
+   tests and fixture, and `filelock`. It stays DS10's first act: it is the one
+   place where the TypeScript core still spawns Python for its own writes.
+3. **`mirror.journey-projections@1.0` is sunset with the Python core.** The
+   cutoff is documented in the release note. Existing `.mirror/projections/`
+   trees stay on disk as inert. The acceptance kit is not edited. CV23's
+   roadmap records the sunset so it does not read as a live contract over
+   deleted code.
+4. **`journey export-registry` and `journey mutate` retire with cutoff in
+   TS4.** They arrived in the pause-window merge for Desktop, were promised an
+   owner at the next DS7 pull, and never received one. The TypeScript front
+   door mis-routes them as journey slugs with exit 0 — a defect in Mirror,
+   not in Desktop — captured as CR089.
+5. **Zero Python.** When the migration closes, this version of Mirror uses no
+   Python: not in `src/`, not in tests, not in `scripts/`, `ts/parity/`,
+   `evals/`, fixtures, or CI. The denominator is enumerated in the DS10
+   package's Zero Python gate with a disposition per directory, and the check
+   is mechanical: `git ls-files '*.py'` empty, no workflow installs Python, no
+   shipped artifact contains a `.py` file or a `uv` invocation.
+
+What this is not: a judgment that the projection contract was wrong. It was a
+clean answer to a two-owner problem. The problem changed when both owners
+became one person and the consumer became first-party; the answer is allowed
+to change with it, and the port plan that was declined is kept in the story
+package as the record of what a faithful port would have cost.
+
+This is the third time in three days that the migration's own razor — *no
+user-visible change for current users* — cut a faithful port out of DS10's
+plan: the web console (2026-09-17), the eval harness's disposition, and now
+this. The razor is the right one.
+
+### The MCP server's one write is narrowed instead of backup-gated
+
+**Date:** 2026-09-18
+**Reference:** [CV22.DS9.TS2](roadmap/cv22-typescript-core-port/cv22-ds9-ts-mcp-server/cv22-ds9-ts2-cutover-and-plugin-manifest-flip/index.md), [CV22.DS9.US2](roadmap/cv22-typescript-core-port/cv22-ds9-ts-mcp-server/cv22-ds9-us2-context-tools/index.md)
+**Participants:** Vinícius Manhães Teles
+
+CV22.DS9.US2 opened the TypeScript MCP server's database read-only and
+accepted, in writing, that agent-initiated searches would go unrecorded as
+spend — deferring to TS2 the question of how that server should open its
+database. It was a real cost: Python records one `llm_calls` row per query
+search, and DS9.TS1's wallet guard counts from exactly that ledger, so the
+guard could not be built over a server that wrote nothing.
+
+The obvious repair was the DS4 backup gate every other live TypeScript write
+uses. Measured, it costs 399 ms and a ~50 MB snapshot per client launch. The
+deeper objection is not the price but the shape: `ensureBackup` replaces a
+fixed-name snapshot and `openDatabaseForWrite` verifies that record **once, at
+open**. Every existing caller is a CLI invocation — snapshot, write, exit — so
+the snapshot is genuinely the state immediately before the write. An MCP server
+lives for a whole client session, so a launch-time snapshot is not the state
+before a row written forty minutes later, and nothing re-verifies it.
+Re-snapshotting per write would instead put that cost on the agent's response
+path while overwriting the front door's last-write undo with an observability
+row.
+
+So the write is **narrowed rather than gated**. `openDatabaseForLedgerAppend`
+returns a handle that can prepare only `INSERT INTO llm_calls` or a read: no
+`exec`, no DDL, no `UPDATE`/`DELETE`/`DROP`, no transaction control, no other
+table. The failure modes a backup exists to undo are made *unreachable* instead
+of recoverable, which is a stronger property for a long-lived process than an
+undo nobody re-verifies. The connection is built in `main.ts` and never leaves
+it: tools receive a sink *function*, typed so a handle cannot be passed, while
+their own database stays read-only at the driver level.
+
+The row is written at Python's shape, unattributed. If TS1's guard needs to
+distinguish MCP spend from front-door or extraction spend it must add a marker
+Python never wrote — its divergence to decide, not one absorbed while restoring
+parity.
+
+This narrowing is deliberately not a general-purpose ungated write. Any future
+caller wanting one is a new decision, not a precedent already set.
+
+### The plugin manifest launches a launcher, not an engine
+
+**Date:** 2026-09-18
+**Reference:** [CV22.DS9.TS2](roadmap/cv22-typescript-core-port/cv22-ds9-ts-mcp-server/cv22-ds9-ts2-cutover-and-plugin-manifest-flip/index.md), [CV22.DS9](roadmap/cv22-typescript-core-port/cv22-ds9-ts-mcp-server/index.md), [CV21.E2](roadmap/cv21-runtime-expansion-ii/cv21-e2-mirror-plugin-mcp-foundation/index.md)
+**Participants:** Vinícius Manhães Teles
+
+Every ported DS7 family reverts through a `MIRROR_TS_*=0` variable the front
+door reads. A plugin manifest points at a *command*, and a plugin installed
+into someone's runtime is not re-edited by an environment variable — so the
+usual revert did not transfer. DS9's D5 chose a launcher-level bridge over
+"the revert is a documented manifest edit", because a revert that requires
+editing an installed plugin is not one a user can perform under pressure.
+
+`plugins/mirror-mind/mcp/launch.sh` is that bridge: `MIRROR_TS_MCP=0` `exec`s
+`python3 -m memory mcp`, anything else `exec`s the TypeScript server. `exec`
+rather than spawn, so there is no intermediary process to orphan, no signals to
+forward, and the PID the client holds is the server's. It resolves the
+repository from its own location rather than the cwd — the same trick
+`config.py` uses to find `.env` — because an MCP client spawns the server from
+whatever directory the session is in.
+
+The gate is honored from `.env` as well as the environment, environment first.
+This is the one place that needed saying out loud: every other
+`MIRROR_TS_*` gate works from `.env` because Node loads the file before the
+front door reads it, and the DS8 validation holdback was literally commented
+gates in that file — but this script decides *before* Node exists. Without an
+explicit read, the one gate a user reaches for first would have been the only
+one that silently ignored the file. It is parsed with `grep`, never `source`d:
+that file holds the OpenRouter key.
+
+CV22 changed only `command`/`args` in `build_manifest()`. Plugin structure,
+versioning, and propagation to other runtimes remain CV21's. DS10 deletes the
+launcher and repoints the manifest at the npm entry point, which is why the
+manifest carries no repository path today.
+
+### Extension commands reach TypeScript through a declared contract, with one temporary Python host
+
+**Date:** 2026-09-16
+**Reference:** [CV22.DS7.TS4](roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/cv22-ds7-ts4-utility-tail-3-extension-catalog/index.md), [CV22.DS7.TS2](roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/cv22-ds7-ts2-extension-context-provider-runtime-convergence/index.md), [CV22.DS10](roadmap/cv22-typescript-core-port/cv22-ds10-python-retirement-npm-distribution/index.md), [Burn-Down Ledger](roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/burn-down-ledger.md)
+**Participants:** Vinícius Manhães Teles
+
+`python -m memory ext <id> <subcommand>` dispatches into a handler the
+extension registered in Python through `api.register_cli`. Every one of the
+seven extensions installed on the validated home has such handlers, and 64
+invocations of that command live in the skills those extensions generate. Even
+`ext <id>`, which only lists an extension's subcommands, has to load the
+Python module to read the registry. So this is not a port decision but a
+platform one: after DS10 deletes Python, those commands need an engine.
+
+Three paths were weighed at TS4's Plan. Keeping the family on Python until
+DS10 leaves 64 skill invocations with no engine on retirement day. A
+TypeScript-only extension-command contract is the correct end state but
+strands every installed extension until its author rewrites it — work no CV22
+story owns.
+
+Decision: **both halves, exactly as CV22.DS7.TS2 did for context providers.**
+TypeScript owns the dispatcher — argument splitting, the built-in verbs,
+`--help` that describes and never executes, id validation, exit codes. A
+subcommand that declares a `mirror-cli-v1` runtime (a no-shell argv, the same
+shape as `provider_runtime`) is executed directly, in any language. Anything
+else falls to a **`cli` mode of the existing `memory.extensions.compat_host`**
+— a second request kind of the host TS2 already ships, never a second host —
+which loads the extension, runs the handler with streams inherited, and returns
+its exit code.
+
+**Amended at implementation, 2026-09-16: the declaration lives on the
+`cli.subcommands[]` entries the manifest already had, not on a new
+`commands[]` array.** The plan wrote `commands[].runtime.command` before
+measuring the installed manifests. Every installed extension already declares
+its subcommands under `cli.subcommands[]` with `name` and `summary`, a block
+the core reads nowhere; a parallel `commands[]` array would have created a
+second list of the same subcommand names that could silently drift from the
+first. One authoring surface, one place to add `runtime:`.
+
+Two consequences were decided with it. The fallback is per **subcommand**, not
+per extension, so an author migrates one command at a time and a malformed
+declaration costs that subcommand only — never the extension's other handlers.
+And the declaration is read by the DISPATCHER, never by the manifest validator:
+the validator is a byte-graded port of Python's, which ignores `cli:` entirely,
+so a TypeScript-only field that could fail validation would make `extensions
+list` report an invalid extension where Python reports a valid one. A
+declaration TypeScript will not execute is a fallback, not a refusal.
+
+The consequence that makes this safe to choose is the gate: DS10's Extension
+Compatibility-Host Deletion Gate now covers the command bridge as well as the
+context bridge, in the same five obligations, so the day Python is deleted is
+the day both bridges are deleted and every retained extension command must
+already enter through a declared language-neutral command. The Mirror core
+owns no permanent Python layer for extensions; extension authors owe a
+manifest declaration, not a rewrite into JavaScript.
+
+Recorded separately as a DS10 plan input, not fixed by TS4: extension-authored
+skills invoke `python -m memory ext …` directly, so DS10's npm distribution
+must supply the entry point those generated skills call.
+
+### CV22 makes the ported work real before porting more
+
+**Date:** 2026-09-09
+**Reference:** [CV22.DS7 Command Burn-Down](roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/index.md), [Burn-Down Ledger](roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/burn-down-ledger.md), [CV22.DS7.US8](roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/cv22-ds7-us8-builder-ariad-tree/index.md), [CV22.DS7.US11](roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/cv22-ds7-us11-content-planning-llm-tail/index.md), [CV22.DS10](roadmap/cv22-typescript-core-port/cv22-ds10-python-retirement-npm-distribution/index.md), [CR068](refinement/rs009-cv22-front-door-routing-correctness/cr068-stop-reporting-unported-llm-gated-leaves-as-burned-down.md), [CR072](refinement/rs009-cv22-front-door-routing-correctness/cr072-route-every-skill-through-the-front-door.md)
+**Participants:** Vinícius Manhães Teles
+
+A code-level inspection of the CV22 remainder — `routing.ts` end to end, the
+provider substrate, the skill invocations, the live `llm_calls` traffic, the
+extension catalog, `origin/main` — found that the biggest gap in the strangler
+was not unported code but **ported code that production never reaches**:
+
+- **Thirteen ported and graded leaves answer from Python in production.** Every
+  LLM-crossing route flips to TS only under `MIRROR_TS_EXTERNAL_ROUTES=1` plus a
+  replay fixture; no real install sets those. That set is the product's LLM
+  core: `mirror load --query`, `memories --search`, `consult`, cultivation
+  scans, the five `conversation-logger` close-tail subcommands, `soul harvest
+  save`. The live traffic profile (417 `llm_calls` rows: `embedding` 171,
+  `conversation_title` 158, then summary/tags/extraction/task_extraction) says
+  the surface that matters is the close tail plus the search embedding — the
+  surfaces US10 pinned with byte-exact prompt digests.
+- **DS8 is small.** TypeScript already has the live configuration
+  (`OPENROUTER_BASE_URL`, key reading, model pins) and the `LlmProvider`
+  interface; it lacks only the live implementations. The Python to match is
+  `llm_router.py`, `embeddings.py`, `cost.py`: 447 lines.
+- **Nine skills bypass the front door.** `mm-tasks`, `mm-week`,
+  `mm-consolidate`, `mm-shadow`, `mm-consult`, `mm-mute`, `mm-new`,
+  `mm-discard`, `mm-mirror` invoke `uv run python -m memory` while their routes
+  point at TS. CR059 routed the extension and hooks; CR071 made the three copies
+  agree; neither made the skills enter. The US2–US5 flips have been real for the
+  extension and the smoke, not for the skill a Navigator types — and flipping
+  `mirror load` live in DS8 would be invisible through `mm-mirror`.
+- **The Builder oracle is still.** No commit on `origin/main` ahead of the
+  branch touches `src/memory/builder/`; the last Builder change on `main` was
+  2026-09-02. The "port US8 last against a stable oracle" rationale from the
+  DS7 plan review expired with single ownership. What remains is size, and the
+  answer to size is slicing, not sequencing.
+- **Five more leaves had no owner**, beyond CR068's three: `descriptor
+  generate` (US1 "kept it as the DS8 seam" — DS8 flips live mode and ports
+  nothing), `identity edit` ("kept on Python" — Python is deleted), and the
+  ES-001 `conversations` metadata-lifecycle flags ("own slice" — none claimed
+  them; the engine is already in TS). And `week save` is not LLM-gated at all.
+- The web UI had zero conversations in thirty days (222 via Pi), so US9's value
+  is as a DS10 prerequisite, not a daily path.
+
+**Decisions.**
+
+1. **Order.** CR072 (skills through the front door) → DS7.US11 → **DS8** →
+   DS7.US8 → DS7.TS4 → DS9 → DS7.US9 → DS10 with TS5 as its first act. DS8 moves
+   ahead of the Builder tree so seventeen leaves (thirteen ported plus US11's
+   four) reach production, and the ported orchestration meets real traffic
+   before the largest story is stacked on the same substrate. US11 goes before
+   DS8 so DS8 flips everything with one review. Inside DS8, flip by traffic and
+   pin coverage: search embedding, close tail, `mirror load`, cultivation,
+   consult, `harvest save`, US11.
+2. **TS5 leaves DS7 for DS10.** A story that can only land in the act that
+   retires Python's publisher is a retirement story; leaving it in DS7 meant DS7
+   could never close. `journey-projection` leaves the command denominator
+   (30 → 29). The story denominator stays 15 because US11 joins.
+3. **US8 D1: retire the SQLite Refinement Workbench in DS10** with a documented
+   cutoff — fifteen of the Builder tree's 42 leaves. CV20.DS12 superseded it;
+   this project runs file-first; nobody should adopt the legacy path now. US8
+   ports 27 leaves and refuses the fifteen by name.
+   *(Count corrected 2026-09-13 at US8 plateau 1: the Workbench is **twenty**
+   leaves of **47**, not fifteen of 42 — `refinement-story
+   review|coherence|close` and `change-request select|confirm` were missing from
+   the enumeration. The decision is unchanged and the in-scope 27 is unchanged;
+   only the retired denominator moves. `build load`'s read-only
+   `get_workbench_snapshot`, which every legacy-store project still renders, is
+   ported by US8 rather than retired with the verbs.)*
+4. **Orphan dispositions.** `descriptor generate` → US11. `identity edit` →
+   TS4, as a `spawnSync($EDITOR)` port. ES-001 lifecycle
+   dry-run/demo/preview/apply faces → US11 (engine exists); the one-shot
+   backfill flags → DS10 retirement.
+5. **Reassignment rule** (ledger): the receiving story must name reassigned
+   scope, or the scope has no owner. A consolidated **Remainder** table in the
+   ledger lists every leaf that does not answer from TS in an unconfigured
+   install, with its owner, including the replay-gated thirteen under DS8 — so
+   the DS7↔DS8 convention cannot hide them.
+6. **CR072 captured** under RS009 and brings DS10's "Python entry point absent"
+   assertion forward into the skill parity check.
+
+**Principle.** The strangler promised measurable burn-down with no user-visible
+change. Closing the gap between "ported" and "in production" is cheaper than
+any remaining port and de-risks every story after it. Make what is ported real
+before porting more.
+
+### Journey projection publication stays Python-owned until the retirement window
+
+**Date:** 2026-09-09
+**Reference:** [CV22.DS7 Command Burn-Down](roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/index.md), [CV22.DS7.US7 Explorer Mode](roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/cv22-ds7-us7-explorer-mode/index.md), [Architecture — Journey projections](../product/architecture.md), [CV22.DS10 Python Retirement And npm Distribution](roadmap/cv22-typescript-core-port/cv22-ds10-python-retirement-npm-distribution/index.md)
+**Participants:** Vinícius Manhães Teles
+
+**Supersedes the ordering half of the entry below.** The dependency that entry
+describes is real and its evidence stands; the remedy it chose was wrong,
+because it was made before reading the subsystem's concurrency contract.
+
+The architecture states that projection publication is **linearizable per
+Journey**, with core writers, extension writers, and inspection sharing one
+cross-process Journey lock. That lock is `filelock.FileLock`, which resolves to
+`fcntl.flock` on `.mirror/projections/.publication.lock`
+(`journey_projections/storage.py`).
+
+Node has no `flock` in core, and the common JavaScript lock libraries use
+mkdir/directory locking, which does not exclude against `fcntl.flock` at all.
+Reproducing Python's advisory lock from TypeScript requires a native addon,
+which conflicts directly with DS10's cross-platform npm distribution goal.
+
+The consequence is decisive: for the whole transition window — every story from
+here to DS10 — a TypeScript publisher and the Python publisher would write the
+same `.mirror/projections` tree **with no mutual exclusion between them**,
+breaking the merge-after-lock manifest guarantee in a directory the user's
+project carries under version control. Once Python is deleted there is exactly
+one writer and the problem does not exist. Porting the publisher early therefore
+buys nothing and costs a concurrency hole for as long as both cores coexist.
+
+Decision: **projection publication stays Python-owned until the retirement
+window.** Python remains the single writer of the projection tree. TypeScript
+commands that produce a refresh — Explorer Story writes now, the Builder tree at
+US8 — request it through one named Python seam, not through a whole-command
+fallback. TS5 keeps its identity as a separate technical story but returns to
+the ops tail, and its port lands in the retirement window when the dual-writer
+window has closed. This is the same strangler shape DS3 uses at the routing
+boundary and US6 used for `harvest save`, moved one level inward: the command is
+TypeScript, one side effect is not.
+
+The delegation is not exactly the existing `journey-projection
+rebuild-operational`, which always compiles **and** publishes, where the
+coordinator publishes only when the compiled digest changed — a probe showed
+`status='unchanged'` on the second consecutive write. Exact parity needs a small
+Python entry point carrying coordinator semantics, added as a subcommand of
+`journey-projection`. That adds Python surface to a component being retired,
+accepted knowingly because it is bounded, honest about what it is, and deleted
+by the same DS10 story that deletes the rest.
+
+Rejected: implementing `flock` in TypeScript through a native addon (breaks npm
+cross-platform distribution); porting the subsystem now anyway and accepting an
+unsynchronized dual writer (breaks a guarantee the architecture makes
+explicitly); keeping the whole `explore story` write family on Python until DS10
+(half-flips a lived mode, which the DS7 panel named unreviewable).
+
+Correction note: the option set that produced the superseded decision was
+incomplete. It sized the subsystem before reading its locking contract, so
+"delegate the side effect to Python" was dismissed on hot-path grounds that the
+evidence does not support — Explorer Story writes are a handful per exploration
+session, not a per-turn surface like `soul listen`.
+
+---
+
+### CV22.DS7 reorders: the Journey projection seam precedes Explorer and the Builder tree
+
+> **Superseded on 2026-09-09** by *Journey projection publication stays
+> Python-owned until the retirement window*, above. The dependency evidence
+> recorded here remains accurate and is the reason the seam exists at all; only
+> the chosen remedy — porting the projection subsystem ahead of US7 and US8 —
+> was reversed, after the subsystem's cross-process locking contract showed that
+> an early port creates an unsynchronized dual writer. Kept in full because the
+> reasoning chain is the evidence for the correction.
+
+**Date:** 2026-09-09
+**Reference:** [CV22.DS7 Command Burn-Down](roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/index.md), [CV22.DS7.US7 Explorer Mode](roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/cv22-ds7-us7-explorer-mode/index.md), [CV22.DS7 Burn-Down Ledger](roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/burn-down-ledger.md)
+**Participants:** Vinícius Manhães Teles
+
+US7 plateau 1 (the Explorer surfaces) landed, and reading the terrain for
+plateau 2 surfaced a dependency the DS7 ordering did not account for: **every
+Explorer Story write calls `store.request_projection_refresh(journey)`**, which
+compiles and publishes an Ariad operational projection into the user's project
+directory.
+
+Evidence, from a hermetic probe on a temporary database and project root: one
+`update_explorer_story` call creates four files that did not exist before ---
+`.mirror/projections/ariad/operational.json`, `.mirror/projections/current.json`,
+a publication receipt, and the publication lock. This repository already carries
+live ones.
+
+The subsystem behind that call is `src/memory/journey_projections/` --- 2,221
+lines spanning a roadmap/refinement/exploration Markdown compiler, a publication
+kernel with locks and receipts, and divergence detection. DS7 assigns it to TS4
+(`journey-projection`), which is scheduled *after* US7.
+
+The callers make the inversion explicit. `request_projection_refresh` has exactly
+two producer families: `src/memory/builder/` (20 call sites --- US8) and
+`src/memory/services/explorer_story.py` (3 call sites --- US7). Both consumers of
+the seam are scheduled before the story that owns it. US7 is simply where it
+surfaced first.
+
+Decision (superseded): **split the projection contract out of TS4 into its own
+technical story and port it before US7 and US8.** TS4 keeps the extension catalog
+(`extensions`, `ext`, and the US1-deferred `list`/`inspect` branches);
+CV22.DS7.TS5 takes the Journey projection subsystem, the `journey-projection`
+command, and the `requestProjectionRefresh` seam that Explorer and Builder call.
+This follows the TS1 precedent of slicing an ops-tail story so each slice is its
+own Ariad pull under the one-active-item rule.
+
+Rejected alternatives, with reasons:
+
+- **Absorb the subsystem into US7.** 2,221 lines including Markdown
+  compilation is Delivery-Story-sized, not a User Story slice.
+- **Flip only Explorer's non-writing leaves** (`load`, `deactivate`,
+  `story show|list|snapshot`), leaving the eight write leaves on Python. Rejected
+  because it half-flips a lived mode, which the DS7 persona panel named as
+  unreviewable in a live session, and because the ledger row would read 6/14
+  while implying Explorer is ported.
+- **Have TS write and shell into Python for the refresh.** Rejected for the same
+  reason the US7 plan rejected it for `story promote`: a cross-language call DS10
+  must then delete, here on a per-write hot path.
+- **Accept bounded staleness with a CR.** Rejected because the failure is
+  silent --- the command exits 0 and the projection the project carries is quietly
+  wrong --- which is the `conversations append` class (RS009/CR055) the burn-down
+  exists to prevent.
+
+US7 pauses at its plateau-1 boundary with the Explorer surfaces committed,
+graded, and registered in the oracle-drift tripwire. Nothing was routed, so no
+user-visible behavior depends on the pause. *(The pause lasted one session: the
+superseding decision resumed US7 with a Python-delegated refresh seam.)*
+
+---
+
+### CV22.DS7.TS1 ops tail: `runtime` splits, rehearsal and legacy migration retire in DS10
+
+**Date:** 2026-09-07
+**Reference:** [CV22.DS7.TS1 Ops/utility tail](roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/cv22-ds7-ts1-ops-utility-tail/index.md), [CV22.DS7 Burn-Down Ledger](roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/burn-down-ledger.md), [CV22.DS10 Python Retirement And npm Distribution](roadmap/cv22-typescript-core-port/cv22-ds10-python-retirement-npm-distribution/index.md), [REFERENCE — Legacy Migration Workflow](../../REFERENCE.md#legacy-migration-workflow)
+**Participants:** Vinícius Manhães Teles
+
+The 2026-09-07 reconciliation of the TS1 inventory against
+`src/memory/__main__.py` left three items with no written owner. Evidence
+gathered for the decision: Python's `runtime diagnose` already misreports the
+TS-owned schema — it flags the TS-authored migration `017_journey_parent_column`
+as `core_migration_unknown` on any install that has run the TS engine; the
+v0.8.0 release defined `runtime update` as a git-pull workflow over the runtime
+clone, which npm distribution redesigns rather than ports; `migration_rehearsal.py`
+rehearses the Python migration engine, whose custody DS6 already moved to TS and
+proved over real legacy copies; `migrate-legacy` converts Portuguese-era
+(`travessia` → `journey`, pre-CV0) databases, which REFERENCE already marked a
+removal candidate and which no user who arrived through a published release can
+hold.
+
+Decided:
+
+1. **`runtime` splits by mutation.** The read subcommands (`status`, `version`,
+   `diagnose`, `release-notes`) are ported in TS1 together with `welcome`, which
+   imports them; porting `diagnose` also fixes the live false alarm.
+   *(Corrected 2026-09-08 during CV22.DS7.TS3: this entry originally listed
+   `latest` and `pending` as subcommands. They are positional arguments of
+   `release-notes` — `runtime release-notes [latest|<version>|pending]` — so
+   there are four read subcommands, not six. The routing table allowlists those
+   four by name.)* The mutating subcommands (`update`, `pull`, `stable`, `backup`,
+   `release-doctor`, `release-promote`) are **not ported at parity**; DS10 owns
+   their redesign under npm distribution, including whether `release-promote`
+   belongs in the product command surface at all.
+2. **`memory-rehearse-migration` retires in DS10, unported.** This closes the
+   2026-04-17 open discussion. If a rehearsal of TS migrations on a real-DB copy
+   is ever wanted, it is a TS-native tool against the TS engine and separate
+   scope, not a port of the Python tool.
+3. **`migrate-legacy` retires in DS10, unported, with a documented cutoff:**
+   Portuguese-era databases must be migrated with a pre-DS10 release. The tool
+   stays in git history and the last Python-bearing release can still run it.
+   The cutoff pattern is the one DS7.TS2 established for the extension compat
+   host.
+4. **The burn-down denominator moves 32 → 30.** `runtime` and `migrate-legacy`
+   join `mcp`, `web`, and `eval` as explicitly owned later work. The `runtime`
+   read subcommands are tracked as TS1 branch coverage, not as a burned-down
+   top-level command, because the ledger rule requires an ungated TS route for
+   the whole command.
+5. **TS1 is sliced, not pulled as one bucket:** slice 1 `backup` +
+   `repair-encoding`; slice 2 `welcome` + `runtime` reads; slice 3 the extension
+   catalog (`extensions`, `ext`, the US1-deferred `list`/`inspect` branches) +
+   `journey-projection`. Because Ariad pulls one roadmap item at a time, the
+   slices are three technical stories — TS1, TS3, TS4 — and DS7's story count
+   moves 12 → 14. Slices 1 and 2 are pulled before DS7.US6 because they
+   close live gaps (`repair-journeys --apply`, the `diagnose` false alarm) and
+   `backup` is the gate the Soul and Builder write ports lean on. US8 stays
+   last.
+
+Nothing changes at runtime today: Python fallback keeps serving `runtime`'s
+mutating half and `migrate-legacy` until DS10, no routing entry flips, no file
+is deleted, and push, release, deletion, and npm publication remain separate
+Navigator gates.
+
+### CV22 becomes a single-owner migration
+
+**Date:** 2026-09-07
+**Reference:** [CV22 Collaboration Strategy](roadmap/cv22-typescript-core-port/collaboration-strategy.md), [CV22 TypeScript Core Port](roadmap/cv22-typescript-core-port/index.md), [CV22.DS7 Command Burn-Down](roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/index.md)
+**Participants:** Vinícius Manhães Teles, Alisson Vale
+
+Since DS2 the TypeScript Core Port was a two-person, part-time effort divided
+by baton blocks handed off at coherent plateaus, with a proposed lane split for
+the DS6–DS10 convergence work: mechanical seams, fixtures, and package
+mechanics to Vinícius; semantic coherence, Ariad alignment, and Python
+retirement decisions to Alisson. Alisson has moved to a different aspect of
+Mirror and will not be working on the Python core on `main`.
+
+Decided:
+
+1. **Vinícius is the sole owner of the migration** — the DS7 remainder (US6,
+   US7, US8, US9, TS1), DS8, DS9, and DS10. The baton model is closed; its
+   history stays in the collaboration strategy as the evidence record for the
+   DS2–DS5 plateaus.
+2. **Plateau discipline is kept as session-to-session resumability.** Work
+   still stops only at coherent, resumable states, and the handoff statement
+   (what is true, what is undone, what is next, which evidence) is written for
+   the next session and the Mirror that loads the journey, in the story package
+   and the burn-down ledger.
+3. **The multi-persona review is the standing second opinion.** With no second
+   human at any boundary, the Plan review before implementation is required for
+   every story above a small bounded slice, and the implementation/handoff
+   review after validation stays. Skipping either is a recorded decision in the
+   story package, never a default.
+4. **The ownership split is collapsed.** Python retirement decisions — what
+   DS10 removes, what gets a documented cutoff, what `runtime`'s git-based
+   update path becomes under npm distribution — are taken by the port owner at
+   plan time and recorded near the roadmap. The three open TS1 decisions
+   (`runtime` port-or-DS10, `memory-rehearse-migration` removal, `migrate-legacy`
+   cutoff) no longer wait on a second confirmer.
+5. **The moving-target policy is unchanged; its exposure is reduced.** The
+   2026-08-13 decision and its 2026-09-02 restart still hold: no global Python
+   freeze, Python remains product authority for unported commands, every Python
+   change creates named TS parity scope. What changes is that the main source
+   of Python movement — CV20/CV21 Builder work on `main` — no longer has an
+   active author. DS7.US8's moving-oracle risk drops to maintenance and
+   parity-driven fixes, all caught by the oracle-drift tripwire; re-baselining
+   after every `main` merge remains mandatory.
+6. **Bus factor is named and mitigated by rule, not by hope:** resumable
+   plateaus, portable validation (redacted real-DB-copy harness, demo database,
+   CI determinism gate, per-story `test-guide.md`), decisions in files, and
+   green CI on every push.
+
+This changes who carries the work and how it is reviewed. It does not change
+the database-seam discipline, the risk-first sequencing, the golden oracle,
+copy-based write validation, the DS7–DS10 chain, or any Navigator gate on push,
+release, deletion, or npm publication.
+
+### CV22 restarts after reconciliation of the pause-window Python behavior
+
+**Date:** 2026-09-02
+**Reference:** [CV22 TypeScript Core Port](roadmap/cv22-typescript-core-port/index.md), [Worklog — main merge reconciliation](../process/worklog.md)
+**Participants:** Vinícius Manhães Teles
+
+The 2026-08-19 pause decision made restart conditional on two things: a new
+explicit Navigator decision, and a reconciliation plan against all Python
+behavior accumulated during the pause. The reconciliation was executed on
+2026-09-02: `main` was merged through v0.31.14 (`1b8f164`), the oracle-drift
+tripwire was answered oracle by oracle, the one behavioral delta in a ported
+surface (`identity_integrations` in the journey-removal inventory) was ported
+with regenerated goldens, the `journey_mutation_receipts` schema change was
+carried into TS custody in the same commit, and the full validation ladder —
+both suites, structural parity, custody parity, deterministic golden
+regeneration, redacted real-DB-copy parity, green CI — passed.
+
+Decided:
+
+1. **CV22 resumes as an active delivery stream** on the `mirror-ts-core`
+   branch, continuing the DS7 command burn-down from its 5/11 state.
+2. **The moving-target strangler policies resume in force** — the 2026-08-13
+   policy and its 2026-08-14 metadata-authority refinement. Python remains
+   product authority for unported entry points and may evolve there; each
+   change creates named TS parity scope; there is no global Python freeze.
+3. **Pause-window behavior is named restart backlog, not ambient debt:** the
+   D-016 WAL read-only fallback (`db/connection.py`), the CV23
+   `journey_projections` subsystem with its Extension API 1.1 façade, and the
+   v0.31.12 `journey_admin` service/storage surface. Each gets an explicit
+   owner at the next DS7 planning pull; none is silently absorbed.
+4. **The conservative-schema clause survives the pause:** restarting does not
+   authorize unnecessary migrations or incompatible database changes.
+5. **Coordination before US5:** the pause preserved uncommitted US5 work on
+   Alisson's side. Restart does not appropriate it — before US5 is pulled, its
+   work state is confirmed with him, or a non-overlapping story is pulled
+   instead.
+
+This supersedes the operational effect of the 2026-08-19 pause decision. The
+pause record itself, and the evidence it preserved, remain historical fact.
+
 ### Conditional Plan authority is flow-aware, exact, and single-use
 
 **Date:** 2026-08-26
@@ -122,6 +827,75 @@ Decided:
    specified public behavior; they do not alter the probe or add a Nautilus
    dependency.
 
+### Extension context converges through a language-neutral process protocol and finite Python host
+
+**Date:** 2026-08-19
+**Reference:** [CV22.DS7.TS2](roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/cv22-ds7-ts2-extension-context-provider-runtime-convergence/index.md)
+**Participants:** Alisson Vale
+
+Current Mirror context providers are arbitrary Python functions registered through
+`ExtensionAPI`. Silently dropping them would break user context; keeping the whole
+`mirror load` route or a generic Python bridge would prevent CV22 convergence.
+
+Decided:
+
+1. **TS owns the complete Mirror route.** Binding selection, stable ordering, context
+   composition, failure isolation, and rendering no longer fall back as one Python command.
+2. **Providers use `mirror-context-v1`.** A manifest capability may declare a no-shell argv
+   process that receives one versioned JSON request and returns text/null as one JSON result.
+   The protocol is language-neutral and keeps extension runtime choice outside the core.
+3. **Installed extensions remain trusted code.** Process isolation adds timeout/output
+   bounds and payload-free diagnostics, but does not pretend to sandbox code that already
+   had raw SQLite access through `ExtensionAPI.db`.
+4. **Legacy compatibility is finite.** Python-only capabilities run through a narrow host
+   that invokes one named provider. The host does not select bindings or run Mirror Mode.
+5. **DS10 is the deletion gate.** The compatibility host is deprecated at introduction and
+   must be removed before Python retirement/npm publication. Unmigrated providers receive
+   explicit migration failure rather than silent omission.
+6. **DS8 stays separate.** Any provider behavior that requires the live core LLM/embedding
+   cutover stops for DS8 ownership rather than expanding this protocol into dual authority.
+
+### Moving-target strangler keeps journey metadata authoritative during mixed-engine operation
+
+**Date:** 2026-08-14
+**Reference:** [RS008 / CR050](refinement/rs008-v0319-recursive-journey-parity/cr050-reconcile-moving-target-and-parent-authority.md), [CV22 TypeScript Core Port](roadmap/cv22-typescript-core-port/index.md)
+**Participants:** Alisson Vale
+
+The strict Python feature freeze kept the migration target stable, but the port is a
+long-running background effort and `v0.31.9` legitimately evolved journey behavior
+while Python still owned the Workspace/web parent writer. Freezing the product for the
+migration is not sustainable; hiding that movement behind branch-local green tests is
+not convergence either.
+
+Decided:
+
+1. **Authority transfers by entry point.** Python remains product authority for an
+   unported command or API entry point and may evolve there. Every change creates named
+   TS parity scope. After transfer, new behavior for that entry point lands in TS and
+   Python becomes compatibility-only.
+2. **The target moves visibly.** Goldens and parity probes must absorb all behavior
+   accumulated by the current authority before TS claims parity. Product work does not
+   require simultaneous dual implementation merely because CV22 is active.
+3. **Journey metadata is mixed-engine semantic authority.** Python `v0.31.9` and every
+   supported TS writer store `parent_journey` in identity metadata. While any Python
+   parent writer remains, TS resolves parentage from metadata only, including the
+   absence of the key as an explicit root.
+4. **Migration `017` remains a projection.** The TS-authored
+   `identity.parent_journey` column stays as a derived/indexable projection and TS
+   parent writes update it atomically with metadata. Column/metadata disagreement is
+   drift to diagnose, not fallback semantics or an automatic repair trigger.
+5. **Column authority requires a later decision.** It may transfer only after every
+   parent writer and affected Workspace/web entry point runs through TS and separate
+   evidence proves no mixed writer can leave the projection stale.
+6. **Schema discipline remains strict.** Migration `017` stays append-only and must
+   remain compatible with Python `v0.31.9`; this decision adds no Python migration and
+   no automatic row rewrite.
+
+This supersedes the global Python-freeze clause of the 2026-06-23 strangler decision
+and the column-first read portion of the 2026-07-23 DS7.US1 rider. Atomic TS dual-write,
+the database seam, backup gates, copy-only write parity, and command-by-command
+retirement remain in force.
+
 ### TypeScript strangler tracks a moving Python product instead of freezing it
 
 **Date:** 2026-08-13
@@ -162,6 +936,103 @@ This supersedes only the strict "no new Python features" clause of the 2026-06-2
 strangler decision. The database seam, risk-first sequencing, golden oracle,
 copy-based write validation, and command-by-command retirement strategy remain
 unchanged.
+
+### CV22.DS6.US3 `parent_journey` dual-write activated as a DS7.US1 rider
+
+**Date:** 2026-07-23 · **Origin:** CV22.DS7.US1 Slice C implementation
+
+CV22.DS6.US3 authored the `identity.parent_journey` column and deferred its
+activation (atomic dual-write, column-first read) to DS7 because of its
+high-blast-radius runtime-seam impact. DS7.US1 carried it as a rider and
+activated it:
+
+- `journey/journeyWrite.ts`'s `createJourney` — the only currently-ported live
+  write that can set `parent_journey` — now writes the JSON metadata and the
+  column in one `withTransaction` (the same idiom `reinforcement.ts`'s
+  `logAccess` already established for a two-statement atomic write). A
+  rollback test proves a mid-transaction failure leaves neither side updated:
+  a simulated pre-migration schema (identity without the column) makes the
+  second statement fail, and the row from the first statement's INSERT does
+  not survive either.
+- `journey/parentJourney.ts`'s `resolveParentJourney` — the single call site
+  DS6.US3 reserved for this — now reads the column first, falling back to the
+  JSON metadata when the column is null/empty. The JSON fallback stays load-
+  bearing, not vestigial: no CLI/MCP-ported path can create a journey yet, so
+  every journey in a real database today was created by Python, which has no
+  such column at all (`TS ⊇ Python`) and always leaves it null.
+- Grounding surfaced a real gap that would have made the flip a no-op for the
+  already-shipped `journeys` command: `render/identityRows.ts`'s shared reader
+  never selected `parent_journey` at all, so every row reaching
+  `resolveParentJourney` through that path had `parent_journey: undefined`
+  regardless of the flip. Fixed by extending the `SELECT` (additive; the only
+  other consumer, `detect-persona`, ignores the extra column) and wiring it
+  through `render/journeys.ts`.
+
+**Known, accepted limitation.** Python's `JourneyService.update_metadata_fields`
+can still change a journey's `parent_journey` in the JSON without touching the
+column — but that method is reachable only from the web server
+(`src/memory/web/server.py`), which is outside this migration's CLI/MCP scope
+(the CV22 Done condition is stated in terms of "every CLI/MCP command").
+A row whose column was once populated and is later changed only through that
+path would read as stale (non-null column, outdated value) until that path is
+ported or the column is re-synced on read. A null/absent column always falls
+through to the JSON, so this limitation cannot silently drop a parent — only a
+previously-synced value can go stale. Recorded here rather than silently
+accepted or scope-crept into a web-server port.
+
+### CV22.DS6 splits into a risk-ordered retirement chain (DS6–DS10)
+
+**Date:** 2026-07-23 · **Origin:** CV22 journey planning, after the DS5 handoff
+
+The former CV22 epic `E6` — *Convergence & Python Retirement* — carried the
+entire remaining port in one Delivery Story: schema custody, the whole unported
+command surface (Builder/Ariad, Soul, Explorer, mirror-mode, extraction), live
+external-provider transport, the MCP server, Python deletion, the package
+rename, and npm distribution. Read against the front-door routing table, that is
+essentially *all of CV22 that is left*, spanning several distinct risk profiles
+(irreversible data-layer work, real-money live calls, a security threat model).
+Expanding it as one DS would produce an incoherent 20-plus-story package, so it
+is divided — the collaboration strategy already anticipated dividing DS6 "after
+the DS5 handoff clarifies the remaining convergence work."
+
+Decided:
+
+1. **Split, risk-first, into five Delivery Stories.**
+   - **DS6 — Schema Custody Transfer** (the deletion gate): bootstrap DDL,
+     migration engine + `_migrations`, cross-process locking, pragma discipline,
+     proven over real legacy databases; carries the CR023 `identity.metadata`
+     canonicalization and the `parent_journey` first-class-column decisions.
+   - **DS7 — Command Burn-Down & Re-homed Feature Work**: the remaining command
+     surface (re-homed CV20/CV21 in-flight work included).
+   - **DS8 — Live-Provider Cutover**: the `live` mode of the TS `LlmTransport`
+     (AI-18).
+   - **DS9 — TS MCP Server**: threat model first (RS005 scoping, AI-19
+     denial-of-wallet), then port.
+   - **DS10 — Python Retirement & npm Distribution**: zero-command verification,
+     core deletion, `memory → mirror` rename decision, npm publish.
+
+2. **Live-provider cutover stays in CV22 scope (option A), not deferred.** DS5
+   ported search/consult/extraction only behind *replay* provider boundaries; a
+   real production run still makes the live OpenAI/OpenRouter/Gemini call through
+   Python. Since CV22's done condition is a *deleted* Python core, the live call
+   must move to TS — otherwise a thin Python provider shim survives forever and
+   forfeits the single-language convergence the strangler exists to reach. The
+   alternative (amend the done condition to accept a permanent shim) was
+   considered and rejected. DS8 therefore exists as a discrete, late,
+   risk-managed story: it spends real money (AI-19), carries real secrets, and
+   is validated by live smoke contracts rather than golden parity, so it runs
+   through the multi-persona Plan review before implementation.
+
+3. **Ownership follows the baton strategy.** Schema custody (DS6) and package
+   mechanics lean to Vinícius (mechanical seams, fixtures, record/replay); MCP
+   convergence (DS9) and Python-retirement semantics lean to Alisson. Not
+   fine-grained sliced — hand off at coherent plateaus.
+
+The `memory → mirror` package rename stays open and gated to DS10; it is a
+decision, not a given. DS6 and DS7 are authored as full packages
+([CV22.DS6 — Schema Custody Transfer](roadmap/cv22-typescript-core-port/cv22-ds6-schema-custody-transfer/index.md),
+[CV22.DS7 — Command Burn-Down & Re-homed Feature Work](roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/index.md));
+DS8–DS10 stay as delivery-level scope until pulled.
 
 ### Ariad Expand resolves story packages by heading, never by path derivation
 
@@ -370,6 +1241,138 @@ Decided:
 Deferred, not done here: the affected `uncle-vinny` workspace still has a dirty
 delivery cursor from the buggy runtime; its cleanup is separate operational work.
 
+### TS front door delegates a missing database to Python (first-run self-heal)
+
+**Date:** 2026-07-14 · **Origin:** RS002 QA audit, CR015
+
+Python's `get_connection` creates the directory, schema, and migrations when the
+database file is absent; the TS front door originally refused with exit 2. Since
+`mm-journeys`/`mm-memories` route through TS, a brand-new user hit the TS refusal
+where the Python path used to self-heal.
+
+Decided: when the resolved database file does not exist, the TS front door
+**delegates to the Python fallback** (which bootstraps and answers) rather than
+refusing or reimplementing schema creation in TS. It is the cheapest option,
+preserves onboarding exactly, and keeps schema bootstrap single-sourced in Python
+until the DS6 custody transfer. TS serves only an existing database;
+configuration failures (no home resolvable) still fail loudly with exit 2.
+
+**Resolved by CV22.DS6.TS4 (2026-07-23):** the front door now bootstraps a
+missing database through the TS core (`bootstrapDatabaseIfMissing` →
+`bootstrapDatabase`) under the cross-process lock, for read and backup-gated
+write routes alike, removing this Python delegation. First run is single-language
+and schema bootstrap is TS-owned. The `tryOpenDbForConsultLogging` fail-soft
+path is the one deliberate exception — an external-API command must not create a
+database as a logging side effect. Configuration failures still fail with exit 2.
+
+### identity.metadata contract: Python json.dumps bytes during CV22; canonicalize at DS6
+
+**Date:** 2026-07-14 · **Origin:** RS003 database audit, CR023
+
+The de facto contract of `identity.metadata` is the exact byte output of
+Python `json.dumps` — in two dialects: `create_journey` serializes with
+`sort_keys=True, ensure_ascii=False`, while `set_project_path` re-serializes
+with defaults (`sort_keys=False, ensure_ascii=True`). `ts/src/util/pyJson.ts`
+exists solely to reproduce both byte-for-byte. Journey hierarchy integrity
+(`parent_journey`) lives inside that JSON with no schema constraint; orphan
+parents are handled in application code.
+
+Decided: byte-mimicry is the **transition** contract and must not outlive the
+transition. At DS6, alongside the schema custody transfer:
+
+1. choose a canonical serialization (plain `JSON.stringify` is the natural
+   candidate) with either a one-time normalization of existing rows or a
+   read-tolerant policy — an explicit choice, not drift;
+2. revisit graduating `parent_journey` from JSON metadata to a first-class
+   column with an index, giving the hierarchy real referential integrity — a
+   schema change gated on custody transfer.
+
+Until then, `pyJson.ts` stays byte-faithful and any new metadata writer must
+state which dialect it reproduces.
+
+**Item 1 resolved by CV22.DS6.US1 (2026-07-23):** chose plain `JSON.stringify` as
+the canonical form with the **read-tolerant** policy (no data-rewrite migration).
+Deciding fact from grounding: every journey-metadata reader already `JSON.parse`s,
+so the on-disk byte form is semantically invisible — old rows keep working and
+converge to canonical on their next write, and US2's `parent_journey` migration
+mops up residuals. `ts/src/util/pyJson.ts` is deleted. The write-parity harness
+now grades journey metadata **semantically** (parse → stable stringify) instead
+of byte-for-byte, so cross-language value divergence is still caught while the
+intended dialect change is tolerated. Item 2 (`parent_journey` as a first-class
+indexed column) is CV22.DS6.US2 (authorship core) + CV22.DS6.US3 (activation) —
+see the split decision below.
+
+### CV22.DS6.US2 splits: schema authorship now, runtime activation as US3 (TS ⊇ Python)
+
+**Date:** 2026-07-23 · **Origin:** CV22.DS6.US2 implementation
+
+US2 (`parent_journey` first-class column) was planned as a single story:
+add the column, author the migration, and adopt it (dual-read/write + integrity).
+Implementation surfaced that it is really two concerns of very different risk.
+
+1. **Schema authorship (delivered as US2 core).** TS authors its first *new
+   forward* migration `017` (indexed `identity.parent_journey` + JSON backfill).
+   This is the first time the TS schema **exceeds** Python's, which breaks the
+   three guards that enforced "TS == Python": the migration-id contract
+   (`test_ts_schema_contract.py`), the structural inventory (`schema.test.ts` +
+   the Navigator parity script), and the legacy-fixture end-state
+   (`migrationFixtures.test.ts`). Decided (Navigator: **Approach 1**): keep Python
+   untouched and renegotiate all three to **TS ⊇ Python** through one enumerated
+   divergence set (`schemaTsDivergence.ts`) — the guards still fail on any
+   *unlisted* drift, in either direction. `assertSchemaState` is softened so a
+   database missing only TS-authored migrations is *served* (Python cannot apply
+   them; the read path does not yet need them) rather than refused.
+
+2. **Runtime activation (split to CV22.DS6.US3).** Actually *applying* `017` to an
+   existing database, and reading/writing the column, requires a
+   **migrate-on-open** mechanism (the front door does not migrate existing
+   databases; TS4 only bootstraps missing ones). That is a high-blast-radius
+   runtime-seam change, foundational well beyond this column, so it is its own
+   story. Until US3, `parent_journey` stays sourced from JSON at runtime and the
+   column is dormant except on freshly TS-bootstrapped databases.
+
+Rationale: land the proven, reviewable schema-authorship plateau without rushing
+a runtime-seam change, and give migrate-on-open the explicit decision it warrants.
+CV22.DS6 cannot be marked Done until US3 (and the carried TS2 migration-016
+fixture debt) close.
+
+### CV22 ports semantics, not query plans — first application: DS5 access counts
+
+**Date:** 2026-07-14 · **Origin:** RS003 database audit, CR020
+
+The parity contract is the *observable result* (values, ordered ids, rendered
+output), never the SQL shape that produced it. Where the Python oracle has an
+accidental plan — an N+1, a per-row query — the TS port may choose a better
+plan **if and only if** a parity probe proves the results identical on a
+real-DB copy.
+
+First application, binding on the DS5 plan: Python computes reinforcement
+inputs with one `get_access_count(memory_id)` COUNT per candidate per search
+(`src/memory/intelligence/search.py:177`) over the unboundedly growing
+`memory_access_log`. The TS live-search path computes all counts in a single
+`GROUP BY memory_id` aggregate. Semantics are identical (same counts); the
+DS5 plan must include a probe on a real-DB copy proving `GROUP BY` counts
+equal the per-id counts before the ranker consumes them.
+
+### Supply-chain posture: zero runtime npm deps as policy; tag-pinned CI actions accepted
+
+**Date:** 2026-07-14 · **Origin:** RS005 security audit, CR035
+
+Two related stances, made deliberate instead of accidental:
+
+1. **Zero runtime npm dependencies is policy** for the TS core, recorded in
+   [engineering principles](../process/engineering-principles.md). It is also
+   a user-trust feature to advertise when DS6 publishes to npm: the package
+   executes nothing from the npm dependency graph at runtime.
+2. **CI actions remain tag-pinned** (`actions/checkout@v6`,
+   `actions/setup-python@v6`, `actions/setup-node@v5`,
+   `astral-sh/setup-uv@v8.1.0`). Tags are mutable, so this trades some
+   supply-chain rigor for upgrade ergonomics — accepted because every pinned
+   action comes from a first-party publisher (GitHub, Astral) and the
+   workflows carry no repository secrets beyond the default token. Revisit
+   and SHA-pin when a third-party action enters a workflow or when npm
+   publishing (DS6) adds release credentials to CI.
+
 ### Runtime state is contained in the mirror home for every environment
 
 **Date:** 2026-07-12
@@ -509,13 +1512,13 @@ Consequences:
   the port, superseding the historical-namespace decision when intentionally
   planned.
 - The strategic spine is now realized as [CV22 — TypeScript Core Port](roadmap/cv22-typescript-core-port/index.md),
-  derived from this record after the hybrid-search parity spike (CV22.E1)
+  derived from this record after the hybrid-search parity spike (CV22.DS1)
   validated the approach on synthetic and real-DB data.
 
 ### CV22 TypeScript core scaffolding: node:sqlite, single `ts/` package, Node 24, Biome
 
 **Date:** 2026-06-23
-**Reference:** [CV22 — TypeScript Core Port](roadmap/cv22-typescript-core-port/index.md), [CV22.E2 — TS Foundation & Read-Only Command Parity](roadmap/cv22-typescript-core-port/cv22-e2-ts-foundation-read-only-parity/index.md), parent decision [database-seam strangler](#mirror-mind-ports-to-typescript-via-a-database-seam-strangler-not-a-rewrite)
+**Reference:** [CV22 — TypeScript Core Port](roadmap/cv22-typescript-core-port/index.md), [CV22.DS2 — TS Foundation & Read-Only Command Parity](roadmap/cv22-typescript-core-port/cv22-ds2-ts-foundation-read-only-parity/index.md), parent decision [database-seam strangler](#mirror-mind-ports-to-typescript-via-a-database-seam-strangler-not-a-rewrite)
 **Participants:** Vinícius Teles
 
 The strangler's transition state is durable — it must be comfortable to live in
@@ -547,7 +1550,7 @@ choices for the TS core were settled before standing it up:
   `node:test` on synthetic goldens, pinned to Node 24); the Python job is
   unchanged.
 
-These are realized first in CV22.E2.S1 (TS package scaffold & driver seam).
+These are realized first in CV22.DS2.TS1 (TS package scaffold & driver seam).
 
 ### Builder adds Refinement Work before release/push governance
 
@@ -1333,11 +2336,257 @@ This decision resolves the previously open `MIRROR_USER_DIR` discussion in princ
 
 ---
 
+### The TypeScript front door may accept `--mirror-home` where a Python command refuses it
+
+**Date:** 2026-09-08
+**Reference:** [CV22.DS7.US6](roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/cv22-ds7-us6-soul-mode/index.md), [burn-down ledger](roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/burn-down-ledger.md)
+
+Python's `soul` parser declares no `--mirror-home` and refuses the flag with argparse's
+exit 2. `explore` has the same gap. The TypeScript front door resolves the mirror home
+uniformly for every command it answers, so a ported `soul` accepts a flag its oracle
+rejects.
+
+Decision: **accept the superset and record it.** The TS route keeps `--mirror-home`;
+Python is not taught the flag as part of the port.
+
+The reasoning is that this changes no answer for any invocation that works today. The
+flag currently produces an error on Python, so no caller can depend on its behavior, and
+every skill and hook invokes `soul` without it. Reproducing the refusal in TypeScript
+would mean writing code whose only purpose is to fail, in a command family that DS10
+deletes from Python anyway; teaching Python the flag would mean growing the surface of a
+core being retired.
+
+The divergence is asserted on BOTH sides in the lifecycle smoke — TS exits 0, Python
+exits 2 — so it stays visible as a recorded property rather than drifting silently. The
+same decision covers `explore` when DS7.US7 reaches it.
+
+This does not license divergence generally. Parity remains the rule; a superset is
+acceptable only when the oracle's behavior is an error, no caller can depend on it, and
+the difference is recorded and asserted.
+
+### The web console is retired, not ported, and DS7 closes at 14/14
+
+**Date:** 2026-09-17 · **Context:** CV22.DS7.US9 (Workspace and web hierarchy
+parity) was pulled as the last DS7 story, planned in full, and reviewed by the
+persona panel. Reading that plan, the Navigator asked what would actually change
+for the user after it shipped. The answer was: nothing — `python -m memory web`
+would keep serving the product unchanged, because the process cutover is DS10's.
+
+**The decision: the Python web console is retired rather than ported. CV22 will
+not reimplement it in TypeScript. US9 closes unported, DS7's non-command rider is
+lifted, and DS7 closes at 14/14.**
+
+Reasons:
+
+1. **The surface is barely used.** The rider was already sequenced last for this
+   reason — zero `web` conversations in the preceding thirty days. Porting a
+   surface nobody opens is the most expensive way to reach zero.
+2. **A better replacement is already a journey.** `mirror-gui` exists to build
+   graphical surfaces over Mirror's memory, identity, journeys, and modes. A
+   desktop client makes the browser console largely redundant; porting the web
+   console first would spend CV22's budget on the surface being superseded.
+3. **US9's value was contract transfer, not user benefit.** Its own acceptance
+   criteria required *no user-visible change*. What it bought was an owner for
+   the hierarchy contract before Python deletion. Retirement buys the same
+   safety more cheaply: a deleted surface needs no owner.
+4. **The precedent already exists in this Delivery Story.** `migrate-legacy` and
+   `memory-rehearse-migration` were retired with a documented cutoff on
+   2026-09-07 rather than ported, and the SQLite Refinement Workbench followed on
+   2026-09-09. `web` is the same shape of decision, one surface larger.
+
+**What survives US9's closure.** The hierarchy *semantics* were never web-only
+and are already TS-owned and done: `listJourneyOptions()` (numeric depth,
+complete lineage, bounded malformed cycles), `resolveParentJourney()` (CR050
+metadata authority), `validateParentJourney()`, and `createJourney()` /
+`setParentJourney()` (CR052). Only the Workspace-specific projection —
+`journeyMap`, `locationPath`, `nearbyJourneys`, `scene` — and the browser
+compatibility evidence are dropped. US9's authored `index.md` and `plan.md` stay
+in the repository as the record of what was decided against, including the cost
+read from code and the five-lens review.
+
+**One invariant is re-homed, not deleted.** US9's selected-journey isolation
+contract — a focused surface shows only records whose journey *is* the selected
+journey, ancestors contributing lineage but no conversations, memories, tasks,
+attachments, metrics, or synthesis scope — is a product rule about hierarchy, not
+about HTML. It is handed to `mirror-gui`, which will render a tree and would
+otherwise rediscover it by leaking.
+
+**What DS10 inherits.** DS10's Workspace/web *convergence* gate becomes a
+*retirement* gate: no TS web process, no endpoint inventory, no static-asset
+packaging. It deletes `src/memory/web/`, the `web` entry in `__main__.py`, the
+web unit tests, and the user-facing documentation in `README.md`, `REFERENCE.md`,
+and `docs/getting-started.md`, after a documented cutoff in the release note.
+The command denominator is unchanged — `web` was already out of it, owned by
+DS10.
+
+**Risk accepted, and named.** `mirror-gui` is at stage *Starting*: its first
+slice is not defined and its done condition is explicitly deferred. So the
+replacement does not exist yet, and between DS10's deletion and the desktop
+client's first usable release there may be **no graphical surface at all**. That
+is acceptable because the console is already effectively unused, and because the
+data remains fully reachable through the CLI and the runtimes. It would stop
+being acceptable if the console became load-bearing again before DS10 executes.
+
+**Revisit trigger.** A real need for a browser-reachable Mirror surface before
+`mirror-gui` ships — for example remote or multi-device access, which a desktop
+app does not cover — or a DS10 finding that something outside `src/memory/web/`
+depends on the console. Either reopens the question *before* deletion, not after.
+
+### The Windows Frame and installer are retired, not re-homed, and no Windows story is promised
+
+**Date:** 2026-10-09 · **Context:** [CV22.DS10.US3](roadmap/cv22-typescript-core-port/cv22-ds10-python-retirement-npm-distribution/cv22-ds10-us3-npm-distribution/index.md)
+plateau 5, decision D4 of its [plan](roadmap/cv22-typescript-core-port/cv22-ds10-python-retirement-npm-distribution/cv22-ds10-us3-npm-distribution/plan.md#decisions-this-plan-asks-the-navigator-to-take);
+the [cutoff](../releases/pending-cutoffs.md#the-windows-frame-and-installer). US2 re-homed
+both to US3 on 2026-09-23 because their new shape would depend on the npm artifact's `bin`
+and install path; TS5 left them as the last Python callers in the tree and exempted their
+files by name "until US3".
+
+**The decision: `frame/`, `installer/`, `docs/installer/`, the `windows-installer.yml`
+workflow, its profile smoke, and the ES-004 mockup are deleted; they remain at
+`cv22-last-python-bearing` and in the v0.30.0 and v0.31.8 release assets; the cutoff names
+`v0.31.14` as where they work; and no Windows product over the npm package is promised.**
+
+**Why retire rather than re-home.** Their premise was a `uv`-bearing git clone: the
+installer put Git, Node, `uv`, and Pi on the machine, cloned the repository, and ran
+`uv sync`; the Frame spawned the interpreter for eight commands; both found the tree by
+the deleted `pyproject.toml`. Re-homing — nine call sites, four root-detection sites,
+`uv sync` → `npm ci`, Node 24 in the workflow — would have shipped a Windows product over
+a core that is tested on macOS and Linux only, with no Windows CI and one known
+Windows-breaking path (the snapshot promotion by rename, US3 D10). A Windows product
+deserves its own story and its own CI, as the web console and Mirror Desktop had their
+own decisions.
+
+**Why no story is promised.** The second plan review (2026-10-05) found D4 argued from
+premise and asked for the number. Read from the GitHub release assets with `gh api` on
+2026-10-09: `MirrorMind-Setup-0.30.0.exe` on v0.30.0, one download (2026-07-05);
+`MirrorMind-Setup-0.31.0.exe` on v0.31.8, two downloads (2026-08-07); three in all, none
+since August, and nobody the Navigator knows of runs it. A promise with no demand behind
+it is a roadmap entry nobody asked for; a Windows product waits for a request.
+
+**What the cutoff tells a Frame user.** Read from the deleted installer, not assumed: its
+clone tracks `stable`, which the CV22 release will point at a tree with no engine for the
+Frame, so updating from inside the Frame would complete and break — stay on `v0.31.14`
+there, or move to the npm package on a supported platform; and the home `init` wrote at
+`.mirror\<user>` under the profile is an ordinary home the package can open. The cutoff
+does not mention WSL: a sentence shaped like a claim about something nobody has run does
+not belong in a release note.
+
+**What holds it.** The `frame-installer` row in the retired-surface guard: absence by
+path and by suffix (no `.ps1`, `.psm1`, `.iss`, or `.cmd` anywhere), residue by the
+product's file names. With the Frame gone, the DS10 Zero Python gate closed for the
+shipped artifact the same day: the pack guard forbids the interpreter-invocation forms in
+shipped content, importing the retired-surface guard's own list so the two halves cannot
+drift.
+
+### The npm package is published by staging from CI with provenance, and a maintainer approves with 2FA
+
+**Date:** 2026-10-10 · **Context:** the CV22 release gate, the day after
+[CV22.DS10.US3](roadmap/cv22-typescript-core-port/cv22-ds10-python-retirement-npm-distribution/cv22-ds10-us3-npm-distribution/index.md)
+closed; its handoff review's P2 (the unpublished name) and plateau 4's note that the real
+publish should carry provenance and never a long-lived token.
+
+**The decision: `mirror-mind` is unscoped, owned by two maintainers, and published only
+through npm's trusted publisher for `mirror-mind-ai/mirror` → `.github/workflows/publish.yml`
+→ GitHub environment `release`. The workflow holds no token: it stages the committed tree
+with provenance (`npm stage publish --provenance`), and a maintainer makes the version public
+with `npm stage approve <id>` and a one-time code, or drops it with `npm stage reject`. The
+package's publishing access requires 2FA and disallows bypass tokens.**
+
+**Why unscoped.** A scoped `@mirror-mind-ai/mirror-mind` would say the organization in the
+install line at the cost of reopening an implemented decision (US3 D1: `PACKAGE_NAME`, the
+pack guard, the install-kind layout, the wiring step, every doc page). The collaboration shows
+where people look — two maintainers on the package, the organization's repository in
+`repository`, and the provenance attestation naming `github.com/mirror-mind-ai/mirror` —
+and the npm organization can be created later for anything that wants a scope.
+
+**Why stage rather than publish.** The trusted publisher was granted `npm stage publish`
+alone. A stage reaches the registry in a state no install can see; approval needs a human
+with 2FA. That is the project's rule — publication is a Navigator-authorized hard gate —
+in npm's own vocabulary, with two human steps before the registry: the `release`
+environment's required reviewer before the job runs, and the approve after it.
+`release:promote` prints that route as its last step and runs none of it.
+
+**What proved it.** The name was taken with a placeholder `0.0.1` (README, LICENSE,
+manifest; no `bin`) published from a scratch directory with the Navigator's OTP, which also
+let the trusted publisher be configured — npm requires the package to exist first. The
+connection then had 48 hours to see one publish. A rehearsal branch at `0.0.2-rehearsal.0`
+was dispatched through the workflow: the first run **stopped at the pack guard**, because
+`npm@latest` had become 12.2.0, whose `pack --dry-run --json` prints an object where npm
+11 printed an array, and the guard graded an empty inventory as twenty missing files. The
+guard now reads both shapes and throws on an empty inventory; the workflow pins npm 12. The
+second run staged with a signed provenance statement in the transparency log, and the
+Navigator rejected it: nothing public, the pipeline run end to end once, the trusted
+publisher validated.
+
+**One commit on `main`.** GitHub finds a `workflow_dispatch` workflow by its file on the
+default branch, and `main` is 864 commits behind the delivery branch; a copy of
+`publish.yml` was committed there alone (`90686b41`) so the button exists. Every dispatch
+runs the file from the chosen ref. The CV22 release merge will meet the same bytes.
+
+### CV22 releases as v0.32.0, not v1.0.0
+
+**Date:** 2026-10-10 · **Context:** the CV22 release gate, with every Delivery Story
+done. The [versioning rule](../process/versioning.md) says MAJOR for a completed
+Capability Value, and the package sits at `0.31.14`.
+
+**The decision: the CV22 release is `v0.32.0`.** The MAJOR rule is bent on purpose,
+and this entry records the bend rather than reinterpreting the rule.
+
+**Why not `v1.0.0`.** That name is reserved by the same rule for CV9, Mirror Mind 1.0,
+the public-release readiness boundary. CV22 changes the language, the install, and the
+distribution channel of the product, and changes no behavior a user can see: every
+command, its arguments, and its output are what they were. A migration that was built
+not to be noticed does not get to be the 1.0. Taking `v1.0.0` here would also empty
+CV9's boundary of its number before CV9 has earned it.
+
+**Why not another `0.31.x`.** It is not a patch. The release removes the Python core,
+the web console, the Frame, and five surfaces behind cutoffs, and adds the npm package
+and the trusted-publisher route. A MINOR is the smallest number that says so.
+
+**What follows.** The release note is `docs/releases/v0.32.0.md` and carries the
+[pending cutoffs](../releases/pending-cutoffs.md). The next MAJOR is CV9's, as the
+rule already says.
+
+### A new Mirror home imports only the Pi sessions that are newer than itself
+
+**Date:** 2026-10-10 · **Context:** [CR121](refinement/rs010-cv22-oracle-and-port-hygiene/cr121-a-new-home-s-first-maintenance-imports-the-whole-pi-history.md)
+and [CR106](refinement/rs010-cv22-oracle-and-port-hygiene/cr106-a-pi-session-in-a-scratch-mirror-home-copies-the-whole-pi-history-into-it.md),
+decided together at the CV22 release gate as a release precondition. The options were
+to keep the whole-history import and document it, to ask once before importing, or to
+import only what is newer than the home.
+
+**The decision: session maintenance backfills a Pi session into a home only when the
+session is newer than the home.** A home's age is the first `applied_at` in its
+`_migrations` ledger, which a fresh database writes at its first open and every
+existing database already carries. A session is dated by its last message. Nothing
+older than the home is imported, backed up, retitled, or extracted from.
+
+**Why this one.** The expected npm user has used Pi before installing Mirror, and the
+first thing a new home did was copy every chat they ever had, from every project, and
+then spend on it, before the first prompt was answered. Keeping that and documenting it
+would make the documentation the only thing standing between a stranger and a bill. Asking
+first needs a surface in a background process that has none, and puts a question in
+front of the first session. Importing only what is newer than the home needs no question,
+no surface, and no new record: the ledger already says when the home was born, and the
+rule reads the same way to a person ("Mirror remembers what happened since it arrived").
+
+**What it keeps.** An existing home is old, so everything it was importing still imports:
+gap-filling for sessions the hooks missed is unchanged for anyone whose home predates
+their sessions. `PI_SESSIONS_DIR` still works. A scratch home made for a validation route
+is born at the route's first open, so it imports nothing from before it, which is what
+CR106 asked for.
+
+**What it does not do.** It does not ask, does not report what it skipped, and does not
+offer an import of earlier history. A person who wants their earlier Pi history in Mirror
+has no command for it in this release; if one is wanted, it is a feature with its own
+story, not a flag on maintenance.
+
 ## Open Discussions
 
 ### Migration rehearsal — long-term status
 
-**Status:** Open
+**Status:** Resolved 2026-09-07 — retires in CV22.DS10, unported; see
+[CV22.DS7.TS1 ops tail decision](#cv22ds7ts1-ops-tail-runtime-splits-rehearsal-and-legacy-migration-retire-in-ds10)
 **Raised:** 2026-04-17
 
 `src/memory/cli/migration_rehearsal.py` and its tests exist to allow safe dry-run
@@ -1494,4 +2743,1220 @@ approval gates. No future transition may dual-write files and SQLite as peer aut
 
 ---
 
+### The TypeScript live transport is fetch-based, with no provider SDK
+
+**Date:** 2026-09-11 · **Context:** CV22.DS8.US1, the first live-provider cutover.
+
+Python reaches OpenRouter through the OpenAI SDK. The obvious port would adopt
+the same SDK in TypeScript. We ported the SDK's retry *policy* instead — retry
+connection failures, 408, 409, 429, and 5xx up to `MEMORY_LLM_MAX_RETRIES`,
+never another 4xx — and built the transport on Node's global `fetch`.
+
+Reasons, in order of weight:
+
+1. **Dependency surface on the paid path.** An SDK sits on the path of every
+   billable call, carries its own release cadence and breaking changes, and
+   brings a transitive tree into a package we intend to distribute through npm
+   (DS10). Node ≥ 24 ships `fetch`; the SDK's remaining value here was its
+   retry policy, which is thirty lines.
+2. **Testability.** Every side effect is injectable (`fetch`, `sleep`), so no
+   test in the repo can reach the network by accident, and each taxonomy class
+   gets a deterministic test. Faking an SDK client well enough to assert
+   backoff behavior is harder than owning the loop.
+3. **Error shape control.** We need an error that carries the AI-18
+   classification and *nothing else* — see below.
+
+Two rules travel with this decision and are pinned by tests:
+
+- **The base URL is a module constant, never env-derived.** A future "custom
+  provider endpoint" request meets a documented no: an attacker-influenced base
+  URL is an API-key exfiltration primitive. Redirects are refused outright
+  (`redirect: "error"`) rather than relying on the fetch spec to strip the
+  `Authorization` header on a cross-origin hop.
+- **`LlmTransportError` exposes `kind`, `status`, `retryable` and a redacted
+  message — never a `Response`, a body, or a `cause` chain.** Error objects are
+  serialized whole by loggers, test reporters, and crash handlers, so a body
+  kept "just for debugging" leaks both the key and the request content, which
+  in this product is a query, a transcript, or an identity document.
+
+**Accepted consequence.** Node's `fetch` does not honor `HTTPS_PROXY` unless
+`NODE_USE_ENV_PROXY=1`, and uses its own CA store rather than `certifi`. Both
+are documented in [configuration](../reference/configuration.md) rather than
+worked around in code; the front-door log records the real failure category so
+a proxy problem is not misread as a missing key.
+
+**What would change this.** If TS later needs streaming chat, provider
+fallback chains, or multi-provider routing, the cost/benefit shifts and an SDK
+becomes worth reconsidering — as a deliberate reversal, not a drift.
+
+---
+
 **See also:** [Briefing](briefing.md) · [Roadmap](roadmap/index.md) · [Worklog](../process/worklog.md)
+
+### The TypeScript core bounds OpenRouter's read endpoints, where Python does not
+
+**Date:** 2026-09-11 · **Context:** CV22.DS8.US3, porting `get_credits` and
+`fetch_generation_cost` for the `consult` cutover.
+
+Python reaches `/credits` and `/generation` through bare
+`urllib.request.urlopen` with **no timeout argument**, so both calls inherit
+the socket default — effectively unbounded. `consult credits` renders the
+balance bar after every answer and `fetch_generation_cost` runs up to five
+times per `consult ask`, both in front of a waiting human. A stalled
+connection there parks the command with no way back except Ctrl-C.
+
+The TypeScript port bounds every attempt at the **embedding tier**
+(`MEMORY_LLM_TIMEOUT_EMBEDDING`, 15s by default). That tier is not arbitrary:
+it is the one Python itself uses for its only other cheap GET,
+`list_available_models()` on `/models`. So the divergence adopts a bound
+Python already applies to the same class of request, rather than inventing
+one.
+
+This is a deliberate behavioral divergence, recorded because parity is the
+default rule in CV22 and every exception has to be visible:
+
+- **Observable difference:** a hung read that Python would wait on forever
+  fails in TypeScript after 15 seconds. For `fetch_generation_cost` the
+  result is unchanged either way — its contract is already "return `null`
+  when the cost does not arrive", so a bounded attempt reaches that answer
+  sooner. For `get_credits` the difference is a `timeout` error instead of an
+  indefinite hang.
+- **Why not fix Python instead:** per the
+  [2026-08-13 moving-target decision](#typescript-strangler-tracks-a-moving-python-product-instead-of-freezing-it),
+  once a command is ported, new behavior lands in TypeScript and Python
+  becomes compatibility-only there. `consult` is ported in DS8.US3.
+- **What did not change:** the retry counts. Python makes exactly one request
+  for `/credits`, and the generation-cost poll is five attempts with 1/2/3/4s
+  between them, swallowing every error. Both are reproduced exactly, and each
+  poll attempt is sent with `maxRetries: 0` so the transport's own retry
+  budget cannot multiply into fifteen requests for a number that is optional
+  by design.
+
+### The cultivation prompt templates are their own story, not a line in the cutover
+
+**Date:** 2026-09-11 · **Context:** CV22.DS8.US3 plateau 3 fired a
+`plan_rule_conflict` stop before any cultivation leaf was flipped.
+
+US3's plan treated the pre-digest prompt families as a pinning problem: the
+templates exist in TypeScript, they simply were never SHA-pinned against the
+Python oracle, so a drift would only surface at the live cutover. That reading
+holds for `reception`, and for the US11 and close-tail families already pinned.
+
+It does not hold for `consolidate scan` and `shadow scan`. TypeScript never
+ported `CONSOLIDATION_PROMPT` or `SHADOW_SCAN_PROMPT` at all: `propose.ts`
+assembles a fenced Markdown dump of the memories — measured at 121 and 209
+bytes against Python's 2,247 and 1,598 — carrying no task statement, no
+untrusted-input guard, and no JSON output contract. The deferral was explicit
+and is recorded in that file's own header ("the live prompt-level guard text is
+DS8, per the extraction precedent"), so DS8 owns the work; US3 mis-sized it.
+
+**Why this was invisible.** Under the replay transport the provider resolves a
+canned response by `request.role` and never reads the prompt, so every test and
+every golden passes with a stub prompt. The first reader of those bytes would
+have been a real model, on the leaf with the largest fan-out in the family.
+
+**The decision: split, do not absorb.** The work becomes `CV22.DS8.TS2`, and
+US3's cultivation flip (group C) is gated on it. US3 keeps groups A and B —
+`consult`, `mirror load --query`, `journal`, `soul harvest save`, `week plan`,
+`descriptor generate` — and the transport, ledger, gate-retirement, and
+outcome-seam work that the whole family needs.
+
+Reasons:
+
+1. **Different work.** Porting ~3.8k characters of instruction text against an
+   oracle is prompt authoring, not transport wiring. The rest of US3 is seams,
+   ledger rows, and routing.
+2. **Different reviewer.** The prompt engineer owns instruction text and should
+   read it *as text* before it reaches a live model, rather than approving it
+   as a line item inside a plateau labelled "pins".
+3. **Honest sizing.** Absorbing it would have grown the plateau roughly
+   fourfold and buried a substantive behavioral port inside a story whose plan
+   listed "any prompt text change" as a non-goal.
+
+**What does not change.** The three cultivation leaves stay replay-gated until
+TS2 lands, so DS8's done condition — an empty replay-gated table — cannot be
+claimed before TS2 closes. The dependency is recorded in the DS8 candidate
+table and in the burn-down ledger rather than left to sequencing memory.
+
+### The cultivation owner-name resolver ships without the hardcoded name
+
+**Date:** 2026-09-13 · **Context:** CV22.DS8.TS2, porting the inputs
+`consolidate scan` and `shadow scan` resolve before calling the model.
+
+Python resolves the owner's first name for these two leaves twice, differently.
+`shadow_cmd._user_name` searches `user/identity` for `speaking with (\w+)` and
+falls back to `"the user"`. `consolidate_cmd._user_name` first checks whether
+the literal string `"Vinícius"` appears anywhere in the content and returns it
+if so, then falls through to the same regex and fallback. The short-circuit is
+a distribution defect already captured as CR014: framework source that tests
+for one specific person.
+
+A parity story's contract is byte-identical prompts against the oracle, and
+`user_name` is the first substitution in both templates. The question was
+whether "byte-identical" obliges TypeScript to carry the hardcoded name.
+
+**The decision: port the regex form only.** `cultivationUserName` implements
+`shadow_cmd`'s lookup for both leaves — Unicode-correct, because Python's `\w`
+matches `í` and JavaScript's does not, so the seeded "speaking with Vinícius"
+must be read with `[\p{L}\p{N}_]+` and the `u` flag or it yields `Vin` — with
+the shared fallback. The `consolidate_cmd` short-circuit is not ported.
+
+Reasons:
+
+1. **The divergence has no shipped input.** The two Python forms disagree only
+   when identity content names the owner *without* the seed template's
+   "speaking with" line. Every identity the project's own templates produce
+   carries that line, so on real data the regex form returns the same name
+   the short-circuit would.
+2. **Parity is proven where it matters, independently.** The prompt-assembly
+   golden takes `user_name` as an input, so the assembled-bytes digests hold
+   regardless of how the name was resolved. The resolver is characterized
+   separately against Python outputs recorded in the golden's `resolvers`
+   section — which lists **both** Python forms over the same inputs, so the
+   one row where they differ is visible in the corpus and pinned by a test
+   that fails if a regeneration widens the disagreement.
+3. **TypeScript is the authority for a ported command.** Under the
+   moving-target rule, once a command answers from TS, Python is
+   compatibility-only there. Carrying a known defect into the authority so
+   the compatibility layer matches it would invert the rule.
+
+**What does not change.** CR014 still owns the unified resolver: the close
+tail's `resolveUserName` ports a third oracle (`You are talking to`), TS now
+has two resolvers where Python has three, and the fallbacks still disagree
+(`"User"` vs `"the user"`). TS2 removed the hardcoded name from the
+framework's TypeScript source and touched nothing else.
+
+### The eval harness transfers to TypeScript as a DS10 gate, not a DS8 port
+
+**Date:** 2026-09-13 · **Context:** CV22.DS8.TS1, the last DS8 child. DS8's
+candidate row asked whether `python -m memory eval` is "ported to a TS eval
+harness against the live transport or retired with a documented cutoff".
+
+Neither, as posed. The question assumed a file-move decision; the measurement
+found a different one.
+
+**The instrument's subject moved.** The evals were built to measure prompt
+behavior in the engine that answers users. Every live module imports a Python
+pipeline function directly — `extract_memories`, `reception`,
+`propose_consolidation`, `propose_shadow_observations`,
+`classify_journal_entry`, `generate_conversation_summary`,
+`generate_scene_synthesis` — and since DS8 that engine is **TypeScript** for
+eight of those nine surfaces. `scene` is the exception, reachable only through
+`web/server.py`, which DS10 cuts over.
+
+Measured 2026-09-13:
+
+| Fact | Value |
+|---|---|
+| Size | 13 modules, 3,691 lines incl. frozen fixtures; 12 in `--all` (9 live, 3 deterministic); `persistence` is infrastructure |
+| Gate status | Live and in writing — the [development guide](../process/development-guide.md#evals) model-behavior release gate and the [engineering-principles](../process/engineering-principles.md) definition-of-done checklist both require a green `eval --all` or a recorded waiver for any model-pin or `prompts.py` change |
+| Last run | 2026-07-23 (CV9.E2.S30). v0.31.13 and v0.31.14 did not trigger it; no `eval-history/` existed on the owner's home until this story |
+| Chronic state | `routing` has failed since v0.31.0 ([D-005](debt.md#d-005--evalsroutingpy-fixtures-are-stale-against-the-current-persona-catalog)); every recorded `--all` is 11/12 under a conscious waiver |
+| DS10's plan for it | None. DS10's index did not mention `eval`, so as written it would delete `evals/` with the Python core and make the release gate unenforceable — silently |
+
+**The decision: ownership transfers to TypeScript, and the transfer becomes a
+DS10 deletion gate.** Not DS8 work, and not a retirement.
+
+Reasons, in order of weight:
+
+1. **Retiring is not neutral.** It deletes the instrument that closed AI-16,
+   AI-22, AI-23, and AI-25, and against which those fences were tuned, with no
+   replacement — while [CR080](refinement/rs010-cv22-oracle-and-port-hygiene/cr080-give-the-consolidation-prompt-an-identity-context-it-can-act-on.md)
+   is already asking for a probe before a prompt rewrite.
+2. **DS10's own rule already demands it.** "Python deletion cannot begin merely
+   because the CLI command denominator reaches zero" — every non-command
+   runtime surface needs explicit TypeScript ownership first. The harness is
+   such a surface; the index simply never said so. A gate is therefore a
+   correction, not an addition.
+3. **Nothing before DS10 needs it.** No model-pin or prompt change is
+   scheduled. CR080 is the only candidate and can pull the story forward if it
+   is planned first.
+4. **The interim gate is valid, with a nameable blind spot.** The prompts are
+   byte-identical across engines and digest-pinned (DS7.US10, DS7.US11,
+   DS8.US3, DS8.TS2), so a Python probe still measures the prompt text a
+   TypeScript command sends. What it cannot see is TypeScript-side parsing,
+   coercion, and orchestration — which goldens and unit tests cover, and evals
+   never did.
+
+**Shape of the transfer**, recorded so the DS10 story inherits a design rather
+than a question: a `ts/evals/` developer tool beside `ts/parity/`, same
+contract — one module per surface exposing `PROBES` and `THRESHOLD`, `--all`
+discovering modules by capability, JSONL run history, exit code from the
+threshold — against the live transport DS8 built. Fixture data becomes
+engine-neutral JSON so both harnesses read the same transcripts while Python
+still exists. It is developer tooling, not product surface, so it does not ship
+in the npm package.
+
+**What the transfer retires**, as open questions for that story rather than
+decisions taken here: `routing` is the obvious retirement (dead since v0.31.0,
+and TypeScript has deterministic `detect-persona` goldens from DS2); `scene`
+follows the web cutover it belongs to; `retrieval` may duplicate
+`ranker.test.ts`. The `--all` denominator shrinks with a reason per module
+rather than silently.
+
+**What does not change.** The gate keeps its force and its wording: a
+model-pin or prompt change needs a green `eval --all` or a consciously recorded
+waiver. Until the transfer lands, that run is the Python harness — proven still
+working by this story's own validation, which is the first `eval --all` on this
+home.
+
+### CV22 releases once, when the migration is complete
+
+**Date:** 2026-09-13 · **Context:** CV22.DS8 closed at 5/5 and the Navigator was
+asked whether it creates a release boundary.
+
+**The decision: no CV22 Delivery Story creates a release boundary. The release
+comes once, when the whole migration is complete — including the Ariad tree.**
+DS8's release intent is recorded as `none`, and the same answer applies in
+advance to DS9 and DS10 unless the Navigator revisits it.
+
+The question was worth asking, because DS8 is the most user-visible thing the
+port has shipped: an unconfigured install now answers every LLM- and
+embedding-crossing command from TypeScript against real providers. Under a
+per-Delivery-Story release habit, that would have been a release.
+
+Reasons for holding:
+
+1. **A half-migrated core is not a product story.** "Some commands answer from
+   TypeScript" is an implementation state, not a user benefit. The benefit —
+   one language, one install, npm distribution — arrives with DS10 and cannot
+   be released in fractions.
+2. **The Ariad tree is the honest bar.** `mm-build` still invokes Python
+   directly (DS7.US8), so the runtime a Navigator actually types is not yet on
+   the TS core. Releasing before that would advertise a migration that the
+   most-used Builder surface contradicts.
+3. **Every family still carries a revert.** `MIRROR_TS_*=0` exists on each
+   flipped family precisely because these cutovers are young. A release
+   boundary drawn while the reverts are still load-bearing would publish a
+   state the project itself hedges.
+4. **Release cost is not free.** Version, release note, stable promotion, tag,
+   and the model-behavior gate are real work per boundary. Spending it four
+   times for one user-visible outcome is waste; spending it once, at the end,
+   is proportionate.
+
+**What this does not mean.** Work is still pushed continuously and CI must stay
+green — the policy concerns release boundaries, not integration. Dogfooding on
+the owner's home continues to be the real validation, which is what makes
+deferring the release affordable in the first place: the port is exercised
+daily without being published.
+
+**Revisit trigger.** A DS10 scope change that separates npm distribution from
+Python deletion, or a user-facing need that arrives before the migration
+finishes.
+
+### The Python core is deleted forward, with one recovery point: `cv22-last-python-bearing`
+
+**Date:** 2026-09-24 · **Context:** CV22.DS10.TS5 closed plateau 2 — the
+fallback is gone and Python is present but unreachable — and plateau 3 deletes
+it. **Reference:** [CV22.DS10.TS5 — Rollback](roadmap/cv22-typescript-core-port/cv22-ds10-python-retirement-npm-distribution/cv22-ds10-ts5-python-core-deletion/plan.md#rollback)
+
+**The decision: recovery from the deletion is a checkout of one annotated,
+pushed tag, not a revert of the story.**
+
+| Tag | Commit | Tag object | What it is |
+|---|---|---|---|
+| `cv22-last-python-bearing` | `b0d34254` | `3b667f69` | **The recovery point.** The last commit that contains the Python core, taken after plateaus 1 and 2 made it unreachable. `git checkout cv22-last-python-bearing` restores it |
+| `cv22-ts5-baseline` | `2adf2951` | `4e83c69e` | Provenance, not recovery: the tree the per-family capture was taken against at plateau 0 |
+
+The recovery tag sits at the END of plateau 2 rather than the start of the
+story on purpose. A tag at the baseline would make recovery discard the two
+plateaus that made TypeScript self-sufficient and the fallback unnecessary, to
+escape a problem that could only arise in the deletion itself.
+
+Neither name can match the release doctor's `vX.Y.Z` pattern, and pushing a
+tag authorizes nothing: CV22 still [releases once](#cv22-releases-once-when-the-migration-is-complete).
+Historical documents that linked to a deleted Python file point at this tag,
+so the record keeps a path to the code it describes.
+
+### The Python core is gone, and the answers nobody can grade any more are the front door's own
+
+**Date:** 2026-09-24 · **Context:** CV22.DS10.TS5 deleted the Python core
+(plateau 3) and rewrote the documentation that taught it (plateau 4). While
+the oracle existed, every behavior TypeScript owned was graded against it.
+The decisions below are the ones that had no oracle to grade them: choices
+about what the product says and reads once there is only one engine.
+**Reference:** [CV22.DS10.TS5 — Decisions](roadmap/cv22-typescript-core-port/cv22-ds10-python-retirement-npm-distribution/cv22-ds10-ts5-python-core-deletion/plan.md#decisions-this-plan-asks-the-navigator-to-take)
+
+**The decisions, one line each.**
+
+| | Decision |
+|---|---|
+| D1 | **The version and the checkout identity live in `ts/package.json`** (`0.31.14`, `private`, `mirror-core`), read through one walk in `ts/src/runtime/packageIdentity.ts`. `pyproject.toml` is deleted. US3 changes one constant and the `private` flag. |
+| D2 | **Unknown names get the front door's own answer.** An unknown command prints the usage on stdout, exit 1; an unknown or missing subcommand prints the family's usage and one `error:` line on stderr, exit 2, in argparse's shape but with the family's name where argparse leaked `__main__.py`; `-h`/`--help` after a family prints its usage, exit 0. `mcp` routes to the TypeScript server. |
+| D3 | **The `MIRROR_TS_<FAMILY>` revert gates are deleted,** because the engine they reverted to is. `runtime diagnose` names any of the twenty-three retired migration variables still set, from an explicit list; the `*_REPLAY` fixture variables and `MIRROR_TS_MCP_GUARDS` are unaffected. |
+| D10 | **A command-skill's `entrypoint` is optional,** and validated exactly as before when declared. The core has imported no extension code since TS2. |
+| D11 | **`pyproject.toml` goes now.** The Frame's version test reads `ts/package.json`; the Frame's and the installer's root detection stays with US3, beside their Python call sites. |
+| D12 | **The program is `mirror`** in every usage line and hint, through one constant (`ts/src/util/program.ts`) that US3 renames. The `python-core` guard row went live in two halves: absence at plateau 3, mentions at plateau 4. |
+| D13 | **The Plan scaffold stops telling the Driver to run Python through `uv`.** The line was false for every project once Mirror Mind had no Python; it is removed rather than replaced, because a replacement would add a Mirror-only line to other projects' plans (CR019). |
+| D14 | **The documentation names the program `mirror`, as the product does.** `REFERENCE.md` and `docs/getting-started.md` carry one bridge — the front-door invocation `mirror` stands for, and a shell alias for it — that US3 deletes. Skills and hooks keep the explicit invocation, because an agent runs them where no alias exists. |
+| D15 | **`docs/product/api.md` is deleted.** It documented the Python `MemoryClient`; TypeScript publishes no programmatic API, and a rewritten page would describe a contract nobody offered. |
+| F19 | **`runtime status` counts every migration the core knows.** Its grader forgave a missing `017_journey_parent_column` to keep matching the oracle's recorded `current (16/16)`; with the oracle gone that hid a pending migration behind "ready". It now applies `assertSchemaState`'s rule, and a database without 017 is told so. |
+
+**Why these were decisions and not ports.** A port has a right answer: the
+oracle's. None of these did. D2's bytes, D12's name, and D13's missing line
+change what a user sees on purpose, with no second engine to say whether the
+change is correct — so each is recorded here, and each hand-edited golden is
+listed with its reason in `ts/test/goldens/README.md`, where the next reader
+of a golden will look.
+
+**What the deletion leaves behind.** The goldens are frozen fixtures: a
+failing golden is a regression until proven otherwise, and a deliberate change
+edits it by hand. The migration custody proofs (`ts/smoke/`) are the structural
+evidence that the sole custodian reproduces every migration. The retired-surface
+guard enforces both halves of the Zero Python claim in CI, and the whole suite
+runs a second time with the interpreters shadowed, failing on a single spawn.
+
+**What this is not.** Not zero Python for the shipped artifact. `frame/` and
+`installer/` still install and call the Python engine and find their root by
+the deleted `pyproject.toml`; they are re-homed by CV22.DS10.US3, which makes
+that claim for the npm package. TS5's claim is for the repository.
+
+### The sole migration custodian owns the whole open: migrations, then the bootstrap schema, under a lock with one holder
+
+**Date:** 2026-09-25 · **Context:** CV22.DS10.TS5's handoff review (finding B1)
+and its Debt Review (CR084). TS5 made TypeScript the only engine that migrates a
+Mirror database. Both checkpoints found that "the only engine" had inherited
+less than Python did. **Reference:**
+[TS5 handoff review](roadmap/cv22-typescript-core-port/cv22-ds10-python-retirement-npm-distribution/cv22-ds10-ts5-python-core-deletion/handoff-review.md),
+[CR084](refinement/rs010-cv22-oracle-and-port-hygiene/cr084-the-bootstrap-lock-is-not-exclusive-while-it-is-being-written.md)
+
+**The decision: migrate-on-open performs everything Python's `get_connection`
+did when it opened an existing database: the migrations, then the bootstrap
+schema, backup first, under the cross-process bootstrap lock. That lock admits
+exactly one holder.**
+
+Python ran migrations-then-schema on every open. The second half created every
+object the schema has and no migration does: `_ext_migrations`,
+`_ext_bindings` and its index, and `journey_mutation_receipts`. TypeScript took
+the migrations and not the schema step. So a v0.7.0 home migrated to
+`current (17/17)` and then failed in Mirror Mode. The Navigator chose the fix
+that restores Python's contract, `createSchema` after `runMigrations` on the
+slow path, over a new migration `018`. The steady state stays one read of
+`_migrations`. Every Python-era database takes the slow path once, because
+`017` is pending for all of them. And no `17/17` in any golden moves. The
+accepted limit: a database already at every migration but missing those
+objects is not repaired. Only TS5-era development copies can be in that state.
+
+The lock had a window in which two processes could both hold it. It
+serializes exactly this slow path, most often at the moment an update makes
+every opener hit it at once. Its record is now written before the lock
+becomes visible, by linking a private file into place. Unreadable content ages
+out rather than counting as abandonment. And a release or a reclaim removes
+only the lock it judged.
+
+**How it stays true.** `migrateOnOpen.test.ts` migrates a DDL-only recording of
+a v0.7.0 database and requires the whole canonical inventory of a fresh one:
+normalized DDL, column order, indexes, triggers. `bootstrapLock.test.ts` pins
+the lock's two CR084 behaviors, and the eight-process races in
+`migrateOnOpenConcurrency.test.ts` and the bootstrap custody proof run on
+every CI leg.
+
+**The rule that follows.** A new object in the bootstrap schema needs a
+migration too. A database that is already current never takes the slow path,
+so the schema step alone would never reach it. `createSchema` on the slow path
+heals databases from before this decision; migrations carry every schema change
+after it.
+
+### The CV22 release is gated on an Ariad trust floor, worked before US3
+
+**Date:** 2026-09-25 · **Context:** CV22.DS10 sits at 7/8 with TS5 done and
+US3 (npm distribution) the last story. RS001 (Ariad Runtime Trust) holds
+thirteen open Change Requests, deferred through the whole port. The Navigator
+asked whether the most important of them should be fixed before the migration
+finishes, so the users who adopt the TypeScript release do not meet the Ariad
+failures this project has been living with.
+
+**The decision: the CV22 release requires two things, not one — US3 and a
+fixed list of seven Ariad changes, the trust floor. The floor is worked first,
+then US3, then the release. Every other RS001 Change Request stays captured.**
+
+**Why the deferral ends now.** It existed because of the oracle. While Python
+was product authority for the Ariad tree, an Ariad behavior fix was a
+two-engine change: fix Python, re-baseline, port, prove parity. That tax made
+waiting correct. TS5 deleted the Python core and the parity harness
+(`ts/parity/` and the oracle baseline are gone), so from this date an Ariad
+fix is one engine under ordinary TDD. The migration's behavioral phase ended
+on 2026-09-25; what remains in US3 is packaging — `bin` name, package
+identity, hook resolution, `.env` location, installer, Windows promotion — and
+none of it touches Ariad.
+
+**Why before US3 rather than after.** Two reasons, both about US3 itself.
+US3 is the largest remaining story and runs through Ariad; its
+[`inherited.md`](roadmap/cv22-typescript-core-port/cv22-ds10-python-retirement-npm-distribution/cv22-ds10-us3-npm-distribution/inherited.md)
+is a separate file precisely because Plan materialization still overwrites an
+authored story index (CR004, CR079) — the workaround is baked into the
+project layout. And US3 is the floor's validation route: seven fixes run
+through one real story before any user sees them. Fixed after US3, they would
+ship without a single story run through them.
+
+**The floor.** Ordered by what breaks — silent loss of state or content
+first, then a wrong surface at the point where the Navigator decides. Seven
+changes, nine identifiers:
+
+- Silent damage: [CR008](refinement/rs001-ariad-runtime-trust/cr008-bind-lifecycle-commands-to-active-journey.md)
+  (lifecycle commands without `--journey` bind to another journey — cursor
+  clobbered, files written into another repository);
+  [CR079](refinement/rs001-ariad-runtime-trust/cr079-preserve-authored-content-in-every-lifecycle-artifact.md)
+  absorbing [CR004](refinement/rs001-ariad-runtime-trust/cr004-preserve-authored-story-index.md)
+  (one rule — never overwrite an authored artifact — for every lifecycle
+  artifact; CR015 already did it for `plan.md`; CR004 closes with CR079's
+  delivery, not separately);
+  [CR002](refinement/rs001-ariad-runtime-trust/cr002-cursor-sync-roadmap-selection.md)
+  (refuse ambiguous roadmap selection during cursor sync).
+- Wrong at the decision point: [CR001](refinement/rs001-ariad-runtime-trust/cr001-scope-confirmation-checkpoint.md)
+  (already planned);
+  [CR019](refinement/rs001-ariad-runtime-trust/cr019-plan-checkpoint-states-untruths-about-the-target-project.md)
+  (the Plan checkpoint lists the parent as a sibling, and two Mirror-local
+  contract lines remain; TS5 D13 already removed the `uv run` one);
+  [CR067](refinement/rs001-ariad-runtime-trust/cr067-render-the-refused-checkpoint-not-a-hardcoded-implement-stage.md)
+  with [CR020](refinement/rs001-ariad-runtime-trust/cr020-no-read-only-way-to-re-render-the-active-checkpoint.md)
+  (refusals name the wrong reason and render a hardcoded Implement stage; no
+  read-only way to see the active checkpoint again);
+  [CR018](refinement/rs001-ariad-runtime-trust/cr018-story-titles-with-slashes-truncated-in-surfaces-and-scaffolds.md)
+  (titles truncated at `/`).
+
+**Outside the floor, on purpose.** CR090, CR009 and CR082 stay captured; CR090
+is one string and may be taken in passing when a floor change touches its
+surface, CR009 mostly dissolves with CR008, and the parity-golden cost CR082
+cites no longer exists. CR017's warning came from the projection subsystem,
+which DS10.TS1 retired; it is to be verified and rejected as overtaken, not
+fixed. RS003's three requests were shaped by the SQLite Workbench's lifecycle,
+which project files replaced; they get the same look. Those closures are
+Workbench decisions taken at the index, not part of this one.
+
+**The rule that follows.** The floor is a list, not a category. A Change
+Request found while working the floor is captured, not fixed. Adding one to
+the floor is an explicit decision recorded here, so that "the most important
+Ariad fixes" cannot quietly become "fix Ariad" while DS10 waits at 7/8.
+
+**Vehicle.** RS001 Change Requests through the file-first
+[Refinement route](refinement/index.md), each with Driver and Delivery
+assigned per the Collaboration Convention, on the `mirror-ts-core` branch. No
+new Delivery Story; CV22's [release-once](#cv22-releases-once-when-the-migration-is-complete)
+decision stands, with the floor now named among the things the release waits
+for.
+
+**Amended 2026-09-25: CR102 joins the floor, all of it.** Found while closing
+CR008. The Claude Code `mm-build` skill, in a checkout and in the installed
+plugin, is a 108-line variant with no Builder Activation Boundary, no Journey
+Binding, and no Ariad section. Pi, Codex, and Gemini CLI read the 1019-line
+one ([CR102](refinement/rs010-cv22-oracle-and-port-hygiene/cr102-the-claude-code-mm-build-skill-lacks-the-builder-and-ariad-sections.md)). The
+release ships the plugin, so without CR102 a Claude Code user on CV22 gets
+Builder Mode without Ariad, and without the rule that loading a journey is not
+consent to change files.
+
+The Driver offered to take only the safety half. The Navigator added the whole
+CR. The floor is now eight changes and ten identifiers, and CR008 is done.
+CR102 keeps its RS (RS010, beside CR071, whose deliberate differences it
+reopens): the floor is a list of changes, not a story. It sits last in floor
+order because its port carries the Ariad section that the other floor changes
+are still editing. Moving it earlier makes sense only if its plan chooses to
+generate the copies from one source.
+
+**Amended 2026-09-27: CR018 fixes the Expand defect its characterization
+found.** Expand finds an existing child package by the folder name it would
+give it, not by the child's heading. When an authored child lives in another
+folder, Expand writes a second package claiming the same code, and every
+Builder command that then resolves that code crashes with an uncaught
+`StoryPackageAmbiguityError`. The rule above would have captured it. The
+Navigator had it fixed inside
+[CR018](refinement/rs001-ariad-runtime-trust/cr018-story-titles-with-slashes-truncated-in-surfaces-and-scaffolds.md)
+instead, for two reasons. It is the floor's first class, silent damage. And
+CR018's link-free titles rename the folders Expand derives for children whose
+titles carry links, so without the fix every such child already expanded would
+be written a second time. The escaped-pipe defect found beside it is captured
+as [CR107](refinement/rs001-ariad-runtime-trust/cr107-an-escaped-pipe-in-a-candidate-table-title-is-read-as-a-cell-border.md),
+outside the floor. The floor stays eight changes and ten identifiers: CR018
+grows by one defect, not by one identifier.
+
+**Amended 2026-09-27, after CR102: the floor grows by three changes, and the
+release gate reaches past Ariad.** With the eight floor changes done, the
+Navigator asked for another inspection of the Refinement Workbench before
+pulling US3. It found no Ariad defect left of the silent-damage class. The
+Navigator added three changes to the floor:
+
+- [CR104](refinement/rs004-identity-resolution-fidelity/cr104-journey-slugs-are-not-validated-and-command-hints-print-them-raw.md):
+  four Builder command hints print a journey slug unquoted inside commands the
+  reader is told to run, and nothing validates a slug. It is the one
+  security-class item left. Agents follow hints, so a crafted slug is two steps
+  away from a shell command on the user's machine.
+- [CR105](refinement/rs001-ariad-runtime-trust/cr105-choosing-delivery-story-flow-leaves-the-story-confirmation-pending.md):
+  choosing Delivery Story flow leaves the story-by-story confirmation pending.
+  The resume surface a new session reads first then contradicts the scope
+  confirmation. CR001 made that state routine.
+- [CR090](refinement/rs001-ariad-runtime-trust/cr090-debt-review-surface-mixes-portuguese-into-english.md)
+  rides along, as this decision already allowed: one Portuguese phrase in an
+  English surface that is transported verbatim.
+
+The Navigator also extended the release gate past Ariad, to the only archive a
+user has. The first is
+[CR061](refinement/rs010-cv22-oracle-and-port-hygiene/cr061-snapshot-the-live-database-consistently-before-zipping.md):
+the silent backup reads the live database and its WAL without a snapshot, so an
+archive taken during a write can be inconsistent, and nobody learns it until a
+restore. The second is
+[CR062](refinement/rs010-cv22-oracle-and-port-hygiene/cr062-write-backup-archives-owner-only.md):
+the archive and its directory are created with default permissions. The third is
+[CR060](refinement/rs010-cv22-oracle-and-port-hygiene/cr060-fail-loudly-when-a-silent-backup-fails.md):
+a failing silent backup stays silent. These are not Ariad, so US3 does not
+validate them, and they gate the release, which is what this decision is about.
+Their plans say to fix TypeScript first and Python second, and they are now
+single-engine.
+
+The order follows the floor's rule of what breaks first. The backups come first,
+because their failure is a silent loss of the user's only archive. CR104 comes
+next, as an injection path. CR105 comes last, with CR090, as a wrong surface at
+the decision point. All of it is worked before US3, so US3 stays the last change
+before the release. The floor is now eleven changes and thirteen identifiers,
+eight of them done. US3 remains separately authorized.
+
+The same inspection closed what the floor had marked for a look. CR017 was
+rejected as overtaken, because DS10.TS1 retired the projection subsystem that
+printed its warning. CR010, CR012, and CR013 were rejected too, because
+DS10.TS4 deleted the SQLite Workbench whose state machine they described, and
+RS003 closed with them. Two findings recorded only in the journey path were
+captured, as
+[CR109](refinement/rs009-cv22-front-door-routing-correctness/cr109-mirror-log-help-records-help-and-renames-the-conversation.md)
+and
+[CR110](refinement/rs010-cv22-oracle-and-port-hygiene/cr110-the-doc-link-checker-reads-a-link-inside-inline-code-as-a-real-link.md).
+
+**Amended 2026-09-27: CR104 guards persona ids too, and fixes seed's three
+stale hints.** Characterizing
+[CR104](refinement/rs004-identity-resolution-fidelity/cr104-journey-slugs-are-not-validated-and-command-hints-print-them-raw.md)
+found persona ids open the same way as journey slugs, with a stranger at the
+first step. `seed` takes a persona's key from its file, `ext-persona-export`
+writes seed-compatible bundles to be shared, and `detect-persona` prints the id
+an agent puts into `mirror load --persona`. The rule above would have captured
+it. The Navigator had it fixed inside CR104 instead, for the reason CR018's
+Expand defect was: it is the floor's own class, the security class that put
+CR104 on the floor. Fixing the local journey case alone would ship the
+cross-user persona case. The same characterization found `seed`'s three skip
+hints naming `memory`, the Python program TS5 deleted. CR104 changes those lines
+to quote their key, and fixes the name with them. The floor stays eleven
+changes and thirteen identifiers.
+
+**2026-09-28: the floor is complete.** CR104 closed on 2026-09-27, and
+[CR105](refinement/rs001-ariad-runtime-trust/cr105-choosing-delivery-story-flow-leaves-the-story-confirmation-pending.md)
+with [CR090](refinement/rs001-ariad-runtime-trust/cr090-debt-review-surface-mixes-portuguese-into-english.md)
+on 2026-09-28. With the backups, every change the release gate names is done.
+US3 is next, and remains separately authorized.
+
+**Amended 2026-09-30: US3's first two commands reopen the floor by three
+changes, worked before US3.** US3 was pulled and planned on 2026-09-30, the
+floor's validation route by this decision's own reasoning. Its Pull and its
+Plan each rendered a surface that was not true, and the Plan exposed a hole
+under both:
+
+- [CR112](refinement/rs001-ariad-runtime-trust/cr112-a-scaffold-cannot-be-told-from-authored-content-and-approve-plan-never-reads-the-plan.md):
+  a scaffold Ariad wrote cannot be told from a file a person authored, `build
+  show` reports only present or missing, and ordinary `approve-plan` never
+  reads `plan.md`, so an untouched scaffold can be approved. US3's `index.md`
+  held Expand's template sentence for eleven days. Silent damage; first in
+  order.
+- [CR111](refinement/rs001-ariad-runtime-trust/cr111-the-plan-checkpoint-renders-template-sentences-as-the-plan.md):
+  the Plan checkpoint prints template sentences with the title pasted in as
+  `scope` and `acceptance`, checked off, and cannot show a real plan; the
+  transport rule then puts that card above the plan the Driver wrote. CR019's
+  class, at the same gate.
+- [CR113](refinement/rs001-ariad-runtime-trust/cr113-the-pull-card-claims-prepare-did-not-run-mislabels-the-level-and-skips-the-parent.md):
+  the Pull card says Prepare was not executed while the same command runs it,
+  names every level a Delivery Story, omits the parent from its tree, and the
+  ribbon marks Expand done for an item that never expands.
+
+The Navigator's words: fix those problems completely, and make the
+implementation airtight before the release. Asked for more, the Driver
+proposed every open RS001 Change Request, and the Navigator took all of them,
+the same day:
+
+- [CR114](refinement/rs001-ariad-runtime-trust/cr114-the-builder-resume-offers-prepare-on-a-completed-item.md):
+  the resume offers Prepare on a completed item, on the first surface a
+  session reads.
+- [CR115](refinement/rs001-ariad-runtime-trust/cr115-the-cadence-profile-is-shown-on-no-read-only-surface.md):
+  the cadence that removes the Navigator's Plan turn is shown on no read-only
+  surface.
+- [CR082](refinement/rs001-ariad-runtime-trust/cr082-lifecycle-surfaces-print-absolute-paths.md)
+  with [CR009](refinement/rs001-ariad-runtime-trust/cr009-name-the-target-project-in-artifact-surfaces.md):
+  Plan and Expand print absolute paths where the artifact card prints
+  project-relative ones, and no card names the project it wrote into. Both
+  were left out on 2026-09-25 for a cost, the parity goldens, that TS5
+  removed.
+- [CR103](refinement/rs001-ariad-runtime-trust/cr103-candidate-and-position-rows-print-a-package-s-entire-status-line.md):
+  the resume's roadmap position is a package's whole status line, links and
+  all.
+- [CR107](refinement/rs001-ariad-runtime-trust/cr107-an-escaped-pipe-in-a-candidate-table-title-is-read-as-a-cell-border.md):
+  an escaped pipe in a title is read as a cell border by Expand and by the
+  scaffold it writes.
+
+With these, RS001 has no open Change Request outside the floor. The floor is
+now nineteen changes and twenty-two identifiers, eleven of them done. The
+order: CR112, CR111, CR113, CR114 with CR115, CR082 with CR009, CR103, CR107
+— what can advance a wrong state first, then what is wrong at the point where
+the Navigator decides, then what is merely wrong. Each is worked through the
+full Refinement route, one at a time. US3 stays pulled at its Plan checkpoint,
+awaiting approval, and is worked after the floor.
+
+**Amended 2026-10-01: characterizing CR114 with CR115 found two defects, and
+the Navigator decided both.** The resume offered `prepare_active_item` at every
+position with nothing pending, and `prepare-item` has no guard: run on a Done
+story, it moves the story back before Plan, where `plan-item` accepts it again.
+As with CR018's Expand defect, the Navigator had the guard fixed inside
+[CR114](refinement/rs001-ariad-runtime-trust/cr114-the-builder-resume-offers-prepare-on-a-completed-item.md)
+(decision D3): removing the offer and leaving the rewind would fix the card and
+not the harm it pointed at. And Pull carries a Delivery Story's flow unit to
+every item pulled after it, so after any Delivery Story run in Delivery Story
+flow, no story Plan can be preauthorized, under `accelerated` or on the
+Navigator's explicit delegation, and the remedy the refusal names is one the
+runtime refuses for a story. That is captured as
+[CR117](refinement/rs001-ariad-runtime-trust/cr117-a-delivery-story-s-flow-unit-outlives-it.md),
+and joins the floor last, after CR107 (decision D5). The floor is now twenty
+changes and twenty-three identifiers, fourteen of them done.
+
+**Amended 2026-10-09: CR121 joins the release gate as a decision, not on the
+floor.** Found while proving US3's route 3. On an install from nothing, the
+first maintenance run imports the person's whole Pi history: every project,
+every chat from before Mirror. That run may come from Pi, Claude Code, or
+Gemini CLI, and later runs spend on extracting what it imported
+([CR121](refinement/rs010-cv22-oracle-and-port-hygiene/cr121-a-new-home-s-first-maintenance-imports-the-whole-pi-history.md)).
+It reaches every npm user who has used Pi, Mirror's recommended harness, and no
+clone user, so it is a property of this release, not of Ariad. The Navigator
+decided it must be decided before the CV22 release. The options:
+- keep the import and document it;
+- ask first;
+- import only sessions newer than the home.
+
+CR106's behavior option would close CR106 with it. What the decision requires
+before the release is decided with it.
+
+The floor is unchanged: CR121 is not an Ariad change, and the floor is a list.
+The release now waits for:
+- US3;
+- the floor (done 2026-10-05);
+- the Python-era updater's last hop on the production clone (US3 D12);
+- this decision.
+
+[CR120](refinement/rs010-cv22-oracle-and-port-hygiene/cr120-a-failed-pi-session-import-aborts-the-rest-of-session-maintenance.md)
+(a failed import aborts the rest of maintenance) stays captured.
+
+### A Builder journey's position is its cursor's active item, never a roadmap scan
+
+**Date:** 2026-09-26 · **Context:** [CR002](refinement/rs001-ariad-runtime-trust/cr002-cursor-sync-roadmap-selection.md),
+on the [Ariad trust floor](#the-cv22-release-is-gated-on-an-ariad-trust-floor-worked-before-us3).
+Every Builder surface that answers "where are we" or "what next" read the whole
+roadmap for whichever journey asked. The resume row took the first `index.md`
+whose status contained "Active"; the recommendation ranked every candidate in the
+project. A project holding several journeys' work told all of them the same
+answer: `builder-mode-evolution` was told it stood at CV9.DS7 in July, and this
+journey met the same row during CV22.DS6.TS4 and took it for a stale cursor.
+
+**The decision: a journey's roadmap scope comes from its delivery cursor and
+nowhere else. With an active item, the position is the Capability Value the item
+belongs to by heading code, and the next pull is recommended only among that CV's
+strict descendants. Without one, the surfaces say `no item pulled yet`, list the
+project-wide candidates as such, recommend nothing, and give the literal
+`pull-item` command.**
+
+**Why the cursor, not a binding.** The active item is the only roadmap fact a
+journey already owns: Pull sets it, and only `sync-cursor` clears it. A persisted
+journey-to-roadmap binding would be a new piece of data to keep true; the cursor is
+already kept true by the lifecycle. The cost is one explicit Pull per fresh journey,
+which is what the July recovery did anyway.
+
+**Why an honest refusal, not a better guess.** No status scan can be right for two
+journeys at once, and a project-wide ranking recommends another journey's work the
+moment one CV runs out. "No item pulled yet" is always true; a guess is sometimes
+false, and it is false at the point where the Navigator decides.
+
+**The rule that follows.** Identity is the heading code; folders never decide
+membership. Membership is strict descent (`CVx.`), so a CV is never its own
+candidate. A Builder surface that needs a position or a recommendation takes the
+scope from `ts/src/builder/roadmapScope.ts` and its words from
+`ts/src/builder/scopePhrases.ts`; it does not scan.
+
+### Builder Mode's skill has one body in every runtime
+
+**Date:** 2026-09-27 · **Context:** [CR102](refinement/rs010-cv22-oracle-and-port-hygiene/cr102-the-claude-code-mm-build-skill-lacks-the-builder-and-ariad-sections.md),
+the last change on the [Ariad trust floor](#the-cv22-release-is-gated-on-an-ariad-trust-floor-worked-before-us3).
+Claude Code's `mm-build` was 108 lines, against 1093 for Pi, Codex, and Gemini
+CLI. It had no activation boundary, no journey binding, and no Ariad section.
+Each Builder rule had to be written in two places, and six floor changes in
+three days wrote it in one.
+
+**The decision: `.pi/skills/mm-build/SKILL.md` is the only copy of the Builder
+skill anyone edits. Both Claude Code copies, `.claude/skills/mm-build` and the
+plugin's, are generated from it by `node ts/scripts/buildClaudePlugin.ts`. They
+differ from it only in the frontmatter `name` (`mm:build`), and `npm test`
+fails when they fall out of date.**
+
+**Why this reverses CR071 for one skill.** [CR071](refinement/rs010-cv22-oracle-and-port-hygiene/cr071-collapse-the-triplicated-skill-command-references.md)
+rejected generating the copies because the generator would have to model
+per-runtime differences: Usage sections, example language, and lines that hold
+for one runtime only. `mm-build` has no line of the third kind, and its Usage
+section already documents all three invocations. That leaves one frontmatter
+line to model. The plugin copy had been generated from `.claude/skills/` all
+along, so the new step is one more derived file, not a new machine.
+
+**What Claude Code users now read.** They read the Pi Usage section, which names
+the Pi, Gemini CLI, and Codex invocations beside `/mm:build`. They also read the
+Pi trigger examples, which pair Portuguese phrases with English ones. Pi,
+Codex, and Gemini CLI users already read both. For this skill, that ends the
+English-only convention for Claude copies set in the
+[worklog of 2026-06-21](../process/worklog.md). The cost is context: a Builder
+activation on Claude Code loads about 12k tokens of skill instead of about
+0.9k, as the other runtimes already did.
+
+**The rule that follows.** A skill joins the list in
+`ts/src/guards/piSourcedSkills.ts` only when its Pi body holds in every
+runtime, and joining is recorded here. `mm-soul` and `mm-mirror` do not
+qualify: each carries lines that hold for one runtime only. The other skills
+keep two bodies under CR071's guards. Their drift is captured as
+[CR108](refinement/rs010-cv22-oracle-and-port-hygiene/cr108-the-claude-code-copies-of-other-skills-drift-from-pi-in-behavior.md),
+outside the floor.
+
+### A journey slug and a persona id are kebab-case, checked where they are created
+
+**Date:** 2026-09-27 · **Context:** [CR104](refinement/rs004-identity-resolution-fidelity/cr104-journey-slugs-are-not-validated-and-command-hints-print-them-raw.md),
+on the [Ariad trust floor](#the-cv22-release-is-gated-on-an-ariad-trust-floor-worked-before-us3).
+Nothing constrained a journey slug or a persona id. `identity set`,
+`identity edit`, and `seed` accepted `x;touch PWNED`, and four Builder hints
+printed the slug raw inside commands an agent runs. Pasted as printed, they ran
+`touch`. Persona ids could arrive from a stranger, in a persona bundle made to be
+seeded. Python's `create_journey` had enforced a slug grammar, but only the web
+console called it, and the grammar left with the console.
+
+**The decision: a new journey slug or persona id is kebab-case, meaning
+lowercase letters and digits in runs joined by single hyphens, up to 80
+characters, exactly what `kebabSlug` leaves unchanged. It is refused where every
+creation passes, in `upsertIdentity`'s INSERT branch. A key that predates the
+rule keeps working, is never rewritten, and is reported by `runtime diagnose`.
+Separately, every command Mirror prints for its reader to run quotes each value
+it carries through `shellWord`.**
+
+**Why at the store, not at each command.** `upsertIdentity` holds the only
+INSERT into `identity`. A guard there covers `identity set`, `identity edit`,
+`seed`, the exported `createJourney`, and the next writer nobody has written
+yet. `identity set` and `identity edit` ask the same function first, so a
+refusal costs no pre-write snapshot and discards nothing typed into an editor.
+Wherever else the store's refusal surfaces, the front door answers it as one
+line (`ts/src/frontDoor/namedRefusal.ts`).
+
+**Why report, not rename.** A slug is a natural key copied, with no foreign key,
+into fourteen columns across thirteen tables, two of them extension-owned.
+Renaming one is the largest write this change could have made, for keys that no
+known install holds: the production and dev homes held none. And a key stored
+differently from how it was typed would miss the next command that uses it, so
+the refusal names a key that would work rather than normalizing silently.
+
+**Why quote as well.** The grammar keeps new keys plain, and quoting protects the
+keys that predate it. Neither covers an agent that composes a command of its own
+from a key it read. That is the risk `runtime diagnose` names, and the reason the
+grammar applies to the layers whose keys agents type.
+
+**The rule that follows.** A command Mirror prints for its reader to run names
+the program through `PROGRAM` and passes every value through `shellWord`. The
+exception is a value listed in the guard (`ts/test/util/shellWord.test.ts`),
+with the reason it cannot carry shell syntax. A new identity layer whose keys
+agents put into commands joins `ts/src/identity/identityKey.ts`, and joining is
+recorded here. A key that is printed goes through `pyRepr`, which escapes what
+Python's `repr` escapes.
+
+### A flow unit is chosen at a Delivery Story's flow decision, and choosing records the question it asks
+
+**Date:** 2026-09-28 · **Context:** [CR105](refinement/rs001-ariad-runtime-trust/cr105-choosing-delivery-story-flow-leaves-the-story-confirmation-pending.md),
+the last change on the [Ariad trust floor](#the-cv22-release-is-gated-on-an-ariad-trust-floor-worked-before-us3).
+After Expand, choosing Delivery Story flow printed the scope question and left
+Expand's story-by-story stop on the cursor, so every surface that reads the
+cursor reported a question that flow never asks. CR001 had made that state
+routine, because the Builder skill ends the agent's turn at the scope question.
+Switching back to story by story after a Delivery Story Plan asked about a next
+story. The Plan's approval then started implementation under the wrong flow, and
+the Delivery Story could not close.
+
+**The decision: a flow unit is chosen only at a Delivery Story's flow decision,
+after Prepare or Expand and before its Plan. Choosing records the question its
+surface asks: `navigator_scope_confirmation` for Delivery Story flow, and
+`navigator_story_confirmation` for story by story, which Expand records first.
+Anywhere else, choosing refuses and changes nothing. The recorded stop is not
+enforced: `plan-delivery-story` replaces it, and plans without it, as CR001
+decided.**
+
+**Why record rather than clear.** Cleared, the resume would say nothing is
+pending while the Navigator owes an answer, and a new session could not know the
+scope question is open. Recorded, the resume names it, and its next action,
+answering the pending confirmation, is what the flow waits for. Listing the Plan
+as a next action instead would invite planning before the answer, the shape
+CR001 closed.
+
+**Why refuse rather than switch.** A flow unit changed after the Plan describes
+work planned under the other one. No choice at that point is honest without
+planning again, and planning again is the Navigator's decision, not the
+runtime's. When a Navigator first needs it, that route is designed then.
+
+**The rule that follows.** A Builder surface that asks the Navigator a question
+records it as the cursor's pending confirmation, so a resume can say it is open,
+and no stop stays on the cursor that no surface is asking. `FLOW_STOPS` in
+`ts/src/builder/flowUnit.ts` names the flow stops, and Expand takes its own
+from it.
+
+### A scaffold is not a plan: approval reads the plan, and Done reads the story's record
+
+**Date:** 2026-09-30 · **Context:** [CR112](refinement/rs001-ariad-runtime-trust/cr112-a-scaffold-cannot-be-told-from-authored-content-and-approve-plan-never-reads-the-plan.md),
+first of the changes US3's Pull and Plan put back on the
+[Ariad trust floor](#the-cv22-release-is-gated-on-an-ariad-trust-floor-worked-before-us3).
+Plan and Expand write story files as scaffolds, template sentences with the title
+pasted in, and CR079 protects them like authored files. Nothing read them back:
+`build show` said present or missing, ordinary approval never opened `plan.md`, and
+the preauthorized route's structural check could not see the scaffold's own sentences.
+An untouched scaffold was approvable on both routes, and a story could close with its
+record still saying "I want to <title>". CV22.DS10.US3's own index did, for eleven
+days.
+
+**The decision: every sentence a story scaffold carries has one home, as a template
+with a `{title}` slot and a kind, placeholder or default. The writers fill it; one
+reader matches files against it and says missing, scaffold, incomplete, partly
+authored, or authored. Every surface that names a Plan-stage file says which. Both
+approval routes refuse a plan whose required sections are missing, empty, pending, or
+still the scaffold's, and story Done, by any route, refuses an index that still is.**
+
+**Why structure, and never prose.** One real line under a heading is authored. The
+runtime cannot judge a plan's quality and must not pretend to. What it can know
+exactly is whether a file is still the text it wrote itself. The skill states the
+bar, a plan the Navigator can approve from, and names the structural check as the
+floor it is.
+
+**Why no marker in the file.** The runtime knows its own bytes. A marker would be one
+more thing a Driver forgets to remove, and a file without one would be trusted.
+
+**Why a kind per section.** "Deliver X as an observable slice" stands in for content
+the Driver must write; "Do not use git add ." is a rule a Driver may keep verbatim. A
+check that treated them alike would refuse honest plans or pass empty ones.
+
+**Why one list and required arguments.** The two approval routes read one list,
+`PLAN_APPROVAL_SECTIONS`, so they cannot hold a plan to different rules. The handoff
+review found the rule's weak point anyway: it lived in optional arguments, and
+`continue-lifecycle` reached Done without the index path, closing a scaffold under
+`accelerated` cadence. The paths are required now, so every caller must decide,
+including the next one.
+
+**The rule that follows.** A scaffold sentence lives only in
+`ts/src/builder/artifacts/scaffoldSections.ts`, and a new scaffold section declares its
+kind there. A lifecycle rule that reads a project file takes that file's path as a
+required argument, `null` only where there is no project to read.
+
+### The Plan checkpoint holds no plan: it names the story files
+
+**Date:** 2026-09-30 · **Context:** [CR111](refinement/rs001-ariad-runtime-trust/cr111-the-plan-checkpoint-renders-template-sentences-as-the-plan.md),
+the second change US3's Pull and Plan put back on the
+[Ariad trust floor](#the-cv22-release-is-gated-on-an-ariad-trust-floor-worked-before-us3).
+The Plan checkpoint filled its `plan`, `scope`, `non-goals`, `acceptance`, and
+`validation` blocks from the scaffold's sentences and checked them off. It did so over a
+plan a person had written, too, while the artifacts card printed below it said
+`existing plan — authored`: 13 of the 18 recorded Plan cards were that case. The
+Builder skill's transport rule put the card first in every Plan turn.
+
+**The decision: the Plan checkpoint prints what the runtime knows and no section of the
+plan. In place of the plan it names the story files, each with its state and the
+sections still to author, in the rows `build show` prints, from one function. Its next
+action says where the plan is read. `build show`, the Plan checkpoint, and both approval
+routes give one answer to what a `plan.md` still needs. Plan writes one scaffold
+vocabulary, titled by the roadmap's title for the item, else the title Pull recorded,
+else the item's code.**
+
+**Why no digest.** A digest of the authored plan, its first lines or its line counts,
+is a lossy copy of the plan on the one surface that must not look like one. The runtime
+reads structure and the Navigator reads plans (CR112). The approval surface is `build
+show` reading `authored`, returned verbatim, and the Driver presenting the file,
+section by section.
+
+**Why the non-goals left too.** The sibling list is the scaffold's Non-Goals text, and
+after authoring the file may say otherwise. The rule that holds whatever the plan says,
+that changes stay scoped to the active story, is in the implementation contract, which
+stays on the card.
+
+**Why one answer.** Approval required the Non-Goals and the Implementation Contract, and
+`build show` did not look at them, so a plan read `authored` over an approval that
+refused. A card built on `build show` would have repeated it. The list is now the
+approval rule's, and every surface reads it. The word still comes from the placeholder
+sections alone, so an untouched scaffold, whose defaults are filled, still reads
+`scaffold`.
+
+**Why one vocabulary.** The second set of sentences was written only when a caller
+passed no sections, and no product path did. The corpus graded a scaffold no user
+received.
+
+**The rule that follows.** A Builder surface prints no sentence that stands in for
+content a person must write. A surface that names a Plan-stage file prints the rows of
+`ts/src/builder/artifacts/storyFiles.ts`, and anything that says what a `plan.md` still
+needs asks `planSectionsToAuthor`. An argument a command cannot record is named on its
+surface, never dropped silently.
+
+### The Pull card says what happened, and a stage a level never reaches is drawn as not applicable
+
+**Date:** 2026-09-30 · **Context:** [CR113](refinement/rs001-ariad-runtime-trust/cr113-the-pull-card-claims-prepare-did-not-run-mislabels-the-level-and-skips-the-parent.md),
+the third change US3's Pull and Plan put back on the
+[Ariad trust floor](#the-cv22-release-is-gated-on-an-ariad-trust-floor-worked-before-us3).
+The Pull card, which the product prints only after a story is pulled, was headed
+DELIVERY STORY ACTIVATED under a marker naming a Delivery Story. It said Prepare had
+not run while the same command ran it, drew a story straight under its CV, and called
+any pulled code a roadmap candidate. Every Delivery ribbon drew a story's Expand as done
+once it passed Prepare, and as still to come before.
+
+**The decision: the Pull card names the level it pulled, under `ITEM_ACTIVATED`, a
+marker that names no level. It claims nothing about Prepare, whose own card follows. Its
+placement is the item's lineage, CV, then Delivery Story, then story, titled by the
+roadmap and drawn by the renderer the Ready card shares. Its source row says whether
+the roadmap names the item. A stage an item's level never reaches is drawn `–`, not
+applicable: a User or Technical Story's Expand, on every Delivery ribbon.**
+
+**Why "named by the roadmap" is status-blind.** The pull-candidates reader keeps only
+the statuses that can be pulled. A story marked Done, or a candidate-table row with no
+package yet, is still named by the roadmap. So the item is named when a package heading
+claims it, when its Delivery Story's candidate table lists it, or when it is a pull
+candidate.
+
+**Why a required argument, and a walk as well.** The compiler named every call to the
+ribbon. It could not name the two handoffs whose ribbon was a fixed string. One walk
+through a story's whole lifecycle, through the front door, collects every ribbon it
+prints, and it found them.
+
+**Why a dash, not an omission.** One ribbon shape serves every level. The Navigator
+judged the dash in their own terminal.
+
+**The rule that follows.** A surface that draws a story's Delivery ribbon draws it
+through `renderLifecycleRibbon`, with the item's level; the Delivery Story flow's own
+ribbons are that flow's matter. Which levels never expand is `isImplementableByDefault`'s
+answer, and nowhere else. A surface that says where a pulled item sits asks
+`pullPlacement` and draws with `placementRows`.
+
+### Every Builder surface takes its next steps from one table of cursor positions, and prints the cadence they run at
+
+**Date:** 2026-10-01 · **Context:** [CR114](refinement/rs001-ariad-runtime-trust/cr114-the-builder-resume-offers-prepare-on-a-completed-item.md)
+with [CR115](refinement/rs001-ariad-runtime-trust/cr115-the-cadence-profile-is-shown-on-no-read-only-surface.md),
+the fourth change US3's Pull and Plan put back on the
+[Ariad trust floor](#the-cv22-release-is-gated-on-an-ariad-trust-floor-worked-before-us3).
+The Builder resume chose its next actions from whether a confirmation was pending and
+whether an item was active, and never from the cursor's last event. So it offered
+`prepare_active_item` at every position with nothing pending: right after a Pull, which
+had already prepared, and after Done alike. `prepare-item` then ran from anywhere, and a
+Done story it prepared went back before Plan. `build show` printed no list, and with no
+cursor it gave a Pull command that refused. No surface that opens a session printed the
+cadence, which decides whether the next Plan stops for the Navigator.
+
+**The decision: one ordered table of cursor positions, in `cursorPosition.ts`, names for
+each event the runtime writes the ribbon stage a story draws and the steps the runtime
+accepts next. The Builder resume and `build show` choose their next actions through one
+selector, `allowedNextActions`, and nothing else chooses them. Each step offered is one
+the runtime accepts where it is offered; a position the table does not know, or a level
+Plan refuses, is offered no lifecycle step. Prepare is a lifecycle step, complete once
+the cursor reaches Plan. The resume, `build show`, and the Builder orientation print the
+journey's cadence, from `cadence.ts`.**
+
+**Why the steps are named, not printed as commands.** The resume already spoke in
+`<verb>_active_item` identifiers, a command wraps to two or three card rows, and in
+Delivery Story flow the same step runs a different command. The skill says what each
+identifier routes to, and a test fails when the table can produce one the skill does not
+name (D1).
+
+**Why no guess for an unknown position.** A guessed step is the defect itself: the old
+fallback, Prepare, rewound whatever state the cursor held. CR067 drew no ribbon stage for
+an event it did not know, and the list follows the same rule (D2).
+
+**Why the guard lives in this change.** Removing the offer would have left the rewind
+one keystroke away. Prepare joined CR067's steps rather than carrying a refusal of its
+own, so CR067's table-driven test grades it at every ordered event (D3).
+
+**Why the cadence is printed as a name.** The profile's name is the method's own
+vocabulary, defined once by `inspect-method ariad` and explained to the agent by the
+skill; a gloss on three cards would restate the method and drift from it.
+
+**The rule that follows.** A Builder surface that names what comes next asks
+`allowedNextActions`; one that places the cursor on the ribbon asks `lifecycleStageOf`;
+and a step it offers is one the runtime accepts at that position, which the front-door
+walk in `nextActionsWalk.test.ts` proves by running it. A surface that orients the
+Navigator prints the cadence from `cadence.ts`, whose `effectiveCadenceProfile` is the
+one default for a cursor that stores none. Offering a step is not running it: the
+Builder Activation Boundary still holds after a load.
+
+### A Builder surface names every path relative to the journey's project, and every report of a write names the project
+
+**Date:** 2026-10-01 · **Context:** [CR082](refinement/rs001-ariad-runtime-trust/cr082-lifecycle-surfaces-print-absolute-paths.md)
+with [CR009](refinement/rs001-ariad-runtime-trust/cr009-name-the-target-project-in-artifact-surfaces.md),
+the fifth change on the reopened
+[Ariad trust floor](#the-cv22-release-is-gated-on-an-ariad-trust-floor-worked-before-us3).
+Six surfaces printed paths as the runtime resolved them, absolute: the Plan
+checkpoint's package row and its four `*_path=` lines, the four story closure
+checkpoints' records, and Expand's refusals. Surfaces are transported verbatim into
+replies, handoffs, and committed documents, so the owner's home directory travelled with
+them, and a card cut each path where the root's length decided, so a recorded card read
+differently on every machine and the corpus could only collapse those rows. The
+artifacts card, meanwhile, printed paths relative to a project it never named, which is
+how CR009's Navigator searched the wrong repository.
+
+**The decision: every path a Builder card prints goes through `displayPath`, in
+`projectPaths.ts`, relative to the journey's project, and every message that names a
+package is built with it where it is raised. Plan's four `*_path=` lines are the agent's:
+absolute, and printed after the surface's end marker. Every report of a write names the
+project's folder and the journey on one row, `project: <folder> · journey: <slug>`.**
+
+**Why the agent's lines stay absolute, and leave the surface (D1).** An agent often works
+from a directory that is not the project, and a relative path joined to it names a file
+in another repository, one this repository's own `docs/project/roadmap/` would make look
+right. But inside the block the transport rule copied the root into every reply. Below
+the end marker the agent still reads them, as it reads `build load`'s `project_path=`.
+
+**Why the folder and the journey (D2).** A wrong journey, and a journey whose project path
+names the wrong folder, both show as a wrong name, and the row is the same on every
+machine. The absolute root would put back what this decision removes; the journey alone
+passes a wrong project path. Two checkouts of one repository share a folder name, and
+there the slug tells them apart, and `build load` prints the root.
+
+**Why one row per report of a write (D3).** The question a reader asks is where the files
+went, once per card. A story's closure reports its record on its own card and a Delivery
+Story's on the artifacts card; both carry the row, and the two shapes are
+[CR118](refinement/rs001-ariad-runtime-trust/cr118-a-story-closure-and-a-delivery-story-closure-report-their-record-in-two-shapes.md)'s
+question (D6).
+
+**Why where the message is raised (D4).** Every reader of those messages is human, a card
+or an `Error:` line, and a renderer that searched prose for paths would leave the
+`Error:` line absolute.
+
+**The rule that follows.** A card that prints a path asks `displayPath`; a message that
+names a package is built with it; a report of a write prints `targetLine`; and a line for
+the agent goes below the surface, not inside it. `pathsWalk.test.ts` runs every command
+that prints a path or reports a write under a known root and fails on that root inside
+any marked surface.
+
+### A roadmap status enters Ariad as its first clause
+
+**Date:** 2026-10-04 · **Context:** [CR103](refinement/rs001-ariad-runtime-trust/cr103-candidate-and-position-rows-print-a-package-s-entire-status-line.md),
+the sixth change on the reopened
+[Ariad trust floor](#the-cv22-release-is-gated-on-an-ariad-trust-floor-worked-before-us3).
+Several packages on this roadmap write their `**Status:**` line as a running
+changelog, up to 5,417 characters, and every Builder reader read the line whole.
+Three formatters printed it: the candidate rows of `PROJECT_POSITION` and
+`PULL_CANDIDATES` (205 and 209 card lines on this roadmap), the resume's roadmap
+position (23 lines on every load, Markdown raw), and `statusMarker`'s fallback, which
+printed a Blocked CV's whole status on the snapshot's focus row and pushed the title
+and the border off the card. The classifiers behind the rows searched the same line
+for a word, so a Blocked story whose prose said Planned was recommended over a
+Candidate, and a Done story whose prose said Active was listed.
+
+**The decision: a status line enters Ariad as the status its author declared, its
+first clause: links reduced to their labels, `**`, `__`, and backticks removed, cut
+before the first separator (` — `, ` – `, ` - `, `; `, `, `, `. `, ` (`, ` · `, `: `),
+trailing punctuation dropped, bounded to 24 code points by the card's clip. The
+clause is applied where a status leaves a reader, so every candidate, snapshot item,
+authored package, and candidate-table child carries it by construction, and the
+classifiers and the formatters read what the rows print. The rest of the line stays
+in the package, whose path the row names.**
+
+**Why in what the runtime reads, not in how lines are written (D1).** Ariad renders
+roadmaps it did not author and cannot depend on another project's authoring
+discipline; rewriting this repository's 54 long lines would fix one roadmap and churn
+its history. The corpus settled the rule: the 366 lines reduce to 18 clauses, each the
+status its author meant, and all but one lead with the status word.
+
+**Why the author's clause, not a marker (D2).** A normalized marker needs a vocabulary
+every project's wording must fit, and Blocked, Future, Superseded, Retired, Deferred,
+and Cancelled were already outside the five markers. The two surfaces that print a
+marker keep it; its fallback prints the clause, so a Blocked CV reads `○ 🔴 blocked`
+and keeps its title.
+
+**Why one reading (D3).** A row that printed the clause over classifiers that read
+the line would recommend what it shows as Blocked and list what it shows as Done: the
+fix would make the contradiction and hide its cause. Reading the clause changed no
+candidate and no recommendation on this roadmap. The cost, accepted: a status that
+does not lead with its status word stops being a candidate; none exists here, and
+Ariad's own scaffolds put the word first.
+
+**What stays outside (D4).** The Delivery Story Done preflight reads its own line and
+passes it only when its last word is `done`, refusing 47 of this roadmap's 320 Done
+statuses and passing `Not done`. It is a gate, not a row; captured as
+[CR119](refinement/rs001-ariad-runtime-trust/cr119-the-delivery-story-done-preflight-reads-a-status-line-s-last-word.md),
+outside the floor, with the instruction to read the clause when it is fixed.
+
+**The rule that follows.** A reader that carries a roadmap status into a surface or a
+classification yields `statusClause`, never the line; `matchStatus` returns the line
+for the one gate that wants it, until CR119. A new reader joins the every-reader test
+in `statusClause.test.ts`, and `statusWalk.test.ts` runs every command that prints a
+status on a roadmap whose every line carries a sentinel after its separator, and
+fails on the sentinel inside any marked surface. The skill says a row's status is the
+clause, and where the rest of the line is.
+
+### A table cell is read as GFM reads it, and what Ariad writes into one reads back as written
+
+**Date:** 2026-10-05 · **Context:** [CR107](refinement/rs001-ariad-runtime-trust/cr107-an-escaped-pipe-in-a-candidate-table-title-is-read-as-a-cell-border.md),
+the seventh change on the reopened
+[Ariad trust floor](#the-cv22-release-is-gated-on-an-ariad-trust-floor-worked-before-us3).
+Three readers split a roadmap table row on every pipe: the index's CV and DS tables, a
+Delivery Story's candidate table, and the Done preflight's status tables. None read
+`\|`, GFM's one way to put a pipe in a cell, so a cell with one split in two and every
+column after it shifted. Expand recommended ``Read `a \`` and wrote the fragment into a
+heading and a folder; the index read a CV's status from its title's second half and
+marked it `○ card`; the preflight read a Done row's status from the cell the escape
+pushed into it and refused the Delivery Story's Done. The one writer, the scaffold
+Expand leaves for a Delivery Story with no package, escaped nothing, so a piped title it
+wrote read back cut. This roadmap had one such row, `CV20.DS13.TS1`'s, Done since July
+and read as pending.
+
+**The decision: a table row is read by one reader, `tableRowCells`, as GFM reads it.
+`\|` is a pipe inside the cell, a code span included, `\\` is a backslash, and an
+unescaped pipe closes a cell; every other character is itself. Ariad writes a title
+into a cell through `tableCell`, every backslash doubled and every pipe escaped, so the
+row reads back exactly as written. The title goes unescaped into the heading, the
+cards, and the folder's slug.**
+
+**Why GFM's rule and not Ariad's own.** The tables are Markdown a person reads rendered,
+and GFM is what renders them; a cell that renders with a pipe must read with one.
+Nothing short of the escape lets an author name a pipeline or a union type in a story.
+
+**Why one reader.** Three readers had one rule written three times, and the one that
+mattered for closing a Delivery Story was the one nobody had run. The reader is the
+inverse of the writer for the two characters it interprets, which the round trip of
+``a \| b`` as a title proves; the plan had the backslash rule only before a pipe, and
+that round trip is what overturned it.
+
+**Why the fragment packages stay.** A child already written with a fragment heading is
+authored content, found by its code (CR018) and never rewritten (CR079). None exists
+here.
+
+**The rule that follows.** A reader that splits a roadmap table row calls
+`tableRowCells`; a writer that puts text into a cell calls `tableCell`; and a pipe
+inside a cell is written `\|`, which the Builder skill's authoring contract now says.
+A new table reader or writer joins `escapedPipe.test.ts`.
+
+### A flow unit belongs to the Delivery Story it was chosen for
+
+**Date:** 2026-10-05 · **Context:** [CR117](refinement/rs001-ariad-runtime-trust/cr117-a-delivery-story-s-flow-unit-outlives-it.md),
+the last change on the reopened
+[Ariad trust floor](#the-cv22-release-is-gated-on-an-ariad-trust-floor-worked-before-us3).
+A flow unit is chosen at a Delivery Story's flow decision and nowhere else (CR105), but
+Pull carried `navigator_flow_unit` with the cadence to whatever item came next. After a
+Delivery Story ran in Delivery Story flow, every story pulled after it held
+`delivery_story`: `set-flow-unit` would not let a story change it, `plan-item` under
+`accelerated` and under the Navigator's explicit delegation refused with a remedy the
+runtime refused, and pulling the story again kept it. The `finances` journey's cursor
+held the case on a closed Technical Story.
+
+**The decision: Pull keeps a flow unit only when the pulled code equals the cursor's
+active item and the level is `delivery_story`; any other Pull writes `null`, the
+default, `story_by_story`. The refusal a cursor written before this rule still meets
+names where the unit came from and the Pull that clears it.**
+
+**Why the same Delivery Story only.** The unit says the Delivery Story is the lifecycle
+unit. A story cursor is not one, and a Delivery Story pulled after other items is back
+at the flow decision where the unit is chosen; carrying the old one past that decision
+is the same carry one item later. The one Pull where keeping is right is the Delivery
+Story re-pulled mid-flow as the item the cursor already holds, where its children and
+its aggregate status are kept too.
+
+**Why a predicate of its own.** `itemChanged`, the predicate that keeps the children, is
+false for a cursor with no item, and would let a stale unit through a Delivery Story's
+first Pull. The flow unit asks a different question and reads it directly.
+
+**Why no migration.** The one real cursor clears on its journey's next Pull, which is
+of another item; a migration would touch a cursor for one field one write fixes.
+
+**The rule that follows.** A cursor field that belongs to an item is decided by Pull,
+not carried: `carriedForward` carries the cadence, which belongs to the journey, and
+nothing else. A field that belongs to an item names the item it belongs to, and Pull
+keeps it only for that item. `flowUnitCarry.test.ts` grades Pull at every case and
+walks both preauthorized Plan routes on the story after a Delivery Story.

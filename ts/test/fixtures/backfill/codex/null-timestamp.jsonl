@@ -1,0 +1,3 @@
+{"timestamp":"2026-05-08T09:00:00.000Z","type":"session_meta","payload":{"id":"codex-null-ts-0008"}}
+{"type":"event_msg","payload":{"type":"user_message","message":"this event has no timestamp at all"}}
+{"timestamp":"2026-05-08T09:00:02.000Z","type":"event_msg","payload":{"type":"agent_message","message":"and Python's model validation rejects it"}}

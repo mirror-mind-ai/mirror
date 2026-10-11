@@ -1,0 +1,1918 @@
+{
+  "codex": {
+    "cases": [
+      {
+        "count": 1,
+        "file": "valid.jsonl",
+        "interface": "codex",
+        "label": "valid"
+      },
+      {
+        "count": 0,
+        "file": "valid.jsonl",
+        "interface": "codex",
+        "label": "valid_rerun_is_tracked"
+      },
+      {
+        "count": 0,
+        "file": "no-meta.jsonl",
+        "interface": "codex",
+        "label": "no_session_meta"
+      },
+      {
+        "count": 0,
+        "file": "no-messages.jsonl",
+        "interface": "codex",
+        "label": "no_messages"
+      },
+      {
+        "count": 0,
+        "file": "broken.jsonl",
+        "interface": "codex",
+        "label": "corrupt_line_skips_file"
+      },
+      {
+        "count": 1,
+        "file": "meta-last.jsonl",
+        "interface": "codex",
+        "label": "meta_last_and_last_meta_wins"
+      },
+      {
+        "count": 0,
+        "file": "tracked.jsonl",
+        "interface": "codex",
+        "label": "already_tracked"
+      },
+      {
+        "count": 1,
+        "file": "emoji-title.jsonl",
+        "interface": "codex-cli",
+        "label": "emoji_title_cut_by_code_points"
+      },
+      {
+        "count": 0,
+        "file": "does-not-exist.jsonl",
+        "interface": "codex",
+        "label": "missing_file"
+      }
+    ],
+    "null_timestamp": {
+      "error_type": "ValidationError",
+      "raises": true,
+      "rows_unchanged": true
+    },
+    "state": {
+      "conversations": [
+        {
+          "ended_at": "2026-05-01T09:00:07.000Z",
+          "id": "<conversation-1>",
+          "interface": "codex",
+          "journey": null,
+          "messages": [
+            {
+              "content": "Please review the persistence layer of the port and tell me whether the seam holds under load",
+              "created_at": "2026-05-01T09:00:01.000Z",
+              "metadata": null,
+              "role": "user",
+              "token_count": null
+            },
+            {
+              "content": "The seam holds; the busy timeout is the load bearing part.",
+              "created_at": "2026-05-01T09:00:03.000Z",
+              "metadata": null,
+              "role": "assistant",
+              "token_count": null
+            },
+            {
+              "content": "Obrigado, caf\u00e9 agora.",
+              "created_at": "2026-05-01T09:00:07.000Z",
+              "metadata": null,
+              "role": "user",
+              "token_count": null
+            }
+          ],
+          "metadata_raw": null,
+          "persona": null,
+          "started_at": "2026-09-03T12:00:00.000000Z",
+          "summary": null,
+          "tags": null,
+          "title": "Please review the persistence layer of the port and tell me..."
+        },
+        {
+          "ended_at": "2026-05-05T09:00:02.000Z",
+          "id": "<conversation-2>",
+          "interface": "codex",
+          "journey": null,
+          "messages": [
+            {
+              "content": "the agent spoke first",
+              "created_at": "2026-05-05T09:00:01.000Z",
+              "metadata": null,
+              "role": "assistant",
+              "token_count": null
+            },
+            {
+              "content": "and the meta arrives last",
+              "created_at": "2026-05-05T09:00:02.000Z",
+              "metadata": null,
+              "role": "user",
+              "token_count": null
+            }
+          ],
+          "metadata_raw": null,
+          "persona": null,
+          "started_at": "2026-09-03T12:00:00.000000Z",
+          "summary": null,
+          "tags": null,
+          "title": "and the meta arrives last"
+        },
+        {
+          "ended_at": "2026-05-07T09:00:02.000Z",
+          "id": "<conversation-3>",
+          "interface": "codex-cli",
+          "journey": null,
+          "messages": [
+            {
+              "content": "\ud83c\udfaf \ud83c\udfaf \ud83c\udfaf \ud83c\udfaf \ud83c\udfaf word word word word word word word word word word word word",
+              "created_at": "2026-05-07T09:00:01.000Z",
+              "metadata": null,
+              "role": "user",
+              "token_count": null
+            },
+            {
+              "content": "the generated title cuts at a word boundary inside sixty code points",
+              "created_at": "2026-05-07T09:00:02.000Z",
+              "metadata": null,
+              "role": "assistant",
+              "token_count": null
+            }
+          ],
+          "metadata_raw": null,
+          "persona": null,
+          "started_at": "2026-09-03T12:00:00.000000Z",
+          "summary": null,
+          "tags": null,
+          "title": "\ud83c\udfaf \ud83c\udfaf \ud83c\udfaf \ud83c\udfaf \ud83c\udfaf word word word word word word word word word word..."
+        }
+      ],
+      "runtime_sessions": [
+        {
+          "active": 1,
+          "closed_at": null,
+          "conversation_id": null,
+          "hook_injected": 0,
+          "interface": "codex",
+          "journey": null,
+          "metadata": null,
+          "mirror_active": 0,
+          "persona": null,
+          "session_id": "codex-tracked-0006",
+          "started_at": "2026-09-03T12:00:00.000000Z",
+          "updated_at": "2026-09-03T12:00:00.000000Z"
+        },
+        {
+          "active": 0,
+          "closed_at": "2026-05-01T09:00:07.000Z",
+          "conversation_id": "<conversation-1>",
+          "hook_injected": 0,
+          "interface": "codex",
+          "journey": null,
+          "metadata": null,
+          "mirror_active": 0,
+          "persona": null,
+          "session_id": "codex-valid-0001",
+          "started_at": "2026-09-03T12:00:00.000000Z",
+          "updated_at": "2026-09-03T12:00:00.000000Z"
+        },
+        {
+          "active": 0,
+          "closed_at": "2026-05-05T09:00:02.000Z",
+          "conversation_id": "<conversation-2>",
+          "hook_injected": 0,
+          "interface": "codex",
+          "journey": null,
+          "metadata": null,
+          "mirror_active": 0,
+          "persona": null,
+          "session_id": "codex-meta-last-0005",
+          "started_at": "2026-09-03T12:00:00.000000Z",
+          "updated_at": "2026-09-03T12:00:00.000000Z"
+        },
+        {
+          "active": 0,
+          "closed_at": "2026-05-07T09:00:02.000Z",
+          "conversation_id": "<conversation-3>",
+          "hook_injected": 0,
+          "interface": "codex-cli",
+          "journey": null,
+          "metadata": null,
+          "mirror_active": 0,
+          "persona": null,
+          "session_id": "codex-emoji-0007",
+          "started_at": "2026-09-03T12:00:00.000000Z",
+          "updated_at": "2026-09-03T12:00:00.000000Z"
+        }
+      ]
+    }
+  },
+  "hook_session_end": [
+    {
+      "label": "sessionless_backfill_only",
+      "state": {
+        "conversations": [
+          {
+            "ended_at": "2026-09-03T10:10:00.000000Z",
+            "id": "<conversation-1>",
+            "interface": "claude_code",
+            "journey": "mirror-ts-core",
+            "messages": [
+              {
+                "content": "user line 0",
+                "created_at": "2026-09-03T10:00:30.000000Z",
+                "metadata": null,
+                "role": "user",
+                "token_count": null
+              },
+              {
+                "content": "Window-start answer: reaches a conversation that ended at this exact instant.",
+                "created_at": "2026-09-03T12:00:00.000000Z",
+                "metadata": null,
+                "role": "assistant",
+                "token_count": null
+              },
+              {
+                "content": "First answer, inside the closed window.\n\nSecond block of the same turn.",
+                "created_at": "2026-09-03T12:00:00.000000Z",
+                "metadata": null,
+                "role": "assistant",
+                "token_count": null
+              },
+              {
+                "content": "Boundary answer: exactly at the open conversation start.",
+                "created_at": "2026-09-03T12:00:00.000000Z",
+                "metadata": null,
+                "role": "assistant",
+                "token_count": null
+              },
+              {
+                "content": "Shared answer: inside both the closed and the open window.",
+                "created_at": "2026-09-03T12:00:00.000000Z",
+                "metadata": null,
+                "role": "assistant",
+                "token_count": null
+              }
+            ],
+            "metadata_raw": null,
+            "persona": null,
+            "started_at": "2026-09-03T10:00:00.000000Z",
+            "summary": null,
+            "tags": null,
+            "title": null
+          },
+          {
+            "ended_at": "2026-09-03T10:10:00.000000Z",
+            "id": "<conversation-2>",
+            "interface": "claude_code",
+            "journey": "mirror-ts-core",
+            "messages": [
+              {
+                "content": "user line 0",
+                "created_at": "2026-09-03T10:00:30.000000Z",
+                "metadata": null,
+                "role": "user",
+                "token_count": null
+              },
+              {
+                "content": "assistant line 1",
+                "created_at": "2026-09-03T10:00:31.000000Z",
+                "metadata": null,
+                "role": "assistant",
+                "token_count": null
+              }
+            ],
+            "metadata_raw": null,
+            "persona": null,
+            "started_at": "2026-09-03T10:00:00.000000Z",
+            "summary": null,
+            "tags": null,
+            "title": null
+          },
+          {
+            "ended_at": "2026-09-03T09:30:00.000000Z",
+            "id": "<conversation-3>",
+            "interface": "claude_code",
+            "journey": "mirror-ts-core",
+            "messages": [
+              {
+                "content": "user line 0",
+                "created_at": "2026-09-03T09:00:30.000000Z",
+                "metadata": null,
+                "role": "user",
+                "token_count": null
+              }
+            ],
+            "metadata_raw": null,
+            "persona": null,
+            "started_at": "2026-09-03T09:00:00.000000Z",
+            "summary": null,
+            "tags": null,
+            "title": null
+          },
+          {
+            "ended_at": "2026-09-03T10:00:30.000Z",
+            "id": "<conversation-4>",
+            "interface": "claude_code",
+            "journey": "mirror-ts-core",
+            "messages": [
+              {
+                "content": "user line 0",
+                "created_at": "2026-09-03T09:50:30.000000Z",
+                "metadata": null,
+                "role": "user",
+                "token_count": null
+              },
+              {
+                "content": "Window-start answer: reaches a conversation that ended at this exact instant.",
+                "created_at": "2026-09-03T12:00:00.000000Z",
+                "metadata": null,
+                "role": "assistant",
+                "token_count": null
+              }
+            ],
+            "metadata_raw": null,
+            "persona": null,
+            "started_at": "2026-09-03T09:50:00.000000Z",
+            "summary": null,
+            "tags": null,
+            "title": null
+          },
+          {
+            "ended_at": null,
+            "id": "<conversation-5>",
+            "interface": "claude_code",
+            "journey": "mirror-ts-core",
+            "messages": [
+              {
+                "content": "user line 0",
+                "created_at": "2026-09-03T10:05:30.000000Z",
+                "metadata": null,
+                "role": "user",
+                "token_count": null
+              },
+              {
+                "content": "Boundary answer: exactly at the open conversation start.",
+                "created_at": "2026-09-03T12:00:00.000000Z",
+                "metadata": null,
+                "role": "assistant",
+                "token_count": null
+              },
+              {
+                "content": "Shared answer: inside both the closed and the open window.",
+                "created_at": "2026-09-03T12:00:00.000000Z",
+                "metadata": null,
+                "role": "assistant",
+                "token_count": null
+              },
+              {
+                "content": "Late answer: only the open conversation is still in range.",
+                "created_at": "2026-09-03T12:00:00.000000Z",
+                "metadata": null,
+                "role": "assistant",
+                "token_count": null
+              },
+              {
+                "content": "Future answer: the window end is the transcript maximum, not the clock.",
+                "created_at": "2026-09-03T12:00:00.000000Z",
+                "metadata": null,
+                "role": "assistant",
+                "token_count": null
+              }
+            ],
+            "metadata_raw": null,
+            "persona": null,
+            "started_at": "2026-09-03T10:05:00.000000Z",
+            "summary": null,
+            "tags": null,
+            "title": null
+          },
+          {
+            "ended_at": null,
+            "id": "<conversation-6>",
+            "interface": "claude_code",
+            "journey": "mirror-ts-core",
+            "messages": [
+              {
+                "content": "user line 0",
+                "created_at": "2026-09-03T13:00:30.000000Z",
+                "metadata": null,
+                "role": "user",
+                "token_count": null
+              },
+              {
+                "content": "Future answer: the window end is the transcript maximum, not the clock.",
+                "created_at": "2026-09-03T12:00:00.000000Z",
+                "metadata": null,
+                "role": "assistant",
+                "token_count": null
+              }
+            ],
+            "metadata_raw": null,
+            "persona": null,
+            "started_at": "2026-09-03T13:00:00.000Z",
+            "summary": null,
+            "tags": null,
+            "title": null
+          },
+          {
+            "ended_at": null,
+            "id": "<conversation-7>",
+            "interface": "claude_code",
+            "journey": "mirror-ts-core",
+            "messages": [
+              {
+                "content": "user line 0",
+                "created_at": "2026-09-03T14:00:30.000000Z",
+                "metadata": null,
+                "role": "user",
+                "token_count": null
+              }
+            ],
+            "metadata_raw": null,
+            "persona": null,
+            "started_at": "2026-09-03T14:00:00.000000Z",
+            "summary": null,
+            "tags": null,
+            "title": null
+          }
+        ],
+        "runtime_sessions": []
+      }
+    },
+    {
+      "label": "empty_payload_is_noop",
+      "state": {
+        "conversations": [
+          {
+            "ended_at": "2026-09-03T10:10:00.000000Z",
+            "id": "<conversation-1>",
+            "interface": "claude_code",
+            "journey": "mirror-ts-core",
+            "messages": [
+              {
+                "content": "user line 0",
+                "created_at": "2026-09-03T10:00:30.000000Z",
+                "metadata": null,
+                "role": "user",
+                "token_count": null
+              },
+              {
+                "content": "Window-start answer: reaches a conversation that ended at this exact instant.",
+                "created_at": "2026-09-03T12:00:00.000000Z",
+                "metadata": null,
+                "role": "assistant",
+                "token_count": null
+              },
+              {
+                "content": "First answer, inside the closed window.\n\nSecond block of the same turn.",
+                "created_at": "2026-09-03T12:00:00.000000Z",
+                "metadata": null,
+                "role": "assistant",
+                "token_count": null
+              },
+              {
+                "content": "Boundary answer: exactly at the open conversation start.",
+                "created_at": "2026-09-03T12:00:00.000000Z",
+                "metadata": null,
+                "role": "assistant",
+                "token_count": null
+              },
+              {
+                "content": "Shared answer: inside both the closed and the open window.",
+                "created_at": "2026-09-03T12:00:00.000000Z",
+                "metadata": null,
+                "role": "assistant",
+                "token_count": null
+              }
+            ],
+            "metadata_raw": null,
+            "persona": null,
+            "started_at": "2026-09-03T10:00:00.000000Z",
+            "summary": null,
+            "tags": null,
+            "title": null
+          },
+          {
+            "ended_at": "2026-09-03T10:10:00.000000Z",
+            "id": "<conversation-2>",
+            "interface": "claude_code",
+            "journey": "mirror-ts-core",
+            "messages": [
+              {
+                "content": "user line 0",
+                "created_at": "2026-09-03T10:00:30.000000Z",
+                "metadata": null,
+                "role": "user",
+                "token_count": null
+              },
+              {
+                "content": "assistant line 1",
+                "created_at": "2026-09-03T10:00:31.000000Z",
+                "metadata": null,
+                "role": "assistant",
+                "token_count": null
+              }
+            ],
+            "metadata_raw": null,
+            "persona": null,
+            "started_at": "2026-09-03T10:00:00.000000Z",
+            "summary": null,
+            "tags": null,
+            "title": null
+          },
+          {
+            "ended_at": "2026-09-03T09:30:00.000000Z",
+            "id": "<conversation-3>",
+            "interface": "claude_code",
+            "journey": "mirror-ts-core",
+            "messages": [
+              {
+                "content": "user line 0",
+                "created_at": "2026-09-03T09:00:30.000000Z",
+                "metadata": null,
+                "role": "user",
+                "token_count": null
+              }
+            ],
+            "metadata_raw": null,
+            "persona": null,
+            "started_at": "2026-09-03T09:00:00.000000Z",
+            "summary": null,
+            "tags": null,
+            "title": null
+          },
+          {
+            "ended_at": "2026-09-03T10:00:30.000Z",
+            "id": "<conversation-4>",
+            "interface": "claude_code",
+            "journey": "mirror-ts-core",
+            "messages": [
+              {
+                "content": "user line 0",
+                "created_at": "2026-09-03T09:50:30.000000Z",
+                "metadata": null,
+                "role": "user",
+                "token_count": null
+              },
+              {
+                "content": "Window-start answer: reaches a conversation that ended at this exact instant.",
+                "created_at": "2026-09-03T12:00:00.000000Z",
+                "metadata": null,
+                "role": "assistant",
+                "token_count": null
+              }
+            ],
+            "metadata_raw": null,
+            "persona": null,
+            "started_at": "2026-09-03T09:50:00.000000Z",
+            "summary": null,
+            "tags": null,
+            "title": null
+          },
+          {
+            "ended_at": null,
+            "id": "<conversation-5>",
+            "interface": "claude_code",
+            "journey": "mirror-ts-core",
+            "messages": [
+              {
+                "content": "user line 0",
+                "created_at": "2026-09-03T10:05:30.000000Z",
+                "metadata": null,
+                "role": "user",
+                "token_count": null
+              },
+              {
+                "content": "Boundary answer: exactly at the open conversation start.",
+                "created_at": "2026-09-03T12:00:00.000000Z",
+                "metadata": null,
+                "role": "assistant",
+                "token_count": null
+              },
+              {
+                "content": "Shared answer: inside both the closed and the open window.",
+                "created_at": "2026-09-03T12:00:00.000000Z",
+                "metadata": null,
+                "role": "assistant",
+                "token_count": null
+              },
+              {
+                "content": "Late answer: only the open conversation is still in range.",
+                "created_at": "2026-09-03T12:00:00.000000Z",
+                "metadata": null,
+                "role": "assistant",
+                "token_count": null
+              },
+              {
+                "content": "Future answer: the window end is the transcript maximum, not the clock.",
+                "created_at": "2026-09-03T12:00:00.000000Z",
+                "metadata": null,
+                "role": "assistant",
+                "token_count": null
+              }
+            ],
+            "metadata_raw": null,
+            "persona": null,
+            "started_at": "2026-09-03T10:05:00.000000Z",
+            "summary": null,
+            "tags": null,
+            "title": null
+          },
+          {
+            "ended_at": null,
+            "id": "<conversation-6>",
+            "interface": "claude_code",
+            "journey": "mirror-ts-core",
+            "messages": [
+              {
+                "content": "user line 0",
+                "created_at": "2026-09-03T13:00:30.000000Z",
+                "metadata": null,
+                "role": "user",
+                "token_count": null
+              },
+              {
+                "content": "Future answer: the window end is the transcript maximum, not the clock.",
+                "created_at": "2026-09-03T12:00:00.000000Z",
+                "metadata": null,
+                "role": "assistant",
+                "token_count": null
+              }
+            ],
+            "metadata_raw": null,
+            "persona": null,
+            "started_at": "2026-09-03T13:00:00.000Z",
+            "summary": null,
+            "tags": null,
+            "title": null
+          },
+          {
+            "ended_at": null,
+            "id": "<conversation-7>",
+            "interface": "claude_code",
+            "journey": "mirror-ts-core",
+            "messages": [
+              {
+                "content": "user line 0",
+                "created_at": "2026-09-03T14:00:30.000000Z",
+                "metadata": null,
+                "role": "user",
+                "token_count": null
+              }
+            ],
+            "metadata_raw": null,
+            "persona": null,
+            "started_at": "2026-09-03T14:00:00.000000Z",
+            "summary": null,
+            "tags": null,
+            "title": null
+          }
+        ],
+        "runtime_sessions": []
+      }
+    },
+    {
+      "label": "missing_transcript_is_noop",
+      "state": {
+        "conversations": [
+          {
+            "ended_at": "2026-09-03T10:10:00.000000Z",
+            "id": "<conversation-1>",
+            "interface": "claude_code",
+            "journey": "mirror-ts-core",
+            "messages": [
+              {
+                "content": "user line 0",
+                "created_at": "2026-09-03T10:00:30.000000Z",
+                "metadata": null,
+                "role": "user",
+                "token_count": null
+              },
+              {
+                "content": "Window-start answer: reaches a conversation that ended at this exact instant.",
+                "created_at": "2026-09-03T12:00:00.000000Z",
+                "metadata": null,
+                "role": "assistant",
+                "token_count": null
+              },
+              {
+                "content": "First answer, inside the closed window.\n\nSecond block of the same turn.",
+                "created_at": "2026-09-03T12:00:00.000000Z",
+                "metadata": null,
+                "role": "assistant",
+                "token_count": null
+              },
+              {
+                "content": "Boundary answer: exactly at the open conversation start.",
+                "created_at": "2026-09-03T12:00:00.000000Z",
+                "metadata": null,
+                "role": "assistant",
+                "token_count": null
+              },
+              {
+                "content": "Shared answer: inside both the closed and the open window.",
+                "created_at": "2026-09-03T12:00:00.000000Z",
+                "metadata": null,
+                "role": "assistant",
+                "token_count": null
+              }
+            ],
+            "metadata_raw": null,
+            "persona": null,
+            "started_at": "2026-09-03T10:00:00.000000Z",
+            "summary": null,
+            "tags": null,
+            "title": null
+          },
+          {
+            "ended_at": "2026-09-03T10:10:00.000000Z",
+            "id": "<conversation-2>",
+            "interface": "claude_code",
+            "journey": "mirror-ts-core",
+            "messages": [
+              {
+                "content": "user line 0",
+                "created_at": "2026-09-03T10:00:30.000000Z",
+                "metadata": null,
+                "role": "user",
+                "token_count": null
+              },
+              {
+                "content": "assistant line 1",
+                "created_at": "2026-09-03T10:00:31.000000Z",
+                "metadata": null,
+                "role": "assistant",
+                "token_count": null
+              }
+            ],
+            "metadata_raw": null,
+            "persona": null,
+            "started_at": "2026-09-03T10:00:00.000000Z",
+            "summary": null,
+            "tags": null,
+            "title": null
+          },
+          {
+            "ended_at": "2026-09-03T09:30:00.000000Z",
+            "id": "<conversation-3>",
+            "interface": "claude_code",
+            "journey": "mirror-ts-core",
+            "messages": [
+              {
+                "content": "user line 0",
+                "created_at": "2026-09-03T09:00:30.000000Z",
+                "metadata": null,
+                "role": "user",
+                "token_count": null
+              }
+            ],
+            "metadata_raw": null,
+            "persona": null,
+            "started_at": "2026-09-03T09:00:00.000000Z",
+            "summary": null,
+            "tags": null,
+            "title": null
+          },
+          {
+            "ended_at": "2026-09-03T10:00:30.000Z",
+            "id": "<conversation-4>",
+            "interface": "claude_code",
+            "journey": "mirror-ts-core",
+            "messages": [
+              {
+                "content": "user line 0",
+                "created_at": "2026-09-03T09:50:30.000000Z",
+                "metadata": null,
+                "role": "user",
+                "token_count": null
+              },
+              {
+                "content": "Window-start answer: reaches a conversation that ended at this exact instant.",
+                "created_at": "2026-09-03T12:00:00.000000Z",
+                "metadata": null,
+                "role": "assistant",
+                "token_count": null
+              }
+            ],
+            "metadata_raw": null,
+            "persona": null,
+            "started_at": "2026-09-03T09:50:00.000000Z",
+            "summary": null,
+            "tags": null,
+            "title": null
+          },
+          {
+            "ended_at": null,
+            "id": "<conversation-5>",
+            "interface": "claude_code",
+            "journey": "mirror-ts-core",
+            "messages": [
+              {
+                "content": "user line 0",
+                "created_at": "2026-09-03T10:05:30.000000Z",
+                "metadata": null,
+                "role": "user",
+                "token_count": null
+              },
+              {
+                "content": "Boundary answer: exactly at the open conversation start.",
+                "created_at": "2026-09-03T12:00:00.000000Z",
+                "metadata": null,
+                "role": "assistant",
+                "token_count": null
+              },
+              {
+                "content": "Shared answer: inside both the closed and the open window.",
+                "created_at": "2026-09-03T12:00:00.000000Z",
+                "metadata": null,
+                "role": "assistant",
+                "token_count": null
+              },
+              {
+                "content": "Late answer: only the open conversation is still in range.",
+                "created_at": "2026-09-03T12:00:00.000000Z",
+                "metadata": null,
+                "role": "assistant",
+                "token_count": null
+              },
+              {
+                "content": "Future answer: the window end is the transcript maximum, not the clock.",
+                "created_at": "2026-09-03T12:00:00.000000Z",
+                "metadata": null,
+                "role": "assistant",
+                "token_count": null
+              }
+            ],
+            "metadata_raw": null,
+            "persona": null,
+            "started_at": "2026-09-03T10:05:00.000000Z",
+            "summary": null,
+            "tags": null,
+            "title": null
+          },
+          {
+            "ended_at": null,
+            "id": "<conversation-6>",
+            "interface": "claude_code",
+            "journey": "mirror-ts-core",
+            "messages": [
+              {
+                "content": "user line 0",
+                "created_at": "2026-09-03T13:00:30.000000Z",
+                "metadata": null,
+                "role": "user",
+                "token_count": null
+              },
+              {
+                "content": "Future answer: the window end is the transcript maximum, not the clock.",
+                "created_at": "2026-09-03T12:00:00.000000Z",
+                "metadata": null,
+                "role": "assistant",
+                "token_count": null
+              }
+            ],
+            "metadata_raw": null,
+            "persona": null,
+            "started_at": "2026-09-03T13:00:00.000Z",
+            "summary": null,
+            "tags": null,
+            "title": null
+          },
+          {
+            "ended_at": null,
+            "id": "<conversation-7>",
+            "interface": "claude_code",
+            "journey": "mirror-ts-core",
+            "messages": [
+              {
+                "content": "user line 0",
+                "created_at": "2026-09-03T14:00:30.000000Z",
+                "metadata": null,
+                "role": "user",
+                "token_count": null
+              }
+            ],
+            "metadata_raw": null,
+            "persona": null,
+            "started_at": "2026-09-03T14:00:00.000000Z",
+            "summary": null,
+            "tags": null,
+            "title": null
+          }
+        ],
+        "runtime_sessions": []
+      }
+    },
+    {
+      "label": "session_ended_then_backfilled",
+      "state": {
+        "conversations": [
+          {
+            "ended_at": "2026-09-03T10:10:00.000000Z",
+            "id": "<conversation-1>",
+            "interface": "claude_code",
+            "journey": "mirror-ts-core",
+            "messages": [
+              {
+                "content": "user line 0",
+                "created_at": "2026-09-03T10:00:30.000000Z",
+                "metadata": null,
+                "role": "user",
+                "token_count": null
+              },
+              {
+                "content": "Window-start answer: reaches a conversation that ended at this exact instant.",
+                "created_at": "2026-09-03T12:00:00.000000Z",
+                "metadata": null,
+                "role": "assistant",
+                "token_count": null
+              },
+              {
+                "content": "First answer, inside the closed window.\n\nSecond block of the same turn.",
+                "created_at": "2026-09-03T12:00:00.000000Z",
+                "metadata": null,
+                "role": "assistant",
+                "token_count": null
+              },
+              {
+                "content": "Boundary answer: exactly at the open conversation start.",
+                "created_at": "2026-09-03T12:00:00.000000Z",
+                "metadata": null,
+                "role": "assistant",
+                "token_count": null
+              },
+              {
+                "content": "Shared answer: inside both the closed and the open window.",
+                "created_at": "2026-09-03T12:00:00.000000Z",
+                "metadata": null,
+                "role": "assistant",
+                "token_count": null
+              }
+            ],
+            "metadata_raw": null,
+            "persona": null,
+            "started_at": "2026-09-03T10:00:00.000000Z",
+            "summary": null,
+            "tags": null,
+            "title": null
+          },
+          {
+            "ended_at": "2026-09-03T10:10:00.000000Z",
+            "id": "<conversation-2>",
+            "interface": "claude_code",
+            "journey": "mirror-ts-core",
+            "messages": [
+              {
+                "content": "user line 0",
+                "created_at": "2026-09-03T10:00:30.000000Z",
+                "metadata": null,
+                "role": "user",
+                "token_count": null
+              },
+              {
+                "content": "assistant line 1",
+                "created_at": "2026-09-03T10:00:31.000000Z",
+                "metadata": null,
+                "role": "assistant",
+                "token_count": null
+              }
+            ],
+            "metadata_raw": null,
+            "persona": null,
+            "started_at": "2026-09-03T10:00:00.000000Z",
+            "summary": null,
+            "tags": null,
+            "title": null
+          },
+          {
+            "ended_at": "2026-09-03T09:30:00.000000Z",
+            "id": "<conversation-3>",
+            "interface": "claude_code",
+            "journey": "mirror-ts-core",
+            "messages": [
+              {
+                "content": "user line 0",
+                "created_at": "2026-09-03T09:00:30.000000Z",
+                "metadata": null,
+                "role": "user",
+                "token_count": null
+              }
+            ],
+            "metadata_raw": null,
+            "persona": null,
+            "started_at": "2026-09-03T09:00:00.000000Z",
+            "summary": null,
+            "tags": null,
+            "title": null
+          },
+          {
+            "ended_at": "2026-09-03T10:00:30.000Z",
+            "id": "<conversation-4>",
+            "interface": "claude_code",
+            "journey": "mirror-ts-core",
+            "messages": [
+              {
+                "content": "user line 0",
+                "created_at": "2026-09-03T09:50:30.000000Z",
+                "metadata": null,
+                "role": "user",
+                "token_count": null
+              },
+              {
+                "content": "Window-start answer: reaches a conversation that ended at this exact instant.",
+                "created_at": "2026-09-03T12:00:00.000000Z",
+                "metadata": null,
+                "role": "assistant",
+                "token_count": null
+              }
+            ],
+            "metadata_raw": null,
+            "persona": null,
+            "started_at": "2026-09-03T09:50:00.000000Z",
+            "summary": null,
+            "tags": null,
+            "title": null
+          },
+          {
+            "ended_at": null,
+            "id": "<conversation-5>",
+            "interface": "claude_code",
+            "journey": "mirror-ts-core",
+            "messages": [
+              {
+                "content": "user line 0",
+                "created_at": "2026-09-03T10:05:30.000000Z",
+                "metadata": null,
+                "role": "user",
+                "token_count": null
+              },
+              {
+                "content": "Boundary answer: exactly at the open conversation start.",
+                "created_at": "2026-09-03T12:00:00.000000Z",
+                "metadata": null,
+                "role": "assistant",
+                "token_count": null
+              },
+              {
+                "content": "Shared answer: inside both the closed and the open window.",
+                "created_at": "2026-09-03T12:00:00.000000Z",
+                "metadata": null,
+                "role": "assistant",
+                "token_count": null
+              },
+              {
+                "content": "Late answer: only the open conversation is still in range.",
+                "created_at": "2026-09-03T12:00:00.000000Z",
+                "metadata": null,
+                "role": "assistant",
+                "token_count": null
+              },
+              {
+                "content": "Future answer: the window end is the transcript maximum, not the clock.",
+                "created_at": "2026-09-03T12:00:00.000000Z",
+                "metadata": null,
+                "role": "assistant",
+                "token_count": null
+              }
+            ],
+            "metadata_raw": null,
+            "persona": null,
+            "started_at": "2026-09-03T10:05:00.000000Z",
+            "summary": null,
+            "tags": null,
+            "title": null
+          },
+          {
+            "ended_at": null,
+            "id": "<conversation-6>",
+            "interface": "claude_code",
+            "journey": "mirror-ts-core",
+            "messages": [
+              {
+                "content": "user line 0",
+                "created_at": "2026-09-03T13:00:30.000000Z",
+                "metadata": null,
+                "role": "user",
+                "token_count": null
+              },
+              {
+                "content": "Future answer: the window end is the transcript maximum, not the clock.",
+                "created_at": "2026-09-03T12:00:00.000000Z",
+                "metadata": null,
+                "role": "assistant",
+                "token_count": null
+              }
+            ],
+            "metadata_raw": null,
+            "persona": null,
+            "started_at": "2026-09-03T13:00:00.000Z",
+            "summary": null,
+            "tags": null,
+            "title": null
+          },
+          {
+            "ended_at": null,
+            "id": "<conversation-7>",
+            "interface": "claude_code",
+            "journey": "mirror-ts-core",
+            "messages": [
+              {
+                "content": "user line 0",
+                "created_at": "2026-09-03T14:00:30.000000Z",
+                "metadata": null,
+                "role": "user",
+                "token_count": null
+              }
+            ],
+            "metadata_raw": null,
+            "persona": null,
+            "started_at": "2026-09-03T14:00:00.000000Z",
+            "summary": null,
+            "tags": null,
+            "title": null
+          },
+          {
+            "ended_at": "2026-09-03T12:00:00.000000Z",
+            "id": "<conversation-8>",
+            "interface": "claude_code",
+            "journey": null,
+            "messages": [
+              {
+                "content": "live session prompt",
+                "created_at": "2026-09-03T12:00:00.000000Z",
+                "metadata": null,
+                "role": "user",
+                "token_count": null
+              },
+              {
+                "content": "Boundary answer: exactly at the open conversation start.",
+                "created_at": "2026-09-03T12:00:00.000000Z",
+                "metadata": null,
+                "role": "assistant",
+                "token_count": null
+              },
+              {
+                "content": "Shared answer: inside both the closed and the open window.",
+                "created_at": "2026-09-03T12:00:00.000000Z",
+                "metadata": null,
+                "role": "assistant",
+                "token_count": null
+              },
+              {
+                "content": "Late answer: only the open conversation is still in range.",
+                "created_at": "2026-09-03T12:00:00.000000Z",
+                "metadata": null,
+                "role": "assistant",
+                "token_count": null
+              }
+            ],
+            "metadata_raw": "{\"title_source\": \"first_user\", \"title_status\": \"provisional\"}",
+            "persona": null,
+            "started_at": "2026-09-03T10:05:00.000000Z",
+            "summary": null,
+            "tags": null,
+            "title": "live session prompt"
+          }
+        ],
+        "runtime_sessions": [
+          {
+            "active": 0,
+            "closed_at": "2026-09-03T12:00:00.000000Z",
+            "conversation_id": "<conversation-8>",
+            "hook_injected": 0,
+            "interface": "claude_code",
+            "journey": null,
+            "metadata": null,
+            "mirror_active": 0,
+            "persona": null,
+            "session_id": "sess-hook",
+            "started_at": "2026-09-03T12:00:00.000000Z",
+            "updated_at": "2026-09-03T12:00:00.000000Z"
+          }
+        ]
+      }
+    }
+  ],
+  "meta": {
+    "note": "Ids are aliased by insertion order; Pi session ids are relative to <sessions_dir>. _now() is frozen.",
+    "now": "2026-09-03T12:00:00.000000Z"
+  },
+  "pi_sessions": {
+    "absent_dir_count": 0,
+    "first_count": 4,
+    "rerun_count": 0,
+    "state": {
+      "conversations": [
+        {
+          "ended_at": "2026-04-17T10:00:11Z",
+          "id": "<conversation-1>",
+          "interface": "pi",
+          "journey": null,
+          "messages": [
+            {
+              "content": "  \n  How do I configure   the caf\u00e9 server for the   nomad workshop next month?  \n",
+              "created_at": "2026-04-17T10:00:00Z",
+              "metadata": null,
+              "role": "user",
+              "token_count": null
+            },
+            {
+              "content": "Start with the config file.\n\nThen restart it.",
+              "created_at": "2024-04-17T10:00:00.123000+00:00",
+              "metadata": null,
+              "role": "assistant",
+              "token_count": null
+            },
+            {
+              "content": "Second user turn",
+              "created_at": "2024-04-17T10:00:00+00:00",
+              "metadata": null,
+              "role": "user",
+              "token_count": null
+            },
+            {
+              "content": "No timestamp on this one",
+              "created_at": "2026-09-03T12:00:00.000000Z",
+              "metadata": null,
+              "role": "assistant",
+              "token_count": null
+            },
+            {
+              "content": "Seconds-epoch falls through",
+              "created_at": "2026-09-03T12:00:00.000000Z",
+              "metadata": null,
+              "role": "assistant",
+              "token_count": null
+            },
+            {
+              "content": "Fractional milliseconds",
+              "created_at": "2024-04-17T10:00:00.123700+00:00",
+              "metadata": null,
+              "role": "assistant",
+              "token_count": null
+            },
+            {
+              "content": "Half a microsecond rounds, not truncates",
+              "created_at": "2024-04-17T10:00:00.123500+00:00",
+              "metadata": null,
+              "role": "assistant",
+              "token_count": null
+            },
+            {
+              "content": "Boolean is an int in Python",
+              "created_at": "2026-09-03T12:00:00.000000Z",
+              "metadata": null,
+              "role": "assistant",
+              "token_count": null
+            },
+            {
+              "content": "Null timestamp",
+              "created_at": "2026-09-03T12:00:00.000000Z",
+              "metadata": null,
+              "role": "user",
+              "token_count": null
+            },
+            {
+              "content": "Last line sets ended_at",
+              "created_at": "2026-04-17T10:00:11Z",
+              "metadata": null,
+              "role": "assistant",
+              "token_count": null
+            }
+          ],
+          "metadata_raw": "{\"title_source\": \"first_user\", \"title_status\": \"provisional\"}",
+          "persona": null,
+          "started_at": "2026-09-03T12:00:00.000000Z",
+          "summary": null,
+          "tags": null,
+          "title": "How do I configure the caf\u00e9 server for the nomad worksho"
+        },
+        {
+          "ended_at": "2026-04-18T08:00:01Z",
+          "id": "<conversation-2>",
+          "interface": "pi",
+          "journey": null,
+          "messages": [
+            {
+              "content": "Welcome back. What are we building today?",
+              "created_at": "2026-04-18T08:00:00Z",
+              "metadata": null,
+              "role": "assistant",
+              "token_count": null
+            },
+            {
+              "content": "the title comes from the first USER line even when the assistant spoke first",
+              "created_at": "2026-04-18T08:00:01Z",
+              "metadata": null,
+              "role": "user",
+              "token_count": null
+            }
+          ],
+          "metadata_raw": "{\"title_source\": \"first_user\", \"title_status\": \"provisional\"}",
+          "persona": null,
+          "started_at": "2026-09-03T12:00:00.000000Z",
+          "summary": null,
+          "tags": null,
+          "title": "the title comes from the first USER line even when the assis"
+        },
+        {
+          "ended_at": "2026-04-27T07:00:01Z",
+          "id": "<conversation-3>",
+          "interface": "pi",
+          "journey": null,
+          "messages": [
+            {
+              "content": "\ud83c\udfaf \ud83c\udfaf \ud83c\udfaf \ud83c\udfaf \ud83c\udfaf xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+              "created_at": "2026-04-27T07:00:00Z",
+              "metadata": null,
+              "role": "user",
+              "token_count": null
+            },
+            {
+              "content": "the provisional title is cut at sixty code points, not code units",
+              "created_at": "2026-04-27T07:00:01Z",
+              "metadata": null,
+              "role": "assistant",
+              "token_count": null
+            }
+          ],
+          "metadata_raw": "{\"title_source\": \"first_user\", \"title_status\": \"provisional\"}",
+          "persona": null,
+          "started_at": "2026-09-03T12:00:00.000000Z",
+          "summary": null,
+          "tags": null,
+          "title": "\ud83c\udfaf \ud83c\udfaf \ud83c\udfaf \ud83c\udfaf \ud83c\udfaf xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        },
+        {
+          "ended_at": "2026-04-19T07:00:01Z",
+          "id": "<conversation-4>",
+          "interface": "pi",
+          "journey": null,
+          "messages": [
+            {
+              "content": "nested directories are walked recursively",
+              "created_at": "2026-04-19T07:00:00Z",
+              "metadata": null,
+              "role": "user",
+              "token_count": null
+            },
+            {
+              "content": "yes",
+              "created_at": "2026-04-19T07:00:01Z",
+              "metadata": null,
+              "role": "assistant",
+              "token_count": null
+            }
+          ],
+          "metadata_raw": "{\"title_source\": \"first_user\", \"title_status\": \"provisional\"}",
+          "persona": null,
+          "started_at": "2026-09-03T12:00:00.000000Z",
+          "summary": null,
+          "tags": null,
+          "title": "nested directories are walked recursively"
+        }
+      ],
+      "runtime_sessions": [
+        {
+          "active": 1,
+          "closed_at": null,
+          "conversation_id": null,
+          "hook_injected": 0,
+          "interface": "pi",
+          "journey": null,
+          "metadata": null,
+          "mirror_active": 0,
+          "persona": null,
+          "session_id": "<sessions_dir>/tracked.jsonl",
+          "started_at": "2026-09-03T12:00:00.000000Z",
+          "updated_at": "2026-09-03T12:00:00.000000Z"
+        },
+        {
+          "active": 0,
+          "closed_at": "2026-04-17T10:00:11Z",
+          "conversation_id": "<conversation-1>",
+          "hook_injected": 0,
+          "interface": "pi",
+          "journey": null,
+          "metadata": null,
+          "mirror_active": 0,
+          "persona": null,
+          "session_id": "<sessions_dir>/a/b.jsonl",
+          "started_at": "2026-09-03T12:00:00.000000Z",
+          "updated_at": "2026-09-03T12:00:00.000000Z"
+        },
+        {
+          "active": 0,
+          "closed_at": "2026-04-18T08:00:01Z",
+          "conversation_id": "<conversation-2>",
+          "hook_injected": 0,
+          "interface": "pi",
+          "journey": null,
+          "metadata": null,
+          "mirror_active": 0,
+          "persona": null,
+          "session_id": "<sessions_dir>/a-x/c.jsonl",
+          "started_at": "2026-09-03T12:00:00.000000Z",
+          "updated_at": "2026-09-03T12:00:00.000000Z"
+        },
+        {
+          "active": 0,
+          "closed_at": "2026-04-27T07:00:01Z",
+          "conversation_id": "<conversation-3>",
+          "hook_injected": 0,
+          "interface": "pi",
+          "journey": null,
+          "metadata": null,
+          "mirror_active": 0,
+          "persona": null,
+          "session_id": "<sessions_dir>/emoji-title.jsonl",
+          "started_at": "2026-09-03T12:00:00.000000Z",
+          "updated_at": "2026-09-03T12:00:00.000000Z"
+        },
+        {
+          "active": 0,
+          "closed_at": "2026-04-19T07:00:01Z",
+          "conversation_id": "<conversation-4>",
+          "hook_injected": 0,
+          "interface": "pi",
+          "journey": null,
+          "metadata": null,
+          "mirror_active": 0,
+          "persona": null,
+          "session_id": "<sessions_dir>/nested/deeper/d.jsonl",
+          "started_at": "2026-09-03T12:00:00.000000Z",
+          "updated_at": "2026-09-03T12:00:00.000000Z"
+        }
+      ]
+    }
+  },
+  "transcript": {
+    "rerun_state": {
+      "conversations": [
+        {
+          "ended_at": "2026-09-03T10:10:00.000000Z",
+          "id": "<conversation-1>",
+          "interface": "claude_code",
+          "journey": "mirror-ts-core",
+          "messages": [
+            {
+              "content": "user line 0",
+              "created_at": "2026-09-03T10:00:30.000000Z",
+              "metadata": null,
+              "role": "user",
+              "token_count": null
+            },
+            {
+              "content": "Window-start answer: reaches a conversation that ended at this exact instant.",
+              "created_at": "2026-09-03T12:00:00.000000Z",
+              "metadata": null,
+              "role": "assistant",
+              "token_count": null
+            },
+            {
+              "content": "First answer, inside the closed window.\n\nSecond block of the same turn.",
+              "created_at": "2026-09-03T12:00:00.000000Z",
+              "metadata": null,
+              "role": "assistant",
+              "token_count": null
+            },
+            {
+              "content": "Boundary answer: exactly at the open conversation start.",
+              "created_at": "2026-09-03T12:00:00.000000Z",
+              "metadata": null,
+              "role": "assistant",
+              "token_count": null
+            },
+            {
+              "content": "Shared answer: inside both the closed and the open window.",
+              "created_at": "2026-09-03T12:00:00.000000Z",
+              "metadata": null,
+              "role": "assistant",
+              "token_count": null
+            }
+          ],
+          "metadata_raw": null,
+          "persona": null,
+          "started_at": "2026-09-03T10:00:00.000000Z",
+          "summary": null,
+          "tags": null,
+          "title": null
+        },
+        {
+          "ended_at": "2026-09-03T10:10:00.000000Z",
+          "id": "<conversation-2>",
+          "interface": "claude_code",
+          "journey": "mirror-ts-core",
+          "messages": [
+            {
+              "content": "user line 0",
+              "created_at": "2026-09-03T10:00:30.000000Z",
+              "metadata": null,
+              "role": "user",
+              "token_count": null
+            },
+            {
+              "content": "assistant line 1",
+              "created_at": "2026-09-03T10:00:31.000000Z",
+              "metadata": null,
+              "role": "assistant",
+              "token_count": null
+            }
+          ],
+          "metadata_raw": null,
+          "persona": null,
+          "started_at": "2026-09-03T10:00:00.000000Z",
+          "summary": null,
+          "tags": null,
+          "title": null
+        },
+        {
+          "ended_at": "2026-09-03T09:30:00.000000Z",
+          "id": "<conversation-3>",
+          "interface": "claude_code",
+          "journey": "mirror-ts-core",
+          "messages": [
+            {
+              "content": "user line 0",
+              "created_at": "2026-09-03T09:00:30.000000Z",
+              "metadata": null,
+              "role": "user",
+              "token_count": null
+            }
+          ],
+          "metadata_raw": null,
+          "persona": null,
+          "started_at": "2026-09-03T09:00:00.000000Z",
+          "summary": null,
+          "tags": null,
+          "title": null
+        },
+        {
+          "ended_at": "2026-09-03T10:00:30.000Z",
+          "id": "<conversation-4>",
+          "interface": "claude_code",
+          "journey": "mirror-ts-core",
+          "messages": [
+            {
+              "content": "user line 0",
+              "created_at": "2026-09-03T09:50:30.000000Z",
+              "metadata": null,
+              "role": "user",
+              "token_count": null
+            },
+            {
+              "content": "Window-start answer: reaches a conversation that ended at this exact instant.",
+              "created_at": "2026-09-03T12:00:00.000000Z",
+              "metadata": null,
+              "role": "assistant",
+              "token_count": null
+            }
+          ],
+          "metadata_raw": null,
+          "persona": null,
+          "started_at": "2026-09-03T09:50:00.000000Z",
+          "summary": null,
+          "tags": null,
+          "title": null
+        },
+        {
+          "ended_at": null,
+          "id": "<conversation-5>",
+          "interface": "claude_code",
+          "journey": "mirror-ts-core",
+          "messages": [
+            {
+              "content": "user line 0",
+              "created_at": "2026-09-03T10:05:30.000000Z",
+              "metadata": null,
+              "role": "user",
+              "token_count": null
+            },
+            {
+              "content": "Boundary answer: exactly at the open conversation start.",
+              "created_at": "2026-09-03T12:00:00.000000Z",
+              "metadata": null,
+              "role": "assistant",
+              "token_count": null
+            },
+            {
+              "content": "Shared answer: inside both the closed and the open window.",
+              "created_at": "2026-09-03T12:00:00.000000Z",
+              "metadata": null,
+              "role": "assistant",
+              "token_count": null
+            },
+            {
+              "content": "Late answer: only the open conversation is still in range.",
+              "created_at": "2026-09-03T12:00:00.000000Z",
+              "metadata": null,
+              "role": "assistant",
+              "token_count": null
+            },
+            {
+              "content": "Future answer: the window end is the transcript maximum, not the clock.",
+              "created_at": "2026-09-03T12:00:00.000000Z",
+              "metadata": null,
+              "role": "assistant",
+              "token_count": null
+            }
+          ],
+          "metadata_raw": null,
+          "persona": null,
+          "started_at": "2026-09-03T10:05:00.000000Z",
+          "summary": null,
+          "tags": null,
+          "title": null
+        },
+        {
+          "ended_at": null,
+          "id": "<conversation-6>",
+          "interface": "claude_code",
+          "journey": "mirror-ts-core",
+          "messages": [
+            {
+              "content": "user line 0",
+              "created_at": "2026-09-03T13:00:30.000000Z",
+              "metadata": null,
+              "role": "user",
+              "token_count": null
+            },
+            {
+              "content": "Future answer: the window end is the transcript maximum, not the clock.",
+              "created_at": "2026-09-03T12:00:00.000000Z",
+              "metadata": null,
+              "role": "assistant",
+              "token_count": null
+            }
+          ],
+          "metadata_raw": null,
+          "persona": null,
+          "started_at": "2026-09-03T13:00:00.000Z",
+          "summary": null,
+          "tags": null,
+          "title": null
+        },
+        {
+          "ended_at": null,
+          "id": "<conversation-7>",
+          "interface": "claude_code",
+          "journey": "mirror-ts-core",
+          "messages": [
+            {
+              "content": "user line 0",
+              "created_at": "2026-09-03T14:00:30.000000Z",
+              "metadata": null,
+              "role": "user",
+              "token_count": null
+            }
+          ],
+          "metadata_raw": null,
+          "persona": null,
+          "started_at": "2026-09-03T14:00:00.000000Z",
+          "summary": null,
+          "tags": null,
+          "title": null
+        }
+      ],
+      "runtime_sessions": []
+    },
+    "state": {
+      "conversations": [
+        {
+          "ended_at": "2026-09-03T10:10:00.000000Z",
+          "id": "<conversation-1>",
+          "interface": "claude_code",
+          "journey": "mirror-ts-core",
+          "messages": [
+            {
+              "content": "user line 0",
+              "created_at": "2026-09-03T10:00:30.000000Z",
+              "metadata": null,
+              "role": "user",
+              "token_count": null
+            },
+            {
+              "content": "Window-start answer: reaches a conversation that ended at this exact instant.",
+              "created_at": "2026-09-03T12:00:00.000000Z",
+              "metadata": null,
+              "role": "assistant",
+              "token_count": null
+            },
+            {
+              "content": "First answer, inside the closed window.\n\nSecond block of the same turn.",
+              "created_at": "2026-09-03T12:00:00.000000Z",
+              "metadata": null,
+              "role": "assistant",
+              "token_count": null
+            },
+            {
+              "content": "Boundary answer: exactly at the open conversation start.",
+              "created_at": "2026-09-03T12:00:00.000000Z",
+              "metadata": null,
+              "role": "assistant",
+              "token_count": null
+            },
+            {
+              "content": "Shared answer: inside both the closed and the open window.",
+              "created_at": "2026-09-03T12:00:00.000000Z",
+              "metadata": null,
+              "role": "assistant",
+              "token_count": null
+            }
+          ],
+          "metadata_raw": null,
+          "persona": null,
+          "started_at": "2026-09-03T10:00:00.000000Z",
+          "summary": null,
+          "tags": null,
+          "title": null
+        },
+        {
+          "ended_at": "2026-09-03T10:10:00.000000Z",
+          "id": "<conversation-2>",
+          "interface": "claude_code",
+          "journey": "mirror-ts-core",
+          "messages": [
+            {
+              "content": "user line 0",
+              "created_at": "2026-09-03T10:00:30.000000Z",
+              "metadata": null,
+              "role": "user",
+              "token_count": null
+            },
+            {
+              "content": "assistant line 1",
+              "created_at": "2026-09-03T10:00:31.000000Z",
+              "metadata": null,
+              "role": "assistant",
+              "token_count": null
+            }
+          ],
+          "metadata_raw": null,
+          "persona": null,
+          "started_at": "2026-09-03T10:00:00.000000Z",
+          "summary": null,
+          "tags": null,
+          "title": null
+        },
+        {
+          "ended_at": "2026-09-03T09:30:00.000000Z",
+          "id": "<conversation-3>",
+          "interface": "claude_code",
+          "journey": "mirror-ts-core",
+          "messages": [
+            {
+              "content": "user line 0",
+              "created_at": "2026-09-03T09:00:30.000000Z",
+              "metadata": null,
+              "role": "user",
+              "token_count": null
+            }
+          ],
+          "metadata_raw": null,
+          "persona": null,
+          "started_at": "2026-09-03T09:00:00.000000Z",
+          "summary": null,
+          "tags": null,
+          "title": null
+        },
+        {
+          "ended_at": "2026-09-03T10:00:30.000Z",
+          "id": "<conversation-4>",
+          "interface": "claude_code",
+          "journey": "mirror-ts-core",
+          "messages": [
+            {
+              "content": "user line 0",
+              "created_at": "2026-09-03T09:50:30.000000Z",
+              "metadata": null,
+              "role": "user",
+              "token_count": null
+            },
+            {
+              "content": "Window-start answer: reaches a conversation that ended at this exact instant.",
+              "created_at": "2026-09-03T12:00:00.000000Z",
+              "metadata": null,
+              "role": "assistant",
+              "token_count": null
+            }
+          ],
+          "metadata_raw": null,
+          "persona": null,
+          "started_at": "2026-09-03T09:50:00.000000Z",
+          "summary": null,
+          "tags": null,
+          "title": null
+        },
+        {
+          "ended_at": null,
+          "id": "<conversation-5>",
+          "interface": "claude_code",
+          "journey": "mirror-ts-core",
+          "messages": [
+            {
+              "content": "user line 0",
+              "created_at": "2026-09-03T10:05:30.000000Z",
+              "metadata": null,
+              "role": "user",
+              "token_count": null
+            },
+            {
+              "content": "Boundary answer: exactly at the open conversation start.",
+              "created_at": "2026-09-03T12:00:00.000000Z",
+              "metadata": null,
+              "role": "assistant",
+              "token_count": null
+            },
+            {
+              "content": "Shared answer: inside both the closed and the open window.",
+              "created_at": "2026-09-03T12:00:00.000000Z",
+              "metadata": null,
+              "role": "assistant",
+              "token_count": null
+            },
+            {
+              "content": "Late answer: only the open conversation is still in range.",
+              "created_at": "2026-09-03T12:00:00.000000Z",
+              "metadata": null,
+              "role": "assistant",
+              "token_count": null
+            },
+            {
+              "content": "Future answer: the window end is the transcript maximum, not the clock.",
+              "created_at": "2026-09-03T12:00:00.000000Z",
+              "metadata": null,
+              "role": "assistant",
+              "token_count": null
+            }
+          ],
+          "metadata_raw": null,
+          "persona": null,
+          "started_at": "2026-09-03T10:05:00.000000Z",
+          "summary": null,
+          "tags": null,
+          "title": null
+        },
+        {
+          "ended_at": null,
+          "id": "<conversation-6>",
+          "interface": "claude_code",
+          "journey": "mirror-ts-core",
+          "messages": [
+            {
+              "content": "user line 0",
+              "created_at": "2026-09-03T13:00:30.000000Z",
+              "metadata": null,
+              "role": "user",
+              "token_count": null
+            },
+            {
+              "content": "Future answer: the window end is the transcript maximum, not the clock.",
+              "created_at": "2026-09-03T12:00:00.000000Z",
+              "metadata": null,
+              "role": "assistant",
+              "token_count": null
+            }
+          ],
+          "metadata_raw": null,
+          "persona": null,
+          "started_at": "2026-09-03T13:00:00.000Z",
+          "summary": null,
+          "tags": null,
+          "title": null
+        },
+        {
+          "ended_at": null,
+          "id": "<conversation-7>",
+          "interface": "claude_code",
+          "journey": "mirror-ts-core",
+          "messages": [
+            {
+              "content": "user line 0",
+              "created_at": "2026-09-03T14:00:30.000000Z",
+              "metadata": null,
+              "role": "user",
+              "token_count": null
+            }
+          ],
+          "metadata_raw": null,
+          "persona": null,
+          "started_at": "2026-09-03T14:00:00.000000Z",
+          "summary": null,
+          "tags": null,
+          "title": null
+        }
+      ],
+      "runtime_sessions": []
+    }
+  }
+}

@@ -29,12 +29,17 @@ echo "   fake session: $FAKE_SESSION_ID"
 echo
 
 # Production DB guard: record checksum of the real production DB before the test.
-# Ask the core to resolve the path (reads .env / MIRROR_HOME / MIRROR_USER and the
-# ~/.mirror-minds default with legacy ~/.mirror fallback) so this guard protects the
-# actual production DB regardless of home-directory naming. Must run before the
-# DB_PATH/MEMORY_ENV exports below. Empty on failure → guard degrades to a no-op.
-PROD_DB="$(cd "$ROOT_DIR" && uv run python -c \
-  'from memory.config import resolve_mirror_home, default_db_path_for_home; print(default_db_path_for_home(resolve_mirror_home()))' \
+# Ask the core to resolve the path (.env, MIRROR_HOME / MIRROR_USER, and the
+# ~/.mirror-minds default with legacy ~/.mirror fallback) so this guard protects
+# the actual production DB regardless of home-directory naming. Must run before
+# the DB_PATH/MEMORY_ENV exports below. Empty on failure → guard degrades to a
+# no-op. The TypeScript resolver is the one the hooks use; the Python one this
+# called was deleted by CV22.DS10.TS5.
+PROD_DB="$(cd "$ROOT_DIR" && NODE_OPTIONS=--no-warnings node --env-file-if-exists=.env \
+  --input-type=module -e '
+    const { resolveDbPath } = await import("./ts/src/frontDoor/dbPath.ts");
+    const { DB_PATH: _ignored, ...env } = process.env;
+    console.log(resolveDbPath([], { ...env, MEMORY_ENV: "production" }));' \
   2>/dev/null || true)"
 PROD_DB_CHECKSUM=""
 if [[ -n "$PROD_DB" && -f "$PROD_DB" ]]; then
@@ -74,7 +79,7 @@ EOF
 OUTPUT=$(printf '%s' "$PAYLOAD" | bash .gemini/hooks/log-user.sh 2>/dev/null)
 echo "   output: $OUTPUT"
 # Must be valid JSON
-python3 -c "import json,sys; json.loads(sys.argv[1])" "$OUTPUT" || { echo "FAIL: not valid JSON"; exit 1; }
+node -e 'JSON.parse(process.argv[1])' "$OUTPUT" || { echo "FAIL: not valid JSON"; exit 1; }
 echo "   OK"
 echo
 

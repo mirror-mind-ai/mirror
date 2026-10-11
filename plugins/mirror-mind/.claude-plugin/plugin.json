@@ -1,18 +1,13 @@
 {
   "name": "mirror-mind",
-  "version": "0.31.14",
+  "version": "0.32.0",
   "description": "Mirror Mind — local-first memory and identity for agentic runtimes.",
   "author": {
     "name": "Mirror Mind"
   },
   "mcpServers": {
     "mirror-mind": {
-      "command": "python3",
-      "args": [
-        "-m",
-        "memory",
-        "mcp"
-      ]
+      "command": "${CLAUDE_PLUGIN_ROOT}/mcp/launch.sh"
     }
   }
 }

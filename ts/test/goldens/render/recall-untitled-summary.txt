@@ -1,0 +1,11 @@
+# Conversation: (untitled)
+**Date:** 2026-07-01
+**ID:** `conv-bbbb2222`
+
+**Summary:** A fixture summary for the untitled conversation.
+
+---
+
+**User:**
+Solo fixture message.
+

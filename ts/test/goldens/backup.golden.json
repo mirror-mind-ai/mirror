@@ -1,0 +1,190 @@
+{
+  "kb_format": {
+    "1024": "1",
+    "1048576": "1024",
+    "1049088": "1024",
+    "1535": "1",
+    "1536": "2",
+    "2560": "2",
+    "3584": "4",
+    "4096": "4",
+    "512": "0"
+  },
+  "meta": {
+    "frozen_now": "2026-09-07T14:03:05",
+    "note": "Frozen from the Python oracle (src/memory/cli/backup.py) with datetime.now() at 2026-09-07T14:03:05 (TZ=UTC): stdout, stderr, exit codes, and listings. Since CR061 the archive holds one member, a snapshot of the database as committed, graded here by name, order, compression, and the DOS time of capture. Its bytes depend on the SQLite build, so the tests grade the restored database instead: it opens, passes quick_check, holds every committed row, and runs in WAL mode. Fixtures are real databases built at test time.",
+    "retention_days": 30
+  },
+  "retention_files": {
+    "memory_20260101_000000.zip.partial": "c3RyYW5kZWQgc3RhZ2luZyBmaWxlOiBzd2VwdA==",
+    "memory_20260808_140304.zip": "b25lIHNlY29uZCBvbGRlciB0aGFuIHRoZSBjdXRvZmY6IHJlbW92ZWQ=",
+    "memory_20260808_140305.zip": "ZXhhY3RseSBhdCB0aGUgY3V0b2ZmOiBrZXB0",
+    "memory_20260906_120000.zip": "cmVjZW50OiBrZXB0",
+    "memory_notadate.zip": "dW5wYXJzZWFibGUgc3RhbXA6IGtlcHQ=",
+    "other.zip": "bm90IG91cnM6IGlnbm9yZWQ="
+  },
+  "scenarios": {
+    "db_only": {
+      "argv": [
+        "--mirror-home",
+        "<home>"
+      ],
+      "backups_after": [
+        "memory_20260907_140305.zip"
+      ],
+      "exit_code": 0,
+      "fixture_files": [
+        "memory.db"
+      ],
+      "members": [
+        {
+          "compress_type": 8,
+          "date_time": [
+            2026,
+            9,
+            7,
+            14,
+            3,
+            4
+          ],
+          "name": "memory.db"
+        }
+      ],
+      "stderr": "",
+      "stdout": "Mirror home: <home>\nDatabase: <home>/memory.db\nBackup dir: <home>/backups\nBackup created: memory_20260907_140305.zip (<KB> KB)\n"
+    },
+    "deprecated_backup_dir_env": {
+      "argv": [
+        "--mirror-home",
+        "<home>"
+      ],
+      "backups_after": [
+        "memory_20260907_140305.zip"
+      ],
+      "exit_code": 0,
+      "fixture_files": [
+        "memory.db"
+      ],
+      "ignored_dir_exists": false,
+      "stderr": "warning: BACKUP_DIR is deprecated and no longer redirects backups. Backups are written under <mirror_home>/backups. Use --backup-dir <path> to choose a destination.\n",
+      "stdout": "Mirror home: <home>\nDatabase: <home>/memory.db\nBackup dir: <home>/backups\nBackup created: memory_20260907_140305.zip (<KB> KB)\n"
+    },
+    "deprecated_env_with_explicit_dir": {
+      "argv": [
+        "--mirror-home",
+        "<home>",
+        "--backup-dir",
+        "<dest>"
+      ],
+      "dest_after": [
+        "memory_20260907_140305.zip"
+      ],
+      "exit_code": 0,
+      "fixture_files": [
+        "memory.db"
+      ],
+      "stderr": "",
+      "stdout": "Mirror home: <home>\nDatabase: <home>/memory.db\nBackup dir: <dest>\nBackup created: memory_20260907_140305.zip (<KB> KB)\n"
+    },
+    "explicit_backup_dir": {
+      "argv": [
+        "--mirror-home",
+        "<home>",
+        "--backup-dir",
+        "<dest>"
+      ],
+      "dest_after": [
+        "memory_20260907_140305.zip"
+      ],
+      "exit_code": 0,
+      "fixture_files": [
+        "memory.db"
+      ],
+      "home_backups_after": [],
+      "stderr": "",
+      "stdout": "Mirror home: <home>\nDatabase: <home>/memory.db\nBackup dir: <dest>\nBackup created: memory_20260907_140305.zip (<KB> KB)\n"
+    },
+    "full": {
+      "archive_name": "memory_20260907_140305.zip",
+      "argv": [
+        "--mirror-home",
+        "<home>"
+      ],
+      "backups_after": [
+        "memory_20260808_140305.zip",
+        "memory_20260906_120000.zip",
+        "memory_20260907_140305.zip",
+        "memory_notadate.zip",
+        "other.zip"
+      ],
+      "exit_code": 0,
+      "fixture_files": [
+        "memory.db",
+        "memory.db-wal",
+        "memory.db-shm"
+      ],
+      "members": [
+        {
+          "compress_type": 8,
+          "date_time": [
+            2026,
+            9,
+            7,
+            14,
+            3,
+            4
+          ],
+          "name": "memory.db"
+        }
+      ],
+      "retention_before": [
+        "memory_20260101_000000.zip.partial",
+        "memory_20260808_140304.zip",
+        "memory_20260808_140305.zip",
+        "memory_20260906_120000.zip",
+        "memory_notadate.zip",
+        "other.zip"
+      ],
+      "stderr": "",
+      "stdout": "Mirror home: <home>\nDatabase: <home>/memory.db\nBackup dir: <home>/backups\nBackup created: memory_20260907_140305.zip (<KB> KB)\nRemoved 1 backup(s) older than 30 days.\n"
+    },
+    "missing_db": {
+      "argv": [
+        "--mirror-home",
+        "<home>"
+      ],
+      "backups_after": [],
+      "exit_code": 1,
+      "stderr": "",
+      "stdout": "Mirror home: <home>\nDatabase: <home>/memory.db\nBackup dir: <home>/backups\nDatabase not found: <home>/memory.db\n"
+    },
+    "missing_db_silent": {
+      "argv": [
+        "--mirror-home",
+        "<home>",
+        "--silent"
+      ],
+      "backups_after": [],
+      "exit_code": 1,
+      "stderr": "backup: no archive was written: database not found: <home>/memory.db\n",
+      "stdout": ""
+    },
+    "silent": {
+      "argv": [
+        "--mirror-home",
+        "<home>",
+        "--silent"
+      ],
+      "backups_after": [
+        "memory_20260907_140305.zip"
+      ],
+      "exit_code": 0,
+      "fixture_files": [
+        "memory.db",
+        "memory.db-wal"
+      ],
+      "stderr": "",
+      "stdout": ""
+    }
+  }
+}

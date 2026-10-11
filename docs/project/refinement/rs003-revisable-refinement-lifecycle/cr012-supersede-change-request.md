@@ -86,4 +86,4 @@ anywhere in `src/memory/`. Still valid.
 
 ## Outcome
 
-Pending.
+**Rejected 2026-09-27**, by the Navigator's decision after the Workbench inspection that followed the Ariad trust floor: overtaken, not declined. The verbs it weighed belonged to the SQLite Workbench's state machine, and CV22.DS10.TS4 deleted it (`72ca4776`). In the file-first Workbench, status is document vocabulary, so a Change Request resolved by another reaches `done` directly. The narrative names the one that resolved it, which gives the reference in both directions that this CR asked for. CR004 closed that way with CR079, and CR020 with CR067.

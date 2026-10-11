@@ -23,10 +23,12 @@ We need a way for:
 ### Capabilities (declared by the extension)
 
 A **capability** is a named hook the extension offers. It is declared in the
-manifest and registered at runtime through `api.register_mirror_context`.
+manifest and implemented through its `mirror-context-v1` `provider_runtime`. Since
+CV22.DS10.TS2 that declaration is the only way in: a capability without one is skipped
+with a `no_provider_runtime` diagnostic.
 
 A capability is *not* a CLI subcommand. CLI subcommands are always reachable
-directly (`python -m memory ext <id> <subcommand>`). Capabilities are
+directly (`mirror ext <id> <subcommand>`). Capabilities are
 context providers that the mirror calls *on behalf of* a persona.
 
 Example declaration (finance extension):
@@ -36,6 +38,9 @@ mirror_context_providers:
   - id: financial_summary
     description: "Live financial summary: balances by liquidity, monthly cash flow, runway."
     suggested_personas: [treasurer, cfo, founder]
+    provider_runtime:
+      protocol: mirror-context-v1
+      command: [node, context/financial-summary.mjs]
 ```
 
 `suggested_personas` is a hint, never a binding. The mirror does not act on it
@@ -61,9 +66,9 @@ The user manages bindings through CLI commands provided by the core (not by
 the extension):
 
 ```bash
-python -m memory ext <id> bind   <capability> --persona <persona_id>
-python -m memory ext <id> unbind <capability> --persona <persona_id>
-python -m memory ext <id> bindings
+mirror ext <id> bind   <capability> --persona <persona_id>
+mirror ext <id> unbind <capability> --persona <persona_id>
+mirror ext <id> bindings
 ```
 
 Multiple bindings per capability are allowed: a capability may be bound to
@@ -72,13 +77,15 @@ several personas at once.
 ### Dispatch (executed by the mirror)
 
 When the mirror assembles a Mirror Mode prompt and the active persona is `P`,
-it queries `_ext_bindings WHERE target_kind='persona' AND target_id=P`. For
-each match, it loads the corresponding extension (if not loaded), looks up
-the capability in the context registry, and calls the provider function with
-a `ContextRequest`.
+it queries `_ext_bindings WHERE target_kind='persona' AND target_id=P`. For each match, the core resolves the installed manifest and invokes the declared
+`mirror-context-v1` provider command with the request fields in a versioned JSON
+request. Providers run in stable binding order in bounded, no-shell
+processes.
 
-The provider returns either a string (appended to the prompt) or `None`
-(skipped silently). Exceptions are caught, logged, and ignored.
+The provider returns either text (appended to the prompt) or `null` (skipped silently).
+Missing, malformed, timed-out, or failing providers are isolated. A capability without a
+process descriptor is skipped with a `no_provider_runtime` diagnostic; nothing falls back
+to anything.
 
 ## Three target kinds
 
@@ -144,9 +151,9 @@ load_mirror_context(persona="treasurer", journey="eudaimon", query=...)
    │     │        OR (target_kind='journey'  AND target_id='eudaimon')
    │     │
    │     ├─ for each (ext_id, capability_id):
-   │     │     ├─ load extension (if needed)
-   │     │     ├─ provider = context_registry[(ext_id, capability_id)]
-   │     │     ├─ text = safely_call(provider, ContextRequest(...))
+   │     │     ├─ load and validate installed manifest
+   │     │     ├─ invoke mirror-context-v1 command (or finite legacy host)
+   │     │     ├─ validate {protocol, text} under timeout/output bounds
    │     │     └─ if text: append "=== extension/<id>/<cap> ===\n<text>"
    │
    ▼
@@ -169,7 +176,7 @@ bind, but it never binds silently.
 
 ## Why CLI direct invocation does not need bindings
 
-CLI subcommands (`python -m memory ext finances runway`) are always reachable
+CLI subcommands (`mirror ext finances runway`) are always reachable
 without any binding. They are not part of the binding model. The agent (or
 the user) calls them explicitly when needed. Bindings exist solely to control
 *automatic* context injection during Mirror Mode.

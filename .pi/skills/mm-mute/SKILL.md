@@ -10,9 +10,9 @@ When receiving `/mm-mute`:
 
 1. Check current status:
    ```bash
-   uv run python -m memory conversation-logger status
+   mirror conversation-logger status
    ```
 
 2. Toggle:
-   - If **ACTIVE**: run `uv run python -m memory conversation-logger mute` → say "Conversation logging muted."
-   - If **MUTED**: run `uv run python -m memory conversation-logger unmute` → say "Conversation logging reactivated."
+   - If **ACTIVE**: run `mirror conversation-logger mute` → say "Conversation logging muted."
+   - If **MUTED**: run `mirror conversation-logger unmute` → say "Conversation logging reactivated."

@@ -3,7 +3,7 @@
 # CV9.DS7.TS3 — Bounded Metadata Lifecycle Apply Service
 
 **Type:** Technical Story  
-**Status:** Validated  
+**Status:** Done  
 **Parent:** [CV9.DS7 Conversation Metadata Lifecycle](../index.md)
 
 ---

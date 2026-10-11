@@ -1,0 +1,319 @@
+{
+  "cases": [
+    {
+      "id_shapes": [],
+      "label": "no pending file",
+      "pending": null,
+      "pending_file_exists_after": false,
+      "stdout": "No pending items to save.\n",
+      "tasks": []
+    },
+    {
+      "id_shapes": [],
+      "label": "empty pending list",
+      "pending": [],
+      "pending_file_exists_after": false,
+      "stdout": "✅ 0 items saved:\n",
+      "tasks": []
+    },
+    {
+      "id_shapes": [
+        {
+          "hex": true,
+          "length": 8
+        }
+      ],
+      "label": "scheduled_at renders as ' at HH:MM'",
+      "pending": [
+        {
+          "due_date": "2026-09-10",
+          "scheduled_at": "2026-09-10T14:30",
+          "title": "Ship the port"
+        }
+      ],
+      "pending_file_exists_after": false,
+      "stdout": "✅ 1 items saved:\n  ○ `<task-1>` Ship the port - 2026-09-10 at 14:30\n",
+      "tasks": [
+        {
+          "context": null,
+          "due_date": "2026-09-10",
+          "id": "<task-1>",
+          "journey": null,
+          "scheduled_at": "2026-09-10T14:30",
+          "source": "week_plan",
+          "stage": null,
+          "status": "todo",
+          "time_hint": null,
+          "title": "Ship the port"
+        }
+      ]
+    },
+    {
+      "id_shapes": [
+        {
+          "hex": true,
+          "length": 8
+        }
+      ],
+      "label": "time_hint only renders as ' (hint)'",
+      "pending": [
+        {
+          "due_date": "2026-09-10",
+          "time_hint": "morning",
+          "title": "Review the plan"
+        }
+      ],
+      "pending_file_exists_after": false,
+      "stdout": "✅ 1 items saved:\n  ○ `<task-1>` Review the plan - 2026-09-10 (morning)\n",
+      "tasks": [
+        {
+          "context": null,
+          "due_date": "2026-09-10",
+          "id": "<task-1>",
+          "journey": null,
+          "scheduled_at": null,
+          "source": "week_plan",
+          "stage": null,
+          "status": "todo",
+          "time_hint": "morning",
+          "title": "Review the plan"
+        }
+      ]
+    },
+    {
+      "id_shapes": [
+        {
+          "hex": true,
+          "length": 8
+        }
+      ],
+      "label": "neither renders no time suffix",
+      "pending": [
+        {
+          "due_date": "2026-09-11",
+          "title": "Read the ledger"
+        }
+      ],
+      "pending_file_exists_after": false,
+      "stdout": "✅ 1 items saved:\n  ○ `<task-1>` Read the ledger - 2026-09-11\n",
+      "tasks": [
+        {
+          "context": null,
+          "due_date": "2026-09-11",
+          "id": "<task-1>",
+          "journey": null,
+          "scheduled_at": null,
+          "source": "week_plan",
+          "stage": null,
+          "status": "todo",
+          "time_hint": null,
+          "title": "Read the ledger"
+        }
+      ]
+    },
+    {
+      "id_shapes": [
+        {
+          "hex": true,
+          "length": 8
+        }
+      ],
+      "label": "scheduled_at wins over time_hint",
+      "pending": [
+        {
+          "due_date": "2026-09-12",
+          "scheduled_at": "2026-09-12T09:05",
+          "time_hint": "afternoon",
+          "title": "Both fields"
+        }
+      ],
+      "pending_file_exists_after": false,
+      "stdout": "✅ 1 items saved:\n  ○ `<task-1>` Both fields - 2026-09-12 at 09:05\n",
+      "tasks": [
+        {
+          "context": null,
+          "due_date": "2026-09-12",
+          "id": "<task-1>",
+          "journey": null,
+          "scheduled_at": "2026-09-12T09:05",
+          "source": "week_plan",
+          "stage": null,
+          "status": "todo",
+          "time_hint": "afternoon",
+          "title": "Both fields"
+        }
+      ]
+    },
+    {
+      "id_shapes": [
+        {
+          "hex": true,
+          "length": 8
+        }
+      ],
+      "label": "unparseable scheduled_at falls through ValueError to no suffix",
+      "pending": [
+        {
+          "due_date": "2026-09-13",
+          "scheduled_at": "not-a-timestamp",
+          "title": "Bad clock"
+        }
+      ],
+      "pending_file_exists_after": false,
+      "stdout": "✅ 1 items saved:\n  ○ `<task-1>` Bad clock - 2026-09-13\n",
+      "tasks": [
+        {
+          "context": null,
+          "due_date": "2026-09-13",
+          "id": "<task-1>",
+          "journey": null,
+          "scheduled_at": "not-a-timestamp",
+          "source": "week_plan",
+          "stage": null,
+          "status": "todo",
+          "time_hint": null,
+          "title": "Bad clock"
+        }
+      ]
+    },
+    {
+      "id_shapes": [
+        {
+          "hex": true,
+          "length": 8
+        }
+      ],
+      "label": "journey renders as ' [slug]'",
+      "pending": [
+        {
+          "due_date": "2026-09-14",
+          "journey": "mirror-ts-core",
+          "title": "Scoped item"
+        }
+      ],
+      "pending_file_exists_after": false,
+      "stdout": "✅ 1 items saved:\n  ○ `<task-1>` Scoped item - 2026-09-14 [mirror-ts-core]\n",
+      "tasks": [
+        {
+          "context": null,
+          "due_date": "2026-09-14",
+          "id": "<task-1>",
+          "journey": "mirror-ts-core",
+          "scheduled_at": null,
+          "source": "week_plan",
+          "stage": null,
+          "status": "todo",
+          "time_hint": null,
+          "title": "Scoped item"
+        }
+      ]
+    },
+    {
+      "id_shapes": [
+        {
+          "hex": true,
+          "length": 8
+        }
+      ],
+      "label": "non-ASCII title",
+      "pending": [
+        {
+          "due_date": "2026-09-15",
+          "journey": "mirror",
+          "title": "Revisão do plano — café ☕"
+        }
+      ],
+      "pending_file_exists_after": false,
+      "stdout": "✅ 1 items saved:\n  ○ `<task-1>` Revisão do plano — café ☕ - 2026-09-15 [mirror]\n",
+      "tasks": [
+        {
+          "context": null,
+          "due_date": "2026-09-15",
+          "id": "<task-1>",
+          "journey": "mirror",
+          "scheduled_at": null,
+          "source": "week_plan",
+          "stage": null,
+          "status": "todo",
+          "time_hint": null,
+          "title": "Revisão do plano — café ☕"
+        }
+      ]
+    },
+    {
+      "id_shapes": [
+        {
+          "hex": true,
+          "length": 8
+        },
+        {
+          "hex": true,
+          "length": 8
+        },
+        {
+          "hex": true,
+          "length": 8
+        }
+      ],
+      "label": "several items keep file order",
+      "pending": [
+        {
+          "due_date": "2026-09-16",
+          "time_hint": "morning",
+          "title": "First"
+        },
+        {
+          "due_date": "2026-09-16",
+          "journey": "admin",
+          "scheduled_at": "2026-09-16T18:00",
+          "title": "Second"
+        },
+        {
+          "context": "carried over",
+          "due_date": "2026-09-17",
+          "title": "Third"
+        }
+      ],
+      "pending_file_exists_after": false,
+      "stdout": "✅ 3 items saved:\n  ○ `<task-1>` First - 2026-09-16 (morning)\n  ○ `<task-2>` Second - 2026-09-16 at 18:00 [admin]\n  ○ `<task-3>` Third - 2026-09-17\n",
+      "tasks": [
+        {
+          "context": null,
+          "due_date": "2026-09-16",
+          "id": "<task-1>",
+          "journey": null,
+          "scheduled_at": null,
+          "source": "week_plan",
+          "stage": null,
+          "status": "todo",
+          "time_hint": "morning",
+          "title": "First"
+        },
+        {
+          "context": null,
+          "due_date": "2026-09-16",
+          "id": "<task-2>",
+          "journey": "admin",
+          "scheduled_at": "2026-09-16T18:00",
+          "source": "week_plan",
+          "stage": null,
+          "status": "todo",
+          "time_hint": null,
+          "title": "Second"
+        },
+        {
+          "context": "carried over",
+          "due_date": "2026-09-17",
+          "id": "<task-3>",
+          "journey": null,
+          "scheduled_at": null,
+          "source": "week_plan",
+          "stage": null,
+          "status": "todo",
+          "time_hint": null,
+          "title": "Third"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{"type":"session","id":"sess-a-b","timestamp":"2026-04-17T09:59:59Z"}
+{"type":"message","message":{"role":"user","content":"  \n  How do I configure   the café server for the   nomad workshop next month?  \n","timestamp":"2026-04-17T10:00:00Z"}}
+
+{"type":"message","message":{"role":"assistant","content":[{"type":"text","text":"Start with the config file."},{"type":"tool_use","name":"read","input":{"path":"x"}},"stray string block",{"type":"text"},{"type":"text","text":"Then restart it."}],"timestamp":1713348000123}}
+{"type":"message","message":{"role":"system","content":"hidden system line","timestamp":"2026-04-17T10:00:02Z"}}
+{"type":"message","message":{"role":"user","content":"   \n\t ","timestamp":"2026-04-17T10:00:03Z"}}
+{"type":"message","message":{"role":"user","content":[{"type":"text","text":"Second user turn"}],"timestamp":1713348000000}}
+{"type":"message","message":{"role":"assistant","content":"No timestamp on this one"}}
+{"type":"message","message":{"role":"assistant","content":"Seconds-epoch falls through","timestamp":1713348000}}
+{"type":"message","message":{"role":"assistant","content":"Fractional milliseconds","timestamp":1713348000123.7}}
+{"type":"message","message":{"role":"assistant","content":"Half a microsecond rounds, not truncates","timestamp":1713348000123.5}}
+{"type":"message","message":{"role":"assistant","content":"Boolean is an int in Python","timestamp":true}}
+{"type":"message","message":{"role":"user","content":"Null timestamp","timestamp":null}}
+{"type":"message","message":{"role":"assistant","content":42,"timestamp":"2026-04-17T10:00:09Z"}}
+{"type":"message","message":{"role":"assistant","content":{"type":"text","text":"dict content is not a list"},"timestamp":"2026-04-17T10:00:10Z"}}
+{"type":"message","message":{"role":"assistant","content":"Last line sets ended_at","timestamp":"2026-04-17T10:00:11Z"}}

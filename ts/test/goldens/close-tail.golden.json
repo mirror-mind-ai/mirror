@@ -1,0 +1,260 @@
+{
+  "meta": {
+    "note": "Ordered LLM call sequences for the close tail. End-state equality cannot expose a diverged call graph; the sequence can.",
+    "profile": "close_time"
+  },
+  "scenarios": [
+    {
+      "action": "finalize",
+      "call_sequence": [
+        "conversation_title",
+        "conversation_summary",
+        "conversation_tags"
+      ],
+      "extraction_raises": false,
+      "final_state": {
+        "ended_at_set": false,
+        "metadata": "{\"title_source\": \"close_time_metadata_finalization\", \"title_status\": \"generated\", \"summary_status\": \"generated\", \"summary_source\": \"close_time_metadata_finalization\", \"tags_status\": \"generated\", \"tags_source\": \"close_time_metadata_finalization\", \"metadata_lifecycle_version\": 1, \"last_metadata_update_source\": \"close_time_metadata_finalization\"}",
+        "summary": "A generated summary sentence.",
+        "tags": "[\"alpha\", \"bravo\"]",
+        "title": "A generated title"
+      },
+      "label": "generates_all_fields",
+      "repeat": 1,
+      "replies": {
+        "conversation_summary": "A generated summary sentence.",
+        "conversation_tags": "[\"alpha\", \"bravo\"]",
+        "conversation_title": "A generated title"
+      },
+      "reports": [
+        {
+          "actions": {
+            "summary": "regenerate",
+            "tags": "regenerate",
+            "title": "regenerate"
+          },
+          "changed": {
+            "summary": "A generated summary sentence.",
+            "tags": [
+              "alpha",
+              "bravo"
+            ],
+            "title": "A generated title"
+          },
+          "mutated": true,
+          "profile": "close_time",
+          "skipped": {}
+        }
+      ],
+      "seed": {
+        "message_count": 4,
+        "metadata": null,
+        "summary": null,
+        "tags": null,
+        "title": null
+      }
+    },
+    {
+      "action": "finalize",
+      "call_sequence": [
+        "conversation_title",
+        "conversation_summary",
+        "conversation_summary",
+        "conversation_tags"
+      ],
+      "extraction_raises": false,
+      "final_state": {
+        "ended_at_set": false,
+        "metadata": "{\"previous_title\": \"A perfectly fine title\", \"title_source\": \"close_time_metadata_finalization\", \"title_status\": \"generated\", \"tags_status\": \"generated\", \"tags_source\": \"close_time_metadata_finalization\", \"metadata_lifecycle_version\": 1, \"last_metadata_update_source\": \"close_time_metadata_finalization\"}",
+        "summary": "- bullet one\n- bullet two",
+        "tags": "[\"alpha\"]",
+        "title": "Another title"
+      },
+      "label": "double_summary_when_generation_is_blank",
+      "repeat": 1,
+      "replies": {
+        "conversation_summary": "   ",
+        "conversation_tags": "[\"alpha\"]",
+        "conversation_title": "Another title"
+      },
+      "reports": [
+        {
+          "actions": {
+            "summary": "regenerate",
+            "tags": "regenerate",
+            "title": "regenerate"
+          },
+          "changed": {
+            "tags": [
+              "alpha"
+            ],
+            "title": "Another title"
+          },
+          "mutated": true,
+          "profile": "close_time",
+          "skipped": {
+            "summary": "generation_failed"
+          }
+        }
+      ],
+      "seed": {
+        "message_count": 4,
+        "metadata": null,
+        "summary": "- bullet one\n- bullet two",
+        "tags": null,
+        "title": "A perfectly fine title"
+      }
+    },
+    {
+      "action": "end_conversation",
+      "call_sequence": [
+        "conversation_title",
+        "conversation_summary",
+        "conversation_tags"
+      ],
+      "extraction_raises": true,
+      "final_state": {
+        "ended_at_set": true,
+        "metadata": "{\"title_source\": \"close_time_metadata_finalization\", \"title_status\": \"generated\", \"summary_status\": \"generated\", \"summary_source\": \"close_time_metadata_finalization\", \"tags_status\": \"generated\", \"tags_source\": \"close_time_metadata_finalization\", \"metadata_lifecycle_version\": 1, \"last_metadata_update_source\": \"close_time_metadata_finalization\"}",
+        "summary": "Summary after failure.",
+        "tags": "[\"alpha\"]",
+        "title": "Title after failure"
+      },
+      "label": "finalizes_after_extraction_failure",
+      "repeat": 1,
+      "replies": {
+        "conversation_summary": "Summary after failure.",
+        "conversation_tags": "[\"alpha\"]",
+        "conversation_title": "Title after failure"
+      },
+      "reports": [],
+      "seed": {
+        "message_count": 4,
+        "metadata": null,
+        "summary": null,
+        "tags": null,
+        "title": null
+      }
+    },
+    {
+      "action": "finalize",
+      "call_sequence": [
+        "conversation_title",
+        "conversation_summary",
+        "conversation_tags",
+        "conversation_title",
+        "conversation_summary",
+        "conversation_tags"
+      ],
+      "extraction_raises": false,
+      "final_state": {
+        "ended_at_set": false,
+        "metadata": "{\"title_source\": \"close_time_metadata_finalization\", \"title_status\": \"generated\", \"summary_status\": \"generated\", \"summary_source\": \"close_time_metadata_finalization\", \"tags_status\": \"generated\", \"tags_source\": \"close_time_metadata_finalization\", \"metadata_lifecycle_version\": 1, \"last_metadata_update_source\": \"close_time_metadata_finalization\", \"previous_title\": \"A generated title\"}",
+        "summary": "A generated summary sentence.",
+        "tags": "[\"alpha\", \"bravo\"]",
+        "title": "A generated title"
+      },
+      "label": "rerun_over_finalized_conversation",
+      "repeat": 2,
+      "replies": {
+        "conversation_summary": "A generated summary sentence.",
+        "conversation_tags": "[\"alpha\", \"bravo\"]",
+        "conversation_title": "A generated title"
+      },
+      "reports": [
+        {
+          "actions": {
+            "summary": "regenerate",
+            "tags": "regenerate",
+            "title": "regenerate"
+          },
+          "changed": {
+            "summary": "A generated summary sentence.",
+            "tags": [
+              "alpha",
+              "bravo"
+            ],
+            "title": "A generated title"
+          },
+          "mutated": true,
+          "profile": "close_time",
+          "skipped": {}
+        },
+        {
+          "actions": {
+            "summary": "regenerate",
+            "tags": "regenerate",
+            "title": "regenerate"
+          },
+          "changed": {
+            "summary": "A generated summary sentence.",
+            "tags": [
+              "alpha",
+              "bravo"
+            ],
+            "title": "A generated title"
+          },
+          "mutated": true,
+          "profile": "close_time",
+          "skipped": {}
+        }
+      ],
+      "seed": {
+        "message_count": 6,
+        "metadata": null,
+        "summary": null,
+        "tags": null,
+        "title": null
+      }
+    },
+    {
+      "action": "finalize",
+      "call_sequence": [
+        "conversation_summary",
+        "conversation_tags"
+      ],
+      "extraction_raises": false,
+      "final_state": {
+        "ended_at_set": false,
+        "metadata": "{\"title_status\": \"manual\", \"summary_status\": \"generated\", \"summary_source\": \"close_time_metadata_finalization\", \"tags_status\": \"generated\", \"tags_source\": \"close_time_metadata_finalization\", \"metadata_lifecycle_version\": 1, \"last_metadata_update_source\": \"close_time_metadata_finalization\"}",
+        "summary": "A generated summary sentence.",
+        "tags": "[\"alpha\"]",
+        "title": "Human chosen title"
+      },
+      "label": "manual_title_lock_is_preserved",
+      "repeat": 1,
+      "replies": {
+        "conversation_summary": "A generated summary sentence.",
+        "conversation_tags": "[\"alpha\"]",
+        "conversation_title": "Machine title"
+      },
+      "reports": [
+        {
+          "actions": {
+            "summary": "regenerate",
+            "tags": "regenerate",
+            "title": "preserve_manual"
+          },
+          "changed": {
+            "summary": "A generated summary sentence.",
+            "tags": [
+              "alpha"
+            ]
+          },
+          "mutated": true,
+          "profile": "close_time",
+          "skipped": {
+            "title": "manual_lock_preserved"
+          }
+        }
+      ],
+      "seed": {
+        "message_count": 4,
+        "metadata": "{\"title_status\": \"manual\"}",
+        "summary": null,
+        "tags": null,
+        "title": "Human chosen title"
+      }
+    }
+  ]
+}

@@ -81,4 +81,4 @@ in `src/memory/`. Still valid.
 
 ## Outcome
 
-Pending.
+**Rejected 2026-09-27**, by the Navigator's decision after the Workbench inspection that followed the Ariad trust floor: overtaken, not declined. The missing verbs belonged to the SQLite Workbench, and CV22.DS10.TS4 deleted it (`72ca4776`). Refinement Stories and Change Requests are Markdown documents now. Amending a title or a scope is an edit, Git keeps what the edit replaced, and the root index carries the canonical title.

@@ -38,7 +38,7 @@ adopted Ariad or any Builder method.
 ## 1. Load Context (DB)
 
 ```bash
-uv run python -m memory build load <slug>
+mirror build load <slug>
 ```
 
 The command:
@@ -75,6 +75,23 @@ Builder Mode surface should orient the user around:
 - project path, when present
 - compact briefing/synthesis
 - boundary: `Builder executes commitment.`
+
+## 1.2 Journey Binding
+
+Every `build` command after `build load` carries `--journey <slug>`. The slug
+is the journey this session's `build load` activated, and its `■ BUILDER MODE
+ACTIVE` surface names it. For a journey the Navigator names explicitly, pass
+that slug instead.
+
+The runtime never guesses the journey. Without `--journey`, a command binds
+only to a session in Builder Mode named with `--session-id` or
+`MIRROR_SESSION_ID`. An agent shell names none, so the command refuses with
+`requires a journey`. A guessed journey once moved other journeys' cursors and
+wrote files into other projects.
+
+If that refusal appears and this session's slug is no longer in view, ask the
+Navigator. Do not take the slug from `mode status`, the status line, or any
+other database-wide state. They can show another window's journey.
 
 ## 2. Read Project Docs
 
@@ -160,7 +177,7 @@ docs scaffold unless the user explicitly asks for one.
 If the journey does not yet have an associated project:
 
 ```bash
-uv run python -m memory journey set-path <slug> /path/to/project
+mirror journey set-path <slug> /path/to/project
 ```
 
 ## 7. Finalize Session
@@ -168,7 +185,7 @@ uv run python -m memory journey set-path <slug> /path/to/project
 When the user says "End the session":
 
 ```bash
-uv run python -m memory mirror log "SESSION_SUMMARY"
+mirror mirror log "SESSION_SUMMARY"
 ```
 
 ---
@@ -193,17 +210,12 @@ When the user asks which Builder method governs the active journey, inspect the
 current Builder method state:
 
 ```bash
-uv run python -m memory build inspect-method
+mirror build inspect-method --journey <slug>
 ```
 
-If the user names a specific journey:
-
-```bash
-uv run python -m memory build inspect-method --journey <slug>
-```
-
-Render the command output visibly. If no Builder journey is active yet, say so
-plainly and ask the user to activate or name a journey. If the journey has not
+Render the command output visibly. If no Builder journey has been loaded in this
+session, do not run the command: say so plainly and ask the user to activate or
+name a journey. If the journey has not
 adopted a Builder method yet, say so plainly. Do not infer that Ariad governs the
 journey just because Ariad is available.
 
@@ -211,7 +223,7 @@ When the user asks what Ariad is as a Builder method, inspect the built-in metho
 defaults:
 
 ```bash
-uv run python -m memory build inspect-method ariad
+mirror build inspect-method ariad
 ```
 
 This is read-only inspection.
@@ -221,13 +233,7 @@ This is read-only inspection.
 When the user explicitly asks to adopt Ariad for the active journey, run:
 
 ```bash
-uv run python -m memory build adopt --method ariad
-```
-
-If the user names a specific journey:
-
-```bash
-uv run python -m memory build adopt --journey <slug> --method ariad
+mirror build adopt --journey <slug> --method ariad
 ```
 
 Render the adoption report visibly. This mutates Builder method state only. It
@@ -287,53 +293,124 @@ Next step:
 ...
 ```
 
+A refused lifecycle command renders `CHECKPOINT_REFUSED`. Return it verbatim like
+any other surface. It shows the stage the cursor actually holds and the true reason,
+and nothing changed: the refusal comes before any write. Read the reason before
+acting. An already-complete step needs no rerun, a pending confirmation needs the
+Navigator's answer, a step not reached needs the step before it, and missing
+evidence needs the evidence the reason names. A failure that is not a refusal
+prints a plain `Error:` line instead and makes no claim about what changed: run
+`build show` to see where the cursor stands before trying again.
+
+If a marked block was lost before it reached the Navigator (output filtered,
+truncated, or never rendered), say which surface was lost and run `build show`, as
+described in **Show The Active Checkpoint**. Return its `ACTIVE_CHECKPOINT` block
+verbatim. Never substitute another command's surface, such as `check-implementation`,
+as evidence of where the cursor stands.
+
+### Paths on Ariad surfaces
+
+A card prints a path inside the project relative to the journey's `project_path`,
+from the `project_path=` line `build load` prints. Open it by joining the two, never by joining it
+to the working directory, which can belong to another repository. A card that
+reports a file written or left in place names its project folder and journey on a
+`project:` row. If that row names a project or journey other than the one this
+session loaded, tell the Navigator before touching the files. Plan prints its files'
+absolute paths as `*_path=` lines below its surface. They are not part of the
+surface: use them as printed, and do not render them.
+
+### Statuses on Ariad surfaces
+
+A row that names a roadmap package states its status as the first clause of the
+package's `**Status:**` line, links reduced to their labels, cut to fit the row. The
+rest of the line is in the package the row names; read it there when you need more
+than the status, such as why a package is Blocked.
+
 ## Ariad Activation Surfaces
 
-For Ariad-adopted journeys with no active item, `build load` can emit:
+For Ariad-adopted journeys whose delivery cursor has no active item,
+`build load` emits:
 
-- `■ Builder Home`
-- `ROADMAP SNAPSHOT`
-- `■ Ariad Pull Candidates`
+- `PROJECT POSITION`
+- `■ BUILDER ORIENTATION`
 
-For Ariad-adopted journeys with an active item or pending confirmation,
-`build load` can emit:
+For Ariad-adopted journeys with no delivery cursor yet, or with an active item
+or a pending confirmation, `build load` emits:
 
 - `■ BUILDER RESUME`
 
+Every position and next pull on these surfaces is the journey's own, derived
+from its delivery cursor. With an active item, the position is the Capability
+Value the item belongs to, and any recommended pull is chosen inside it. Without
+one, the surfaces read `no item pulled yet`, list `project-wide candidates`,
+recommend nothing, and give the literal `pull explicitly:` command. Never present
+a candidate from the project-wide list as this journey's recommendation.
+
 These surfaces are mandatory activation output. The final response to the user
 must include the wrapped Ariad surface blocks verbatim from the command output.
-If the command output contains `<<<ARIAD:BUILDER_HOME>>>`,
-`<<<ARIAD:ROADMAP_SNAPSHOT>>>`, or `<<<ARIAD:PULL_CANDIDATES>>>`, the response
-is invalid unless the visible reply also contains every complete matching
-begin/end block in stdout order.
+If the command output contains `<<<ARIAD:BUILDER_RESUME>>>`,
+`<<<ARIAD:PROJECT_POSITION>>>`, or `<<<ARIAD:BUILDER_ORIENTATION>>>`, the
+response is invalid unless the visible reply also contains every complete
+matching begin/end block in stdout order.
 
 After rendering these surfaces, do not ask a generic question such as "inspeção
 runtime, planejamento de Delivery, ou exploração?" and do not add a third
 runtime-inspection option unless the surface itself recommends it. For an Ariad
-journey with no active item, ask only whether the Navigator wants to pull the
-recommended candidate or inspect the roadmap further after the verbatim blocks.
+journey with no active item, ask only which item the Navigator wants to pull,
+from the project-wide list and without ranking it, or whether to inspect the
+roadmap further, after the verbatim blocks.
+
+For an Ariad journey with an active item, the resume's `allowed next actions` are
+the steps the cursor accepts next, the recommended one first; `build show` prints
+the same list. Offer the step the list names, and no lifecycle step it does not.
+Offering is not doing: the Builder Activation Boundary holds, and no step runs
+before the Navigator says so. Each step routes to a section of this skill, or in
+Delivery Story flow to its Delivery Story command:
+
+- `answer_pending_confirmation`: ask the Navigator the question the `pending
+  confirmation` row names. Never answer it.
+- `prepare_active_item`: Prepare, `build prepare-item`.
+- `expand_active_item`: Expand was blocked. After the Navigator fixes what
+  `EXPAND_BLOCKED` named, pull the Delivery Story again.
+- `plan_active_item`: Plan Ariad Work.
+- `implement_active_item`: the implementation guard, then the approved Plan.
+- `validate_active_item`: Validate Ariad Work.
+- `review_active_item_debt`: Review Ariad Debt.
+- `check_active_item_coherence`: Check Ariad Coherence.
+- `close_active_item`: Close Ariad Done.
+- `pull_candidate_if_known`: the item is closed, or none is pulled. Pull the item
+  the Navigator chooses, as Pull And Prepare Ariad Work describes.
+- `inspect_roadmap`: Inspect Roadmap And Pull Candidates.
+- `inspect_method`: Inspect Builder Method.
+- `sync_cursor`: Sync Delivery Cursor.
+- `adopt_method`: Adopt Ariad.
+
+A list of only `inspect_roadmap` and `inspect_method`, on an item that is open,
+means the cursor holds a position Ariad does not know. Say so, and offer
+`sync-cursor`, then Pull. `sync-cursor` drops the item and any pending question,
+and returns the cadence to `stepwise`.
 
 ## Compose Refinement Work
 
-### Choose the Refinement authority
+### The Refinement authority
 
-Before inspecting, capturing, selecting, continuing, or changing Refinement Work,
-check for this exact path beneath the trusted `project_path`:
+Refinement Work lives in project files, at this exact path beneath the trusted
+`project_path`:
 
 ```text
 docs/project/refinement/index.md
 ```
 
-If it exists, use the **file-first path** below. The root index is the sole
-authority for focus, ordering, and current RS/CR status; linked documents own
-narrative, plans, evidence, and outcomes. Read the project's own convention from
-the index before acting. Do not invoke SQLite Workbench commands, inspect legacy
-rows, compare the two stores, or fall back to SQLite when a file-first operation
-is unclear.
+The root index is the sole authority for focus, ordering, and current RS/CR
+status; linked documents own narrative, plans, evidence, and outcomes. Read the
+project's own convention from the index before acting.
 
-If the path does not exist, use the **legacy SQLite path** below. File-first and
-legacy behavior are alternatives selected by the explicit path, never dual
-writers or competing authorities.
+**There is no second store.** CV22.DS10.TS4 retired the compatibility-only
+SQLite Workbench and its twenty commands; the front door answers each of them
+with its cutoff. If the index does not exist, the project has not started
+Refinement Work — say so and offer to create the index. Never inspect legacy
+rows, never fall back to SQLite when a file-first operation is unclear, and
+never treat an absent index as a different kind of authority.
 
 ### File-first path
 
@@ -483,131 +560,13 @@ legacy display codes as project artifact identity. Git owns history, conflicts,
 and recovery; ordinary file work must not create an application-level Git
 protocol.
 
-### Legacy SQLite path
-
-When the Navigator uses natural language such as "capture this as a CR", "create
-a CR", "register this refinement", "add this to the Workbench", or "this should
-be a refinement", treat it as Refinement Work capture rather than roadmap
-Delivery Work. Ask only for missing essentials: CR title/body and whether to
-attach it to an existing Refinement Story or keep it unassigned. Do not invent
-missing title/body/RS target.
-
-When the Navigator asks to "create an RS", "compose a refinement story", "group
-these CRs", or "show me that refinement story", route to the Builder Workbench
-commands only when the canonical project index is absent:
-
-```bash
-uv run python -m memory build refinement-story create --journey <slug> --title "<title>" [--description "<description>"]
-uv run python -m memory build change-request capture --journey <slug> --title "<title>" --body "<body>" [--refinement-story-id <rs-id>]
-uv run python -m memory build change-request attach --journey <slug> --change-request-id <cr-id> --refinement-story-id <rs-id>
-uv run python -m memory build refinement-story overview --journey <slug> --refinement-story-id <rs-id>
-```
-
-When the Navigator asks to "pull that refinement story", "start working on
-RS-001", "enter refinement work for ...", or "pull the RS we just created", route
-to:
-
-```bash
-uv run python -m memory build refinement-story pull --journey <slug> --refinement-story-id <rs-id>
-```
-
-Use the recent RS context only when it is unambiguous. If "pull" could mean a
-Delivery candidate or a Workbench Refinement Story, ask which field/item to pull.
-
-Render `CHANGE_REQUEST_CAPTURED`, `REFINEMENT_STORY_OVERVIEW`, and
-`REFINEMENT_STORY_PULLED` Ariad surfaces verbatim before commentary.
-Composition captures or organizes work only. Pulling an RS selects active
-Refinement Work only: it must not start a CR lifecycle, mutate Delivery cursor
-state, change roadmap status, implement files, commit, push, or release.
-
-If the Navigator's language implies immediate fixing, distinguish capture/pull
-from execution: capture or pull only when requested, and explain that executing a
-CR is a later lifecycle step.
-
-When the Navigator asks to select, confirm, plan, mark implemented, validate, or
-mark done a Change Request in active Refinement Work, route to:
-
-```bash
-uv run python -m memory build change-request select --journey <slug> --change-request-id <cr-id>
-uv run python -m memory build change-request resume --journey <slug> --change-request-id <cr-id>
-uv run python -m memory build change-request confirm --journey <slug> --change-request-id <cr-id>
-uv run python -m memory build change-request plan --journey <slug> --change-request-id <cr-id> --summary "<plan>"
-uv run python -m memory build change-request mark-implemented --journey <slug> --change-request-id <cr-id> --evidence "<evidence>"
-uv run python -m memory build change-request validate --journey <slug> --change-request-id <cr-id> --evidence "<evidence>"
-uv run python -m memory build change-request done --journey <slug> --change-request-id <cr-id> --notes "<done note>"
-```
-
-When the Navigator wants to defer, decline, or graduate a CR instead of
-finishing it, route to the matching terminal verb:
-
-```bash
-uv run python -m memory build change-request park --journey <slug> --change-request-id <cr-id> --reason "<why deferred>" --revisit-trigger "<what reopens it>"
-uv run python -m memory build change-request reject --journey <slug> --change-request-id <cr-id> --reason "<decided no>"
-uv run python -m memory build change-request promote --journey <slug> --change-request-id <cr-id> --target "<delivery target>" [--notes "<note>"]
-```
-
-These are distinct verbs, not synonyms — do not substitute one for another:
-
-- `park` — a deliberate defer; requires both `--reason` and `--revisit-trigger`.
-- `reject` — a decided no; **keeps** the record with a reason (contrast `discard`, below).
-- `promote` — the CR outgrew Refinement Work and becomes Delivery Work; records
-  a `--target` pointer only, does **not** create or mutate a roadmap item.
-- `discard` — deletes an **accidental capture**; the only one of the four that
-  removes the record. If in doubt between `reject` and `discard`, prefer
-  `reject`: it preserves the decision instead of erasing it.
-
-Use `change-request resume` only when a non-terminal CR inside the active
-Refinement Story has moved beyond capture and lost the active pointer. It
-preserves status, evidence, timestamps, and RS link, then reactivates the CR so
-`implemented` can proceed to `validate` and `validated` can proceed to `done`.
-Use `select` for captured CRs. Terminal CRs (`done`, `parked`, `rejected`, and
-`promoted`) cannot be resumed.
-
-Render the `CHANGE_REQUEST_PARKED` / `_REJECTED` / `_PROMOTED` events as
-`REFINEMENT_FLOW_EVENT` surfaces verbatim, same as the other CR transitions. If
-a needed transition has no supported verb, stop and report the gap to the
-Navigator — never write to storage directly to work around it.
-
-When the Navigator asks to review, check coherence, or close an active RS, route
-to:
-
-```bash
-uv run python -m memory build refinement-story review --journey <slug> --refinement-story-id <rs-id> --summary "<review>"
-uv run python -m memory build refinement-story coherence --journey <slug> --refinement-story-id <rs-id> --summary "<coherence>"
-uv run python -m memory build refinement-story close --journey <slug> --refinement-story-id <rs-id> --summary "<close summary>"
-```
-
-If the Navigator wants to defer the whole Refinement Story rather than an
-individual CR, route to:
-
-```bash
-uv run python -m memory build refinement-story park --journey <slug> --refinement-story-id <rs-id> --reason "<why deferred>" --revisit-trigger "<what reopens it>"
-```
-
-Render `REFINEMENT_FLOW_EVENT` surfaces verbatim before commentary. Do not skip
-CR phases: if a CR has not been selected, confirmed, and planned, do not jump to
-implementation. The implementation step requires explicit Navigator language
-such as "implement this CR" and should be represented by the runtime transition
-only after the actual implementation/evidence exists. Review and Coherence must
-not mutate files directly; required changes discovered there must become CRs or
-future work. Do not close an RS while any attached CR remains unfinished; finish,
-park, reject, or promote each CR first (`change-request done` / `park` / `reject`
-/ `promote`), then run RS review, coherence, and close in order. Closing an RS
-clears active Refinement Work only and must not pull or execute Delivery Work.
-
 ## Prepare Ariad Templates
 
 When the user asks to prepare Ariad templates or make the adopted journey
 documentation-ready, run:
 
 ```bash
-uv run python -m memory build prepare-templates --method ariad
-```
-
-If the user names a specific journey:
-
-```bash
-uv run python -m memory build prepare-templates --journey <slug> --method ariad
+mirror build prepare-templates --journey <slug> --method ariad
 ```
 
 Render the report visibly. The operation may create missing method-declared
@@ -620,13 +579,7 @@ When the user asks to sync the initial Builder delivery cursor for an
 Ariad-adopted journey, run:
 
 ```bash
-uv run python -m memory build sync-cursor --method ariad
-```
-
-If the user names a specific journey:
-
-```bash
-uv run python -m memory build sync-cursor --journey <slug> --method ariad
+mirror build sync-cursor --journey <slug> --method ariad
 ```
 
 Render the cursor sync report visibly. This persists runtime resume state only.
@@ -640,38 +593,62 @@ candidates, see what can be pulled, choose the next story, or asks "o que posso
 puxar agora?", run:
 
 ```bash
-uv run python -m memory build pull-candidates --method ariad
+mirror build pull-candidates --journey <slug> --method ariad
 ```
 
-If the user names a specific journey, pass `--journey <slug>`. Render the
-configured Ariad surfaces visibly, currently `ROADMAP SNAPSHOT` and `■ Ariad Pull
-Candidates`. This is read-only: it must not pull an item, update the cursor,
-execute lifecycle work, change story status, commit, push, or release.
+Render the configured Ariad surfaces visibly, currently `ROADMAP SNAPSHOT` and
+`■ Ariad Pull Candidates`. With an active item both are scoped to its Capability
+Value: `candidates in <CV>`, a count of those outside, and a recommendation
+inside the CV (or `no remaining candidates in <CV>`). Without one, the list is
+`project-wide candidates` and no pull is recommended. This is read-only: it must
+not pull an item, update the cursor, execute lifecycle work, change story status,
+commit, push, or release.
+
+## Show The Active Checkpoint
+
+When the user asks where the active item stands or asks to see the current checkpoint
+again, or when a surface was lost, run:
+
+```bash
+mirror build show --journey <slug> --method ariad
+```
+
+Return the `ACTIVE_CHECKPOINT` surface verbatim. It shows the stage, the cursor's
+position, the cadence, the steps the cursor accepts next, as the resume lists them,
+and the story package's files: `index.md`, `plan.md`, and `test-guide.md` with
+their state, and the closure records, each present or missing. It does not replay the
+original checkpoint surface: that evidence lives in those records, so read the one the
+Navigator needs, such as `plan.md` before Plan approval. It is read-only and changes
+neither the cursor nor any file.
 
 ## Pull And Prepare Ariad Work
 
 When the user asks to change testing/runtime cadence, use:
 
 ```bash
-uv run python -m memory build set-cadence --method ariad --profile <stepwise|checkpoint|accelerated|autonomous>
+mirror build set-cadence --journey <slug> --method ariad --profile <stepwise|checkpoint|accelerated|autonomous>
 ```
 
 Use `stepwise` for detailed dogfooding: Plan stops for approval unless the Navigator naturally asks the Driver to create and execute the active story Plan without another approval turn. Use `checkpoint` for normal Ariad cadence. Use `accelerated` when the Navigator trusts the Driver to complete the active story Plan and continue directly into local implementation; the runtime automatically records bounded story Plan authority and still stops at Navigator Validation. Use `autonomous` only with explicit Navigator limits, for example:
 
 ```bash
-uv run python -m memory build set-cadence --method ariad \
+mirror build set-cadence --journey <slug> --method ariad \
   --profile autonomous \
   --limit "stop before push or release" \
   --limit "stop on scope change" \
   --limit "stop on failing checks"
 ```
 
+The Builder resume, `build show`, and the Builder orientation print the cadence
+profile and, under `autonomous`, its limits. Read it there before Plan: under
+`accelerated`, Plan continues into implementation without a Navigator turn.
+
 Higher-autonomy cadence never grants permission to cross Navigator validation acceptance, debt decisions, unsafe operations, scope changes, push/release, or Done/history boundaries. For an active User Story or Technical Story in `story_by_story`, `accelerated` satisfies the Plan approval gate through a complete, structurally matching, single-use receipt instead of pausing for another Navigator turn; Plan completeness and mismatch checks still apply. In current Ariad, Pull is the Navigator signal to Prepare; pulling a Delivery Story also expands it into implementable User/Technical Stories and stops for confirmation of the recommended next story.
 
 When the user asks to continue under the active cadence, use:
 
 ```bash
-uv run python -m memory build continue-lifecycle --method ariad \
+mirror build continue-lifecycle --journey <slug> --method ariad \
   --process "<process alignment evidence>" \
   --project "<project/docs/artifacts alignment evidence>" \
   --product "<product behavior alignment evidence>" \
@@ -686,19 +663,21 @@ When the user asks to pull a roadmap item into active Ariad work, run the
 contained Pull command with explicit item metadata:
 
 ```bash
-uv run python -m memory build pull-item --method ariad \
+mirror build pull-item --journey <slug> --method ariad \
   --item-code <code> \
   --item-title "<title>" \
   --item-level <delivery_story|user_story|technical_story> \
   --why-now "<why this level now>"
 ```
 
-If the user names a specific journey, pass `--journey <slug>`. Render all emitted
-surfaces visibly. Pull may update runtime cursor active item and automatically
-run Prepare. If the pulled item is a Delivery Story, Pull also expands it into
-implementable child stories and recommends the next User/Technical Story to plan.
-Pull must not create a Plan, approve a checkpoint, implement, validate, review,
-close, commit, push, or release.
+Render all emitted surfaces visibly. Pull may update runtime cursor active item
+and automatically run Prepare. If the pulled item is a Delivery Story, Pull also
+expands it into implementable child stories and recommends the next
+User/Technical Story to plan. Pull must not create a Plan, approve a checkpoint,
+implement, validate, review, close, commit, push, or release.
+
+When the Pull card's source reads `not in the roadmap`, say so to the Navigator
+before planning: the code may be mistyped, or the roadmap behind.
 
 When the Navigator confirms the recommended child story after an Expand surface,
 pull that child story explicitly with `--item-level user_story` or
@@ -708,13 +687,12 @@ Then plan that implementable story when requested.
 When the user asks to prepare the pulled item, run:
 
 ```bash
-uv run python -m memory build prepare-item --method ariad
+mirror build prepare-item --journey <slug> --method ariad
 ```
 
-If the user names a specific journey, pass `--journey <slug>`. Render the Prepare
-report visibly. Prepare may update the runtime cursor last delivery event, but
-must not create a Plan, approve a checkpoint, start implementation, change story
-status, commit, push, or release.
+Render the Prepare report visibly. Prepare may update the runtime cursor last
+delivery event, but must not create a Plan, approve a checkpoint, start
+implementation, change story status, commit, push, or release.
 
 ## Delivery Story Candidate Table Authoring Contract
 
@@ -741,10 +719,16 @@ Navigator proposes a different shape (for example `| Family | Scope | Type |
 Risk |`), flag the mismatch before Pull/Expand runs so the table is
 Expand-compatible by construction.
 
+A pipe inside a cell is written `\|`, as GFM writes it, and reads back as `|`;
+Ariad escapes the pipes in any title it writes into a cell.
+
 If Expand renders `<<<ARIAD:EXPAND_BLOCKED>>>` (the resolved package's table
-does not parse, or two packages claim the same code), return the surface
-verbatim per the transport protocol, then explain what to fix: correct the
-table header to the canonical grammar, or resolve the duplicate heading. Do not
+does not parse, two packages claim the same code, or a Delivery Story with no
+package would need a story that an authored package already claims), return the
+surface verbatim per the transport protocol, then explain what to fix: correct
+the table header to the canonical grammar, resolve the duplicate heading, or
+author the Delivery Story's `index.md` with a canonical candidate table that
+lists the story already authored. Do not
 hand-edit the package's materialized children to work around a blocked Expand,
 and do not re-run Pull/Expand until the Navigator has fixed the authored
 content.
@@ -756,13 +740,12 @@ explicitly says the DS is expected to create a release boundary, has no release
 intent, or remains undecided, record only that planning state:
 
 ```bash
-uv run python -m memory build release-intent --method ariad \
+mirror build release-intent --journey <slug> --method ariad \
   --intent <planned|none|undecided>
 ```
 
-If the Navigator names a specific journey, pass `--journey <slug>`. To inspect
-without changing state, omit `--intent`. Return the `RELEASE_INTENT` surface
-verbatim.
+To inspect without changing state, omit `--intent`. Return the `RELEASE_INTENT`
+surface verbatim.
 
 Map only explicit meaning:
 
@@ -791,14 +774,35 @@ current Delivery Story and says a natural-language equivalent of:
 run:
 
 ```bash
-uv run python -m memory build set-flow-unit --method ariad --unit delivery_story
+mirror build set-flow-unit --journey <slug> --method ariad --unit delivery_story
 ```
 
-If the user names a specific journey, pass `--journey <slug>`. Return the
-`NAVIGATOR_FLOW_UNIT` surface verbatim. Explain after the surface that child
-User/Technical Stories remain traceable Driver work packages, and that choosing
-Delivery Story flow does not approve a Plan, start implementation, validate,
-push, or release.
+Return the `DELIVERY_STORY_SCOPE_CONFIRMATION` surface verbatim. Explain after
+the surface that child User/Technical Stories remain traceable Driver work
+packages, and that choosing Delivery Story flow does not approve a Plan, start
+implementation, validate, push, or release.
+
+The scope confirmation is a Navigator stop. It asks whether the scope is right
+before any DS Plan exists. The runtime records the stop without enforcing it: the
+cursor holds `navigator_scope_confirmation` until the Plan replaces it, and
+`plan-delivery-story` does not refuse while it is pending, so the question stays
+true only if you wait for the answer. End the turn after the surface. Do not run
+`plan-delivery-story` in the same turn, even when the Navigator's request also
+asked for the Plan. Plan only on a later Navigator turn that confirms or corrects
+the scope. Cadence and Plan preauthorization do not remove this stop.
+
+A Builder resume that shows `pending confirmation: navigator_scope_confirmation`
+is this same question, still open. Ask it again, or render it again with the
+`set-flow-unit --unit delivery_story` command above, and plan only on the
+Navigator's answer.
+
+A flow unit is chosen only at the Delivery Story's flow decision, after Prepare or
+Expand and before its Plan. Anywhere else `set-flow-unit --unit` refuses with one
+`Error: no flow unit was chosen: ...` line and changes nothing. Relay that reason to
+the Navigator. Do not reset or re-pull to force the choice without their decision.
+
+`set-flow-unit` without `--unit` only inspects the current choice and renders
+`NAVIGATOR_FLOW_UNIT`.
 
 When the effective flow unit is `story_by_story`, preserve existing child-story
 Plan behavior. Do not silently use Delivery Story-level Plan unless the
@@ -819,7 +823,7 @@ equivalent of:
 run:
 
 ```bash
-uv run python -m memory build plan-delivery-story --method ariad \
+mirror build plan-delivery-story --journey <slug> --method ariad \
   --objective "<aggregate Delivery Story objective>" \
   --child <child-work-item-code>
 ```
@@ -846,7 +850,7 @@ User Story and Technical Story preauthorization is handled separately under
 For an explicit matching request, include:
 
 ```bash
-uv run python -m memory build plan-delivery-story --method ariad \
+mirror build plan-delivery-story --journey <slug> --method ariad \
   --objective "<aggregate Delivery Story objective>" \
   --child <every exact child code> \
   --preauthorize-approval \
@@ -862,7 +866,7 @@ replace an existing non-empty Plan with the runtime scaffold.
 In the same assistant turn, after completing the Plan, consume the receipt with:
 
 ```bash
-uv run python -m memory build approve-delivery-story-plan --method ariad \
+mirror build approve-delivery-story-plan --journey <slug> --method ariad \
   --use-preauthorization
 ```
 
@@ -875,7 +879,7 @@ presentational, but addition or removal is a mismatch.
 Cancel pending authority when the Navigator withdraws it:
 
 ```bash
-uv run python -m memory build cancel-delivery-story-plan-preauthorization \
+mirror build cancel-delivery-story-plan-preauthorization --journey <slug> \
   --method ariad
 ```
 
@@ -885,19 +889,22 @@ purchase, or another irreversible boundary.
 
 If the Navigator asks to plan the Delivery Story before selecting
 `delivery_story` flow, first surface or request the flow-unit choice; do not
-silently use DS-level Plan from the default `story_by_story` flow.
+silently use DS-level Plan from the default `story_by_story` flow. Surfacing the
+choice with `set-flow-unit --unit delivery_story` ends the turn at its scope
+confirmation, as described in Delivery Story Navigator Flow; plan on the
+Navigator's next turn.
 
 When the Navigator approves a pending DS-level Plan with natural language such
 as `aprovo o plano da DS`, `plano da DS aprovado`, or `approve the Delivery
 Story plan`, run:
 
 ```bash
-uv run python -m memory build approve-delivery-story-plan --method ariad
+mirror build approve-delivery-story-plan --journey <slug> --method ariad
 ```
 
-If the user names a specific journey, pass `--journey <slug>`. Return every
-emitted Ariad surface verbatim, including `DELIVERY_STORY_PLAN_CHECKPOINT`,
-`ARTIFACTS_MATERIALIZED`, and `IMPLEMENTATION_STARTED` when present.
+Return every emitted Ariad surface verbatim, including
+`DELIVERY_STORY_PLAN_CHECKPOINT`, `ARTIFACTS_MATERIALIZED`, and
+`IMPLEMENTATION_STARTED` when present.
 
 Plan approval authorizes local implementation under the approved DS Plan. After
 rendering the approval surfaces, do **not** stop to ask for a separate
@@ -914,15 +921,16 @@ When the user asks to plan the pulled item, create a plan for the active item, o
 says a natural-language equivalent such as `planeje o item puxado`, run:
 
 ```bash
-uv run python -m memory build plan-item --method ariad
+mirror build plan-item --journey <slug> --method ariad
 ```
 
-If the user names a specific journey, pass `--journey <slug>`. Render the Plan
-Checkpoint visibly and include the `plan artifact` path from the command output
-in the reply. The response must show the actual plan content in Navigator-facing
-language: scope, non-goals, acceptance behavior, validation route, E2E decision,
-and approval question. Keep runtime cursor fields compact; do not let technical
-metadata replace the plan itself.
+Render the Plan Checkpoint visibly, and name the plan in the reply by its
+project-relative path: the card's `story package`, then `/plan.md`. The card holds no plan: it names the story files,
+`index.md`, `plan.md`, and `test-guide.md`, each with its state and the sections
+still to author. The plan is read in `plan.md`. Right after `plan-item` that file
+is usually the scaffold, so there is no plan to present yet: present it after it
+is authored, by the sequence below. Keep runtime cursor fields compact; do not let
+technical metadata replace the plan itself.
 
 Plan may update runtime cursor checkpoint state and may create/update the
 Plan-stage story package (`index.md`, `plan.md`, and `test-guide.md`) only for an
@@ -930,6 +938,42 @@ implementable User Story or Technical Story. Delivery Stories are never planned
 as the implementable unit; they must expand first. Plan must not approve the
 checkpoint, start implementation, change implementation files for the pulled
 item, change story status, commit, push, or release.
+
+### Author the plan before asking for approval
+
+Plan writes `plan.md` as a scaffold: template sentences with the item's title
+pasted in. It is not a plan. The Objective, Scope, Acceptance Behavior, and
+Validation Route are what the Navigator approves from: write them for this
+story, in Navigator-facing language. The Non-Goals, Implementation Contract,
+Stop Conditions, and Approval Gate may stand as written when they are true. Unless
+the Plan checkpoint or `build show` names `index.md` authored, write its story
+statement, Outcome, and Acceptance Behavior too: it may say scaffold, partly
+authored, or incomplete.
+
+The sequence:
+
+1. `plan-item`.
+2. Author `plan.md`, and `index.md` unless the Plan checkpoint or `build show`
+   names it authored.
+3. Run `build show` and return its `ACTIVE_CHECKPOINT` block. It must read
+   `✓ plan.md — authored`; if it does not, author what it names and run it again.
+4. Present the plan from `plan.md`, section by section: the Objective, Scope,
+   Non-Goals, Acceptance Behavior, and Validation Route as the file states them,
+   not paraphrased into claims the file does not make. Then ask for approval.
+5. On approval, `approve-plan`.
+
+The runtime checks structure, not quality: one real line under a heading passes
+it. That check is a floor. The bar is a plan the Navigator can approve from.
+
+`approve-plan` refuses with `CHECKPOINT_REFUSED` while any section it requires is
+missing, empty, pending, or still the scaffold's, and names each by its heading.
+A refusal means: author what it names, run `build show`, and present the plan
+again. Do not run `approve-plan` again in the same turn as if the approval were
+still standing: the Navigator approved a plan that did not exist yet.
+
+`done-item` refuses the same way while the story's `index.md` still says what
+Expand or Plan wrote ("I want to <title>"). Write the story it is before closing
+it.
 
 ### Conditional story Plan preauthorization
 
@@ -956,7 +1000,7 @@ is itself the explicit cadence decision that authorizes Plan continuation for
 active implementable stories. For natural explicit delegation, run:
 
 ```bash
-uv run python -m memory build plan-item --method ariad \
+mirror build plan-item --journey <slug> --method ariad \
   --preauthorize-approval \
   --stop-after navigator_validation
 ```
@@ -967,14 +1011,18 @@ receipt surface. Do not pause for Navigator approval after either route.
 
 Return `PLAN_CHECKPOINT`, `PLAN_PREAUTHORIZATION_RECORDED`, and artifact surfaces
 verbatim. Preserve existing `index.md`, `plan.md`, and `test-guide.md` bytes. The
-receipt is not approval: the Driver-owned Plan must contain complete Scope,
-Non-Goals, Acceptance Behavior, Validation Route, and Implementation Contract
-sections before authority can be consumed.
+receipt is not approval: the Driver-owned Plan must be authored, as in
+[Author the plan before asking for approval](#author-the-plan-before-asking-for-approval),
+before authority can be consumed. The Objective, Scope, Acceptance Behavior, and
+Validation Route must be written for this story, not the scaffold's sentences, and
+the Non-Goals and Implementation Contract must not be empty. A plan that is not
+authored returns `PLAN_PREAUTHORIZATION_MISMATCH` with reason `plan_incomplete` and
+the sections still to author.
 
 In the same assistant turn, after completing the exact story Plan, run:
 
 ```bash
-uv run python -m memory build approve-plan --method ariad \
+mirror build approve-plan --journey <slug> --method ariad \
   --use-preauthorization
 ```
 
@@ -986,7 +1034,7 @@ Plan approval; never repair, reinterpret, or recreate authority silently.
 Cancel pending story authority when the Navigator withdraws it:
 
 ```bash
-uv run python -m memory build cancel-plan-preauthorization --method ariad
+mirror build cancel-plan-preauthorization --journey <slug> --method ariad
 ```
 
 Cancellation preserves the ordinary Plan gate. Story authority is private,
@@ -997,19 +1045,35 @@ purchase, or another irreversible action.
 When the Navigator approves an ordinary Plan checkpoint, run:
 
 ```bash
-uv run python -m memory build approve-plan --method ariad
+mirror build approve-plan --journey <slug> --method ariad
 ```
 
 If the user asks to implement while the Plan checkpoint is pending, run the guard
 before doing any implementation work:
 
 ```bash
-uv run python -m memory build check-implementation --method ariad
+mirror build check-implementation --journey <slug> --method ariad
 ```
 
 Render the deterministic `IMPLEMENTATION_GUARD` surface. If the guard reports
 that Navigator approval is required, return the surface and stop. Do not mutate
 files.
+
+## Closure Records
+
+`validation.md`, `review.md`, `coherence.md`, and `done.md` are records
+that Ariad seals: their last line is `<!-- ariad-seal sha256:… -->`. A closure
+command rewrites a record only while its seal still matches. Anything else is
+left exactly as it is, and the checkpoint says `preserved`.
+
+`preserved` is not an error. It means a person wrote or edited the file, and
+their version stands. The checkpoint's fields are in the surface you render, and
+they were not written to the file.
+
+- Never delete, rewrite, or re-seal an authored record to make Ariad write it.
+- Never copy a seal line into a file.
+- If the Navigator wants Ariad's record in the file, ask how they want their
+  own notes kept.
 
 ## Delivery Story Validation And Closure
 
@@ -1022,7 +1086,7 @@ For natural validation requests such as `valide a DS`, `valide a Delivery
 Story`, or `validação da DS aceita`, run:
 
 ```bash
-uv run python -m memory build validate-delivery-story --method ariad \
+mirror build validate-delivery-story --journey <slug> --method ariad \
   --summary "<aggregate DS validation evidence>" \
   --navigator-accepted
 ```
@@ -1030,7 +1094,7 @@ uv run python -m memory build validate-delivery-story --method ariad \
 For DS-level debt review requests, run:
 
 ```bash
-uv run python -m memory build review-delivery-story --method ariad \
+mirror build review-delivery-story --journey <slug> --method ariad \
   --decision <no_action|defer|pay_now> \
   --summary "<DS-level debt review summary>"
 ```
@@ -1041,14 +1105,14 @@ every known child package/candidate row, and every canonical roadmap table row
 for the DS as Done. Then run:
 
 ```bash
-uv run python -m memory build done-delivery-story --method ariad \
+mirror build done-delivery-story --journey <slug> --method ariad \
   --summary "<DS-level done/history summary>"
 ```
 
 The command runs an authored roadmap closure preflight before cursor or artifact
 mutation. If any DS package, known child package/candidate row, or canonical
 roadmap row remains non-Done, the runtime refuses Done before cursor or artifact mutation and names project-relative files to align. The agent owns semantic
-Markdown updates; Python verifies explicit status evidence and never invents
+Markdown updates; the runtime verifies explicit status evidence and never invents
 project meaning.
 
 DS-level Coherence is not a separate lifecycle stage before Done. It is checked
@@ -1056,12 +1120,11 @@ inside Done only after the authored status preflight passes, so the final surfac
 can truthfully state that docs, roadmap, cursor, artifacts, and next-pull readiness
 remain consistent after closure.
 
-If the user names a specific journey, pass `--journey <slug>`. Return every
-`DELIVERY_STORY_CLOSURE_CHECKPOINT` surface verbatim. Explain after the block
-that child User/Technical Stories remain evidence units and that push/release
-remain separate hard gates. Do not use these DS-level closure commands when the
-effective flow unit is `story_by_story`; preserve existing child-story lifecycle
-behavior in that mode.
+Return every `DELIVERY_STORY_CLOSURE_CHECKPOINT` surface verbatim. Explain after
+the block that child User/Technical Stories remain evidence units and that
+push/release remain separate hard gates. Do not use these DS-level closure
+commands when the effective flow unit is `story_by_story`; preserve existing
+child-story lifecycle behavior in that mode.
 
 ## Validate Ariad Work
 
@@ -1069,7 +1132,7 @@ After implementation is complete and before moving to Debt Review or Done,
 render the Validation checkpoint:
 
 ```bash
-uv run python -m memory build validate-item --method ariad \
+mirror build validate-item --journey <slug> --method ariad \
   --implementation-complete \
   --check "<automated check command or evidence>" \
   --checks-status <passed|failed|not_run> \
@@ -1085,10 +1148,9 @@ uv run python -m memory build validate-item --method ariad \
 If the Navigator has already performed and accepted the validation route, also
 pass `--navigator-accepted`. Providing a route is not the same as acceptance.
 
-If the user names a specific journey, pass `--journey <slug>`. Render the
-deterministic `VALIDATION_CHECKPOINT` surface. If required evidence is missing or
-Navigator validation has not been accepted, return the surface and stop; do not
-advance to Debt Review, Done, commit, push, or release.
+Render the deterministic `VALIDATION_CHECKPOINT` surface. If required evidence
+is missing or Navigator validation has not been accepted, return the surface and
+stop; do not advance to Debt Review, Done, commit, push, or release.
 
 ## Review Ariad Debt
 
@@ -1096,37 +1158,36 @@ After Validation has passed and before moving to Done, render the Debt Review
 checkpoint:
 
 ```bash
-uv run python -m memory build review-item --method ariad \
+mirror build review-item --journey <slug> --method ariad \
   --debt "<debt finding, or No debt found>" \
   --decision <pending|no_action|defer|pay_now> \
   --defer-reason "<required when decision=defer>" \
   --revisit-trigger "<required when decision=defer>"
 ```
 
-If the user names a specific journey, pass `--journey <slug>`. Render the
-deterministic `DEBT_REVIEW_CHECKPOINT` surface. If the decision is `pending`,
-`defer` without a reason/trigger, or `pay_now`, stop at the debt decision
-checkpoint. `pay_now` must route through a future Refactor loop before Done.
-Do not advance to Done, commit, push, or release while the debt decision is
-unresolved.
+Render the deterministic `DEBT_REVIEW_CHECKPOINT` surface. If the decision is
+`pending`, `defer` without a reason/trigger, or `pay_now`, stop at the debt
+decision checkpoint. `pay_now` must route through a future Refactor loop before
+Done. Do not advance to Done, commit, push, or release while the debt decision
+is unresolved.
 
 ## Check Ariad Coherence
 
 After Debt Review is complete, verify Process, Project, and Product alignment:
 
 ```bash
-uv run python -m memory build coherence-item --method ariad \
+mirror build coherence-item --journey <slug> --method ariad \
   --process "<process alignment evidence>" \
   --project "<project alignment evidence>" \
   --product "<product alignment evidence>"
 ```
 
-If the user names a specific journey, pass `--journey <slug>`. Render the
-`COHERENCE_CHECKPOINT` surface. If it reports `pending_coherence`, correct the
-missing evidence and rerun the same command. Reentry is valid only for the exact
-`navigator_coherence` / `last_delivery_event=coherence` state. It re-evaluates
-the evidence; it does not bypass Coherence. Unrelated pending confirmations stay
-blocked, and `done-item` never consumes `navigator_coherence`.
+Render the `COHERENCE_CHECKPOINT` surface. If it reports `pending_coherence`,
+correct the missing evidence and rerun the same command. Reentry is valid only
+for the exact `navigator_coherence` / `last_delivery_event=coherence` state. It
+re-evaluates the evidence; it does not bypass Coherence. Unrelated pending
+confirmations stay blocked, and `done-item` never consumes
+`navigator_coherence`.
 
 ## Close Ariad Done
 
@@ -1134,13 +1195,12 @@ After Coherence is complete and the Navigator confirms there is nothing else to
 do in the story, render the Done checkpoint:
 
 ```bash
-uv run python -m memory build done-item --method ariad \
+mirror build done-item --journey <slug> --method ariad \
   --history-action "<commit/history action taken or proposed>" \
   --roadmap-update "<roadmap/story package update>" \
   --next-recommendation "<next Pull, parent collapse, or release boundary>"
 ```
 
-If the user names a specific journey, pass `--journey <slug>`. Render the
-deterministic `DONE_CHECKPOINT` surface. Done must name the history action,
-roadmap/story package update, and next Ariad movement. Do not push or release
-unless the effective policy explicitly allows it.
+Render the deterministic `DONE_CHECKPOINT` surface. Done must name the history
+action, roadmap/story package update, and next Ariad movement. Do not push or
+release unless the effective policy explicitly allows it.

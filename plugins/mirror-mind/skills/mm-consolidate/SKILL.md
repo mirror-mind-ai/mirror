@@ -34,8 +34,10 @@ This is intentional — identity updates are meaningful acts.
 
 ## 1. Scan for proposals
 
+> The scan answers from TypeScript against the live provider (CV22.DS8.TS2). Each cluster is one model call bounded by the extraction timeout (`MEMORY_LLM_TIMEOUT_EXTRACTION`, 60 s) with bounded retries, and every successful call leaves a priced `llm_calls` row before its proposal is parsed. A call that fails is logged by class (`outcome=transport_failed kind=…`) in `front-door.log` beside the database.
+
 ```bash
-uv run python -m memory consolidate scan \
+mirror consolidate scan \
   [--journey <slug>] \
   [--layer <layer>] \
   [--limit 5] \
@@ -53,7 +55,7 @@ Each proposal is printed and stored with `status='pending'`.
 
 ---
 
-## 2. Present each proposal to Vinícius
+## 2. Present each proposal to the user
 
 For each proposal, show:
 - The source memories (title, type, date)
@@ -69,18 +71,18 @@ Ask: **accept as-is / edit / reject?**
 
 **Accept as-is:**
 ```bash
-uv run python -m memory consolidate apply <proposal_id>
+mirror consolidate apply <proposal_id>
 ```
 
 **Accept with edited content:**
 ```bash
-uv run python -m memory consolidate apply <proposal_id> \
+mirror consolidate apply <proposal_id> \
   --content "User-revised version of the proposed content"
 ```
 
 **Reject:**
 ```bash
-uv run python -m memory consolidate reject <proposal_id>
+mirror consolidate reject <proposal_id>
 ```
 
 What happens on acceptance:
@@ -95,7 +97,7 @@ Rejected proposals leave source memories unchanged.
 ## 4. List consolidation history
 
 ```bash
-uv run python -m memory consolidate list [--status pending|accepted|rejected] [--limit 20]
+mirror consolidate list [--status pending|accepted|rejected] [--limit 20]
 ```
 
 ---

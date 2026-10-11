@@ -1,0 +1,538 @@
+{
+  "_comment": "MCP protocol parity golden (CV22.DS9.US1). Generated from the real memory.mcp oracle by ts/parity/generate_mcp_protocol_golden.py. serverInfo.version is frozen to a literal on both sides; parity of the version MECHANISM is out of scope (DS10 owns versioning under npm).",
+  "protocol_version": "2025-06-18",
+  "server_name": "mirror-mind",
+  "frozen_version": "0.0.0-golden",
+  "dispatch": [
+    {
+      "name": "initialize_echoes_requested_version",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "initialize",
+        "params": {
+          "protocolVersion": "2024-11-05"
+        }
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {
+          "protocolVersion": "2024-11-05",
+          "capabilities": {
+            "tools": {}
+          },
+          "serverInfo": {
+            "name": "mirror-mind",
+            "version": "0.0.0-golden"
+          }
+        }
+      }
+    },
+    {
+      "name": "initialize_defaults_version_when_absent",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 2,
+        "method": "initialize",
+        "params": {}
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 2,
+        "result": {
+          "protocolVersion": "2025-06-18",
+          "capabilities": {
+            "tools": {}
+          },
+          "serverInfo": {
+            "name": "mirror-mind",
+            "version": "0.0.0-golden"
+          }
+        }
+      }
+    },
+    {
+      "name": "initialize_defaults_version_when_not_a_string",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 3,
+        "method": "initialize",
+        "params": {
+          "protocolVersion": 17
+        }
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 3,
+        "result": {
+          "protocolVersion": "2025-06-18",
+          "capabilities": {
+            "tools": {}
+          },
+          "serverInfo": {
+            "name": "mirror-mind",
+            "version": "0.0.0-golden"
+          }
+        }
+      }
+    },
+    {
+      "name": "initialize_without_params",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 4,
+        "method": "initialize"
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 4,
+        "result": {
+          "protocolVersion": "2025-06-18",
+          "capabilities": {
+            "tools": {}
+          },
+          "serverInfo": {
+            "name": "mirror-mind",
+            "version": "0.0.0-golden"
+          }
+        }
+      }
+    },
+    {
+      "name": "initialized_notification_has_no_response",
+      "request": {
+        "jsonrpc": "2.0",
+        "method": "notifications/initialized"
+      },
+      "response": null
+    },
+    {
+      "name": "ping",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 5,
+        "method": "ping"
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 5,
+        "result": {}
+      }
+    },
+    {
+      "name": "tools_list_real_seven",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 6,
+        "method": "tools/list"
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 6,
+        "result": {
+          "tools": [
+            {
+              "name": "mirror_context",
+              "description": "Load Mirror identity context on demand (side-effect-free). Optionally scope by persona and journey; pass the user query for attachment search.",
+              "inputSchema": {
+                "type": "object",
+                "properties": {
+                  "query": {
+                    "type": "string",
+                    "description": "User query for attachment search."
+                  },
+                  "persona": {
+                    "type": "string",
+                    "description": "Persona id to scope context."
+                  },
+                  "journey": {
+                    "type": "string",
+                    "description": "Journey slug to scope context."
+                  }
+                }
+              }
+            },
+            {
+              "name": "list_journeys",
+              "description": "List active journeys with status, stage, and description.",
+              "inputSchema": {
+                "type": "object",
+                "properties": {}
+              }
+            },
+            {
+              "name": "journey_status",
+              "description": "Get status for one journey, or overall status when no slug is given.",
+              "inputSchema": {
+                "type": "object",
+                "properties": {
+                  "slug": {
+                    "type": "string",
+                    "description": "Journey slug."
+                  }
+                }
+              }
+            },
+            {
+              "name": "search_memories",
+              "description": "Search memories by query, or list by type/layer/journey filter.",
+              "inputSchema": {
+                "type": "object",
+                "properties": {
+                  "query": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string",
+                    "description": "Memory type filter."
+                  },
+                  "layer": {
+                    "type": "string",
+                    "description": "Jungian layer filter."
+                  },
+                  "journey": {
+                    "type": "string",
+                    "description": "Journey slug filter."
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "default": 5
+                  }
+                }
+              }
+            },
+            {
+              "name": "list_conversations",
+              "description": "List recent conversations with optional journey/persona filters.",
+              "inputSchema": {
+                "type": "object",
+                "properties": {
+                  "limit": {
+                    "type": "integer",
+                    "default": 20
+                  },
+                  "journey": {
+                    "type": "string"
+                  },
+                  "persona": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            {
+              "name": "recall_conversation",
+              "description": "Load messages from a previous conversation by id (prefix accepted).",
+              "inputSchema": {
+                "type": "object",
+                "properties": {
+                  "conversation_id": {
+                    "type": "string"
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "default": 50
+                  }
+                },
+                "required": [
+                  "conversation_id"
+                ]
+              }
+            },
+            {
+              "name": "detect_persona",
+              "description": "Show persona routing matches for a query.",
+              "inputSchema": {
+                "type": "object",
+                "properties": {
+                  "query": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "query"
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "tools_call_returns_text",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 7,
+        "method": "tools/call",
+        "params": {
+          "name": "__stub_ok",
+          "arguments": {
+            "b": 2,
+            "a": 1
+          }
+        }
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 7,
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "stub ok: {\"a\": 1, \"b\": 2}"
+            }
+          ],
+          "isError": false
+        }
+      }
+    },
+    {
+      "name": "tools_call_without_arguments",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 8,
+        "method": "tools/call",
+        "params": {
+          "name": "__stub_ok"
+        }
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 8,
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "stub ok: {}"
+            }
+          ],
+          "isError": false
+        }
+      }
+    },
+    {
+      "name": "tools_call_non_object_arguments_passes_through",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 9,
+        "method": "tools/call",
+        "params": {
+          "name": "__stub_ok",
+          "arguments": [
+            1,
+            2
+          ]
+        }
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 9,
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "stub ok: [1, 2]"
+            }
+          ],
+          "isError": false
+        }
+      }
+    },
+    {
+      "name": "tools_call_tool_error_is_result_not_protocol_error",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 10,
+        "method": "tools/call",
+        "params": {
+          "name": "__stub_raise"
+        }
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 10,
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "Error: stub failure"
+            }
+          ],
+          "isError": true
+        }
+      }
+    },
+    {
+      "name": "tools_call_unknown_tool",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 11,
+        "method": "tools/call",
+        "params": {
+          "name": "nope"
+        }
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 11,
+        "error": {
+          "code": -32602,
+          "message": "Unknown tool: nope"
+        }
+      }
+    },
+    {
+      "name": "tools_call_non_string_tool_name",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 12,
+        "method": "tools/call",
+        "params": {
+          "name": 42
+        }
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 12,
+        "error": {
+          "code": -32602,
+          "message": "Unknown tool: 42"
+        }
+      }
+    },
+    {
+      "name": "tools_call_without_params",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 13,
+        "method": "tools/call"
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 13,
+        "error": {
+          "code": -32602,
+          "message": "Unknown tool: None"
+        }
+      }
+    },
+    {
+      "name": "unknown_request_method",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 14,
+        "method": "totally/unknown"
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 14,
+        "error": {
+          "code": -32601,
+          "message": "Method not found: totally/unknown"
+        }
+      }
+    },
+    {
+      "name": "unknown_notification_ignored",
+      "request": {
+        "jsonrpc": "2.0",
+        "method": "totally/unknown"
+      },
+      "response": null
+    },
+    {
+      "name": "non_string_method_request",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 15,
+        "method": 99
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 15,
+        "error": {
+          "code": -32600,
+          "message": "Invalid Request"
+        }
+      }
+    },
+    {
+      "name": "non_string_method_notification",
+      "request": {
+        "jsonrpc": "2.0",
+        "method": 99
+      },
+      "response": null
+    },
+    {
+      "name": "id_zero_is_a_request",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 0,
+        "method": "ping"
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 0,
+        "result": {}
+      }
+    },
+    {
+      "name": "id_empty_string_is_a_request",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": "",
+        "method": "ping"
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": "",
+        "result": {}
+      }
+    },
+    {
+      "name": "id_explicit_null_is_a_request",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": null,
+        "method": "ping"
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": null,
+        "result": {}
+      }
+    },
+    {
+      "name": "id_string",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": "abc-123",
+        "method": "ping"
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": "abc-123",
+        "result": {}
+      }
+    }
+  ],
+  "framing": {
+    "stdout_lines": [
+      "{\"jsonrpc\": \"2.0\", \"id\": null, \"error\": {\"code\": -32700, \"message\": \"Parse error\"}}",
+      "{\"jsonrpc\": \"2.0\", \"id\": null, \"error\": {\"code\": -32600, \"message\": \"Invalid Request\"}}",
+      "{\"jsonrpc\": \"2.0\", \"id\": null, \"error\": {\"code\": -32600, \"message\": \"Invalid Request\"}}",
+      "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"protocolVersion\": \"2025-06-18\", \"capabilities\": {\"tools\": {}}, \"serverInfo\": {\"name\": \"mirror-mind\", \"version\": \"0.0.0-golden\"}}}",
+      "{\"jsonrpc\": \"2.0\", \"id\": 2, \"result\": {}}",
+      "{\"jsonrpc\": \"2.0\", \"id\": 0, \"result\": {}}",
+      "{\"jsonrpc\": \"2.0\", \"id\": 3, \"result\": {\"tools\": [{\"name\": \"mirror_context\", \"description\": \"Load Mirror identity context on demand (side-effect-free). Optionally scope by persona and journey; pass the user query for attachment search.\", \"inputSchema\": {\"type\": \"object\", \"properties\": {\"query\": {\"type\": \"string\", \"description\": \"User query for attachment search.\"}, \"persona\": {\"type\": \"string\", \"description\": \"Persona id to scope context.\"}, \"journey\": {\"type\": \"string\", \"description\": \"Journey slug to scope context.\"}}}}, {\"name\": \"list_journeys\", \"description\": \"List active journeys with status, stage, and description.\", \"inputSchema\": {\"type\": \"object\", \"properties\": {}}}, {\"name\": \"journey_status\", \"description\": \"Get status for one journey, or overall status when no slug is given.\", \"inputSchema\": {\"type\": \"object\", \"properties\": {\"slug\": {\"type\": \"string\", \"description\": \"Journey slug.\"}}}}, {\"name\": \"search_memories\", \"description\": \"Search memories by query, or list by type/layer/journey filter.\", \"inputSchema\": {\"type\": \"object\", \"properties\": {\"query\": {\"type\": \"string\"}, \"type\": {\"type\": \"string\", \"description\": \"Memory type filter.\"}, \"layer\": {\"type\": \"string\", \"description\": \"Jungian layer filter.\"}, \"journey\": {\"type\": \"string\", \"description\": \"Journey slug filter.\"}, \"limit\": {\"type\": \"integer\", \"default\": 5}}}}, {\"name\": \"list_conversations\", \"description\": \"List recent conversations with optional journey/persona filters.\", \"inputSchema\": {\"type\": \"object\", \"properties\": {\"limit\": {\"type\": \"integer\", \"default\": 20}, \"journey\": {\"type\": \"string\"}, \"persona\": {\"type\": \"string\"}}}}, {\"name\": \"recall_conversation\", \"description\": \"Load messages from a previous conversation by id (prefix accepted).\", \"inputSchema\": {\"type\": \"object\", \"properties\": {\"conversation_id\": {\"type\": \"string\"}, \"limit\": {\"type\": \"integer\", \"default\": 50}}, \"required\": [\"conversation_id\"]}}, {\"name\": \"detect_persona\", \"description\": \"Show persona routing matches for a query.\", \"inputSchema\": {\"type\": \"object\", \"properties\": {\"query\": {\"type\": \"string\"}}, \"required\": [\"query\"]}}]}}",
+      "{\"jsonrpc\": \"2.0\", \"id\": 4, \"error\": {\"code\": -32601, \"message\": \"Method not found: totally/unknown\"}}",
+      "{\"jsonrpc\": \"2.0\", \"id\": 5, \"error\": {\"code\": -32602, \"message\": \"Unknown tool: nope\"}}",
+      "{\"jsonrpc\": \"2.0\", \"id\": 6, \"error\": {\"code\": -32602, \"message\": \"Unknown tool: não-existe ✳\"}}"
+    ],
+    "stderr": "",
+    "exit_code": 0,
+    "trailing_newline": true
+  }
+}

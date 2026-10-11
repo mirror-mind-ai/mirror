@@ -1,0 +1,11 @@
+{"timestamp":"2026-05-01T09:00:00.000Z","type":"session_meta","payload":{"id":"codex-valid-0001","cwd":"/work","originator":"codex_cli"}}
+{"timestamp":"2026-05-01T09:00:01.000Z","type":"event_msg","payload":{"type":"user_message","message":"Please review the persistence layer of the port and tell me whether the seam holds under load"}}
+
+{"timestamp":"2026-05-01T09:00:02.000Z","type":"event_msg","payload":{"type":"agent_reasoning","text":"thinking..."}}
+{"timestamp":"2026-05-01T09:00:03.000Z","type":"event_msg","payload":{"type":"agent_message","message":"The seam holds; the busy timeout is the load bearing part."}}
+{"timestamp":"2026-05-01T09:00:04.000Z","type":"event_msg","payload":{"type":"user_message","message":""}}
+{"timestamp":"2026-05-01T09:00:04.500Z","type":"event_msg","payload":{"type":"user_message","message":[]}}
+{"timestamp":"2026-05-01T09:00:04.600Z","type":"event_msg","payload":{"type":"agent_message","message":{}}}
+{"timestamp":"2026-05-01T09:00:05.000Z","type":"event_msg","payload":{"type":"token_count","info":{"total":12}}}
+{"timestamp":"2026-05-01T09:00:06.000Z","type":"response_item","payload":{"type":"message","role":"assistant","content":[{"type":"output_text","text":"ignored: not an event_msg"}]}}
+{"timestamp":"2026-05-01T09:00:07.000Z","type":"event_msg","payload":{"type":"user_message","message":"Obrigado, café agora."}}

@@ -9,7 +9,7 @@ user-invocable: true
 When receiving `/mm:journeys`, run:
 
 ```bash
-uv run python -m memory journeys
+mirror journeys
 ```
 
 The script prints a compact hierarchical journey list, including parent/child indentation when configured. Present the result to the user without modification so the hierarchy remains intact.

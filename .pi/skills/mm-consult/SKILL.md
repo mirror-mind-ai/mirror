@@ -22,18 +22,20 @@ Sends prompts with Mirror identity context to other models through OpenRouter.
 
 ## Flow
 
+> The model call answers from TypeScript, bounded by the extraction timeout (`MEMORY_LLM_TIMEOUT_EXTRACTION`, 60 s) with bounded retries. (The 10-minute ceiling CR072 added applied only to the Python engine, which is gone.)
+
 ### Explicit Question
 
 Analyze the message to determine persona and journey using Mirror routing.
 
 ```bash
-uv run python -m memory consult FAMILY TIER "QUESTION" \
+mirror consult FAMILY TIER "QUESTION" \
   [--persona PERSONA] [--journey JOURNEY] [--org]
 ```
 
 **Examples:**
-- `/mm-consult gemini lite "draft an opening for this article"` → `uv run python -m memory consult gemini lite "draft an opening for this article" --persona writer`
-- `/mm-consult deepseek "is this design overengineered?"` → `uv run python -m memory consult deepseek "is this design overengineered?" --persona engineer`
+- `/mm-consult gemini lite "draft an opening for this article"` → `mirror consult gemini lite "draft an opening for this article" --persona writer`
+- `/mm-consult deepseek "is this design overengineered?"` → `mirror consult deepseek "is this design overengineered?" --persona engineer`
 
 The script prints the response, cost, and balance. Always show the complete response to the user without summarizing or omitting it.
 
@@ -42,7 +44,7 @@ The script prints the response, cost, and balance. Always show the complete resp
 When the user omits the question, synthesize Mirror Mode content (reflection, strategy, content — not Builder Mode code or architecture) into a self-contained prompt, then call:
 
 ```bash
-uv run python -m memory consult FAMILY TIER "SYNTHESIZED_PROMPT" \
+mirror consult FAMILY TIER "SYNTHESIZED_PROMPT" \
   [--persona PERSONA] [--journey JOURNEY] [--org]
 ```
 
@@ -51,7 +53,7 @@ The synthesized prompt must be self-contained — the external LLM has no access
 ## Credits
 
 ```bash
-uv run python -m memory consult credits
+mirror consult credits
 ```
 
 Shows OpenRouter usage and remaining balance.

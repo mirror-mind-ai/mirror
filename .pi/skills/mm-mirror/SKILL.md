@@ -12,7 +12,7 @@ determines when to activate it; this skill defines how.
 ---
 
 > ⛔ **HARD CONSTRAINT**
-> Never produce a Mirror Mode response without first running `uv run python -m memory mirror load`.
+> Never produce a Mirror Mode response without first running `mirror mirror load`.
 > No exceptions. Load first. Always.
 
 ---
@@ -36,7 +36,7 @@ pure mode-switch request such as `volte para o modo mirror`, use the full switch
 request as the query.
 
 ```bash
-uv run python -m memory mirror load \
+mirror mirror load \
   --query "full text of the user's prompt" \
   [--persona PERSONA_ID] \
   [--journey JOURNEY_ID] \

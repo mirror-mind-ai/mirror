@@ -3,14 +3,18 @@ set -euo pipefail
 
 # CV21.E2.S2 — Mirror MCP server stdio smoke test.
 #
-# Drives a real stdio JSON-RPC round-trip against `python -m memory mcp`:
+# Drives a real stdio JSON-RPC round-trip against the MCP server the packaged
+# plugin launches (`plugins/mirror-mind/mcp/launch.sh`):
 #   initialize -> notifications/initialized -> tools/list -> tools/call,
 # asserts the protocol responses, and proves the run leaks nothing into any
 # production database.
 #
-# Plugin contract (CV21): the server is launched as a bare `python3 -m memory
-# mcp`, assuming `memory` is installed. In the dev repo it is not pip-installed,
-# so this harness puts the project venv interpreter first on PATH.
+# The server is TypeScript since CV22.DS9, and the launcher lost its Python
+# branch at CV22.DS10.TS5 plateau 1. Since CV22.DS10.US3 plateau 3 the launcher
+# finds the installed `mirror` bin rather than a tree, so this smoke puts THIS
+# checkout's `bin/mirror.js` on a scratch PATH the way npm's global bin links
+# it -- a machine with no `npm link` (CI) must not fail here, and a machine
+# with one must not pass on the linked copy.
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
@@ -32,12 +36,16 @@ export DB_PATH="$SANDBOX/memory.db"
 export DB_BACKUP_PATH="$SANDBOX/backups"
 unset MIRROR_HOME MIRROR_USER 2>/dev/null || true
 
-VENV_BIN="$(cd "$REPO_ROOT" && uv run python -c 'import os,sys; print(os.path.dirname(sys.executable))')"
-export PATH="$VENV_BIN:$PATH"
-export PYTHONPATH="$REPO_ROOT/src${PYTHONPATH:+:$PYTHONPATH}"
 
 MARKER="mcp-smoke-$$"
 echo "Isolated DB: $DB_PATH"
+
+BIN="$SANDBOX/bin"
+mkdir -p "$BIN"
+ln -s "$REPO_ROOT/bin/mirror.js" "$BIN/mirror"
+ln -s "$(command -v node)" "$BIN/node"
+export PATH="$BIN:$PATH"   # first, so the checkout copy wins over any npm-linked one
+unset MIRROR_BIN MIRROR_NODE 2>/dev/null || true
 
 # Drive a full round-trip; capture stdout (pure JSON-RPC) to a file.
 printf '%s\n' \
@@ -45,35 +53,41 @@ printf '%s\n' \
   '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
   '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
   '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"list_journeys","arguments":{}}}' \
-  | python3 -m memory mcp 2>/dev/null > "$SANDBOX/out.jsonl"
+  | bash "$REPO_ROOT/plugins/mirror-mind/mcp/launch.sh" 2>/dev/null > "$SANDBOX/out.jsonl"
 
-# Assert the protocol responses with a strict parser. The captured output is read
-# from a file because a heredoc script would otherwise claim stdin.
-python3 - "$SANDBOX/out.jsonl" <<'PY' || fail "protocol assertions"
-import json, sys
+# Assert the protocol responses with a strict parser: every line must be JSON.
+node - "$SANDBOX/out.jsonl" <<'JS' || fail "protocol assertions"
+const { readFileSync } = require("node:fs");
+const assert = require("node:assert/strict");
 
-lines = [json.loads(line) for line in open(sys.argv[1]) if line.strip()]
-by_id = {m.get("id"): m for m in lines if "id" in m}
+const lines = readFileSync(process.argv[2], "utf8")
+  .split("\n")
+  .filter((line) => line.trim())
+  .map((line) => JSON.parse(line));
+const byId = new Map(lines.filter((m) => "id" in m).map((m) => [m.id, m]));
 
-init = by_id.get(1)
-assert init and "tools" in init["result"]["capabilities"], "initialize missing tools capability"
-assert init["result"]["serverInfo"]["name"] == "mirror-mind", "wrong serverInfo"
+const init = byId.get(1);
+assert.ok(init && "tools" in init.result.capabilities, "initialize missing tools capability");
+assert.equal(init.result.serverInfo.name, "mirror-mind", "wrong serverInfo");
 
-tools = by_id.get(2)
-names = {t["name"] for t in tools["result"]["tools"]}
-for required in ("mirror_context", "list_journeys", "search_memories", "recall_conversation"):
-    assert required in names, f"tools/list missing {required}"
+const names = new Set(byId.get(2).result.tools.map((tool) => tool.name));
+for (const required of ["mirror_context", "list_journeys", "search_memories", "recall_conversation"]) {
+  assert.ok(names.has(required), `tools/list missing ${required}`);
+}
 
-call = by_id.get(3)
-assert call["result"]["isError"] is False, "tools/call reported error"
-assert call["result"]["content"][0]["type"] == "text", "tools/call returned no text content"
-print(f"protocol OK: {len(names)} tools advertised")
-PY
+const call = byId.get(3);
+assert.equal(call.result.isError, false, "tools/call reported error");
+assert.equal(call.result.content[0].type, "text", "tools/call returned no text content");
+console.log(`protocol OK: ${names.size} tools advertised`);
+JS
 
 echo "✓ stdio round-trip: initialize / tools/list / tools/call"
 
 # Production guard: the run's unique marker must never appear in production.
-for db in "${PROD_DBS[@]}"; do
+# `${arr[@]+...}`: bash 3.2 -- macOS's /bin/bash -- treats an EMPTY array as
+# unbound under `set -u`, and with the EXIT trap above the abort exits 0, so a
+# machine with no production home skipped this check and still "passed".
+for db in ${PROD_DBS[@]+"${PROD_DBS[@]}"}; do
   leaked="$(sqlite3 "$db" "SELECT count(*) FROM messages WHERE content LIKE '%$MARKER%';" 2>/dev/null || echo ERR)"
   [ "$leaked" = "0" ] || fail "smoke marker leaked into production: $db ($leaked)"
 done

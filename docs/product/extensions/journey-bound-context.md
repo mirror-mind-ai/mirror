@@ -20,7 +20,7 @@ This link answers:
 Set it with:
 
 ```bash
-python -m memory journey set-path <journey_id> /path/to/project
+mirror journey set-path <journey_id> /path/to/project
 ```
 
 Conceptually, this stores:
@@ -42,7 +42,7 @@ This link answers:
 Set it with:
 
 ```bash
-python -m memory ext <extension_id> bind <capability_id> --journey <journey_id>
+mirror ext <extension_id> bind <capability_id> --journey <journey_id>
 ```
 
 Conceptually, this stores:
@@ -83,12 +83,13 @@ IdentityService.load_mirror_context(journey="product-launch", ...)
    │     _ext_bindings where target_kind='journey'
    │     and target_id='product-launch'
    │
-   ├─ For each matching binding:
-   │     ├─ loads installed extension runtime from
+   ├─ For each matching binding, in stable order:
+   │     ├─ loads the installed manifest from
    │     │     ~/.mirror-minds/<user>/extensions/<extension_id>/
-   │     ├─ looks up the registered provider by capability_id
-   │     ├─ builds ContextRequest(journey_id="product-launch", ...)
-   │     └─ safely calls provider(api, ctx)
+   │     ├─ resolves provider_runtime for capability_id
+   │     ├─ builds mirror-context-v1 JSON with journey_id="product-launch"
+   │     └─ invokes the bounded no-shell provider process
+   │           (no runtime declared -> skipped, reported, load continues)
    │
    ├─ Provider may read journey metadata:
    │     identity.metadata.project_path -> /path/to/project
@@ -102,8 +103,10 @@ Returned text is appended to the Mirror Mode prompt as:
 <provider text>
 ```
 
-If any extension fails to load, raises, or returns `None`, Mirror Mode continues
-without that section. Extension failures must never block the mirror.
+If any extension is missing, emits malformed output, times out, fails, or returns `null`,
+Mirror Mode continues without that section. Raw provider request/output is never written to
+operational logs. Extension failures must never block the mirror, and journey bindings for
+ancestors, descendants, or unrelated journeys never widen the selected journey.
 
 ## Source, installed runtime, and target project
 
@@ -123,7 +126,7 @@ has a `project_path`.
 When an extension changes, reinstall it:
 
 ```bash
-python -m memory extensions install <extension_id> --extensions-root <extensions-root>
+mirror extensions install <extension_id> --extensions-root <extensions-root>
 ```
 
 This copies the source into the installed runtime and runs pending migrations.
@@ -133,8 +136,8 @@ This copies the source into the installed runtime and runs pending migrations.
 Configuration:
 
 ```bash
-python -m memory journey set-path product-launch ~/Code/product-launch
-python -m memory ext project-health bind status --journey product-launch
+mirror journey set-path product-launch ~/Code/product-launch
+mirror ext project-health bind status --journey product-launch
 ```
 
 Meaning:

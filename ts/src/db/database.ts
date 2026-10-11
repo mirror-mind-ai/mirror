@@ -6,7 +6,10 @@
 // `node:sqlite` is still experimental and emits an ExperimentalWarning to stderr;
 // that is non-fatal and stays out of stdout.
 
-import { DatabaseSync } from "node:sqlite";
+import { DatabaseSync, type StatementSync } from "node:sqlite";
+
+import { type BackupRecord, requireBackup } from "./backupGate.ts";
+import { assertCopyTarget } from "./copyGuard.ts";
 
 /** A SQLite-storable value. Mirrored here so callers don't import driver types. */
 export type SqlValue = null | number | bigint | string | Uint8Array;
@@ -27,29 +30,368 @@ export interface Database {
 }
 
 /**
+ * Connection discipline matching the Python core (`src/memory/db/connection.py`):
+ * every connection — read-only included — gets `busy_timeout=30000` so lock
+ * contention waits instead of failing instantly, and `foreign_keys=ON` so FK
+ * enforcement never depends on an unasserted driver default. The timeout is
+ * configurable only so contention tests can use a short one.
+ */
+export interface OpenOptions {
+  busyTimeoutMs?: number;
+}
+
+const DEFAULT_BUSY_TIMEOUT_MS = 30_000;
+
+function applyConnectionPragmas(driver: DatabaseSync, options: OpenOptions): void {
+  driver.exec(`PRAGMA busy_timeout=${options.busyTimeoutMs ?? DEFAULT_BUSY_TIMEOUT_MS}`);
+  driver.exec("PRAGMA foreign_keys=ON");
+}
+
+/**
  * Open a SQLite file read-only. The handle can prepare and run read queries;
  * any write rejects at the driver level, keeping the database-as-seam contract
  * safe against the authors' live `memory.db`.
  */
-export function openDatabaseReadOnly(path: string): Database {
-  const driver = new DatabaseSync(path, { readOnly: true });
+/**
+ * Wrap a driver statement's read methods with row normalization. `node:sqlite`
+ * returns null-prototype row objects; normalizing to plain objects keeps the
+ * seam's row shape driver-independent and predictable for every consumer (and
+ * for strict equality in tests). Shared by the read-only and writable handles.
+ */
+function readableStatement(statement: StatementSync): PreparedQuery {
   return {
-    prepare(sql: string): PreparedQuery {
+    all: (...params: SqlValue[]): Row[] =>
+      (statement.all(...params) as Row[]).map((row) => ({ ...row })),
+    get: (...params: SqlValue[]): Row | undefined => {
+      const row = statement.get(...params) as Row | undefined;
+      return row === undefined ? undefined : { ...row };
+    },
+  };
+}
+
+export function openDatabaseReadOnly(path: string, options: OpenOptions = {}): Database {
+  const driver = new DatabaseSync(path, { readOnly: true });
+  applyConnectionPragmas(driver, options);
+  return {
+    prepare: (sql: string): PreparedQuery => readableStatement(driver.prepare(sql)),
+    close: (): void => {
+      driver.close();
+    },
+  };
+}
+
+/** `PRAGMA quick_check`'s first verdict: `ok`, or the first problem it reports. */
+function quickCheckVerdict(driver: DatabaseSync): string {
+  const rows = driver.prepare("PRAGMA quick_check").all() as Record<string, SqlValue>[];
+  const first = rows[0];
+  return first === undefined ? "no result" : String(Object.values(first)[0] ?? "");
+}
+
+/**
+ * `PRAGMA quick_check` against a standalone database FILE (CV22.DS10.US2).
+ *
+ * For verifying a backup: `runtime backup --verify` extracts the archive's
+ * `memory.db` to a throwaway copy and asks whether it actually opens, because
+ * the oracle verifies entry NAMES and will call 4 KB of zeros a valid backup.
+ *
+ * It lives here because this module is the only one allowed to touch the
+ * driver. The first implementation spawned the `sqlite3` CLI, which was a
+ * second SQLite access path and an external binary no user is guaranteed to
+ * have; CI found it on the macOS leg.
+ *
+ * The copy is opened READ-WRITE on purpose. Every archive Mirror writes holds
+ * a WAL-mode database (header byte 18 == 2) and carries no `-shm`/`-wal`
+ * sidecars, and a WAL database opened read-only cannot create the `-shm` file
+ * it needs -- SQLITE_CANTOPEN. The target is a temp copy the caller deletes,
+ * never the live database, so allowing SQLite to create sidecars beside it
+ * costs nothing and is the only way the check can run at all.
+ */
+export function quickCheckDatabaseFile(path: string): { ok: boolean; verdict: string } {
+  let driver: DatabaseSync;
+  try {
+    driver = new DatabaseSync(path);
+  } catch (error) {
+    return { ok: false, verdict: sqliteMessage(error) };
+  }
+  try {
+    const verdict = quickCheckVerdict(driver);
+    return { ok: verdict === "ok", verdict };
+  } catch (error) {
+    return { ok: false, verdict: sqliteMessage(error) };
+  } finally {
+    try {
+      driver.close();
+    } catch {
+      // A database that failed to open has nothing to close.
+    }
+  }
+}
+
+/** The driver's own message, never a wrapper's, and never a path. */
+function sqliteMessage(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error);
+  return message.split("\n")[0] ?? "database could not be opened";
+}
+
+/** A prepared query that can also execute a write. */
+/** What a write reports back. `node:sqlite` returns bigint counts. */
+export interface RunResult {
+  readonly changes: number | bigint;
+  readonly lastInsertRowid: number | bigint;
+}
+
+export interface WritablePreparedQuery extends PreparedQuery {
+  /**
+   * Returns the driver's result rather than `void` (CV22.DS7.US8 plateau 2).
+   *
+   * The delivery cursor's compare-and-swap is a conditional `UPDATE … WHERE
+   * metadata = ?`, and whether it applied is only observable through
+   * `changes` — Python reads `cursor.rowcount` for exactly this. Existing
+   * callers that ignore the value are unaffected; widening a return type is
+   * not a breaking change.
+   */
+  run(...params: SqlValue[]): RunResult;
+}
+
+/**
+ * The narrowest write capability: prepare a statement and run it.
+ *
+ * Both `WritableDatabase` and the `llm_calls`-only `LedgerAppendDatabase`
+ * satisfy this, so append-only writers (the ledger hooks) can depend on what
+ * they actually use instead of demanding a handle that can also `exec` DDL.
+ */
+export interface StatementRunner {
+  prepare(sql: string): WritablePreparedQuery;
+}
+
+/** A writable handle over a SQLite *copy*. */
+export interface WritableDatabase extends Database, StatementRunner {
+  prepare(sql: string): WritablePreparedQuery;
+  exec(sql: string): void;
+}
+
+/** Wrap a raw driver as the writable seam handle (prepare/exec/close). */
+function writableHandle(driver: DatabaseSync): WritableDatabase {
+  return {
+    prepare(sql: string): WritablePreparedQuery {
       const statement = driver.prepare(sql);
       return {
-        // `node:sqlite` returns null-prototype row objects. Normalize to plain
-        // objects so the seam's row shape is driver-independent and predictable
-        // for every consumer (and for strict equality in tests).
-        all: (...params: SqlValue[]): Row[] =>
-          (statement.all(...params) as Row[]).map((row) => ({ ...row })),
-        get: (...params: SqlValue[]): Row | undefined => {
-          const row = statement.get(...params) as Row | undefined;
-          return row === undefined ? undefined : { ...row };
-        },
+        ...readableStatement(statement),
+        run: (...params: SqlValue[]): RunResult => statement.run(...params),
+      };
+    },
+    exec: (sql: string): void => {
+      driver.exec(sql);
+    },
+    close: (): void => {
+      driver.close();
+    },
+  };
+}
+
+/**
+ * Open (creating if absent) a database file for the bootstrap authority
+ * (CV22.DS6.TS3). Unlike `openDatabaseCopyForWrite`/`openDatabaseForWrite`,
+ * this is permitted against the real `memory.db` path — bootstrap's whole
+ * purpose is to create/migrate the live file when TS, not Python, owns
+ * custody. Safety here comes from the caller: `bootstrap.ts` always wraps
+ * this open in the cross-process bootstrap lock, and every statement run
+ * against the result (`runMigrations`, `createSchema`) is idempotent, so a
+ * lock-protected re-open is always a safe no-op, never a destructive write.
+ */
+export function openDatabaseForBootstrap(
+  path: string,
+  options: OpenOptions = {},
+): WritableDatabase {
+  const driver = new DatabaseSync(path);
+  applyConnectionPragmas(driver, options);
+  return writableHandle(driver);
+}
+
+/**
+ * Open a SQLite file for writing — permitted ONLY for a copy. `assertCopyTarget`
+ * runs first and throws before the driver touches the file if the path is a live
+ * `memory.db` or is not under a `tmp/` directory. This is how DS4 mutates state
+ * during parity proofs without ever risking the authors' real database.
+ */
+export function openDatabaseCopyForWrite(
+  path: string,
+  options: OpenOptions = {},
+): WritableDatabase {
+  assertCopyTarget(path);
+  const driver = new DatabaseSync(path);
+  applyConnectionPragmas(driver, options);
+  return writableHandle(driver);
+}
+
+/**
+ * Run `fn` inside an explicit `BEGIN IMMEDIATE` transaction, committing on
+ * success and rolling back on any throw. Multi-statement writes must use this
+ * so a failure between statements can never leave partial state — the Python
+ * core commits such sequences as one transaction (e.g. `log_access`).
+ */
+export function withTransaction<T>(db: WritableDatabase, fn: () => T): T {
+  db.exec("BEGIN IMMEDIATE");
+  try {
+    const result = fn();
+    db.exec("COMMIT");
+    return result;
+  } catch (error) {
+    db.exec("ROLLBACK");
+    throw error;
+  }
+}
+
+/**
+ * Open a real database for writing — the sanctioned live-write seam (US4). Unlike
+ * the copy path, this is allowed to touch a live `memory.db`, so it fails closed
+ * without a hash-verified backup: `requireBackup` throws before the driver opens
+ * the file if no valid backup was recorded. Used only by the front door's
+ * allowlisted deterministic write commands.
+ */
+export function openDatabaseForWrite(
+  path: string,
+  backup: BackupRecord,
+  options: OpenOptions = {},
+): WritableDatabase {
+  requireBackup(backup);
+  const driver = new DatabaseSync(path);
+  applyConnectionPragmas(driver, options);
+  return writableHandle(driver);
+}
+
+/**
+ * A handle that can append to the `llm_calls` ledger and read — nothing else.
+ *
+ * Deliberately NOT a `WritableDatabase`: it exposes no `exec`, so there is no
+ * DDL or multi-statement path, and its `prepare` refuses any statement but the
+ * ledger append. Structural typing would otherwise let it satisfy
+ * `WritableDatabase` and travel anywhere a write is accepted.
+ */
+export interface LedgerAppendDatabase extends Database, StatementRunner {
+  prepare(sql: string): WritablePreparedQuery;
+}
+
+/**
+ * The one statement shape this handle may form. Matched on the normalized text
+ * so formatting (the multi-line template `logLlmCall` builds) is irrelevant,
+ * while anything with a second statement, a different table, or a different
+ * verb fails. Reads are allowed so the writer can verify its own row.
+ */
+const LEDGER_APPEND = /^insert\s+into\s+llm_calls\s*\(/;
+const READ_ONLY_STATEMENT = /^(select|with)\b/;
+
+function assertLedgerStatement(sql: string): void {
+  const normalized = sql.trim().replace(/\s+/g, " ").toLowerCase();
+  const singleStatement = !normalized.replace(/;\s*$/, "").includes(";");
+  const permitted =
+    singleStatement && (LEDGER_APPEND.test(normalized) || READ_ONLY_STATEMENT.test(normalized));
+  if (!permitted) {
+    throw new Error(
+      `this connection may prepare only the llm_calls append or a read; refused: ${sql.trim().slice(0, 60)}`,
+    );
+  }
+}
+
+/**
+ * Open a live database for the `llm_calls` append and nothing else
+ * (CV22.DS9.TS2 D1) — the MCP server's single sanctioned write.
+ *
+ * **Why this is not `openDatabaseForWrite`.** The DS4 backup gate is a
+ * last-write undo built for a snapshot→write→exit CLI: `openLiveWriteDatabase`
+ * promotes a fresh snapshot to a fixed name, and the record is verified once, at
+ * open. The MCP server
+ * lives for an entire client session, so a snapshot taken at launch is not the
+ * state before a row written forty minutes later, and re-snapshotting per write
+ * would put a 399 ms / ~50 MB `VACUUM INTO` on the agent's response path while
+ * overwriting the front door's undo with an observability row. The gate is the
+ * wrong shape here, not merely the wrong price.
+ *
+ * **What replaces it.** Narrowing, enforced at the statement level rather than
+ * documented: an append-only INSERT into an observability table, through a
+ * handle that can form no other statement and exposes no `exec`. It cannot
+ * UPDATE, DELETE, DROP, open a transaction, or touch `memories`, `identity`,
+ * `conversations`, or any other table — so the failure modes the gate protects
+ * against are unreachable rather than undone. `logLlmCall` is already
+ * fail-soft, matching Python, whose MCP server writes this same row through an
+ * ungated connection.
+ *
+ * The sole sanctioned caller is `ts/src/mcp/main.ts`, which keeps its tools on a
+ * driver-level read-only handle and hands them only a sink function.
+ */
+export function openDatabaseForLedgerAppend(
+  path: string,
+  options: OpenOptions = {},
+): LedgerAppendDatabase {
+  const driver = new DatabaseSync(path);
+  applyConnectionPragmas(driver, options);
+  return {
+    prepare(sql: string): WritablePreparedQuery {
+      assertLedgerStatement(sql);
+      const statement = driver.prepare(sql);
+      return {
+        ...readableStatement(statement),
+        run: (...params: SqlValue[]): RunResult => statement.run(...params),
       };
     },
     close: (): void => {
       driver.close();
     },
   };
+}
+
+/**
+ * Snapshot a live database into `targetPath` using `VACUUM INTO` from a
+ * read-only connection. Unlike a raw file copy, this captures committed
+ * transactions still living in the `-wal` sidecar and cannot produce a torn
+ * copy mid-checkpoint — it is the only sanctioned way to back up a live
+ * `memory.db` (the parity harness uses the equivalent Python `backup()` API
+ * for the same reason). The target must not exist; callers remove any
+ * previous snapshot first.
+ */
+export function snapshotDatabaseTo(
+  sourcePath: string,
+  targetPath: string,
+  options: OpenOptions = {},
+): void {
+  const driver = new DatabaseSync(sourcePath, { readOnly: true });
+  // Every other seam connection waits on lock contention rather than failing
+  // instantly; the snapshot read must too. Without this, a `VACUUM INTO` that
+  // races a concurrent writer (e.g. migrate-on-open backing up under multi-process
+  // contention) raises SQLITE_BUSY ("database is locked") immediately instead of
+  // waiting for the writer to finish.
+  applyConnectionPragmas(driver, options);
+  try {
+    driver.prepare("VACUUM INTO ?").run(targetPath);
+  } finally {
+    driver.close();
+  }
+}
+
+/**
+ * Make a `VACUUM INTO` snapshot restorable as the database it was taken from
+ * (CR061), then check it. A snapshot comes out in rollback-journal mode, and
+ * Mirror sets WAL only when bootstrap creates a missing file, so a restored
+ * snapshot would otherwise run in a mode the original never ran in. Switching
+ * it to WAL and closing leaves one self-contained file whose header records
+ * WAL, with no sidecars. The snapshot is a private copy nothing else holds
+ * open, which is why this connection may write to it.
+ *
+ * Returns `PRAGMA quick_check`'s verdict; the caller publishes the snapshot
+ * only when it is `ok` -- a backup that has never been opened is a belief.
+ */
+export function prepareArchiveSnapshot(path: string): { ok: boolean; verdict: string } {
+  const driver = new DatabaseSync(path);
+  try {
+    const mode = driver.prepare("PRAGMA journal_mode=WAL").get() as { journal_mode?: string };
+    if (mode.journal_mode !== "wal") {
+      return { ok: false, verdict: `journal_mode is ${mode.journal_mode ?? "unknown"}, not wal` };
+    }
+    const verdict = quickCheckVerdict(driver);
+    return { ok: verdict === "ok", verdict };
+  } catch (error) {
+    return { ok: false, verdict: sqliteMessage(error) };
+  } finally {
+    driver.close();
+  }
 }

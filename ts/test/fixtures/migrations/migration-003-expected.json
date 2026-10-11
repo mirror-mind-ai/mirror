@@ -1,0 +1,1742 @@
+{
+  "applied_migration_ids": [
+    "001_project_to_travessia",
+    "002_create_attachments",
+    "003_create_tasks",
+    "004_tasks_temporal_fields",
+    "005_travessia_to_journey",
+    "006_create_llm_calls",
+    "007_create_identity_descriptors",
+    "008_create_memories_fts",
+    "009_memories_reinforcement_columns",
+    "010_create_consolidations",
+    "011_create_operation_runs",
+    "012_create_operation_run_events",
+    "013_create_exploratory_stories",
+    "014_create_identity_integrations",
+    "015_create_builder_workbench",
+    "016_builder_workbench_display_codes"
+  ],
+  "attachment_legacy_row": {
+    "content": "Legacy plan content.",
+    "journey_id": "genesis-project",
+    "name": "legacy-plan.md"
+  },
+  "conversation_journeys": [
+    "genesis-project"
+  ],
+  "identity_layers": [
+    "journey"
+  ],
+  "indexes": {
+    "idx_attachments_journey": {
+      "columns": [
+        "journey_id"
+      ],
+      "sql": "CREATE INDEX idx_attachments_journey ON attachments(journey_id)",
+      "table": "attachments",
+      "unique": 0
+    },
+    "idx_attachments_journey_name": {
+      "columns": [
+        "journey_id",
+        "name"
+      ],
+      "sql": "CREATE UNIQUE INDEX idx_attachments_journey_name ON attachments(journey_id, name)",
+      "table": "attachments",
+      "unique": 1
+    },
+    "idx_builder_change_requests_journey_status": {
+      "columns": [
+        "journey",
+        "status",
+        "updated_at"
+      ],
+      "sql": "CREATE INDEX idx_builder_change_requests_journey_status ON builder_change_requests(journey, status, updated_at)",
+      "table": "builder_change_requests",
+      "unique": 0
+    },
+    "idx_builder_change_requests_story_status": {
+      "columns": [
+        "journey",
+        "refinement_story_id",
+        "status",
+        "position",
+        "updated_at"
+      ],
+      "sql": "CREATE INDEX idx_builder_change_requests_story_status ON builder_change_requests(journey, refinement_story_id, status, position, updated_at)",
+      "table": "builder_change_requests",
+      "unique": 0
+    },
+    "idx_builder_refinement_stories_journey_status": {
+      "columns": [
+        "journey",
+        "status",
+        "position",
+        "updated_at"
+      ],
+      "sql": "CREATE INDEX idx_builder_refinement_stories_journey_status ON builder_refinement_stories(journey, status, position, updated_at)",
+      "table": "builder_refinement_stories",
+      "unique": 0
+    },
+    "idx_consolidations_created": {
+      "columns": [
+        "created_at"
+      ],
+      "sql": "CREATE INDEX idx_consolidations_created ON consolidations(created_at)",
+      "table": "consolidations",
+      "unique": 0
+    },
+    "idx_consolidations_status": {
+      "columns": [
+        "status"
+      ],
+      "sql": "CREATE INDEX idx_consolidations_status ON consolidations(status)",
+      "table": "consolidations",
+      "unique": 0
+    },
+    "idx_exploratory_stories_journey": {
+      "columns": [
+        "journey",
+        "updated_at"
+      ],
+      "sql": "CREATE INDEX idx_exploratory_stories_journey ON exploratory_stories(journey, updated_at)",
+      "table": "exploratory_stories",
+      "unique": 0
+    },
+    "idx_exploratory_stories_one_active_per_journey": {
+      "columns": [
+        "journey"
+      ],
+      "sql": "CREATE UNIQUE INDEX idx_exploratory_stories_one_active_per_journey ON exploratory_stories(journey) WHERE status = 'active'",
+      "table": "exploratory_stories",
+      "unique": 1
+    },
+    "idx_exploratory_stories_status": {
+      "columns": [
+        "status"
+      ],
+      "sql": "CREATE INDEX idx_exploratory_stories_status ON exploratory_stories(status)",
+      "table": "exploratory_stories",
+      "unique": 0
+    },
+    "idx_identity_integrations_status": {
+      "columns": [
+        "status"
+      ],
+      "sql": "CREATE INDEX idx_identity_integrations_status ON identity_integrations(status)",
+      "table": "identity_integrations",
+      "unique": 0
+    },
+    "idx_identity_integrations_target": {
+      "columns": [
+        "layer",
+        "key",
+        "created_at"
+      ],
+      "sql": "CREATE INDEX idx_identity_integrations_target ON identity_integrations(layer, key, created_at)",
+      "table": "identity_integrations",
+      "unique": 0
+    },
+    "idx_llm_calls_called_at": {
+      "columns": [
+        "called_at"
+      ],
+      "sql": "CREATE INDEX idx_llm_calls_called_at ON llm_calls(called_at)",
+      "table": "llm_calls",
+      "unique": 0
+    },
+    "idx_llm_calls_conversation": {
+      "columns": [
+        "conversation_id"
+      ],
+      "sql": "CREATE INDEX idx_llm_calls_conversation ON llm_calls(conversation_id)",
+      "table": "llm_calls",
+      "unique": 0
+    },
+    "idx_llm_calls_role": {
+      "columns": [
+        "role"
+      ],
+      "sql": "CREATE INDEX idx_llm_calls_role ON llm_calls(role)",
+      "table": "llm_calls",
+      "unique": 0
+    },
+    "idx_memories_journey": {
+      "columns": [
+        "journey"
+      ],
+      "sql": "CREATE INDEX idx_memories_journey ON memories(journey)",
+      "table": "memories",
+      "unique": 0
+    },
+    "idx_operation_run_events_run": {
+      "columns": [
+        "run_id",
+        "sequence"
+      ],
+      "sql": "CREATE INDEX idx_operation_run_events_run ON operation_run_events(run_id, sequence)",
+      "table": "operation_run_events",
+      "unique": 0
+    },
+    "idx_operation_runs_operation": {
+      "columns": [
+        "operation_id"
+      ],
+      "sql": "CREATE INDEX idx_operation_runs_operation ON operation_runs(operation_id)",
+      "table": "operation_runs",
+      "unique": 0
+    },
+    "idx_operation_runs_started": {
+      "columns": [
+        "started_at"
+      ],
+      "sql": "CREATE INDEX idx_operation_runs_started ON operation_runs(started_at)",
+      "table": "operation_runs",
+      "unique": 0
+    },
+    "idx_operation_runs_status": {
+      "columns": [
+        "status"
+      ],
+      "sql": "CREATE INDEX idx_operation_runs_status ON operation_runs(status)",
+      "table": "operation_runs",
+      "unique": 0
+    },
+    "idx_tasks_due_date": {
+      "columns": [
+        "due_date"
+      ],
+      "sql": "CREATE INDEX idx_tasks_due_date ON tasks(due_date)",
+      "table": "tasks",
+      "unique": 0
+    },
+    "idx_tasks_journey": {
+      "columns": [
+        "journey"
+      ],
+      "sql": "CREATE INDEX idx_tasks_journey ON tasks(journey)",
+      "table": "tasks",
+      "unique": 0
+    },
+    "idx_tasks_status": {
+      "columns": [
+        "status"
+      ],
+      "sql": "CREATE INDEX idx_tasks_status ON tasks(status)",
+      "table": "tasks",
+      "unique": 0
+    },
+    "sqlite_autoindex_attachments_1": {
+      "columns": [
+        "id"
+      ],
+      "sql": null,
+      "table": "attachments",
+      "unique": 1
+    },
+    "sqlite_autoindex_builder_change_requests_1": {
+      "columns": [
+        "id"
+      ],
+      "sql": null,
+      "table": "builder_change_requests",
+      "unique": 1
+    },
+    "sqlite_autoindex_builder_refinement_cursors_1": {
+      "columns": [
+        "journey"
+      ],
+      "sql": null,
+      "table": "builder_refinement_cursors",
+      "unique": 1
+    },
+    "sqlite_autoindex_builder_refinement_stories_1": {
+      "columns": [
+        "id"
+      ],
+      "sql": null,
+      "table": "builder_refinement_stories",
+      "unique": 1
+    },
+    "sqlite_autoindex_consolidations_1": {
+      "columns": [
+        "id"
+      ],
+      "sql": null,
+      "table": "consolidations",
+      "unique": 1
+    },
+    "sqlite_autoindex_conversations_1": {
+      "columns": [
+        "id"
+      ],
+      "sql": null,
+      "table": "conversations",
+      "unique": 1
+    },
+    "sqlite_autoindex_exploratory_stories_1": {
+      "columns": [
+        "id"
+      ],
+      "sql": null,
+      "table": "exploratory_stories",
+      "unique": 1
+    },
+    "sqlite_autoindex_identity_1": {
+      "columns": [
+        "id"
+      ],
+      "sql": null,
+      "table": "identity",
+      "unique": 1
+    },
+    "sqlite_autoindex_identity_2": {
+      "columns": [
+        "layer",
+        "key"
+      ],
+      "sql": null,
+      "table": "identity",
+      "unique": 1
+    },
+    "sqlite_autoindex_identity_descriptors_1": {
+      "columns": [
+        "layer",
+        "key"
+      ],
+      "sql": null,
+      "table": "identity_descriptors",
+      "unique": 1
+    },
+    "sqlite_autoindex_identity_integrations_1": {
+      "columns": [
+        "id"
+      ],
+      "sql": null,
+      "table": "identity_integrations",
+      "unique": 1
+    },
+    "sqlite_autoindex_llm_calls_1": {
+      "columns": [
+        "id"
+      ],
+      "sql": null,
+      "table": "llm_calls",
+      "unique": 1
+    },
+    "sqlite_autoindex_memories_1": {
+      "columns": [
+        "id"
+      ],
+      "sql": null,
+      "table": "memories",
+      "unique": 1
+    },
+    "sqlite_autoindex_operation_run_events_1": {
+      "columns": [
+        "id"
+      ],
+      "sql": null,
+      "table": "operation_run_events",
+      "unique": 1
+    },
+    "sqlite_autoindex_operation_runs_1": {
+      "columns": [
+        "id"
+      ],
+      "sql": null,
+      "table": "operation_runs",
+      "unique": 1
+    },
+    "sqlite_autoindex_tasks_1": {
+      "columns": [
+        "id"
+      ],
+      "sql": null,
+      "table": "tasks",
+      "unique": 1
+    },
+    "ux_builder_change_requests_journey_display_code": {
+      "columns": [
+        "journey",
+        "display_code"
+      ],
+      "sql": "CREATE UNIQUE INDEX ux_builder_change_requests_journey_display_code ON builder_change_requests(journey, display_code)",
+      "table": "builder_change_requests",
+      "unique": 1
+    },
+    "ux_builder_refinement_stories_journey_display_code": {
+      "columns": [
+        "journey",
+        "display_code"
+      ],
+      "sql": "CREATE UNIQUE INDEX ux_builder_refinement_stories_journey_display_code ON builder_refinement_stories(journey, display_code)",
+      "table": "builder_refinement_stories",
+      "unique": 1
+    }
+  },
+  "memories_fts_findable_legacy_row_count": 1,
+  "memory_journeys": [
+    "genesis-project"
+  ],
+  "memory_legacy_row": {
+    "content": "Keep the legacy content intact through every migration.",
+    "journey": "genesis-project",
+    "readiness_state": "observed",
+    "title": "Legacy Decision",
+    "use_count": 0
+  },
+  "tables": {
+    "attachments": {
+      "columns": [
+        {
+          "dflt_value": null,
+          "name": "id",
+          "notnull": 0,
+          "pk": 1,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "journey_id",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "name",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "description",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "content",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": "'markdown'",
+          "name": "content_type",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "tags",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "embedding",
+          "notnull": 0,
+          "pk": 0,
+          "type": "BLOB"
+        },
+        {
+          "dflt_value": null,
+          "name": "created_at",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "updated_at",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "metadata",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [],
+      "sql": "CREATE TABLE attachments ( id TEXT PRIMARY KEY, journey_id TEXT NOT NULL, name TEXT NOT NULL, description TEXT, content TEXT NOT NULL, content_type TEXT NOT NULL DEFAULT 'markdown', tags TEXT, embedding BLOB, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, metadata TEXT)"
+    },
+    "builder_change_requests": {
+      "columns": [
+        {
+          "dflt_value": null,
+          "name": "id",
+          "notnull": 0,
+          "pk": 1,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "journey",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "display_code",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "refinement_story_id",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "title",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "body",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": "'captured'",
+          "name": "status",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": "0",
+          "name": "position",
+          "notnull": 1,
+          "pk": 0,
+          "type": "INTEGER"
+        },
+        {
+          "dflt_value": "'manual'",
+          "name": "source",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "provenance",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "outcome_notes",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "created_at",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "updated_at",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "completed_at",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "from": "refinement_story_id",
+          "match": "NONE",
+          "on_delete": "NO ACTION",
+          "on_update": "NO ACTION",
+          "table": "builder_refinement_stories",
+          "to": "id"
+        }
+      ],
+      "sql": "CREATE TABLE builder_change_requests ( id TEXT PRIMARY KEY, journey TEXT NOT NULL, display_code TEXT NOT NULL, refinement_story_id TEXT REFERENCES builder_refinement_stories(id), title TEXT NOT NULL, body TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'captured', position INTEGER NOT NULL DEFAULT 0, source TEXT NOT NULL DEFAULT 'manual', provenance TEXT, outcome_notes TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, completed_at TEXT, CHECK(status IN ( 'captured', 'planned', 'active', 'implemented', 'validated', 'done', 'parked', 'rejected', 'promoted')))"
+    },
+    "builder_refinement_cursors": {
+      "columns": [
+        {
+          "dflt_value": null,
+          "name": "journey",
+          "notnull": 0,
+          "pk": 1,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "active_refinement_story_id",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "active_change_request_id",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "last_refinement_event",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "updated_at",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "from": "active_change_request_id",
+          "match": "NONE",
+          "on_delete": "NO ACTION",
+          "on_update": "NO ACTION",
+          "table": "builder_change_requests",
+          "to": "id"
+        },
+        {
+          "from": "active_refinement_story_id",
+          "match": "NONE",
+          "on_delete": "NO ACTION",
+          "on_update": "NO ACTION",
+          "table": "builder_refinement_stories",
+          "to": "id"
+        }
+      ],
+      "sql": "CREATE TABLE builder_refinement_cursors ( journey TEXT PRIMARY KEY, active_refinement_story_id TEXT REFERENCES builder_refinement_stories(id), active_change_request_id TEXT REFERENCES builder_change_requests(id), last_refinement_event TEXT, updated_at TEXT NOT NULL)"
+    },
+    "builder_refinement_stories": {
+      "columns": [
+        {
+          "dflt_value": null,
+          "name": "id",
+          "notnull": 0,
+          "pk": 1,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "journey",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "display_code",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "title",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "description",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": "'draft'",
+          "name": "status",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": "0",
+          "name": "position",
+          "notnull": 1,
+          "pk": 0,
+          "type": "INTEGER"
+        },
+        {
+          "dflt_value": "'manual'",
+          "name": "source",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "provenance",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "created_at",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "updated_at",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "pulled_at",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "closed_at",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [],
+      "sql": "CREATE TABLE builder_refinement_stories ( id TEXT PRIMARY KEY, journey TEXT NOT NULL, display_code TEXT NOT NULL, title TEXT NOT NULL, description TEXT, status TEXT NOT NULL DEFAULT 'draft', position INTEGER NOT NULL DEFAULT 0, source TEXT NOT NULL DEFAULT 'manual', provenance TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, pulled_at TEXT, closed_at TEXT, CHECK(status IN ('draft', 'open', 'active', 'closed', 'parked')))"
+    },
+    "consolidations": {
+      "columns": [
+        {
+          "dflt_value": null,
+          "name": "id",
+          "notnull": 0,
+          "pk": 1,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "action",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "proposal",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "result",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "source_memory_ids",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "target_layer",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "target_key",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "rationale",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": "'pending'",
+          "name": "status",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "created_at",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "reviewed_at",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [],
+      "sql": "CREATE TABLE consolidations ( id TEXT PRIMARY KEY, action TEXT NOT NULL, proposal TEXT NOT NULL, result TEXT, source_memory_ids TEXT NOT NULL, target_layer TEXT, target_key TEXT, rationale TEXT, status TEXT NOT NULL DEFAULT 'pending', created_at TEXT NOT NULL, reviewed_at TEXT)"
+    },
+    "conversations": {
+      "columns": [
+        {
+          "dflt_value": null,
+          "name": "id",
+          "notnull": 0,
+          "pk": 1,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "title",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "started_at",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "ended_at",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "interface",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "persona",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "journey",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "summary",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "tags",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "metadata",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [],
+      "sql": "CREATE TABLE conversations ( id TEXT PRIMARY KEY, title TEXT, started_at TEXT NOT NULL, ended_at TEXT, interface TEXT NOT NULL, persona TEXT, journey TEXT, summary TEXT, tags TEXT, metadata TEXT)"
+    },
+    "exploratory_stories": {
+      "columns": [
+        {
+          "dflt_value": null,
+          "name": "id",
+          "notnull": 0,
+          "pk": 1,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "journey",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "title",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": "'active'",
+          "name": "status",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "current_story",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "narrative_summary",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "last_story_card",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "attractors_json",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "experiment_proposal_json",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "builder_handoff_json",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "source_conversations_json",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "artifact_dir",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "created_at",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "updated_at",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "promoted_at",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "archived_at",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [],
+      "sql": "CREATE TABLE exploratory_stories ( id TEXT PRIMARY KEY, journey TEXT NOT NULL, title TEXT, status TEXT NOT NULL DEFAULT 'active', current_story TEXT, narrative_summary TEXT, last_story_card TEXT, attractors_json TEXT, experiment_proposal_json TEXT, builder_handoff_json TEXT, source_conversations_json TEXT, artifact_dir TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, promoted_at TEXT, archived_at TEXT, CHECK(status IN ('active', 'archived', 'promoted')))"
+    },
+    "identity": {
+      "columns": [
+        {
+          "dflt_value": null,
+          "name": "id",
+          "notnull": 0,
+          "pk": 1,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "layer",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "key",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "content",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": "'1.0.0'",
+          "name": "version",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "created_at",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "updated_at",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "metadata",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [],
+      "sql": "CREATE TABLE identity ( id TEXT PRIMARY KEY, layer TEXT NOT NULL, key TEXT NOT NULL, content TEXT NOT NULL, version TEXT DEFAULT '1.0.0', created_at TEXT NOT NULL, updated_at TEXT NOT NULL, metadata TEXT, UNIQUE(layer, key))"
+    },
+    "identity_descriptors": {
+      "columns": [
+        {
+          "dflt_value": null,
+          "name": "layer",
+          "notnull": 1,
+          "pk": 1,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "key",
+          "notnull": 1,
+          "pk": 2,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "descriptor",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "generated_at",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [],
+      "sql": "CREATE TABLE identity_descriptors ( layer TEXT NOT NULL, key TEXT NOT NULL, descriptor TEXT NOT NULL, generated_at TEXT NOT NULL, PRIMARY KEY (layer, key))"
+    },
+    "identity_integrations": {
+      "columns": [
+        {
+          "dflt_value": null,
+          "name": "id",
+          "notnull": 0,
+          "pk": 1,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "layer",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "key",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "content",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": "'soul_mode'",
+          "name": "source",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "origin",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "conversation_id",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "journal_id",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "created_at",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": "'active'",
+          "name": "status",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": "'{}'",
+          "name": "metadata",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "from": "conversation_id",
+          "match": "NONE",
+          "on_delete": "NO ACTION",
+          "on_update": "NO ACTION",
+          "table": "conversations",
+          "to": "id"
+        },
+        {
+          "from": "journal_id",
+          "match": "NONE",
+          "on_delete": "NO ACTION",
+          "on_update": "NO ACTION",
+          "table": "memories",
+          "to": "id"
+        }
+      ],
+      "sql": "CREATE TABLE identity_integrations ( id TEXT PRIMARY KEY, layer TEXT NOT NULL, key TEXT NOT NULL, content TEXT NOT NULL, source TEXT NOT NULL DEFAULT 'soul_mode', origin TEXT, conversation_id TEXT REFERENCES conversations(id), journal_id TEXT REFERENCES memories(id), created_at TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'active', metadata TEXT NOT NULL DEFAULT '{}')"
+    },
+    "llm_calls": {
+      "columns": [
+        {
+          "dflt_value": null,
+          "name": "id",
+          "notnull": 0,
+          "pk": 1,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "role",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "model",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "prompt",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "response",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "prompt_tokens",
+          "notnull": 0,
+          "pk": 0,
+          "type": "INTEGER"
+        },
+        {
+          "dflt_value": null,
+          "name": "completion_tokens",
+          "notnull": 0,
+          "pk": 0,
+          "type": "INTEGER"
+        },
+        {
+          "dflt_value": null,
+          "name": "latency_ms",
+          "notnull": 0,
+          "pk": 0,
+          "type": "INTEGER"
+        },
+        {
+          "dflt_value": null,
+          "name": "cost_usd",
+          "notnull": 0,
+          "pk": 0,
+          "type": "REAL"
+        },
+        {
+          "dflt_value": null,
+          "name": "conversation_id",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "session_id",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "called_at",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "from": "conversation_id",
+          "match": "NONE",
+          "on_delete": "NO ACTION",
+          "on_update": "NO ACTION",
+          "table": "conversations",
+          "to": "id"
+        }
+      ],
+      "sql": "CREATE TABLE llm_calls ( id TEXT PRIMARY KEY, role TEXT NOT NULL, model TEXT NOT NULL, prompt TEXT NOT NULL, response TEXT NOT NULL, prompt_tokens INTEGER, completion_tokens INTEGER, latency_ms INTEGER, cost_usd REAL, conversation_id TEXT REFERENCES conversations(id), session_id TEXT, called_at TEXT NOT NULL)"
+    },
+    "memories": {
+      "columns": [
+        {
+          "dflt_value": null,
+          "name": "id",
+          "notnull": 0,
+          "pk": 1,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "conversation_id",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "memory_type",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": "'ego'",
+          "name": "layer",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "title",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "content",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "context",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "journey",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "persona",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "tags",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "created_at",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": "1.0",
+          "name": "relevance_score",
+          "notnull": 0,
+          "pk": 0,
+          "type": "REAL"
+        },
+        {
+          "dflt_value": null,
+          "name": "embedding",
+          "notnull": 0,
+          "pk": 0,
+          "type": "BLOB"
+        },
+        {
+          "dflt_value": null,
+          "name": "metadata",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "last_accessed_at",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": "0",
+          "name": "use_count",
+          "notnull": 1,
+          "pk": 0,
+          "type": "INTEGER"
+        },
+        {
+          "dflt_value": "'observed'",
+          "name": "readiness_state",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "from": "conversation_id",
+          "match": "NONE",
+          "on_delete": "NO ACTION",
+          "on_update": "NO ACTION",
+          "table": "conversations",
+          "to": "id"
+        }
+      ],
+      "sql": "CREATE TABLE memories ( id TEXT PRIMARY KEY, conversation_id TEXT REFERENCES conversations(id), memory_type TEXT NOT NULL, layer TEXT NOT NULL DEFAULT 'ego', title TEXT NOT NULL, content TEXT NOT NULL, context TEXT, journey TEXT, persona TEXT, tags TEXT, created_at TEXT NOT NULL, relevance_score REAL DEFAULT 1.0, embedding BLOB, metadata TEXT, last_accessed_at TEXT, use_count INTEGER NOT NULL DEFAULT 0, readiness_state TEXT NOT NULL DEFAULT 'observed')"
+    },
+    "memories_fts": {
+      "columns": [
+        {
+          "dflt_value": null,
+          "name": "title",
+          "notnull": 0,
+          "pk": 0,
+          "type": ""
+        },
+        {
+          "dflt_value": null,
+          "name": "content",
+          "notnull": 0,
+          "pk": 0,
+          "type": ""
+        },
+        {
+          "dflt_value": null,
+          "name": "context",
+          "notnull": 0,
+          "pk": 0,
+          "type": ""
+        }
+      ],
+      "foreign_keys": [],
+      "sql": "CREATE VIRTUAL TABLE memories_fts USING fts5( title, content, context, content=memories, content_rowid=rowid)"
+    },
+    "operation_run_events": {
+      "columns": [
+        {
+          "dflt_value": null,
+          "name": "id",
+          "notnull": 0,
+          "pk": 1,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "run_id",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "sequence",
+          "notnull": 1,
+          "pk": 0,
+          "type": "INTEGER"
+        },
+        {
+          "dflt_value": null,
+          "name": "kind",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "message",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "details_json",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "created_at",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "from": "run_id",
+          "match": "NONE",
+          "on_delete": "CASCADE",
+          "on_update": "NO ACTION",
+          "table": "operation_runs",
+          "to": "id"
+        }
+      ],
+      "sql": "CREATE TABLE operation_run_events ( id TEXT PRIMARY KEY, run_id TEXT NOT NULL REFERENCES operation_runs(id) ON DELETE CASCADE, sequence INTEGER NOT NULL, kind TEXT NOT NULL, message TEXT NOT NULL, details_json TEXT, created_at TEXT NOT NULL)"
+    },
+    "operation_runs": {
+      "columns": [
+        {
+          "dflt_value": null,
+          "name": "id",
+          "notnull": 0,
+          "pk": 1,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "operation_id",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "status",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "outcome",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "parameters_json",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "summary_json",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "result_json",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "error",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "started_at",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "completed_at",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "created_at",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [],
+      "sql": "CREATE TABLE operation_runs ( id TEXT PRIMARY KEY, operation_id TEXT NOT NULL, status TEXT NOT NULL, outcome TEXT, parameters_json TEXT NOT NULL, summary_json TEXT, result_json TEXT, error TEXT, started_at TEXT NOT NULL, completed_at TEXT, created_at TEXT NOT NULL)"
+    },
+    "tasks": {
+      "columns": [
+        {
+          "dflt_value": null,
+          "name": "id",
+          "notnull": 0,
+          "pk": 1,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "journey",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "title",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": "'todo'",
+          "name": "status",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "due_date",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "stage",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "context",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": "'manual'",
+          "name": "source",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "created_at",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "updated_at",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "completed_at",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "metadata",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "scheduled_at",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "time_hint",
+          "notnull": 0,
+          "pk": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [],
+      "sql": "CREATE TABLE tasks ( id TEXT PRIMARY KEY, journey TEXT, title TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'todo', due_date TEXT, stage TEXT, context TEXT, source TEXT NOT NULL DEFAULT 'manual', created_at TEXT NOT NULL, updated_at TEXT NOT NULL, completed_at TEXT, metadata TEXT, scheduled_at TEXT, time_hint TEXT)"
+    }
+  },
+  "task_legacy_row": null,
+  "triggers": {
+    "memories_fts_ad": {
+      "sql": "CREATE TRIGGER memories_fts_ad AFTER DELETE ON memories BEGIN INSERT INTO memories_fts(memories_fts, rowid, title, content, context) VALUES ('delete', OLD.rowid, OLD.title, OLD.content, COALESCE(OLD.context, '')); END",
+      "table": "memories"
+    },
+    "memories_fts_ai": {
+      "sql": "CREATE TRIGGER memories_fts_ai AFTER INSERT ON memories BEGIN INSERT INTO memories_fts(rowid, title, content, context) VALUES (NEW.rowid, NEW.title, NEW.content, COALESCE(NEW.context, '')); END",
+      "table": "memories"
+    },
+    "memories_fts_au": {
+      "sql": "CREATE TRIGGER memories_fts_au AFTER UPDATE ON memories BEGIN INSERT INTO memories_fts(memories_fts, rowid, title, content, context) VALUES ('delete', OLD.rowid, OLD.title, OLD.content, COALESCE(OLD.context, '')); INSERT INTO memories_fts(rowid, title, content, context) VALUES (NEW.rowid, NEW.title, NEW.content, COALESCE(NEW.context, '')); END",
+      "table": "memories"
+    }
+  }
+}

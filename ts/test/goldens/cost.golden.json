@@ -1,0 +1,92 @@
+{
+  "cases": [
+    {
+      "completion_tokens": 500,
+      "cost_usd": 0.00030000000000000003,
+      "model": "google/gemini-2.5-flash-lite",
+      "prompt_tokens": 1000
+    },
+    {
+      "completion_tokens": 1,
+      "cost_usd": 5.000000000000001e-07,
+      "model": "google/gemini-2.5-flash-lite",
+      "prompt_tokens": 1
+    },
+    {
+      "completion_tokens": 6789,
+      "cost_usd": 0.0039501,
+      "model": "google/gemini-2.5-flash-lite",
+      "prompt_tokens": 12345
+    },
+    {
+      "completion_tokens": null,
+      "cost_usd": 0.0001,
+      "model": "google/gemini-2.5-flash-lite",
+      "prompt_tokens": 1000
+    },
+    {
+      "completion_tokens": null,
+      "cost_usd": 8.400000000000001e-07,
+      "model": "openai/text-embedding-3-small",
+      "prompt_tokens": 42
+    },
+    {
+      "completion_tokens": 0,
+      "cost_usd": 8.400000000000001e-07,
+      "model": "openai/text-embedding-3-small",
+      "prompt_tokens": 42
+    },
+    {
+      "completion_tokens": null,
+      "cost_usd": 0.02,
+      "model": "openai/text-embedding-3-small",
+      "prompt_tokens": 1000000
+    },
+    {
+      "completion_tokens": 0,
+      "cost_usd": 0.0,
+      "model": "google/gemini-2.5-flash-lite",
+      "prompt_tokens": 0
+    },
+    {
+      "completion_tokens": null,
+      "cost_usd": 0.0,
+      "model": "google/gemini-2.5-flash-lite",
+      "prompt_tokens": 0
+    },
+    {
+      "completion_tokens": 500,
+      "cost_usd": null,
+      "model": "anthropic/claude-sonnet-4",
+      "prompt_tokens": 1000
+    },
+    {
+      "completion_tokens": 500,
+      "cost_usd": null,
+      "model": "",
+      "prompt_tokens": 1000
+    },
+    {
+      "completion_tokens": 500,
+      "cost_usd": null,
+      "model": "google/gemini-2.5-flash-lite",
+      "prompt_tokens": null
+    },
+    {
+      "completion_tokens": null,
+      "cost_usd": null,
+      "model": "openai/text-embedding-3-small",
+      "prompt_tokens": null
+    }
+  ],
+  "prices": {
+    "google/gemini-2.5-flash-lite": {
+      "completion_per_1k": 0.0004,
+      "prompt_per_1k": 0.0001
+    },
+    "openai/text-embedding-3-small": {
+      "completion_per_1k": 0.0,
+      "prompt_per_1k": 2e-05
+    }
+  }
+}

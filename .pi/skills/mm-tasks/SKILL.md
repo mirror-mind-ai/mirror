@@ -9,16 +9,16 @@ user-invocable: true
 When receiving `/mm-tasks [subcommand] [args]`:
 
 ```bash
-uv run python -m memory tasks [subcommand] [args]
+mirror tasks [subcommand] [args]
 ```
 
 Subcommands: `list` (default), `add`, `done`, `doing`, `block`, `delete`, `import`, `sync`, `sync-config`
 
 **Examples:**
 ```bash
-uv run python -m memory tasks --journey mirror
-uv run python -m memory tasks add "Write plan doc" --journey mirror
-uv run python -m memory tasks done <task-id>
+mirror tasks --journey mirror
+mirror tasks add "Write plan doc" --journey mirror
+mirror tasks done <task-id>
 ```
 
 Present the output to the user without modification.

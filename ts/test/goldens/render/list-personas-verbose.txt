@@ -1,0 +1,7 @@
+=== PERSONAS ===
+  engineer
+    version: 1.0.0
+    routing_keywords: code, typescript, refactor
+  therapist
+    version: 1.0.0
+    routing_keywords: feeling, tension

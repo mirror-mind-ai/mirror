@@ -4,15 +4,44 @@ Command reference, configuration, and legacy migration workflow.
 
 - **Commands:** this document
 - **System architecture, schema, and runtime model:** [docs/product/architecture.md](docs/product/architecture.md)
-- **Python API:** [docs/product/api.md](docs/product/api.md)
 - **Extensions:** [docs/product/extensions/](docs/product/extensions/index.md)
 
 ---
 
+## Running a command
+
+Every command in this document runs through the front door, the one entry into
+Mirror Mind's core. `npm install -g mirror-mind` puts it on your `PATH` as
+`mirror`, the name it gives itself in its own usage lines:
+
+```bash
+mirror runtime status
+```
+
+The skills say the same thing, so what an agent runs is what you run. Two
+install kinds provide the name, and `runtime status` reports which one you
+have:
+
+- **`package`** — a global npm install. The package holds the runtime subset of
+  this repository with the same paths, under `$(npm root -g)/mirror-mind`;
+  `npm install -g mirror-mind@<version>` and `mirror runtime update` both
+  replace it in place.
+- **`clone`** — a git checkout, after `npm link` once at its root. That is how
+  the repository's own developers run it; the
+  [development guide](docs/process/development-guide.md) has the setup.
+
+A second command, `mirror-hook`, is installed beside it for the runtimes' hooks;
+you never run it yourself. Repository tooling — tests, smokes, CI — calls
+`node ts/src/frontDoor/cli.ts` directly, which is a statement about scripts, not
+about what anyone is told to type.
+
 ## Commands
 
 Claude Code uses the `/mm:` prefix. Pi and Gemini CLI use the `/mm-` prefix.
-Codex uses the `$mm-` prefix. All runtimes call the same Python core.
+Codex uses the `$mm-` prefix. All runtimes call the same core. A Claude Code
+**plugin** install (the npm package's wiring) prefixes the plugin's name:
+`/mirror-mind:mm:<skill>` in the slash menu, `mirror-mind:mm-<skill>` as the
+skill's own name; the `/mm:` column below is the checkout's form.
 
 | Pi / Gemini CLI | Codex | Claude Code | Purpose | Main Arguments |
 |---------|-------|-------------|---------|----------------|
@@ -20,7 +49,7 @@ Codex uses the `$mm-` prefix. All runtimes call the same Python core.
 | `/mm-build` | `$mm-build` | `/mm:build` | Builder Mode for a journey — loads context and project docs | `<slug>` |
 | `/mm-explore` | `$mm-explore` | `/mm:explore` | Explorer Mode for a journey, with explicit deactivation, in-session story surfaces, and Builder handoff artifacts — preserves uncertainty before construction | `<slug>`, `deactivate`, `story show|update|clear|open|thicken|snapshot|attractors|experiment|handoff|promote` |
 | `/mm-soul` | `$mm-soul` | `/mm:soul` | Soul Mode ritual entry and possible-listenings surface for inner-life listening | `[slug]` |
-| `python -m memory mode` | — | — | Internal explicit Mirror operating mode lifecycle used by runtime skills and status bars | `activate <mode> [--journey J]`, `deactivate`, `status` |
+| `mirror mode` | — | — | Internal explicit Mirror operating mode lifecycle used by runtime skills and status bars | `activate <mode> [--journey J]`, `deactivate`, `status` |
 | `/mm-identity` | `$mm-identity` | `/mm:identity` | Read and update identity directly in the database | `list [--layer L]`, `get <layer> <key>`, `set <layer> <key>`, `edit <layer> <key>` |
 | `/mm-consult` | `$mm-consult` | `/mm:consult` | Asks other LLMs through OpenRouter with Mirror context | `<family> [tier] "prompt"`, `credits` |
 | `/mm-journeys` | `$mm-journeys` | `/mm:journeys` | Lists journeys with status | no arguments |
@@ -31,7 +60,7 @@ Codex uses the `$mm-` prefix. All runtimes call the same Python core.
 | `/mm-journal` | `$mm-journal` | `/mm:journal` | Records a personal journal entry | `[--journey J] "text"` |
 | `/mm-recall` | `$mm-recall` | `/mm:recall` | Loads a previous conversation into context | `<conversation_id> [--limit N]` |
 | `/mm-conversations` | `$mm-conversations` | `/mm:conversations` | Lists recent conversations | `--limit N`, `--journey J`, `--persona P` |
-| `python -m memory conversations append` | — | — | Atomically appends an explicit bounded user/assistant batch to one exact conversation | `--mirror-home PATH --format json`, JSON stdin |
+| `mirror conversations append` | — | — | Atomically appends an explicit bounded user/assistant batch to one exact conversation | `--mirror-home PATH --format json`, JSON stdin |
 | `/mm-backup` | `$mm-backup` | `/mm:backup` | Backs up the memory database | no arguments |
 | `/mm-seed` | `$mm-seed` | `/mm:seed` | Seeds identity files from the active user home into the database | no arguments |
 | `/mm-mute` | `$mm-mute` | `/mm:mute` | Toggles conversation logging | no arguments |
@@ -43,16 +72,35 @@ Codex uses the `$mm-` prefix. All runtimes call the same Python core.
 | `/mm-release-notes` | `$mm-release-notes` | `/mm:release-notes` | Shows Mirror Mind release notes | `[latest|vX.Y.Z]`, `pending` |
 | `/mm-update` | `$mm-update` | `/mm:update` | Updates the local Mirror runtime through the safe updater | no arguments |
 | `/mm-help` | `$mm-help` | `/mm:help` | Lists available commands | no arguments |
-| `python -m memory runtime` | — | — | Inspects Mirror runtime status, version, drift, backups, release notes, release promotion readiness, plans updates, and executes safe updates | `status [--mirror-home PATH] [--channel stable|main]`, `version [--start PATH] [--channel stable|main]`, `diagnose [--mirror-home PATH]`, `backup [--mirror-home PATH]`, `backup --verify PATH`, `release-notes [latest|vX.Y.Z]`, `release-notes pending [--from vX.Y.Z] [--ref REF] [--no-fetch]`, `release-doctor --target vX.Y.Z [--stable REF]`, `release-promote --target vX.Y.Z [--stable BRANCH] [--remote REMOTE] [--dry-run] [--push]`, `update --dry-run [--mirror-home PATH] [--channel stable|main]`, `update --check [--channel stable|main]`, `update [--no-fetch] [--skip-migrations] [--mirror-home PATH] [--channel stable|main]`, `update --repair-updater [--no-fetch] [--mirror-home PATH] [--channel stable|main]` |
-| `python -m memory conversation-logger` | — | — | Runtime conversation logging and repair utilities | `discard-current [--interface pi] [--session-id ID]`, `repair-journeys [--limit N] [--apply]` |
-| `python -m memory journey-projection` | — | — | Discovers, rebuilds, and inspects Journey projections; isolated test mode also supports the immutable consumer probe | `capabilities`, `rebuild-operational --journey ID`, `inspect --journey ID --namespace ID --projection ID`, test-only `probe-prepare` and `probe-publish`; all accept `--mirror-home PATH --format json` |
-| `python -m memory web` | — | — | Runs the local Mirror Web Console — Identity and Workspace perspectives, conversation intelligence, bulk conversation maintenance (assign/delete), and allowlisted operation runs | `[--host 127.0.0.1] [--port 8765]` |
+| `mirror runtime` | — | — | Inspects Mirror runtime status, version, drift, backups, release notes, release promotion readiness, plans updates, and executes safe updates | `status [--mirror-home PATH] [--channel stable|main]`, `version [--start PATH] [--channel stable|main]`, `diagnose [--mirror-home PATH]`, `backup [--mirror-home PATH]`, `backup --verify PATH`, `release-notes [latest|vX.Y.Z]`, `release-notes pending [--from vX.Y.Z] [--ref REF] [--no-fetch]`, `migrate [--mirror-home PATH]`, `update --dry-run [--mirror-home PATH] [--channel stable|main]`, `update --check [--channel stable|main]`, `update [--no-fetch] [--skip-migrations] [--mirror-home PATH] [--channel stable|main]`, `update --repair-updater [--no-fetch] [--mirror-home PATH] [--channel stable|main]`, `channel [stable|main]` |
+| `mirror conversation-logger` | — | — | Runtime conversation logging and repair utilities | `discard-current [--interface pi] [--session-id ID]`, `repair-journeys [--limit N] [--apply]` |
 | `ext-review-copy` | — | `ext:review-copy` | External multi-LLM copy review skill; install and expose it before use | skill-driven workflow |
+
+### Journey slugs and persona ids
+
+A new journey slug or persona id must be kebab-case: lowercase letters, digits,
+and single hyphens, up to 80 characters, such as `product-launch`. Agents put
+these keys into shell commands (`--journey <slug>`, `--persona <id>`), and a
+kebab-case key is one plain word that a shell cannot split, substitute, or read
+as an option. `identity set`, `identity edit`, and `seed` refuse any other new
+key, write nothing for it, and name one that would work:
+
+```text
+Error: no journey was created: 'My Trip' is not a journey slug. Use lowercase letters, digits, and single hyphens, up to 80 characters, for example 'my-trip'.
+```
+
+Nothing is renamed for you: a key stored differently from how it was typed would
+miss the next command that uses it. A key created before this rule keeps working
+and is never rewritten. Every command Mirror prints for you to run quotes the key
+it carries, so such a key still arrives as one argument. An agent writing a
+command of its own may not quote it, so `mirror runtime diagnose` reports each
+such key as `identity_key_outside_grammar`
+([CR104](docs/project/refinement/rs004-identity-resolution-fidelity/cr104-journey-slugs-are-not-validated-and-command-hints-print-them-raw.md)).
 
 ## Explicit Conversation Append
 
 ```bash
-uv run python -m memory conversations append \
+mirror conversations append \
   --mirror-home <home> --format json < payload.json
 ```
 
@@ -73,6 +121,14 @@ rejects every conflict, inserts only missing rows, and commits once. Identical
 retries return `existing`; divergent or cross-conversation ID reuse rejects the
 whole batch.
 
+Idempotency compares caller metadata by **JSON value, not by stored bytes**.
+JSON has a single number type, so `1` and `1.0` are the same value and a retry
+carrying either is `existing` rather than `idempotency_conflict`. Booleans are
+never equal to numbers: `true` and `1` remain a conflict. A retry only
+classifies; it never rewrites the metadata already stored. Any other difference
+in role, content, timestamp, target conversation, or metadata value still
+rejects the whole batch.
+
 Success and expected failure are compact bounded JSON. Success receipts contain
 only conversation/Journey identity, counts, and validated message IDs with
 `inserted` or `existing` state. Failure reasons are
@@ -82,52 +138,12 @@ only conversation/Journey identity, counts, and validated message IDs with
 `persistence_failure`. Receipts never echo message content, caller metadata,
 private paths, environment values, or raw exceptions.
 
-## Journey Projection Contract
-
-```bash
-uv run python -m memory journey-projection capabilities \
-  --mirror-home <home> --format json
-```
-
-Capability discovery is database-free and returns the installed
-`mirror.journey-projections` contract version, Extension API version `1.1`, and
-all five v1 operations. Production consumers can run `rebuild-operational` and
-`inspect`; both resolve the Journey root from the selected home's registry. The
-`probe-prepare` and `probe-publish` routes are unavailable unless
-`MEMORY_ENV=test` and an isolated non-production home is proven. All output is
-structured JSON. Unknown operations, formats, unsafe paths, invalid schemas, and
-authority violations return nonzero bounded JSON without echoing private paths
-or payload content.
-
-Extension API `1.1` adds `api.journey_projections.publish(...)` and
-`api.journey_projections.inspect(...)`. Both are permanently bound to the
-installed extension's `extension_id`; extensions cannot select `ariad`, another
-extension namespace, or a filesystem root. See the [Extension API
-reference](docs/product/extensions/api-reference.md#journey-projections).
-
-Ariad Operational rebuilds are Core-owned. They compile the registered
-Journey's authored roadmap, explicit active work, public Exploratory Story
-handoff fields, canonical Refinement indexes, and allowlisted artifact paths
-into `ariad:operational`, then publish through the shared linearizable kernel.
-The compiler accepts no production root from consumers, invokes no model or
-network, copies no private narrative bodies, and fails closed on unsafe or
-ambiguous durable references. `rebuild-operational` returns the published
-document and identity; `inspect` returns the validated document plus its current
-manifest entry and never repairs divergence implicitly.
-
-Represented Ariad mutations now request Operational refresh only after durable
-source commit. Equal projected `sourceRevision` values are treated as unchanged;
-otherwise publication uses the shared kernel. Refresh failure is intentionally
-non-transactional with source truth: the source mutation stays committed and the
-latest bounded outcome remains available through the internal coordinator. No
-background retry, repair, model, network, or extra CLI output is introduced.
-
 ## Operating Mode Lifecycle
 
 ```bash
-uv run python -m memory mode [--session-id ID] activate "Builder Mode" --journey <slug>
-uv run python -m memory mode [--session-id ID] status
-uv run python -m memory mode [--session-id ID] deactivate
+mirror mode [--session-id ID] activate "Builder Mode" --journey <slug>
+mirror mode [--session-id ID] status
+mirror mode [--session-id ID] deactivate
 ```
 
 Operating mode lifecycle is a small runtime state surface used by Mirror skills
@@ -139,48 +155,56 @@ global fallback. Mode activation and deactivation are semantic operations.
 Rendering the Pi status line and clearing stale UI are internal effects of that
 lifecycle.
 
+Operating mode is what the status line and `mode status` show. Builder lifecycle
+commands do not use it to choose a journey. Each takes `--journey <slug>`, or
+binds to the Builder Mode of an active session named with `--session-id` or
+`MIRROR_SESSION_ID`. With neither, it refuses with `requires a journey` before
+reading a cursor or writing a file. An agent shell names no session, so the
+Builder skill passes `--journey` on every command. See
+[Troubleshooting](docs/process/troubleshooting.md#a-builder-command-refuses-with-requires-a-journey).
+
 The user-facing mode skills are `/mm-mirror`, `/mm-build`, `/mm-explore`, and
 `/mm-soul`. The internal lifecycle command exists so Mirror can activate and
 leave explicit lenses through contained operations. Users are never in "no
 mode": when an explicit lens is deactivated, Mirror returns to Mirror Mode,
 preserving journey context when one remains active.
 
-`memory mirror load` activates `◌ Mirror Mode`. `memory build load <slug>`
-activates `■ Builder Mode` for the selected journey. `memory soul load [slug]`
+`mirror mirror load` activates `◌ Mirror Mode`. `mirror build load <slug>`
+activates `■ Builder Mode` for the selected journey. `mirror soul load [slug]`
 activates `☾ Soul Mode` and renders the ritual entry surface without opening a
-rite or writing to the journal. `memory soul listen` renders situated Possible
-Listenings; `memory soul rite self|shadow` renders listening-lens surfaces;
-`memory soul fruit set|show|clear` manages one Fruit In Maturation; `memory soul
+rite or writing to the journal. `mirror soul listen` renders situated Possible
+Listenings; `mirror soul rite self|shadow` renders listening-lens surfaces;
+`mirror soul fruit set|show|clear` manages one Fruit In Maturation; `mirror soul
 harvest set|show|save|decline` closes and optionally saves one harvested fruit;
-and `memory soul prompt self` composes Self Voice with the user's `self/soul`
-identity layer. `memory explore load <slug>` activates `△ Explorer Mode` for the selected journey and resumes the active
-durable Exploratory Story when one exists. `memory explore story show|update|clear
+and `mirror soul prompt self` composes Self Voice with the user's `self/soul`
+identity layer. `mirror explore load <slug>` activates `△ Explorer Mode` for the selected journey and resumes the active
+durable Exploratory Story when one exists. `mirror explore story show|update|clear
 <slug>` manages the current Exploratory Story; `clear` archives the active story
-so it is no longer current but remains historical evidence. `memory explore story
+so it is no longer current but remains historical evidence. `mirror explore story
 list|archive <slug>` shows durable Explorer Story visibility and archives the
-active story explicitly. `memory explore story open|thicken|snapshot <slug>`
+active story explicitly. `mirror explore story open|thicken|snapshot <slug>`
 renders the first visible Explorer story surfaces while persisting durable state.
-`memory explore story attractors|experiment <slug>` records visible attractors and
+`mirror explore story attractors|experiment <slug>` records visible attractors and
 small experiment proposals inside the current durable story state without
-activating Builder. `memory explore story handoff <slug>` writes the Builder
+activating Builder. `mirror explore story handoff <slug>` writes the Builder
 transfer document set under `docs/project/explorations/<exploratory-story-slug>/`
 when the journey has a project path, including `index.md`,
 `exploratory-story.md`, `handoff-info.md`, and `product-design-proposal.md`. It can
 attach reviewed source conversations with `--source-conversation <id>` or
 `--source-conversation <id>:<role>`, and can write a privacy-obfuscated
 `full-conversation.md` only when `--include-full-conversation` is passed.
-`memory explore story promote <slug>` marks the durable story promoted and enters
+`mirror explore story promote <slug>` marks the durable story promoted and enters
 Builder only after an explicit handoff exists. Required Explorer story surfaces
 are wrapped with `[[MIRROR_REQUIRED_SURFACE_BEGIN:<surface-id>]]` and
 `[[MIRROR_REQUIRED_SURFACE_END:<surface-id>]]` markers so runtimes can distinguish
 product surfaces from ordinary command output; the marker lines are not
-user-facing copy. `memory explore deactivate` is the Explorer-specific exit
+user-facing copy. `mirror explore deactivate` is the Explorer-specific exit
 operation and returns the runtime to Mirror Mode semantics
 while preserving sticky journey context. Deactivation clears only the explicit
 active mode state; it does not erase sticky persona/journey defaults or rewrite
 conversation history.
 
-`memory welcome --status-line [--session-id ID]` includes active mode context when present:
+`mirror welcome --status-line [--session-id ID]` includes active mode context when present:
 
 ```text
 ◇ alisson-vale · Explorer Mode on ■ Builder Mode · ✓
@@ -207,19 +231,19 @@ The `runtime` subcommands operate in three layers: inspection (read-only), backu
 
 ```bash
 # 1. Confirm the runtime is healthy
-uv run python -m memory runtime status
+mirror runtime status
 
 # 2. Classify any drift the status surfaces
-uv run python -m memory runtime diagnose
+mirror runtime diagnose
 
 # 3. Check whether a new version is available
-uv run python -m memory runtime update --check
+mirror runtime update --check
 
 # 4. Plan the update locally
-uv run python -m memory runtime update --dry-run
+mirror runtime update --dry-run
 
 # 5. Execute the update through the safe pipeline
-uv run python -m memory runtime update
+mirror runtime update
 ```
 
 Each command exits non-zero when state is not safe enough for the next step.
@@ -229,63 +253,74 @@ Each command exits non-zero when state is not safe enough for the next step.
 #### `runtime status`
 
 ```bash
-uv run python -m memory runtime status [--mirror-home PATH] [--channel stable|main]
+mirror runtime status [--mirror-home PATH] [--channel stable|main]
 ```
 
-Reports version, repository, git state, mirror home, database, core migration health, installed extensions, extension health, clone role, Python version, and environment. Exits `attention needed` when the git tree is dirty, the mirror home is not configured, core migrations are missing or unknown, or installed extension migrations are pending, drifted, or unknown.
+Reports version, how Mirror is installed (`Install: clone (<path>)`, or `Install: package (mirror-mind@<version>)` with its `Install root:`), repository and git state for a clone (`Repository: none (package install)` for a package, which is not graded as a git tree), mirror home, database, core migration health, installed extensions, extension health, clone role, update channel, Node version, and environment. Exits `attention needed` when the git tree is dirty, the mirror home is not configured, core migrations are missing or unknown, or installed extension migrations are pending, drifted, or unknown. The install kind is read from where the front door lives, with nothing spawned: a checkout by its `.git`, a package by the global layout (`<prefix>/lib/node_modules/mirror-mind` with `<prefix>/bin/mirror` linked into it).
 
 #### `runtime version`
 
 ```bash
-uv run python -m memory runtime version [--start PATH] [--channel stable|main]
+mirror runtime version [--start PATH] [--channel stable|main]
 ```
 
-Reports the installed version, repository, branch, commit, clone role, and update channel. Local and offline. `--start` inspects a repository from a chosen path instead of the current working directory.
+Reports the installed version, the install (as `runtime status` does), repository, branch, commit, clone role, and update channel. Local and offline. `--start` inspects a repository from a chosen path instead of the current working directory; the install is where the front door lives regardless of `--start`.
 
 #### `runtime diagnose`
 
 ```bash
-uv run python -m memory runtime diagnose [--mirror-home PATH]
+mirror runtime diagnose [--mirror-home PATH]
 ```
 
-Classifies attention-needed drift into stable finding codes (`git_dirty`, `core_migration_pending`, `core_migration_unknown`, `extension_migration_pending`, `extension_migration_unknown`, `extension_migration_checksum_drift`, `extension_manifest_invalid`, `database_missing`, `mirror_home_missing`). Each finding carries severity, subject, recommendation, and a repair route. Read-only.
+Classifies attention-needed drift into stable finding codes (`git_dirty`, `core_migration_pending`, `core_migration_unknown`, `extension_migration_pending`, `extension_migration_unknown`, `extension_migration_checksum_drift`, `extension_manifest_invalid`, `database_missing`, `mirror_home_missing`, `identity_key_outside_grammar`). Each finding carries severity, subject, recommendation, and a repair route. Read-only.
 
 ### Backup
 
 ```bash
-uv run python -m memory runtime backup [--mirror-home PATH]
-uv run python -m memory runtime backup --verify PATH_TO_BACKUP.zip
+mirror runtime backup [--mirror-home PATH]
+mirror runtime backup --verify PATH_TO_BACKUP.zip
 ```
 
-Runtime backup archives contain `memory.db` and SQLite sidecars (`memory.db-wal`, `memory.db-shm`) when present. Verification is structural: the zip must be readable, contain `memory.db`, and avoid unsafe archive paths. Recovery is manual in this version: stop active runtime sessions, move current database files aside, extract the backup into the Mirror home, and rerun `runtime status`.
+A backup archive holds one member, `memory.db`: a consistent snapshot of the database as committed, in WAL mode, taken with `VACUUM INTO` and checked before it is written. The snapshot is staged in a private directory under the OS temp dir, never in the backups directory, so a backup needs free temp space about the size of the database; `TMPDIR` moves it, and a backup that cannot stage it fails with `backup: no archive was written:` and the reason. Archives written before CR061 may also carry `memory.db-wal` and `memory.db-shm`. Verification checks that the zip is readable, holds `memory.db` and nothing but SQLite's own files, and has no unsafe archive paths, then extracts `memory.db` and runs `PRAGMA quick_check` on it. Recovery is manual in this version: stop active runtime sessions, move current database files aside, extract the backup into the Mirror home, and rerun `runtime status`.
 
 ### Update planning
 
 #### `runtime update --check`
 
 ```bash
-uv run python -m memory runtime update --check [--channel stable|main]
+mirror runtime update --check [--channel stable|main]
 ```
 
-Queries the configured upstream branch through `git ls-remote`. May contact the network, but does not fetch, pull, change refs, back up, migrate, or modify files. Reports `up_to_date`, `update_available`, `local_ahead`, `diverged`, `no_upstream`, or `unknown`.
+For a clone, queries the configured upstream branch through `git ls-remote`. May contact the network, but does not fetch, pull, change refs, back up, migrate, or modify files. Reports `up_to_date`, `update_available`, `local_ahead`, `diverged`, `no_upstream`, or `unknown`.
 
 On the `stable` channel, this check remains intentionally conservative: it can know a remote commit is available, but it does not fetch release-note files. When release details are not already available from local refs, the output says so and points to the preview and update commands.
+
+For a package, asks the registry for the package's dist-tags (`npm view mirror-mind dist-tags`) and reports the installed version, the channel's version, and the availability: `up_to_date`, `update_available`, `channel_behind` (the channel's version is lower than the installed one — a downgrade, which `runtime update` refuses because migrations do not run backwards; the check names the channel that carries the installed version), or `unresolved` (no registry, no such tag, or a tag whose value is not a plain version). Nothing is installed.
 
 #### `runtime update --dry-run`
 
 ```bash
-uv run python -m memory runtime update --dry-run [--channel stable|main]
+mirror runtime update --dry-run [--channel stable|main]
 ```
 
 Plans an update from local refs only. Reuses `runtime status` as the safety gate. Reports whether a real update would be a no-op, pull known remote commits, or require manual reconciliation because the branch is ahead, diverged, dirty, or missing an upstream. Does not contact the network.
 
 When the channel is `stable` and the local upstream ref contains release notes newer than the installed version, the dry-run shows a release-aware notice with version, title, digest, and the concrete preview/update commands. If release notes are unavailable locally, the dry-run falls back to commit-oriented wording.
 
+#### `runtime channel`
+
+```bash
+mirror runtime channel
+mirror runtime channel stable|main
+```
+
+Shows the channel this install follows, with its source, or sets it. The file is the install kind's own: a clone's `.mirror-update-channel` at the checkout root (gitignored, so the tree stays clean), a package's `update-channel` beside the user's config file (`${XDG_CONFIG_HOME:-~/.config}/mirror/`, created `0700` if `init` has not run). Anything other than `stable` or `main` is refused with exit 2 and nothing is written; an install the updater cannot identify has nowhere to keep a channel and says so with exit 1. Setting the channel does not update: it decides what the next `runtime update` follows.
+
 ### Release notes
 
 ```bash
-uv run python -m memory runtime release-notes [latest|vX.Y.Z]
-uv run python -m memory runtime release-notes pending [--from vX.Y.Z] [--ref origin/stable]
+mirror runtime release-notes [latest|vX.Y.Z]
+mirror runtime release-notes pending [--from vX.Y.Z] [--ref origin/stable]
 ```
 
 Reads narrative release notes from `docs/releases/`. `latest` and explicit versions read the checked-out files. `pending` reads release notes from a git ref, defaults to `origin/stable`, fetches that ref safely before rendering, and lists every release newer than the installed runtime version. The fetch updates only remote-tracking refs; it does not merge, checkout, migrate, or modify the working tree. Use `--from` to simulate an older installed version or support a user report without mutating package metadata. Use `--ref HEAD --no-fetch` for local smoke tests before a release is published, or `--ref origin/stable` for the user-facing stable channel.
@@ -293,32 +328,42 @@ Reads narrative release notes from `docs/releases/`. `latest` and explicit versi
 Examples:
 
 ```bash
-uv run python -m memory runtime release-notes latest
-uv run python -m memory runtime release-notes v0.10.5
-uv run python -m memory runtime release-notes pending
-uv run python -m memory runtime release-notes pending --from 0.9.0 --ref origin/stable
-uv run python -m memory runtime release-notes pending --from 0.9.0 --ref HEAD --no-fetch
+mirror runtime release-notes latest
+mirror runtime release-notes v0.10.5
+mirror runtime release-notes pending
+mirror runtime release-notes pending --from 0.9.0 --ref origin/stable
+mirror runtime release-notes pending --from 0.9.0 --ref HEAD --no-fetch
 ```
 
 ### Release promotion doctor
 
+**Moved out of the product command surface (CV22.DS10.US2).** `runtime release-doctor`
+no longer exists as a Mirror command: it needs a git checkout, a clean tree, and local
+tags, which an installed user does not have. It is maintainer tooling now, and the front
+door answers the old name with its [cutoff](docs/releases/pending-cutoffs.md#release-tooling-leaves-the-product-command-surface).
+
 ```bash
-uv run python -m memory runtime release-doctor --target vX.Y.Z [--stable origin/stable]
+npm run release:doctor -- --target vX.Y.Z [--stable origin/stable]
 ```
 
 Runs a read-only preflight before stable promotion. The doctor checks repository availability, clean git state, package version, release-note file and heading, release index link, release tag state, and stable ref relationship. It prints `pass`, `warn`, and `fail` checks. Warnings keep the command exit code at zero because a pre-promotion state may legitimately lack a tag or stable fast-forward; failures exit non-zero. The command does not fetch, tag, merge, push, edit files, back up, migrate, or modify refs.
 
 ### Stable release promotion
 
+**Moved out of the product command surface (CV22.DS10.US2)**, with `release-doctor` and
+for the same reason: it needs tags, a `stable` branch, and push rights. The front door
+answers the old name with its cutoff, *before dispatch*, so a stray `--push` reaches
+nothing.
+
 ```bash
-uv run python -m memory runtime release-promote --target vX.Y.Z --dry-run
-uv run python -m memory runtime release-promote --target vX.Y.Z
-uv run python -m memory runtime release-promote --target vX.Y.Z --push
+npm run release:promote -- --target vX.Y.Z --dry-run
+npm run release:promote -- --target vX.Y.Z
+npm run release:promote -- --target vX.Y.Z --push
 ```
 
-Promotes a release to the stable channel through a controlled path. The command runs the release doctor first and blocks on failures. Dry-run prints planned stages without creating tags, moving branches, or pushing. Local promotion creates the missing target tag at `HEAD` or reuses an existing tag already at `HEAD`, then creates or fast-forwards the local `stable` branch to `HEAD`. Remote publication happens only with `--push`, which pushes the tag and stable branch to `origin`. The command does not fetch, force-push, rewrite existing tags, bump versions, write release notes, create GitHub Releases, back up, migrate, or update production clones.
+Promotes a release to the stable channel through a controlled path. The command runs the release doctor first and blocks on failures, then runs `npm publish --dry-run --tag stable` **before the tag**: it packs the tree and reports what would be published, reaches no registry (npm warns that a login would be needed and stops there), and a tarball that cannot be built stops the promotion before a tag exists for it. Dry-run prints planned stages without creating tags, moving branches, pushing, or running npm at all. Local promotion creates the missing target tag at `HEAD` or reuses an existing tag already at `HEAD`, then creates or fast-forwards the local `stable` branch to `HEAD`. Remote publication happens only with `--push`, which pushes the tag and stable branch to `origin`. The last step is always a printed plan for the npm publication — `npm publish --tag stable`, or `npm dist-tag add mirror-mind@<version> stable` for a version already on the registry — which the command never runs: publication is a separate gate. The command does not fetch, force-push, rewrite existing tags, bump versions, write release notes, create GitHub Releases, publish to npm, back up, migrate, or update production clones.
 
-After `release-promote --push` succeeds and CI is green, publish the matching GitHub Release on the same tag:
+After `npm run release:promote -- --push` succeeds and CI is green, publish the matching GitHub Release on the same tag:
 
 ```bash
 gh release create vX.Y.Z \
@@ -332,24 +377,33 @@ Use `gh release edit vX.Y.Z ... --latest` if the GitHub Release already exists. 
 ### Update execution
 
 ```bash
-uv run python -m memory runtime update [--no-fetch] [--skip-migrations] [--mirror-home PATH] [--channel stable|main]
-uv run python -m memory runtime update --repair-updater [--no-fetch] [--mirror-home PATH] [--channel stable|main]
+mirror runtime update [--no-fetch] [--skip-migrations] [--mirror-home PATH] [--channel stable|main]
+mirror runtime update --repair-updater [--no-fetch] [--mirror-home PATH] [--channel stable|main]
 ```
 
 Executes the safe update pipeline. Stages run in order and the first failure stops execution:
 
-1. **status gate** — normally requires `runtime status` to be ready. If status reports the database as unavailable, the updater first attempts a safe `MemoryClient` bootstrap, rebuilds status, and continues if the runtime becomes ready. If the only remaining blocker is core migration drift that may be resolved by the target version, such as pending or unknown core migration ids, the updater may proceed through the backup-gated update path and still requires post-update status to be ready.
-2. **fetch upstream** — mutates only remote-tracking refs. Skipped with `--no-fetch`.
-3. **plan** — accepts `none` (already up to date) and `pull`. Blocks `ahead`, `diverged`, and other unsafe states.
-4. **backup database** — reuses the runtime backup pipeline.
-5. **verify backup** — structural verification of the archive.
-6. **fast-forward** — `git merge --ff-only` against the upstream. Refuses merges and rebases.
-7. **migrations** — opens `MemoryClient` once to trigger migration application. Skipped with `--skip-migrations`.
-8. **post-update status** — reruns `runtime status` and expects `ready`. If the database is temporarily unavailable, the same safe bootstrap/retry path runs before reporting failure.
+The updater first identifies **how Mirror is installed**, from where the front door
+itself lives — never from configuration. A `clone` (a git checkout) fast-forwards against
+`origin/<channel>`; a `package` (an install under `npm root -g`) installs the version its
+channel's dist-tag resolves to. Anything else is `unknown` and is refused with the reason
+printed, rather than updated on a guess. A project-local `node_modules` is deliberately
+*not* a package install: `npm install -g` would update a different tree from the one
+running.
 
-Failures print a recovery block with the backup path and previous commit when relevant. Successful installs that move to a new commit include an `Installed changes` summary generated from `git log <previous>..<new>`. On the `stable` channel, successful installs also include an `Installed release` block when the new checkout contains narrative release notes. The pipeline does not roll back automatically: recovery is documented manual work.
+1. **status gate** — normally requires status to be ready. If the only remaining blocker is core migration drift that the target version may resolve, the updater proceeds through the backup-gated path and still requires post-update status to be ready. If the gate *crashes*, the repair lane runs automatically — an updater that cannot evaluate its own status is exactly what that lane is for.
+2. **capture** — records where to go back to, before anything moves: the current commit for a clone, the installed version for a package. The recovery block prints the pasteable route with that value in it.
+3. **fetch** — mutates only remote-tracking refs. Skipped with `--no-fetch`.
+4. **plan** — accepts already-up-to-date and pull. Blocks ahead, diverged, and other unsafe states. Plan and fetch are read-only and run *before* the backup, so an update with nothing to do never archives the database.
+5. **backup** — writes the dated archive.
+6. **verify backup** — extracts `memory.db` and runs `PRAGMA quick_check` against it. Verifying entry names alone would accept an archive that cannot be opened.
+7. **apply** — `git merge --ff-only` for a clone, `npm install -g <name>@<resolved version>` for a package. Never a merge, a rebase, or a bare dist-tag.
+8. **migrate** — spawns `runtime migrate` in a **fresh process**, so the code that migrates is the code that was just installed, and prints the `_migrations` ledger before and after. Skipped with `--skip-migrations`.
+9. **post-update status** — reruns `runtime status` in a fresh process and expects `ready`.
 
-If the full status gate crashes before update planning, `runtime update` automatically falls back to updater self-repair. The repair lane uses a minimal safety gate: clean git tree, configured upstream, optional fetch, optional database backup when the Mirror home and database are available, fast-forward only code update, and migrations skipped. It then asks the user to rerun `runtime update` with the repaired updater. The same lane can be invoked explicitly with `runtime update --repair-updater`. Older production clones whose updater is blocked before they receive the latest recovery behavior may need this explicit repair lane once.
+Failures print a recovery block with the backup path and previous commit when relevant. For a package, `plan` also refuses a channel whose version is **lower** than the installed one: migrations do not run backwards, so a downgrade is not an update, and the refusal names the channel that carries the installed version (`runtime channel main`). After a successful clone update, when `mirror` does not resolve on the `PATH`, one last line names `npm link` at the repository root: every skill says `mirror`, and a checkout provides it only after that. Successful installs that move to a new commit include an `Installed changes` summary generated from `git log <previous>..<new>`. On the `stable` channel, successful installs also include an `Installed release` block when the new checkout contains narrative release notes. The pipeline does not roll back automatically: recovery is documented manual work.
+
+If the status gate crashes before update planning, `runtime update` automatically falls back to updater self-repair. The repair lane uses a minimal safety gate — readable checkout, clean tree, configured upstream, optional fetch — applies a fast-forward-only code update, and skips migrations, which the next ordinary update owns. It then asks the user to rerun `runtime update` with the repaired updater. The same lane can be invoked explicitly with `runtime update --repair-updater`. Older production clones whose updater is blocked before they receive the latest recovery behavior may need this explicit repair lane once.
 
 ### Builder Refinement authority
 
@@ -401,92 +455,98 @@ identity, deletion, or conflict meaning stops with a concrete recommendation for
 Navigator. This repair policy never authorizes a commit, push, publication, release,
 configuration change, or legacy data mutation.
 
-When the canonical index is absent, Ariad-adopted journeys retain the compatibility-only
-SQLite Workbench commands. They can compose Refinement Work without pulling it into
-active lifecycle execution:
+**The SQLite Workbench is removed.** Until CV22.DS10.TS4, an Ariad-adopted
+journey whose project had no canonical index fell back to twenty
+compatibility-only `build refinement-story` / `build change-request` commands
+backed by SQLite. Those commands no longer exist, and the front door answers
+each of them with its
+[cutoff](docs/releases/pending-cutoffs.md#the-sqlite-refinement-workbench).
+Refinement Work lives in project files, for every journey, with no second
+authority to fall back to.
 
-```bash
-uv run python -m memory build refinement-story create --journey <slug> --title "<title>" [--description "<description>"]
-uv run python -m memory build change-request capture --journey <slug> --title "<title>" --body "<body>" [--refinement-story-id <rs-id>]
-uv run python -m memory build change-request attach --journey <slug> --change-request-id <cr-id> --refinement-story-id <rs-id>
-uv run python -m memory build refinement-story overview --journey <slug> --refinement-story-id <rs-id>
-uv run python -m memory build refinement-story pull --journey <slug> --refinement-story-id <rs-id>
-uv run python -m memory build change-request select --journey <slug> --change-request-id <cr-id>
-uv run python -m memory build change-request resume --journey <slug> --change-request-id <cr-id>
-uv run python -m memory build change-request confirm --journey <slug> --change-request-id <cr-id>
-uv run python -m memory build change-request plan --journey <slug> --change-request-id <cr-id> --summary "<plan>"
-uv run python -m memory build change-request mark-implemented --journey <slug> --change-request-id <cr-id> --evidence "<evidence>"
-uv run python -m memory build change-request validate --journey <slug> --change-request-id <cr-id> --evidence "<evidence>"
-uv run python -m memory build change-request done --journey <slug> --change-request-id <cr-id> --notes "<done note>"
-uv run python -m memory build change-request park --journey <slug> --change-request-id <cr-id> --reason "<why deferred>" --revisit-trigger "<what reopens it>"
-uv run python -m memory build change-request reject --journey <slug> --change-request-id <cr-id> --reason "<decided no>"
-uv run python -m memory build change-request promote --journey <slug> --change-request-id <cr-id> --target "<delivery target>" [--notes "<note>"]
-uv run python -m memory build refinement-story review --journey <slug> --refinement-story-id <rs-id> --summary "<review>"
-uv run python -m memory build refinement-story coherence --journey <slug> --refinement-story-id <rs-id> --summary "<coherence>"
-uv run python -m memory build refinement-story close --journey <slug> --refinement-story-id <rs-id> --summary "<close summary>"
-uv run python -m memory build refinement-story park --journey <slug> --refinement-story-id <rs-id> --reason "<why deferred>" --revisit-trigger "<what reopens it>"
-```
+### Builder lifecycle artifacts
 
-These commands render Ariad Workbench surfaces such as `CHANGE_REQUEST_CAPTURED`, `REFINEMENT_STORY_OVERVIEW`, `REFINEMENT_STORY_PULLED`, and `REFINEMENT_FLOW_EVENT`. Composition commands capture or organize Refinement Stories and Change Requests only. Pulling an RS selects active Refinement Work only. CR/RS flow commands update runtime state and evidence only; they do not mutate Delivery cursor state, implement files, commit, push, or release. Review and Coherence do not mutate files directly.
+Every file a Builder lifecycle command writes into a project falls under one of
+two rules:
 
-`resume` is a public, explicit recovery verb for a non-terminal Change Request
-inside the active Refinement Story that moved beyond capture but lost the active
-pointer. It preserves the CR status, evidence, timestamps, and RS link, then
-makes the CR active again so `implemented` can proceed to `validate` and
-`validated` can proceed to `done`. Use `select` for `captured` CRs. Terminal CRs
-(`done`, `parked`, `rejected`, and `promoted`) cannot be resumed.
+- **Scaffolds are written only where no file exists.** These are the story and
+  Delivery Story Plan packages (`index.md`, `plan.md`, `test-guide.md`),
+  the story indexes Expand creates, and the method templates. From then on they
+  belong to the Driver, and no command rewrites them.
+- **A scaffold is not a plan.** Ariad reads a story's files back through the
+  same template sentences it writes, so it can tell its own scaffold from an
+  authored file
+  ([CR112](docs/project/refinement/rs001-ariad-runtime-trust/cr112-a-scaffold-cannot-be-told-from-authored-content-and-approve-plan-never-reads-the-plan.md)).
+  `build show` lists `index.md`, `plan.md`, and `test-guide.md` as
+  `authored`, `partly authored`, `scaffold`, `incomplete` (written by a person
+  without the sections the Plan contract requires), or `missing`, and under
+  any not authored, the sections still to write. For `plan.md` that list is
+  exactly what `approve-plan` would refuse on. The artifacts card says the
+  same of a file it left alone. The Plan checkpoint names the same three files
+  in the same rows and prints none of the plan's sections: the plan is read in
+  `plan.md`
+  ([CR111](docs/project/refinement/rs001-ariad-runtime-trust/cr111-the-plan-checkpoint-renders-template-sentences-as-the-plan.md)).
+  Plan writes one scaffold for every item, titled by the roadmap's title for
+  it, else the title Pull recorded, else the item's code.
+  - `approve-plan`, on either route, refuses a `plan.md` whose Objective,
+    Scope, Acceptance Behavior, or Validation Route is missing, empty,
+    pending, or still the scaffold's, or whose Non-Goals or Implementation
+    Contract is empty.
+  - `done-item` refuses a story whose `index.md` still carries the scaffold's
+    statement, Outcome, or acceptance block.
+  - A journey with no project has no file to read, and neither check applies.
+    See [Troubleshooting](docs/process/troubleshooting.md#approve-plan-or-done-item-refuses-with-still-to-author).
+- **Records carry a seal.** These are `validation.md`, `review.md`,
+  `coherence.md`, and `done.md`, at story and Delivery Story level. Each
+  ends with `<!-- ariad-seal sha256:… -->`, the hash of everything above it.
+  - A closure command rewrites a record only while its seal still matches.
+    That is how a validation recorded as pending and later accepted updates its
+    file.
+  - Any other record is left exactly as it is: one written or edited by hand,
+    one written before seals existed, or one whose seal was removed. The
+    checkpoint surface then says `preserved`, and that checkpoint's fields are
+    in the surface, not in the file.
+  - To let Ariad write such a record again, a person moves their notes
+    elsewhere and deletes the file. The Builder skill never does that on its
+    own.
 
-`done`, `park`, `reject`, and `promote` are the four CR terminal verbs (a fifth,
-`discard`, deletes an accidental capture instead of reaching a terminal state).
-`park` requires both `--reason` and `--revisit-trigger`; `reject` requires
-`--reason` and keeps the record (contrast `discard`, which deletes it);
-`promote` requires `--target` and records a pointer only — it does not create
-or mutate a roadmap item. All four are legal from any non-terminal CR status
-and clear the runtime cursor only when the affected CR was the active one. An
-RS whose Change Requests are all terminal (including parked/rejected/promoted)
-can proceed through review, coherence, and close. `refinement-story park`
-mirrors the CR-level verb at the story level.
+Every artifact path must resolve inside the journey's project, or nothing is
+written.
 
 ### Clone role
 
 Each Mirror Mind clone declares its role through a `.mirror-clone-role` file at the repository root. Valid values are `production` and `dev`. The file is local to each clone and ignored by git. When the file is missing, unreadable, or contains an unknown value, the role defaults to `production`.
 
 - `runtime status` and `runtime version` report the current clone role.
-- `python -m memory build load <slug>` applies the clone-role guard only when the journey `project_path` points at a Mirror Mind source checkout. In that case it refuses `production` clones unless `--ignore-production-role` is passed. Non-Mirror journey projects are not blocked by missing `.mirror-clone-role`. When no `project_path` is configured, Builder falls back to inspecting the current directory.
+- `mirror build load <slug>` applies the clone-role guard only when the journey `project_path` points at a Mirror Mind source checkout. In that case it refuses `production` clones unless `--ignore-production-role` is passed. Non-Mirror journey projects are not blocked by missing `.mirror-clone-role`. When no `project_path` is configured, Builder falls back to inspecting the current directory.
 - Production clones receive code through `runtime update`, not by direct development edits.
 
 See [Runtime Repair Policy](docs/process/runtime-repair-policy.md) and [Decisions](docs/project/decisions.md#mirror-mind-clones-declare-a-role) for the boundary and rationale.
 
 ### Update channel
 
-Each clone declares its update channel through `.mirror-update-channel`. Valid values are `stable` and `main`; missing, unreadable, or unknown values default to `stable`.
+Each install declares its update channel: a clone through `.mirror-update-channel` at the checkout root, a package through `update-channel` beside the user's config file. `mirror runtime channel [stable|main]` shows or sets it for either kind. Valid values are `stable` and `main`; missing, unreadable, or unknown values default to `stable`.
 
 - `stable` is the user-facing release channel.
 - `main` is the integration/dogfooding channel.
 - A push to `main` is not a release.
 - `stable` advances only through release promotion after versioning, release notes, CI, smoke validation, tagging, fast-forward, and GitHub Release publication.
 
-Change a clone to stable releases:
+Change to stable releases:
 
 ```bash
-printf 'stable\n' > .mirror-update-channel
-uv run python -m memory runtime version
-uv run python -m memory runtime update --check
+mirror runtime channel stable
+mirror runtime update --check
 ```
 
-Change a clone to dogfooding/main:
+Change to dogfooding/main:
 
 ```bash
-printf 'main\n' > .mirror-update-channel
-uv run python -m memory runtime version
-uv run python -m memory runtime update --check
+mirror runtime channel main
+mirror runtime update --check
 ```
 
-Remove the marker to return to the safe default (`stable`):
-
-```bash
-rm .mirror-update-channel
-```
+Remove the file (`rm .mirror-update-channel` in a clone) to return to the safe default (`stable`). A package install that switches from `main` to `stable` before `stable` has caught up sees `channel_behind` on `--check`, and `runtime update` refuses the downgrade.
 
 The local git branch and the update channel are related but not identical. A checkout may report `Git branch: main` and `Update channel: stable`. In that state, `runtime update` still compares and fast-forwards against `origin/stable`; the channel controls the update target even if the local branch name remains `main`.
 
@@ -495,7 +555,7 @@ For common channel problems, see [Troubleshooting](docs/process/troubleshooting.
 To list the active personas for the current user:
 
 ```bash
-uv run python -m memory list personas --verbose
+mirror list personas --verbose
 ```
 
 The database is the source of truth for personas. There is no authoritative
@@ -505,13 +565,78 @@ static table; `list personas --verbose` reflects the current seeded state.
 
 ## Configuration
 
-`.env` is loaded automatically by `memory.config` at import time; values
-already present in the real environment take precedence.
+Mirror reads its configuration itself, on every command, from every entry (the
+front door, the hooks, the MCP server). Nothing passes a flag. Two files, one
+order, and nothing is overridden: a value set in your shell wins over both
+files, and the first file to set a variable keeps it.
 
-Two starter files live at the repo root:
+1. the real environment;
+2. `<clone>/.env` — only for a clone, located from the running front door's
+   own tree, never from the working directory. A package install ships no
+   `.env` and reads none;
+3. `${XDG_CONFIG_HOME:-~/.config}/mirror/env` — the OS user's Mirror
+   configuration. `mirror init <user>` creates it with `MIRROR_USER=<user>`
+   when no other source configured a user, readable by you only (`0600` in a
+   `0700` directory; `runtime diagnose` grades the mode), and tells you to add
+   `OPENROUTER_API_KEY` to it by hand. The key is never read from the command
+   line.
+
+A second mirror on the same machine runs with `MIRROR_USER=<other>` set in the
+shell, as before. The per-install update channel lives beside the configuration
+for a package (`~/.config/mirror/update-channel`) and in the tree for a clone
+(`.mirror-update-channel`); `mirror runtime channel` reads and writes it.
+
+Two starter files live at the repository root, for a clone's `.env`:
 
 - `.env.example` — minimal template (identity + API keys)
 - `.env.example.advanced` — canonical reference with every variable documented
+
+### Platform envelope
+
+Mirror Mind's core is one TypeScript package, run by **Node.js ≥ 24**, required for
+`node:sqlite` and direct `.ts` execution). There is no build step and no other
+runtime: the Python engine was deleted in CV22.DS10.TS5. `runtime status`
+reports the Node version; the front door refuses to run on Node below 24 with
+an actionable message.
+
+**Supported today: POSIX (macOS, Linux).** The hook wrappers, the MCP launcher,
+and the Codex wrapper are POSIX shell scripts, CI runs on Linux, and the
+data-at-rest posture below is POSIX file modes. **There is no Windows product.**
+The PowerShell installer and the Windows Frame were retired by CV22.DS10.US3
+(decision D4): they installed and called the Python engine, and they still do at
+`v0.31.14`, as their [cutoff](docs/releases/pending-cutoffs.md#the-windows-frame-and-installer)
+says. A Windows story over the npm package — invocation, path handling, an
+ACL-based data-at-rest posture, a snapshot promotion that survives an open
+database, and Windows CI — is its own story, and none is promised while nobody
+asks for it.
+
+### Data at rest
+
+A mirror home holds a person's identity, memories, and conversations. The
+expected filesystem posture is **owner-only**: directories `0700`, data files
+`0600` (POSIX; Windows ACLs are currently out of scope).
+
+- **Enforced at creation points:** the database bootstrap
+  (`ts/src/db/bootstrap.ts`) applies the posture to a directory it creates and
+  to the database file and its `-wal`/`-shm` sidecars; the front door creates
+  `backups/` at `0700` and its snapshot at `0600`; `mirror backup` writes each
+  dated archive `0600` from its first byte and tightens Mirror's older
+  `memory_*.zip` archives to `0600`, since they are its own files. Pre-existing
+  directories are never mutated — a
+  user-chosen location like `~/Documents` stays as the user set it.
+- **Reported on drift:** `mirror runtime diagnose` emits a
+  `loose_permissions` finding (severity: attention) when the mirror home or
+  database is group/other-accessible, including the exact `chmod` to run.
+- **Pre-write backup:** every front-door live write first snapshots the
+  database (WAL-safe `VACUUM INTO`) to `<mirror home>/backups/`
+  `frontdoor-pre-write-backup.db`. The name is fixed and overwritten per write:
+  it is an undo of the most recent routed write, not an archive — scheduled
+  archives remain `mm-backup`'s job. Each write snapshots into a staging file
+  of its own and promotes it with an atomic rename, so concurrent writes —
+  Claude Code's parallel prompt hooks, Pi's session maintenance and its
+  opening prompt — never collide, and the fixed file is never half-written.
+  A staging file left by a writer that was killed mid-snapshot is removed by
+  the next write, once its process is gone and it is ten minutes old.
 
 ### Identity (CV4 user home)
 
@@ -569,7 +694,7 @@ to the homes root (`~/.mirror-minds`).
 | `MEMORY_PROD_DIR` | `MEMORY_DIR` | Production-only override. |
 | `DB_PATH` | `<mirror home>/<env db name>` | Full SQLite path. |
 | `DB_BACKUP_PATH` | `<DB_PATH parent>/backups` | Global backup default used only when no mirror home is in scope. |
-| `BACKUP_DIR` | — | **Deprecated.** No longer redirects backups. `python -m memory backup` now writes to `<mirror_home>/backups`; if this variable is set, the command warns and ignores it. Use `--backup-dir <path>` for an intentional, per-invocation destination. |
+| `BACKUP_DIR` | — | **Deprecated.** No longer redirects backups. `mirror backup` now writes to `<mirror_home>/backups`; if this variable is set, the command warns and ignores it. Use `--backup-dir <path>` for an intentional, per-invocation destination. |
 | `EXPORT_DIR` | `<MIRROR_HOME>/exports` | Markdown export root. |
 | `TRANSCRIPT_EXPORT_DIR` | `<EXPORT_DIR>/transcripts` | Full-transcript export dir. |
 
@@ -577,9 +702,20 @@ to the homes root (`~/.mirror-minds`).
 
 | Variable | Default | Role |
 |----------|---------|------|
-| `PI_SESSIONS_DIR` | `~/.pi/agent/sessions` | Source directory for `backfill_pi_sessions`. Override for multi-user setups. |
-| `MIRROR_SESSION_ID` | (unset) | Fallback session id for conversation-logger CLIs when neither `--session-id` nor a hook payload is present. Rarely set by humans. |
-| `MIRROR_WELCOME` | (unset) | Set to `off`, `0`, `false`, or `no` to suppress the welcome card emitted by `python -m memory welcome`. See `docs/product/specs/welcome/index.md`. |
+| `PI_SESSIONS_DIR` | `~/.pi/agent/sessions` | Source directory for the Pi session backfill that session maintenance runs. Only sessions that ended after the home was born are imported (the home's birth is its database's first open); earlier Pi history stays where it is. Override for multi-user setups. |
+| `MIRROR_SESSION_ID` | (unset) | Session id for CLIs called without `--session-id`: the conversation logger's fallback when no hook payload is present, and a named session for Builder lifecycle commands, which otherwise require `--journey` and never guess one. Do not set it in a shared `.env`: every window would then name the same session, and a Builder command without `--journey` would follow whichever window loaded last. Rarely set by humans. |
+| `MIRROR_WELCOME` | (unset) | Set to `off`, `0`, `false`, or `no` to suppress the welcome card emitted by `mirror welcome`. See `docs/product/specs/welcome/index.md`. |
+| `MIRROR_TS_MCP_GUARDS` | (unset) | Set to `0` to remove the MCP wallet and abuse guards (rate limit, spend ceiling, argument caps). See [Configuration](docs/reference/configuration.md#mcp-wallet-and-abuse-guards-cv22ds9ts1). |
+| `MIRROR_NODE` | (unset) | The `node` binary the hook wrappers and the plugin's MCP launcher run, when the runtime's `PATH` does not hold one (a GUI launch). Searched after it: `PATH`, the directory the Mirror entry was found in, `~/.nvm/current/bin`, `/opt/homebrew/bin`, `/usr/local/bin`. |
+| `MIRROR_BIN` | (unset) | The directory holding `mirror` and `mirror-hook` (`$(npm prefix -g)/bin`), for the Claude plugin's hook wrappers and MCP launcher, which live in Claude Code's cache and cannot reach the tree by a relative path. Searched after it: `PATH`, `~/.nvm/current/bin`, `/opt/homebrew/bin`, `/usr/local/bin`. Same trust class as `MIRROR_NODE`: whoever sets it chooses what runs. |
+
+The plugin manifest launches `${CLAUDE_PLUGIN_ROOT}/mcp/launch.sh`, which
+finds the installed `mirror` (as above) and `exec`s `mirror mcp`, so the entry
+point can change without editing a plugin installed inside a runtime. A
+launcher that finds neither `mirror` nor `node` says so on stderr, the MCP
+client's log, and exits 1. The `MIRROR_TS_*` revert variables of the
+migration, `MIRROR_TS_MCP` among them, are inert since CV22.DS10.TS5: nothing
+reads them, and `runtime diagnose` names any still set.
 
 ### Set by External Runtimes (do not set manually)
 
@@ -591,8 +727,8 @@ to the homes root (`~/.mirror-minds`).
 
 Before CV9.E2.S6, development/test databases, the Pi `mirror-logger.log`,
 bootstrap locks, and a `backups/` directory could land directly in the homes
-root (`~/.mirror-minds/`) instead of inside a mirror home. `python -m memory
-runtime diagnose` reports such artifacts as `legacy_root_runtime_state`.
+root (`~/.mirror-minds/`) instead of inside a mirror home. `mirror runtime
+diagnose` reports such artifacts as `legacy_root_runtime_state`.
 
 Relocation is deliberately manual — histories are never merged automatically:
 
@@ -604,10 +740,12 @@ Relocation is deliberately manual — histories are never merged automatically:
    non-survivor can be archived elsewhere.
 3. `*.bootstrap.lock`, `*.db-wal`, and `*.db-shm` sidecars belong next to
    their database; move them with it (or delete lock files when no process
-   is running).
+   is running). So does a `*.bootstrap.lock.*.tmp` record file, which a lock
+   attempt writes and removes within the same call. It is left behind only if
+   the process was killed mid-attempt.
 4. `mirror-logger.log` in the root can be deleted or archived; new sessions
    write to `<mirror home>/mirror-logger.log`.
-5. Re-run `python -m memory runtime diagnose` and confirm no
+5. Re-run `mirror runtime diagnose` and confirm no
    `legacy_root_runtime_state` findings remain.
 
 The Pi logger still falls back to `~/.mirror-minds/mirror-logger.log` when no
@@ -618,53 +756,17 @@ workspace is running without `MIRROR_USER`/`MIRROR_HOME`.
 
 ## Legacy Migration Workflow
 
-> **Note:** This workflow exists for users migrating from Portuguese-era
-> databases (pre-CV0). Most early users have already completed this migration.
-> This section is a removal candidate for a future CV.
+**Removed in the CV22 migration.** The Portuguese-era database conversion
+(`memoria.db` → a user home, pre-CV0) was retired rather than ported to the
+TypeScript core — see the
+[cutoff](docs/releases/pending-cutoffs.md#legacy-migration) for what to do
+instead and what still works.
 
-Use this when you have a Portuguese-era source database such as `memoria.db`
-and want to migrate it into a user home.
-
-### Supported Source Policy
-
-Supported:
-- clean Portuguese legacy databases
-
-Rejected explicitly:
-- already-English/current databases
-- mixed Portuguese/English databases
-- unsupported or ambiguous SQLite shapes
-
-### Commands
-
-```bash
-uv run python -m memory migrate-legacy validate \
-  --source ~/.espelho/memoria.db \
-  --target-home ~/.mirror-minds/<user> \
-  --report /tmp/mirror-migration-validate.json
-
-uv run python -m memory migrate-legacy run \
-  --source ~/.espelho/memoria.db \
-  --target-home ~/.mirror-minds/<user> \
-  --report /tmp/mirror-migration-run.json
-```
-
-### Safety Guarantees
-
-- explicit source required
-- explicit target home required
-- source is never mutated
-- target `memory.db` must not already exist
-- no silent merge into an existing target
-- `validate` performs no writes
-- `run` copies first, migrates the copy, and verifies the result
-
-Both commands support `--report PATH`. The JSON report includes: generation
-timestamp, command mode, source and target paths, source classification,
-source row counts, applied migrations, detected legacy columns/indexes/identity
-layers, planned translations, and post-migration verification details.
+In one line: if you still hold a Portuguese-era database, convert it with the
+last Python-bearing release, once; a home that was already converted keeps
+working, and nothing about it changed.
 
 ---
 
 **See also:** [Getting Started](docs/getting-started.md) ·
-[Architecture](docs/product/architecture.md) · [Python API](docs/product/api.md)
+[Architecture](docs/product/architecture.md)

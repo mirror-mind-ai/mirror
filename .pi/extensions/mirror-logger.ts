@@ -9,10 +9,17 @@
  * - agent_end          → log assistant response (all messages in the turn)
  * - session_shutdown   → close conversation + backup database
  *
- * All heavy logic lives in the Python CLI. This extension is a thin dispatcher.
- * Failures are swallowed to never block Pi — but logged to mirror-logger.log
- * in the resolved mirror home (homes root only as bootstrap fallback when no
- * mirror home is resolvable).
+ * All heavy logic lives in the TypeScript core, reached through the `mirror`
+ * bin that ships beside this file (`bin/mirror.js`). This extension is a thin
+ * dispatcher. Failures are swallowed to never block Pi — but logged to
+ * mirror-logger.log in the resolved mirror home (homes root only as bootstrap
+ * fallback when no mirror home is resolvable).
+ *
+ * Since CV22.DS10.US3 this extension assumes nothing about the cwd: the core it
+ * runs is the one it ships with, located from this file (D6); configuration
+ * is the core's own (D3); and for a session Pi did not open inside the tree,
+ * it supplies the Operating Instructions (`AGENTS.md`) itself (D13), and says
+ * so once when `mirror` is not on the PATH.
  *
  * External skill prep note:
  * Pi reads installed external skills from
@@ -21,10 +28,18 @@
  */
 
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import { appendFileSync, closeSync, existsSync, mkdirSync, openSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { accessSync, appendFileSync, closeSync, constants, existsSync, mkdirSync, openSync, readdirSync, readFileSync, realpathSync, statSync } from "node:fs";
 import { homedir } from "node:os";
-import { dirname, join } from "node:path";
+import { delimiter, dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
+
+/** The tree this extension ships in: `.pi/extensions/` sits two below the root. */
+const TREE_ROOT = fileURLToPath(new URL("../../", import.meta.url)).replace(/\/$/, "");
+/** The core this extension runs: the bin beside it, never one found by the cwd (D6). */
+const MIRROR_BIN = join(TREE_ROOT, "bin", "mirror.js");
+/** The Operating Instructions that ship with the core (D13). */
+const AGENTS_FILE = join(TREE_ROOT, "AGENTS.md");
 
 // Mirror home directory names. Mirrors the Python core contract in
 // src/memory/config.py (_DEFAULT_USER_HOMES_DIR_NAME / _LEGACY_USER_HOMES_DIR_NAME).
@@ -85,43 +100,70 @@ function _piCatalogHomes(homesDirName: string): string[] {
 	}
 }
 
-// Read the nearest .env by walking upward from startDir, mirroring the Python
-// core's dotenv loading in src/memory/config.py (first file wins, no quote
-// stripping, only KEY=VALUE lines that are not comments). Pi (Node) never loads
-// .env on its own, so without this the extension cannot see the per-workspace
-// MIRROR_USER that Python reads.
-function _readDotenv(startDir: string): Record<string, string> {
-	let dir = startDir;
-	for (;;) {
-		const candidate = join(dir, ".env");
-		try {
-			if (statSync(candidate).isFile()) {
-				const out: Record<string, string> = {};
-				for (const rawLine of readFileSync(candidate, "utf-8").split(/\r?\n/)) {
-					const line = rawLine.trim();
-					if (!line || line.startsWith("#") || !line.includes("=")) continue;
-					const eq = line.indexOf("=");
-					const key = line.slice(0, eq).trim();
-					if (key) out[key] = line.slice(eq + 1).trim();
-				}
-				return out;
-			}
-		} catch {
-			// Not a readable file — keep walking upward.
+// One KEY=VALUE file, as the core reads it (no quote stripping, comments
+// skipped). Pi (Node) never loads .env on its own, so without this the
+// extension cannot see the MIRROR_USER the core will resolve.
+function _readEnvFile(path: string): Record<string, string> {
+	try {
+		if (!statSync(path).isFile()) return {};
+		const out: Record<string, string> = {};
+		for (const rawLine of readFileSync(path, "utf-8").split(/\r?\n/)) {
+			const line = rawLine.trim();
+			if (!line || line.startsWith("#") || !line.includes("=")) continue;
+			const eq = line.indexOf("=");
+			const key = line.slice(0, eq).trim();
+			if (key) out[key] = line.slice(eq + 1).trim();
 		}
-		const parent = dirname(dir);
-		if (parent === dir) return {};
-		dir = parent;
+		return out;
+	} catch {
+		return {};
 	}
 }
 
-// Effective Mirror env: real shell env wins over .env, matching Python's
-// os.environ.setdefault semantics (shell present → keep it; else fill from .env).
+/** The user's config file, where the core reads it: `${XDG_CONFIG_HOME:-~/.config}/mirror/env`. */
+function _userConfigFile(): string {
+	const xdg = process.env.XDG_CONFIG_HOME;
+	return join(xdg && xdg.length > 0 ? xdg : join(homedir(), ".config"), "mirror", "env");
+}
+
+// Effective Mirror env, in the core's own order (CV22.DS10.US3 D3): the real
+// shell env wins; then the TREE's `.env` -- a clone's, located from this file,
+// never the cwd's; then the user's config file. The core resolves the database
+// the same way, so the two cannot disagree about which mirror a session logs to.
 function _effectiveMirrorEnv(): { home?: string; user?: string } {
-	const dotenv = _readDotenv(process.cwd());
-	const rawHome = "MIRROR_HOME" in process.env ? process.env.MIRROR_HOME : dotenv.MIRROR_HOME;
-	const rawUser = "MIRROR_USER" in process.env ? process.env.MIRROR_USER : dotenv.MIRROR_USER;
+	const fromFiles = { ..._readEnvFile(_userConfigFile()), ..._readEnvFile(join(TREE_ROOT, ".env")) };
+	const rawHome = "MIRROR_HOME" in process.env ? process.env.MIRROR_HOME : fromFiles.MIRROR_HOME;
+	const rawUser = "MIRROR_USER" in process.env ? process.env.MIRROR_USER : fromFiles.MIRROR_USER;
 	return { home: rawHome?.trim() || undefined, user: rawUser?.trim() || undefined };
+}
+
+/**
+ * Where `mirror` resolves on this PATH, or null. The skills say `mirror`
+ * (CV22.DS10.US3 D7), so an agent in a session where it does not resolve
+ * meets `command not found` and improvises -- which is why session start says
+ * so once, naming the fix, instead of leaving the agent to guess.
+ */
+function _mirrorOnPath(): string | null {
+	const dirs = (process.env.PATH ?? "").split(delimiter).filter(Boolean);
+	for (const dir of dirs) {
+		const candidate = join(dir, process.platform === "win32" ? "mirror.cmd" : "mirror");
+		try {
+			accessSync(candidate, constants.X_OK);
+			return candidate;
+		} catch {
+			// keep looking
+		}
+	}
+	return null;
+}
+
+/** True when `path` is the same file as this tree's AGENTS.md (symlinks resolved). */
+function _isOurAgentsFile(path: string): boolean {
+	try {
+		return realpathSync(path) === realpathSync(AGENTS_FILE);
+	} catch {
+		return false;
+	}
 }
 
 const MIRROR_DIR = _resolveMemoryDir();
@@ -154,8 +196,41 @@ type MirrorStatusContext = {
 	};
 };
 
+/**
+ * One registration per Pi process. Pi can reach this file twice -- as the
+ * project's `.pi/extensions/` inside the checkout and as a personal package
+ * installed from `npm root -g`, which `npm link` makes the same file under
+ * two paths -- and two registrations would log every turn twice. The guard is
+ * process-scoped, not module-scoped, because two paths are two module
+ * instances (CV22.DS10.US3 plateau 2, the quality-assurance finding).
+ */
+const LOADED_KEY = "__mirrorLoggerRegistered";
+
 export default function (pi: ExtensionAPI) {
+	const globals = globalThis as Record<string, unknown>;
+	if (globals[LOADED_KEY]) {
+		try {
+			appendFileSync(LOG_FILE, `${new Date().toISOString()} [INFO] second registration skipped: ${import.meta.url}\n`);
+		} catch {
+			// never block Pi
+		}
+		return;
+	}
+	globals[LOADED_KEY] = import.meta.url;
+
 	// --- Helpers ---
+
+	/**
+	 * Every Mirror command this extension runs enters the TypeScript front
+	 * door through the `mirror` bin beside this file (`bin/mirror.js`), the
+	 * same entry the skills reach through the PATH, so `routing.ts` decides
+	 * the route and `front-door.log` records it. The bin, not `cli.ts`
+	 * directly: under `npm root -g` Node will not strip types (D15), and the
+	 * bin is the one entry that runs in a checkout and an install alike.
+	 * It reads configuration and silences warnings itself (D3), so no flag
+	 * and no `.env` path travels here. Nothing depends on the cwd.
+	 */
+	const FRONT_DOOR_ARGV = [MIRROR_BIN];
 
 	function log(level: string, msg: string): void {
 		try {
@@ -167,12 +242,12 @@ export default function (pi: ExtensionAPI) {
 		}
 	}
 
-	function runPyBackground(args: string[], label: string): void {
+	function runMirrorBackground(args: string[], label: string): void {
 		let logFd: number | undefined;
 		try {
 			mkdirSync(MIRROR_DIR, { recursive: true });
 			logFd = openSync(LOG_FILE, "a");
-			const child = spawn("uv", ["run", "python", ...args], {
+			const child = spawn("node", [...FRONT_DOOR_ARGV, ...args], {
 				cwd: process.cwd(),
 				stdio: ["ignore", logFd, logFd],
 				// Windows: a detached console child materializes as a visible
@@ -199,24 +274,19 @@ export default function (pi: ExtensionAPI) {
 		}
 	}
 
-	async function runPy(args: string[]): Promise<string> {
+	async function runMirror(args: string[]): Promise<string> {
 		try {
-			// Use `uv run python` so the project's venv (which has the `memory`
-			// package installed) is used. Plain `python3` resolves to whatever PATH
-			// finds first (often a pyenv shim without project deps), causing
-			// `ModuleNotFoundError: No module named 'memory'`. See conversa
-			// 2026-05-10 for full diagnosis.
-			const result = await pi.exec("uv", ["run", "python", ...args], {
+			const result = await pi.exec("node", [...FRONT_DOOR_ARGV, ...args], {
 				timeout: 30_000,
 			});
 			const stderr = (result?.stderr ?? "").trim();
 			if (stderr) {
-				log("WARN", `stderr from [${args.slice(0, 3).join(" ")}]: ${stderr.slice(0, 500)}`);
+				log("WARN", `stderr from [${args.slice(0, 2).join(" ")}]: ${stderr.slice(0, 500)}`);
 			}
 			return (result?.stdout ?? "").trim();
 		} catch (err: unknown) {
 			const message = err instanceof Error ? err.message : String(err);
-			log("ERROR", `runPy failed [${args.slice(0, 3).join(" ")}]: ${message.slice(0, 500)}`);
+			log("ERROR", `runMirror failed [${args.slice(0, 2).join(" ")}]: ${message.slice(0, 500)}`);
 			return "";
 		}
 	}
@@ -240,11 +310,11 @@ export default function (pi: ExtensionAPI) {
 	async function refreshMirrorStatus(ctx: MirrorStatusContext): Promise<void> {
 		if (!ctx.hasUI) return;
 		const sessionId = ctx.sessionManager.getSessionFile() ?? null;
-		const statusArgs = ["-m", "memory", "welcome", "--status-line"];
+		const statusArgs = ["welcome", "--status-line"];
 		if (sessionId) {
 			statusArgs.push("--session-id", sessionId);
 		}
-		const compactStatus = (await runPy(statusArgs)).trim();
+		const compactStatus = (await runMirror(statusArgs)).trim();
 		const externalCatalog = loadInstalledPiExternalSkills();
 		const externalSkills = externalCatalog?.extensions ?? [];
 		const status = compactStatus || "◇ Mirror · ?";
@@ -342,6 +412,30 @@ export default function (pi: ExtensionAPI) {
 		return { skillPaths };
 	});
 
+	// --- 0. the Operating Instructions, for a session Pi did not open in the tree ---
+	//
+	// Pi loads one context file per directory from the cwd upward. Inside the
+	// checkout that is this tree's AGENTS.md; from anywhere else -- an npm
+	// user's project, /tmp -- it is not, and a session that answers /mm-mirror
+	// without the modes, the persona signature, or the Builder boundary is not
+	// a Mirror session (CV22.DS10.US3 D13). So the extension appends the file
+	// it ships with, unless Pi already loaded that very file.
+
+	pi.on("before_agent_start", async (event) => {
+		const files = event.systemPromptOptions.contextFiles;
+		if (files.some((file) => _isOurAgentsFile(file.path))) return;
+		let content: string;
+		try {
+			content = readFileSync(AGENTS_FILE, "utf-8");
+		} catch (err: unknown) {
+			log("WARN", `AGENTS.md not readable at ${AGENTS_FILE}: ${err instanceof Error ? err.message : String(err)}`);
+			return;
+		}
+		if (files.some((file) => file.content === content)) return;
+		files.push({ path: AGENTS_FILE, content });
+		log("INFO", `operating instructions appended from ${AGENTS_FILE}`);
+	});
+
 	// --- 1. session_start → unmute + close stale orphans + extract pending ---
 
 	pi.on("session_start", async (_event, ctx) => {
@@ -349,7 +443,16 @@ export default function (pi: ExtensionAPI) {
 		if (ctx.hasUI) {
 			ctx.ui.setStatus("mirror", "◇ Mirror · starting… maintenance will continue in background");
 		}
-		const summary = await runPy(["-m", "memory", "conversation-logger", "session-start", "--fast"]);
+		// The skills say `mirror`. Say once, visibly, when that will not work.
+		if (_mirrorOnPath() === null) {
+			const fix = existsSync(join(TREE_ROOT, ".git"))
+				? `run \`npm link\` once in ${TREE_ROOT}`
+				: "add `$(npm prefix -g)/bin` to the PATH";
+			const line = `Mirror: \`mirror\` is not on the PATH — ${fix}. Skills will fail until it is.`;
+			log("WARN", line);
+			if (ctx.hasUI) ctx.ui.notify(line, "warning");
+		}
+		const summary = await runMirror(["conversation-logger", "session-start", "--fast"]);
 		if (ctx.hasUI) {
 			ctx.ui.setStatus("mirror", "◇ Mirror · checking release status…");
 		}
@@ -361,7 +464,7 @@ export default function (pi: ExtensionAPI) {
 		log("INFO", `session-start result: ${summary || "(empty)"}`);
 		log("INFO", externalSkillSummary);
 
-		const welcome = (await runPy(["-m", "memory", "welcome"])).trim();
+		const welcome = (await runMirror(["welcome"])).trim();
 		if (welcome) {
 			log("INFO", `welcome: ${welcome.split("\n")[0]}`);
 		}
@@ -371,9 +474,9 @@ export default function (pi: ExtensionAPI) {
 				ctx.ui.notify(welcome, "info");
 			}
 			await refreshMirrorStatus(ctx);
-			runPyBackground(["-m", "memory", "conversation-logger", "session-maintenance"], "session-maintenance");
+			runMirrorBackground(["conversation-logger", "session-maintenance"], "session-maintenance");
 		} else {
-			runPyBackground(["-m", "memory", "conversation-logger", "session-maintenance"], "session-maintenance");
+			runMirrorBackground(["conversation-logger", "session-maintenance"], "session-maintenance");
 		}
 	});
 
@@ -387,9 +490,7 @@ export default function (pi: ExtensionAPI) {
 		if (!prompt || prompt.startsWith("/")) return;
 
 		log("INFO", `log-user: ${prompt.slice(0, 80)}...`);
-		await runPy([
-			"-m",
-			"memory",
+		await runMirror([
 			"conversation-logger",
 			"log-user",
 			sessionId,
@@ -434,17 +535,8 @@ export default function (pi: ExtensionAPI) {
 		const combined = assistantTexts.join("\n\n---\n\n");
 		const content = truncate(combined);
 
-		runPyBackground(
-			[
-				"-m",
-				"memory",
-				"conversation-logger",
-				"log-assistant",
-				sessionId,
-				content,
-				"--interface",
-				"pi",
-			],
+		runMirrorBackground(
+			["conversation-logger", "log-assistant", sessionId, content, "--interface", "pi"],
 			"log-assistant",
 		);
 		await refreshMirrorStatus(ctx);
@@ -459,10 +551,11 @@ export default function (pi: ExtensionAPI) {
 		const sessionId = ctx.sessionManager.getSessionFile() ?? null;
 
 		if (sessionId) {
-			await runPy(["-m", "memory", "conversation-logger", "session-end-pi", sessionId]);
+			await runMirror(["conversation-logger", "session-end-pi", sessionId]);
 			log("INFO", `session closed: ${sessionId}`);
 		}
 
-		await runPy(["-m", "memory", "backup", "--silent"]);
+		// The dated zip backup answers from TypeScript (CV22.DS7.TS1).
+		await runMirror(["backup", "--silent"]);
 	});
 }

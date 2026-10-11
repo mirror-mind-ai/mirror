@@ -1,0 +1,1865 @@
+#!/usr/bin/env node
+
+//
+// Front-door entry: route a command, answer it, and log the outcome. Argument
+// parsing lives in `args.ts`, DB-path resolution in `dbPath.ts`, and the read
+// renderers in `render/`. The module is importable (the entry guard at the
+// bottom runs `main` only when invoked directly), so its pieces can be tested
+// in-process.
+//
+// Every route answers from TypeScript. Until CV22.DS10.TS5 an unported or
+// reverted command fell back to the Python engine by spawning the
+// interpreter; the fallback, the revert gates that chose it, and the engine
+// itself are gone. A name nothing answers gets the front door's own usage
+// answer.
+//
+// Configuration and the node:sqlite ExperimentalWarning are both handled
+// in-process, inside the entry guard (CV22.DS10.US3, D3): the program reads
+// its own `.env` and `~/.config/mirror/env` and silences the warning itself,
+// so neither a `bin` shim nor a skill line needs `--env-file` or
+// `NODE_OPTIONS=--no-warnings`. Importing this module does neither.
+
+import { existsSync, readFileSync } from "node:fs";
+import { basename, dirname } from "node:path";
+import { pathToFileURL } from "node:url";
+import {
+  AppendRejectedError,
+  type AppendRejectionReason,
+  appendConversationMessages,
+  type ConversationAppendRequest,
+  canonicalJson,
+  MAX_PAYLOAD_BYTES,
+  parseAppendRequest,
+} from "#conversation/append.ts";
+import { DEFAULT_CLUSTER_THRESHOLD } from "#cultivation/cluster.ts";
+import { listConsolidations } from "#cultivation/consolidationStore.ts";
+import {
+  consolidateScan,
+  DEFAULT_CONSOLIDATE_SCAN_LIMIT,
+  DEFAULT_SHADOW_SCAN_LIMIT,
+  shadowScan,
+} from "#cultivation/scan.ts";
+import { type Database, openDatabaseReadOnly, type WritableDatabase } from "#db/database.ts";
+import { ensureDatabaseReady } from "#db/readyOnOpen.ts";
+import { assertSchemaState, SchemaStateError } from "#db/schemaState.ts";
+import { allDescriptors, descriptorsByLayer } from "#descriptor/descriptorRead.ts";
+import { newIdentityKeyProblem } from "#identity/identityKey.ts";
+import { identityRowExists, listIdentityByLayer } from "#identity/identityRead.ts";
+import { listJourneysForListCommand } from "#identity/journeyListing.ts";
+import { listPersonas } from "#identity/personaListing.ts";
+import { setIdentity } from "#identity/setIdentity.ts";
+import { IdentityRootExistsError, initUserHome, TemplatesNotFoundError } from "#init/init.ts";
+import { JOURNEY_PATH_LAYER } from "#journey/journeyStatus.ts";
+import { JourneyNotFoundError } from "#journey/journeyWrite.ts";
+import {
+  CallOutcomeTally,
+  formatCallOutcome,
+  type ProviderCallReport,
+} from "#observability/callOutcome.ts";
+import { chatLedgerHook } from "#observability/ledgerHooks.ts";
+import { runWeekSave } from "#planning/weekSave.ts";
+import type { EmbeddingProvider } from "#providers/embedding.ts";
+import { resolveFamilyProviders } from "#providers/familyProviders.ts";
+import type { LlmProvider } from "#providers/llm.ts";
+import {
+  CULTIVATION_APPLY_TRANSPORT,
+  CULTIVATION_SCAN_TRANSPORT,
+  DESCRIPTOR_TRANSPORT,
+  JOURNAL_TRANSPORT,
+  WEEK_PLAN_TRANSPORT,
+} from "#providers/transport.ts";
+import {
+  configFilePath,
+  loadConfiguration,
+  silenceExperimentalWarnings,
+  writeConfigValue,
+} from "#runtime/config.ts";
+import { runningTreeRoot } from "#runtime/treeRoot.ts";
+import { detectRuntimes, runtimeWiringLines } from "#runtime/wiring.ts";
+import { runSeed } from "#seed/seed.ts";
+import { getTasksForWeek, listTasks } from "#tasks/taskStore.ts";
+import { computeWeekRange } from "#tasks/weekView.ts";
+import { isExecutable } from "#util/paths.ts";
+import { PROGRAM } from "#util/program.ts";
+import { newId, nowIso } from "#util/pyGenerators.ts";
+import { hasOption, optionValue, stripOptionWithValue } from "./args.ts";
+import { canonicalArgv } from "./argvShape.ts";
+import { createBuildLoadRuntime } from "./buildLoadRuntime.ts";
+import { runConsultRoute } from "./consultRoute.ts";
+import {
+  runDescriptorGenerateRoute,
+  runJournalRoute,
+  runLifecycleFaceRead,
+  runWeekPlanRoute,
+} from "./contentTailRoute.ts";
+import {
+  isConversationLoggerCommand,
+  runConversationLoggerRoute,
+} from "./conversationLoggerRoute.ts";
+import {
+  runConsolidateApply as runConsolidateApplyRoute,
+  runReject,
+  runShadowApply as runShadowApplyRoute,
+} from "./cultivationRoute.ts";
+import { MirrorHomeNotConfiguredError, resolveDbPath } from "./dbPath.ts";
+import { runBackupRoute, runRepairEncodingRoute } from "./dbSafetyToolsRoute.ts";
+import { defaultExploreRouteDeps, runExploreRoute } from "./exploreRoute.ts";
+import { frontDoorLogPath, logFrontDoor } from "./frontDoorLog.ts";
+import { applyIdentitySet } from "./identityWrite.ts";
+import { applyJourneySetPath } from "./journeyWriteRoute.ts";
+import { openLiveWriteDatabase } from "./liveBackup.ts";
+import {
+  isMirrorWrite,
+  isModeWrite,
+  mirrorDeactivateMissingSession,
+  runMirrorRead,
+  runMirrorWriteRoute,
+  runModeRead,
+  runModeWriteRoute,
+} from "./mirrorModeRoute.ts";
+import { namedRefusal } from "./namedRefusal.ts";
+import { nodeVersionError } from "./nodeSupport.ts";
+import {
+  renderConsolidateApply,
+  renderConsolidateList,
+  renderConsolidateReject,
+  renderConsolidateScan,
+} from "./render/consolidate.ts";
+import { renderConversationsListing } from "./render/conversations.ts";
+import { renderDescriptorList } from "./render/descriptor.ts";
+import { renderDetectPersona } from "./render/detectPersona.ts";
+import {
+  IdentityEntryNotFoundError,
+  identityListRows,
+  renderIdentityGet,
+  renderIdentityList,
+} from "./render/identity.ts";
+import { PersonaNotFoundError, renderInspectPersona } from "./render/inspectPersona.ts";
+import { renderJourneyStatus, resolveJourneyStatusSlug } from "./render/journeyStatus.ts";
+import { renderJourneys } from "./render/journeys.ts";
+import { renderListJourneys, renderListPersonas } from "./render/list.ts";
+import { renderMemories } from "./render/memories.ts";
+import { ConversationNotFoundError, renderRecall } from "./render/recall.ts";
+import {
+  renderShadowApply,
+  renderShadowList,
+  renderShadowReject,
+  renderShadowScan,
+  renderShadowShow,
+} from "./render/shadow.ts";
+import {
+  renderTasksAdd,
+  renderTasksDelete,
+  renderTasksList,
+  renderTasksStatusChange,
+} from "./render/tasks.ts";
+import {
+  renderTasksImport,
+  renderTasksSyncConfig,
+  renderTasksSyncNoJourneysConfigured,
+  renderTasksSyncOutcome,
+} from "./render/tasksImportSync.ts";
+import { renderWeekView } from "./render/week.ts";
+import { retiredRefusal, routeMemoryCommand } from "./routing.ts";
+import { runRuntimeReadRoute, runWelcomeRoute } from "./runtimeRoute.ts";
+import { runMemorySearchRoute } from "./searchRoute.ts";
+import { resolveSeedPaths } from "./seedPaths.ts";
+import { runSoulRoute } from "./soulRoute.ts";
+import {
+  applyTasksImport,
+  applyTasksSyncConfig,
+  applyTasksSyncForJourney,
+  resolveSyncJourneys,
+} from "./tasksImportSyncRoute.ts";
+import {
+  applyTasksAdd,
+  applyTasksDelete,
+  applyTasksStatusChange,
+  type TaskStatusTarget,
+} from "./tasksWriteRoute.ts";
+import { answerUsage } from "./usage.ts";
+
+/**
+ * Resolve the database path for a CLI invocation, mapping a configuration
+ * failure (no home/env resolvable) to a printed error and null — callers
+ * translate null into exit code 2.
+ */
+function resolveDbPathForCli(args: readonly string[]): string | null {
+  try {
+    return resolveDbPath(args);
+  } catch (error) {
+    if (error instanceof MirrorHomeNotConfiguredError) {
+      console.error(`Mirror TS front door: ${error.message}`);
+      return null;
+    }
+    throw error;
+  }
+}
+
+/**
+ * Prepare a database for TS serving and record what happened in the front-door
+ * log: a redacted `migrate_on_open` event (migration ids + backup file name,
+ * never content). The activation itself lives in `db/readyOnOpen.ts`, shared
+ * with the MCP entry point, which writes its note to stderr instead.
+ */
+function ensureDatabaseReadyForCli(dbPath: string, command: string | null): void {
+  const migration = ensureDatabaseReady(dbPath);
+  if (migration.migrated) {
+    logFrontDoor(frontDoorLogPath(dbPath), {
+      command,
+      route: "ts",
+      exitCode: 0,
+      detail: `migrate_on_open applied=${migration.appliedIds.join(",")} backup=${
+        migration.backupPath ? basename(migration.backupPath) : "none"
+      }`,
+    });
+  }
+}
+
+/** Serve a ported read command from the TS core, bootstrapping a missing DB via the TS core first. */
+function runTs(argv: readonly string[]): number {
+  const command = argv[0];
+  const args = argv.slice(1);
+  const dbPath = resolveDbPathForCli(args);
+  if (dbPath === null) return 2;
+  // First-run contract (CV22.DS6.TS4): a missing database means an
+  // unbootstrapped install. TS now owns bootstrap — create the directory,
+  // schema, and migrations under the cross-process lock — then serve read-only
+  // from the fresh file. (This replaces the DS3 stopgap that delegated a
+  // missing DB to Python; see docs/project/decisions.md.)
+  ensureDatabaseReadyForCli(dbPath, command ?? null);
+  const db = openDatabaseReadOnly(dbPath);
+  try {
+    assertSchemaState(db);
+    if (command === "detect-persona") process.stdout.write(renderDetectPersona(db, args));
+    else if (command === "journeys") process.stdout.write(renderJourneys(db));
+    else if (command === "memories") process.stdout.write(renderMemories(db, args));
+    else if (command === "identity") return runIdentityRead(db, args);
+    else if (command === "descriptor") return runDescriptorRead(db, args);
+    else if (command === "list") return runListRead(db, args);
+    else if (command === "inspect") return runInspectRead(db, args);
+    else if (command === "recall") return runRecallRead(db, args);
+    else if (command === "conversations") {
+      // CV22.DS7.US11: the two ES-001 read faces share the read seam with the
+      // plain listing; routing.ts has already refused the write faces.
+      const lifecycleFace =
+        args.includes("--metadata-lifecycle-dry-run") ||
+        args.includes("--metadata-lifecycle-preview-at-message");
+      return lifecycleFace ? runLifecycleFaceRead(db, args) : runConversationsRead(db, args);
+    } else if (command === "journey") return runJourneyStatusRead(db, args);
+    else if (command === "tasks") return runTasksRead(db, args);
+    else if (command === "week") return runWeekRead(db, args);
+    else if (command === "consolidate") return runConsolidateRead(db, args);
+    else if (command === "shadow") return runShadowRead(db, args);
+    else if (command === "mirror") return runMirrorRead(db, args);
+    else if (command === "mode") return runModeRead(db, args);
+    else throw new Error(`Unsupported TS route: ${command}`);
+    return 0;
+  } catch (error) {
+    if (error instanceof SchemaStateError) {
+      console.error(`Mirror TS front door: ${error.message}`);
+      return 2;
+    }
+    throw error;
+  } finally {
+    db.close();
+  }
+}
+
+/**
+ * Serve `identity list` / `identity get` (DS7.US1). `args` excludes the
+ * `identity` token itself, e.g. `["list", "--layer", "ego"]` or
+ * `["get", "ego", "behavior"]`. `identity set` and `identity edit` never reach
+ * here — routed elsewhere (write seam) or to Python (interactive) respectively.
+ */
+function runIdentityRead(db: Database, args: readonly string[]): number {
+  const sub = args[0];
+  const rest = stripOptionWithValue(
+    stripOptionWithValue(args.slice(1), "--mirror-home"),
+    "--db-path",
+  );
+  if (sub === "list") {
+    process.stdout.write(renderIdentityList(identityListRows(db, optionValue(args, "--layer"))));
+    return 0;
+  }
+  // sub === "get" (the only other route.ts-allowed subcommand).
+  const [layer, key] = rest;
+  if (!layer || !key) {
+    console.error("Usage: identity get <layer> <key>");
+    return 2;
+  }
+  try {
+    process.stdout.write(renderIdentityGet(db, layer, key));
+    return 0;
+  } catch (error) {
+    if (error instanceof IdentityEntryNotFoundError) {
+      console.error(error.message);
+      return 1;
+    }
+    throw error;
+  }
+}
+
+/** Serve `descriptor list` (DS7.US1). `descriptor generate` never reaches here. */
+function runDescriptorRead(db: Database, args: readonly string[]): number {
+  const layer = optionValue(args, "--layer");
+  const rows = layer ? descriptorsByLayer(db, layer) : allDescriptors(db);
+  process.stdout.write(renderDescriptorList(rows));
+  return 0;
+}
+
+/** Serve `list personas` / `list journeys` (DS7.US1). `extensions`/`all` never reach here. */
+function runListRead(db: Database, args: readonly string[]): number {
+  if (args[0] === "personas") {
+    process.stdout.write(renderListPersonas(listPersonas(db), hasOption(args, "--verbose")));
+    return 0;
+  }
+  process.stdout.write(renderListJourneys(listJourneysForListCommand(db)));
+  return 0;
+}
+
+/** Serve `inspect persona <id>` (DS7.US1). Other inspect targets never reach here. */
+function runInspectRead(db: Database, args: readonly string[]): number {
+  const rest = stripOptionWithValue(
+    stripOptionWithValue(args.slice(1), "--mirror-home"),
+    "--extensions-root",
+  );
+  const personaId = rest[0];
+  if (!personaId) {
+    console.error("Usage: inspect persona <id>");
+    return 2;
+  }
+  try {
+    process.stdout.write(renderInspectPersona(db, personaId));
+    return 0;
+  } catch (error) {
+    if (error instanceof PersonaNotFoundError) {
+      // Matches Python: this goes to STDOUT, not stderr.
+      process.stdout.write(`${error.message}\n`);
+      return 1;
+    }
+    throw error;
+  }
+}
+
+/** Serve `recall <conv_id> [--limit N]` (DS7.US1). */
+function runRecallRead(db: Database, args: readonly string[]): number {
+  const limitRaw = optionValue(args, "--limit");
+  const limit = limitRaw !== null ? Number(limitRaw) : 50;
+  const positionals = stripOptionWithValue(
+    stripOptionWithValue(stripOptionWithValue(args, "--limit"), "--mirror-home"),
+    "--db-path",
+  );
+  const convId = positionals[0];
+  if (!convId) {
+    console.error("Usage: recall <conv_id> [--limit N]");
+    return 2;
+  }
+  try {
+    process.stdout.write(renderRecall(db, convId, limit));
+    return 0;
+  } catch (error) {
+    if (error instanceof ConversationNotFoundError) {
+      console.error(error.message);
+      return 1;
+    }
+    throw error;
+  }
+}
+
+/** Serve `conversations` (plain listing only; DS7.US1). */
+function runConversationsRead(db: Database, args: readonly string[]): number {
+  const limitRaw = optionValue(args, "--limit");
+  process.stdout.write(
+    renderConversationsListing(db, {
+      limit: limitRaw !== null ? Number(limitRaw) : 20,
+      journey: optionValue(args, "--journey"),
+      persona: optionValue(args, "--persona"),
+    }),
+  );
+  return 0;
+}
+
+/**
+ * Serve `journey` status reads (DS7.US1): `journey`, `journey <slug>`,
+ * `journey status`, `journey status <slug>`. `journey set-path`/`update` never
+ * reach here (their own write routes).
+ */
+function runJourneyStatusRead(db: Database, args: readonly string[]): number {
+  const remaining = stripOptionWithValue(stripOptionWithValue(args, "--mirror-home"), "--db-path");
+  process.stdout.write(renderJourneyStatus(db, resolveJourneyStatusSlug(remaining)));
+  return 0;
+}
+
+/**
+ * Serve `tasks list` (and the bare `tasks`/`tasks --journey ...` default,
+ * DS7.US2 slice 3a). `args` excludes the `tasks` token itself. Flags are
+ * scanned across the whole slice (the existing recall/conversations
+ * convention) rather than requiring them after a `list` token -- Python's own
+ * argparse subparser quirk (a flag given only BEFORE the subcommand can be
+ * overwritten back to the subparser's default) is a narrow, unreproduced edge
+ * case; the common "flag after/around the subcommand" usage matches exactly.
+ */
+function runTasksRead(db: Database, args: readonly string[]): number {
+  const journey = optionValue(args, "--journey");
+  const status = optionValue(args, "--status");
+  const all = hasOption(args, "--all");
+  const filters = all ? { journey } : status ? { journey, status } : { journey, openOnly: true };
+  const tasks = listTasks(db, filters);
+  process.stdout.write(renderTasksList(tasks, { all, status }));
+  return 0;
+}
+
+/**
+ * Serve `week view` (and the bare `week` default, DS7.US2 slice 3b). `plan`/
+ * `save` never reach here (their own routes). `now` is the real current time
+ * in production; tests inject a frozen instant by calling `renderWeekView`
+ * directly rather than through this CLI entry point.
+ */
+/**
+ * `week save` (CV22.DS7.US11 plateau 1) is the only `week` leaf that writes.
+ * `view` stays on the read seam; `plan` is Python's until it lands behind the
+ * replay transport.
+ */
+function isWeekSaveWrite(argv: readonly string[]): boolean {
+  return argv[0] === "week" && argv[1] === "save";
+}
+
+function runWeekSaveWrite(argv: readonly string[]): number {
+  return withLiveWriteDb(argv, (db) => {
+    runWeekSave(db, {});
+    return 0;
+  });
+}
+
+/**
+ * The content-tail routes (CV22.DS7.US11, live under CV22.DS8.US3).
+ *
+ * Each builds its providers from the same spec `routing.ts` decided with, so
+ * the route cannot disagree with the router about which transport is in play.
+ * Half a replay fixture throws `ReplayFixtureIncompleteError` from the factory,
+ * which the front door answers as a refusal; a missing provider here is defense
+ * in depth.
+ */
+async function runJournalContentRoute(argv: readonly string[]): Promise<number> {
+  const family = await resolveFamilyProviders(process.env, JOURNAL_TRANSPORT);
+  if (!family?.llm || !family.embedding) {
+    throw new Error("journal requires an LLM and an embedding provider");
+  }
+  return withLiveWriteDbAsync(argv, (db) =>
+    runJournalRoute(db, argv.slice(1), {
+      llm: family.llm as LlmProvider,
+      embedding: family.embedding as EmbeddingProvider,
+    }),
+  );
+}
+
+async function runWeekPlanContentRoute(argv: readonly string[]): Promise<number> {
+  const family = await resolveFamilyProviders(process.env, WEEK_PLAN_TRANSPORT);
+  if (!family?.llm) throw new Error("week plan requires an LLM provider");
+  const llm = family.llm;
+  return withLiveWriteDbAsync(argv, (db) => runWeekPlanRoute(db, argv.slice(2), llm));
+}
+
+async function runDescriptorContentRoute(argv: readonly string[]): Promise<number> {
+  const family = await resolveFamilyProviders(process.env, DESCRIPTOR_TRANSPORT);
+  if (!family?.llm) throw new Error("descriptor generate requires an LLM provider");
+  const llm = family.llm;
+  const reporter = outcomeReporter(argv, "descriptor");
+  return withLiveWriteDbAsync(argv, async (db) => {
+    const exitCode = await runDescriptorGenerateRoute(db, argv.slice(2), llm, reporter.onOutcome);
+    reporter.logSummary();
+    return exitCode;
+  });
+}
+
+function runWeekRead(db: Database, _args: readonly string[]): number {
+  const now = new Date();
+  const range = computeWeekRange(now);
+  const tasks = getTasksForWeek(db, range.start, range.end);
+  process.stdout.write(renderWeekView(tasks, now));
+  return 0;
+}
+
+/** Serve `consolidate list` (CV22.DS7.US3). `args` excludes the `consolidate` token itself. */
+function runConsolidateRead(db: Database, args: readonly string[]): number {
+  const status = optionValue(args, "--status");
+  const limitRaw = optionValue(args, "--limit");
+  const limit = limitRaw !== null ? Number(limitRaw) : 20;
+  process.stdout.write(renderConsolidateList(listConsolidations(db, { status, limit }), status));
+  return 0;
+}
+
+/** Serve `shadow list` / `shadow show` (CV22.DS7.US3). `args` excludes the `shadow` token itself. */
+function runShadowRead(db: Database, args: readonly string[]): number {
+  if (args[0] === "show") {
+    process.stdout.write(renderShadowShow(listIdentityByLayer(db, "shadow")));
+    return 0;
+  }
+  // args[0] === "list" (the only other route.ts-allowed read subcommand).
+  const status = optionValue(args, "--status");
+  const limitRaw = optionValue(args, "--limit");
+  const limit = limitRaw !== null ? Number(limitRaw) : 20;
+  // Port of Python's own over-fetch-then-filter: list_consolidations(limit*5),
+  // then keep only shadow_observation rows, THEN cap at limit.
+  const pool = listConsolidations(db, { status, limit: limit * 5 });
+  const items = pool.filter((c) => c.action === "shadow_observation").slice(0, limit);
+  process.stdout.write(renderShadowList(items, status));
+  return 0;
+}
+
+function readStdinContent(): string {
+  try {
+    return readFileSync(0, "utf8");
+  } catch {
+    return "";
+  }
+}
+
+/** `conversations append` (CV22.DS7.US10 slice B′). */
+function isConversationsAppend(argv: readonly string[]): boolean {
+  return argv[0] === "conversations" && argv[1] === "append";
+}
+
+/**
+ * Serve `conversations append`: the published external-shell write boundary.
+ *
+ * Mirrors Python's `_append_main` exactly, including its two exit codes — 0 with
+ * a success receipt, 2 with a bounded rejection receipt — because the contract
+ * is consumed by third-party shells that branch on them. Receipts are emitted
+ * as canonical JSON (sorted keys, tight separators) so the bytes match the
+ * oracle's.
+ *
+ * The stdin read is bounded before parsing: Python reads one byte past the
+ * limit and rejects `limit_exceeded` without ever decoding an oversized
+ * payload, so an attacker cannot force the parser to walk 100 MB of JSON.
+ */
+function runConversationsAppend(argv: readonly string[]): number {
+  const emitRejection = (reason: AppendRejectionReason): number => {
+    process.stdout.write(`${canonicalJson(new AppendRejectedError(reason).receipt())}\n`);
+    return 2;
+  };
+
+  const raw = readStdinBytes(MAX_PAYLOAD_BYTES + 1);
+  if (raw.byteLength > MAX_PAYLOAD_BYTES) return emitRejection("limit_exceeded");
+
+  let request: ConversationAppendRequest;
+  try {
+    request = parseAppendRequest(JSON.parse(raw.toString("utf8")));
+  } catch (error) {
+    if (error instanceof AppendRejectedError) return emitRejection(error.reason);
+    // Malformed UTF-8/JSON and recursion overflow are all `malformed_request`.
+    return emitRejection("malformed_request");
+  }
+
+  try {
+    return withLiveWriteDb(argv, (db) => {
+      const receipt = appendConversationMessages(db, request);
+      process.stdout.write(`${canonicalJson(receipt)}\n`);
+      return 0;
+    });
+  } catch (error) {
+    if (error instanceof AppendRejectedError) return emitRejection(error.reason);
+    return emitRejection("persistence_failure");
+  }
+}
+
+/** Read at most `limit` bytes from stdin, matching Python's bounded read. */
+function readStdinBytes(limit: number): Buffer {
+  try {
+    const buffer = readFileSync(0);
+    return buffer.byteLength > limit ? buffer.subarray(0, limit) : buffer;
+  } catch {
+    return Buffer.alloc(0);
+  }
+}
+
+/**
+ * Shared skeleton for the sanctioned live-write commands: resolve the DB (exit 2
+ * on config failure), bootstrap a missing DB via the TS core, open the
+ * backup-gated live-write seam, assert schema state, run `write`, and always
+ * close. Schema
+ * drift maps to exit 2; every other error propagates for the caller's own
+ * handling. Callers do their argument pre-validation before invoking this.
+ */
+function withLiveWriteDb(argv: readonly string[], write: (db: WritableDatabase) => number): number {
+  const dbPath = resolveDbPathForCli(argv.slice(2));
+  if (dbPath === null) return 2;
+  return withLiveWriteDbAt(dbPath, argv[0] ?? null, write);
+}
+
+/** The live-write seam for an already-resolved database path. */
+function withLiveWriteDbAt(
+  dbPath: string,
+  command: string | null,
+  write: (db: WritableDatabase) => number,
+): number {
+  // Missing DB => unbootstrapped install; TS bootstraps it (CV22.DS6.TS4) and
+  // applies any pending TS-authored migration (US3), then the backup-gated
+  // live-write seam opens the now-current file.
+  ensureDatabaseReadyForCli(dbPath, command);
+  const db = openLiveWriteDatabase(dbPath);
+  try {
+    assertSchemaState(db);
+    return write(db);
+  } catch (error) {
+    if (error instanceof SchemaStateError) {
+      console.error(`Mirror TS front door: ${error.message}`);
+      return 2;
+    }
+    throw error;
+  } finally {
+    db.close();
+  }
+}
+
+/**
+ * Async counterpart to `withLiveWriteDb`, for the CV22.DS7.US3 replay-gated
+ * cultivation writes (`consolidate apply`/`scan`, `shadow scan`) whose `write`
+ * callback must `await` a replay LLM/embedding provider call. Same skeleton,
+ * schema-drift handling, and always-close guarantee.
+ */
+async function withLiveWriteDbAsync(
+  argv: readonly string[],
+  write: (db: WritableDatabase) => Promise<number>,
+): Promise<number> {
+  const dbPath = resolveDbPathForCli(argv.slice(2));
+  if (dbPath === null) return 2;
+  ensureDatabaseReadyForCli(dbPath, argv[0] ?? null);
+  const db = openLiveWriteDatabase(dbPath);
+  try {
+    assertSchemaState(db);
+    return await write(db);
+  } catch (error) {
+    if (error instanceof SchemaStateError) {
+      console.error(`Mirror TS front door: ${error.message}`);
+      return 2;
+    }
+    throw error;
+  } finally {
+    db.close();
+  }
+}
+
+/** Write `rendered.text` to the correct stream and return its exit code -- the
+ * shared endpoint for every `RenderedCommand`-shaped cultivation outcome. */
+function writeRendered(rendered: { text: string; stderr: boolean; exitCode: number }): number {
+  if (rendered.stderr) process.stderr.write(rendered.text);
+  else process.stdout.write(rendered.text);
+  return rendered.exitCode;
+}
+
+function isIdentityWrite(argv: readonly string[]): boolean {
+  return argv[0] === "identity" && argv[1] === "set";
+}
+
+function isIdentityEdit(argv: readonly string[]): boolean {
+  return argv[0] === "identity" && argv[1] === "edit";
+}
+
+/**
+ * The leaves CV22.DS7.TS4 answers, once `routing.ts` has allowed them.
+ *
+ * `list` and `inspect` are SHARED commands: `list personas|journeys` and
+ * `inspect persona` are DS7.US1's ported reads and must keep reaching their own
+ * handlers. The first version of this predicate claimed both commands whole and
+ * sent all four of those leaves through the catalog route — the same
+ * inheritance the routing comments warn about, committed one file away from the
+ * warning. Named leaves only.
+ */
+function isExtensionCatalogCommand(argv: readonly string[]): boolean {
+  const command = argv[0];
+  if (command === "extensions" || command === "ext") return true;
+  const target = firstCatalogPositional(argv.slice(1));
+  if (command === "list") return target === null || target === "extensions" || target === "all";
+  if (command === "inspect") {
+    return (
+      target === "extension" ||
+      target === "runtime-catalog" ||
+      target === "llm-calls" ||
+      target === "embedding-provenance"
+    );
+  }
+  return false;
+}
+
+/** The first non-option token, skipping the valued options these commands take. */
+function firstCatalogPositional(args: readonly string[]): string | null {
+  const valued = new Set([
+    "--mirror-home",
+    "--db-path",
+    "--extensions-root",
+    "--runtime",
+    "--target-root",
+  ]);
+  for (let index = 0; index < args.length; index += 1) {
+    const token = args[index] as string;
+    if (valued.has(token)) {
+      index += 1;
+      continue;
+    }
+    if (!token.startsWith("--")) return token;
+  }
+  return null;
+}
+
+function isLifecycleWriteFace(argv: readonly string[]): boolean {
+  return (
+    argv[0] === "conversations" &&
+    (argv.includes("--metadata-lifecycle-apply") || argv.includes("--metadata-lifecycle-demo"))
+  );
+}
+
+/**
+ * `identity edit <layer> <key>`: drive $EDITOR, then write through the same
+ * seam `identity set` uses.
+ *
+ * The editor inherits this process's streams, so the write handle is taken
+ * AFTER it returns — a human staring at vim for ten minutes should not be
+ * holding the database open, and an editor that never exits should not be
+ * holding it forever.
+ */
+async function runIdentityEditRoute(argv: readonly string[]): Promise<number> {
+  const { runIdentityEdit } = await import("#identity/identityEdit.ts");
+  const positionals = stripOptionWithValue(
+    stripOptionWithValue(argv.slice(2), "--db-path"),
+    "--mirror-home",
+  );
+  const layer = positionals[0];
+  const key = positionals[1];
+  if (!layer || !key) {
+    console.error("identity edit requires <layer> <key>");
+    return 2;
+  }
+  const refused = refusedNewIdentityKey(argv.slice(1), layer, key);
+  if (refused !== null) {
+    console.error(`Error: ${refused}`);
+    return 1;
+  }
+  return withMirrorWriteDb(argv, (db) => {
+    const result = runIdentityEdit(db, layer, key, {
+      editor: process.env.EDITOR,
+      visual: process.env.VISUAL,
+      nowIso,
+      newId,
+    });
+    if (result.stdout) process.stdout.write(result.stdout);
+    if (result.stderr) process.stderr.write(result.stderr);
+    return result.exitCode;
+  });
+}
+
+/** `conversations --metadata-lifecycle-apply|--metadata-lifecycle-demo`. */
+async function runLifecycleWriteFace(argv: readonly string[]): Promise<number> {
+  const { runLifecycleWriteRoute } = await import("./lifecycleWriteRoute.ts");
+  return withMirrorWriteDb(argv, (db) => runLifecycleWriteRoute(db, argv.slice(1)));
+}
+
+/** The extension catalog family, answered from the TS core. */
+async function runExtensionCatalog(argv: readonly string[]): Promise<DispatchOutcome> {
+  const { runExtensionCatalogRoute } = await import("./extensionCatalogRoute.ts");
+  const dbPath = resolveDbPathForCli(argv.slice(1));
+  if (dbPath === null) return { exitCode: 2 };
+  ensureDatabaseReadyForCli(dbPath, argv[0] ?? null);
+  const { pythonUtcIsoformat } = await import("#extensions/bindings.ts");
+  return runExtensionCatalogRoute(argv, {
+    mirrorHome: dirname(dbPath),
+    databasePath: dbPath,
+    deps: { nowIso: () => pythonUtcIsoformat() },
+    withReadOnlyDatabase: (run) => withMirrorReadDb(argv, run),
+    withWritableDatabase: (run) => withMirrorWriteDb(argv, run),
+  });
+}
+
+/**
+ * CR104: why `identity set` or `identity edit` must refuse to create `key` in
+ * `layer`, decided before the write seam opens, or null to go ahead.
+ *
+ * The store refuses such a create on its own (`upsertIdentity`), but only after
+ * the seam has taken its pre-write snapshot, and after `identity edit` has had the
+ * user type into an editor. Asked here first, a refusal costs neither.
+ *
+ * A key outside the grammar may still name a row that predates the grammar, and
+ * that row stays writable, so only for such a key is the row looked up, read-only.
+ * When the database cannot be resolved or read, the answer is left to the write
+ * path, which reports the resolution error and where the store still refuses.
+ */
+function refusedNewIdentityKey(args: readonly string[], layer: string, key: string): string | null {
+  const problem = newIdentityKeyProblem(layer, key);
+  if (problem === null) return null;
+  let dbPath: string;
+  try {
+    dbPath = resolveDbPath(args);
+  } catch {
+    return null;
+  }
+  if (!existsSync(dbPath)) return problem;
+  try {
+    const db = openDatabaseReadOnly(dbPath);
+    try {
+      return identityRowExists(db, layer, key) ? null : problem;
+    } finally {
+      db.close();
+    }
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Route `identity set <layer> <key> --content ... | stdin` to the TS core. Mirrors
+ * the Python `identity set` interface and output, but writes through the sanctioned
+ * live-write seam after a backup, reusing the ported `setIdentity`. A new journey
+ * slug or persona id outside the grammar is refused first (CR104).
+ */
+function runIdentityWrite(argv: readonly string[]): number {
+  const args = argv.slice(2);
+  const positionals = stripOptionWithValue(
+    stripOptionWithValue(stripOptionWithValue(args, "--content"), "--db-path"),
+    "--mirror-home",
+  );
+  const layer = positionals[0];
+  const key = positionals[1];
+  if (!layer || !key) {
+    console.error("identity set requires <layer> <key>");
+    return 2;
+  }
+  const refused = refusedNewIdentityKey(args, layer, key);
+  if (refused !== null) {
+    console.error(`Error: ${refused}`);
+    return 1;
+  }
+  const content = optionValue(args, "--content") ?? readStdinContent();
+  if (!content.trim()) {
+    console.error("Error: content is empty.");
+    return 1;
+  }
+  return withLiveWriteDb(argv, (db) => {
+    const outcome = applyIdentitySet(db, { layer, key, content, id: newId(), nowIso: nowIso() });
+    process.stdout.write(`\u2713 ${outcome.layer}/${outcome.key} ${outcome.action}\n`);
+    return 0;
+  });
+}
+
+function isJourneyWrite(argv: readonly string[]): boolean {
+  return argv[0] === "journey" && argv[1] === "set-path";
+}
+
+function isJourneyUpdateWrite(argv: readonly string[]): boolean {
+  return argv[0] === "journey" && argv[1] === "update";
+}
+
+function isMemorySearch(argv: readonly string[]): boolean {
+  return argv[0] === "memories" && argv.includes("--search");
+}
+
+function isConsult(argv: readonly string[]): boolean {
+  return argv[0] === "consult";
+}
+
+function isInit(argv: readonly string[]): boolean {
+  return argv[0] === "init";
+}
+
+/**
+ * Serve `init <user>` (DS7.US1 Slice B). Filesystem-only — no database is
+ * opened. Python's argparse defines only the `user` positional (no
+ * --mirror-home/--db-path), so none are stripped here.
+ *
+ * Deliberate divergence: an already-populated identity root or a missing
+ * templates root are uncaught exceptions in Python (a raw traceback, exit 1) --
+ * not a designed message. This preserves the contract (exit 1, a stderr
+ * message naming the failure) without fabricating a fake traceback.
+ *
+ * CV22.DS10.US3 (D3): when no source configured a user, `init` writes
+ * `MIRROR_USER=<user>` into `~/.config/mirror/env` (0600 in 0700) and says
+ * where to add `OPENROUTER_API_KEY` by hand. The key is never read from argv.
+ * When a user IS configured -- the checkout's `.env`, or a shell running a
+ * second mirror -- the file is left alone and the person is told how to
+ * select the new home.
+ *
+ * Plateau 3: it ends with the wiring step for each runtime found on the PATH
+ * (`#runtime/wiring.ts`), with this tree's path in it, so the person is handed
+ * the next line rather than a page. Printing is not automating.
+ */
+function runInit(argv: readonly string[], env: NodeJS.ProcessEnv = process.env): number {
+  const user = argv[1];
+  if (!user) {
+    console.error("Usage: init <user>");
+    return 2;
+  }
+  try {
+    const identityRoot = initUserHome(user);
+    const mirrorHome = dirname(identityRoot);
+    const configured = Boolean(env.MIRROR_USER || env.MIRROR_HOME);
+    const configuration = configured
+      ? [
+          `  1. This machine already selects a user; to use this one, run with MIRROR_USER=${user}`,
+          `     or set it in ${configFilePath(env)}`,
+        ]
+      : [
+          `Configuration: ${writeConfigValue("MIRROR_USER", user, { env })} (MIRROR_USER=${user})`,
+          "",
+          "Next steps:",
+          "  1. Add OPENROUTER_API_KEY=<your key> to that file (it is created readable by you only)",
+        ];
+    const prints = [
+      `Created user home: ${mirrorHome}`,
+      `Identity ready at: ${identityRoot}`,
+      ...(configured ? ["", "Next steps:"] : []),
+      ...configuration,
+      `  2. Run: ${PROGRAM} seed`,
+      "\nYour identity is ready to use. Deepen it over time with:",
+      `  ${PROGRAM} identity edit user identity`,
+      ...runtimeWiringSection(env),
+    ];
+    process.stdout.write(prints.map((line) => `${line}\n`).join(""));
+    return 0;
+  } catch (error) {
+    if (error instanceof IdentityRootExistsError || error instanceof TemplatesNotFoundError) {
+      console.error(error.message);
+      return 1;
+    }
+    throw error;
+  }
+}
+
+/** The "Wire your runtime" tail of `init`, empty when no runtime is on the PATH. */
+function runtimeWiringSection(env: NodeJS.ProcessEnv): string[] {
+  const detected = detectRuntimes(env, isExecutable);
+  if (detected.length === 0) return [];
+  const root = runningTreeRoot();
+  return [
+    "\nWire your runtime to this install (each step is one you run and can read first):",
+    ...detected.flatMap((runtime) => ["", ...runtimeWiringLines(runtime, root)]),
+  ];
+}
+
+function isSeed(argv: readonly string[]): boolean {
+  return argv[0] === "seed";
+}
+
+/**
+ * Serve `seed [--env E] [--mirror-home PATH] [--force]` (DS7.US1 Slice B).
+ * Uses its own resolution (seedPaths.ts) rather than the shared
+ * withLiveWriteDb skeleton: `seed`'s Python source resolves the database path
+ * differently from every other command (see seedPaths.ts's module comment for
+ * the verified, surprising divergence), though the actual backup-gated
+ * write-open below is the same sanctioned seam every other write uses.
+ */
+function runSeedCommand(argv: readonly string[]): number {
+  const args = argv.slice(1);
+  const force = hasOption(args, "--force");
+  const envFlag = optionValue(args, "--env");
+  const ambientEnv = process.env.MEMORY_ENV || "production";
+  const headerPrints = [`Seeding identity into [${envFlag || ambientEnv}]...\n`];
+  if (force) {
+    headerPrints.push("  (--force: existing entries will be overwritten from YAML files)\n");
+  }
+  process.stdout.write(headerPrints.map((line) => `${line}\n`).join(""));
+
+  let paths: ReturnType<typeof resolveSeedPaths>;
+  try {
+    paths = resolveSeedPaths(args);
+  } catch (error) {
+    if (error instanceof MirrorHomeNotConfiguredError) {
+      console.error(`Mirror TS front door: ${error.message}`);
+      return 2;
+    }
+    throw error;
+  }
+
+  ensureDatabaseReadyForCli(paths.dbPath, "seed");
+  const db = openLiveWriteDatabase(paths.dbPath);
+  try {
+    assertSchemaState(db);
+    const prints = [`Mirror home: ${paths.mirrorHome}`, `Identity root: ${paths.identityRoot}`];
+    const result = runSeed(db, paths.identityRoot, { force });
+    prints.push(...result.lines);
+    prints.push(
+      `\nResult: ${result.created} created, ${result.updated} updated, ${result.skipped} skipped`,
+    );
+    if (result.errors.length > 0) {
+      prints.push(`Errors: ${result.errors.length}`);
+      for (const err of result.errors) prints.push(`  - ${err}`);
+    }
+    process.stdout.write(prints.map((line) => `${line}\n`).join(""));
+    return result.errors.length > 0 ? 1 : 0;
+  } catch (error) {
+    if (error instanceof SchemaStateError) {
+      console.error(`Mirror TS front door: ${error.message}`);
+      return 2;
+    }
+    throw error;
+  } finally {
+    db.close();
+  }
+}
+
+/** `consult credits` never logs to llm_calls (Python doesn't either, AI-09) --
+ * so it skips the live-write db-open entirely, matching its current
+ * read-only-external-API shape. */
+function isConsultCredits(argv: readonly string[]): boolean {
+  return argv[1] === "credits";
+}
+
+/**
+ * Route `journey set-path <slug> <path>` to the TS core. Normalizes the path like
+ * Python (`Path.expanduser().resolve()`), writes through the live-write seam after a
+ * backup via the ported setProjectPath, and mirrors Python's output: the resolved
+ * path on stdout, a status line on stderr, and a not-found error + exit 1.
+ */
+function runJourneyWrite(argv: readonly string[]): number {
+  const args = argv.slice(2);
+  const positionals = stripOptionWithValue(
+    stripOptionWithValue(args, "--db-path"),
+    "--mirror-home",
+  );
+  const slug = positionals[0];
+  const rawPath = positionals[1];
+  if (!slug || !rawPath) {
+    console.error("Usage: journey set-path <slug> <path>");
+    return 2;
+  }
+  return withLiveWriteDb(argv, (db) => {
+    try {
+      const resolved = applyJourneySetPath(db, slug, rawPath, nowIso());
+      console.error(`project_path set for '${slug}': ${resolved}`);
+      process.stdout.write(`${resolved}\n`);
+      return 0;
+    } catch (error) {
+      if (error instanceof JourneyNotFoundError) {
+        console.error(`Error: journey '${slug}' not found.`);
+        return 1;
+      }
+      throw error;
+    }
+  });
+}
+
+/**
+ * Route `journey update <slug> <content>` to the TS core (DS7.US1 Slice B).
+ * A thin wrapper over the already-ported `setIdentity`: Python's own
+ * `set_journey_path` is the SAME upsert-identity primitive with a fixed
+ * `journey_path` layer, no created/updated verb distinction (always prints
+ * "updated", matching Python exactly), and no check that the journey slug
+ * itself exists.
+ *
+ * CR073: the stdin sentinel is exactly `-`. A FLAG-SHAPED argument -- one or
+ * two hyphens then a letter -- is a mistyped sentinel (`-stdin`, `--stdin`) or
+ * a stray option, never path text, and is refused before anything is written.
+ * A markdown list (`- item`) or an em-dash lead is not flag-shaped and stays
+ * valid: four of six real journey paths carry lists. Empty content is refused
+ * as `identity set` already does. Messages and exit codes are byte-exact to
+ * the Python oracle (`ts/test/goldens/journey-update.golden.json`), including
+ * the usage path's exit 1, which this route previously returned as 2.
+ */
+const JOURNEY_UPDATE_USAGE =
+  `Usage: ${PROGRAM} journey update <slug> <content>\n` +
+  "       Pass '-' as <content> to read it from stdin.";
+const FLAG_SHAPED_CONTENT = /^--?[A-Za-z]/;
+
+function runJourneyUpdateWrite(argv: readonly string[]): number {
+  const args = argv.slice(2);
+  const positionals = stripOptionWithValue(
+    stripOptionWithValue(args, "--db-path"),
+    "--mirror-home",
+  );
+  const slug = positionals[0];
+  let content = positionals[1];
+  if (!slug || content === undefined) {
+    console.error(JOURNEY_UPDATE_USAGE);
+    return 1;
+  }
+  if (content === "-") {
+    content = readStdinContent();
+  } else if (FLAG_SHAPED_CONTENT.test(content)) {
+    console.error(
+      `Error: '${content}' looks like an option, not journey path text. ` +
+        "Pass '-' as <content> to read it from stdin.",
+    );
+    return 1;
+  }
+  if (!content.trim()) {
+    console.error("Error: content is empty.");
+    return 1;
+  }
+  return withLiveWriteDb(argv, (db) => {
+    setIdentity(db, { id: newId(), layer: JOURNEY_PATH_LAYER, key: slug, content }, nowIso());
+    console.error(`Journey path '${slug}' updated.`);
+    return 0;
+  });
+}
+
+function isTasksSubcommandWrite(argv: readonly string[]): boolean {
+  return (
+    argv[0] === "tasks" &&
+    (argv[1] === "add" ||
+      argv[1] === "done" ||
+      argv[1] === "doing" ||
+      argv[1] === "block" ||
+      argv[1] === "delete" ||
+      argv[1] === "import" ||
+      argv[1] === "sync" ||
+      argv[1] === "sync-config")
+  );
+}
+
+/**
+ * Route `tasks add <title> [--journey J] [--due D] [--stage S]` to the TS core
+ * (DS7.US2 slice 3a). Python's `title` positional accepts exactly one argv
+ * token (no `nargs`); extra unrecognized positionals are an argparse error in
+ * Python, not reproduced here beyond a generic usage message.
+ */
+function runTasksAddWrite(argv: readonly string[]): number {
+  const args = argv.slice(2);
+  const journey = optionValue(args, "--journey");
+  const due = optionValue(args, "--due");
+  const stage = optionValue(args, "--stage");
+  const title = stripOptionWithValue(
+    stripOptionWithValue(
+      stripOptionWithValue(
+        stripOptionWithValue(stripOptionWithValue(args, "--journey"), "--due"),
+        "--stage",
+      ),
+      "--db-path",
+    ),
+    "--mirror-home",
+  )[0];
+  if (!title) {
+    console.error("Usage: tasks add <title> [--journey J] [--due D] [--stage S]");
+    return 2;
+  }
+  return withLiveWriteDb(argv, (db) => {
+    const task = applyTasksAdd(db, { title, journey, due, stage }, newId(), nowIso());
+    process.stdout.write(renderTasksAdd(task));
+    return 0;
+  });
+}
+
+/**
+ * Route `tasks done|doing|block <task_id>` to the TS core (DS7.US2 slice 3a).
+ * Matches Python's `cmd_status_change`: business-logic outcomes (ambiguous,
+ * not found) print to STDOUT and exit 0 -- Python never calls `sys.exit()` in
+ * this command, so no branch here maps to a nonzero exit code either.
+ */
+function runTasksStatusChangeWrite(argv: readonly string[]): number {
+  // argv[1] is "done" | "doing" | "block" here (isTasksSubcommandWrite already
+  // narrowed it); only "block" needs translating to the Task model's status.
+  const newStatus: TaskStatusTarget =
+    argv[1] === "block" ? "blocked" : (argv[1] as TaskStatusTarget);
+  const args = argv.slice(2);
+  const idOrPrefix = stripOptionWithValue(
+    stripOptionWithValue(args, "--db-path"),
+    "--mirror-home",
+  )[0];
+  if (!idOrPrefix) {
+    console.error(`Usage: tasks ${argv[1]} <task_id>`);
+    return 2;
+  }
+  return withLiveWriteDb(argv, (db) => {
+    const outcome = applyTasksStatusChange(db, idOrPrefix, newStatus, nowIso());
+    process.stdout.write(renderTasksStatusChange(outcome));
+    return 0;
+  });
+}
+
+/**
+ * Route `tasks delete <task_id>` to the TS core (DS7.US2 slice 3a). Matches
+ * Python's `cmd_delete`: business-logic "not found" prints to STDOUT and exits
+ * 0, same as status-change.
+ */
+function runTasksDeleteWrite(argv: readonly string[]): number {
+  const args = argv.slice(2);
+  const idOrPrefix = stripOptionWithValue(
+    stripOptionWithValue(args, "--db-path"),
+    "--mirror-home",
+  )[0];
+  if (!idOrPrefix) {
+    console.error("Usage: tasks delete <task_id>");
+    return 2;
+  }
+  return withLiveWriteDb(argv, (db) => {
+    const outcome = applyTasksDelete(db, idOrPrefix);
+    process.stdout.write(renderTasksDelete(outcome));
+    return 0;
+  });
+}
+
+/**
+ * Route `tasks import [journey]` to the TS core (DS7.US2 slice 3c). The
+ * `journey` positional is optional in Python (`nargs="?"`); when absent, every
+ * known journey is attempted.
+ */
+function runTasksImportWrite(argv: readonly string[]): number {
+  const args = argv.slice(2);
+  const journey =
+    stripOptionWithValue(stripOptionWithValue(args, "--db-path"), "--mirror-home")[0] ?? null;
+  return withLiveWriteDb(argv, (db) => {
+    const results = applyTasksImport(db, journey);
+    process.stdout.write(renderTasksImport(results));
+    return 0;
+  });
+}
+
+/**
+ * Route `tasks sync [journey]` to the TS core (DS7.US2 slice 3c). Matches
+ * Python's `cmd_sync`: per-journey errors (no sync file, sync file missing on
+ * disk, or any other failure) print `❌ {journey}: {message}` and move on to
+ * the next journey rather than aborting the whole command; exit is always 0
+ * (no `sys.exit()` anywhere in `cmd_sync`).
+ */
+function runTasksSyncWrite(argv: readonly string[]): number {
+  const args = argv.slice(2);
+  const journey =
+    stripOptionWithValue(stripOptionWithValue(args, "--db-path"), "--mirror-home")[0] ?? null;
+  return withLiveWriteDb(argv, (db) => {
+    const journeys = resolveSyncJourneys(db, journey);
+    if (journeys.length === 0) {
+      process.stdout.write(renderTasksSyncNoJourneysConfigured());
+      return 0;
+    }
+    const lines: string[] = [];
+    for (const j of journeys) {
+      lines.push(renderTasksSyncOutcome(applyTasksSyncForJourney(db, j)));
+    }
+    process.stdout.write(lines.join(""));
+    return 0;
+  });
+}
+
+/**
+ * Route `tasks sync-config <journey> <file_path>` to the TS core (DS7.US2
+ * slice 3c). Matches Python's `cmd_sync_config`: an unknown journey is an
+ * uncaught `ValueError` in Python (no try/except around `set_sync_file`); this
+ * maps it to a clear stderr message and exit 1 instead of fabricating a fake
+ * traceback (the same DS7.US1 `init` precedent).
+ */
+function runTasksSyncConfigWrite(argv: readonly string[]): number {
+  const args = argv.slice(2);
+  const positionals = stripOptionWithValue(
+    stripOptionWithValue(args, "--db-path"),
+    "--mirror-home",
+  );
+  const journey = positionals[0];
+  const filePath = positionals[1];
+  if (!journey || !filePath) {
+    console.error("Usage: tasks sync-config <journey> <file_path>");
+    return 2;
+  }
+  return withLiveWriteDb(argv, (db) => {
+    try {
+      const outcome = applyTasksSyncConfig(db, journey, filePath, nowIso());
+      process.stdout.write(renderTasksSyncConfig(outcome));
+      return 0;
+    } catch (error) {
+      if (error instanceof JourneyNotFoundError) {
+        console.error(`Error: journey '${journey}' not found.`);
+        return 1;
+      }
+      throw error;
+    }
+  });
+}
+
+/** Dispatch a `tasks add|done|doing|block|delete|import|sync|sync-config` write to its sub-handler. */
+function runTasksWrite(argv: readonly string[]): number {
+  if (argv[1] === "add") return runTasksAddWrite(argv);
+  if (argv[1] === "delete") return runTasksDeleteWrite(argv);
+  if (argv[1] === "import") return runTasksImportWrite(argv);
+  if (argv[1] === "sync-config") return runTasksSyncConfigWrite(argv);
+  if (argv[1] === "sync") return runTasksSyncWrite(argv);
+  return runTasksStatusChangeWrite(argv);
+}
+
+// --- consolidate / shadow writes (CV22.DS7.US3) ------------------------------
+
+/** Route `consolidate reject <proposal_id>` to the TS core. */
+function runConsolidateRejectWrite(argv: readonly string[]): number {
+  const args = argv.slice(2);
+  const proposalId = stripOptionWithValue(
+    stripOptionWithValue(args, "--db-path"),
+    "--mirror-home",
+  )[0];
+  if (!proposalId) {
+    console.error("Usage: consolidate reject <proposal_id>");
+    return 2;
+  }
+  return withLiveWriteDb(argv, (db) =>
+    writeRendered(renderConsolidateReject(runReject(db, proposalId, nowIso()))),
+  );
+}
+
+/** Route `shadow reject <proposal_id>` to the TS core. */
+function runShadowRejectWrite(argv: readonly string[]): number {
+  const args = argv.slice(2);
+  const proposalId = stripOptionWithValue(
+    stripOptionWithValue(args, "--db-path"),
+    "--mirror-home",
+  )[0];
+  if (!proposalId) {
+    console.error("Usage: shadow reject <proposal_id>");
+    return 2;
+  }
+  return withLiveWriteDb(argv, (db) =>
+    writeRendered(renderShadowReject(runReject(db, proposalId, nowIso()))),
+  );
+}
+
+/** Route `shadow apply <proposal_id> [--content "..."]` to the TS core. Deterministic --
+ * no replay gate needed (the write is a hardcoded-layer identity append). */
+function runShadowApplyWrite(argv: readonly string[]): number {
+  const args = argv.slice(2);
+  const positionals = stripOptionWithValue(
+    stripOptionWithValue(stripOptionWithValue(args, "--content"), "--db-path"),
+    "--mirror-home",
+  );
+  const proposalId = positionals[0];
+  if (!proposalId) {
+    console.error('Usage: shadow apply <proposal_id> [--content "..."]');
+    return 2;
+  }
+  const overrideContent = optionValue(args, "--content");
+  return withLiveWriteDb(argv, (db) => {
+    const outcome = runShadowApplyRoute(db, proposalId, overrideContent, {
+      id: newId(),
+      nowIso: nowIso(),
+    });
+    return writeRendered(renderShadowApply(outcome));
+  });
+}
+
+/**
+ * Route `consolidate apply <proposal_id> [--content "..."]` to the TS core.
+ * The whole command is gated on `MIRROR_TS_CULTIVATION_EMBEDDING_REPLAY`
+ * (routing.ts already refuses to route here otherwise) because the action is
+ * read from the DB, not argv -- a `merge` proposal needs the replay embedding
+ * provider even though `identity_update`/`shadow_candidate` do not.
+ */
+async function runConsolidateApplyWrite(argv: readonly string[]): Promise<number> {
+  const args = argv.slice(2);
+  const positionals = stripOptionWithValue(
+    stripOptionWithValue(stripOptionWithValue(args, "--content"), "--db-path"),
+    "--mirror-home",
+  );
+  const proposalId = positionals[0];
+  if (!proposalId) {
+    console.error('Usage: consolidate apply <proposal_id> [--content "..."]');
+    return 2;
+  }
+  const overrideContent = optionValue(args, "--content");
+  const family = await resolveFamilyProviders(process.env, CULTIVATION_APPLY_TRANSPORT);
+  if (!family?.embedding) throw new Error("consolidate apply requires an embedding provider");
+  const embeddingProvider = family.embedding;
+  return withLiveWriteDbAsync(argv, async (db) => {
+    const outcome = await runConsolidateApplyRoute(
+      db,
+      proposalId,
+      overrideContent,
+      { identityId: newId(), mergeMemoryId: newId(), nowIso: nowIso() },
+      embeddingProvider,
+    );
+    return writeRendered(renderConsolidateApply(outcome));
+  });
+}
+
+/**
+ * Route `consolidate scan [--journey J] [--layer L] [--limit N] [--threshold F]`
+ * to the TS core, gated on `MIRROR_TS_CULTIVATION_LLM_REPLAY` (routing.ts).
+ */
+async function runConsolidateScanWrite(argv: readonly string[]): Promise<number> {
+  const args = argv.slice(2);
+  const journey = optionValue(args, "--journey");
+  const layer = optionValue(args, "--layer");
+  const limitRaw = optionValue(args, "--limit");
+  const limit = limitRaw !== null ? Number(limitRaw) : DEFAULT_CONSOLIDATE_SCAN_LIMIT;
+  const thresholdRaw = optionValue(args, "--threshold");
+  const threshold = thresholdRaw !== null ? Number(thresholdRaw) : DEFAULT_CLUSTER_THRESHOLD;
+  const family = await resolveFamilyProviders(process.env, CULTIVATION_SCAN_TRANSPORT);
+  if (!family?.llm) throw new Error("consolidate scan requires an LLM provider");
+  const provider = family.llm;
+  const reporter = outcomeReporter(argv, "consolidation");
+  return withLiveWriteDbAsync(argv, async (db) => {
+    const result = await consolidateScan(db, {
+      journey,
+      layer,
+      limit,
+      threshold,
+      provider,
+      id: newId,
+      nowIso,
+      onLlmCall: chatLedgerHook(db, "consolidation"),
+      onOutcome: reporter.onOutcome,
+    });
+    reporter.logSummary();
+    process.stdout.write(renderConsolidateScan(result, threshold));
+    return 0;
+  });
+}
+
+/** Route `shadow scan [--limit N]` to the TS core, gated on `MIRROR_TS_CULTIVATION_LLM_REPLAY`. */
+async function runShadowScanWrite(argv: readonly string[]): Promise<number> {
+  const args = argv.slice(2);
+  const limitRaw = optionValue(args, "--limit");
+  const limit = limitRaw !== null ? Number(limitRaw) : DEFAULT_SHADOW_SCAN_LIMIT;
+  const family = await resolveFamilyProviders(process.env, CULTIVATION_SCAN_TRANSPORT);
+  if (!family?.llm) throw new Error("shadow scan requires an LLM provider");
+  const provider = family.llm;
+  const reporter = outcomeReporter(argv, "shadow_scan");
+  return withLiveWriteDbAsync(argv, async (db) => {
+    const result = await shadowScan(db, {
+      limit,
+      provider,
+      id: newId,
+      nowIso,
+      onLlmCall: chatLedgerHook(db, "shadow_scan"),
+      onOutcome: reporter.onOutcome,
+    });
+    reporter.logSummary();
+    process.stdout.write(renderShadowScan(result));
+    return 0;
+  });
+}
+
+function isConsolidateSubcommandWrite(argv: readonly string[]): boolean {
+  return (
+    argv[0] === "consolidate" && (argv[1] === "reject" || argv[1] === "apply" || argv[1] === "scan")
+  );
+}
+
+function isShadowSubcommandWrite(argv: readonly string[]): boolean {
+  return (
+    argv[0] === "shadow" && (argv[1] === "reject" || argv[1] === "apply" || argv[1] === "scan")
+  );
+}
+
+/** Dispatch a `consolidate reject|apply|scan` write to its sub-handler. */
+function runConsolidateWrite(argv: readonly string[]): number | Promise<number> {
+  if (argv[1] === "reject") return runConsolidateRejectWrite(argv);
+  if (argv[1] === "apply") return runConsolidateApplyWrite(argv);
+  return runConsolidateScanWrite(argv); // "scan"
+}
+
+/** Dispatch a `shadow reject|apply|scan` write to its sub-handler. */
+function runShadowWrite(argv: readonly string[]): number | Promise<number> {
+  if (argv[1] === "reject") return runShadowRejectWrite(argv);
+  if (argv[1] === "apply") return runShadowApplyWrite(argv);
+  return runShadowScanWrite(argv); // "scan"
+}
+
+function withMirrorReadDb(argv: readonly string[], read: (db: Database) => number): number {
+  const dbPath = resolveDbPathForCli(argv.slice(1));
+  if (dbPath === null) return 2;
+  ensureDatabaseReadyForCli(dbPath, argv[0] ?? null);
+  const db = openDatabaseReadOnly(dbPath);
+  try {
+    assertSchemaState(db);
+    return read(db);
+  } catch (error) {
+    if (error instanceof SchemaStateError) {
+      console.error(`Mirror TS front door: ${error.message}`);
+      return 2;
+    }
+    throw error;
+  } finally {
+    db.close();
+  }
+}
+
+async function withMirrorWriteDb(
+  argv: readonly string[],
+  write: (db: WritableDatabase, dbPath: string) => Promise<number> | number,
+): Promise<number> {
+  const dbPath = resolveDbPathForCli(argv.slice(1));
+  if (dbPath === null) return 2;
+  ensureDatabaseReadyForCli(dbPath, argv[0] ?? null);
+  const db = openLiveWriteDatabase(dbPath);
+  try {
+    assertSchemaState(db);
+    return await write(db, dbPath);
+  } catch (error) {
+    if (error instanceof SchemaStateError) {
+      console.error(`Mirror TS front door: ${error.message}`);
+      return 2;
+    }
+    throw error;
+  } finally {
+    db.close();
+  }
+}
+
+function runMirrorWrite(argv: readonly string[]): Promise<number> | number {
+  if (mirrorDeactivateMissingSession(argv)) {
+    console.error("warning: mirror deactivate invoked without --session-id; no state change.");
+    return 0;
+  }
+  const reporter = outcomeReporter(argv, "reception");
+  return withMirrorWriteDb(argv, async (db, dbPath) => {
+    const exitCode = await runMirrorWriteRoute(db, dbPath, argv, process.env, {
+      onReceptionOutcome: reporter.onOutcome,
+    });
+    // Only a `--query` run reaches reception; a deterministic `mirror load`
+    // makes no call, and a `calls=0` line for it would be noise.
+    if (reporter.calls > 0) reporter.logSummary();
+    return exitCode;
+  });
+}
+
+function runModeWrite(argv: readonly string[]): Promise<number> {
+  return withMirrorWriteDb(argv, (db) => runModeWriteRoute(db, argv));
+}
+
+function runSoulWrite(argv: readonly string[]): Promise<number> {
+  return withMirrorWriteDb(argv, (db) => runSoulRoute(db, argv));
+}
+
+function runExploreWrite(argv: readonly string[]): Promise<number> {
+  return withMirrorWriteDb(argv, (db, dbPath) =>
+    runExploreRoute(db, argv, {
+      ...defaultExploreRouteDeps(),
+      // `story promote` ends in a Builder session start, so it needs the same
+      // wiring plateau 8's `build` route will use: the composed transport, the
+      // close tail, and the clone-role guard. Lazy, so the other eleven story
+      // actions never touch the provider seam.
+      buildLoadRuntime: () => createBuildLoadRuntime({ db, dbPath }),
+    }),
+  );
+}
+
+/** CV22.DS7.US5: the conversation logger, the product's primary write path. */
+function runConversationLoggerWrite(argv: readonly string[]): Promise<number> {
+  return withMirrorWriteDb(argv, (db, dbPath) => runConversationLoggerRoute(db, dbPath, argv));
+}
+
+/**
+ * Surface a provider-backed call's outcome into the front-door log
+ * (CV22.DS8.US3).
+ *
+ * One SUMMARY line per invocation, always -- it carries `calls=N` and the full
+ * outcome distribution, which is what makes a fan-out visible after the fact
+ * and what the live smoke reads instead of counting ledger rows. Plus one line
+ * per NON-answered call, because only those carry a `kind=` worth having; a
+ * line per successful call would triple the log for no diagnostic gain.
+ *
+ * Category only: no cluster content, no query, no model output.
+ */
+function outcomeReporter(
+  argv: readonly string[],
+  surface: string,
+): {
+  onOutcome: (report: ProviderCallReport) => void;
+  logSummary: () => void;
+  readonly calls: number;
+} {
+  const logPath = resolveLogPath(argv);
+  const tally = new CallOutcomeTally();
+  return {
+    get calls() {
+      return tally.calls;
+    },
+    onOutcome: (report) => {
+      tally.record(report);
+      if (report.outcome === "answered") return;
+      logFrontDoor(logPath, {
+        command: argv[0] ?? null,
+        route: "ts",
+        exitCode: 0,
+        detail: formatCallOutcome(surface, report),
+      });
+    },
+    logSummary: () => {
+      logFrontDoor(logPath, {
+        command: argv[0] ?? null,
+        route: "ts",
+        exitCode: 0,
+        detail: `${surface} ${tally.summary()}`,
+      });
+    },
+  };
+}
+
+/** Best-effort log path from the same resolver; null when unconfigured. */
+function resolveLogPath(argv: readonly string[]): string | null {
+  try {
+    return frontDoorLogPath(resolveDbPath(argv));
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * `consult <model> <question>` logs to llm_calls on a best-effort basis
+ * (AI-09). Unlike `runMemorySearch`/`runIdentityWrite`/`runJourneyWrite`,
+ * consult's established contract does NOT require a database to exist --
+ * it is fundamentally an external-API command, and logging is an added,
+ * optional side effect. If a db cannot be resolved, opened, backed up, or
+ * schema-checked for any reason, consult must still run; it just logs
+ * nothing -- the same fail-soft principle `logLlmCall` applies to the write
+ * itself, extended to db resolution.
+ */
+async function runConsultAskWithDb(argv: readonly string[]): Promise<number> {
+  const db = tryOpenDbForConsultLogging(argv);
+  try {
+    process.stdout.write(await runConsultRoute(db, argv.slice(1)));
+    return 0;
+  } finally {
+    db?.close();
+  }
+}
+
+export function tryOpenDbForConsultLogging(argv: readonly string[]): WritableDatabase | null {
+  let db: WritableDatabase | null = null;
+  try {
+    // Uses resolveDbPath directly, NOT resolveDbPathForCli -- that wrapper
+    // prints a user-facing error on an unconfigured mirror home, which is
+    // correct for commands that require a db but wrong here: consult without
+    // a configured home must stay completely silent about logging, exactly
+    // as it behaved before this CR.
+    const dbPath = resolveDbPath(argv.slice(1));
+    if (!existsSync(dbPath)) return null;
+    db = openLiveWriteDatabase(dbPath);
+    assertSchemaState(db);
+    return db;
+  } catch {
+    db?.close();
+    return null;
+  }
+}
+
+/**
+ * `mcp` (CV22.DS10.TS5, F9): the oracle's command, answered by the server
+ * CV22.DS9 ported. The module IS the server -- importing it serves stdio, and
+ * the import settles when the client closes stdin. The plugin launches the same
+ * module directly; this is the front door's way in, not a second server.
+ */
+async function runMcpServer(): Promise<number> {
+  await import("#mcp/main.ts");
+  return 0;
+}
+
+async function runMemorySearch(argv: readonly string[]): Promise<number> {
+  const dbPath = resolveDbPathForCli(argv.slice(1));
+  if (dbPath === null) return 2;
+  // Missing DB => unbootstrapped install; TS bootstraps it (CV22.DS6.TS4) and
+  // applies any pending TS-authored migration (US3) before the backup-gated
+  // search read/log path opens it.
+  ensureDatabaseReadyForCli(dbPath, argv[0] ?? null);
+  const db = openLiveWriteDatabase(dbPath);
+  try {
+    assertSchemaState(db);
+    process.stdout.write(
+      await runMemorySearchRoute(db, argv.slice(1), {
+        onDegraded: (detail) =>
+          logFrontDoor(frontDoorLogPath(dbPath), {
+            command: argv[0] ?? null,
+            route: "ts",
+            exitCode: 0,
+            detail,
+          }),
+      }),
+    );
+    return 0;
+  } catch (error) {
+    if (error instanceof SchemaStateError) {
+      console.error(`Mirror TS front door: ${error.message}`);
+      return 2;
+    }
+    throw error;
+  } finally {
+    db.close();
+  }
+}
+
+/**
+ * The exit code, with the content-free route metadata a route may add for the
+ * durable front-door log.
+ *
+ * (Until CV22.DS10.TS5 this also carried which ENGINE answered, because a
+ * TypeScript route could still fall back to Python inside dispatch and the log
+ * records the outcome, not the intent -- RS009 CR059/CR064. Nothing falls back
+ * now; every outcome is TypeScript's.)
+ */
+interface DispatchOutcome {
+  exitCode: number;
+  /** Content-free route metadata for the durable front-door log. */
+  detail?: string;
+}
+
+async function dispatch(argv: readonly string[]): Promise<DispatchOutcome> {
+  const result = await dispatchTs(argv);
+  return typeof result === "number" ? { exitCode: result } : result;
+}
+
+/** Every route the front door answers once routing has chosen it. */
+async function dispatchTs(argv: readonly string[]): Promise<number | DispatchOutcome> {
+  if (isConversationLoggerCommand(argv)) return runConversationLoggerWrite(argv);
+  if (argv[0] === "build") {
+    // The Builder command tree is deliberately lazy: the other commands never
+    // pay for loading it, and a broken Builder core cannot take them down.
+    const { runBuildRoute } = await import("./buildRoute.ts");
+    return runBuildRoute(argv, {
+      withReadOnlyDatabase: (run) => withMirrorReadDb(argv, run),
+      withWritableDatabase: (run) => withMirrorWriteDb(argv, run),
+      createLoadRuntime: (db, dbPath, ignoreProductionRole) =>
+        createBuildLoadRuntime({ db, dbPath, ignoreProductionRole }),
+      nowIso,
+      environmentSessionId: process.env.MIRROR_SESSION_ID ?? null,
+    });
+  }
+  if (isInit(argv)) return runInit(argv);
+  if (isSeed(argv)) return runSeedCommand(argv);
+  if (isIdentityWrite(argv)) return runIdentityWrite(argv);
+  if (isIdentityEdit(argv)) return runIdentityEditRoute(argv);
+  // CV22.DS7.TS4: the extension catalog family. Lazy like the Builder tree, and
+  // for the same reason: the other commands never pay for loading it.
+  if (isExtensionCatalogCommand(argv)) return runExtensionCatalog(argv);
+  if (isLifecycleWriteFace(argv)) return runLifecycleWriteFace(argv);
+  if (isJourneyWrite(argv)) return runJourneyWrite(argv);
+  if (isJourneyUpdateWrite(argv)) return runJourneyUpdateWrite(argv);
+  if (isTasksSubcommandWrite(argv)) return runTasksWrite(argv);
+  if (isWeekSaveWrite(argv)) return runWeekSaveWrite(argv);
+  if (argv[0] === "week" && argv[1] === "plan") return runWeekPlanContentRoute(argv);
+  if (argv[0] === "journal") return runJournalContentRoute(argv);
+  if (argv[0] === "descriptor" && argv[1] === "generate") return runDescriptorContentRoute(argv);
+  if (isConsolidateSubcommandWrite(argv)) return runConsolidateWrite(argv);
+  if (isShadowSubcommandWrite(argv)) return runShadowWrite(argv);
+  if (isMirrorWrite(argv)) return runMirrorWrite(argv);
+  if (isModeWrite(argv)) return runModeWrite(argv);
+  // CV22.DS7.US6: the Soul ritual; `routing.ts` allowlists its subcommands by
+  // name.
+  if (argv[0] === "soul") return runSoulWrite(argv);
+  if (argv[0] === "explore") return runExploreWrite(argv);
+  if (isConversationsAppend(argv)) return runConversationsAppend(argv);
+  // CV22.DS7.TS1: the DB safety tools. `backup` never opens or bootstraps the
+  // database; `repair-encoding --apply` rides the live-write seam.
+  if (argv[0] === "backup") {
+    return runBackupRoute(argv, {
+      // CR060: the backup reports an unresolved home itself, in one line.
+      resolveDbPath: (args) => resolveDbPath(args),
+      withLiveWriteDb: (dbPath, write) => withLiveWriteDbAt(dbPath, "backup", write),
+    });
+  }
+  if (argv[0] === "repair-encoding") {
+    return runRepairEncodingRoute(argv, {
+      resolveDbPath: resolveDbPathForCli,
+      withLiveWriteDb: (dbPath, write) => withLiveWriteDbAt(dbPath, "repair-encoding", write),
+    });
+  }
+  // CV22.DS7.TS3: the daily-visible tail. Both are read-only and open the
+  // database, when at all, through a read-only handle -- no bootstrap, no
+  // migrate-on-open, and for `welcome --status-line` no subprocess whatsoever.
+  if (argv[0] === "welcome") return runWelcomeRoute(argv);
+  if (argv[0] === "runtime") return runRuntimeReadRoute(argv);
+  if (argv[0] === "mcp") return runMcpServer();
+  if (isMemorySearch(argv)) return runMemorySearch(argv);
+  if (isConsult(argv)) {
+    if (isConsultCredits(argv)) {
+      process.stdout.write(await runConsultRoute(null, argv.slice(1)));
+      return 0;
+    }
+    return runConsultAskWithDb(argv);
+  }
+  return runTs(argv);
+}
+
+export async function main(rawArgv = process.argv.slice(2)): Promise<number> {
+  const nodeError = nodeVersionError(process.versions.node);
+  if (nodeError) {
+    console.error(nodeError);
+    return 1;
+  }
+  // Once, before routing, and the SAME argv goes to dispatch: a family's
+  // leading options move after its subcommand (CV22.DS10.TS5, finding F5), so
+  // the router and every handler read one shape.
+  const argv = canonicalArgv(rawArgv);
+  const decision = routeMemoryCommand(argv);
+  const logPath = resolveLogPath(argv);
+  // CV22.DS10.TS4: a surface this migration removed answers here, before any
+  // dispatch -- so nothing is spawned, no database is opened, and NO STDIN IS
+  // READ. `journey mutate` took JSON on stdin; refusing before the read is what
+  // makes the refusal immediate instead of a hang, and what keeps the caller's
+  // payload out of this process entirely.
+  if (decision.engine === "retired") {
+    process.stderr.write(retiredRefusal(decision));
+    logFrontDoor(logPath, {
+      command: decision.command,
+      route: "retired",
+      exitCode: 1,
+      // Metadata only, and constant per entry: the anchor names the cutoff,
+      // never the arguments the caller passed to the removed command.
+      detail: `cutoff=${decision.anchor}`,
+    });
+    return 1;
+  }
+  // CV22.DS10.TS5 (D2): a name the front door does not answer. Same posture as
+  // a retired surface -- answered before dispatch, so nothing is opened, read
+  // from stdin, or spawned -- and logged by SCOPE only: an unknown top-level
+  // name is whatever the caller typed, and it stays out of the log.
+  if (decision.engine === "usage") {
+    const env = process.env;
+    const answer = answerUsage(decision.request, {
+      userConfigured: Boolean(env.MIRROR_USER || env.MIRROR_HOME || env.MEMORY_DIR || env.DB_PATH),
+      configFile: configFilePath(env),
+    });
+    (answer.stream === "stdout" ? process.stdout : process.stderr).write(answer.text);
+    logFrontDoor(logPath, {
+      command: decision.command,
+      route: "usage",
+      exitCode: answer.exitCode,
+      detail: `usage=${decision.request.scope}`,
+    });
+    return answer.exitCode;
+  }
+  try {
+    const outcome = await dispatch(argv);
+    logFrontDoor(logPath, {
+      command: decision.command,
+      route: decision.engine,
+      exitCode: outcome.exitCode,
+      ...(outcome.detail ? { detail: outcome.detail } : {}),
+    });
+    return outcome.exitCode;
+  } catch (error) {
+    // Metadata-only: the error's name/category, never argument values.
+    const detail = error instanceof Error ? error.name : "unknown error";
+    // A refusal no route answered is still a refusal: one line, by name, and
+    // never a stack trace (`namedRefusal.ts`).
+    const refusal = namedRefusal(error);
+    if (refusal !== null) {
+      console.error(refusal.line);
+      logFrontDoor(logPath, {
+        command: decision.command,
+        route: decision.engine,
+        exitCode: refusal.exitCode,
+        detail,
+      });
+      return refusal.exitCode;
+    }
+    logFrontDoor(logPath, {
+      command: decision.command,
+      route: decision.engine,
+      exitCode: 1,
+      detail,
+    });
+    throw error;
+  }
+}
+
+/**
+ * What the entry does, for the two ways the program is started: this file run
+ * directly (a checkout, `npm link`), or the `bin/mirror.js` shim that an
+ * installed package needs because Node will not strip types under
+ * `node_modules` (CV22.DS10.US3, D15). Configuration and the warning filter
+ * run here and nowhere else, so importing this module does neither.
+ */
+export async function runAsEntry(rawArgv = process.argv.slice(2)): Promise<number> {
+  silenceExperimentalWarnings();
+  loadConfiguration({ entryPath: import.meta.filename });
+  return main(rawArgv);
+}
+
+// Run only when invoked as the CLI entry, not when imported (keeps the module
+// importable for tests and tooling, and keeps `process.env` untouched there).
+if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
+  process.exitCode = await runAsEntry();
+}

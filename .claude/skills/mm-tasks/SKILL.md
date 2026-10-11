@@ -9,7 +9,7 @@ user-invocable: true
 When receiving `/mm:tasks`, run:
 
 ```bash
-uv run python -m memory tasks [SUBCOMMAND] [ARGS]
+mirror tasks [SUBCOMMAND] [ARGS]
 ```
 
 ## Subcommands

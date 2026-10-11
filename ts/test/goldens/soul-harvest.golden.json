@@ -1,0 +1,417 @@
+{
+  "scenarios": [
+    {
+      "conversation_id": null,
+      "expected_content": "Esta entrada nasceu de uma colheita em Soul Mode.\n\n## Fruto\n\n> A first sentence. A second one follows.\n",
+      "expected_metadata": "{\"format\": \"markdown\", \"origin\": {\"mode\": \"soul\", \"conversation_id\": null, \"conversation_uri\": null}, \"harvested_fruit\": \"A first sentence. A second one follows.\"}",
+      "expected_title": "A first sentence",
+      "fruit": "A first sentence. A second one follows.",
+      "messages": [],
+      "name": "title_first_sentence"
+    },
+    {
+      "conversation_id": null,
+      "expected_content": "Esta entrada nasceu de uma colheita em Soul Mode.\n\n## Fruto\n\n> Ends with punctuation!!!\n",
+      "expected_metadata": "{\"format\": \"markdown\", \"origin\": {\"mode\": \"soul\", \"conversation_id\": null, \"conversation_uri\": null}, \"harvested_fruit\": \"Ends with punctuation!!!\"}",
+      "expected_title": "Ends with punctuation",
+      "fruit": "Ends with punctuation!!!",
+      "messages": [],
+      "name": "title_strips_trailing_punctuation"
+    },
+    {
+      "conversation_id": null,
+      "expected_content": "Esta entrada nasceu de uma colheita em Soul Mode.\n\n## Fruto\n\n> no punctuation at all here\n",
+      "expected_metadata": "{\"format\": \"markdown\", \"origin\": {\"mode\": \"soul\", \"conversation_id\": null, \"conversation_uri\": null}, \"harvested_fruit\": \"no punctuation at all here\"}",
+      "expected_title": "no punctuation at all here",
+      "fruit": "no punctuation at all here",
+      "messages": [],
+      "name": "title_no_sentence_end"
+    },
+    {
+      "conversation_id": null,
+      "expected_content": "Esta entrada nasceu de uma colheita em Soul Mode.\n\n## Fruto\n\n> xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.\n",
+      "expected_metadata": "{\"format\": \"markdown\", \"origin\": {\"mode\": \"soul\", \"conversation_id\": null, \"conversation_uri\": null}, \"harvested_fruit\": \"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.\"}",
+      "expected_title": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "fruit": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.",
+      "messages": [],
+      "name": "title_exactly_eighty"
+    },
+    {
+      "conversation_id": null,
+      "expected_content": "Esta entrada nasceu de uma colheita em Soul Mode.\n\n## Fruto\n\n> yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy.\n",
+      "expected_metadata": "{\"format\": \"markdown\", \"origin\": {\"mode\": \"soul\", \"conversation_id\": null, \"conversation_uri\": null}, \"harvested_fruit\": \"yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy.\"}",
+      "expected_title": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy...",
+      "fruit": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy.",
+      "messages": [],
+      "name": "title_eighty_one_truncates"
+    },
+    {
+      "conversation_id": null,
+      "expected_content": "Esta entrada nasceu de uma colheita em Soul Mode.\n\n## Fruto\n\n> 🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯 a tail that pushes this past eighty code points in total\n",
+      "expected_metadata": "{\"format\": \"markdown\", \"origin\": {\"mode\": \"soul\", \"conversation_id\": null, \"conversation_uri\": null}, \"harvested_fruit\": \"🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯 a tail that pushes this past eighty code points in total\"}",
+      "expected_title": "🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯 a tail that pushes this past eighty...",
+      "fruit": "🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯🎯 a tail that pushes this past eighty code points in total",
+      "messages": [],
+      "name": "title_astral_boundary"
+    },
+    {
+      "conversation_id": null,
+      "expected_content": "Esta entrada nasceu de uma colheita em Soul Mode.\n\n## Fruto\n\n> zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz  and more text after the cut point to force truncation\n",
+      "expected_metadata": "{\"format\": \"markdown\", \"origin\": {\"mode\": \"soul\", \"conversation_id\": null, \"conversation_uri\": null}, \"harvested_fruit\": \"zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz  and more text after the cut point to force truncation\"}",
+      "expected_title": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz...",
+      "fruit": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz  and more text after the cut point to force truncation",
+      "messages": [],
+      "name": "title_rstrip_at_cut"
+    },
+    {
+      "conversation_id": null,
+      "expected_content": "Esta entrada nasceu de uma colheita em Soul Mode.\n\n## Fruto\n\n> First sentence. Second sentence.\n",
+      "expected_metadata": "{\"format\": \"markdown\", \"origin\": {\"mode\": \"soul\", \"conversation_id\": null, \"conversation_uri\": null}, \"harvested_fruit\": \"First sentence. Second sentence.\"}",
+      "expected_title": "First sentence",
+      "fruit": "First sentence. Second sentence.",
+      "messages": [],
+      "name": "title_nbsp_after_period"
+    },
+    {
+      "conversation_id": null,
+      "expected_content": "Esta entrada nasceu de uma colheita em Soul Mode.\n\n## Fruto\n\n> First sentence.　Second.\n",
+      "expected_metadata": "{\"format\": \"markdown\", \"origin\": {\"mode\": \"soul\", \"conversation_id\": null, \"conversation_uri\": null}, \"harvested_fruit\": \"First sentence.　Second.\"}",
+      "expected_title": "First sentence",
+      "fruit": "First sentence.　Second.",
+      "messages": [],
+      "name": "title_ideographic_space_after_period"
+    },
+    {
+      "conversation_id": null,
+      "expected_content": "Esta entrada nasceu de uma colheita em Soul Mode.\n\n## Fruto\n\n> First sentence.\u001fSecond.\n",
+      "expected_metadata": "{\"format\": \"markdown\", \"origin\": {\"mode\": \"soul\", \"conversation_id\": null, \"conversation_uri\": null}, \"harvested_fruit\": \"First sentence.\\u001fSecond.\"}",
+      "expected_title": "First sentence",
+      "fruit": "First sentence.\u001fSecond.",
+      "messages": [],
+      "name": "title_unit_separator_after_period"
+    },
+    {
+      "conversation_id": null,
+      "expected_content": "Esta entrada nasceu de uma colheita em Soul Mode.\n\n## Fruto\n\n> First sentence.\n> Second sentence.\n",
+      "expected_metadata": "{\"format\": \"markdown\", \"origin\": {\"mode\": \"soul\", \"conversation_id\": null, \"conversation_uri\": null}, \"harvested_fruit\": \"First sentence.\\nSecond sentence.\"}",
+      "expected_title": "First sentence",
+      "fruit": "First sentence.\nSecond sentence.",
+      "messages": [],
+      "name": "title_newline_after_period"
+    },
+    {
+      "conversation_id": null,
+      "expected_content": "Esta entrada nasceu de uma colheita em Soul Mode.\n\n## Fruto\n\n> first line\n> second line\n",
+      "expected_metadata": "{\"format\": \"markdown\", \"origin\": {\"mode\": \"soul\", \"conversation_id\": null, \"conversation_uri\": null}, \"harvested_fruit\": \"first line\\nsecond line\"}",
+      "expected_title": "first line\nsecond line",
+      "fruit": "first line\nsecond line",
+      "messages": [],
+      "name": "fruit_multiline"
+    },
+    {
+      "conversation_id": null,
+      "expected_content": "Esta entrada nasceu de uma colheita em Soul Mode.\n\n## Fruto\n\n> first line\n>\n> third line\n",
+      "expected_metadata": "{\"format\": \"markdown\", \"origin\": {\"mode\": \"soul\", \"conversation_id\": null, \"conversation_uri\": null}, \"harvested_fruit\": \"first line\\n\\nthird line\"}",
+      "expected_title": "first line\n\nthird line",
+      "fruit": "first line\n\nthird line",
+      "messages": [],
+      "name": "fruit_blank_line_between"
+    },
+    {
+      "conversation_id": null,
+      "expected_content": "Esta entrada nasceu de uma colheita em Soul Mode.\n\n## Fruto\n\n> first line\n> second line\n",
+      "expected_metadata": "{\"format\": \"markdown\", \"origin\": {\"mode\": \"soul\", \"conversation_id\": null, \"conversation_uri\": null}, \"harvested_fruit\": \"first line\\r\\nsecond line\"}",
+      "expected_title": "first line\r\nsecond line",
+      "fruit": "first line\r\nsecond line",
+      "messages": [],
+      "name": "fruit_crlf"
+    },
+    {
+      "conversation_id": null,
+      "expected_content": "Esta entrada nasceu de uma colheita em Soul Mode.\n\n## Fruto\n\n> first line\n> second line\n",
+      "expected_metadata": "{\"format\": \"markdown\", \"origin\": {\"mode\": \"soul\", \"conversation_id\": null, \"conversation_uri\": null}, \"harvested_fruit\": \"first line\\u000bsecond line\"}",
+      "expected_title": "first line\u000bsecond line",
+      "fruit": "first line\u000bsecond line",
+      "messages": [],
+      "name": "fruit_vertical_tab"
+    },
+    {
+      "conversation_id": null,
+      "expected_content": "Esta entrada nasceu de uma colheita em Soul Mode.\n\n## Fruto\n\n> first line\n> second line\n",
+      "expected_metadata": "{\"format\": \"markdown\", \"origin\": {\"mode\": \"soul\", \"conversation_id\": null, \"conversation_uri\": null}, \"harvested_fruit\": \"first line\\fsecond line\"}",
+      "expected_title": "first line\fsecond line",
+      "fruit": "first line\fsecond line",
+      "messages": [],
+      "name": "fruit_form_feed"
+    },
+    {
+      "conversation_id": null,
+      "expected_content": "Esta entrada nasceu de uma colheita em Soul Mode.\n\n## Fruto\n\n> first line\n> second line\n",
+      "expected_metadata": "{\"format\": \"markdown\", \"origin\": {\"mode\": \"soul\", \"conversation_id\": null, \"conversation_uri\": null}, \"harvested_fruit\": \"first line second line\"}",
+      "expected_title": "first line second line",
+      "fruit": "first line second line",
+      "messages": [],
+      "name": "fruit_line_separator"
+    },
+    {
+      "conversation_id": "conv-1",
+      "expected_content": "Esta entrada nasceu de uma colheita em Soul Mode.\n\n## Fruto\n\n> a fruit\n\n## Origem\n\n[Conversa originária](mirror://conversation/conv-1)\n",
+      "expected_metadata": "{\"format\": \"markdown\", \"origin\": {\"mode\": \"soul\", \"conversation_id\": \"conv-1\", \"conversation_uri\": \"mirror://conversation/conv-1\"}, \"harvested_fruit\": \"a fruit\"}",
+      "expected_title": "a fruit",
+      "fruit": "a fruit",
+      "messages": [],
+      "name": "with_conversation_id"
+    },
+    {
+      "conversation_id": null,
+      "expected_content": "Esta entrada nasceu de uma colheita em Soul Mode.\n\n## Fruto\n\n> a fruit\n",
+      "expected_metadata": "{\"format\": \"markdown\", \"origin\": {\"mode\": \"soul\", \"conversation_id\": null, \"conversation_uri\": null}, \"harvested_fruit\": \"a fruit\"}",
+      "expected_title": "a fruit",
+      "fruit": "a fruit",
+      "messages": [],
+      "name": "without_conversation_id"
+    },
+    {
+      "conversation_id": "conv-1",
+      "expected_content": "Esta entrada nasceu de uma colheita em Soul Mode.\n\n## Fruto\n\n> a fruit\n\n## Origem\n\n[Conversa originária](mirror://conversation/conv-1)\n\n## Material vivo da conversa\n\n### User\n\na user line\n\n### Mirror\n\na mirror line\n\n### System\n\na system line\n\n### Tool_Call\n\nan unknown role rendered with str.title()\n",
+      "expected_metadata": "{\"format\": \"markdown\", \"origin\": {\"mode\": \"soul\", \"conversation_id\": \"conv-1\", \"conversation_uri\": \"mirror://conversation/conv-1\"}, \"harvested_fruit\": \"a fruit\"}",
+      "expected_title": "a fruit",
+      "fruit": "a fruit",
+      "messages": [
+        {
+          "content": "  a user line  ",
+          "role": "user"
+        },
+        {
+          "content": "a mirror line",
+          "role": "assistant"
+        },
+        {
+          "content": "a system line",
+          "role": "system"
+        },
+        {
+          "content": "an unknown role rendered with str.title()",
+          "role": "tool_call"
+        }
+      ],
+      "name": "transcript_roles"
+    },
+    {
+      "conversation_id": "conv-1",
+      "expected_content": "Esta entrada nasceu de uma colheita em Soul Mode.\n\n## Fruto\n\n> a fruit\n\n## Origem\n\n[Conversa originária](mirror://conversation/conv-1)\n\n## Material vivo da conversa\n\n### User\n\nkept\n\n### User\n\nalso kept\n",
+      "expected_metadata": "{\"format\": \"markdown\", \"origin\": {\"mode\": \"soul\", \"conversation_id\": \"conv-1\", \"conversation_uri\": \"mirror://conversation/conv-1\"}, \"harvested_fruit\": \"a fruit\"}",
+      "expected_title": "a fruit",
+      "fruit": "a fruit",
+      "messages": [
+        {
+          "content": "kept",
+          "role": "user"
+        },
+        {
+          "content": "   ",
+          "role": "assistant"
+        },
+        {
+          "content": "also kept",
+          "role": "user"
+        }
+      ],
+      "name": "transcript_skips_blank_content"
+    },
+    {
+      "conversation_id": "conv-1",
+      "expected_content": "Esta entrada nasceu de uma colheita em Soul Mode.\n\n## Fruto\n\n> a fruit\n\n## Origem\n\n[Conversa originária](mirror://conversation/conv-1)\n\n## Material vivo da conversa\n\n### User\n\nmessage 0\n\n### User\n\nmessage 1\n\n### User\n\nmessage 2\n\n### User\n\nmessage 3\n\n### User\n\nmessage 4\n\n### User\n\nmessage 5\n\n### User\n\nmessage 6\n\n### User\n\nmessage 7\n\n### User\n\nmessage 8\n\n### User\n\nmessage 9\n\n### User\n\nmessage 10\n\n### User\n\nmessage 11\n\n### User\n\nmessage 12\n\n### User\n\nmessage 13\n\n### User\n\nmessage 14\n\n### User\n\nmessage 15\n\n_Mais 4 mensagens ficaram preservadas na conversa originária._\n",
+      "expected_metadata": "{\"format\": \"markdown\", \"origin\": {\"mode\": \"soul\", \"conversation_id\": \"conv-1\", \"conversation_uri\": \"mirror://conversation/conv-1\"}, \"harvested_fruit\": \"a fruit\"}",
+      "expected_title": "a fruit",
+      "fruit": "a fruit",
+      "messages": [
+        {
+          "content": "message 0",
+          "role": "user"
+        },
+        {
+          "content": "message 1",
+          "role": "user"
+        },
+        {
+          "content": "message 2",
+          "role": "user"
+        },
+        {
+          "content": "message 3",
+          "role": "user"
+        },
+        {
+          "content": "message 4",
+          "role": "user"
+        },
+        {
+          "content": "message 5",
+          "role": "user"
+        },
+        {
+          "content": "message 6",
+          "role": "user"
+        },
+        {
+          "content": "message 7",
+          "role": "user"
+        },
+        {
+          "content": "message 8",
+          "role": "user"
+        },
+        {
+          "content": "message 9",
+          "role": "user"
+        },
+        {
+          "content": "message 10",
+          "role": "user"
+        },
+        {
+          "content": "message 11",
+          "role": "user"
+        },
+        {
+          "content": "message 12",
+          "role": "user"
+        },
+        {
+          "content": "message 13",
+          "role": "user"
+        },
+        {
+          "content": "message 14",
+          "role": "user"
+        },
+        {
+          "content": "message 15",
+          "role": "user"
+        },
+        {
+          "content": "message 16",
+          "role": "user"
+        },
+        {
+          "content": "message 17",
+          "role": "user"
+        },
+        {
+          "content": "message 18",
+          "role": "user"
+        },
+        {
+          "content": "message 19",
+          "role": "user"
+        }
+      ],
+      "name": "transcript_limit_and_omitted_count"
+    },
+    {
+      "conversation_id": "conv-1",
+      "expected_content": "Esta entrada nasceu de uma colheita em Soul Mode.\n\n## Fruto\n\n> a fruit\n\n## Origem\n\n[Conversa originária](mirror://conversation/conv-1)\n\n## Material vivo da conversa\n\n### User\n\nmessage 0\n\n### User\n\nmessage 1\n\n### User\n\nmessage 2\n\n### User\n\nmessage 3\n\n### User\n\nmessage 4\n\n### User\n\nmessage 5\n\n### User\n\nmessage 6\n\n### User\n\nmessage 7\n\n### User\n\nmessage 8\n\n### User\n\nmessage 9\n\n### User\n\nmessage 10\n\n### User\n\nmessage 11\n\n### User\n\nmessage 12\n\n### User\n\nmessage 13\n\n### User\n\nmessage 14\n\n### User\n\nmessage 15\n",
+      "expected_metadata": "{\"format\": \"markdown\", \"origin\": {\"mode\": \"soul\", \"conversation_id\": \"conv-1\", \"conversation_uri\": \"mirror://conversation/conv-1\"}, \"harvested_fruit\": \"a fruit\"}",
+      "expected_title": "a fruit",
+      "fruit": "a fruit",
+      "messages": [
+        {
+          "content": "message 0",
+          "role": "user"
+        },
+        {
+          "content": "message 1",
+          "role": "user"
+        },
+        {
+          "content": "message 2",
+          "role": "user"
+        },
+        {
+          "content": "message 3",
+          "role": "user"
+        },
+        {
+          "content": "message 4",
+          "role": "user"
+        },
+        {
+          "content": "message 5",
+          "role": "user"
+        },
+        {
+          "content": "message 6",
+          "role": "user"
+        },
+        {
+          "content": "message 7",
+          "role": "user"
+        },
+        {
+          "content": "message 8",
+          "role": "user"
+        },
+        {
+          "content": "message 9",
+          "role": "user"
+        },
+        {
+          "content": "message 10",
+          "role": "user"
+        },
+        {
+          "content": "message 11",
+          "role": "user"
+        },
+        {
+          "content": "message 12",
+          "role": "user"
+        },
+        {
+          "content": "message 13",
+          "role": "user"
+        },
+        {
+          "content": "message 14",
+          "role": "user"
+        },
+        {
+          "content": "message 15",
+          "role": "user"
+        }
+      ],
+      "name": "transcript_exactly_sixteen"
+    },
+    {
+      "conversation_id": null,
+      "expected_content": "Esta entrada nasceu de uma colheita em Soul Mode.\n\n## Fruto\n\n> a fruit\n\n## Material vivo da conversa\n\n### User\n\npresent but unlinked\n",
+      "expected_metadata": "{\"format\": \"markdown\", \"origin\": {\"mode\": \"soul\", \"conversation_id\": null, \"conversation_uri\": null}, \"harvested_fruit\": \"a fruit\"}",
+      "expected_title": "a fruit",
+      "fruit": "a fruit",
+      "messages": [
+        {
+          "content": "present but unlinked",
+          "role": "user"
+        }
+      ],
+      "name": "transcript_without_conversation_id"
+    },
+    {
+      "conversation_id": null,
+      "expected_content": "Esta entrada nasceu de uma colheita em Soul Mode.\n\n## Fruto\n\n> Silêncio 沉默 🎯 kept raw in content and metadata\n",
+      "expected_metadata": "{\"format\": \"markdown\", \"origin\": {\"mode\": \"soul\", \"conversation_id\": null, \"conversation_uri\": null}, \"harvested_fruit\": \"Silêncio 沉默 🎯 kept raw in content and metadata\"}",
+      "expected_title": "Silêncio 沉默 🎯 kept raw in content and metadata",
+      "fruit": "Silêncio 沉默 🎯 kept raw in content and metadata",
+      "messages": [],
+      "name": "unicode_fruit"
+    },
+    {
+      "conversation_id": null,
+      "expected_error": "harvested fruit must not be empty",
+      "fruit": "   ",
+      "messages": [],
+      "name": "error_blank_fruit"
+    }
+  ]
+}

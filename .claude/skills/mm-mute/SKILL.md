@@ -9,10 +9,10 @@ user-invocable: true
 When receiving `/mm:mute`, run:
 
 ```bash
-uv run python -m memory conversation-logger status
+mirror conversation-logger status
 ```
 
-- If status is **ACTIVE**, run `uv run python -m memory conversation-logger mute` and say: "Conversation logging muted. Use `/mm:mute` again to reactivate it."
-- If status is **MUTED**, run `uv run python -m memory conversation-logger unmute` and say: "Conversation logging reactivated."
+- If status is **ACTIVE**, run `mirror conversation-logger mute` and say: "Conversation logging muted. Use `/mm:mute` again to reactivate it."
+- If status is **MUTED**, run `mirror conversation-logger unmute` and say: "Conversation logging reactivated."
 
 This is a simple toggle. It needs no arguments.

@@ -2,19 +2,21 @@ name: Docs
 
 on:
   push:
-    branches: [main, "claude/**"]
+    branches: [main, "claude/**", mirror-ts-core]
     paths:
       - "docs/**"
       - "**.md"
-      - "scripts/check_doc_links.py"
-      - "src/memory/docs_lint.py"
+      - "ts/scripts/checkDocLinks.ts"
+      - "ts/src/docs/docsLint.ts"
+      - "ts/scripts/checkSkillCommandParity.ts"
   pull_request:
     branches: [main]
     paths:
       - "docs/**"
       - "**.md"
-      - "scripts/check_doc_links.py"
-      - "src/memory/docs_lint.py"
+      - "ts/scripts/checkDocLinks.ts"
+      - "ts/src/docs/docsLint.ts"
+      - "ts/scripts/checkSkillCommandParity.ts"
 
 permissions:
   contents: read
@@ -30,18 +32,44 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Set up Python
-        uses: actions/setup-python@v6
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v5
         with:
-          python-version: "3.12"
+          node-version: "24"
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v8.1.0
-        with:
-          enable-cache: true
-
-      - name: Install dependencies
-        run: uv sync --frozen
-
+      # Node since CV22.DS10.TS5 slice B. Its Python original ran beside it for
+      # one commit and agreed -- same exit code, same first problem line -- on a
+      # clean tree and on a seeded regression before it was deleted.
+      #
+      # Its specification is the 26-case self-test carried into
+      # `ts/test/scripts/docsLint.test.ts`: the Python script was a 57-line
+      # wrapper with no test of its own, so porting it without the cases would
+      # have shipped the docs gate untested. No npm install is needed: the
+      # checker imports nothing outside the repository and node's standard
+      # library.
       - name: Check documentation links and anchors
-        run: uv run python scripts/check_doc_links.py
+        run: node ts/scripts/checkDocLinks.ts
+
+      # Fails when a strangler flip updates the invocation in one runtime's
+      # skill copy and not the others (CR071). By 2026-09-09 eleven skills had
+      # drifted this way -- reaching the front door on Pi while still calling
+      # the retired Python entry point on Claude Code and the published plugin, for
+      # commands flipped as far back as DS3. Nothing failed, because Python
+      # answered correctly; the claim "answers from TS" was simply untrue for
+      # two of three runtimes.
+      #
+      # Ported to Node by CV22.DS10.US2 (D6): a check whose job is to assert
+      # that nothing invokes the interpreter cannot itself need that
+      # interpreter to run, and after TS5 there would be nothing left to
+      # execute the Python version. Both guards ran side by side in the
+      # previous commit and agreed, on a clean tree and on a seeded
+      # regression, before the Python one was deleted.
+      #
+      # It asserts what the original could not: ABSENCE. The allowlist
+      # mechanism is deleted rather than emptied -- an empty dictionary invites
+      # the next story to add a row, which is the escape hatch DS10's Skill
+      # Invocation Gate exists to close -- and the scan covers the whole
+      # packaged plugin, manifest and commands and hooks included, because an
+      # installed user resolves that directory and not this repository's .pi/.
+      - name: Check skill command parity across runtime copies
+        run: node ts/scripts/checkSkillCommandParity.ts

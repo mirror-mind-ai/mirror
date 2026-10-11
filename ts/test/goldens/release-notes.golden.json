@@ -1,0 +1,247 @@
+{
+  "local_notes": {
+    "v0.10.0.md": "# v0.10.0 — Tenth\n\n## Highlights\n\n- Ordering is semantic, not lexical\n",
+    "v0.6.0.md": "# v0.6.1 — Mismatched Heading\n\nThe stem says 0.6.0.\n",
+    "v0.7.0.md": "# Release seven\n\nNo canonical heading here.\n",
+    "v0.8.0.md": "# v0.8.0 — Bare\n\nJust prose, no sections.\n",
+    "v0.9.0.md": "---\ndigest: >\n  The ninth release consolidates the reader\n  and its tests.\n---\n\n# v0.9.0 — Consolidated Reader\n\n## Highlights\n\n- One reader for both paths\n- A wrapped highlight that continues\n  on a second line and a third\n\n## Notes\n\n- This bullet is after the highlights section and must not be collected.\n"
+  },
+  "meta": {
+    "current_version": "0.9.0",
+    "note": "Oracle: src/memory/cli/runtime.py over the fixture repository built by this generator (same recipe shape as the git golden). Only the temp root is a placeholder; commit ids do not appear in these surfaces."
+  },
+  "ref_after_fetch": {
+    "explicit_from_ref": {
+      "digest": "Pending work the clone has not merged.",
+      "highlights": [
+        "Visible only through the ref"
+      ],
+      "path": "docs/releases/v0.11.0.md",
+      "title": "Pending One",
+      "version": "v0.11.0"
+    },
+    "latest_from_ref": {
+      "digest": null,
+      "highlights": [],
+      "path": "docs/releases/v0.12.0.md",
+      "title": "Pending Two",
+      "version": "v0.12.0"
+    },
+    "missing_from_ref": null,
+    "notes": [
+      {
+        "digest": null,
+        "highlights": [],
+        "path": "docs/releases/v0.6.0.md",
+        "title": "Mismatched Heading",
+        "version": "v0.6.1"
+      },
+      {
+        "digest": null,
+        "highlights": [],
+        "path": "docs/releases/v0.7.0.md",
+        "title": "v0.7.0",
+        "version": "v0.7.0"
+      },
+      {
+        "digest": null,
+        "highlights": [],
+        "path": "docs/releases/v0.8.0.md",
+        "title": "Bare",
+        "version": "v0.8.0"
+      },
+      {
+        "digest": "The ninth release consolidates the reader and its tests.",
+        "highlights": [
+          "One reader for both paths",
+          "A wrapped highlight that continues on a second line and a third"
+        ],
+        "path": "docs/releases/v0.9.0.md",
+        "title": "Consolidated Reader",
+        "version": "v0.9.0"
+      },
+      {
+        "digest": null,
+        "highlights": [
+          "Ordering is semantic, not lexical"
+        ],
+        "path": "docs/releases/v0.10.0.md",
+        "title": "Tenth",
+        "version": "v0.10.0"
+      },
+      {
+        "digest": "Pending work the clone has not merged.",
+        "highlights": [
+          "Visible only through the ref"
+        ],
+        "path": "docs/releases/v0.11.0.md",
+        "title": "Pending One",
+        "version": "v0.11.0"
+      },
+      {
+        "digest": null,
+        "highlights": [],
+        "path": "docs/releases/v0.12.0.md",
+        "title": "Pending Two",
+        "version": "v0.12.0"
+      }
+    ],
+    "pending_render": "Mirror runtime release notes\n\nCurrent version: v0.9.0\nSource: origin/stable\nPending releases: 3\n\n## v0.10.0 — Tenth\nHighlights:\n- Ordering is semantic, not lexical\n\n## v0.11.0 — Pending One\nPending work the clone has not merged.\nHighlights:\n- Visible only through the ref\n\n## v0.12.0 — Pending Two\n",
+    "pending_render_current_is_newest": "Mirror runtime release notes\n\nCurrent version: v0.12.0\nSource: origin/stable\nPending releases: none\n"
+  },
+  "ref_before_fetch": {
+    "notes": [
+      {
+        "digest": null,
+        "highlights": [],
+        "path": "docs/releases/v0.6.0.md",
+        "title": "Mismatched Heading",
+        "version": "v0.6.1"
+      },
+      {
+        "digest": null,
+        "highlights": [],
+        "path": "docs/releases/v0.7.0.md",
+        "title": "v0.7.0",
+        "version": "v0.7.0"
+      },
+      {
+        "digest": null,
+        "highlights": [],
+        "path": "docs/releases/v0.8.0.md",
+        "title": "Bare",
+        "version": "v0.8.0"
+      },
+      {
+        "digest": "The ninth release consolidates the reader and its tests.",
+        "highlights": [
+          "One reader for both paths",
+          "A wrapped highlight that continues on a second line and a third"
+        ],
+        "path": "docs/releases/v0.9.0.md",
+        "title": "Consolidated Reader",
+        "version": "v0.9.0"
+      },
+      {
+        "digest": null,
+        "highlights": [
+          "Ordering is semantic, not lexical"
+        ],
+        "path": "docs/releases/v0.10.0.md",
+        "title": "Tenth",
+        "version": "v0.10.0"
+      }
+    ],
+    "pending_render": "Mirror runtime release notes\n\nCurrent version: v0.9.0\nSource: origin/stable\nPending releases: 1\n\n## v0.10.0 — Tenth\nHighlights:\n- Ordering is semantic, not lexical\n"
+  },
+  "remote_only_notes": {
+    "v0.11.0.md": "---\ndigest: >\n  Pending work the clone has not merged.\n---\n\n# v0.11.0 — Pending One\n\n## Highlights\n\n- Visible only through the ref\n",
+    "v0.12.0.md": "# v0.12.0 — Pending Two\n\nNo highlights here.\n"
+  },
+  "semver_keys": {
+    " v1.2.3 ": [
+      1,
+      2,
+      3
+    ],
+    "0.10.0": [
+      0,
+      10,
+      0
+    ],
+    "nonsense": [
+      -1,
+      -1,
+      -1
+    ],
+    "v0.9.0": [
+      0,
+      9,
+      0
+    ],
+    "v1.2": [
+      -1,
+      -1,
+      -1
+    ],
+    "v10.0.1": [
+      10,
+      0,
+      1
+    ]
+  },
+  "unknown_ref": {
+    "notes": [],
+    "pending_render": "Mirror runtime release notes\n\nCurrent version: v0.9.0\nSource: origin/nope\nPending releases: none\n"
+  },
+  "working_tree": {
+    "by_v_prefixed_render": "Mirror runtime release notes\n\nRelease: v0.10.0 — Tenth\nPath: <root>/clone/docs/releases/v0.10.0.md\n\nHighlights:\n- Ordering is semantic, not lexical\n",
+    "by_version_render": "Mirror runtime release notes\n\nRelease: v0.8.0 — Bare\nPath: <root>/clone/docs/releases/v0.8.0.md\n",
+    "heading_filename_mismatch": {
+      "digest": null,
+      "highlights": [],
+      "path": "<root>/clone/docs/releases/v0.6.0.md",
+      "title": "Mismatched Heading",
+      "version": "v0.6.1"
+    },
+    "latest_render": "Mirror runtime release notes\n\nRelease: v0.10.0 — Tenth\nPath: <root>/clone/docs/releases/v0.10.0.md\n\nHighlights:\n- Ordering is semantic, not lexical\n",
+    "malformed_heading": {
+      "digest": null,
+      "highlights": [],
+      "path": "<root>/clone/docs/releases/v0.7.0.md",
+      "title": "v0.7.0",
+      "version": "v0.7.0"
+    },
+    "mismatch_by_filename": null,
+    "missing_render": "Mirror runtime release notes\n\nRelease notes: not found\n",
+    "notes": [
+      {
+        "digest": null,
+        "highlights": [],
+        "path": "<root>/clone/docs/releases/v0.6.0.md",
+        "title": "Mismatched Heading",
+        "version": "v0.6.1"
+      },
+      {
+        "digest": null,
+        "highlights": [],
+        "path": "<root>/clone/docs/releases/v0.7.0.md",
+        "title": "v0.7.0",
+        "version": "v0.7.0"
+      },
+      {
+        "digest": null,
+        "highlights": [],
+        "path": "<root>/clone/docs/releases/v0.8.0.md",
+        "title": "Bare",
+        "version": "v0.8.0"
+      },
+      {
+        "digest": "The ninth release consolidates the reader and its tests.",
+        "highlights": [
+          "One reader for both paths",
+          "A wrapped highlight that continues on a second line and a third"
+        ],
+        "path": "<root>/clone/docs/releases/v0.9.0.md",
+        "title": "Consolidated Reader",
+        "version": "v0.9.0"
+      },
+      {
+        "digest": null,
+        "highlights": [
+          "Ordering is semantic, not lexical"
+        ],
+        "path": "<root>/clone/docs/releases/v0.10.0.md",
+        "title": "Tenth",
+        "version": "v0.10.0"
+      }
+    ],
+    "order": [
+      "v0.6.1",
+      "v0.7.0",
+      "v0.8.0",
+      "v0.9.0",
+      "v0.10.0"
+    ]
+  }
+}

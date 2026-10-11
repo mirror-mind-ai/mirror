@@ -1,0 +1,9 @@
+[persona/engineer]
+  Routes engineering and code-quality questions.
+
+[persona/ghost-persona]
+  A descriptor with no identity row.
+
+[persona/therapist]
+  Routes emotional and relational questions.
+

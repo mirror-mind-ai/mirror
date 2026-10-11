@@ -1,0 +1,3 @@
+{"type":"message","message":{"role":"user","content":"   ","timestamp":"2026-04-26T07:00:00Z"}}
+{"type":"message","message":{"role":"assistant","content":[{"type":"text","text":"  \n "}],"timestamp":"2026-04-26T07:00:01Z"}}
+{"type":"message","message":{"role":"user","content":"","timestamp":"2026-04-26T07:00:02Z"}}

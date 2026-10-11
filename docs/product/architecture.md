@@ -4,42 +4,64 @@
 
 System architecture for Mirror Mind. Written for contributors who want to add
 a feature or fix a bug and need to understand how the system is organized
-before touching code. If you want to integrate programmatically, see
-[docs/product/api.md](api.md).
+before touching code. The command line is the integration surface; see
+[REFERENCE.md](../../REFERENCE.md).
 
 ---
 
 ## 1. System Overview
 
 Mirror Mind is a local-first memory and identity framework for agentic AI
-runtimes. One Python core (`src/memory/`) handles all persistence, extraction,
-search, and identity management. Multiple harness interfaces — Pi, Codex, Claude
-Code, and Gemini CLI — connect to that core through thin adapter layers. The
-database is SQLite, stored in the user's home directory. Nothing runs on a
-server; all data stays on the user's machine.
+runtimes. One TypeScript core (`ts/`), run directly by Node.js 24 or newer,
+handles all persistence, extraction, search, and identity management. Multiple
+harness interfaces — Pi, Codex, Claude Code, and Gemini CLI — connect to that
+core through thin adapters that all enter it the same way: a process running
+the front door, `ts/src/frontDoor/cli.ts`. The database is SQLite, stored in
+the user's home directory. Nothing runs on a server; all data stays on the
+user's machine.
+
+Until CV22.DS10.TS5 the core was Python (`src/memory/`). CV22 ported it to
+TypeScript through a database-seam strangler — the new core read and then
+wrote the same `memory.db`, one command at a time — and deleted it once
+nothing reached it. Its last state is readable at the
+[`cv22-last-python-bearing`](https://github.com/mirror-mind-ai/mirror/tree/cv22-last-python-bearing/src/memory)
+tag.
 
 ---
 
 ## 2. Repository Structure
 
 ```text
-src/memory/                  — Python package: all business logic
-  cli/                       — CLI entry points (call services, no raw SQL)
-  hooks/                     — Hook handlers (called by runtime lifecycle events)
-  journey_projections/       — Versioned Journey projection contracts, schemas, serialization, and publication
-  intelligence/              — LLM-powered extraction, search, routing
-  services/                  — Domain services (the implementation layer)
-  storage/                   — Persistence components (raw SQL lives here)
-  surfaces/                  — Web read-model composition for Atlas, Workspace, detail, evidence, and search
-  skills/                    — Shared skill logic callable by any harness
-templates/identity/          — Generic bootstrap templates shipped in the repo
-examples/extensions/         — Reference extensions (e.g. review-copy)
-tests/                       — Automated tests
+ts/                          — the core: one TypeScript package, no build step
+  src/frontDoor/             — the command-line front door every runtime calls:
+                               cli.ts, routing.ts, one route module per family
+  src/<domain>/              — the behavior, one directory per domain:
+                               conversation, memory, search, extraction,
+                               identity, journey, persona, mirror, mode,
+                               builder, explorer, soul, cultivation, tasks,
+                               planning, consult, extensions, runtime, backup,
+                               welcome, …
+  src/db/                    — the SQLite driver seam (database.ts), bootstrap,
+                               migrations, schema state
+  src/providers/             — OpenRouter: LLM and embedding calls, cost,
+                               credits, the replay transport
+  src/hooks/                 — the one Node entry every runtime hook calls
+  src/mcp/                   — the MCP server
+  scripts/                   — repository guards and release tooling
+  smoke/                     — end-to-end smokes, migration custody proofs,
+                               the synthetic demo database generator
+  evals/                     — model-behavior evaluations (not in CI)
+  test/                      — node:test suites, frozen goldens, fixtures
+templates/identity/          — generic bootstrap templates shipped in the repo
+examples/extensions/         — reference extensions (e.g. review-copy)
 .pi/skills/                  — Pi skill surface (SKILL.md files)
-.claude/skills/              — Claude Code skill surface
-.agents/skills/              — Shared Gemini CLI/Codex surface (symlinked from .pi/skills/)
-scripts/                     — Shell utilities (smoke tests, Codex wrapper)
-evals/                       — LLM behavioral evaluations (not in CI)
+.agents/skills/              — Gemini CLI and Codex surface (symlinks to .pi/skills/)
+.pi/extensions/              — the Pi logger extension
+.claude/                     — Claude Code skills and hook wrappers
+.gemini/hooks/               — Gemini CLI hook wrappers
+plugins/mirror-mind/         — the packaged Claude Code plugin, generated by
+                               ts/scripts/buildClaudePlugin.ts
+scripts/                     — the Codex wrapper and the runtime smokes
 ```
 
 **User home (outside the repo):**
@@ -53,42 +75,44 @@ evals/                       — LLM behavioral evaluations (not in CI)
 
 ---
 
-## 3. Layer Model — Import Direction
+## 3. Module Model
 
-The architecture enforces a strict one-way import hierarchy:
-
-```
-cli / hooks
-    ↓
-services
-    ↓
-storage
-    ↓
-db (SQLite)
-```
-
-- `cli` and `hooks` import from `services`. They never execute SQL directly.
-- `services` import from `storage`. They hold domain logic and orchestrate
-  storage calls.
-- `storage` imports from `db`. It owns all raw SQL; no SQL lives above this layer.
-- `MemoryClient` (`src/memory/client.py`) is a façade: it wires the services
-  together and exposes a single public surface for all callers.
-
-Reversing this direction — e.g. a service importing from CLI, or storage
-importing from services — is a design violation. When in doubt, push logic down.
-
-The web visibility surface adds a read-model layer above services:
+Every invocation is one process, and every process enters the same way:
 
 ```text
-web -> surfaces -> services -> storage -> db
+runtime — a skill, a hook wrapper, the Pi extension, the MCP launcher
+    ↓   mirror <command> …   — bin/mirror.js, a loader shim over ts/src/frontDoor/cli.ts
+    ↓   (hooks: bin/mirror-hook.js over ts/src/hooks/main.ts; MCP: mirror mcp)
+front door — routing.ts resolves the command to a route module
+    ↓
+domain modules — ts/src/<domain>/: the behavior
+    ↓
+db/database.ts (node:sqlite)          providers/ (OpenRouter)
 ```
 
-`web` routes must not execute SQL or compose domain meaning. They consume typed
-surface DTOs produced by `src/memory/surfaces/`. See the [Web Surface
-Specification](specs/web-surface/index.md).
+- **The front door owns the process, not the behavior.** `cli.ts` parses
+  arguments, resolves the database path, applies the pre-write backup gate,
+  answers, and logs the outcome. `routing.ts` decides which route module
+  answers a command, and answers a name nothing owns with the front door's
+  own usage error rather than guessing. A retired command answers with its
+  cutoff *before* dispatch, so a removed write never reads its input.
+- **Domain modules own the behavior.** Each directory under `ts/src/` holds
+  one domain's reads, writes, and renderers. A domain module never parses
+  `process.argv` or exits the process; it returns a result the route renders.
+- **One driver seam.** `ts/src/db/database.ts` is the module that opens
+  SQLite through `node:sqlite`. Everything else depends on the `Database`
+  interface it exports, so swapping the driver rewrites one file.
+- **One schema custodian.** `ts/src/db/` bootstraps a missing database and
+  applies every pending known migration on open, backup first. A database
+  newer than the code — an unknown migration — is refused, never guessed at.
+- **Providers are replaceable in tests.** Every LLM and embedding call goes
+  through `ts/src/providers/`, which has a replay transport: tests and smokes
+  answer from recorded fixtures, and CI holds no provider key.
 
-The single documented exception: `RuntimeSessionService` still owns some
-transaction-boundary SQL pending a separate architecture decision.
+The hooks and the MCP server are two more entries beside `cli.ts`, not
+separate engines: `ts/src/hooks/main.ts` reads a runtime's hook payload and
+runs the same front-door modules in-process, and `ts/src/mcp/main.ts` serves
+seven tools over the same database.
 
 Ariad's Delivery cursor is the sole runtime owner of conditional Plan authority.
 Each Pull advances an active-item generation. A bounded single-use receipt may
@@ -108,64 +132,15 @@ Intent survives Pulls within that DS and clears when work moves to another DS.
 It never grants commit, push, tag, stable-promotion, publication, or remote
 mutation authority.
 
-Journey projections add a filesystem read-model boundary without changing this
-import direction. CLI, Ariad lifecycle, and the public Extension API call one
-Journey projection service; contract models/schema validation, deterministic
-serialization, Operational compilation, and publication storage remain separate
-owners. Production root authority always comes from the registered Journey, not
-a caller-supplied path. The subsystem invokes no model or network service.
-
-Projection publication is linearizable per Journey. Core and extension writers,
-as well as inspection, share one cross-process Journey lock; different Journeys
-remain independent. The manifest is re-read and merged only after lock
-acquisition, preventing stale-manifest lost updates. Internal create-once
-receipts bind each snapshot ID to its canonical byte digest, while the manifest
-remains the public current-state authority. Projection replacement precedes
-manifest replacement; controlled pre-manifest failures restore the old document,
-and interrupted/unrecoverable states surface explicit divergence without
-implicit repair.
-
-Extension API `1.1` exposes this owner through a bound
-`ExtensionJourneyProjections` façade. Its namespace and producer identity come
-from `ExtensionAPI.extension_id`, never caller parameters; `ariad` remains
-Core-only. A lazy resolver reads only the registered Journey `project_path` from
-the existing registry connection, and the façade delegates all validation,
-locking, receipts, publication, rollback, and inspection to the shared service.
-The extension's raw SQLite handle grants no projection path authority.
-
-The Ariad Operational compiler is a pure read-model compiler above that same
-service. It resolves authored roadmap links from their containing documents with
-shared Ariad grammar, then classifies safety by the canonical target beneath the
-registered Journey root. Parent-relative traversal is valid only while confined;
-absolute, URI-like, backslash-based, canonical-escape, and symlink-escape targets
-remain bounded failures. The compiler preserves authored hierarchy order, reads
-active work only from explicit durable state, and extracts only public
-exploration/refinement fields and allowlisted artifact references. Its `sourceRevision` hashes the canonical projected content, so
-excluded narrative bodies cannot perturb consumer identity. A registered-root
-rebuild validates the Operational schema and delegates publication to the DS2
-kernel; lifecycle-triggered refresh remains a separate coordinator concern.
-Malformed, cyclic, duplicate, or escaping durable references fail before
-publication and never trigger inference or implicit repair.
-
-Operational refresh is a post-commit observer, not mutation authority. A generic
-optional callback on `Store` is wired by `MemoryClient` to one
-`ProjectionRefreshCoordinator`. Delivery cursor writes compare only projected
-active-work fields; Explorer persistence compares only public story fields; and
-Refinement service operations request once after their complete logical commit.
-The coordinator compiles registered state, skips publication when the current
-`sourceRevision` already matches, and otherwise delegates to DS2. Compilation,
-inspection, or publication failure becomes bounded diagnostics and is never
-re-raised into the already-successful source mutation. Read-only operations and
-excluded Explorer evidence do not request refresh.
-
-The Journey Projection CLI is a transport over these owners. Production rebuild
-and inspection accept a Journey ID plus selected Mirror home, then resolve root
-authority from that home's registry. Consumer-probe preparation is a separate
-test-only adapter: it requires `MEMORY_ENV=test`, proves a non-production home,
-confines fixture and active state below `.journey-projection-probe`, verifies the
-isolated SQLite main path, and grants extension publication only through the
-fixed `projection-probe` identity. Fixed compiler identities live in that
-isolated control record and cannot be selected by production callers.
+Journey projections are retired. Until CV22.DS10.TS1 Mirror published a
+versioned filesystem read model under `.mirror/projections` — a linearizable
+publication kernel, an Ariad Operational compiler, and an Extension API
+capability, specified as `mirror.journey-projections@1.0` for an external
+consumer. The consumer is Mirror Desktop, which is outside the TypeScript
+migration and pins to the last Python-bearing release; with no reader the
+migration serves, the subsystem retired with the Python core rather than being
+ported. Any future read model belongs to the Desktop integration effort, and is
+a new design rather than a revival of this one.
 
 ---
 
@@ -193,40 +168,37 @@ routing, Builder state, and search remain scoped to the exact journey id.
 infers filesystem content. Parent assignment rejects cycles, and removing a
 journey is allowed only for an empty leaf with no associated records.
 
-Canonical desktop administration uses `mirror.journey-mutation@1.0`. The
-Mirror-owned Journey administration service validates create, move, sibling order, project-path and empty-leaf deletion
-operations against an exact registry `sourceVersion`.
-The focused storage boundary acquires an immediate SQLite transaction, rejects
-stale authority, commits Journey rows and a sanitized idempotency receipt once,
-and provides native read-back for the `0.2.0` registry projection. Deletion
-re-checks child Journeys and every database-backed Journey association inside
-the same immediate transaction; any protected record blocks the operation and
-nothing cascades. CLI is only a JSON transport; desktop harnesses never mutate Journey SQL directly. Registry
-publication remains post-commit: a failed consumer export keeps its prior local
-projection and retries the same receipt without compensating over newer Mirror
-state. These operations invoke no model, conversation or dedicated-thread
-lifecycle.
+The dedicated desktop Journey-administration contract and the service behind it
+were retired in the CV22 migration — see the
+[cutoff](../releases/pending-cutoffs.md#journey-admin-verbs). Journeys are
+created, moved, reordered, re-pathed, and deleted through the ordinary Mirror,
+Builder, and Explorer surfaces, which enforce the same invariants described
+above.
 
 **User-home YAML → database flow:**
 
-1. `memory init your-name` copies templates into `~/.mirror-minds/your-name/identity/`
+1. `mirror init your-name` copies templates into `~/.mirror-minds/your-name/identity/`
    and substitutes the user's name.
-2. `memory seed` reads those YAML files and writes rows into the `identity` table.
+2. `mirror seed` reads those YAML files and writes rows into the `identity` table.
 3. At runtime, the mirror reads exclusively from the database — never from YAML
    files directly.
-4. Editing identity after the first seed: use `uv run python -m memory identity
-   edit <layer> <key>` or the equivalent skill. Do not edit YAMLs and re-seed
-   unless you intend to reset.
+4. Editing identity after the first seed: use `mirror identity edit <layer>
+   <key>` or the equivalent skill. Do not edit YAMLs and re-seed unless you
+   intend to reset.
 
-**Live persona list:** `uv run python -m memory list personas --verbose`  
+**Live persona list:** `mirror list personas --verbose`
 (The database is the source of truth; there is no authoritative static table.)
+
+`mirror` is the program the front door names itself in its own usage lines;
+[REFERENCE.md](../../REFERENCE.md#running-a-command) shows the invocation it
+stands for until the npm package installs it.
 
 ---
 
 ### Explicit conversation append boundary
 
 External callers that already hold one complete conversation ID may append a
-bounded user/assistant batch through `memory conversations append`. Contract
+bounded user/assistant batch through `mirror conversations append`. Contract
 validation and canonicalization occur before storage; one message-store-owned
 `BEGIN IMMEDIATE` transaction then verifies the exact conversation and Journey,
 classifies globally unique message IDs, rejects all conflicts, inserts missing
@@ -248,7 +220,8 @@ guard, D7 in the briefing).
 
 **Extraction pipeline:**
 
-1. Conversation ends → `end_conversation(extract=True)` fires
+1. The conversation ends → the conversation logger's close tail
+   (`ts/src/conversation/closeTail.ts`) runs extraction
 2. Two-pass extraction: LLM generates candidates → curation pass deduplicates
    against existing memories
 3. Embeddings generated for each memory
@@ -286,13 +259,15 @@ results.
 ## 6. Runtime Model
 
 Four harnesses connect to Mirror Core through different adapter patterns.
+Every adapter ends in a Node process running the core; none of them runs an
+interpreter of its own.
 
 | Harness | Parity | Adapter pattern | Session ID source |
 |---|---|---|---|
-| Pi | L4 | TypeScript extension (`mirror-logger.ts`) calls Python CLI | Session file path |
-| Gemini CLI | L4 | Shell hooks in `.gemini/hooks/` | `$GEMINI_SESSION_ID` env var |
+| Pi | L4 | TypeScript extension (`.pi/extensions/mirror-logger.ts`) that spawns the front door | Session file path |
+| Gemini CLI | L4 | Shell wrappers in `.gemini/hooks/` that exec `ts/src/hooks/main.ts` | `$GEMINI_SESSION_ID` env var |
 | Codex | L3 | Wrapper script (`scripts/codex-mirror.sh`) + JSONL backfill | Session UUID in JSONL filename |
-| Claude Code | L4 | Shell hooks in `.claude/hooks/` | Hook stdin payload |
+| Claude Code | L4 | Shell wrappers in `.claude/hooks/` that exec `ts/src/hooks/main.ts` | Hook stdin payload |
 
 **L4 (full parity):** session start, per-turn user logging, per-turn assistant
 logging, mirror mode context injection, session end with extraction.
@@ -302,7 +277,11 @@ end, no per-turn hooks.
 
 Skills (`SKILL.md` files) are the primary way users invoke Mirror Mind
 capabilities. Pi and Gemini CLI/Codex share the same skill files via symlinks:
-`.pi/skills/` is the source; `.agents/skills/` symlinks to it.
+`.pi/skills/` is the source; `.agents/skills/` symlinks to it. Claude Code
+reads `.claude/skills/`, which the plugin generator copies into
+`plugins/mirror-mind/`. The generator writes the Claude copy of `mm-build` from
+`.pi/skills/` as well, because the Builder skill has one body in every runtime
+([decision](../project/decisions.md#builder-modes-skill-has-one-body-in-every-runtime)).
 
 For the full runtime lifecycle contract, including hook payload shapes and
 injection models, see:
@@ -339,7 +318,7 @@ This is permanent supported behavior. See
 | `runtime_sessions` | Runtime session ↔ conversation registry | `session_id`, `conversation_id`, `interface`, `mirror_active`, `persona`, `journey`, `hook_injected`, `active`, `started_at`, `updated_at`, `closed_at` |
 | `exploratory_stories` | Durable Explorer Mode stories | `id`, `journey`, `title`, `status`, `current_story`, `narrative_summary`, `attractors_json`, `experiment_proposal_json`, `builder_handoff_json`, `source_conversations_json` |
 | `identity_integrations` | Atomic Soul Mode identity integration records; additive identity updates with provenance | `id`, `layer`, `key`, `content`, `source`, `origin`, `conversation_id`, `journal_id`, `status`, `created_at` |
-| `operation_runs` | Asynchronous Mirror Web Console operation runs | `id`, `operation_id`, `status`, `outcome`, `parameters_json`, `summary_json`, `result_json`, `started_at`, `completed_at`, `created_at` |
+| `operation_runs` | Asynchronous operation runs — written only by the retired web console (CR091) | `id`, `operation_id`, `status`, `outcome`, `parameters_json`, `summary_json`, `result_json`, `started_at`, `completed_at`, `created_at` |
 | `operation_run_events` | Event timeline for a web operation run | `id`, `run_id`, `sequence`, `kind`, `message`, `details_json`, `created_at` |
 | `consolidations` | Memory consolidation proposals and decisions | `id`, `action`, `source_memory_ids`, `proposal`, `status`, `applied_content`, `created_at` |
 | `identity_descriptors` | Routing-optimized descriptors for personas and journeys | `layer`, `key`, `descriptor`, `generated_at` |
@@ -370,6 +349,7 @@ independent state.
 
 ---
 
-**See also:** [Briefing](../project/briefing.md) · [Python API](api.md) ·
+**See also:** [Briefing](../project/briefing.md) ·
+[REFERENCE.md](../../REFERENCE.md) ·
 [Runtime Interface Spec](specs/runtime-interface/index.md) ·
 [Engineering Principles](../process/engineering-principles.md)

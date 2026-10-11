@@ -1,5 +1,12 @@
 [< Product Envisioning](index.md)
 
+> **Retired 2026-09-19.** The web console this document describes was deleted by
+> [CV22.DS10.US1](../../project/roadmap/cv22-typescript-core-port/cv22-ds10-python-retirement-npm-distribution/cv22-ds10-us1-web-console-retirement/index.md);
+> the [decision](../../project/decisions.md#the-web-console-is-retired-not-ported-and-ds7-closes-at-1414)
+> retires it rather than porting it to TypeScript, and `mirror-gui` owns any future
+> graphical surface. Kept as the record of a surface that existed and the thinking
+> behind it — not as a description of Mirror today.
+
 > **Status: Graduated into roadmap planning.** This document captures the future
 > agentic horizon for the post-1.0 web surface. It is not part of CV9.E6; it has
 > graduated into [CV13 Mirror Web Experience](../../project/roadmap/cv13-mirror-web-console/index.md)

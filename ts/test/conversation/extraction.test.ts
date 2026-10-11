@@ -1,0 +1,796 @@
+import assert from "node:assert/strict";
+import { mkdir, rm } from "node:fs/promises";
+import { join } from "node:path";
+import test from "node:test";
+
+import { runConversationExtraction } from "#conversation/extraction.ts";
+import {
+  recordFailedExtractionAttempt,
+  runExtractionWithAccounting,
+} from "#conversation/extractionRun.ts";
+import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
+import { DEFAULT_EXTRACTION_MODEL } from "#providers/config.ts";
+import {
+  type EmbeddingProvider,
+  type EmbeddingResult,
+  ReplayEmbeddingProvider,
+} from "#providers/embedding.ts";
+import type { LlmProvider } from "#providers/llm.ts";
+import { ReplayLlmProvider } from "#providers/llm.ts";
+import { LlmTransportError } from "#providers/openrouter.ts";
+
+/** Mirrors the FailingEmbeddingProvider pattern from CR037, applied to
+ * LlmProvider -- deterministic proof of the llm_failed path without a live
+ * network dependency. */
+class FailingLlmProvider implements LlmProvider {
+  async complete(): Promise<never> {
+    throw new Error("llm provider unreachable");
+  }
+}
+
+function metadataOf(db: WritableDatabase, conversationId: string): Record<string, unknown> {
+  const raw = db
+    .prepare("SELECT metadata FROM conversations WHERE id = ?")
+    .get(conversationId)?.metadata;
+  return raw ? JSON.parse(String(raw)) : {};
+}
+
+const TMP_DIR = join(process.cwd(), "tmp", "test-conversation-extraction");
+// generateEmbeddingSafely (CR043) validates response length against
+// EMBEDDING_DIMENSIONS=1536 -- replay-provider fixtures must be realistic
+// length, not the toy [1,0]/[1,0,0] vectors pre-CR043 tests used.
+const VALID_EMBEDDING = Array(1536).fill(0.1);
+
+test("runConversationExtraction enforces journey and message-count guards", async () => {
+  const { db, path } = await makeDb("guards.db");
+  try {
+    insertConversation(db, { id: "c1", journey: null });
+    insertMessage(db, "c1", "user", "one", 1);
+    insertMessage(db, "c1", "assistant", "two", 2);
+    insertMessage(db, "c1", "user", "three", 3);
+    insertMessage(db, "c1", "assistant", "four", 4);
+
+    const result = await runConversationExtraction(db, "c1", providers());
+
+    assert.deepEqual(result, { memoryIds: [], taskIds: [], extracted: 0 });
+    assert.equal(db.prepare("SELECT COUNT(*) AS count FROM memories").get()?.count, 0);
+  } finally {
+    db.close();
+    await rm(path, { force: true });
+  }
+});
+
+test("runConversationExtraction persists replayed memories, tasks, summary, embeddings, and metadata", async () => {
+  const { db, path } = await makeDb("extract.db");
+  try {
+    insertConversation(db, {
+      id: "c1",
+      journey: "cv22",
+      persona: "builder",
+      metadata: '{"kept":true}',
+    });
+    insertIdentity(db, "You are talking to Alisson today.");
+    insertMessage(db, "c1", "user", "We decided to port extraction.", 1);
+    insertMessage(db, "c1", "assistant", "I will keep it replay-safe.", 2);
+    insertMessage(db, "c1", "user", "Also remember the validation task.", 3);
+    insertMessage(db, "c1", "assistant", "Done.", 4);
+    insertTask(db, { id: "existing-task", title: "Existing", journey: "cv22" });
+
+    const result = await runConversationExtraction(db, "c1", {
+      ...providers(),
+      now: fixedNow,
+      id: idSequence(["t1", "m1", "m2"]),
+    });
+
+    assert.deepEqual(result, { memoryIds: ["m1", "m2"], taskIds: ["t1"], extracted: 2 });
+    const memories = db
+      .prepare("SELECT id, title, journey, persona, tags, embedding FROM memories ORDER BY id")
+      .all();
+    assert.equal(memories.length, 2);
+    assert.deepEqual(
+      memories.map((row) => ({
+        id: row.id,
+        title: row.title,
+        journey: row.journey,
+        persona: row.persona,
+        tags: row.tags,
+        hasEmbedding: row.embedding instanceof Uint8Array,
+      })),
+      [
+        {
+          id: "m1",
+          title: "Extraction decision",
+          journey: "cv22",
+          persona: "builder",
+          tags: '["ts"]',
+          hasEmbedding: true,
+        },
+        {
+          id: "m2",
+          title: "Explicit journey",
+          journey: "manual",
+          persona: "builder",
+          tags: null,
+          hasEmbedding: true,
+        },
+      ],
+    );
+    const tasks = db.prepare("SELECT id, title, journey, source FROM tasks ORDER BY id").all();
+    assert.deepEqual(tasks, [
+      { id: "existing-task", title: "Existing", journey: "cv22", source: "conversation" },
+      { id: "t1", title: "Validate extraction", journey: "cv22", source: "conversation" },
+    ]);
+    assert.equal(
+      db.prepare("SELECT summary FROM conversations WHERE id = ?").get("c1")?.summary,
+      "Synthetic summary.",
+    );
+    assert.ok(
+      db
+        .prepare("SELECT summary_embedding FROM conversation_embeddings WHERE conversation_id = ?")
+        .get("c1")?.summary_embedding instanceof Uint8Array,
+    );
+    assert.deepEqual(metadataOf(db, "c1"), {
+      kept: true,
+      extracted: true,
+      extraction_status: "ok",
+    });
+  } finally {
+    db.close();
+    await rm(path, { force: true });
+  }
+});
+
+test("runConversationExtraction records extraction_status: no_signal when the LLM returns no memories (AI-10)", async () => {
+  const { db, path } = await makeDb("status-no-signal.db");
+  try {
+    insertConversation(db, { id: "c1", journey: "cv22" });
+    for (let i = 1; i <= 4; i += 1)
+      insertMessage(db, "c1", i % 2 ? "user" : "assistant", `m${i}`, i);
+    const llm = new ReplayLlmProvider({
+      kind: "llm",
+      responses: { extraction: "[]", task_extraction: "[]", summary: "Summary" },
+    });
+
+    const result = await runConversationExtraction(db, "c1", {
+      llm,
+      embeddings: new ReplayEmbeddingProvider({
+        kind: "embedding",
+        response: { embedding: VALID_EMBEDDING },
+      }),
+      now: fixedNow,
+      id: idSequence([]),
+    });
+
+    assert.deepEqual(result.memoryIds, []);
+    assert.deepEqual(metadataOf(db, "c1"), { extracted: true, extraction_status: "no_signal" });
+  } finally {
+    db.close();
+    await rm(path, { force: true });
+  }
+});
+
+test("runConversationExtraction records extraction_status: parse_failed for a non-array LLM response (AI-10)", async () => {
+  const { db, path } = await makeDb("status-parse-failed.db");
+  try {
+    insertConversation(db, { id: "c1", journey: "cv22" });
+    for (let i = 1; i <= 4; i += 1)
+      insertMessage(db, "c1", i % 2 ? "user" : "assistant", `m${i}`, i);
+    const llm = new ReplayLlmProvider({
+      kind: "llm",
+      responses: {
+        extraction: '{"not":"a list"}',
+        task_extraction: "[]",
+        summary: "Summary",
+      },
+    });
+
+    const result = await runConversationExtraction(db, "c1", {
+      llm,
+      embeddings: new ReplayEmbeddingProvider({
+        kind: "embedding",
+        response: { embedding: VALID_EMBEDDING },
+      }),
+      now: fixedNow,
+      id: idSequence([]),
+    });
+
+    assert.deepEqual(result.memoryIds, []);
+    assert.deepEqual(metadataOf(db, "c1"), { extracted: true, extraction_status: "parse_failed" });
+  } finally {
+    db.close();
+    await rm(path, { force: true });
+  }
+});
+
+test("runConversationExtraction records extraction_dropped only when sanitize actually drops something (AI-10)", async () => {
+  const { db, path } = await makeDb("status-dropped.db");
+  try {
+    insertConversation(db, { id: "c1", journey: "cv22" });
+    for (let i = 1; i <= 4; i += 1)
+      insertMessage(db, "c1", i % 2 ? "user" : "assistant", `m${i}`, i);
+    const llm = new ReplayLlmProvider({
+      kind: "llm",
+      responses: {
+        extraction: JSON.stringify([
+          { title: "Keep", content: "Content", memory_type: "insight", layer: "ego" },
+          { title: "Bad", content: "Content", memory_type: "insight", layer: "banana" },
+        ]),
+        task_extraction: "[]",
+        summary: "Summary",
+      },
+    });
+
+    const result = await runConversationExtraction(db, "c1", {
+      llm,
+      embeddings: new ReplayEmbeddingProvider({
+        kind: "embedding",
+        response: { embedding: VALID_EMBEDDING },
+      }),
+      now: fixedNow,
+      id: idSequence(["m1"]),
+    });
+
+    assert.deepEqual(result.memoryIds, ["m1"]);
+    assert.deepEqual(metadataOf(db, "c1"), {
+      extracted: true,
+      extraction_status: "ok",
+      extraction_dropped: { invalidLayer: 1, invalidType: 0, overCap: 0 },
+    });
+  } finally {
+    db.close();
+    await rm(path, { force: true });
+  }
+});
+
+test("runConversationExtraction leaves the row untouched and throws when the LLM call fails; the accounting wrapper records it (AI-10, CV9.E2.S7)", async () => {
+  const { db, path } = await makeDb("status-llm-failed.db");
+  try {
+    insertConversation(db, { id: "c1", journey: "cv22", metadata: '{"kept":true}' });
+    for (let i = 1; i <= 4; i += 1)
+      insertMessage(db, "c1", i % 2 ? "user" : "assistant", `m${i}`, i);
+    const extraction = (database: WritableDatabase, conversationId: string) =>
+      runConversationExtraction(database, conversationId, {
+        llm: new FailingLlmProvider(),
+        embeddings: new ReplayEmbeddingProvider({
+          kind: "embedding",
+          response: { embedding: VALID_EMBEDDING },
+        }),
+        now: fixedNow,
+      });
+
+    // The orchestration itself records nothing: Python's `_extract_and_persist`
+    // leaves the metadata alone and lets `_run_extraction` account for it.
+    await assert.rejects(extraction(db, "c1"), /llm provider unreachable/);
+    assert.deepEqual(metadataOf(db, "c1"), { kept: true });
+
+    // The wrapper is Python's `_run_extraction`: attempt counted, status
+    // stamped, error propagated unmodified, and NOT marked extracted -- a
+    // failed attempt is not "done". Key order is Python's dict order.
+    await assert.rejects(
+      runExtractionWithAccounting(db, "c1", extraction),
+      /llm provider unreachable/,
+    );
+    assert.equal(
+      db.prepare("SELECT metadata FROM conversations WHERE id = 'c1'").get()?.metadata,
+      '{"kept": true, "extraction_attempts": 1, "extraction_status": "llm_failed"}',
+    );
+    assert.equal(db.prepare("SELECT COUNT(*) AS count FROM memories").get()?.count, 0);
+
+    // Two more failures reach EXTRACTION_MAX_ATTEMPTS and quarantine the row.
+    await assert.rejects(runExtractionWithAccounting(db, "c1", extraction));
+    assert.deepEqual(metadataOf(db, "c1"), {
+      kept: true,
+      extraction_attempts: 2,
+      extraction_status: "llm_failed",
+    });
+    await assert.rejects(runExtractionWithAccounting(db, "c1", extraction));
+    assert.deepEqual(metadataOf(db, "c1"), {
+      kept: true,
+      extraction_attempts: 3,
+      extraction_status: "llm_failed",
+      extraction_quarantined: true,
+    });
+  } finally {
+    db.close();
+    await rm(path, { force: true });
+  }
+});
+
+test("recordFailedExtractionAttempt tolerates a missing row, a string counter, and malformed metadata", async () => {
+  const { db, path } = await makeDb("attempt-edges.db");
+  try {
+    assert.equal(recordFailedExtractionAttempt(db, "absent"), 0);
+
+    // Python `int("2") + 1`.
+    insertConversation(db, {
+      id: "c-str",
+      journey: "cv22",
+      metadata: '{"extraction_attempts":"2"}',
+    });
+    assert.equal(recordFailedExtractionAttempt(db, "c-str"), 3);
+    assert.equal(metadataOf(db, "c-str").extraction_quarantined, true);
+
+    // Python `_metadata_dict` yields {} for unparseable metadata: the counter
+    // starts over rather than crashing the maintenance loop.
+    insertConversation(db, { id: "c-bad", journey: "cv22", metadata: "{not json" });
+    assert.equal(recordFailedExtractionAttempt(db, "c-bad"), 1);
+    assert.deepEqual(metadataOf(db, "c-bad"), {
+      extraction_attempts: 1,
+      extraction_status: "llm_failed",
+    });
+  } finally {
+    db.close();
+    await rm(path, { force: true });
+  }
+});
+
+test("runConversationExtraction requests the resolved extraction model pin for the summary call (AI-06)", async () => {
+  const { db, path } = await makeDb("status-model-pin.db");
+  try {
+    insertConversation(db, { id: "c1", journey: "cv22" });
+    for (let i = 1; i <= 4; i += 1)
+      insertMessage(db, "c1", i % 2 ? "user" : "assistant", `m${i}`, i);
+    const llm = new ReplayLlmProvider({
+      kind: "llm",
+      responses: { extraction: "[]", task_extraction: "[]", summary: "Summary" },
+    });
+
+    await runConversationExtraction(db, "c1", {
+      llm,
+      embeddings: new ReplayEmbeddingProvider({
+        kind: "embedding",
+        response: { embedding: VALID_EMBEDDING },
+      }),
+      now: fixedNow,
+      id: idSequence([]),
+    });
+
+    const summaryCall = llm.calls.find((call) => call.role === "summary");
+    assert.equal(summaryCall?.model, DEFAULT_EXTRACTION_MODEL);
+  } finally {
+    db.close();
+    await rm(path, { force: true });
+  }
+});
+
+test("runConversationExtraction stamps embedding provenance on each stored memory, but not on the summary (CR043)", async () => {
+  const { db, path } = await makeDb("provenance.db");
+  try {
+    insertConversation(db, { id: "c1", journey: "cv22" });
+    for (let i = 1; i <= 4; i += 1)
+      insertMessage(db, "c1", i % 2 ? "user" : "assistant", `m${i}`, i);
+    insertTask(db, { id: "existing-task", title: "Existing", journey: "cv22" });
+
+    await runConversationExtraction(db, "c1", {
+      ...providers(),
+      now: fixedNow,
+      id: idSequence(["t1", "m1", "m2"]),
+    });
+
+    const memories = db.prepare("SELECT id, metadata FROM memories ORDER BY id").all() as {
+      id: string;
+      metadata: string;
+    }[];
+    assert.equal(memories.length, 2);
+    for (const memory of memories) {
+      const metadata = JSON.parse(memory.metadata) as Record<string, unknown>;
+      assert.equal(typeof metadata.embedding_model, "string");
+      assert.equal(metadata.embedding_dimensions, 1536);
+    }
+    // conversation_embeddings has no metadata column at all -- provenance has
+    // nowhere to go for the summary, matching Python's own narrower scope
+    // (add_embedding_provenance is called from add_memory/add_attachment only).
+    const columns = db.prepare("PRAGMA table_info(conversation_embeddings)").all() as {
+      name: string;
+    }[];
+    assert.ok(!columns.some((c) => c.name === "metadata"));
+  } finally {
+    db.close();
+    await rm(path, { force: true });
+  }
+});
+
+test("runConversationExtraction logs embedding calls to the ledger for the summary and each memory (CR043)", async () => {
+  const { db, path } = await makeDb("embedding-ledger.db");
+  try {
+    insertConversation(db, { id: "c1", journey: "cv22" });
+    for (let i = 1; i <= 4; i += 1)
+      insertMessage(db, "c1", i % 2 ? "user" : "assistant", `m${i}`, i);
+    insertTask(db, { id: "existing-task", title: "Existing", journey: "cv22" });
+
+    await runConversationExtraction(db, "c1", {
+      ...providers(),
+      now: fixedNow,
+      id: idSequence(["t1", "m1", "m2"]),
+    });
+
+    const rows = db
+      .prepare(
+        "SELECT role, model, prompt_tokens, cost_usd FROM llm_calls WHERE role = 'embedding'",
+      )
+      .all() as {
+      role: string;
+      prompt_tokens: number | null;
+      cost_usd: number | null;
+    }[];
+    // 1 summary embedding + 2 memory embeddings = 3 rows.
+    assert.equal(rows.length, 3);
+    for (const row of rows) {
+      // Honest limitation: EmbeddingProvider.embed() carries no usage data, so
+      // every row is unpriced -- not a fabricated cost.
+      assert.equal(row.prompt_tokens, null);
+      assert.equal(row.cost_usd, null);
+    }
+  } finally {
+    db.close();
+    await rm(path, { force: true });
+  }
+});
+
+test("two-pass curation can filter replayed candidate memories", async () => {
+  const { db, path } = await makeDb("curation.db");
+  try {
+    insertConversation(db, { id: "c1", journey: "cv22" });
+    for (let i = 1; i <= 4; i += 1)
+      insertMessage(db, "c1", i % 2 ? "user" : "assistant", `m${i}`, i);
+    const llm = new ReplayLlmProvider({
+      kind: "llm",
+      responses: {
+        extraction: JSON.stringify([
+          { title: "Keep", content: "Content", memory_type: "insight" },
+          { title: "Drop", content: "Duplicate", memory_type: "insight" },
+        ]),
+        curation: JSON.stringify([{ title: "Keep", content: "Content", memory_type: "insight" }]),
+        task_extraction: "[]",
+        summary: "Summary",
+      },
+    });
+
+    const result = await runConversationExtraction(db, "c1", {
+      llm,
+      embeddings: new ReplayEmbeddingProvider({
+        kind: "embedding",
+        response: { embedding: VALID_EMBEDDING },
+      }),
+      twoPass: true,
+      curationExisting: [
+        { title: "Old", content: "Duplicate", memory_type: "insight", layer: "ego" },
+      ],
+      now: fixedNow,
+      id: idSequence(["m1"]),
+    });
+
+    assert.deepEqual(result.memoryIds, ["m1"]);
+    assert.equal(db.prepare("SELECT COUNT(*) AS count FROM memories").get()?.count, 1);
+  } finally {
+    db.close();
+    await rm(path, { force: true });
+  }
+});
+
+test("task extraction failure does not block memory extraction", async () => {
+  const { db, path } = await makeDb("task-failure.db");
+  try {
+    insertConversation(db, { id: "c1", journey: "cv22" });
+    for (let i = 1; i <= 4; i += 1)
+      insertMessage(db, "c1", i % 2 ? "user" : "assistant", `m${i}`, i);
+    const llm = new ReplayLlmProvider({
+      kind: "llm",
+      responses: {
+        extraction: JSON.stringify([
+          { title: "Memory", content: "Content", memory_type: "insight" },
+        ]),
+        summary: "Summary",
+      },
+    });
+
+    const result = await runConversationExtraction(db, "c1", {
+      llm,
+      embeddings: new ReplayEmbeddingProvider({
+        kind: "embedding",
+        response: { embedding: VALID_EMBEDDING },
+      }),
+      now: fixedNow,
+      id: idSequence(["m1"]),
+    });
+
+    assert.deepEqual(result.memoryIds, ["m1"]);
+    assert.deepEqual(result.taskIds, []);
+  } finally {
+    db.close();
+    await rm(path, { force: true });
+  }
+});
+
+// --- CV22.DS8.US2 plateau 1: the write unit of an extraction ------------
+
+/** Succeeds for the first `successes` embeddings, then fails like a live
+ * provider would. Replay providers never fail, which is exactly why the
+ * partial-write path below has never been exercised. */
+class FailAfterNEmbeddingProvider implements EmbeddingProvider {
+  calls = 0;
+  private readonly successes: number;
+  constructor(successes: number) {
+    this.successes = successes;
+  }
+  async embed(): Promise<EmbeddingResult> {
+    this.calls += 1;
+    if (this.calls > this.successes) {
+      throw new LlmTransportError("provider_error", "provider connection failed");
+    }
+    return { vector: VALID_EMBEDDING, promptTokens: 5 };
+  }
+}
+
+test("a failed embedding mid-extraction persists NOTHING (AI-03 / CV9.E2.S9 parity)", async () => {
+  const { db, path } = await makeDb("atomicity.db");
+  try {
+    insertConversation(db, { id: "c1", journey: "cv22", persona: "builder" });
+    insertMessage(db, "c1", "user", "We decided to port extraction.", 1);
+    insertMessage(db, "c1", "assistant", "I will keep it replay-safe.", 2);
+    insertMessage(db, "c1", "user", "Also remember the validation task.", 3);
+    insertMessage(db, "c1", "assistant", "Done.", 4);
+
+    // Summary embedding succeeds, first memory embedding succeeds, second fails.
+    // Python stages EVERY embedding -- summary included -- before it writes
+    // anything, so this run must leave the database exactly as it found it.
+    const embeddings = new FailAfterNEmbeddingProvider(2);
+
+    await assert.rejects(
+      runConversationExtraction(db, "c1", {
+        ...providers(),
+        embeddings,
+        now: fixedNow,
+        id: idSequence(["t1", "m1", "m2"]),
+      }),
+    );
+
+    assert.equal(
+      db.prepare("SELECT COUNT(*) AS count FROM memories").get()?.count,
+      0,
+      "a partial memory set would be duplicated by the retry, each with a paid embedding",
+    );
+    assert.equal(
+      db.prepare("SELECT COUNT(*) AS count FROM conversation_embeddings").get()?.count,
+      0,
+      "the summary embedding is staged with the rest, not written ahead of them",
+    );
+    assert.equal(
+      db.prepare("SELECT summary FROM conversations WHERE id = ?").get("c1")?.summary ?? null,
+      null,
+      "the summary row must not outlive a failed extraction",
+    );
+    assert.notEqual(metadataOf(db, "c1").extracted, true, "the conversation stays un-extracted");
+
+    // Real spend stays visible even though nothing was persisted: two
+    // successful round-trips, plus the failed one. The failure is logged
+    // UNPRICED rather than omitted -- a billable attempt that vanishes from
+    // the ledger understates spend, which is Python's contract too
+    // (_log_embedding_call on the exception path, prompt_tokens=None).
+    const rows = db
+      .prepare("SELECT cost_usd FROM llm_calls WHERE role = 'embedding' ORDER BY called_at")
+      .all() as { cost_usd: number | null }[];
+    assert.equal(rows.length, 3, "summary + first memory + the failed attempt");
+    assert.equal(rows.filter((row) => row.cost_usd !== null).length, 2, "two priced round-trips");
+    assert.equal(rows.filter((row) => row.cost_usd === null).length, 1, "the failure is unpriced");
+  } finally {
+    db.close();
+    await rm(path, { force: true });
+  }
+});
+
+test("a clean retry after a failed embedding inserts each memory exactly once", async () => {
+  const { db, path } = await makeDb("atomicity-retry.db");
+  try {
+    insertConversation(db, { id: "c1", journey: "cv22", persona: "builder" });
+    insertMessage(db, "c1", "user", "We decided to port extraction.", 1);
+    insertMessage(db, "c1", "assistant", "I will keep it replay-safe.", 2);
+    insertMessage(db, "c1", "user", "Also remember the validation task.", 3);
+    insertMessage(db, "c1", "assistant", "Done.", 4);
+
+    await assert.rejects(
+      runConversationExtraction(db, "c1", {
+        ...providers(),
+        embeddings: new FailAfterNEmbeddingProvider(2),
+        now: fixedNow,
+        id: idSequence(["t1", "m1", "m2"]),
+      }),
+    );
+    await runConversationExtraction(db, "c1", {
+      ...providers(),
+      now: fixedNow,
+      id: idSequence(["t2", "m1", "m2"]),
+    });
+
+    const titles = db.prepare("SELECT title FROM memories ORDER BY id").all();
+    assert.equal(titles.length, 2, "the retry starts clean instead of duplicating");
+  } finally {
+    db.close();
+    await rm(path, { force: true });
+  }
+});
+
+function providers() {
+  return {
+    llm: new ReplayLlmProvider({
+      kind: "llm",
+      responses: {
+        extraction: JSON.stringify([
+          {
+            title: "Extraction decision",
+            content: "Port safely",
+            memory_type: "decision",
+            tags: ["ts"],
+          },
+          { title: "bad" },
+          {
+            title: "Explicit journey",
+            content: "Manual journey remains",
+            memory_type: "insight",
+            journey: "manual",
+          },
+        ]),
+        task_extraction: JSON.stringify([
+          { title: "Validate extraction", due_date: "2026-01-02" },
+          { title: "Existing" },
+        ]),
+        summary: "Synthetic summary.",
+      },
+    }),
+    embeddings: new ReplayEmbeddingProvider({
+      kind: "embedding",
+      response: { embedding: VALID_EMBEDDING },
+    }),
+  };
+}
+
+async function makeDb(name: string): Promise<{ db: WritableDatabase; path: string }> {
+  await mkdir(TMP_DIR, { recursive: true });
+  const path = join(TMP_DIR, name);
+  await rm(path, { force: true });
+  const db = openDatabaseCopyForWrite(path);
+  db.exec(`
+    CREATE TABLE conversations (
+      id TEXT PRIMARY KEY,
+      title TEXT,
+      started_at TEXT NOT NULL,
+      ended_at TEXT,
+      interface TEXT NOT NULL,
+      persona TEXT,
+      journey TEXT,
+      summary TEXT,
+      tags TEXT,
+      metadata TEXT
+    );
+    CREATE TABLE messages (
+      id TEXT PRIMARY KEY,
+      conversation_id TEXT NOT NULL REFERENCES conversations(id),
+      role TEXT NOT NULL,
+      content TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      token_count INTEGER,
+      metadata TEXT
+    );
+    CREATE TABLE memories (
+      id TEXT PRIMARY KEY,
+      conversation_id TEXT REFERENCES conversations(id),
+      memory_type TEXT NOT NULL,
+      layer TEXT NOT NULL DEFAULT 'ego',
+      title TEXT NOT NULL,
+      content TEXT NOT NULL,
+      context TEXT,
+      journey TEXT,
+      persona TEXT,
+      tags TEXT,
+      created_at TEXT NOT NULL,
+      relevance_score REAL DEFAULT 1.0,
+      embedding BLOB,
+      metadata TEXT,
+      last_accessed_at TEXT,
+      use_count INTEGER NOT NULL DEFAULT 0,
+      readiness_state TEXT NOT NULL DEFAULT 'observed'
+    );
+    CREATE TABLE conversation_embeddings (
+      conversation_id TEXT PRIMARY KEY REFERENCES conversations(id),
+      summary_embedding BLOB
+    );
+    CREATE TABLE tasks (
+      id TEXT PRIMARY KEY,
+      journey TEXT,
+      title TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'todo',
+      due_date TEXT,
+      scheduled_at TEXT,
+      time_hint TEXT,
+      stage TEXT,
+      context TEXT,
+      source TEXT NOT NULL DEFAULT 'manual',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      completed_at TEXT,
+      metadata TEXT
+    );
+    CREATE TABLE identity (
+      id TEXT PRIMARY KEY,
+      layer TEXT NOT NULL,
+      key TEXT NOT NULL,
+      content TEXT NOT NULL,
+      version TEXT DEFAULT '1.0.0',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      metadata TEXT,
+      UNIQUE(layer, key)
+    );
+    CREATE TABLE llm_calls (
+      id TEXT PRIMARY KEY, role TEXT NOT NULL, model TEXT NOT NULL,
+      prompt TEXT NOT NULL, response TEXT NOT NULL,
+      prompt_tokens INTEGER, completion_tokens INTEGER, latency_ms INTEGER,
+      cost_usd REAL, conversation_id TEXT, session_id TEXT, called_at TEXT NOT NULL
+    );
+  `);
+  return { db, path };
+}
+
+function insertConversation(
+  db: WritableDatabase,
+  input: { id: string; journey: string | null; persona?: string | null; metadata?: string | null },
+): void {
+  db.prepare(
+    `INSERT INTO conversations (id, started_at, ended_at, interface, persona, journey, metadata) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+  ).run(
+    input.id,
+    "2026-01-01T00:00:00Z",
+    "2026-01-01T00:10:00Z",
+    "pi",
+    input.persona ?? null,
+    input.journey,
+    input.metadata ?? null,
+  );
+}
+
+function insertMessage(
+  db: WritableDatabase,
+  conversationId: string,
+  role: string,
+  content: string,
+  n: number,
+): void {
+  db.prepare(
+    `INSERT INTO messages (id, conversation_id, role, content, created_at) VALUES (?, ?, ?, ?, ?)`,
+  ).run(`msg-${n}`, conversationId, role, content, `2026-01-01T00:0${n}:00Z`);
+}
+
+function insertIdentity(db: WritableDatabase, content: string): void {
+  db.prepare(
+    `INSERT INTO identity (id, layer, key, content, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)`,
+  ).run(
+    "user-identity",
+    "user",
+    "identity",
+    content,
+    "2026-01-01T00:00:00Z",
+    "2026-01-01T00:00:00Z",
+  );
+}
+
+function insertTask(
+  db: WritableDatabase,
+  input: { id: string; title: string; journey: string },
+): void {
+  db.prepare(
+    `INSERT INTO tasks (id, journey, title, status, source, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+  ).run(input.id, input.journey, input.title, "todo", "conversation", fixedNow(), fixedNow());
+}
+
+function fixedNow(): string {
+  return "2026-01-01T00:00:00.000000Z";
+}
+
+function idSequence(values: string[]): () => string {
+  const remaining = [...values];
+  return () => {
+    const value = remaining.shift();
+    if (!value) throw new Error("id sequence exhausted");
+    return value;
+  };
+}

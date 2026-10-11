@@ -43,6 +43,24 @@ what was planned, what was implemented, what evidence was accepted, and how it c
 - [CR012 — Close a Change Request superseded by another](cr012-supersede-change-request.md)
 - [CR013 — Amend Refinement Story and Change Request text during refinement](cr013-amend-story-and-request-text.md)
 
+## Review And Closure
+
+RS003 closed on 2026-09-27 by the Navigator's decision. CR011 reached `done` in
+the SQLite era. CR010, CR012, and CR013 were rejected as overtaken, not
+declined. Each one described a missing transition in the SQLite Workbench's
+state machine, and CV22.DS10.TS4 deleted that Workbench.
+
+The file-first Workbench that replaced it gives this story's outcome by other
+means. A Change Request is one evolving Markdown document, so its plan,
+amendments, evidence, and closure are sections of it, and Git keeps everything
+an edit replaced. Status is document vocabulary rather than a transition table,
+so revising, resuming, and closing a request resolved by another route need no
+verb. CR004 closed with CR079 that way, and CR020 with CR067.
+
+No RS-level corrective action remains. The boundary this story set, amendment
+as append rather than replacement, holds through Git history rather than
+through the runtime.
+
 ## Provenance
 
 These four Change Requests were authored from seven field captures recorded on the `mirror`

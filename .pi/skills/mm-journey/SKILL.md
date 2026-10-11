@@ -6,18 +6,18 @@ user-invocable: true
 
 # Journey
 
-When receiving `/mm-journey [slug]`:
+When receiving `/mm-journey [slug]`: answered by the TS core (CV22.DS7.US1).
 
 ```bash
-uv run python -m memory journey [slug]
+mirror journey [slug]
 ```
 
-When receiving `/mm-journey update <slug> <content>`:
+When receiving `/mm-journey update <slug> <content>`: answered by the TS core (CV22.DS7.US1).
 
 ```bash
-uv run python -m memory journey update <slug> "<content>"
+mirror journey update <slug> "<content>"
 # or pipe via stdin:
-echo "<content>" | uv run python -m memory journey update <slug> -
+echo "<content>" | mirror journey update <slug> -
 ```
 
 Present the output to the user.

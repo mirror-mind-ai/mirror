@@ -1,0 +1,296 @@
+{
+  "aliases": {
+    "alpha-one": [
+      "alpha one",
+      "alpha-one"
+    ],
+    "beta-two": [
+      "beta two",
+      "beta-two"
+    ],
+    "dup-alpha": [
+      "duplicate title",
+      "dup alpha",
+      "dup-alpha"
+    ],
+    "dup-beta": [
+      "duplicate title",
+      "dup beta",
+      "dup-beta"
+    ],
+    "mirror-ts-core": [
+      "mirror typescript core port",
+      "mirror ts core",
+      "mirror-ts-core"
+    ],
+    "no-heading": [
+      "no heading",
+      "no-heading"
+    ]
+  },
+  "inference": [
+    {
+      "activation_text": "\n/mm-build mirror-ts-core",
+      "first_user": "/mm-build mirror-ts-core",
+      "journey": "mirror-ts-core",
+      "label": "build_command_slash",
+      "reason": "explicit build command",
+      "title": null
+    },
+    {
+      "activation_text": "\n$mm-build alpha-one",
+      "first_user": "$mm-build alpha-one",
+      "journey": "alpha-one",
+      "label": "build_command_dollar",
+      "reason": "explicit build command",
+      "title": null
+    },
+    {
+      "activation_text": "\n/mm:build beta-two",
+      "first_user": "/mm:build beta-two",
+      "journey": "beta-two",
+      "label": "build_command_colon",
+      "reason": "explicit build command",
+      "title": null
+    },
+    {
+      "activation_text": "\n/mm-build not-a-journey",
+      "first_user": "/mm-build not-a-journey",
+      "journey": null,
+      "label": "build_command_unknown_slug",
+      "reason": null,
+      "title": null
+    },
+    {
+      "activation_text": "\nmirror-ts-core",
+      "first_user": "mirror-ts-core",
+      "journey": "mirror-ts-core",
+      "label": "standalone_slug_line",
+      "reason": "standalone journey slug/name",
+      "title": null
+    },
+    {
+      "activation_text": "\nmirror typescript core port",
+      "first_user": "mirror typescript core port",
+      "journey": "mirror-ts-core",
+      "label": "standalone_heading_line",
+      "reason": "standalone journey slug/name",
+      "title": null
+    },
+    {
+      "activation_text": "\nalpha one",
+      "first_user": "alpha one",
+      "journey": "alpha-one",
+      "label": "standalone_slug_with_spaces",
+      "reason": "standalone journey slug/name",
+      "title": null
+    },
+    {
+      "activation_text": "\nvamos trabalhar no alpha-one",
+      "first_user": "vamos trabalhar no alpha-one",
+      "journey": "alpha-one",
+      "label": "activation_pt_vamos_trabalhar",
+      "reason": "activation phrase",
+      "title": null
+    },
+    {
+      "activation_text": "\nquero retomar a jornada beta-two",
+      "first_user": "quero retomar a jornada beta-two",
+      "journey": "beta-two",
+      "label": "activation_pt_quero_retomar",
+      "reason": "activation phrase",
+      "title": null
+    },
+    {
+      "activation_text": "\nlet's work on mirror-ts-core",
+      "first_user": "let's work on mirror-ts-core",
+      "journey": "mirror-ts-core",
+      "label": "activation_en_lets_work",
+      "reason": "activation phrase",
+      "title": null
+    },
+    {
+      "activation_text": "\n\n/mm-build alpha-one\n<skill>mm-build</skill>",
+      "first_user": "<skill>mm-build</skill>\n/mm-build alpha-one",
+      "journey": "alpha-one",
+      "label": "skill_tag_stripped",
+      "reason": "explicit build command",
+      "title": null
+    },
+    {
+      "activation_text": "alpha-one\n",
+      "first_user": "",
+      "journey": "alpha-one",
+      "label": "title_carries_the_slug",
+      "reason": "standalone journey slug/name",
+      "title": "alpha-one"
+    },
+    {
+      "activation_text": "\ni was reading about alpha-one yesterday",
+      "first_user": "I was reading about alpha-one yesterday",
+      "journey": null,
+      "label": "alias_mid_sentence_does_not_match",
+      "reason": null,
+      "title": null
+    },
+    {
+      "activation_text": "\n",
+      "first_user": "",
+      "journey": null,
+      "label": "empty_text",
+      "reason": null,
+      "title": null
+    },
+    {
+      "activation_text": "\n",
+      "first_user": "   \n  ",
+      "journey": null,
+      "label": "whitespace_only",
+      "reason": null,
+      "title": null
+    },
+    {
+      "activation_text": "\njust a normal question about the weather",
+      "first_user": "just a normal question about the weather",
+      "journey": null,
+      "label": "unrelated_text",
+      "reason": null,
+      "title": null
+    },
+    {
+      "activation_text": "\nduplicate title",
+      "first_user": "duplicate title",
+      "journey": null,
+      "label": "ambiguous_shared_alias_refuses",
+      "reason": null,
+      "title": null
+    }
+  ],
+  "journeys": {
+    "alpha-one": "# Alpha One\n\nDescription.\n",
+    "beta-two": "# Beta Two\n\nDescription.\n",
+    "dup-alpha": "# Duplicate Title\n\nDescription.\n",
+    "dup-beta": "# Duplicate Title\n\nDescription.\n",
+    "mirror-ts-core": "# Mirror TypeScript Core Port\n\nDescription.\n",
+    "no-heading": "Just body text with no heading at all.\n"
+  },
+  "meta": {
+    "note": "`--apply` is a mutating repair: findings are identical in both modes, and only the write differs."
+  },
+  "repair": {
+    "applied_findings": [
+      {
+        "conversation_id": "conv-b",
+        "journey": "alpha-one",
+        "message_count": 4,
+        "reason": "activation phrase",
+        "started_at": "2026-09-03T11:00:00.000000Z",
+        "title": ""
+      },
+      {
+        "conversation_id": "conv-a",
+        "journey": "mirror-ts-core",
+        "message_count": 2,
+        "reason": "explicit build command",
+        "started_at": "2026-09-03T10:00:00.000000Z",
+        "title": ""
+      },
+      {
+        "conversation_id": "conv-d",
+        "journey": "beta-two",
+        "message_count": 3,
+        "reason": "standalone journey slug/name",
+        "started_at": "2026-09-03T09:00:00.000000Z",
+        "title": "beta-two"
+      }
+    ],
+    "dry_run_findings": [
+      {
+        "conversation_id": "conv-b",
+        "journey": "alpha-one",
+        "message_count": 4,
+        "reason": "activation phrase",
+        "started_at": "2026-09-03T11:00:00.000000Z",
+        "title": ""
+      },
+      {
+        "conversation_id": "conv-a",
+        "journey": "mirror-ts-core",
+        "message_count": 2,
+        "reason": "explicit build command",
+        "started_at": "2026-09-03T10:00:00.000000Z",
+        "title": ""
+      },
+      {
+        "conversation_id": "conv-d",
+        "journey": "beta-two",
+        "message_count": 3,
+        "reason": "standalone journey slug/name",
+        "started_at": "2026-09-03T09:00:00.000000Z",
+        "title": "beta-two"
+      }
+    ],
+    "journey_after_apply": {
+      "conv-a": "mirror-ts-core",
+      "conv-b": "alpha-one",
+      "conv-c": null,
+      "conv-d": "beta-two"
+    },
+    "journey_after_dry_run": {
+      "conv-a": null,
+      "conv-b": null,
+      "conv-c": null,
+      "conv-d": null
+    },
+    "journey_before": {
+      "conv-a": null,
+      "conv-b": null,
+      "conv-c": null,
+      "conv-d": null
+    },
+    "limited_findings": [
+      {
+        "conversation_id": "conv-b",
+        "journey": "alpha-one",
+        "message_count": 4,
+        "reason": "activation phrase",
+        "started_at": "2026-09-03T11:00:00.000000Z",
+        "title": ""
+      }
+    ],
+    "rendered": {
+      "applied": "Repaired: 3\n- conv-b -> alpha-one (activation phrase; 4 messages; 2026-09-03T11:00:00.000000Z; )\n- conv-a -> mirror-ts-core (explicit build command; 2 messages; 2026-09-03T10:00:00.000000Z; )\n- conv-d -> beta-two (standalone journey slug/name; 3 messages; 2026-09-03T09:00:00.000000Z; beta-two)\n",
+      "dry_run": "Repair candidates: 3\n- conv-b -> alpha-one (activation phrase; 4 messages; 2026-09-03T11:00:00.000000Z; )\n- conv-a -> mirror-ts-core (explicit build command; 2 messages; 2026-09-03T10:00:00.000000Z; )\n- conv-d -> beta-two (standalone journey slug/name; 3 messages; 2026-09-03T09:00:00.000000Z; beta-two)\n"
+    },
+    "seeds": [
+      {
+        "first_user": "/mm-build mirror-ts-core",
+        "id": "conv-a",
+        "message_count": 2,
+        "started_at": "2026-09-03T10:00:00.000000Z",
+        "title": null
+      },
+      {
+        "first_user": "vamos trabalhar no alpha-one",
+        "id": "conv-b",
+        "message_count": 4,
+        "started_at": "2026-09-03T11:00:00.000000Z",
+        "title": null
+      },
+      {
+        "first_user": "unrelated chatter",
+        "id": "conv-c",
+        "message_count": 1,
+        "started_at": "2026-09-03T12:00:00.000000Z",
+        "title": null
+      },
+      {
+        "first_user": "",
+        "id": "conv-d",
+        "message_count": 3,
+        "started_at": "2026-09-03T09:00:00.000000Z",
+        "title": "beta-two"
+      }
+    ]
+  }
+}

@@ -1,0 +1,71 @@
+[< Refinement Workbench](../index.md)
+
+# RS010 — CV22 Oracle And Port Hygiene
+
+## Framing
+
+Porting the Python core one command at a time keeps finding things that are
+not the port's to fix: a TypeScript fidelity gap under an already-validated
+golden, a Python product defect the oracle has always had, a test that
+behaves differently on a developer machine than in CI. A parity story is the
+wrong place for any of them — the moving-target rule says the authority
+changes first and the port follows, and a story graded by byte-equality
+cannot change either side silently without breaking its own evidence.
+
+Until now these findings lived as debt observations in story plans, which is
+where they get forgotten. This story is their durable home.
+
+## Outcome
+
+Each finding surfaced by CV22 that is neither in-scope parity work nor a
+DS8 live-cutover input has a Change Request that fixes one core first and
+reconciles the other, with the golden or test that pins it, so the port's
+evidence stays honest as both cores move.
+
+## Boundaries
+
+- Never fixed inside a parity story; each CR is its own bounded change with
+  the moving-target rule applied (authority first, port second, oracle
+  baseline advanced in the same commit).
+- Not for DS8 inputs (spend bounds, pricing, re-close cost): those are
+  planning inputs for the live cutover, recorded in US10's Debt Review.
+- Not for routing correctness: that is RS009.
+
+## Change Requests
+
+- [CR056 — Measure title length by code point in titleNeedsImprovement](cr056-measure-title-length-by-code-point.md)
+- [CR057 — Stop paying for the discarded summary in the close tail](cr057-stop-paying-for-the-discarded-summary-in-the-close-tail.md)
+- [CR058 — Wait for completion, not a wall-clock budget, in the runtime-diagnose web test](cr058-wait-for-completion-in-the-runtime-diagnose-web-test.md)
+- [CR060 — Fail loudly when a silent backup fails](cr060-fail-loudly-when-a-silent-backup-fails.md)
+- [CR061 — Snapshot the live database consistently before zipping](cr061-snapshot-the-live-database-consistently-before-zipping.md)
+- [CR062 — Write backup archives owner-only](cr062-write-backup-archives-owner-only.md)
+- [CR063 — Keep journey slugs consistent across tables in repair-encoding](cr063-keep-journey-slugs-consistent-across-tables-in-repair-encoding.md)
+- [CR065 — Make parity fixture generators hermetic by construction](cr065-make-parity-fixture-generators-hermetic-by-construction.md)
+- [CR066 — Skip a naive timestamp instead of crashing the diagnosis](cr066-skip-a-naive-timestamp-instead-of-crashing-the-diagnosis.md)
+- [CR069 — Fail cleanly when `soul apply` is given an unknown id](cr069-fail-cleanly-when-soul-apply-is-given-an-unknown-id.md)
+- [CR070 — Render or remove the inert `--listening-for` argument](cr070-render-or-remove-the-inert-listening-for-argument.md)
+- [CR071 — Collapse the triplicated skill command references](cr071-collapse-the-triplicated-skill-command-references.md)
+- [CR073 — Refuse a mistyped stdin sentinel in `journey update`](cr073-refuse-a-mistyped-stdin-sentinel-in-journey-update.md)
+- [CR074 — Harden the `week plan` pending file](cr074-harden-the-week-plan-pending-file.md)
+- [CR075 — Route the journal embedding through the safety wrapper](cr075-route-the-journal-embedding-through-the-safety-wrapper.md)
+- [CR076 — Collapse the three close-tail metadata calls into one](cr076-collapse-the-three-close-tail-metadata-calls.md)
+- [CR078 — Stop spending thirteen seconds polling for a `consult` cost](cr078-stop-spending-thirteen-seconds-polling-for-a-consult-cost.md)
+- [CR080 — Give the consolidation prompt an identity context it can act on](cr080-give-the-consolidation-prompt-an-identity-context-it-can-act-on.md)
+- [CR081 — Typecheck the parity tools](cr081-typecheck-the-parity-tools.md)
+- [CR083 — Path-normalization assumptions in the ported tree are untested, and one shipped wrong for two plateaus](cr083-path-normalization-assumptions-are-untested-in-the-port.md)
+- [CR084 — The bootstrap lock is not exclusive during the window between creating it and writing it](cr084-the-bootstrap-lock-is-not-exclusive-while-it-is-being-written.md)
+- [CR086 — A baseline advance must name the oracle change it absorbs](cr086-baseline-advance-must-name-the-oracle-change.md)
+- [CR091 — `operation_runs` outlived its only consumer](cr091-operation-runs-outlived-its-only-consumer.md)
+- [CR097 — New record ids are 32 bits because the oracle's were, and `messages` already collides](cr097-new-ids-are-32-bits-because-the-oracle-s-were.md)
+- [CR098 — The Pi extension logs the first 80 characters of every prompt](cr098-the-pi-extension-logs-the-start-of-every-prompt.md)
+- [CR099 — A `--global` capability binding is not idempotent](cr099-a-global-capability-binding-is-not-idempotent.md)
+- [CR100 — The session resolver guesses "the session" from a table that holds three kinds of row](cr100-the-session-resolver-guesses-from-a-table-of-three-row-kinds.md)
+- [CR101 — Explorer and Soul activation stamp their mode onto a guessed session](cr101-explorer-and-soul-activation-stamp-a-guessed-session.md)
+- [CR102 — The Claude Code `mm-build` skill carries no activation boundary, journey binding, or Ariad section](cr102-the-claude-code-mm-build-skill-lacks-the-builder-and-ariad-sections.md)
+- [CR106 — A Pi session started against a scratch Mirror home copies the whole Pi history into it](cr106-a-pi-session-in-a-scratch-mirror-home-copies-the-whole-pi-history-into-it.md)
+- [CR108 — The Claude Code copies of other skills drift from Pi in behavior, and no guard compares them](cr108-the-claude-code-copies-of-other-skills-drift-from-pi-in-behavior.md)
+- [CR110 — The doc-link checker reads a link inside inline code as a real link](cr110-the-doc-link-checker-reads-a-link-inside-inline-code-as-a-real-link.md)
+- [CR120 — A failed Pi session import aborts the rest of session maintenance](cr120-a-failed-pi-session-import-aborts-the-rest-of-session-maintenance.md)
+- [CR121 — A new home's first maintenance run imports the person's whole Pi history](cr121-a-new-home-s-first-maintenance-imports-the-whole-pi-history.md)
+- [CR122 — The capture normalizer's word-boundary masks are inert under BSD `sed`](cr122-the-capture-normalizer-s-word-boundary-masks-are-inert-under-bsd-sed.md)
+- [CR123 — The plugin smoke's missing-bin case cannot run on a machine with a global link](cr123-the-plugin-smoke-s-missing-bin-case-cannot-run-on-a-machine-with-a-global-link.md)

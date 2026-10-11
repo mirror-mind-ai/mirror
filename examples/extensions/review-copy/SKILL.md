@@ -10,7 +10,7 @@ user-invocable: true
 >
 > Install source tree:
 >
-> `~/.mirror/<user>/extensions/review-copy/`
+> `~/.mirror-minds/<user>/extensions/review-copy/`
 >
 > Runtime-visible commands:
 > - Claude Code: `ext:review-copy`
@@ -19,35 +19,35 @@ user-invocable: true
 > Concrete migration flow:
 >
 > ```bash
-> python -m memory extensions install \
+> mirror extensions install \
 >   review-copy \
 >   --extensions-root examples/extensions \
->   --mirror-home ~/.mirror/<user>
+>   --mirror-home ~/.mirror-minds/<user>
 > ```
 >
 > Equivalent explicit flow:
 >
 > ```bash
-> mkdir -p ~/.mirror/<user>/extensions
-> cp -R examples/extensions/review-copy ~/.mirror/<user>/extensions/
+> mkdir -p ~/.mirror-minds/<user>/extensions
+> cp -R examples/extensions/review-copy ~/.mirror-minds/<user>/extensions/
 >
-> python -m memory extensions validate --mirror-home ~/.mirror/<user>
-> python -m memory inspect extension review-copy --mirror-home ~/.mirror/<user>
+> mirror extensions validate --mirror-home ~/.mirror-minds/<user>
+> mirror inspect extension review-copy --mirror-home ~/.mirror-minds/<user>
 >
-> python -m memory extensions sync \
->   --mirror-home ~/.mirror/<user> \
+> mirror extensions sync \
+>   --mirror-home ~/.mirror-minds/<user> \
 >   --runtime pi \
->   --target-root ~/.mirror/<user>/runtime/skills/pi
+>   --target-root ~/.mirror-minds/<user>/runtime/skills/pi
 >
-> python -m memory extensions sync \
->   --mirror-home ~/.mirror/<user> \
+> mirror extensions sync \
+>   --mirror-home ~/.mirror-minds/<user> \
 >   --runtime claude \
->   --target-root ~/.mirror/<user>/runtime/skills/claude
+>   --target-root ~/.mirror-minds/<user>/runtime/skills/claude
 > ```
 >
 > Resulting runtime skill files:
-> - `~/.mirror/<user>/runtime/skills/pi/ext-review-copy/SKILL.md`
-> - `~/.mirror/<user>/runtime/skills/claude/ext:review-copy/SKILL.md`
+> - `~/.mirror-minds/<user>/runtime/skills/pi/ext-review-copy/SKILL.md`
+> - `~/.mirror-minds/<user>/runtime/skills/claude/ext:review-copy/SKILL.md`
 
 Sends a copy file to multiple models through OpenRouter and generates an HTML
 report with side-by-side reviews, synthesis, and a recommended next step.
@@ -111,7 +111,7 @@ COPY:
 For each requested model, run:
 
 ```bash
-python -m memory consult FAMILY TIER "PROMPT" [--journey JOURNEY_ID]
+mirror consult FAMILY TIER "PROMPT" [--journey JOURNEY_ID]
 ```
 
 Run consult calls in parallel where possible and capture each full response.
@@ -143,7 +143,7 @@ After saving the HTML, tell the user the full generated file path.
 ## Boundary contract
 
 This extension should orchestrate stable Mirror commands such as:
-- `python -m memory consult`
+- `mirror consult`
 - file reads/writes
 
-It should not depend on internal Mirror Python modules.
+It should not depend on internal Mirror modules.

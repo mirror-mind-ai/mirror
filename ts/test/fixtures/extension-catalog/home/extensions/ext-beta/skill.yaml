@@ -1,0 +1,9 @@
+id: ext-beta
+name: Beta Command Skill
+category: extension
+kind: command-skill
+summary: A command skill with one runtime.
+runtimes:
+  pi:
+    command_name: ext-beta
+    skill_file: skills/pi/SKILL.md

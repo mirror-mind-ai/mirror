@@ -20,12 +20,13 @@ Use when the user asks any natural-language variant of:
 Run the safe updater:
 
 ```bash
-uv run python -m memory runtime update
+mirror runtime update
 ```
 
 Show the output verbatim. Do not replace this with `git pull`, `git fetch`, or
-manual migration commands. The runtime updater owns status gates, backups,
-fast-forwarding, migrations, and post-update validation.
+manual migration commands. The runtime updater owns the status gate, the
+verified backup, the fast-forward, the migration, and the post-update check.
 
-If the updater reports a recovery command, show that recovery command exactly as
-printed. If it succeeds, mention the installed version if the output includes it.
+If the updater reports a recovery route, show it exactly as printed: it names
+the commit to return to. If it succeeds, mention the installed version if the
+output includes it.

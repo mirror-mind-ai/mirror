@@ -1,0 +1,392 @@
+{
+  "cases": [
+    {
+      "argv": [
+        "Decidi encerrar o experimento e escrever o que aprendi."
+      ],
+      "embedding_fails": false,
+      "exit": 0,
+      "id_shapes": [
+        {
+          "hex": true,
+          "length": 8
+        }
+      ],
+      "label": "well-formed classification",
+      "llm_calls": [
+        {
+          "model": "stub/model",
+          "role": "journal_classification",
+          "unpriced": 0
+        },
+        {
+          "model": "openai/text-embedding-3-small",
+          "role": "embedding",
+          "unpriced": 0
+        }
+      ],
+      "llm_response": "{\"title\": \"Encerramento do experimento\", \"layer\": \"ego\", \"tags\": [\"decision\", \"learning\"]}",
+      "memories": [
+        {
+          "content": "Decidi encerrar o experimento e escrever o que aprendi.",
+          "has_embedding": 1,
+          "journey": null,
+          "layer": "ego",
+          "memory_type": "journal",
+          "tags": "[\"decision\", \"learning\"]",
+          "title": "Encerramento do experimento"
+        }
+      ],
+      "raised": null,
+      "stderr": "",
+      "stdout": "📓 Journal entry recorded\n   Title: Encerramento do experimento\n   Layer: Ego (operational)\n   Tags: decision, learning\n   ID: <memory-1>\n"
+    },
+    {
+      "argv": [
+        "Uma nota curta."
+      ],
+      "embedding_fails": false,
+      "exit": 0,
+      "id_shapes": [
+        {
+          "hex": true,
+          "length": 8
+        }
+      ],
+      "label": "layer self",
+      "llm_calls": [
+        {
+          "model": "stub/model",
+          "role": "journal_classification",
+          "unpriced": 0
+        },
+        {
+          "model": "openai/text-embedding-3-small",
+          "role": "embedding",
+          "unpriced": 0
+        }
+      ],
+      "llm_response": "{\"title\": \"Nota\", \"layer\": \"self\", \"tags\": [\"identity\"]}",
+      "memories": [
+        {
+          "content": "Uma nota curta.",
+          "has_embedding": 1,
+          "journey": null,
+          "layer": "self",
+          "memory_type": "journal",
+          "tags": "[\"identity\"]",
+          "title": "Nota"
+        }
+      ],
+      "raised": null,
+      "stderr": "",
+      "stdout": "📓 Journal entry recorded\n   Title: Nota\n   Layer: Self (identity)\n   Tags: identity\n   ID: <memory-1>\n"
+    },
+    {
+      "argv": [
+        "Uma nota curta."
+      ],
+      "embedding_fails": false,
+      "exit": 0,
+      "id_shapes": [
+        {
+          "hex": true,
+          "length": 8
+        }
+      ],
+      "label": "layer shadow",
+      "llm_calls": [
+        {
+          "model": "stub/model",
+          "role": "journal_classification",
+          "unpriced": 0
+        },
+        {
+          "model": "openai/text-embedding-3-small",
+          "role": "embedding",
+          "unpriced": 0
+        }
+      ],
+      "llm_response": "{\"title\": \"Tensao\", \"layer\": \"shadow\", \"tags\": []}",
+      "memories": [
+        {
+          "content": "Uma nota curta.",
+          "has_embedding": 1,
+          "journey": null,
+          "layer": "shadow",
+          "memory_type": "journal",
+          "tags": null,
+          "title": "Tensao"
+        }
+      ],
+      "raised": null,
+      "stderr": "",
+      "stdout": "📓 Journal entry recorded\n   Title: Tensao\n   Layer: Shadow (tension)\n   Tags: \n   ID: <memory-1>\n"
+    },
+    {
+      "argv": [
+        "Uma nota curta."
+      ],
+      "embedding_fails": false,
+      "exit": 0,
+      "id_shapes": [
+        {
+          "hex": true,
+          "length": 8
+        }
+      ],
+      "label": "AI-24: invalid layer coerced to ego",
+      "llm_calls": [
+        {
+          "model": "stub/model",
+          "role": "journal_classification",
+          "unpriced": 0
+        },
+        {
+          "model": "openai/text-embedding-3-small",
+          "role": "embedding",
+          "unpriced": 0
+        }
+      ],
+      "llm_response": "{\"title\": \"Coercao\", \"layer\": \"superego\", \"tags\": [\"x\"]}",
+      "memories": [
+        {
+          "content": "Uma nota curta.",
+          "has_embedding": 1,
+          "journey": null,
+          "layer": "ego",
+          "memory_type": "journal",
+          "tags": "[\"x\"]",
+          "title": "Coercao"
+        }
+      ],
+      "raised": null,
+      "stderr": "",
+      "stdout": "📓 Journal entry recorded\n   Title: Coercao\n   Layer: Ego (operational)\n   Tags: x\n   ID: <memory-1>\n"
+    },
+    {
+      "argv": [
+        "🌍 primeiro dia fora — café ☕ e uma ideia comprida o bastante para passar do corte"
+      ],
+      "embedding_fails": false,
+      "exit": 0,
+      "id_shapes": [
+        {
+          "hex": true,
+          "length": 8
+        }
+      ],
+      "label": "non-JSON response falls back, title cut at 60 code points",
+      "llm_calls": [
+        {
+          "model": "stub/model",
+          "role": "journal_classification",
+          "unpriced": 0
+        },
+        {
+          "model": "openai/text-embedding-3-small",
+          "role": "embedding",
+          "unpriced": 0
+        }
+      ],
+      "llm_response": "I am not JSON at all.",
+      "memories": [
+        {
+          "content": "🌍 primeiro dia fora — café ☕ e uma ideia comprida o bastante para passar do corte",
+          "has_embedding": 1,
+          "journey": null,
+          "layer": "ego",
+          "memory_type": "journal",
+          "tags": null,
+          "title": "🌍 primeiro dia fora — café ☕ e uma ideia comprida o bastante"
+        }
+      ],
+      "raised": null,
+      "stderr": "",
+      "stdout": "📓 Journal entry recorded\n   Title: 🌍 primeiro dia fora — café ☕ e uma ideia comprida o bastante\n   Layer: Ego (operational)\n   Tags: \n   ID: <memory-1>\n"
+    },
+    {
+      "argv": [
+        "Uma nota curta."
+      ],
+      "embedding_fails": false,
+      "exit": 0,
+      "id_shapes": [
+        {
+          "hex": true,
+          "length": 8
+        }
+      ],
+      "label": "tags returned as a non-list",
+      "llm_calls": [
+        {
+          "model": "stub/model",
+          "role": "journal_classification",
+          "unpriced": 0
+        },
+        {
+          "model": "openai/text-embedding-3-small",
+          "role": "embedding",
+          "unpriced": 0
+        }
+      ],
+      "llm_response": "{\"title\": \"Tags estranhas\", \"layer\": \"ego\", \"tags\": \"not-a-list\"}",
+      "memories": [
+        {
+          "content": "Uma nota curta.",
+          "has_embedding": 1,
+          "journey": null,
+          "layer": "ego",
+          "memory_type": "journal",
+          "tags": "\"not-a-list\"",
+          "title": "Tags estranhas"
+        }
+      ],
+      "raised": null,
+      "stderr": "",
+      "stdout": "📓 Journal entry recorded\n   Title: Tags estranhas\n   Layer: Ego (operational)\n   Tags: n, o, t, -, a, -, l, i, s, t\n   ID: <memory-1>\n"
+    },
+    {
+      "argv": [
+        "Decidi encerrar o experimento e escrever o que aprendi.",
+        "--journey",
+        "mirror-ts-core"
+      ],
+      "embedding_fails": false,
+      "exit": 0,
+      "id_shapes": [
+        {
+          "hex": true,
+          "length": 8
+        }
+      ],
+      "label": "with --journey",
+      "llm_calls": [
+        {
+          "model": "stub/model",
+          "role": "journal_classification",
+          "unpriced": 0
+        },
+        {
+          "model": "openai/text-embedding-3-small",
+          "role": "embedding",
+          "unpriced": 0
+        }
+      ],
+      "llm_response": "{\"title\": \"Com jornada\", \"layer\": \"ego\", \"tags\": [\"port\"]}",
+      "memories": [
+        {
+          "content": "Decidi encerrar o experimento e escrever o que aprendi.",
+          "has_embedding": 1,
+          "journey": "mirror-ts-core",
+          "layer": "ego",
+          "memory_type": "journal",
+          "tags": "[\"port\"]",
+          "title": "Com jornada"
+        }
+      ],
+      "raised": null,
+      "stderr": "",
+      "stdout": "📓 Journal entry recorded\n   Title: Com jornada\n   Layer: Ego (operational)\n   Tags: port\n   Journey: mirror-ts-core\n   ID: <memory-1>\n"
+    },
+    {
+      "argv": [
+        "duas",
+        "palavras",
+        "aqui"
+      ],
+      "embedding_fails": false,
+      "exit": 0,
+      "id_shapes": [
+        {
+          "hex": true,
+          "length": 8
+        }
+      ],
+      "label": "multi-word content is joined with single spaces",
+      "llm_calls": [
+        {
+          "model": "stub/model",
+          "role": "journal_classification",
+          "unpriced": 0
+        },
+        {
+          "model": "openai/text-embedding-3-small",
+          "role": "embedding",
+          "unpriced": 0
+        }
+      ],
+      "llm_response": "{\"title\": \"Juncao\", \"layer\": \"ego\", \"tags\": []}",
+      "memories": [
+        {
+          "content": "duas palavras aqui",
+          "has_embedding": 1,
+          "journey": null,
+          "layer": "ego",
+          "memory_type": "journal",
+          "tags": null,
+          "title": "Juncao"
+        }
+      ],
+      "raised": null,
+      "stderr": "",
+      "stdout": "📓 Journal entry recorded\n   Title: Juncao\n   Layer: Ego (operational)\n   Tags: \n   ID: <memory-1>\n"
+    },
+    {
+      "argv": [
+        ""
+      ],
+      "embedding_fails": false,
+      "exit": 1,
+      "id_shapes": [],
+      "label": "empty content refused before any model call",
+      "llm_calls": [],
+      "llm_response": null,
+      "memories": [],
+      "raised": null,
+      "stderr": "Error: journal entry text cannot be empty\n",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "   "
+      ],
+      "embedding_fails": false,
+      "exit": 1,
+      "id_shapes": [],
+      "label": "whitespace-only content refused before any model call",
+      "llm_calls": [],
+      "llm_response": null,
+      "memories": [],
+      "raised": null,
+      "stderr": "Error: journal entry text cannot be empty\n",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "Decidi encerrar o experimento e escrever o que aprendi."
+      ],
+      "embedding_fails": true,
+      "exit": 0,
+      "id_shapes": [],
+      "label": "embedding failure: classified, but NOTHING is written",
+      "llm_calls": [
+        {
+          "model": "stub/model",
+          "role": "journal_classification",
+          "unpriced": 0
+        },
+        {
+          "model": "openai/text-embedding-3-small",
+          "role": "embedding",
+          "unpriced": 1
+        }
+      ],
+      "llm_response": "{\"title\": \"Nao deve persistir\", \"layer\": \"ego\", \"tags\": []}",
+      "memories": [],
+      "raised": "EmbeddingError",
+      "stderr": "",
+      "stdout": ""
+    }
+  ]
+}

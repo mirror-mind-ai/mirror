@@ -1,0 +1,9 @@
+[journey/demo]
+  The demo journey used for parity fixtures.
+
+[persona/engineer]
+  Routes engineering and code-quality questions.
+
+[persona/therapist]
+  Routes emotional and relational questions.
+

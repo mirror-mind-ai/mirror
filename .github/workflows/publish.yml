@@ -60,9 +60,12 @@ jobs:
           registry-url: https://registry.npmjs.org
 
       # Trusted publishing and `npm stage` need a recent npm; the one bundled
-      # with the runner's Node may be older than the registry's features.
-      - name: npm at latest
-        run: npm install -g npm@latest && npm --version
+      # with the runner's Node may be older than the registry's features. Pinned
+      # to the major the rehearsal validated (12, 2026-10-10): `latest` moved the
+      # `pack --json` shape under the pack guard once, and a release pipeline
+      # should not meet a new npm by accident.
+      - name: npm 12
+        run: npm install -g npm@12 && npm --version
 
       - run: npm ci
 

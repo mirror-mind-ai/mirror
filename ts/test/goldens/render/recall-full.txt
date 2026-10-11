@@ -1,0 +1,14 @@
+# Conversation: Fixture conversation one
+**Date:** 2026-07-02
+**Persona:** engineer
+**Journey:** demo
+**ID:** `conv-aaaa1111`
+
+---
+
+**User:**
+Fixture user message.
+
+**Mirror:**
+Fixture assistant reply.
+

@@ -1,0 +1,1 @@
+CREATE TABLE IF NOT EXISTS ext_mismatch_thing (id INTEGER PRIMARY KEY);

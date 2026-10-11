@@ -1,0 +1,3 @@
+{"type":"message","message":{"role":"user","content":"valid first line","timestamp":"2026-04-23T07:00:00Z"}}
+{"type":"message","message":"a bare string where an object is expected"}
+{"type":"message","message":{"role":"assistant","content":"never reached","timestamp":"2026-04-23T07:00:02Z"}}

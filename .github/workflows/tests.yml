@@ -2,53 +2,21 @@ name: Tests
 
 on:
   push:
-    branches: [main, "claude/**"]
+    branches: [main, "claude/**", mirror-ts-core]
     paths-ignore: ["docs/**"]
   pull_request:
     branches: [main]
     paths-ignore: ["docs/**"]
+  workflow_dispatch:
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
+  ts:
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        python-version: ["3.10", "3.12"]
-
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v6
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v8.1.0
-        with:
-          enable-cache: true
-
-      - name: Install dependencies
-        run: uv sync --extra dev --frozen
-
-      - name: Lint (ruff)
-        run: uv run ruff check src/ tests/
-
-      - name: Format check (ruff)
-        run: uv run ruff format --check src/ tests/
-
-      - name: Run tests
-        run: uv run pytest tests/unit/ tests/integration/ -m "not live" --cov=src --cov-report=term-missing
-        env:
-          MEMORY_ENV: test
-          ECONOMY_ENV: test
-          # API keys intentionally absent — all live tests are excluded via -m "not live"
-
-  ts:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ts
+        # macOS coverage guards the environment-dependent tmpdir/permission
+        # behavior that a Linux-only matrix cannot catch.
+        os: [ubuntu-latest, macos-latest]
 
     steps:
       - uses: actions/checkout@v6
@@ -58,6 +26,13 @@ jobs:
         with:
           node-version: "24"
 
+      # No Python and no uv (CV22.DS10.TS5 slice G). The last thing this job
+      # installed them for was the updater smoke's demo database, and that
+      # generator is TypeScript now (`ts/smoke/generate_demo_memory_db.ts`).
+      #
+      # From the repository root since CV22.DS10.US3 (D2): the manifest moved
+      # there so that the repository is the package and an installed tree has
+      # the same paths as a checkout.
       - name: Install dependencies
         run: npm ci
 
@@ -67,5 +42,204 @@ jobs:
       - name: Lint (Biome)
         run: npm run lint
 
+      # CV22.DS8.US2 — since the close tail and search now reach a LIVE
+      # provider when no replay fixture is configured, "CI cannot spend" must
+      # be a checked property rather than a happy accident of the runner not
+      # having a key. A leaked key in the environment would turn any test that
+      # exercises those routes into real, silent spend.
+      - name: Assert CI holds no provider key
+        run: |
+          if [ -n "${OPENROUTER_API_KEY:-}" ]; then
+            echo "OPENROUTER_API_KEY is set in CI; live provider routes could spend real money." >&2
+            exit 1
+          fi
+          echo "no provider key present — live routes cannot be reached"
+
       - name: Run tests (node:test)
         run: npm test
+        env:
+          MEMORY_ENV: test
+
+      # CV22.DS10.TS5 slice B: TS2's shadow, widened from test/extensions/ to
+      # the WHOLE suite. It is the proof for plateau 2 -- that no test, and so
+      # no code path a test reaches, spawns the interpreter any more.
+      #
+      # REQUIRED since plateau 2, which deleted the fallback. Until then it ran
+      # `continue-on-error`, printing the work list without blocking, so that
+      # plateau 2's success would be a visible flip rather than a new green
+      # nobody could date.
+      #
+      # The verdict is TWO facts, and the log is the second: the suite passes,
+      # AND no stub was ever invoked. A test that tolerates a failed spawn --
+      # a probe that exits 66 and quietly skips -- would pass the first and is
+      # exactly what the second catches. The log, not a `ps` sample: a
+      # short-lived spawn between two samples is invisible, a stub that
+      # appends a line is not.
+      - name: Interpreter shadow (nothing may spawn python, python3, or uv)
+        run: |
+          SHADOW="$(mktemp -d)"
+          export TS5_SHADOW_LOG="$SHADOW/spawns.log"
+          : > "$TS5_SHADOW_LOG"
+          for bin in python python3 uv; do
+            printf '#!/bin/sh\necho "TS5 SPAWN: %s $*" >> "$TS5_SHADOW_LOG"\nexit 66\n' "$bin" > "$SHADOW/$bin"
+            chmod +x "$SHADOW/$bin"
+          done
+          set +e
+          PATH="$SHADOW:$PATH" npm test > "$SHADOW/suite.log" 2>&1
+          SUITE=$?
+          set -e
+          echo "suite exit: $SUITE"
+          echo "--- interpreter spawn attempts: $(wc -l < "$TS5_SHADOW_LOG" | tr -d ' ') ---"
+          sort "$TS5_SHADOW_LOG" | uniq -c | sort -rn | head -20
+          echo "--- failing suites ---"
+          grep -E '^not ok|✖' "$SHADOW/suite.log" | head -20 || true
+          [ "$SUITE" = 0 ] || exit "$SUITE"
+          if [ -s "$TS5_SHADOW_LOG" ]; then
+            echo "FAIL: something reached for an interpreter (listed above)" >&2
+            exit 1
+          fi
+        env:
+          MEMORY_ENV: test
+
+      # Fails when a surface CV22.DS10 retired comes back, or never fully left.
+      # A deletion has no test of its own; this is it. Each retiring story adds
+      # a row to the table rather than a script to the repository, and the
+      # router is asked too: a family branch that still answers a retired argv
+      # underneath its retired entry is residue no file scan can see.
+      #
+      # Node since CV22.DS10.TS5 slice B. Its Python original ran beside it and
+      # agreed -- same exit code, byte-identical stdout, clean tree and seeded
+      # regressions -- before it was deleted, because a guard must OUTLIVE the
+      # deletion it proves, and one written in the language it forbids cannot.
+      - name: Retired-surface tripwire (DS10 deletions must stay deleted)
+        run: node ts/scripts/checkRetiredSurfaces.ts
+
+      # CV22.DS10.US3: the artifact half of DS10's Zero Python gate. `files`
+      # is a whitelist and this proves it: `npm pack --dry-run` must list the
+      # runtime subset and nothing else -- no test, golden, smoke, scratch,
+      # environment file, database, Python, or Windows product -- and the
+      # manifest must declare no install lifecycle script. Installing Mirror
+      # is a file copy. Content is graded too: no shipped file may name the
+      # author outside LICENSE and README (US3 F4), since every user's agent
+      # reads the skills.
+      - name: Pack contents (the runtime subset, no install script, no forbidden content)
+        run: node ts/scripts/checkPackContents.ts
+
+      # The custody proof (CV22.DS10.TS5, the panel's blocking amendment). Both
+      # scripts grade the TypeScript engine against COMMITTED fixtures -- every
+      # migration step from its pre-state to its recorded end-state, and a fresh
+      # bootstrap under a real 8-process race -- so they contain no Python and
+      # survived the oracle. With no second engine, they are the only structural
+      # evidence that the sole custodian reproduces each migration.
+      #
+      # CR051/CR052: wired here because both had silently drifted from the tests
+      # they duplicate while nothing ran them.
+      - name: Migration custody (every step against its committed fixture)
+        run: node ts/smoke/migration_structural_parity.ts
+
+      - name: Bootstrap custody (fresh database, concurrent bootstrap race)
+        run: node ts/smoke/bootstrap_custody_parity.ts
+
+      # CV22.DS10.US2 — the updater's first operational coverage since v0.8.0.
+      # Runs in the `ts` job because it needs Node and a git checkout, and it
+      # shadows python/python3/uv so any interpreter spawn FAILS the smoke
+      # rather than passing unnoticed. Everything it touches is a scratch
+      # clone, a scratch home, and a scratch env-file.
+      - name: Runtime updater smoke (CV22.DS10.US2)
+        run: bash scripts/smoke_runtime_update.sh "${RUNNER_TEMP}/mirror-update-smoke"
+
+  smoke:
+    # End-to-end through the real front-door process, as SEQUENCES: the unit
+    # suites grade each step, these grade what one step hands the next.
+    #
+    # Until CV22.DS10.TS5 this job was `parity`: it installed Python and ran
+    # every smoke on both engines, plus the redacted real-DB-copy and
+    # write-parity harnesses against the oracle. The oracle is gone, so what
+    # remains is the TypeScript half of each smoke -- the parts that never
+    # needed a second engine to mean something.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+
+      # The smokes spawn the real front door, which needs its npm dependencies
+      # (yaml, for the seed route).
+      - name: Install dependencies
+        run: npm ci
+
+      # Synthetic rows only; the generator is TypeScript since TS5 slice G.
+      - name: Generate portable demo database
+        run: node --no-warnings ts/smoke/generate_demo_memory_db.ts --out tmp/smoke/demo-memory.db
+
+      # The sole migration custodian, end to end: a copy regressed to the
+      # pre-017 shape is opened by the real front door, which must back it up,
+      # apply 017, backfill the column, and still serve.
+      - name: Migrate-on-open smoke (demo copy, must pass)
+        run: node --no-warnings ts/smoke/migrate_on_open_smoke.ts --source-db tmp/smoke/demo-memory.db
+        env:
+          MEMORY_ENV: test
+
+      # The hook-inclusive conversation lifecycle: hooks over stdin, the close
+      # tail under the replay transport, the DB safety tools, Soul, and
+      # Explorer -- every step answered by TypeScript.
+      - name: Conversation-logger lifecycle smoke (replay transport, must pass)
+        run: node --no-warnings ts/smoke/conversation_lifecycle_smoke.ts
+
+      # The Ariad lifecycle -- adopt through done, a Delivery Story closed at
+      # aggregate level, cadence and authority -- each step a fresh front-door
+      # process. Every sequence must REACH its end, publish no projection, and
+      # write nothing into this repository.
+      - name: Builder Ariad lifecycle smoke (must pass)
+        run: node --no-warnings ts/smoke/builder_lifecycle_smoke.ts
+
+      # The extension catalog family as a sequence, install through uninstall,
+      # in a disposable home. Also proves the front-door log carries leaf names
+      # only: every step passes an account id, a campaign name, and a folder
+      # path that would be a leak if logged.
+      - name: Extension catalog smoke (must pass)
+        run: node --no-warnings ts/smoke/extension_catalog_smoke.ts
+        env:
+          MEMORY_ENV: test
+
+      # The runtime smokes: each runtime's real hook wrappers, the Codex wrapper,
+      # and the MCP launcher, against isolated databases. None needs its runtime
+      # installed -- each feeds the payloads its runtime sends -- and since TS5
+      # none needs an interpreter, so they run under the same shadow as the
+      # suite. Until the TS5 handoff review (finding N2) they ran only when
+      # someone remembered, and smoke_gemini_cli.sh is the one that caught F11:
+      # every Gemini assistant turn dropped since plateau 1, a regression the
+      # hook row-diff had passed.
+      - name: Runtime smokes (hooks, Codex wrapper, MCP launcher; nothing may spawn python)
+        run: |
+          SHADOW="$(mktemp -d)"
+          export TS5_SHADOW_LOG="$SHADOW/spawns.log"
+          : > "$TS5_SHADOW_LOG"
+          for bin in python python3 uv; do
+            printf '#!/bin/sh\necho "TS5 SPAWN: %s $*" >> "$TS5_SHADOW_LOG"\nexit 66\n' "$bin" > "$SHADOW/$bin"
+            chmod +x "$SHADOW/$bin"
+          done
+          export PATH="$SHADOW:$PATH"
+          command -v sqlite3 >/dev/null || { sudo apt-get update -q && sudo apt-get install -y -q sqlite3; }
+          for smoke in smoke_codex smoke_gemini_cli smoke_claude_plugin smoke_mirror_mcp; do
+            echo "::group::$smoke"
+            bash "scripts/$smoke.sh"
+            echo "::endgroup::"
+          done
+          if [ -s "$TS5_SHADOW_LOG" ]; then
+            cat "$TS5_SHADOW_LOG"
+            echo "FAIL: a runtime smoke reached for an interpreter" >&2
+            exit 1
+          fi
+
+      # CV22.DS10.US3: the install from nothing. Packs this tree, installs the
+      # tarball into a scratch prefix, and with no checkout in sight runs
+      # init, seed, list, status, and an open of a database that needs
+      # migration 017 -- through the `mirror` bin, from the package location.
+      # This is the one check that exercises bin/mirror.js (D15) the way an
+      # npm user reaches it; nothing run inside the repository can stand in.
+      - name: npm package smoke (install from nothing, through the mirror bin)
+        run: bash scripts/smoke_npm_package.sh "${RUNNER_TEMP}/mirror-npm-package-smoke"

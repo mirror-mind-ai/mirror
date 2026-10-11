@@ -1,0 +1,15 @@
+📦 Memories — 3 shown
+⚖️ decision: 1 | 💡 insight: 2
+
+💡 **Alpha insight**
+  2026-07-01 | `aaaa1111` | insight [ego] 🧭 demo ◇ engineer
+  This is a deliberately long memory body used to exercise the 200-character truncation in the memory renderer so the golden pins the exact cut point and the ellipsis behavior stays stable across refact
+  🏷 typescript, parity
+
+⚖️ **Beta decision**
+  2026-06-15 | `cccc2222` | decision [self]
+  A concise decision body.
+
+💡 **Gamma insight**
+  2026-06-01 | `eeee3333` | insight [ego]
+  Third memory body.

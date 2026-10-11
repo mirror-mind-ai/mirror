@@ -1,0 +1,721 @@
+{
+  "apply": {
+    "argv": [
+      "--mirror-home",
+      "<home>",
+      "--apply",
+      "--no-backup"
+    ],
+    "exit_code": 0,
+    "noop_exit_code": 0,
+    "noop_stdout": "Database: <db>\nRepairable mojibake hits: 0\nNo changes needed.\n",
+    "state_after": {
+      "attachments": [
+        {
+          "__rowid__": 7,
+          "content": "Anexo com Óculos",
+          "id": 7,
+          "journey_id": "j",
+          "name": "notes.md"
+        },
+        {
+          "__rowid__": 9,
+          "content": "clean",
+          "id": 9,
+          "journey_id": "j",
+          "name": "clean.md"
+        }
+      ],
+      "conversations": [
+        {
+          "__rowid__": 1,
+          "id": "c1",
+          "journey": "ok",
+          "persona": "Ética",
+          "summary": null,
+          "title": "Título"
+        }
+      ],
+      "identity": [
+        {
+          "__rowid__": 1,
+          "content": "Eu sou a reflexão",
+          "id": "i1",
+          "key": "soul",
+          "layer": "self",
+          "metadata": null
+        },
+        {
+          "__rowid__": 2,
+          "content": "Sem mojibake: Âncora e ação",
+          "id": "i2",
+          "key": "behavior",
+          "layer": "ego",
+          "metadata": null
+        },
+        {
+          "__rowid__": 3,
+          "content": null,
+          "id": "i3",
+          "key": "identity",
+          "layer": "user",
+          "metadata": "{\"x\": \"Ã©\"}"
+        }
+      ],
+      "memories": [
+        {
+          "__rowid__": 1,
+          "content": "Memória antiga",
+          "id": "m1",
+          "journey": "jornada-épica",
+          "layer": "ego",
+          "source": "série",
+          "summary": 42
+        },
+        {
+          "__rowid__": 2,
+          "content": "second row Ã😀 stays",
+          "id": "m2",
+          "journey": null,
+          "layer": "ego",
+          "source": null,
+          "summary": "resumo ç"
+        }
+      ],
+      "messages": [
+        {
+          "__rowid__": 1,
+          "content": "  muitos   espaços \t aqui  ",
+          "conversation_id": "c1",
+          "id": "msg1",
+          "role": "user"
+        },
+        {
+          "__rowid__": 2,
+          "content": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxéééééééééé",
+          "conversation_id": "c1",
+          "id": "msg2",
+          "role": "assistant"
+        }
+      ],
+      "tasks": [
+        {
+          "__rowid__": 1,
+          "description": "desc",
+          "id": "t1",
+          "journey": null,
+          "status": "pendente",
+          "title": "Tarefa ú"
+        }
+      ],
+      "unrelated_extension_table": [
+        {
+          "__rowid__": 1,
+          "content": "nÃ£o toque",
+          "id": 1
+        }
+      ]
+    },
+    "stdout": "Database: <db>\nRepairable mojibake hits: 11\n- identity.content row=1: Eu sou a reflexÃ£o -> Eu sou a reflexão\n- attachments.content row=7: Anexo com Ã“culos -> Anexo com Óculos\n- memories.content row=1: MemÃ³ria antiga -> Memória antiga\n- memories.source row=1: sÃ©rie -> série\n- memories.journey row=1: jornada-Ã©pica -> jornada-épica\n- memories.summary row=2: resumo Ã§ -> resumo ç\n- messages.content row=1: muitos espaÃ§os aqui -> muitos espaços aqui\n- messages.content row=2: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxÃ©Ã©Ã©Ã©Ã… -> xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxéééééééééé\n- conversations.title row=1: TÃ­tulo -> Título\n- conversations.persona row=1: Ã‰tica -> Ética\n- tasks.title row=1: Tarefa Ãº -> Tarefa ú\nApplied repairs: 11\n"
+  },
+  "dry_run": {
+    "default_limit": {
+      "argv": [
+        "--mirror-home",
+        "<home>"
+      ],
+      "exit_code": 0,
+      "stdout": "Database: <db>\nRepairable mojibake hits: 11\n- identity.content row=1: Eu sou a reflexÃ£o -> Eu sou a reflexão\n- attachments.content row=7: Anexo com Ã“culos -> Anexo com Óculos\n- memories.content row=1: MemÃ³ria antiga -> Memória antiga\n- memories.source row=1: sÃ©rie -> série\n- memories.journey row=1: jornada-Ã©pica -> jornada-épica\n- memories.summary row=2: resumo Ã§ -> resumo ç\n- messages.content row=1: muitos espaÃ§os aqui -> muitos espaços aqui\n- messages.content row=2: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxÃ©Ã©Ã©Ã©Ã… -> xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxéééééééééé\n- conversations.title row=1: TÃ­tulo -> Título\n- conversations.persona row=1: Ã‰tica -> Ética\n- tasks.title row=1: Tarefa Ãº -> Tarefa ú\nDry-run only. Re-run with --apply to modify the database.\n"
+    },
+    "limit_0": {
+      "argv": [
+        "--mirror-home",
+        "<home>",
+        "--limit",
+        "0"
+      ],
+      "exit_code": 0,
+      "stdout": "Database: <db>\nRepairable mojibake hits: 11\n… 11 more\nDry-run only. Re-run with --apply to modify the database.\n"
+    },
+    "limit_2": {
+      "argv": [
+        "--mirror-home",
+        "<home>",
+        "--limit",
+        "2"
+      ],
+      "exit_code": 0,
+      "stdout": "Database: <db>\nRepairable mojibake hits: 11\n- identity.content row=1: Eu sou a reflexÃ£o -> Eu sou a reflexão\n- attachments.content row=7: Anexo com Ã“culos -> Anexo com Óculos\n… 9 more\nDry-run only. Re-run with --apply to modify the database.\n"
+    },
+    "limit_negative": {
+      "argv": [
+        "--mirror-home",
+        "<home>",
+        "--limit",
+        "-3"
+      ],
+      "exit_code": 0,
+      "stdout": "Database: <db>\nRepairable mojibake hits: 11\n… 11 more\nDry-run only. Re-run with --apply to modify the database.\n"
+    }
+  },
+  "fixture": {
+    "ddl": [
+      "CREATE TABLE identity (id TEXT PRIMARY KEY, layer TEXT, key TEXT, content TEXT, metadata TEXT)",
+      "CREATE TABLE attachments (id INTEGER PRIMARY KEY, journey_id TEXT, name TEXT, content TEXT)",
+      "CREATE TABLE memories (id TEXT PRIMARY KEY, content TEXT, summary, source TEXT, journey TEXT, layer TEXT)",
+      "CREATE TABLE messages (id TEXT PRIMARY KEY, conversation_id TEXT, role TEXT, content TEXT)",
+      "CREATE TABLE conversations (id TEXT PRIMARY KEY, title TEXT, summary TEXT, journey TEXT, persona TEXT)",
+      "CREATE TABLE tasks (id TEXT PRIMARY KEY, title TEXT, description TEXT, journey TEXT, status TEXT)",
+      "CREATE TABLE unrelated_extension_table (id INTEGER PRIMARY KEY, content TEXT)"
+    ],
+    "rows": [
+      {
+        "table": "identity",
+        "values": {
+          "content": "Eu sou a reflexÃ£o",
+          "id": "i1",
+          "key": "soul",
+          "layer": "self",
+          "metadata": null
+        }
+      },
+      {
+        "table": "identity",
+        "values": {
+          "content": "Sem mojibake: Âncora e ação",
+          "id": "i2",
+          "key": "behavior",
+          "layer": "ego",
+          "metadata": null
+        }
+      },
+      {
+        "table": "identity",
+        "values": {
+          "content": null,
+          "id": "i3",
+          "key": "identity",
+          "layer": "user",
+          "metadata": "{\"x\": \"Ã©\"}"
+        }
+      },
+      {
+        "table": "attachments",
+        "values": {
+          "content": "Anexo com Ã“culos",
+          "id": 7,
+          "journey_id": "j",
+          "name": "notes.md"
+        }
+      },
+      {
+        "table": "attachments",
+        "values": {
+          "content": "clean",
+          "id": 9,
+          "journey_id": "j",
+          "name": "clean.md"
+        }
+      },
+      {
+        "table": "memories",
+        "values": {
+          "content": "MemÃ³ria antiga",
+          "id": "m1",
+          "journey": "jornada-Ã©pica",
+          "layer": "ego",
+          "source": "sÃ©rie",
+          "summary": 42
+        }
+      },
+      {
+        "table": "memories",
+        "values": {
+          "content": "second row Ã😀 stays",
+          "id": "m2",
+          "journey": null,
+          "layer": "ego",
+          "source": null,
+          "summary": "resumo Ã§"
+        }
+      },
+      {
+        "table": "messages",
+        "values": {
+          "content": "  muitos   espaÃ§os \t aqui  ",
+          "conversation_id": "c1",
+          "id": "msg1",
+          "role": "user"
+        }
+      },
+      {
+        "table": "messages",
+        "values": {
+          "content": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxÃ©Ã©Ã©Ã©Ã©Ã©Ã©Ã©Ã©Ã©",
+          "conversation_id": "c1",
+          "id": "msg2",
+          "role": "assistant"
+        }
+      },
+      {
+        "table": "conversations",
+        "values": {
+          "id": "c1",
+          "journey": "ok",
+          "persona": "Ã‰tica",
+          "summary": null,
+          "title": "TÃ­tulo"
+        }
+      },
+      {
+        "table": "tasks",
+        "values": {
+          "description": "desc",
+          "id": "t1",
+          "journey": null,
+          "status": "pendente",
+          "title": "Tarefa Ãº"
+        }
+      },
+      {
+        "table": "unrelated_extension_table",
+        "values": {
+          "content": "nÃ£o toque",
+          "id": 1
+        }
+      }
+    ]
+  },
+  "meta": {
+    "note": "Oracle: src/memory/cli/repair_encoding.py. Text and preview cases are graded exactly; the scan is an ORDERED hit list; dry-run stdout has the database path replaced by <db>; apply is graded as row state after one transaction. `--no-backup` keeps the backup port (plateau 2) out of this golden."
+  },
+  "missing_database": {
+    "exit_code": 1,
+    "stderr": "Database not found: <missing-home>/memory.db\n",
+    "stdout": ""
+  },
+  "preview_cases": [
+    {
+      "input": "  a \t b\n\nc  ",
+      "label": "collapses_runs",
+      "limit": 80,
+      "preview": "a b c"
+    },
+    {
+      "input": "a b",
+      "label": "nbsp_is_whitespace",
+      "limit": 80,
+      "preview": "a b"
+    },
+    {
+      "input": "ab",
+      "label": "nel_is_whitespace",
+      "limit": 80,
+      "preview": "a b"
+    },
+    {
+      "input": "a\u001cb\u001d\u001e\u001fc",
+      "label": "file_separator_is_whitespace",
+      "limit": 80,
+      "preview": "a b c"
+    },
+    {
+      "input": "a　b",
+      "label": "ideographic_space_is_whitespace",
+      "limit": 80,
+      "preview": "a b"
+    },
+    {
+      "input": "a b c",
+      "label": "line_separator_is_whitespace",
+      "limit": 80,
+      "preview": "a b c"
+    },
+    {
+      "input": "a﻿b",
+      "label": "bom_is_not_whitespace",
+      "limit": 80,
+      "preview": "a﻿b"
+    },
+    {
+      "input": "a​b",
+      "label": "zero_width_space_is_not_whitespace",
+      "limit": 80,
+      "preview": "a​b"
+    },
+    {
+      "input": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "label": "exactly_at_limit_untouched",
+      "limit": 80,
+      "preview": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    },
+    {
+      "input": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "label": "one_over_limit_capped",
+      "limit": 80,
+      "preview": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx…"
+    },
+    {
+      "input": "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀",
+      "label": "astral_capped_by_code_point",
+      "limit": 80,
+      "preview": "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀…"
+    },
+    {
+      "input": "ééééééééééééééééééééééééééééééééééééééééééééé",
+      "label": "combining_marks_count_as_code_points",
+      "limit": 80,
+      "preview": "ééééééééééééééééééééééééééééééééééééééée…"
+    },
+    {
+      "input": "hello world",
+      "label": "small_limit",
+      "limit": 5,
+      "preview": "hell…"
+    },
+    {
+      "input": "hello",
+      "label": "limit_one",
+      "limit": 1,
+      "preview": "…"
+    },
+    {
+      "input": "",
+      "label": "empty",
+      "limit": 80,
+      "preview": ""
+    }
+  ],
+  "scan_hits": [
+    {
+      "after": "Eu sou a reflexão",
+      "before": "Eu sou a reflexÃ£o",
+      "column": "content",
+      "row_id": 1,
+      "table": "identity"
+    },
+    {
+      "after": "Anexo com Óculos",
+      "before": "Anexo com Ã“culos",
+      "column": "content",
+      "row_id": 7,
+      "table": "attachments"
+    },
+    {
+      "after": "Memória antiga",
+      "before": "MemÃ³ria antiga",
+      "column": "content",
+      "row_id": 1,
+      "table": "memories"
+    },
+    {
+      "after": "série",
+      "before": "sÃ©rie",
+      "column": "source",
+      "row_id": 1,
+      "table": "memories"
+    },
+    {
+      "after": "jornada-épica",
+      "before": "jornada-Ã©pica",
+      "column": "journey",
+      "row_id": 1,
+      "table": "memories"
+    },
+    {
+      "after": "resumo ç",
+      "before": "resumo Ã§",
+      "column": "summary",
+      "row_id": 2,
+      "table": "memories"
+    },
+    {
+      "after": "  muitos   espaços \t aqui  ",
+      "before": "  muitos   espaÃ§os \t aqui  ",
+      "column": "content",
+      "row_id": 1,
+      "table": "messages"
+    },
+    {
+      "after": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxéééééééééé",
+      "before": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxÃ©Ã©Ã©Ã©Ã©Ã©Ã©Ã©Ã©Ã©",
+      "column": "content",
+      "row_id": 2,
+      "table": "messages"
+    },
+    {
+      "after": "Título",
+      "before": "TÃ­tulo",
+      "column": "title",
+      "row_id": 1,
+      "table": "conversations"
+    },
+    {
+      "after": "Ética",
+      "before": "Ã‰tica",
+      "column": "persona",
+      "row_id": 1,
+      "table": "conversations"
+    },
+    {
+      "after": "Tarefa ú",
+      "before": "Tarefa Ãº",
+      "column": "title",
+      "row_id": 1,
+      "table": "tasks"
+    }
+  ],
+  "state_before": {
+    "attachments": [
+      {
+        "__rowid__": 7,
+        "content": "Anexo com Ã“culos",
+        "id": 7,
+        "journey_id": "j",
+        "name": "notes.md"
+      },
+      {
+        "__rowid__": 9,
+        "content": "clean",
+        "id": 9,
+        "journey_id": "j",
+        "name": "clean.md"
+      }
+    ],
+    "conversations": [
+      {
+        "__rowid__": 1,
+        "id": "c1",
+        "journey": "ok",
+        "persona": "Ã‰tica",
+        "summary": null,
+        "title": "TÃ­tulo"
+      }
+    ],
+    "identity": [
+      {
+        "__rowid__": 1,
+        "content": "Eu sou a reflexÃ£o",
+        "id": "i1",
+        "key": "soul",
+        "layer": "self",
+        "metadata": null
+      },
+      {
+        "__rowid__": 2,
+        "content": "Sem mojibake: Âncora e ação",
+        "id": "i2",
+        "key": "behavior",
+        "layer": "ego",
+        "metadata": null
+      },
+      {
+        "__rowid__": 3,
+        "content": null,
+        "id": "i3",
+        "key": "identity",
+        "layer": "user",
+        "metadata": "{\"x\": \"Ã©\"}"
+      }
+    ],
+    "memories": [
+      {
+        "__rowid__": 1,
+        "content": "MemÃ³ria antiga",
+        "id": "m1",
+        "journey": "jornada-Ã©pica",
+        "layer": "ego",
+        "source": "sÃ©rie",
+        "summary": 42
+      },
+      {
+        "__rowid__": 2,
+        "content": "second row Ã😀 stays",
+        "id": "m2",
+        "journey": null,
+        "layer": "ego",
+        "source": null,
+        "summary": "resumo Ã§"
+      }
+    ],
+    "messages": [
+      {
+        "__rowid__": 1,
+        "content": "  muitos   espaÃ§os \t aqui  ",
+        "conversation_id": "c1",
+        "id": "msg1",
+        "role": "user"
+      },
+      {
+        "__rowid__": 2,
+        "content": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxÃ©Ã©Ã©Ã©Ã©Ã©Ã©Ã©Ã©Ã©",
+        "conversation_id": "c1",
+        "id": "msg2",
+        "role": "assistant"
+      }
+    ],
+    "tasks": [
+      {
+        "__rowid__": 1,
+        "description": "desc",
+        "id": "t1",
+        "journey": null,
+        "status": "pendente",
+        "title": "Tarefa Ãº"
+      }
+    ],
+    "unrelated_extension_table": [
+      {
+        "__rowid__": 1,
+        "content": "nÃ£o toque",
+        "id": 1
+      }
+    ]
+  },
+  "text_cases": [
+    {
+      "has_mojibake": false,
+      "input": "nothing to repair here",
+      "label": "plain_ascii",
+      "repaired": "nothing to repair here"
+    },
+    {
+      "has_mojibake": false,
+      "input": "",
+      "label": "empty",
+      "repaired": ""
+    },
+    {
+      "has_mojibake": true,
+      "input": "cafÃ©",
+      "label": "latin1_e_acute",
+      "repaired": "café"
+    },
+    {
+      "has_mojibake": true,
+      "input": "aÃ§Ã£o",
+      "label": "latin1_c_cedilla_a_tilde",
+      "repaired": "ação"
+    },
+    {
+      "has_mojibake": true,
+      "input": "1Âº lugar",
+      "label": "latin1_ordinal",
+      "repaired": "1º lugar"
+    },
+    {
+      "has_mojibake": true,
+      "input": "Ã“",
+      "label": "cp1252_o_acute_via_left_quote",
+      "repaired": "Ó"
+    },
+    {
+      "has_mojibake": true,
+      "input": "Ã‰",
+      "label": "cp1252_e_acute_upper_via_permille",
+      "repaired": "É"
+    },
+    {
+      "has_mojibake": true,
+      "input": "Ã€",
+      "label": "cp1252_a_grave_via_euro",
+      "repaired": "À"
+    },
+    {
+      "has_mojibake": true,
+      "input": "ÃŠ",
+      "label": "cp1252_e_circ_via_s_caron",
+      "repaired": "Ê"
+    },
+    {
+      "has_mojibake": true,
+      "input": "Ãž",
+      "label": "cp1252_thorn_via_z_caron",
+      "repaired": "Þ"
+    },
+    {
+      "has_mojibake": true,
+      "input": "ÃŸ",
+      "label": "cp1252_sharp_s_via_y_diaeresis",
+      "repaired": "ß"
+    },
+    {
+      "has_mojibake": true,
+      "input": "Â€",
+      "label": "cp1252_c2_euro_becomes_c1_control",
+      "repaired": ""
+    },
+    {
+      "has_mojibake": false,
+      "input": "Âncora",
+      "label": "legitimate_ancora_unchanged",
+      "repaired": "Âncora"
+    },
+    {
+      "has_mojibake": false,
+      "input": "Ã casa",
+      "label": "legitimate_a_tilde_before_space",
+      "repaired": "Ã casa"
+    },
+    {
+      "has_mojibake": false,
+      "input": "fim Ã",
+      "label": "lead_at_end_unchanged",
+      "repaired": "fim Ã"
+    },
+    {
+      "has_mojibake": false,
+      "input": "Ã\nlinha",
+      "label": "lead_before_newline_unchanged",
+      "repaired": "Ã\nlinha"
+    },
+    {
+      "has_mojibake": false,
+      "input": "Ãx",
+      "label": "lead_before_ascii_unchanged",
+      "repaired": "Ãx"
+    },
+    {
+      "has_mojibake": false,
+      "input": "ÃĀ",
+      "label": "lead_before_non_cp1252_unchanged",
+      "repaired": "ÃĀ"
+    },
+    {
+      "has_mojibake": false,
+      "input": "Ã😀",
+      "label": "lead_before_astral_unchanged",
+      "repaired": "Ã😀"
+    },
+    {
+      "has_mojibake": true,
+      "input": "Ã😀Ã©",
+      "label": "astral_then_repairable_pair",
+      "repaired": "Ã😀é"
+    },
+    {
+      "has_mojibake": true,
+      "input": "ÃÃ",
+      "label": "overlapping_leads",
+      "repaired": "ÃÁ"
+    },
+    {
+      "has_mojibake": true,
+      "input": "ÃÂ©",
+      "label": "double_encoded_stays_single_pass",
+      "repaired": "é"
+    },
+    {
+      "has_mojibake": true,
+      "input": "JoÃ£o comprou Ã“culos Â« caros Â»",
+      "label": "mixed_sentence",
+      "repaired": "João comprou Óculos « caros »"
+    },
+    {
+      "has_mojibake": true,
+      "input": "ÃÂ©",
+      "label": "cp1252_after_latin1_pass_result",
+      "repaired": "é"
+    }
+  ]
+}

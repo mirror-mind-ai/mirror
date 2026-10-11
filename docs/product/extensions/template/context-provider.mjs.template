@@ -1,0 +1,17 @@
+// mirror-context-v1 provider for <id>/<capability_id>.
+// stdout is protocol-only; do not log the request or returned context.
+
+let input = "";
+for await (const chunk of process.stdin) input += chunk;
+const request = JSON.parse(input);
+
+// Use request.database_path when extension-owned SQLite context is needed.
+// Prefer read-only access and keep work deterministic and bounded.
+const text = null;
+
+process.stdout.write(
+  JSON.stringify({
+    protocol: "mirror-context-v1",
+    text,
+  }),
+);

@@ -1,0 +1,16 @@
+=== journey: demo ===
+
+--- identity ---
+# Demo Journey
+**Status:** active
+A short demo journey description.
+
+--- journey path ---
+**Current stage:** E2 — Foundation
+
+--- recent memories (1) ---
+  [2026-07-01] Alpha insight
+
+--- recent conversations (1) ---
+  [2026-07-02] Fixture conversation one
+

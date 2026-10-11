@@ -1,0 +1,884 @@
+{
+  "scenarios": [
+    {
+      "expected_stdout": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        △  EXPLORATORY STORY OPENED                     │\n│                                                        │\n│  journey                                               │\n│  mirror-ts-core                                        │\n│                                                        │\n│  current story                                         │\n│  No story text recorded yet.                           │\n╰────────────────────────────────────────────────────────╯",
+      "input": {
+        "story": {
+          "journey": "mirror-ts-core"
+        }
+      },
+      "name": "opened_minimal_placeholder",
+      "renderer": "exploratory_story_opened"
+    },
+    {
+      "expected_stdout": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        △  EXPLORATORY STORY RESUMED                    │\n│                                                        │\n│  journey                                               │\n│  mirror-ts-core                                        │\n│                                                        │\n│  status                                                │\n│  active                                                │\n│                                                        │\n│  current story                                         │\n│  No story text recorded yet.                           │\n╰────────────────────────────────────────────────────────╯",
+      "input": {
+        "story": {
+          "journey": "mirror-ts-core"
+        }
+      },
+      "name": "resumed_minimal_placeholder",
+      "renderer": "exploratory_story_resumed"
+    },
+    {
+      "expected_stdout": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        △  NARRATIVE FIELD SNAPSHOT                     │\n│                                                        │\n│  journey                                               │\n│  mirror-ts-core                                        │\n│                                                        │\n│  current story                                         │\n│  No story text recorded yet.                           │\n╰────────────────────────────────────────────────────────╯",
+      "input": {
+        "story": {
+          "journey": "mirror-ts-core"
+        }
+      },
+      "name": "snapshot_minimal_placeholder",
+      "renderer": "narrative_field_snapshot"
+    },
+    {
+      "expected_stdout": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        △  EXPLORATORY STORY OPENED                     │\n│                                                        │\n│  journey                                               │\n│  mirror-ts-core                                        │\n│                                                        │\n│  current story                                         │\n│  The port keeps meeting the same wall: parity is cheap │\n│  to claim and expensive to prove.                      │\n╰────────────────────────────────────────────────────────╯",
+      "input": {
+        "story": {
+          "current_exploratory_story": "The port keeps meeting the same wall: parity is cheap to claim and expensive to prove.",
+          "journey": "mirror-ts-core"
+        }
+      },
+      "name": "opened_text_only",
+      "renderer": "exploratory_story_opened"
+    },
+    {
+      "expected_stdout": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        △  EXPLORATORY STORY RESUMED                    │\n│                                                        │\n│  journey                                               │\n│  mirror-ts-core                                        │\n│                                                        │\n│  status                                                │\n│  active                                                │\n│                                                        │\n│  current story                                         │\n│  The port keeps meeting the same wall: parity is cheap │\n│  to claim and expensive to prove.                      │\n│                                                        │\n│  current story                                         │\n│  No story text recorded yet.                           │\n╰────────────────────────────────────────────────────────╯",
+      "input": {
+        "story": {
+          "current_exploratory_story": "The port keeps meeting the same wall: parity is cheap to claim and expensive to prove.",
+          "journey": "mirror-ts-core"
+        }
+      },
+      "name": "resumed_text_only",
+      "renderer": "exploratory_story_resumed"
+    },
+    {
+      "expected_stdout": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        △  NARRATIVE FIELD SNAPSHOT                     │\n│                                                        │\n│  journey                                               │\n│  mirror-ts-core                                        │\n│                                                        │\n│  current story                                         │\n│  The port keeps meeting the same wall: parity is cheap │\n│  to claim and expensive to prove.                      │\n╰────────────────────────────────────────────────────────╯",
+      "input": {
+        "story": {
+          "current_exploratory_story": "The port keeps meeting the same wall: parity is cheap to claim and expensive to prove.",
+          "journey": "mirror-ts-core"
+        }
+      },
+      "name": "snapshot_text_only",
+      "renderer": "narrative_field_snapshot"
+    },
+    {
+      "expected_stdout": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        △  EXPLORATORY STORY OPENED                     │\n│                                                        │\n│  journey                                               │\n│  mirror-ts-core                                        │\n│                                                        │\n│  current story                                         │\n│  The port keeps meeting the same wall: parity is cheap │\n│  to claim and expensive to prove.                      │\n│                                                        │\n│  narrative summary                                     │\n│  Two cores, one database, and a denominator nobody     │\n│  fully trusts yet.                                     │\n│                                                        │\n│  last card                                             │\n│  The oracle moved again while we were reading it.      │\n╰────────────────────────────────────────────────────────╯",
+      "input": {
+        "story": {
+          "attractors": [
+            {
+              "description": "every verbatim card becomes a golden before it becomes an opinion",
+              "label": "grade the surface, not the intent",
+              "status": "accepted"
+            },
+            {
+              "label": "one gate per lived mode",
+              "status": "proposed"
+            }
+          ],
+          "created_at": "2026-09-01T10:00:00Z",
+          "current_exploratory_story": "The port keeps meeting the same wall: parity is cheap to claim and expensive to prove.",
+          "experiment_proposal": {
+            "description": "small enough to finish, whole enough to learn the shape",
+            "status": "proposed",
+            "title": "port one ritual command end to end"
+          },
+          "id": "01J0EXPLORERSTORYFIXTURE0001",
+          "journey": "mirror-ts-core",
+          "last_story_card": "The oracle moved again while we were reading it.",
+          "narrative_field_summary": "Two cores, one database, and a denominator nobody fully trusts yet.",
+          "status": "active",
+          "title": "Parity is a rendering problem",
+          "updated_at": "2026-09-08T14:32:11Z"
+        }
+      },
+      "name": "opened_full",
+      "renderer": "exploratory_story_opened"
+    },
+    {
+      "expected_stdout": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        △  EXPLORATORY STORY RESUMED                    │\n│                                                        │\n│  journey                                               │\n│  mirror-ts-core                                        │\n│                                                        │\n│  story id                                              │\n│  01J0EXPLORERSTORYFIXTURE0001                          │\n│                                                        │\n│  status                                                │\n│  active                                                │\n│                                                        │\n│  current story                                         │\n│  The port keeps meeting the same wall: parity is cheap │\n│  to claim and expensive to prove.                      │\n│                                                        │\n│  narrative summary                                     │\n│  Two cores, one database, and a denominator nobody     │\n│  fully trusts yet.                                     │\n│                                                        │\n│  last card                                             │\n│  The oracle moved again while we were reading it.      │\n│                                                        │\n│  updated                                               │\n│  2026-09-08T14:32:11Z                                  │\n╰────────────────────────────────────────────────────────╯",
+      "input": {
+        "story": {
+          "attractors": [
+            {
+              "description": "every verbatim card becomes a golden before it becomes an opinion",
+              "label": "grade the surface, not the intent",
+              "status": "accepted"
+            },
+            {
+              "label": "one gate per lived mode",
+              "status": "proposed"
+            }
+          ],
+          "created_at": "2026-09-01T10:00:00Z",
+          "current_exploratory_story": "The port keeps meeting the same wall: parity is cheap to claim and expensive to prove.",
+          "experiment_proposal": {
+            "description": "small enough to finish, whole enough to learn the shape",
+            "status": "proposed",
+            "title": "port one ritual command end to end"
+          },
+          "id": "01J0EXPLORERSTORYFIXTURE0001",
+          "journey": "mirror-ts-core",
+          "last_story_card": "The oracle moved again while we were reading it.",
+          "narrative_field_summary": "Two cores, one database, and a denominator nobody fully trusts yet.",
+          "status": "active",
+          "title": "Parity is a rendering problem",
+          "updated_at": "2026-09-08T14:32:11Z"
+        }
+      },
+      "name": "resumed_full",
+      "renderer": "exploratory_story_resumed"
+    },
+    {
+      "expected_stdout": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        △  NARRATIVE FIELD SNAPSHOT                     │\n│                                                        │\n│  journey                                               │\n│  mirror-ts-core                                        │\n│                                                        │\n│  current story                                         │\n│  The port keeps meeting the same wall: parity is cheap │\n│  to claim and expensive to prove.                      │\n│                                                        │\n│  narrative summary                                     │\n│  Two cores, one database, and a denominator nobody     │\n│  fully trusts yet.                                     │\n│                                                        │\n│  last card                                             │\n│  The oracle moved again while we were reading it.      │\n│                                                        │\n│  attractor                                             │\n│  grade the surface, not the intent [accepted]          │\n│                                                        │\n│  attractor detail                                      │\n│  every verbatim card becomes a golden before it becomes│\n│  an opinion                                            │\n│                                                        │\n│  attractor                                             │\n│  one gate per lived mode [proposed]                    │\n│                                                        │\n│  experiment proposal                                   │\n│  port one ritual command end to end [proposed]         │\n│                                                        │\n│  experiment detail                                     │\n│  small enough to finish, whole enough to learn the     │\n│  shape                                                 │\n╰────────────────────────────────────────────────────────╯",
+      "input": {
+        "story": {
+          "attractors": [
+            {
+              "description": "every verbatim card becomes a golden before it becomes an opinion",
+              "label": "grade the surface, not the intent",
+              "status": "accepted"
+            },
+            {
+              "label": "one gate per lived mode",
+              "status": "proposed"
+            }
+          ],
+          "created_at": "2026-09-01T10:00:00Z",
+          "current_exploratory_story": "The port keeps meeting the same wall: parity is cheap to claim and expensive to prove.",
+          "experiment_proposal": {
+            "description": "small enough to finish, whole enough to learn the shape",
+            "status": "proposed",
+            "title": "port one ritual command end to end"
+          },
+          "id": "01J0EXPLORERSTORYFIXTURE0001",
+          "journey": "mirror-ts-core",
+          "last_story_card": "The oracle moved again while we were reading it.",
+          "narrative_field_summary": "Two cores, one database, and a denominator nobody fully trusts yet.",
+          "status": "active",
+          "title": "Parity is a rendering problem",
+          "updated_at": "2026-09-08T14:32:11Z"
+        }
+      },
+      "name": "snapshot_full",
+      "renderer": "narrative_field_snapshot"
+    },
+    {
+      "expected_stdout": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        △  EXPLORATORY STORY RESUMED                    │\n│                                                        │\n│  journey                                               │\n│  mirror-ts-core                                        │\n│                                                        │\n│  story id                                              │\n│  01J0EXPLORERSTORYFIXTURE0002                          │\n│                                                        │\n│  status                                                │\n│  archived                                              │\n│                                                        │\n│  updated                                               │\n│  2026-09-08T14:32:11Z                                  │\n╰────────────────────────────────────────────────────────╯",
+      "input": {
+        "story": {
+          "archived_at": "2026-09-08T14:32:11Z",
+          "id": "01J0EXPLORERSTORYFIXTURE0002",
+          "journey": "mirror-ts-core",
+          "status": "archived",
+          "updated_at": "2026-09-08T14:32:11Z"
+        }
+      },
+      "name": "resumed_lifecycle_placeholder_boundary",
+      "renderer": "exploratory_story_resumed"
+    },
+    {
+      "expected_stdout": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        △  EXPLORATORY STORY RESUMED                    │\n│                                                        │\n│  journey                                               │\n│  mirror-ts-core                                        │\n│                                                        │\n│  story id                                              │\n│  01J0EXPLORERSTORYFIXTURE0002                          │\n│                                                        │\n│  status                                                │\n│  archived                                              │\n│                                                        │\n│  current story                                         │\n│  one line of story                                     │\n│                                                        │\n│  updated                                               │\n│  2026-09-08T14:32:11Z                                  │\n╰────────────────────────────────────────────────────────╯",
+      "input": {
+        "story": {
+          "archived_at": "2026-09-08T14:32:11Z",
+          "current_exploratory_story": "one line of story",
+          "id": "01J0EXPLORERSTORYFIXTURE0002",
+          "journey": "mirror-ts-core",
+          "status": "archived",
+          "updated_at": "2026-09-08T14:32:11Z"
+        }
+      },
+      "name": "resumed_lifecycle_placeholder_not_fired",
+      "renderer": "exploratory_story_resumed"
+    },
+    {
+      "expected_stdout": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        △  NARRATIVE FIELD SNAPSHOT                     │\n│                                                        │\n│  journey                                               │\n│  mirror-ts-core                                        │\n│                                                        │\n│  attractor                                             │\n│  no description here [proposed]                        │\n│                                                        │\n│  experiment proposal                                   │\n│  bare experiment [accepted]                            │\n╰────────────────────────────────────────────────────────╯",
+      "input": {
+        "story": {
+          "attractors": [
+            {
+              "label": "no description here",
+              "status": "proposed"
+            }
+          ],
+          "experiment_proposal": {
+            "status": "accepted",
+            "title": "bare experiment"
+          },
+          "journey": "mirror-ts-core"
+        }
+      },
+      "name": "snapshot_direction_without_descriptions",
+      "renderer": "narrative_field_snapshot"
+    },
+    {
+      "expected_stdout": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        △  STORY THICKENED                              │\n│                                                        │\n│  journey                                               │\n│  mirror-ts-core                                        │\n│                                                        │\n│  current story                                         │\n│  The port keeps meeting the same wall: parity is cheap │\n│  to claim and expensive to prove.                      │\n│                                                        │\n│  narrative summary                                     │\n│  Two cores, one database, and a denominator nobody     │\n│  fully trusts yet.                                     │\n│                                                        │\n│  last card                                             │\n│  The oracle moved again while we were reading it.      │\n╰────────────────────────────────────────────────────────╯",
+      "input": {
+        "changed": null,
+        "story": {
+          "attractors": [
+            {
+              "description": "every verbatim card becomes a golden before it becomes an opinion",
+              "label": "grade the surface, not the intent",
+              "status": "accepted"
+            },
+            {
+              "label": "one gate per lived mode",
+              "status": "proposed"
+            }
+          ],
+          "created_at": "2026-09-01T10:00:00Z",
+          "current_exploratory_story": "The port keeps meeting the same wall: parity is cheap to claim and expensive to prove.",
+          "experiment_proposal": {
+            "description": "small enough to finish, whole enough to learn the shape",
+            "status": "proposed",
+            "title": "port one ritual command end to end"
+          },
+          "id": "01J0EXPLORERSTORYFIXTURE0001",
+          "journey": "mirror-ts-core",
+          "last_story_card": "The oracle moved again while we were reading it.",
+          "narrative_field_summary": "Two cores, one database, and a denominator nobody fully trusts yet.",
+          "status": "active",
+          "title": "Parity is a rendering problem",
+          "updated_at": "2026-09-08T14:32:11Z"
+        }
+      },
+      "name": "thickened_no_changed",
+      "renderer": "story_thickened"
+    },
+    {
+      "expected_stdout": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        △  STORY THICKENED                              │\n│                                                        │\n│  journey                                               │\n│  mirror-ts-core                                        │\n│                                                        │\n│  current story                                         │\n│  The port keeps meeting the same wall: parity is cheap │\n│  to claim and expensive to prove.                      │\n│                                                        │\n│  narrative summary                                     │\n│  Two cores, one database, and a denominator nobody     │\n│  fully trusts yet.                                     │\n│                                                        │\n│  last card                                             │\n│  The oracle moved again while we were reading it.      │\n╰────────────────────────────────────────────────────────╯",
+      "input": {
+        "changed": "   ",
+        "story": {
+          "attractors": [
+            {
+              "description": "every verbatim card becomes a golden before it becomes an opinion",
+              "label": "grade the surface, not the intent",
+              "status": "accepted"
+            },
+            {
+              "label": "one gate per lived mode",
+              "status": "proposed"
+            }
+          ],
+          "created_at": "2026-09-01T10:00:00Z",
+          "current_exploratory_story": "The port keeps meeting the same wall: parity is cheap to claim and expensive to prove.",
+          "experiment_proposal": {
+            "description": "small enough to finish, whole enough to learn the shape",
+            "status": "proposed",
+            "title": "port one ritual command end to end"
+          },
+          "id": "01J0EXPLORERSTORYFIXTURE0001",
+          "journey": "mirror-ts-core",
+          "last_story_card": "The oracle moved again while we were reading it.",
+          "narrative_field_summary": "Two cores, one database, and a denominator nobody fully trusts yet.",
+          "status": "active",
+          "title": "Parity is a rendering problem",
+          "updated_at": "2026-09-08T14:32:11Z"
+        }
+      },
+      "name": "thickened_blank_changed",
+      "renderer": "story_thickened"
+    },
+    {
+      "expected_stdout": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        △  STORY THICKENED                              │\n│                                                        │\n│  what changed                                          │\n│  the wall turned out to be a rendering problem         │\n│                                                        │\n│  journey                                               │\n│  mirror-ts-core                                        │\n│                                                        │\n│  current story                                         │\n│  The port keeps meeting the same wall: parity is cheap │\n│  to claim and expensive to prove.                      │\n│                                                        │\n│  narrative summary                                     │\n│  Two cores, one database, and a denominator nobody     │\n│  fully trusts yet.                                     │\n│                                                        │\n│  last card                                             │\n│  The oracle moved again while we were reading it.      │\n╰────────────────────────────────────────────────────────╯",
+      "input": {
+        "changed": "  the wall turned out to be a rendering problem  ",
+        "story": {
+          "attractors": [
+            {
+              "description": "every verbatim card becomes a golden before it becomes an opinion",
+              "label": "grade the surface, not the intent",
+              "status": "accepted"
+            },
+            {
+              "label": "one gate per lived mode",
+              "status": "proposed"
+            }
+          ],
+          "created_at": "2026-09-01T10:00:00Z",
+          "current_exploratory_story": "The port keeps meeting the same wall: parity is cheap to claim and expensive to prove.",
+          "experiment_proposal": {
+            "description": "small enough to finish, whole enough to learn the shape",
+            "status": "proposed",
+            "title": "port one ritual command end to end"
+          },
+          "id": "01J0EXPLORERSTORYFIXTURE0001",
+          "journey": "mirror-ts-core",
+          "last_story_card": "The oracle moved again while we were reading it.",
+          "narrative_field_summary": "Two cores, one database, and a denominator nobody fully trusts yet.",
+          "status": "active",
+          "title": "Parity is a rendering problem",
+          "updated_at": "2026-09-08T14:32:11Z"
+        }
+      },
+      "name": "thickened_with_changed",
+      "renderer": "story_thickened"
+    },
+    {
+      "expected_stdout": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        △  EXPLORATORY STORY ARCHIVED                   │\n│                                                        │\n│  journey                                               │\n│  mirror-ts-core                                        │\n│                                                        │\n│  story id                                              │\n│  01J0EXPLORERSTORYFIXTURE0002                          │\n│                                                        │\n│  status                                                │\n│  archived                                              │\n│                                                        │\n│  updated                                               │\n│  2026-09-08T14:32:11Z                                  │\n╰────────────────────────────────────────────────────────╯",
+      "input": {
+        "journey": "mirror-ts-core",
+        "story": {
+          "archived_at": "2026-09-08T14:32:11Z",
+          "id": "01J0EXPLORERSTORYFIXTURE0002",
+          "journey": "mirror-ts-core",
+          "status": "archived",
+          "updated_at": "2026-09-08T14:32:11Z"
+        }
+      },
+      "name": "archived_with_story",
+      "renderer": "explorer_story_archived"
+    },
+    {
+      "expected_stdout": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        △  NO ACTIVE EXPLORATORY STORY                  │\n│                                                        │\n│  journey                                               │\n│  mirror-ts-core                                        │\n│                                                        │\n│  state                                                 │\n│  No active Exploratory Story exists to archive.        │\n╰────────────────────────────────────────────────────────╯",
+      "input": {
+        "journey": "mirror-ts-core",
+        "story": null
+      },
+      "name": "archived_none",
+      "renderer": "explorer_story_archived"
+    },
+    {
+      "expected_stdout": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        △  EXPLORATORY STORIES                          │\n│                                                        │\n│  journey                                               │\n│  mirror-ts-core                                        │\n│                                                        │\n│  explorations                                          │\n│  No Exploratory Stories have been recorded yet.        │\n╰────────────────────────────────────────────────────────╯",
+      "input": {
+        "journey": "mirror-ts-core",
+        "stories": []
+      },
+      "name": "list_empty",
+      "renderer": "explorer_story_list"
+    },
+    {
+      "expected_stdout": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        △  EXPLORATORY STORIES                          │\n│                                                        │\n│  journey                                               │\n│  mirror-ts-core                                        │\n│                                                        │\n│  story 1                                               │\n│  Parity is a rendering problem [active]                │\n│                                                        │\n│  id                                                    │\n│  01J0EXPLORERSTORYFIXTURE0001                          │\n│                                                        │\n│  updated                                               │\n│  2026-09-08T14:32:11Z                                  │\n╰────────────────────────────────────────────────────────╯",
+      "input": {
+        "journey": "mirror-ts-core",
+        "stories": [
+          {
+            "attractors": [
+              {
+                "description": "every verbatim card becomes a golden before it becomes an opinion",
+                "label": "grade the surface, not the intent",
+                "status": "accepted"
+              },
+              {
+                "label": "one gate per lived mode",
+                "status": "proposed"
+              }
+            ],
+            "created_at": "2026-09-01T10:00:00Z",
+            "current_exploratory_story": "The port keeps meeting the same wall: parity is cheap to claim and expensive to prove.",
+            "experiment_proposal": {
+              "description": "small enough to finish, whole enough to learn the shape",
+              "status": "proposed",
+              "title": "port one ritual command end to end"
+            },
+            "id": "01J0EXPLORERSTORYFIXTURE0001",
+            "journey": "mirror-ts-core",
+            "last_story_card": "The oracle moved again while we were reading it.",
+            "narrative_field_summary": "Two cores, one database, and a denominator nobody fully trusts yet.",
+            "status": "active",
+            "title": "Parity is a rendering problem",
+            "updated_at": "2026-09-08T14:32:11Z"
+          }
+        ]
+      },
+      "name": "list_single",
+      "renderer": "explorer_story_list"
+    },
+    {
+      "expected_stdout": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        △  EXPLORATORY STORIES                          │\n│                                                        │\n│  journey                                               │\n│  mirror-ts-core                                        │\n│                                                        │\n│  story 1                                               │\n│  The port keeps meeting the same wall: parity is cheap │\n│  to claim and expensive to prove. [active]             │\n│                                                        │\n│  id                                                    │\n│  01J0EXPLORERSTORYFIXTURE0001                          │\n│                                                        │\n│  updated                                               │\n│  2026-09-08T14:32:11Z                                  │\n│                                                        │\n│  story 2                                               │\n│  Untitled exploration [promoted]                       │\n│                                                        │\n│  id                                                    │\n│  01J0EXPLORERSTORYFIXTURE0003                          │\n│                                                        │\n│  updated                                               │\n│  2026-09-07T09:00:00Z                                  │\n│                                                        │\n│  story 3                                               │\n│  no id and no updated_at [archived]                    │\n╰────────────────────────────────────────────────────────╯",
+      "input": {
+        "journey": "mirror-ts-core",
+        "stories": [
+          {
+            "attractors": [
+              {
+                "description": "every verbatim card becomes a golden before it becomes an opinion",
+                "label": "grade the surface, not the intent",
+                "status": "accepted"
+              },
+              {
+                "label": "one gate per lived mode",
+                "status": "proposed"
+              }
+            ],
+            "created_at": "2026-09-01T10:00:00Z",
+            "current_exploratory_story": "The port keeps meeting the same wall: parity is cheap to claim and expensive to prove.",
+            "experiment_proposal": {
+              "description": "small enough to finish, whole enough to learn the shape",
+              "status": "proposed",
+              "title": "port one ritual command end to end"
+            },
+            "id": "01J0EXPLORERSTORYFIXTURE0001",
+            "journey": "mirror-ts-core",
+            "last_story_card": "The oracle moved again while we were reading it.",
+            "narrative_field_summary": "Two cores, one database, and a denominator nobody fully trusts yet.",
+            "status": "active",
+            "title": null,
+            "updated_at": "2026-09-08T14:32:11Z"
+          },
+          {
+            "id": "01J0EXPLORERSTORYFIXTURE0003",
+            "journey": "mirror-ts-core",
+            "status": "promoted",
+            "updated_at": "2026-09-07T09:00:00Z"
+          },
+          {
+            "journey": "mirror-ts-core",
+            "status": "archived",
+            "title": "no id and no updated_at"
+          }
+        ]
+      },
+      "name": "list_title_fallback_chain",
+      "renderer": "explorer_story_list"
+    },
+    {
+      "expected_stdout": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        △  ATTRACTORS EMERGING                          │\n│                                                        │\n│  journey                                               │\n│  mirror-ts-core                                        │\n│                                                        │\n│  possible attractor                                    │\n│  No attractor has been surfaced yet.                   │\n╰────────────────────────────────────────────────────────╯",
+      "input": {
+        "story": {
+          "journey": "mirror-ts-core"
+        }
+      },
+      "name": "attractors_empty",
+      "renderer": "attractors_emerging"
+    },
+    {
+      "expected_stdout": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        △  ATTRACTORS EMERGING                          │\n│                                                        │\n│  journey                                               │\n│  mirror-ts-core                                        │\n│                                                        │\n│  possible attractor                                    │\n│  grade the surface, not the intent                     │\n│                                                        │\n│  description                                           │\n│  every verbatim card becomes a golden before it becomes│\n│  an opinion                                            │\n│                                                        │\n│  status                                                │\n│  accepted                                              │\n│                                                        │\n│  possible attractor 2                                  │\n│  one gate per lived mode                               │\n│                                                        │\n│  status                                                │\n│  proposed                                              │\n╰────────────────────────────────────────────────────────╯",
+      "input": {
+        "story": {
+          "attractors": [
+            {
+              "description": "every verbatim card becomes a golden before it becomes an opinion",
+              "label": "grade the surface, not the intent",
+              "status": "accepted"
+            },
+            {
+              "label": "one gate per lived mode",
+              "status": "proposed"
+            }
+          ],
+          "created_at": "2026-09-01T10:00:00Z",
+          "current_exploratory_story": "The port keeps meeting the same wall: parity is cheap to claim and expensive to prove.",
+          "experiment_proposal": {
+            "description": "small enough to finish, whole enough to learn the shape",
+            "status": "proposed",
+            "title": "port one ritual command end to end"
+          },
+          "id": "01J0EXPLORERSTORYFIXTURE0001",
+          "journey": "mirror-ts-core",
+          "last_story_card": "The oracle moved again while we were reading it.",
+          "narrative_field_summary": "Two cores, one database, and a denominator nobody fully trusts yet.",
+          "status": "active",
+          "title": "Parity is a rendering problem",
+          "updated_at": "2026-09-08T14:32:11Z"
+        }
+      },
+      "name": "attractors_full",
+      "renderer": "attractors_emerging"
+    },
+    {
+      "expected_stdout": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        △  ATTRACTORS EMERGING                          │\n│                                                        │\n│  journey                                               │\n│  mirror-ts-core                                        │\n│                                                        │\n│  possible attractor                                    │\n│  first                                                 │\n│                                                        │\n│  status                                                │\n│  proposed                                              │\n│                                                        │\n│  possible attractor 2                                  │\n│  second                                                │\n│                                                        │\n│  description                                           │\n│  with detail                                           │\n│                                                        │\n│  status                                                │\n│  accepted                                              │\n│                                                        │\n│  possible attractor 3                                  │\n│  third                                                 │\n│                                                        │\n│  status                                                │\n│  proposed                                              │\n╰────────────────────────────────────────────────────────╯",
+      "input": {
+        "story": {
+          "attractors": [
+            {
+              "label": "first",
+              "status": "proposed"
+            },
+            {
+              "description": "with detail",
+              "label": "second",
+              "status": "accepted"
+            },
+            {
+              "label": "third",
+              "status": "proposed"
+            }
+          ],
+          "journey": "mirror-ts-core"
+        }
+      },
+      "name": "attractors_three_numbering",
+      "renderer": "attractors_emerging"
+    },
+    {
+      "expected_stdout": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        △  EXPERIMENT PROPOSAL                          │\n│                                                        │\n│  journey                                               │\n│  mirror-ts-core                                        │\n│                                                        │\n│  small experiment                                      │\n│  No experiment has been proposed yet.                  │\n│                                                        │\n│  boundary                                              │\n│  This is not Builder delivery until explicitly         │\n│  confirmed.                                            │\n╰────────────────────────────────────────────────────────╯",
+      "input": {
+        "story": {
+          "journey": "mirror-ts-core"
+        }
+      },
+      "name": "experiment_absent",
+      "renderer": "experiment_proposal"
+    },
+    {
+      "expected_stdout": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        △  EXPERIMENT PROPOSAL                          │\n│                                                        │\n│  journey                                               │\n│  mirror-ts-core                                        │\n│                                                        │\n│  small experiment                                      │\n│  port one ritual command end to end                    │\n│                                                        │\n│  description                                           │\n│  small enough to finish, whole enough to learn the     │\n│  shape                                                 │\n│                                                        │\n│  status                                                │\n│  proposed                                              │\n│                                                        │\n│  boundary                                              │\n│  This is not Builder delivery until explicitly         │\n│  confirmed.                                            │\n╰────────────────────────────────────────────────────────╯",
+      "input": {
+        "story": {
+          "attractors": [
+            {
+              "description": "every verbatim card becomes a golden before it becomes an opinion",
+              "label": "grade the surface, not the intent",
+              "status": "accepted"
+            },
+            {
+              "label": "one gate per lived mode",
+              "status": "proposed"
+            }
+          ],
+          "created_at": "2026-09-01T10:00:00Z",
+          "current_exploratory_story": "The port keeps meeting the same wall: parity is cheap to claim and expensive to prove.",
+          "experiment_proposal": {
+            "description": "small enough to finish, whole enough to learn the shape",
+            "status": "proposed",
+            "title": "port one ritual command end to end"
+          },
+          "id": "01J0EXPLORERSTORYFIXTURE0001",
+          "journey": "mirror-ts-core",
+          "last_story_card": "The oracle moved again while we were reading it.",
+          "narrative_field_summary": "Two cores, one database, and a denominator nobody fully trusts yet.",
+          "status": "active",
+          "title": "Parity is a rendering problem",
+          "updated_at": "2026-09-08T14:32:11Z"
+        }
+      },
+      "name": "experiment_full",
+      "renderer": "experiment_proposal"
+    },
+    {
+      "expected_stdout": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        △  EXPERIMENT PROPOSAL                          │\n│                                                        │\n│  journey                                               │\n│  mirror-ts-core                                        │\n│                                                        │\n│  small experiment                                      │\n│  bare                                                  │\n│                                                        │\n│  status                                                │\n│  accepted                                              │\n│                                                        │\n│  boundary                                              │\n│  This is not Builder delivery until explicitly         │\n│  confirmed.                                            │\n╰────────────────────────────────────────────────────────╯",
+      "input": {
+        "story": {
+          "experiment_proposal": {
+            "status": "accepted",
+            "title": "bare"
+          },
+          "journey": "mirror-ts-core"
+        }
+      },
+      "name": "experiment_without_description",
+      "renderer": "experiment_proposal"
+    },
+    {
+      "expected_stdout": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        △  BUILDER HANDOFF PROPOSED                     │\n│                                                        │\n│  journey                                               │\n│  mirror-ts-core                                        │\n│                                                        │\n│  handoff                                               │\n│  No Builder handoff has been proposed yet.             │\n│                                                        │\n│  boundary                                              │\n│  Builder executes only after explicit confirmation.    │\n╰────────────────────────────────────────────────────────╯",
+      "input": {
+        "story": {
+          "journey": "mirror-ts-core"
+        }
+      },
+      "name": "handoff_absent",
+      "renderer": "builder_handoff_proposed"
+    },
+    {
+      "expected_stdout": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        △  BUILDER HANDOFF PROPOSED                     │\n│                                                        │\n│  journey                                               │\n│  mirror-ts-core                                        │\n│                                                        │\n│  handoff                                               │\n│  Explorer to Builder handoff for the parity surface    │\n│                                                        │\n│  summary                                               │\n│  Enough shape to plan, not enough to commit.           │\n│                                                        │\n│  artifact directory                                    │\n│  parity-surface —                                      │\n│  /Users/nav/dev/project/docs/project/explorations/parit│\n│  y-surface                                             │\n│                                                        │\n│  index                                                 │\n│  index.md —                                            │\n│  /Users/nav/dev/project/docs/project/explorations/parit│\n│  y-surface/index.md                                    │\n│                                                        │\n│  exploratory story                                     │\n│  exploratory-story.md —                                │\n│  /Users/nav/dev/project/docs/project/explorations/parit│\n│  y-surface/exploratory-story.md                        │\n│                                                        │\n│  handoff info                                          │\n│  handoff-info.md —                                     │\n│  /Users/nav/dev/project/docs/project/explorations/parit│\n│  y-surface/handoff-info.md                             │\n│                                                        │\n│  product design                                        │\n│  product-design-proposal.md —                          │\n│  /Users/nav/dev/project/docs/project/explorations/parit│\n│  y-surface/product-design-proposal.md                  │\n│                                                        │\n│  full conversation                                     │\n│  full-conversation.md —                                │\n│  /Users/nav/dev/project/docs/project/explorations/parit│\n│  y-surface/full-conversation.md                        │\n│                                                        │\n│  source evidence                                       │\n│  01J0CONV0001 — Where parity breaks (origin)           │\n│                                                        │\n│  source evidence                                       │\n│  01J0CONV0002 (source evidence)                        │\n│                                                        │\n│  current story                                         │\n│  Explorer needs a durable artifact, not a good         │\n│  conversation.                                         │\n│                                                        │\n│  attractor                                             │\n│  durable over memorable [accepted]                     │\n│                                                        │\n│  experiment proposal                                   │\n│  write the handoff before deciding [proposed]          │\n│                                                        │\n│  boundary                                              │\n│  Builder executes only after explicit confirmation.    │\n╰────────────────────────────────────────────────────────╯",
+      "input": {
+        "story": {
+          "attractors": [
+            {
+              "label": "durable over memorable",
+              "status": "accepted"
+            }
+          ],
+          "builder_handoff": {
+            "artifact_dir": "/Users/nav/dev/project/docs/project/explorations/parity-surface",
+            "exploratory_story_path": "/Users/nav/dev/project/docs/project/explorations/parity-surface/exploratory-story.md",
+            "full_conversation_path": "/Users/nav/dev/project/docs/project/explorations/parity-surface/full-conversation.md",
+            "handoff_info_path": "/Users/nav/dev/project/docs/project/explorations/parity-surface/handoff-info.md",
+            "index_path": "/Users/nav/dev/project/docs/project/explorations/parity-surface/index.md",
+            "product_design_proposal_path": "/Users/nav/dev/project/docs/project/explorations/parity-surface/product-design-proposal.md",
+            "readiness": "proposed",
+            "summary": "Enough shape to plan, not enough to commit.",
+            "title": "Explorer to Builder handoff for the parity surface"
+          },
+          "current_exploratory_story": "Explorer needs a durable artifact, not a good conversation.",
+          "experiment_proposal": {
+            "status": "proposed",
+            "title": "write the handoff before deciding"
+          },
+          "journey": "mirror-ts-core",
+          "source_conversations": [
+            {
+              "conversation_id": "01J0CONV0001",
+              "role": "origin",
+              "title": "Where parity breaks"
+            },
+            {
+              "conversation_id": "01J0CONV0002",
+              "role": "source evidence",
+              "title": null
+            }
+          ]
+        }
+      },
+      "name": "handoff_full",
+      "renderer": "builder_handoff_proposed"
+    },
+    {
+      "expected_stdout": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        △  BUILDER HANDOFF PROPOSED                     │\n│                                                        │\n│  journey                                               │\n│  mirror-ts-core                                        │\n│                                                        │\n│  handoff                                               │\n│  no project path, no artifacts                         │\n│                                                        │\n│  boundary                                              │\n│  Builder executes only after explicit confirmation.    │\n╰────────────────────────────────────────────────────────╯",
+      "input": {
+        "story": {
+          "builder_handoff": {
+            "readiness": "proposed",
+            "title": "no project path, no artifacts"
+          },
+          "journey": "mirror-ts-core"
+        }
+      },
+      "name": "handoff_without_paths",
+      "renderer": "builder_handoff_proposed"
+    },
+    {
+      "expected_stdout": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        △  BUILDER HANDOFF PROPOSED                     │\n│                                                        │\n│  journey                                               │\n│  mirror-ts-core                                        │\n│                                                        │\n│  handoff                                               │\n│  path label edges                                      │\n│                                                        │\n│  artifact directory                                    │\n│  trailing — docs/project/explorations/trailing/        │\n│                                                        │\n│  index                                                 │\n│  /                                                     │\n│                                                        │\n│  exploratory story                                     │\n│  bare-file.md — bare-file.md                           │\n│                                                        │\n│  handoff info                                          │\n│  handoff-info.md — C:\\Users\\nav\\docs\\handoff-info.md   │\n│                                                        │\n│  product design                                        │\n│  product-design-proposal.md —                          │\n│  ./relative/product-design-proposal.md                 │\n│                                                        │\n│  boundary                                              │\n│  Builder executes only after explicit confirmation.    │\n╰────────────────────────────────────────────────────────╯",
+      "input": {
+        "story": {
+          "builder_handoff": {
+            "artifact_dir": "docs/project/explorations/trailing/",
+            "exploratory_story_path": "bare-file.md",
+            "handoff_info_path": "C:\\Users\\nav\\docs\\handoff-info.md",
+            "index_path": "/",
+            "product_design_proposal_path": "./relative/product-design-proposal.md",
+            "readiness": "proposed",
+            "title": "path label edges"
+          },
+          "journey": "mirror-ts-core"
+        }
+      },
+      "name": "handoff_path_label_edge_cases",
+      "renderer": "builder_handoff_proposed"
+    },
+    {
+      "expected_stdout": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        △  BUILDER HANDOFF PROPOSED                     │\n│                                                        │\n│  journey                                               │\n│  mirror-ts-core                                        │\n│                                                        │\n│  handoff                                               │\n│  No Builder handoff has been proposed yet.             │\n│                                                        │\n│  source evidence                                       │\n│  01J0CONV0003 — kept (origin)                          │\n│                                                        │\n│  source evidence                                       │\n│  01J0CONV0004 (source evidence)                        │\n│                                                        │\n│  boundary                                              │\n│  Builder executes only after explicit confirmation.    │\n╰────────────────────────────────────────────────────────╯",
+      "input": {
+        "story": {
+          "journey": "mirror-ts-core",
+          "source_conversations": [
+            {
+              "conversation_id": "01J0CONV0003",
+              "role": "origin",
+              "title": "kept"
+            },
+            {
+              "conversation_id": "01J0CONV0004",
+              "role": "source evidence"
+            }
+          ]
+        }
+      },
+      "name": "handoff_absent_with_source_conversations",
+      "renderer": "builder_handoff_proposed"
+    },
+    {
+      "expected_stdout": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        △  NO BUILDER HANDOFF                           │\n│                                                        │\n│  journey                                               │\n│  mirror-ts-core                                        │\n│                                                        │\n│  state                                                 │\n│  No Builder handoff proposal exists for this story.    │\n│                                                        │\n│  boundary                                              │\n│  Ask for a handoff proposal before promoting to        │\n│  Builder.                                              │\n╰────────────────────────────────────────────────────────╯",
+      "input": {
+        "journey": "mirror-ts-core"
+      },
+      "name": "no_builder_handoff",
+      "renderer": "no_builder_handoff"
+    },
+    {
+      "expected_stdout": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        △  NO EXPLORATORY STORY                         │\n│                                                        │\n│  journey                                               │\n│  mirror-ts-core                                        │\n│                                                        │\n│  state                                                 │\n│  No current Exploratory Story is stored for this       │\n│  journey.                                              │\n╰────────────────────────────────────────────────────────╯",
+      "input": {
+        "journey": "mirror-ts-core"
+      },
+      "name": "missing_exploratory_story",
+      "renderer": "missing_exploratory_story"
+    },
+    {
+      "expected_stdout": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        △  NO EXPLORATORY STORY                         │\n│                                                        │\n│  journey                                               │\n│  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx│\n│  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx│\n│  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx│\n│  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx                │\n│                                                        │\n│  state                                                 │\n│  No current Exploratory Story is stored for this       │\n│  journey.                                              │\n╰────────────────────────────────────────────────────────╯",
+      "input": {
+        "journey": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      },
+      "name": "missing_exploratory_story_long_journey",
+      "renderer": "missing_exploratory_story"
+    },
+    {
+      "expected_stdout": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        △  EXPLORATORY STORY OPENED                     │\n│                                                        │\n│  journey                                               │\n│  mirror-ts-core                                        │\n│                                                        │\n│  current story                                         │\n│  🎯 a target and 🌱 a seed carried through the whole card│\n╰────────────────────────────────────────────────────────╯",
+      "input": {
+        "story": {
+          "current_exploratory_story": "🎯 a target and 🌱 a seed carried through the whole card",
+          "journey": "mirror-ts-core"
+        }
+      },
+      "name": "wrap_astral_emoji",
+      "renderer": "exploratory_story_opened"
+    },
+    {
+      "expected_stdout": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        △  EXPLORATORY STORY OPENED                     │\n│                                                        │\n│  journey                                               │\n│  mirror-ts-core                                        │\n│                                                        │\n│  current story                                         │\n│  沉默不是空白而是尚未成形的語言在等待被聽見的時刻到來未曾說出的話語仍在生長                 │\n╰────────────────────────────────────────────────────────╯",
+      "input": {
+        "story": {
+          "current_exploratory_story": "沉默不是空白而是尚未成形的語言在等待被聽見的時刻到來未曾說出的話語仍在生長",
+          "journey": "mirror-ts-core"
+        }
+      },
+      "name": "wrap_cjk",
+      "renderer": "exploratory_story_opened"
+    },
+    {
+      "expected_stdout": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        △  EXPLORATORY STORY OPENED                     │\n│                                                        │\n│  journey                                               │\n│  mirror-ts-core                                        │\n│                                                        │\n│  current story                                         │\n│  á é í combining acutes that must count as two code │\n│  points each                                           │\n╰────────────────────────────────────────────────────────╯",
+      "input": {
+        "story": {
+          "current_exploratory_story": "á é í combining acutes that must count as two code points each",
+          "journey": "mirror-ts-core"
+        }
+      },
+      "name": "wrap_combining_marks",
+      "renderer": "exploratory_story_opened"
+    },
+    {
+      "expected_stdout": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        △  EXPLORATORY STORY OPENED                     │\n│                                                        │\n│  journey                                               │\n│  mirror-ts-core                                        │\n│                                                        │\n│  current story                                         │\n│  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx│\n│  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx│\n│  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx│\n│  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx                │\n╰────────────────────────────────────────────────────────╯",
+      "input": {
+        "story": {
+          "current_exploratory_story": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+          "journey": "mirror-ts-core"
+        }
+      },
+      "name": "wrap_unbroken_token_chunked",
+      "renderer": "exploratory_story_opened"
+    },
+    {
+      "expected_stdout": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        △  EXPLORATORY STORY OPENED                     │\n│                                                        │\n│  journey                                               │\n│  mirror-ts-core                                        │\n│                                                        │\n│  current story                                         │\n│  one two three separated by non-breaking spaces        │\n╰────────────────────────────────────────────────────────╯",
+      "input": {
+        "story": {
+          "current_exploratory_story": "one two three separated by non-breaking spaces",
+          "journey": "mirror-ts-core"
+        }
+      },
+      "name": "wrap_nbsp_separators",
+      "renderer": "exploratory_story_opened"
+    },
+    {
+      "expected_stdout": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        △  EXPLORATORY STORY OPENED                     │\n│                                                        │\n│  journey                                               │\n│  mirror-ts-core                                        │\n│                                                        │\n│  current story                                         │\n│  one two three separated by ideographic spaces         │\n╰────────────────────────────────────────────────────────╯",
+      "input": {
+        "story": {
+          "current_exploratory_story": "one　two　three separated by ideographic spaces",
+          "journey": "mirror-ts-core"
+        }
+      },
+      "name": "wrap_ideographic_space",
+      "renderer": "exploratory_story_opened"
+    },
+    {
+      "expected_stdout": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        △  EXPLORATORY STORY OPENED                     │\n│                                                        │\n│  journey                                               │\n│  mirror-ts-core                                        │\n│                                                        │\n│  current story                                         │\n│  one two three separated by a unit separator           │\n╰────────────────────────────────────────────────────────╯",
+      "input": {
+        "story": {
+          "current_exploratory_story": "one\u001ftwo three separated by a unit separator",
+          "journey": "mirror-ts-core"
+        }
+      },
+      "name": "wrap_unit_separator",
+      "renderer": "exploratory_story_opened"
+    },
+    {
+      "expected_stdout": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        △  EXPLORATORY STORY OPENED                     │\n│                                                        │\n│  journey                                               │\n│  mirror-ts-core                                        │\n│                                                        │\n│  current story                                         │\n│  one﻿two three joined by a byte-order mark             │\n╰────────────────────────────────────────────────────────╯",
+      "input": {
+        "story": {
+          "current_exploratory_story": "one﻿two three joined by a byte-order mark",
+          "journey": "mirror-ts-core"
+        }
+      },
+      "name": "wrap_bom_joined",
+      "renderer": "exploratory_story_opened"
+    },
+    {
+      "expected_stdout": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        △  EXPLORATORY STORY OPENED                     │\n│                                                        │\n│  journey                                               │\n│  mirror-ts-core                                        │\n│                                                        │\n│  current story                                         │\n│  first paragraph second paragraph after blank lines    │\n│  third                                                 │\n╰────────────────────────────────────────────────────────╯",
+      "input": {
+        "story": {
+          "current_exploratory_story": "first paragraph\n\n\nsecond paragraph after blank lines\n\nthird",
+          "journey": "mirror-ts-core"
+        }
+      },
+      "name": "wrap_multi_paragraph_collapses",
+      "renderer": "exploratory_story_opened"
+    },
+    {
+      "expected_stdout": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        △  EXPLORATORY STORY OPENED                     │\n│                                                        │\n│  journey                                               │\n│  mirror-ts-core                                        │\n│                                                        │\n│  current story                                         │\n│  first block second block after a form feed            │\n╰────────────────────────────────────────────────────────╯",
+      "input": {
+        "story": {
+          "current_exploratory_story": "first block\fsecond block after a form feed",
+          "journey": "mirror-ts-core"
+        }
+      },
+      "name": "wrap_form_feed_collapses",
+      "renderer": "exploratory_story_opened"
+    },
+    {
+      "expected_stdout": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        △  EXPLORATORY STORY OPENED                     │\n│                                                        │\n│  journey                                               │\n│  mirror-ts-core                                        │\n│                                                        │\n│  current story                                         │\n│  padded on both ends                                   │\n╰────────────────────────────────────────────────────────╯",
+      "input": {
+        "story": {
+          "current_exploratory_story": "\n\n  padded on both ends  \n\n",
+          "journey": "mirror-ts-core"
+        }
+      },
+      "name": "wrap_padded_ends",
+      "renderer": "exploratory_story_opened"
+    },
+    {
+      "expected_stdout": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        △  EXPLORATORY STORY OPENED                     │\n│                                                        │\n│  journey                                               │\n│  mirror-ts-core                                        │\n│                                                        │\n│  current story                                         │\n│  yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy│\n╰────────────────────────────────────────────────────────╯",
+      "input": {
+        "story": {
+          "current_exploratory_story": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+          "journey": "mirror-ts-core"
+        }
+      },
+      "name": "wrap_word_at_max_width",
+      "renderer": "exploratory_story_opened"
+    },
+    {
+      "expected_stdout": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        △  EXPLORATORY STORY OPENED                     │\n│                                                        │\n│  journey                                               │\n│  mirror-ts-core                                        │\n│                                                        │\n│  current story                                         │\n│  zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz│\n│  z                                                     │\n╰────────────────────────────────────────────────────────╯",
+      "input": {
+        "story": {
+          "current_exploratory_story": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+          "journey": "mirror-ts-core"
+        }
+      },
+      "name": "wrap_word_over_max_width",
+      "renderer": "exploratory_story_opened"
+    },
+    {
+      "expected_stdout": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        △  NO ACTIVE EXPLORATORY STORY                  │\n│                                                        │\n│  journey                                               │\n│                                                        │\n│                                                        │\n│  state                                                 │\n│  No active Exploratory Story exists to archive.        │\n╰────────────────────────────────────────────────────────╯",
+      "input": {
+        "journey": "   ",
+        "story": null
+      },
+      "name": "wrap_whitespace_only_value",
+      "renderer": "explorer_story_archived"
+    },
+    {
+      "expected_stdout": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        △  EXPLORER MODE ACTIVE                         │\n│                                                        │\n│  active journey                                        │\n│  mirror-ts-core                                        │\n│                                                        │\n│  availability                                          │\n│  Explorer Mode is active and ready for durable         │\n│  exploration, story thickening, attractors,            │\n│  experiments, and Builder handoff.                     │\n│                                                        │\n│  what this mode is                                     │\n│  Exploration lens. Mirror preserves uncertainty, keeps │\n│  signals, and thickens exploratory stories before      │\n│  construction.                                         │\n│                                                        │\n│  boundary                                              │\n│  Explorer preserves uncertainty.                       │\n╰────────────────────────────────────────────────────────╯",
+      "input": {
+        "journey": "mirror-ts-core"
+      },
+      "name": "mode_transition_plain",
+      "renderer": "explorer_mode_transition"
+    },
+    {
+      "expected_stdout": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        △  EXPLORER MODE ACTIVE                         │\n│                                                        │\n│  active journey                                        │\n│  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx│\n│                                                        │\n│  availability                                          │\n│  Explorer Mode is active and ready for durable         │\n│  exploration, story thickening, attractors,            │\n│  experiments, and Builder handoff.                     │\n│                                                        │\n│  what this mode is                                     │\n│  Exploration lens. Mirror preserves uncertainty, keeps │\n│  signals, and thickens exploratory stories before      │\n│  construction.                                         │\n│                                                        │\n│  boundary                                              │\n│  Explorer preserves uncertainty.                       │\n╰────────────────────────────────────────────────────────╯",
+      "input": {
+        "journey": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      },
+      "name": "mode_transition_long_journey_overflows_not_chunked",
+      "renderer": "explorer_mode_transition"
+    },
+    {
+      "expected_stdout": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        △  EXPLORER MODE ACTIVE                         │\n│                                                        │\n│  active journey                                        │\n│  🎯 a target and 🌱 a seed carried through the whole card│\n│                                                        │\n│  availability                                          │\n│  Explorer Mode is active and ready for durable         │\n│  exploration, story thickening, attractors,            │\n│  experiments, and Builder handoff.                     │\n│                                                        │\n│  what this mode is                                     │\n│  Exploration lens. Mirror preserves uncertainty, keeps │\n│  signals, and thickens exploratory stories before      │\n│  construction.                                         │\n│                                                        │\n│  boundary                                              │\n│  Explorer preserves uncertainty.                       │\n╰────────────────────────────────────────────────────────╯",
+      "input": {
+        "journey": "🎯 a target and 🌱 a seed carried through the whole card"
+      },
+      "name": "mode_transition_astral_journey",
+      "renderer": "explorer_mode_transition"
+    },
+    {
+      "expected_stdout": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        △  EXPLORER MODE ACTIVE                         │\n│                                                        │\n│  active journey                                        │\n│                                                        │\n│                                                        │\n│  availability                                          │\n│  Explorer Mode is active and ready for durable         │\n│  exploration, story thickening, attractors,            │\n│  experiments, and Builder handoff.                     │\n│                                                        │\n│  what this mode is                                     │\n│  Exploration lens. Mirror preserves uncertainty, keeps │\n│  signals, and thickens exploratory stories before      │\n│  construction.                                         │\n│                                                        │\n│  boundary                                              │\n│  Explorer preserves uncertainty.                       │\n╰────────────────────────────────────────────────────────╯",
+      "input": {
+        "journey": ""
+      },
+      "name": "mode_transition_empty_journey",
+      "renderer": "explorer_mode_transition"
+    }
+  ]
+}

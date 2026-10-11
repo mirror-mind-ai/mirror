@@ -7,6 +7,11 @@ and the fixes that addressed them. The goal is twofold: help future users (and
 future us) recognize symptoms quickly, and preserve the reasoning behind each
 fix so we don't re-debug the same class of problem.
 
+Entries written before CV22.DS10.TS5 name the Python core's code as it was at
+the time; the behavior each fix established is kept by the TypeScript core,
+and every command below is written for it (`mirror` is the front door — see
+[Running a command](../../REFERENCE.md#running-a-command)).
+
 When you resolve a non-trivial bug, add an entry here. Keep entries scoped to
 the smallest reproducible cause. Open problems that have a known workaround
 but no fix yet are also welcome (mark them `Status: mitigated`).
@@ -23,7 +28,13 @@ but no fix yet are also welcome (mark them `Status: mitigated`).
 - [`runtime release-notes latest` says release notes were not found](#runtime-release-notes-latest-says-release-notes-were-not-found)
 - [Portuguese accents appear as mojibake on Windows](#portuguese-accents-appear-as-mojibake-on-windows)
 - [Pi Builder conversations appear without journeys](#pi-builder-conversations-appear-without-journeys)
+- [A Builder command refuses with `requires a journey`](#a-builder-command-refuses-with-requires-a-journey)
+- [`approve-plan` or `done-item` refuses with "Still to author"](#approve-plan-or-done-item-refuses-with-still-to-author)
+- [Concurrent writes fail with `table conversations already exists` or `disk I/O error`](#concurrent-writes-fail-with-table-conversations-already-exists-or-disk-io-error)
+- [Hooks skip when a runtime cannot find `node`](#hooks-skip-when-a-runtime-cannot-find-node)
+- [`mirror` or `mirror-hook` is not found after installing, or after a Node switch](#mirror-or-mirror-hook-is-not-found-after-installing-or-after-a-node-switch)
 - [Pi logger fails silently when `python3` resolves outside the project venv](#pi-logger-fails-silently-when-python3-resolves-outside-the-project-venv)
+- [The front door misbehaves: telling it apart, restoring data](#the-front-door-misbehaves-telling-it-apart-restoring-data)
 - [`extensions install` writes migrations to the wrong database outside production](#extensions-install-writes-migrations-to-the-wrong-database-outside-production)
 - [`extensions install` copies through a symlinked extension path](#extensions-install-copies-through-a-symlinked-extension-path)
 - [`extensions install` collapses the runtime skill catalog to one extension](#extensions-install-collapses-the-runtime-skill-catalog-to-one-extension)
@@ -96,8 +107,8 @@ Core migrations: attention needed (... unable to open database file)
 Extension health: attention needed (... database unavailable)
 ```
 
-A common trigger is a local Mirror surface, such as the web console, that has
-recently opened the production database.
+A common trigger is a local Mirror process — an MCP server session, or a runtime
+holding a connection — that has recently opened the production database.
 
 ### Current behavior
 
@@ -110,19 +121,20 @@ this common case.
 ### Older updater recovery
 
 If the production clone is still on an older updater and cannot reach `v0.10.6`
-through the normal path, run the updater repair lane once:
+through the normal path, run the updater repair lane once. A clone that old
+predates the TypeScript core, so run these subcommands through the entry point
+its own documentation names:
 
 ```bash
-uv run python -m memory runtime update --repair-updater
-uv run python -m memory runtime update
+mirror runtime update --repair-updater
+mirror runtime update
 ```
 
-If repair is unavailable or still blocked, inspect status and diagnosis with the
-project environment, not bare `python`:
+If repair is unavailable or still blocked, inspect status and diagnosis:
 
 ```bash
-uv run python -m memory runtime status
-uv run python -m memory runtime diagnose
+mirror runtime status
+mirror runtime diagnose
 ```
 
 ### Manual fallback
@@ -172,13 +184,13 @@ may still contain mojibake.
 Run the explicit repair command in dry-run mode:
 
 ```bash
-uv run python -m memory repair-encoding
+mirror repair-encoding
 ```
 
 For another Mirror home:
 
 ```bash
-uv run python -m memory repair-encoding --mirror-home C:/Users/you/.mirror/Name
+mirror repair-encoding --mirror-home C:/Users/you/.mirror/Name
 ```
 
 The command scans known user-text columns (`identity`, `attachments`, `messages`,
@@ -190,7 +202,7 @@ rows without changing the database.
 Apply only after reviewing the dry-run output:
 
 ```bash
-uv run python -m memory repair-encoding --apply
+mirror repair-encoding --apply
 ```
 
 The apply path creates a database backup first and aborts if backup fails. Use
@@ -231,13 +243,14 @@ conversation because it filters by the `journey` column.
 
 ### Root cause
 
-Pi invokes SKILL.md commands as separate Python processes. `/mm-build` calls:
+Pi invoked SKILL.md commands as separate processes (Python ones, at the time).
+`/mm-build` called:
 
 ```bash
-uv run python -m memory build load <slug>
+mirror build load <slug>
 ```
 
-That process does not always receive `MIRROR_SESSION_ID`. Before the fix,
+That process did not always receive `MIRROR_SESSION_ID`. Before the fix,
 `switch_conversation()` returned without changing the active runtime session
 when no explicit session id was available. The Pi extension still logged user
 and assistant messages, but they remained attached to a conversation with
@@ -258,7 +271,7 @@ historical conversations.
 Run a dry-run repair scan:
 
 ```bash
-uv run python -m memory conversation-logger repair-journeys
+mirror conversation-logger repair-journeys
 ```
 
 This prints high-confidence journeyless conversations whose title or first user
@@ -267,7 +280,7 @@ message clearly activates a known journey.
 Limit the scan while reviewing:
 
 ```bash
-uv run python -m memory conversation-logger repair-journeys --limit 250
+mirror conversation-logger repair-journeys --limit 250
 ```
 
 ### Repair
@@ -275,7 +288,7 @@ uv run python -m memory conversation-logger repair-journeys --limit 250
 Apply only after reviewing the dry-run output:
 
 ```bash
-uv run python -m memory conversation-logger repair-journeys --apply
+mirror conversation-logger repair-journeys --apply
 ```
 
 The apply path creates a database backup first and refuses to continue if backup
@@ -291,11 +304,107 @@ updating, run the dry-run repair command and inspect the candidates.
 
 ---
 
+## A Builder command refuses with `requires a journey`
+
+**Date:** 2026-09-25
+**Status:** by design ([CR008](../project/refinement/rs001-ariad-runtime-trust/cr008-bind-lifecycle-commands-to-active-journey.md))
+**Affected component:** every `build` lifecycle command, `build inspect-method`
+**Severity:** one refused command; nothing is written
+
+### Symptom
+
+```text
+Error: Builder method pull candidates inspection requires a journey. Pass --journey <slug>, or name a session in Builder Mode with --session-id or MIRROR_SESSION_ID.
+```
+
+`build inspect-method` with no argument renders a card that says
+`No Builder journey was named.`
+
+### Root cause
+
+This is intended. Before 2026-09-25, a Builder command without `--journey`
+used the journey of the most recently updated session in the database, or else
+of the global operating-mode row. Either could belong to another window. The
+guess moved other journeys' delivery cursors and wrote roadmap files into other
+projects, and the surfaces reported success. An agent's shell names no session
+(`MIRROR_SESSION_ID` is unset there), so the runtime now refuses instead of
+guessing.
+
+This is not the same heuristic as the
+[conversation fallback above](#pi-builder-conversations-appear-without-journeys).
+That fallback still attaches a `build load` conversation to the active window.
+Only journey binding stopped guessing.
+
+### Fix
+
+Pass the journey:
+
+```bash
+mirror build pull-candidates --journey <slug> --method ariad
+```
+
+The Builder skill passes it on every command, using the slug `build load`
+activated in the session. A caller that names an active session in Builder Mode,
+with `--session-id` or `MIRROR_SESSION_ID`, can omit `--journey`.
+
+If you do not know which journey the session loaded, ask. Do not take it from
+`mode status` or the status line: they show the last activation in the
+database, which may be another window's.
+
+---
+
+## `approve-plan` or `done-item` refuses with "Still to author"
+
+**Date:** 2026-09-30
+**Status:** by design ([CR112](../project/refinement/rs001-ariad-runtime-trust/cr112-a-scaffold-cannot-be-told-from-authored-content-and-approve-plan-never-reads-the-plan.md))
+**Affected component:** `build approve-plan`, `build done-item`, `build show`
+**Severity:** one refused command; nothing is written
+
+### Symptom
+
+```text
+Plan approval needs an authored plan. Still to author in docs/project/roadmap/…/plan.md: Objective, Scope, Acceptance Behavior, Validation Route.
+```
+
+or, closing a story:
+
+```text
+Done needs the story's own record. Still to author in docs/project/roadmap/…/index.md: User Story, Outcome, Acceptance Behavior.
+```
+
+A story approved or closed this way before the update now refuses the same step.
+
+### Root cause
+
+This is intended. Plan writes `plan.md`, and Expand or Plan writes the story's
+`index.md`, as scaffolds: template sentences with the item's title pasted in.
+Until CR112 no approval opened `plan.md` and nothing told a scaffold from an
+authored file, so a plan of five template sentences was approvable, on both
+the ordinary and the preauthorized route, and a story could close while its
+record still said "I want to <title>". The refusal means the file was never
+authored. It does not mean the update broke anything.
+
+### Fix
+
+Open the file the refusal names and write each section it lists, by that
+heading, for this story. Then check:
+
+```bash
+mirror build show --journey <slug> --method ariad
+```
+
+`build show` lists `index.md`, `plan.md`, and `test-guide.md` with their state,
+and under any that is not authored, the sections still to write. When
+`plan.md` reads `authored`, present the plan to the Navigator and approve again.
+A journey with no project has no file to read, and neither check applies.
+
+---
+
 ## Runtime update channel `stable` is not fetched or unavailable
 
 **Date:** 2026-05-22
 **Status:** mitigated
-**Affected component:** `python -m memory runtime update --check|--dry-run|update`
+**Affected component:** `runtime update --check|--dry-run|update`
 **Severity:** update blocked, no mutation
 
 ### Symptom
@@ -326,7 +435,7 @@ Fetch the stable branch and retry the check:
 
 ```bash
 git fetch origin stable
-uv run python -m memory runtime update --check
+mirror runtime update --check
 ```
 
 If the project has not created `origin/stable` yet, switch temporarily to the
@@ -334,7 +443,7 @@ integration/dogfooding channel only if you intentionally accept mainline updates
 
 ```bash
 printf 'main\n' > .mirror-update-channel
-uv run python -m memory runtime update --check
+mirror runtime update --check
 ```
 
 ### Prevention
@@ -348,7 +457,7 @@ remote `stable` branch before recommending self-update to users.
 
 **Date:** 2026-05-22
 **Status:** resolved in current versions
-**Affected component:** `python -m memory runtime update`
+**Affected component:** `runtime update`
 **Severity:** update blocked, no mutation
 
 ### Symptom
@@ -358,7 +467,7 @@ After writing `.mirror-update-channel`, runtime update refuses to proceed:
 ```text
 [✗] status gate: runtime status is not ready
 Recovery:
-- Run: uv run python -m memory runtime diagnose
+- Run: mirror runtime diagnose
 ```
 
 Diagnosis reports a dirty git tree containing `.mirror-update-channel`.
@@ -376,9 +485,9 @@ it:
 
 ```bash
 rm -f .mirror-update-channel
-uv run python -m memory runtime update
+mirror runtime update
 printf 'stable\n' > .mirror-update-channel
-uv run python -m memory runtime version
+mirror runtime version
 ```
 
 Current versions ignore `.mirror-update-channel` in git, so changing it should
@@ -390,7 +499,7 @@ not dirty the repository.
 
 **Date:** 2026-05-22
 **Status:** operational guidance
-**Affected component:** `python -m memory welcome`, `python -m memory runtime version`
+**Affected component:** `welcome`, `runtime version`
 **Severity:** user confusion, no data risk
 
 ### Symptom
@@ -409,8 +518,8 @@ Write the stable marker and verify it:
 
 ```bash
 printf 'stable\n' > .mirror-update-channel
-uv run python -m memory runtime version
-uv run python -m memory runtime update --check
+mirror runtime version
+mirror runtime update --check
 ```
 
 Expected output includes:
@@ -431,7 +540,7 @@ local branch.
 
 **Date:** 2026-05-22
 **Status:** expected before first prospective release note
-**Affected component:** `python -m memory runtime release-notes`
+**Affected component:** `runtime release-notes`
 **Severity:** informational
 
 ### Symptom
@@ -461,133 +570,292 @@ latest` should render that release note.
 
 ---
 
+
+## The front door misbehaves: telling it apart, restoring data
+
+Every command enters Mirror Mind through the front door
+(`ts/src/frontDoor/cli.ts`). Until CV22.DS10.TS5 an unported or reverted
+command fell back to a frozen Python engine, and this entry explained how to
+tell the two engines apart and how to roll a skill back to Python. There is no
+second engine any more, so there is nothing to roll back to: a misbehaving
+command is a bug to report, and a bad write is undone from a backup.
+
+### Symptoms — what the front door's own failures look like
+
+- Error lines prefixed `Mirror TS front door:` (configuration, schema-state
+  guard) or `Mirror TS front door could not find database:` — exit code 2.
+- Schema-guard messages name migrations explicitly: `database schema is older
+  than this TS core (pending migrations: …)` → run `mirror runtime migrate`;
+  `… newer than this TS core (unknown migrations: …)` → update this Mirror
+  installation so its core matches the database: `mirror runtime update`, for
+  a clone and a package alike.
+- A name the front door does not own answers with its own usage error (exit 1
+  for an unknown command, exit 2 for an unknown subcommand), and a retired
+  command answers in one line naming its
+  [cutoff](../releases/pending-cutoffs.md), exit 1.
+- Node-level stack traces or `node: command not found` — the runtime
+  prerequisite (Node ≥ 24), not Mirror data.
+
+### Recovery — restore the pre-write snapshot
+
+Every front-door live write first takes a WAL-safe snapshot at
+`<mirror home>/backups/frontdoor-pre-write-backup.db`. It holds the state
+immediately before the **most recent** routed write (fixed name, overwritten
+per write — an undo, not an archive). To restore, with **no session or
+process holding the database open**:
+
+```bash
+cd <mirror home>
+cp backups/frontdoor-pre-write-backup.db memory.db
+rm -f memory.db-wal memory.db-shm   # stale sidecars must not replay over the restore
+chmod 600 memory.db
+```
+
+The restore semantics (verify, copy back, clear sidecars) are implemented and
+tested in `ts/src/frontDoor/liveBackup.ts` (`restoreFromBackup`); the manual
+steps above are their operator form. For scheduled archives use `mm-backup` —
+the pre-write snapshot only rewinds the last routed write.
+
+### Verify — prove the state you restored
+
+```bash
+mirror journeys
+mirror identity get ego behavior | head -2
+```
+
+If the schema guard refuses after a restore, the snapshot and the checkout are
+from different eras — run `mirror runtime migrate`, or update the checkout,
+before writing anything.
+
+---
+
+
+## Concurrent writes fail with `table conversations already exists` or `disk I/O error`
+
+**Date:** 2026-09-25
+**Status:** fixed in CV22.DS10.TS5 (finding F21)
+**Affected component:** every routed live write — most visibly Claude Code's prompt hooks and the logging of Pi's opening prompt
+**Severity:** lost writes (a message not logged, a Mirror Mode injection not made, a session's maintenance not run); the database itself is never at risk
+
+### Symptom
+
+In Claude Code, Mirror Mode context is missing from some answers. In Pi, a
+session's opening prompt, when given at launch (`pi "…"`), never reaches
+`mirror conversations`. The logs name it:
+
+```text
+<mirror home>/hooks.log:          claude:inject: table conversations already exists
+<mirror home>/mirror-logger.log:  stderr from [conversation-logger log-user]: … Error: disk I/O error
+<mirror home>/mirror-logger.log:  BackupGateError: recorded backup hash does not match the backup file
+<mirror home>/front-door.log:     ERROR conversation-logger ts exit=1
+```
+
+### Root cause
+
+Every routed write first snapshots the database into one fixed file,
+`<mirror home>/backups/frontdoor-pre-write-backup.db`. Each writer removed that
+file and recreated it with `VACUUM INTO`, with no coordination, so two writers
+at the same instant broke each other: the second `VACUUM INTO` found the tables
+the first was still creating, or one removed the file the other was still
+writing. The losing write was aborted, and often the other with it: its
+snapshot no longer matched the hash it had recorded. Claude Code runs its two
+`UserPromptSubmit` hooks at once, and on a prompt that owes an injection both
+write, so the collision was routine. Pi hit it on every session opened with a
+prompt at launch: that prompt is logged about 40 ms after the session's
+detached maintenance starts, while maintenance is still snapshotting, and
+both lost: the prompt went unlogged and the maintenance died, so closing,
+retitling, and extraction waited for a session whose first prompt came later. The
+`VACUUM INTO` only ever read the live database, so no data was damaged — only the writes that
+lost were dropped.
+
+### Fix
+
+Each writer now snapshots into a staging file of its own, the backup gate
+verifies that file, and an atomic rename promotes it to the fixed name. Eight
+writers released at the same instant all land
+(`ts/test/frontDoor/liveWriteConcurrency.test.ts`, which failed seven in eight
+before the fix), and the two Claude hooks run together ten times with no error
+and every message logged. Nothing to do on your side: new writes no longer collide, and `hooks.log`
+stops growing. Writes lost before the fix are not replayed automatically.
+
+---
+
+## Hooks skip when a runtime cannot find `node`
+
+**Date:** 2026-09-24
+**Status:** mitigated by design; diagnosable
+**Affected component:** every hook wrapper under `.claude/hooks/`, `.gemini/hooks/`, and `plugins/mirror-mind/hooks/`
+**Severity:** silent loss of logging, context injection, and the close tail, if nobody reads the log
+
+### Symptom
+
+A runtime launched from the desktop rather than a terminal works normally, but
+its sessions are missing from `mirror conversations`, Mirror Mode context is
+not injected, and conversations never get titles or memories.
+`<mirror home>/hooks.log` holds lines like:
+
+```text
+2026-09-24T10:12:03Z claude:session-start: node not found on PATH; hook skipped. Set MIRROR_NODE.
+2026-09-25T08:40:11Z claude:inject: node exited 9 before the hook finished (/usr/local/bin/node, v18.19.0); Mirror needs Node 24 or later. Set MIRROR_NODE.
+```
+
+The second line is a Node that was found but is too old to run the hook: an
+older install earlier on the runtime's `PATH` than the one your terminal uses.
+
+### Root cause
+
+Since CV22.DS10.TS5 every hook wrapper runs one Node entry
+(`ts/src/hooks/main.ts`). `node` usually lives under nvm or Homebrew, and a
+GUI-launched runtime often does not inherit the `PATH` that holds it. The
+Python hooks never met this — `/usr/bin/python3` is on every macOS — which is
+why their `|| true` was safe and the Node wrappers' silence would not have
+been: the same class of failure as the [2026-05 Pi logger
+incident](#pi-logger-fails-silently-when-python3-resolves-outside-the-project-venv),
+waiting to happen again.
+
+### Diagnosis
+
+```bash
+tail -20 ~/.mirror-minds/<user>/hooks.log
+mirror runtime diagnose
+```
+
+`runtime diagnose` resolves Node the way the wrappers do and reports when it
+cannot. It runs in your terminal's environment, though, not the runtime's, so
+it also counts the lines `hooks.log` recorded in the last seven days
+(`hook_failures_recorded`). The log is the evidence of what the runtime met.
+
+### Fix
+
+Set `MIRROR_NODE` to the absolute path of a `node` 24 or later, in the
+environment the runtime is launched with:
+
+```bash
+which node   # in a terminal where it works
+```
+
+Without it, a wrapper tries `command -v node`, then `~/.nvm/current/bin/node`,
+`/opt/homebrew/bin/node`, and `/usr/local/bin/node`. A wrapper that finds
+none skips the hook, exits 0 so the user's turn is never broken, and writes
+the line above instead of failing silently.
+
+The Claude Code plugin's wrappers, which run from wherever Claude Code copied
+or linked the plugin, first have to find the hook entry itself: `mirror-hook`,
+which `npm install -g mirror-mind` puts beside `mirror`. They look in
+`$MIRROR_BIN` (the directory holding both bins), then on the `PATH`, then in
+the three directories above. The log line for that case names its own fix:
+
+```text
+claude:session-start: mirror-hook not found on PATH; hook skipped. Install mirror-mind (npm install -g mirror-mind) or set MIRROR_BIN to its bin directory.
+```
+
+`MIRROR_BIN` is the same trust class as `MIRROR_NODE`: an executable path the
+environment names, honored as given.
+
+### Recovery of affected sessions
+
+The turns a skipped hook never saw are not in the database, and Mirror has no
+backfill for Claude Code or Gemini CLI transcripts: fix the Node resolution and
+logging resumes from the next session. Pi and the Codex wrapper do not go
+through these wrappers: both spawn `node` from the terminal they were started
+in, which normally has it on its `PATH`.
+
+---
+
+## `mirror` or `mirror-hook` is not found after installing, or after a Node switch
+
+**Date:** 2026-10-09
+**Status:** documented; by design of global npm installs
+**Affected component:** the `mirror` and `mirror-hook` bins; the Pi package installed by local path
+**Severity:** every skill fails with `command not found`; the plugin's hooks skip
+
+### Symptom
+
+Right after `npm install -g mirror-mind`, or after switching Node versions, a
+skill answers `mirror: command not found`; inside Pi the extension says at
+session start that `mirror` is not on the `PATH`; the Claude Code plugin's
+hooks write `mirror-hook not found` to `hooks.log`. In a clone, the same
+symptom appears on the first session after pulling the release whose skills
+say `mirror`.
+
+### Root cause
+
+A global npm install lives under one Node's prefix (`npm prefix -g`), and its
+bins under that prefix's `bin`. With **nvm**, each Node version has its own
+prefix, so switching versions (`nvm use 22`) makes `mirror`, `mirror-hook`,
+and the package directory Pi was pointed at vanish from the active environment
+— nothing was uninstalled, it is just under another prefix. A GUI-launched
+runtime may not have the prefix's `bin` on its `PATH` at all. In a clone,
+nothing provides the name until `npm link` runs once at the root.
+
+### Diagnosis
+
+```bash
+command -v mirror            # empty: not on this PATH
+npm prefix -g                # where the active Node installs global packages
+ls "$(npm prefix -g)/bin"    # is mirror here?
+mirror runtime status        # Install: package (...) or clone (...)
+```
+
+### Fix
+
+- **nvm:** install Mirror under the Node version you use (`nvm use 24 && npm
+  install -g mirror-mind`), and make that version the default (`nvm alias
+  default 24`) so a new shell and a GUI launch find the same prefix. If you keep
+  several versions, install under each, or put one prefix's `bin` on your
+  `PATH` explicitly. Pi was given a path under one prefix (`pi install
+  "$(npm root -g)/mirror-mind"`); after an install under another, point it at
+  the new path.
+- **GUI-launched runtimes:** set `MIRROR_BIN` to the directory holding the two
+  bins (`$(npm prefix -g)/bin`) in the environment the runtime starts with;
+  the plugin's wrappers and the MCP launcher honor it. `MIRROR_NODE` is the
+  same idea for `node` itself.
+- **A clone:** `npm link` once at the repository root. The Pi extension prints
+  that line at session start while `mirror` does not resolve, and so does
+  `runtime update` after a successful clone update.
+
+---
+
 ## Pi logger fails silently when `python3` resolves outside the project venv
 
 **Date:** 2026-05-10
-**Status:** resolved
+**Status:** resolved; superseded by the TypeScript core (CV22). The class of
+failure is not — see [Hooks skip when a runtime cannot find
+`node`](#hooks-skip-when-a-runtime-cannot-find-node).
 **Affected component:** `.pi/extensions/mirror-logger.ts`
 **Severity:** silent data-pipeline loss (no conversations or messages persisted to the database during affected sessions)
 
 ### Symptom
 
-The Pi runtime appears to work normally. `mm-mirror`, `mm-journeys`, and other
-skills run fine. But the conversation history is never persisted:
-
-- `uv run python -m memory conversations --limit 10` shows no rows from the current Pi session
-- `runtime_sessions` table is empty (no row with `active = 1` for the current session)
-- `mm-recall`, `mm-conversations`, and any feature that depends on the message history return as if the session never happened
-
-The only visible signal that something is wrong is buried in
-`~/.mirror-minds/mirror-logger.log`, which accumulates lines like:
-
-```
-2026-05-10T23:22:26.518Z [WARN] stderr from [-m memory conversation-logger]:
-/Users/alissonvale/.pyenv/versions/3.10.6/bin/python3: No module named memory
-```
-
-These appear on **every turn** but never surface to the user because the
-extension is designed to swallow failures to avoid blocking Pi.
-
-### Diagnosis
-
-Three checks confirm the issue:
-
-1. Tail the extension log:
-   ```bash
-   tail -50 ~/.mirror-minds/mirror-logger.log
-   ```
-   If you see repeated `No module named memory` warnings, you are hitting this bug.
-
-2. Confirm the path of `python3`:
-   ```bash
-   which python3
-   python3 -c "import memory"
-   ```
-   The first command will usually point at a pyenv shim or a system Python. The
-   second will fail with `ModuleNotFoundError`.
-
-3. Confirm the project venv has the package:
-   ```bash
-   .venv/bin/python -c "import memory; print(memory.__file__)"
-   ```
-   This should succeed and print the path inside `.venv/lib/.../site-packages`.
-
-If the first two checks indicate `python3` resolves outside the venv but the
-third works, you are hitting the bug.
+The Pi runtime appeared to work normally — `mm-mirror`, `mm-journeys`, and
+other skills ran fine — but the conversation history was never persisted: no
+rows in `conversations` from the current session, no active
+`runtime_sessions` row, and `mm-recall` and `mm-conversations` answered as
+if the session never happened. The only signal was buried in
+`~/.mirror-minds/mirror-logger.log`, which accumulated one `No module named
+memory` warning per turn that the extension, by design, never surfaced.
 
 ### Root cause
 
-The Pi extension at `.pi/extensions/mirror-logger.ts` invokes the Python CLI
-on every conversation turn:
+The extension spawned the Python core with a bare `python3` resolved from the
+user's `PATH`. On a machine with pyenv (or any user-level Python manager)
+ahead of the project virtualenv, that interpreter did not have the `memory`
+package, and every turn failed silently. The extension swallowed failures on
+purpose so a persistence problem could never block a Pi session — correct for
+usability, and exactly why the bug lived for a month.
 
-```typescript
-const result = await pi.exec("python3", args, { timeout: 30_000 });
-```
+### Fix and recovery
 
-`pi.exec("python3", ...)` resolves `python3` via the user's `PATH`. On a
-machine with pyenv (or any user-level Python manager) ahead of the project
-venv in `PATH`, this picks up a Python that does not have the project's
-dependencies installed. The `memory` package lives in `.venv/lib/.../site-packages`,
-which is only on `sys.path` when the venv interpreter is used.
+The extension was changed to run the interpreter through `uv`, which found
+the project virtualenv regardless of `PATH` order. The Pi session files on
+disk still held every turn, and the `conversation-logger session-start`
+backfill ingested the 15 orphaned sessions with no data loss.
 
-The extension was specifically designed to **fail silently** (see the
-`try/catch` around the exec call and the comment in `runPy`) so that any
-failure in the persistence pipeline does not block the user's Pi session.
-That design choice is correct for usability, but it also means a bug at this
-layer can persist for a long time without any visible signal.
-
-### Fix
-
-Replace `python3` with `uv run python` so the project venv is used regardless
-of `PATH` order. This aligns with the project convention (`AGENTS.md`: "Use
-`uv run` for project Python commands") and works without requiring any
-filesystem-relative path resolution because `uv` discovers the venv from the
-process `cwd`.
-
-```typescript
-// .pi/extensions/mirror-logger.ts (line ~75)
-const result = await pi.exec("uv", ["run", "python", ...args], {
-    timeout: 30_000,
-});
-```
-
-After saving the file, the fix takes effect on the next Pi session. Existing
-in-flight sessions still hold the old extension code in memory and continue
-to fail until restarted.
-
-### Recovery of affected sessions
-
-The Pi runtime persists each turn to its own session file on disk (independent
-of the database). Even when the extension's database push fails, the Pi
-session file preserves every user and assistant message. The `session-start`
-sub-command of `conversation-logger` scans for orphaned Pi session files and
-backfills them into the database.
-
-Run after restarting Pi (or manually any time):
-
-```bash
-uv run python -m memory conversation-logger session-start
-```
-
-The output reports how many orphaned sessions were ingested. The most recent
-incident backfilled 15 sessions accumulated over roughly a month, with no
-data loss.
-
-### Prevention
-
-Three avenues are worth considering:
-
-1. **Surface persistence failures.** The current design swallows errors to
-   keep Pi responsive. Consider adding a visible indicator (e.g. a one-line
-   note in `mm-mirror` output or a status check on `mm-help`) when
-   `~/.mirror-minds/mirror-logger.log` shows recent `WARN`/`ERROR` lines.
-2. **Document the convention.** The project already mandates `uv run` for
-   Python invocations. Any new Pi extension should follow the same rule;
-   it is worth calling this out explicitly in the extension author guide
-   when one exists.
-3. **Periodic backfill.** Even with the fix in place, running
-   `conversation-logger session-start` opportunistically catches any future
-   regressions before they accumulate.
+Since CV22 the extension spawns `node` and the front door, and since
+CV22.DS10.TS5 there is no interpreter to resolve. The lesson outlived the code:
+**a runtime's `PATH` is not your shell's `PATH`, and a hook that fails
+silently needs somewhere to say so.** The Node-era rewrite of every hook was
+built around it.
 
 ---
 
@@ -602,7 +870,7 @@ Three avenues are worth considering:
 
 In a non-production environment (`MEMORY_ENV=development` or `test`), installing
 a command-skill extension appears to succeed, but the extension's tables are
-missing at runtime. Extension subcommands (`python -m memory ext <id> ...`)
+missing at runtime. Extension subcommands (`mirror ext <id> ...`)
 fail with `no such table: ext_<id>_*`, and a stray `<mirror home>/memory.db`
 appears next to the real `memory_dev.db`.
 
@@ -702,7 +970,7 @@ extensions source dir) still shows every extension — but the runtime catalog
 lists only one:
 
 ```bash
-uv run python -m memory inspect runtime-catalog pi --mirror-home <home>
+mirror inspect runtime-catalog pi --mirror-home <home>
 # extensions: admin -> ext-admin        (only one, though 7 ext-* dirs exist)
 ```
 
@@ -733,9 +1001,9 @@ A full sync per runtime rebuilds the complete catalog without a code change (it
 also runs automatically on the next install once the fix is present):
 
 ```bash
-uv run python -m memory extensions sync --runtime pi \
+mirror extensions sync --runtime pi \
   --mirror-home <home> --target-root <home>/runtime/skills/pi
-uv run python -m memory extensions sync --runtime claude \
+mirror extensions sync --runtime claude \
   --mirror-home <home> --target-root <home>/runtime/skills/claude
 ```
 

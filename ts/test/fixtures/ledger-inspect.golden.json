@@ -1,0 +1,249 @@
+{
+  "_generated_by": "ts/parity/generate_ledger_inspect_golden.py",
+  "_semantics": "Python's answer for `inspect llm-calls` and `inspect embedding-provenance`, one subprocess per case, over a database seeded from ts/test/fixtures/ledger-inspect/rows.json. These two leaves ARE argparse: their refusals exit 2 with usage on stderr.",
+  "cases": [
+    {
+      "label": "llm_calls_default_limit",
+      "argv": [
+        "inspect",
+        "llm-calls"
+      ],
+      "stdout": "=== llm_calls (10 rows) ===\n\n[2026-01-19 08:00:00] week_plan | openai/gpt-5-mini\n  id:ledger-0  conv:conv-000  80→20 tokens  700ms  ~$0.000090\n  prompt:   'Plan the week.'\n  response: 'done'\n\n[2026-01-12 09:32:00] ? | ?\n  id:ledger-0  conv:—  0→0 tokens  ?ms  $—\n  prompt:   ''\n  response: ''\n\n[2026-01-12 09:31:00] conversation_title | openai/gpt-5-mini\n  id:ledger-0  conv:conv-000  200→8 tokens  500ms  ~$0.000110\n  prompt:   'Title this.'\n  response: 'A Title'\n\n[2026-01-12 09:30:00] journal_classification | openai/gpt-5-mini\n  id:ledger-0  conv:conv-000  60→3 tokens  450ms  ~$0.000008\n  prompt:   'Classificação de diário com acentuação e um caractere astral exatamente na fronteira do corte de duzentos pontos de código: ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLM𝔘'\n  response: 'personal'\n\n[2026-01-05 11:00:01] consult | openai/gpt-5\n  id:ledger-0  conv:conv-000  12→6 tokens  310ms  ~$0.002000\n  prompt:   'he said \"it\\'s fine\" and left'\n  response: 'backslash \\\\ and \"quotes\"'\n\n[2026-01-05 11:00:00] consult | openai/gpt-5\n  id:ledger-0  conv:conv-000  10→5 tokens  300ms  ~$0.001000\n  prompt:   \"it's a quoted prompt\"\n  response: \"it's a quoted response\"\n\n[2026-01-05 10:00:02] embedding | openai/text-embedding-3-small\n  id:ledger-0  conv:—  98→0 tokens  88ms  $—\n  prompt:   ''\n  response: ''\n\n[2026-01-05 10:00:01] embedding | openai/text-embedding-3-small\n  id:ledger-0  conv:conv-000  102→0 tokens  90ms  $—\n  prompt:   ''\n  response: ''\n\n[2026-01-05 10:00:00] extraction | anthropic/claude-sonnet-4\n  id:ledger-0  conv:conv-000  120→40 tokens  1200ms  ~$0.000420\n  prompt:   'Extract memories.\\nUser said:\\thello'\n  response: '[]'\n\n[2026-01-04 08:00:00] extraction | anthropic/claude-sonnet-4\n  id:ledger-1  conv:conv-000  55→9 tokens  1500ms  ~$0.000330\n  prompt:   'The oldest row.'\n  response: '[]'\n",
+      "stderr": "",
+      "exit_code": 0
+    },
+    {
+      "label": "llm_calls_limit_3",
+      "argv": [
+        "inspect",
+        "llm-calls",
+        "--limit",
+        "3"
+      ],
+      "stdout": "=== llm_calls (3 rows) ===\n\n[2026-01-19 08:00:00] week_plan | openai/gpt-5-mini\n  id:ledger-0  conv:conv-000  80→20 tokens  700ms  ~$0.000090\n  prompt:   'Plan the week.'\n  response: 'done'\n\n[2026-01-12 09:32:00] ? | ?\n  id:ledger-0  conv:—  0→0 tokens  ?ms  $—\n  prompt:   ''\n  response: ''\n\n[2026-01-12 09:31:00] conversation_title | openai/gpt-5-mini\n  id:ledger-0  conv:conv-000  200→8 tokens  500ms  ~$0.000110\n  prompt:   'Title this.'\n  response: 'A Title'\n",
+      "stderr": "",
+      "exit_code": 0
+    },
+    {
+      "label": "llm_calls_limit_1",
+      "argv": [
+        "inspect",
+        "llm-calls",
+        "--limit",
+        "1"
+      ],
+      "stdout": "=== llm_calls (1 row) ===\n\n[2026-01-19 08:00:00] week_plan | openai/gpt-5-mini\n  id:ledger-0  conv:conv-000  80→20 tokens  700ms  ~$0.000090\n  prompt:   'Plan the week.'\n  response: 'done'\n",
+      "stderr": "",
+      "exit_code": 0
+    },
+    {
+      "label": "llm_calls_role_embedding",
+      "argv": [
+        "inspect",
+        "llm-calls",
+        "--role",
+        "embedding"
+      ],
+      "stdout": "=== llm_calls (2 rows) ===\n\n[2026-01-05 10:00:02] embedding | openai/text-embedding-3-small\n  id:ledger-0  conv:—  98→0 tokens  88ms  $—\n  prompt:   ''\n  response: ''\n\n[2026-01-05 10:00:01] embedding | openai/text-embedding-3-small\n  id:ledger-0  conv:conv-000  102→0 tokens  90ms  $—\n  prompt:   ''\n  response: ''\n",
+      "stderr": "",
+      "exit_code": 0
+    },
+    {
+      "label": "llm_calls_role_unknown",
+      "argv": [
+        "inspect",
+        "llm-calls",
+        "--role",
+        "nope"
+      ],
+      "stdout": "(no llm_calls rows match the given filters)\n",
+      "stderr": "",
+      "exit_code": 0
+    },
+    {
+      "label": "llm_calls_conversation",
+      "argv": [
+        "inspect",
+        "llm-calls",
+        "--conversation",
+        "conv-0002-cccc-dddd"
+      ],
+      "stdout": "=== llm_calls (3 rows) ===\n\n[2026-01-19 08:00:00] week_plan | openai/gpt-5-mini\n  id:ledger-0  conv:conv-000  80→20 tokens  700ms  ~$0.000090\n  prompt:   'Plan the week.'\n  response: 'done'\n\n[2026-01-12 09:31:00] conversation_title | openai/gpt-5-mini\n  id:ledger-0  conv:conv-000  200→8 tokens  500ms  ~$0.000110\n  prompt:   'Title this.'\n  response: 'A Title'\n\n[2026-01-12 09:30:00] journal_classification | openai/gpt-5-mini\n  id:ledger-0  conv:conv-000  60→3 tokens  450ms  ~$0.000008\n  prompt:   'Classificação de diário com acentuação e um caractere astral exatamente na fronteira do corte de duzentos pontos de código: ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLM𝔘'\n  response: 'personal'\n",
+      "stderr": "",
+      "exit_code": 0
+    },
+    {
+      "label": "llm_calls_session_after_limit",
+      "argv": [
+        "inspect",
+        "llm-calls",
+        "--session",
+        "session-gamma",
+        "--limit",
+        "3"
+      ],
+      "stdout": "(no llm_calls rows match the given filters)\n",
+      "stderr": "",
+      "exit_code": 0
+    },
+    {
+      "label": "llm_calls_session_full",
+      "argv": [
+        "inspect",
+        "llm-calls",
+        "--session",
+        "session-gamma"
+      ],
+      "stdout": "=== llm_calls (1 row) ===\n\n[2026-01-04 08:00:00] extraction | anthropic/claude-sonnet-4\n  id:ledger-1  conv:conv-000  55→9 tokens  1500ms  ~$0.000330\n  prompt:   'The oldest row.'\n  response: '[]'\n",
+      "stderr": "",
+      "exit_code": 0
+    },
+    {
+      "label": "llm_calls_since_date",
+      "argv": [
+        "inspect",
+        "llm-calls",
+        "--since",
+        "2026-01-12"
+      ],
+      "stdout": "=== llm_calls (4 rows) ===\n\n[2026-01-19 08:00:00] week_plan | openai/gpt-5-mini\n  id:ledger-0  conv:conv-000  80→20 tokens  700ms  ~$0.000090\n  prompt:   'Plan the week.'\n  response: 'done'\n\n[2026-01-12 09:32:00] ? | ?\n  id:ledger-0  conv:—  0→0 tokens  ?ms  $—\n  prompt:   ''\n  response: ''\n\n[2026-01-12 09:31:00] conversation_title | openai/gpt-5-mini\n  id:ledger-0  conv:conv-000  200→8 tokens  500ms  ~$0.000110\n  prompt:   'Title this.'\n  response: 'A Title'\n\n[2026-01-12 09:30:00] journal_classification | openai/gpt-5-mini\n  id:ledger-0  conv:conv-000  60→3 tokens  450ms  ~$0.000008\n  prompt:   'Classificação de diário com acentuação e um caractere astral exatamente na fronteira do corte de duzentos pontos de código: ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLM𝔘'\n  response: 'personal'\n",
+      "stderr": "",
+      "exit_code": 0
+    },
+    {
+      "label": "llm_calls_since_future",
+      "argv": [
+        "inspect",
+        "llm-calls",
+        "--since",
+        "2030-01-01"
+      ],
+      "stdout": "(no llm_calls rows match the given filters)\n",
+      "stderr": "",
+      "exit_code": 0
+    },
+    {
+      "label": "llm_calls_summary",
+      "argv": [
+        "inspect",
+        "llm-calls",
+        "--summary"
+      ],
+      "stdout": "=== llm_calls summary ===\n\nBy role:\n                         1 calls  0→0 tokens  —  (1 unpriced)\n  consult                2 calls  22→11 tokens  ~$0.003000\n  conversation_title     1 calls  200→8 tokens  ~$0.000110\n  embedding              2 calls  200→0 tokens  —  (2 unpriced)\n  extraction             2 calls  175→49 tokens  ~$0.000750\n  journal_classification     1 calls  60→3 tokens  ~$0.000008\n  week_plan              1 calls  80→20 tokens  ~$0.000090\n\nBy week:\n  2026-W03               1 calls  80→20 tokens  ~$0.000090\n  2026-W02               3 calls  260→11 tokens  ~$0.000118  (1 unpriced)\n  2026-W01               5 calls  342→51 tokens  ~$0.003420  (2 unpriced)\n  2026-W00               1 calls  55→9 tokens  ~$0.000330\n\nTOTAL  10 calls  737→91 tokens  ~$0.003958  (3 unpriced)\n",
+      "stderr": "",
+      "exit_code": 0
+    },
+    {
+      "label": "llm_calls_summary_since",
+      "argv": [
+        "inspect",
+        "llm-calls",
+        "--summary",
+        "--since",
+        "2026-01-12"
+      ],
+      "stdout": "=== llm_calls summary since 2026-01-12 ===\n\nBy role:\n                         1 calls  0→0 tokens  —  (1 unpriced)\n  conversation_title     1 calls  200→8 tokens  ~$0.000110\n  journal_classification     1 calls  60→3 tokens  ~$0.000008\n  week_plan              1 calls  80→20 tokens  ~$0.000090\n\nBy week:\n  2026-W03               1 calls  80→20 tokens  ~$0.000090\n  2026-W02               3 calls  260→11 tokens  ~$0.000118  (1 unpriced)\n\nTOTAL  4 calls  340→31 tokens  ~$0.000208  (1 unpriced)\n",
+      "stderr": "",
+      "exit_code": 0
+    },
+    {
+      "label": "llm_calls_summary_since_future",
+      "argv": [
+        "inspect",
+        "llm-calls",
+        "--summary",
+        "--since",
+        "2030-01-01"
+      ],
+      "stdout": "(no llm_calls rows match the given filters)\n",
+      "stderr": "",
+      "exit_code": 0
+    },
+    {
+      "label": "llm_calls_bad_limit",
+      "argv": [
+        "inspect",
+        "llm-calls",
+        "--limit",
+        "x"
+      ],
+      "stdout": "",
+      "stderr": "usage: memory inspect llm-calls [-h] [--conversation CONVERSATION_ID]\n                                [--session SESSION_ID] [--role ROLE]\n                                [--since SINCE] [--limit LIMIT] [--summary]\n                                [--mirror-home MIRROR_HOME]\nmemory inspect llm-calls: error: argument --limit: invalid int value: 'x'\n",
+      "exit_code": 2
+    },
+    {
+      "label": "llm_calls_unknown_option",
+      "argv": [
+        "inspect",
+        "llm-calls",
+        "--nope"
+      ],
+      "stdout": "",
+      "stderr": "usage: memory inspect llm-calls [-h] [--conversation CONVERSATION_ID]\n                                [--session SESSION_ID] [--role ROLE]\n                                [--since SINCE] [--limit LIMIT] [--summary]\n                                [--mirror-home MIRROR_HOME]\nmemory inspect llm-calls: error: unrecognized arguments: --nope\n",
+      "exit_code": 2
+    },
+    {
+      "label": "llm_calls_role_without_value",
+      "argv": [
+        "inspect",
+        "llm-calls",
+        "--role"
+      ],
+      "stdout": "",
+      "stderr": "usage: memory inspect llm-calls [-h] [--conversation CONVERSATION_ID]\n                                [--session SESSION_ID] [--role ROLE]\n                                [--since SINCE] [--limit LIMIT] [--summary]\n                                [--mirror-home MIRROR_HOME]\nmemory inspect llm-calls: error: argument --role: expected one argument\n",
+      "exit_code": 2
+    },
+    {
+      "label": "embedding_provenance",
+      "argv": [
+        "inspect",
+        "embedding-provenance"
+      ],
+      "stdout": "=== embedding provenance (5 memory vectors) ===\n       2  unknown (pre-provenance)\n       2  openai/text-embedding-3-small\n       1  voyage/voyage-3\n",
+      "stderr": "",
+      "exit_code": 0
+    },
+    {
+      "label": "embedding_provenance_unknown_option",
+      "argv": [
+        "inspect",
+        "embedding-provenance",
+        "--nope"
+      ],
+      "stdout": "",
+      "stderr": "usage: memory inspect embedding-provenance [-h] [--mirror-home MIRROR_HOME]\nmemory inspect embedding-provenance: error: unrecognized arguments: --nope\n",
+      "exit_code": 2
+    },
+    {
+      "label": "llm_calls_empty_database",
+      "argv": [
+        "inspect",
+        "llm-calls"
+      ],
+      "stdout": "(no llm_calls rows match the given filters)\n",
+      "stderr": "",
+      "exit_code": 0
+    },
+    {
+      "label": "llm_calls_summary_empty_database",
+      "argv": [
+        "inspect",
+        "llm-calls",
+        "--summary"
+      ],
+      "stdout": "(no llm_calls rows match the given filters)\n",
+      "stderr": "",
+      "exit_code": 0
+    },
+    {
+      "label": "embedding_provenance_empty_database",
+      "argv": [
+        "inspect",
+        "embedding-provenance"
+      ],
+      "stdout": "(no stored memory vectors)\n",
+      "stderr": "",
+      "exit_code": 0
+    }
+  ]
+}

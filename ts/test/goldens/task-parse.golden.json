@@ -1,0 +1,357 @@
+{
+  "cases": [
+    {
+      "expected_done": [],
+      "expected_pending": [
+        {
+          "journey": "reflexo",
+          "stage": "In\u00edcio",
+          "status": "todo",
+          "title": "Task simples"
+        }
+      ],
+      "journey": "reflexo",
+      "journey_path": "\n### Etapa 1: In\u00edcio\n- [ ] Task simples\n",
+      "name": "basic_checkbox_extracted"
+    },
+    {
+      "expected_done": [],
+      "expected_pending": [
+        {
+          "journey": "reflexo",
+          "stage": "Desenvolvimento",
+          "status": "todo",
+          "title": "Implementar feature"
+        }
+      ],
+      "journey": "reflexo",
+      "journey_path": "\n### Etapa 2: Desenvolvimento\n- [ ] Implementar feature\n",
+      "name": "stage_assigned_correctly"
+    },
+    {
+      "expected_done": [],
+      "expected_pending": [
+        {
+          "journey": "reflexo",
+          "stage": "Planejamento",
+          "status": "todo",
+          "title": "Task A"
+        },
+        {
+          "journey": "reflexo",
+          "stage": "Planejamento",
+          "status": "todo",
+          "title": "Task B"
+        },
+        {
+          "journey": "reflexo",
+          "stage": "Planejamento",
+          "status": "todo",
+          "title": "Task C"
+        }
+      ],
+      "journey": "reflexo",
+      "journey_path": "\n### Etapa 1: Planejamento\n- [ ] Task A\n- [ ] Task B\n- [ ] Task C\n",
+      "name": "multiple_tasks_under_same_stage"
+    },
+    {
+      "expected_done": [],
+      "expected_pending": [
+        {
+          "journey": "reflexo",
+          "stage": "In\u00edcio",
+          "status": "todo",
+          "title": "Alpha"
+        },
+        {
+          "journey": "reflexo",
+          "stage": "Meio",
+          "status": "todo",
+          "title": "Beta"
+        }
+      ],
+      "journey": "reflexo",
+      "journey_path": "\n### Etapa 1: In\u00edcio\n- [ ] Alpha\n\n### Etapa 2: Meio\n- [ ] Beta\n",
+      "name": "tasks_under_different_stages"
+    },
+    {
+      "expected_done": [
+        {
+          "journey": "reflexo",
+          "stage": "In\u00edcio",
+          "status": "done",
+          "title": "J\u00e1 feito"
+        }
+      ],
+      "expected_pending": [
+        {
+          "journey": "reflexo",
+          "stage": "In\u00edcio",
+          "status": "todo",
+          "title": "Pendente"
+        }
+      ],
+      "journey": "reflexo",
+      "journey_path": "\n### Etapa 1: In\u00edcio\n- [x] J\u00e1 feito\n- [ ] Pendente\n",
+      "name": "done_checkbox_mixed_with_pending"
+    },
+    {
+      "expected_done": [],
+      "expected_pending": [
+        {
+          "journey": "reflexo",
+          "stage": "Ativa",
+          "status": "todo",
+          "title": "Deve ser extra\u00edda"
+        }
+      ],
+      "journey": "reflexo",
+      "journey_path": "\n### Etapa 1: Completa \u2705\n- [ ] N\u00e3o deve ser extra\u00edda\n\n### Etapa 2: Ativa\n- [ ] Deve ser extra\u00edda\n",
+      "name": "completed_stage_skipped"
+    },
+    {
+      "expected_done": [],
+      "expected_pending": [
+        {
+          "journey": "reflexo",
+          "stage": "In\u00edcio",
+          "status": "todo",
+          "title": "T\u00edtulo em negrito"
+        }
+      ],
+      "journey": "reflexo",
+      "journey_path": "\n### Etapa 1: In\u00edcio\n- [ ] **T\u00edtulo em negrito**\n",
+      "name": "markdown_bold_stripped_from_title"
+    },
+    {
+      "expected_done": [],
+      "expected_pending": [
+        {
+          "journey": "reflexo",
+          "stage": "In\u00edcio",
+          "status": "todo",
+          "title": "Task com ponto final"
+        }
+      ],
+      "journey": "reflexo",
+      "journey_path": "\n### Etapa 1: In\u00edcio\n- [ ] Task com ponto final.\n",
+      "name": "trailing_period_stripped"
+    },
+    {
+      "expected_done": [],
+      "expected_pending": [],
+      "journey": "reflexo",
+      "journey_path": "- [ ] Task sem etapa\n",
+      "name": "task_without_stage_not_extracted"
+    },
+    {
+      "expected_done": [],
+      "expected_pending": [],
+      "journey": "reflexo",
+      "journey_path": "",
+      "name": "empty_journey_path"
+    },
+    {
+      "expected_done": [],
+      "expected_pending": [],
+      "journey": "reflexo",
+      "journey_path": "\n### Etapa 1: Planejamento\nApenas texto descritivo, sem checkboxes.\n",
+      "name": "no_tasks_in_journey_path"
+    },
+    {
+      "expected_done": [],
+      "expected_pending": [
+        {
+          "journey": "reflexo",
+          "stage": "In\u00edcio",
+          "status": "todo",
+          "title": "Task indentada"
+        }
+      ],
+      "journey": "reflexo",
+      "journey_path": "\n### Etapa 1: In\u00edcio\n    - [ ] Task indentada\n",
+      "name": "indented_checkbox_extracted"
+    },
+    {
+      "expected_done": [],
+      "expected_pending": [
+        {
+          "journey": "minha-journey",
+          "stage": "Etapa 1",
+          "status": "todo",
+          "title": "Task A"
+        },
+        {
+          "journey": "minha-journey",
+          "stage": "Etapa 1",
+          "status": "todo",
+          "title": "Task B"
+        }
+      ],
+      "journey": "minha-journey",
+      "journey_path": "\n### Etapa 1\n- [ ] Task A\n- [ ] Task B\n",
+      "name": "journey_set_on_all_tasks"
+    },
+    {
+      "expected_done": [
+        {
+          "journey": "reflexo",
+          "stage": "Conclu\u00edda",
+          "status": "done",
+          "title": "Task feita"
+        }
+      ],
+      "expected_pending": [],
+      "journey": "reflexo",
+      "journey_path": "\n### Etapa 1: Conclu\u00edda\n- [x] Task feita\n",
+      "name": "done_basic_extracted"
+    },
+    {
+      "expected_done": [
+        {
+          "journey": "reflexo",
+          "stage": "Etapa 1",
+          "status": "done",
+          "title": "Feita com X mai\u00fasculo"
+        }
+      ],
+      "expected_pending": [],
+      "journey": "reflexo",
+      "journey_path": "\n### Etapa 1\n- [X] Feita com X mai\u00fasculo\n",
+      "name": "done_uppercase_x_matches"
+    },
+    {
+      "expected_done": [
+        {
+          "journey": "reflexo",
+          "stage": "Etapa 1",
+          "status": "done",
+          "title": "Conclu\u00edda"
+        }
+      ],
+      "expected_pending": [
+        {
+          "journey": "reflexo",
+          "stage": "Etapa 1",
+          "status": "todo",
+          "title": "Pendente"
+        }
+      ],
+      "journey": "reflexo",
+      "journey_path": "\n### Etapa 1\n- [ ] Pendente\n- [x] Conclu\u00edda\n",
+      "name": "done_open_checkbox_ignored"
+    },
+    {
+      "expected_done": [
+        {
+          "journey": "reflexo",
+          "stage": "Entrega",
+          "status": "done",
+          "title": "Deploy feito"
+        }
+      ],
+      "expected_pending": [],
+      "journey": "reflexo",
+      "journey_path": "\n### Etapa 3: Entrega\n- [x] Deploy feito\n",
+      "name": "done_stage_assigned"
+    },
+    {
+      "expected_done": [
+        {
+          "journey": "reflexo",
+          "stage": "Etapa 1",
+          "status": "done",
+          "title": "Conclu\u00edda em negrito"
+        }
+      ],
+      "expected_pending": [],
+      "journey": "reflexo",
+      "journey_path": "\n### Etapa 1\n- [x] **Conclu\u00edda em negrito**\n",
+      "name": "done_bold_stripped"
+    },
+    {
+      "expected_done": [
+        {
+          "journey": "reflexo",
+          "stage": "Etapa 1",
+          "status": "done",
+          "title": "Feita com ponto"
+        }
+      ],
+      "expected_pending": [],
+      "journey": "reflexo",
+      "journey_path": "\n### Etapa 1\n- [x] Feita com ponto.\n",
+      "name": "done_trailing_period_stripped"
+    },
+    {
+      "expected_done": [
+        {
+          "journey": "reflexo",
+          "stage": "Completa",
+          "status": "done",
+          "title": "Feita"
+        }
+      ],
+      "expected_pending": [],
+      "journey": "reflexo",
+      "journey_path": "\n### Etapa 1: Completa \u2705\n- [x] Feita\n",
+      "name": "done_ignores_completed_stage_marker"
+    },
+    {
+      "expected_done": [
+        {
+          "journey": "reflexo",
+          "stage": "Sprint",
+          "status": "done",
+          "title": "Task conclu\u00edda"
+        }
+      ],
+      "expected_pending": [
+        {
+          "journey": "reflexo",
+          "stage": "Sprint",
+          "status": "todo",
+          "title": "Task pendente"
+        }
+      ],
+      "journey": "reflexo",
+      "journey_path": "\n### Etapa 1: Sprint\n- [x] Task conclu\u00edda\n- [ ] Task pendente\n",
+      "name": "both_parsers_together"
+    },
+    {
+      "expected_done": [],
+      "expected_pending": [],
+      "journey": "reflexo",
+      "journey_path": "\n### Etapa 1: Sprint\n**Cycle 1 \u2705**\n- [ ] Should be skipped\n",
+      "name": "cycle_header_with_checkmark_resets_stage"
+    },
+    {
+      "expected_done": [],
+      "expected_pending": [
+        {
+          "journey": "reflexo",
+          "stage": "Sprint",
+          "status": "todo",
+          "title": "Still under Sprint"
+        }
+      ],
+      "journey": "reflexo",
+      "journey_path": "\n### Etapa 1: Sprint\n**Cycle 2 in progress:**\n- [ ] Still under Sprint\n",
+      "name": "cycle_header_in_progress_is_noop"
+    },
+    {
+      "expected_done": [],
+      "expected_pending": [
+        {
+          "journey": "reflexo",
+          "stage": "Plain Stage Name (no Etapa prefix)",
+          "status": "todo",
+          "title": "Task under plain stage"
+        }
+      ],
+      "journey": "reflexo",
+      "journey_path": "\n### Plain Stage Name (no Etapa prefix)\n- [ ] Task under plain stage\n",
+      "name": "plain_stage_header_without_etapa_prefix"
+    }
+  ]
+}

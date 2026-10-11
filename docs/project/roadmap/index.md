@@ -38,7 +38,7 @@ folder and index. Stories that are non-trivial have a `plan.md` and a
 | [CV19](cv19-soul-mode-integration/index.md) | Soul Mode Integration | ✅ Done |
 | [CV20](cv20-builder-mode-evolution/index.md) | Builder Mode Evolution | 🟢 In Progress |
 | [CV21](cv21-runtime-expansion-ii/index.md) | Runtime Expansion II: Plugin & MCP Convergence | 🟢 In Progress |
-| [CV22](cv22-typescript-core-port/index.md) | TypeScript Core Port (Database-Seam Strangler) | ⏸️ Paused |
+| [CV22](cv22-typescript-core-port/index.md) | TypeScript Core Port (Database-Seam Strangler) | 🟢 In Progress — restarted 2026-09-02 |
 | [CV23](cv23-journey-projection-contract/index.md) | Journey Projection Contract | ✅ Done — v0.31.10 contract; v0.31.11 confinement hotfix accepted |
 
 ---
@@ -58,8 +58,8 @@ home containment (CV9.E2.S6): the runtime directory is the resolved mirror
 home for every environment, unconfigured resolution fails loudly instead of
 writing to the homes root, and `runtime diagnose` reports legacy root
 artifacts. Conversation
-metadata lifecycle has entered Delivery as CV9.DS7; its dry-run decision path
-and evidence-based policy are done, with apply behavior still remaining.
+metadata lifecycle was delivered as CV9.DS7, done on 2026-09-26 and since ported
+to TypeScript by CV22.DS7.US10.
 Boundary Hardening and the remaining stabilization stories are still open before
 the full CV9 done condition is met.
 
@@ -105,22 +105,44 @@ In progress. CV21 is the successor to CV8, driven by one force: the coding-agent
 
 ## CV22 — TypeScript Core Port (Database-Seam Strangler)
 
-Paused on 2026-08-19. CV22 was the successor to CV21: where CV21 packaged Mirror's runtime
+Paused on 2026-08-19; restarted on 2026-09-02 after the pause-window
+reconciliation merge (see [Decisions](../decisions.md)). CV22 was the successor
+to CV21: where CV21 packaged Mirror's runtime
 surface once (plugin + MCP) and propagated it across runtimes, CV22 unifies the
 **core language underneath** by porting the Python core (`src/memory/`) to
 TypeScript. The motivation is convergence — npm distribution, one language across
 core and the already-TypeScript runtimes, a wider contributor pool, and MCP/plugin
 alignment. The approach is a **database-seam strangler**, never a big-bang
-rewrite: a TS front door over a shared `memory.db`, with authority transferring
-one observable command at a time. Python may keep evolving while it remains the
-runtime authority for an unported command; each change becomes explicit TS parity
-scope instead of freezing product work for the duration of the migration.
-The first epic, CV22.E1, validated the riskiest assumption — hybrid-ranker parity
-between TS and Python over the same SQLite file, proven on 480 real memories with
-1536-dim embeddings and a ~1,700× margin over the near-tie risk. The migration is
-now intentionally paused; its branch and evidence remain preserved, while Python
-is again the sole product authority for new work. The strategy and pause are
-recorded in [Decisions](../decisions.md). See the [CV22 index](cv22-typescript-core-port/index.md).
+rewrite: a TS front door over a shared `memory.db`, with the Python core
+dissolving one observable command at a time, governed by a rule that new feature
+work lands in TS (Python froze to maintenance-only at the CV21.E2.S2 baseline).
+CV22 is governed by Ariad; its former epics became Delivery Stories (DS1–DS5),
+with the final convergence epic now split risk-first into DS6–DS10 (schema
+custody → command burn-down → live-provider cutover → MCP server → Python
+retirement & npm).
+DS1 validated hybrid-ranker parity between TS and Python over the same SQLite
+file; DS2 completed read-only deterministic parity for `search`, `detect-persona`,
+journeys, and memory listing; DS3 closed the Pi-facing TS front door transition
+state with Python fallback preserved for unported and mutating flows; DS4 closed
+deterministic writes with backup-gated, copy-validated parity plus TS front-door
+routing for `identity set` and `journey set-path`. DS5 closed the replay-safe
+external-API plateau: provider record/replay + secrets substrate, fresh embedding
+search, extraction orchestration, consult core, and gated front-door routing for
+validated external command surfaces. DS6 (Schema Custody Transfer, the deletion
+gate) is **done**: all eight children (TS1–TS5, US1–US3) moved schema-bootstrap
+DDL, the migration engine and `_migrations` bookkeeping, cross-process locking,
+and pragma discipline to the TS core, canonicalized `identity.metadata`, and made
+`parent_journey` a first-class column with runtime migrate-on-open activation —
+with compatibility proven over real legacy database copies at multiple historical
+migration states, including migration `016`'s real ADD-COLUMN + backfill (the last
+gap, closed in TS5). The Python core can now be retired without breaking any
+`memory.db`, subject to the DS7+ command burn-down. On 2026-08-19 main recorded an intentional pause of the
+migration: Python resumed sole product authority for new work, with CV22 and its
+evidence preserved for an explicit restart that must reconcile against behavior
+accumulated during the pause. Both restart conditions were met on 2026-09-02 —
+the reconciliation merge landed with green CI and an explicit restart decision —
+and CV22 is active again. The strategy, pause, and restart are recorded in
+[Decisions](../decisions.md). See the [CV22 index](cv22-typescript-core-port/index.md).
 
 ## CV23 — Journey Projection Contract
 
@@ -224,6 +246,23 @@ Add new items at the top. Each entry should name the problem (not just the
 solution), point at evidence or source, and sketch the rough shape of the
 work.
 
+### Journeys remember their subject, but not their agreed way of working
+
+**Source:** [Journey Working Agreements exploration](../explorations/journey-working-agreements/index.md)
+**Surfaced:** 2026-08-17
+**Status:** Deferred until the relevant TypeScript migration seams mature
+
+Journeys currently preserve identity, history, project association, memories, and
+attachments, but cannot declare task-specific working profiles that coordinate persona,
+mode-compatible guidance, and required or optional references. A detailed exploration
+proposes versioned Journey Context Contracts with explainable resolution and
+confirmation-only durable learning. Implementation is deliberately deferred rather than
+absorbed into CV22 parity work. Reconsider it when CV22.DS7.US4 has established a stable
+TS Mirror Mode seam, DS8's live provider is complete or sufficiently concrete, TS schema
+authority remains settled, and the Navigator makes the capability current. The frozen
+source package, product synthesis, provisional future delivery sequence, and re-entry
+checklist are preserved with the exploration; no CV23 or implementation story is active.
+
 ### Change Request verb selection has no automated eval
 
 **Source:** CV20.DS14 (park/reject/promote) / ai-engineer review
@@ -287,6 +326,47 @@ inputs, so this is curation-prompt quality, not a regression. Possible shapes:
 tighten `CURATION_PROMPT` dedup guidance, add a similarity pre-filter before the
 curation call, or accept soft dedup and lean on MMR at retrieval. Low priority;
 surfaced for visibility.
+
+### FTS write amplification: the memories_fts update trigger fires on every row change
+
+**Source:** RS003 database-architect audit of the CV22 persistence seam (CR021)
+**Surfaced:** 2026-07-14
+
+`memories_fts` is an external-content FTS5 index kept in sync by triggers on
+`memories`. The update trigger `memories_fts_au` fires on **any** `UPDATE` of
+`memories`, not `UPDATE OF title, content, context` — so every reinforcement
+write (`log_access`/`log_use`, which touch `last_accessed_at` and `use_count`)
+rewrites the full FTS entry (delete + reinsert) on the hottest write path in
+the system, even though no indexed column changed.
+
+Shape of the work (post-CV22 — a schema change gated on migration discipline
+and the DS6 schema-custody transfer): scope the update trigger to the indexed
+columns with `AFTER UPDATE OF title, content, context ON memories`. Integrity
+is now verified: the write-parity harness runs FTS5 `integrity-check` after
+writes (`ts/src/db/ftsIntegrity.ts`) and `runtime diagnose` probes the index
+read-only, so the trigger change can be made and validated safely when the
+schema opens for change.
+
+### `memory_access_log` grows forever and has no retention policy
+
+**Source:** RS003 database-architect audit of the CV22 persistence seam (CR022)
+**Surfaced:** 2026-07-14
+
+Every search retrieval appends rows to `memory_access_log` (the
+highest-frequency insert in the system), and nothing in production ever
+deletes from it — the only `DELETE` lives in the dev/test-only
+`client.reset()`. Reinforcement scoring reads the table on every search
+(access counts per candidate). The table therefore grows without bound for
+the lifetime of a Mirror while sitting on the search hot path.
+
+Shape of the work (post-CV22 — the port's no-behavior-change rule excludes
+it now): either age-based pruning or aggregate-table compaction. The data
+model invites the latter cheaply — reinforcement only needs the count and the
+latest access time per memory, and `last_accessed_at` is already cached on
+`memories` — but `access_context` rows may retain observability value worth
+keeping by age. Interacts with the recorded DS5 read strategy (single
+`GROUP BY` for access counts): a compaction design should keep that aggregate
+cheap. See [Decisions](../decisions.md) for the read-strategy entry.
 
 ### Mirror Web Experience staged major release
 

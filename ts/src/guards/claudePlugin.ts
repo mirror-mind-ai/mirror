@@ -1,0 +1,252 @@
+// Generate the canonical Mirror Mind Claude plugin (manifest + skills), and the
+// Claude Code copies of Pi-sourced skills.
+//
+// The Node port of `src/memory/plugins/claude.py` and its wrapper
+// `scripts/build_claude_plugin.py` (CV22.DS10.TS5, slice B).
+//
+// The Zero Python gate assigns the builder to **US3**, on the grounds that US3
+// decides what it builds. But it is a `.py` file, and TS5's done condition is
+// that `git ls-files '*.py'` is empty -- so the file cannot survive this story
+// whoever owns its content. Decision D6 resolves that: the port lands here,
+// byte-identical in output; US3 still owns the shape of what it emits when the
+// npm entry point becomes real.
+//
+// The plugin skills are generated from `.claude/skills/` (the Claude-tuned
+// source), with one exception since CR102. A Pi-sourced skill
+// (`piSourcedSkills.ts`) has one body in every runtime, so this module also
+// generates its `.claude/skills/` copy from `.pi/skills/`, and takes its plugin
+// copy from that generated content rather than from the file on disk. Hooks
+// under `plugins/mirror-mind/hooks/` are hand-authored plugin source and are
+// NOT managed by this module -- which is precisely why TS5's inventory had to
+// find their interpreter spawns by reading them.
+
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  rmdirSync,
+  unlinkSync,
+  writeFileSync,
+} from "node:fs";
+import { dirname, join, relative } from "node:path";
+
+import { packageVersion } from "#runtime/version.ts";
+import { claudeVariant, PI_SKILLS_DIR, PI_SOURCED_SKILLS } from "./piSourcedSkills.ts";
+
+export const PLUGIN_NAME = "mirror-mind";
+export const PLUGIN_DESCRIPTION =
+  "Mirror Mind — local-first memory and identity for agentic runtimes.";
+export const PLUGIN_AUTHOR = "Mirror Mind";
+
+export const SKILLS_SOURCE_DIR = ".claude/skills";
+export const PLUGIN_DIR = "plugins/mirror-mind";
+export const SKILL_FILENAME = "SKILL.md";
+
+/** A file the generator owns, addressed relative to the repo root. */
+export interface GeneratedFile {
+  readonly relativePath: string;
+  readonly content: string;
+  /** The authored file it derives from, when a person could mistake it for one. */
+  readonly source?: string;
+}
+
+/**
+ * The project version, read from source.
+ *
+ * Read from source rather than from installed metadata, so the build is
+ * deterministic. `packageVersion` is the single body that answers this for the
+ * whole core (US2 decision D2); CV22.DS10.TS5 re-pointed it at
+ * `package.json` and this builder followed with no edit, which is the point
+ * of there being one body.
+ */
+export function readVersion(repoRoot: string): string {
+  const version = packageVersion(repoRoot);
+  if (!version) throw new Error(`version not found from ${repoRoot}`);
+  return version;
+}
+
+/**
+ * The Claude plugin manifest (minimal; no unsupported keys).
+ *
+ * Declares the Mirror MCP server so the canonical package carries it. Since
+ * CV22.DS9.TS2 the entry is the plugin's own launcher rather than an engine,
+ * so reverting never requires editing a plugin installed inside someone's
+ * runtime (DS9 decision D5). TS5 removes that launcher's Python branch; US3
+ * repoints this at the npm entry point.
+ */
+export function buildManifest(version: string): Record<string, unknown> {
+  return {
+    name: PLUGIN_NAME,
+    version,
+    description: PLUGIN_DESCRIPTION,
+    author: { name: PLUGIN_AUTHOR },
+    mcpServers: {
+      // The placeholder is Claude Code's, expanded when it loads the plugin. A
+      // JavaScript template would resolve at BUILD time, against this
+      // repository, shipping an absolute path from the release machine.
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: Claude expands this at load time, not JS
+      [PLUGIN_NAME]: { command: "${CLAUDE_PLUGIN_ROOT}/mcp/launch.sh" },
+    },
+  };
+}
+
+/** The manifest as deterministic JSON text, byte-identical to Python's. */
+export function manifestJson(version: string): string {
+  return `${JSON.stringify(buildManifest(version), null, 2)}\n`;
+}
+
+/**
+ * The skill markdown file, matching `skill.md` case-insensitively.
+ *
+ * Case-insensitive makes the generator robust on both case-sensitive and
+ * case-insensitive filesystems, including older checkouts that may still
+ * contain lowercase `skill.md`.
+ */
+function findSkillMarkdown(skillDir: string): string | null {
+  for (const entry of readdirSync(skillDir, { withFileTypes: true, encoding: "utf8" }).sort(
+    (a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0),
+  )) {
+    if (entry.isFile() && entry.name.toLowerCase() === SKILL_FILENAME.toLowerCase()) {
+      return join(skillDir, entry.name);
+    }
+  }
+  return null;
+}
+
+/**
+ * `[skillDirName, markdownPath]` for each skill under `.claude/skills/`. Most
+ * are authored there. A Pi-sourced skill's file is generated instead
+ * (`piSourcedSkills.ts`), and `planGeneratedFiles` takes that one from its Pi
+ * copy, never from this path.
+ */
+export function discoverSkillSources(repoRoot: string): [string, string][] {
+  const base = join(repoRoot, SKILLS_SOURCE_DIR);
+  const sources: [string, string][] = [];
+  const entries = readdirSync(base, { withFileTypes: true, encoding: "utf8" }).sort((a, b) =>
+    a.name < b.name ? -1 : a.name > b.name ? 1 : 0,
+  );
+  for (const child of entries) {
+    if (!child.isDirectory()) continue;
+    const markdown = findSkillMarkdown(join(base, child.name));
+    if (markdown === null) continue;
+    sources.push([child.name, markdown]);
+  }
+  return sources;
+}
+
+/**
+ * The `.claude/skills/` copy of each Pi-sourced skill, generated from its Pi
+ * copy. Refuses, before anything is written, when a listed skill has no Pi
+ * copy: generation would otherwise stop without a word, and the old Claude copy
+ * would pass for an authored one again.
+ */
+function planPiSourcedClaudeCopies(repoRoot: string): Map<string, GeneratedFile> {
+  const copies = new Map<string, GeneratedFile>();
+  for (const skill of PI_SOURCED_SKILLS) {
+    const source = join(PI_SKILLS_DIR, skill, SKILL_FILENAME);
+    const path = join(repoRoot, source);
+    if (!existsSync(path)) {
+      throw new Error(
+        `${source}: missing, but ${skill} is listed as Pi-sourced in ts/src/guards/piSourcedSkills.ts`,
+      );
+    }
+    copies.set(skill, {
+      relativePath: join(SKILLS_SOURCE_DIR, skill, SKILL_FILENAME),
+      content: claudeVariant(skill, readFileSync(path, "utf8"), source),
+      source,
+    });
+  }
+  return copies;
+}
+
+/** Every file the generator owns, without touching the filesystem. */
+export function planGeneratedFiles(repoRoot: string): GeneratedFile[] {
+  const version = readVersion(repoRoot);
+  const claudeCopies = planPiSourcedClaudeCopies(repoRoot);
+
+  const pluginSkills = new Map<string, GeneratedFile>();
+  for (const [name, markdown] of discoverSkillSources(repoRoot)) {
+    if (claudeCopies.has(name)) continue;
+    pluginSkills.set(name, {
+      relativePath: join(PLUGIN_DIR, "skills", name, SKILL_FILENAME),
+      content: readFileSync(markdown, "utf8"),
+    });
+  }
+  for (const [name, claudeCopy] of claudeCopies) {
+    pluginSkills.set(name, {
+      relativePath: join(PLUGIN_DIR, "skills", name, SKILL_FILENAME),
+      content: claudeCopy.content,
+      source: claudeCopy.source,
+    });
+  }
+
+  return [
+    {
+      relativePath: join(PLUGIN_DIR, ".claude-plugin", "plugin.json"),
+      content: manifestJson(version),
+    },
+    ...claudeCopies.values(),
+    ...[...pluginSkills].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)).map(([, file]) => file),
+  ];
+}
+
+/** One drift line; a derived file also names the source a person should edit. */
+function driftLine(kind: "missing" | "out of date", file: GeneratedFile): string {
+  const from = file.source
+    ? ` (generated from ${file.source}: edit the source, then regenerate)`
+    : "";
+  return `${kind}: ${file.relativePath}${from}`;
+}
+
+function generatedSkillFiles(repoRoot: string): string[] {
+  const skillsRoot = join(repoRoot, PLUGIN_DIR, "skills");
+  if (!existsSync(skillsRoot)) return [];
+  const found: string[] = [];
+  for (const entry of readdirSync(skillsRoot, { withFileTypes: true, encoding: "utf8" })) {
+    if (!entry.isDirectory()) continue;
+    const candidate = join(skillsRoot, entry.name, SKILL_FILENAME);
+    if (existsSync(candidate)) found.push(candidate);
+  }
+  return found.sort();
+}
+
+/**
+ * Write every generated file, the plugin and the `.claude/skills/` copies of
+ * Pi-sourced skills, or report drift when `write` is false.
+ *
+ * Returns human-readable drift descriptions. In check mode the list is the
+ * assertion target (empty == in sync). In write mode it is empty and the files
+ * are written; stale generated skills are removed.
+ */
+export function materialize(repoRoot: string, options: { write: boolean }): string[] {
+  const desired = planGeneratedFiles(repoRoot);
+  const desiredPaths = new Set(desired.map((file) => file.relativePath));
+  const problems: string[] = [];
+
+  for (const generated of desired) {
+    const target = join(repoRoot, generated.relativePath);
+    if (options.write) {
+      mkdirSync(dirname(target), { recursive: true });
+      writeFileSync(target, generated.content, "utf8");
+    } else if (!existsSync(target)) {
+      problems.push(driftLine("missing", generated));
+    } else if (readFileSync(target, "utf8") !== generated.content) {
+      problems.push(driftLine("out of date", generated));
+    }
+  }
+
+  for (const existing of generatedSkillFiles(repoRoot)) {
+    const rel = relative(repoRoot, existing);
+    if (desiredPaths.has(rel)) continue;
+    if (options.write) {
+      const parent = dirname(existing);
+      for (const leftover of readdirSync(parent).sort()) unlinkSync(join(parent, leftover));
+      rmdirSync(parent);
+    } else {
+      problems.push(`stale: ${rel}`);
+    }
+  }
+
+  return problems;
+}

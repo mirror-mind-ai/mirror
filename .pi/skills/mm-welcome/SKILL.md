@@ -9,7 +9,7 @@ user-invocable: true
 When receiving `/mm-welcome`, run:
 
 ```bash
-uv run python -m memory welcome
+mirror welcome
 ```
 
 Show the user the output verbatim. The welcome is a short, state-aware

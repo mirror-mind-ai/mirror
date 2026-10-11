@@ -2,6 +2,13 @@
 
 **Status:** Done · 2026-05-11
 
+> Built on the Python core. CV22 ported this infrastructure to TypeScript,
+> CV22.DS10.TS2 replaced `register(api)` with language-neutral runtime
+> protocols, and CV22.DS10.TS5 deleted the Python core. The commands and the
+> evidence below are as they were run at the time and are kept as the record;
+> today's contract is the [API reference](../api-reference.md), and today's
+> commands are in the [authoring guide](../authoring-guide.md).
+
 ## Story
 
 **As a** maintainer of Mirror Mind,

@@ -9,7 +9,7 @@ user-invocable: true
 When receiving `/mm-journal "entry text" [--journey SLUG]`:
 
 ```bash
-uv run python -m memory journal "entry text" [--journey SLUG]
+mirror journal "entry text" [--journey SLUG]
 ```
 
 The script records the entry, classifies it into a memory layer, and prints the result.

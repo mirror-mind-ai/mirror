@@ -1,0 +1,143 @@
+{
+  "cache_reads": {
+    "absent": {
+      "file": null,
+      "parsed": null
+    },
+    "empty_channel": {
+      "file": "{\"availability\": \"up_to_date\", \"checked_at\": \"2026-09-08T12:00:00+00:00\", \"channel\": \"\"}",
+      "parsed": null
+    },
+    "malformed_json": {
+      "file": "{not json at all",
+      "parsed": null
+    },
+    "missing_availability": {
+      "file": "{\"checked_at\": \"2026-09-08T12:00:00+00:00\", \"channel\": \"stable\"}",
+      "parsed": null
+    },
+    "not_a_mapping": {
+      "file": "[\"a\", \"list\"]",
+      "parsed": null
+    },
+    "optional_fields_wrong_type": {
+      "file": "{\"availability\": \"up_to_date\", \"checked_at\": \"2026-09-08T12:00:00+00:00\", \"channel\": \"stable\", \"version\": 12, \"title\": \"\", \"note\": null}",
+      "parsed": {
+        "availability": "up_to_date",
+        "channel": "stable",
+        "checked_at": "2026-09-08T12:00:00+00:00",
+        "current_commit": null,
+        "note": null,
+        "remote_commit": null,
+        "title": null,
+        "version": null
+      }
+    },
+    "valid": {
+      "file": "{\"availability\": \"update_available\", \"checked_at\": \"2026-09-08T12:00:00+00:00\", \"channel\": \"stable\", \"version\": \"v9.9.9\", \"title\": \"Uma travessia \\u2014 with an em dash\"}",
+      "parsed": {
+        "availability": "update_available",
+        "channel": "stable",
+        "checked_at": "2026-09-08T12:00:00+00:00",
+        "current_commit": null,
+        "note": null,
+        "remote_commit": null,
+        "title": "Uma travessia — with an em dash",
+        "version": "v9.9.9"
+      }
+    },
+    "wrong_types": {
+      "file": "{\"availability\": 1, \"checked_at\": \"2026-09-08T12:00:00+00:00\", \"channel\": \"stable\"}",
+      "parsed": null
+    }
+  },
+  "cache_writes": {
+    "unknown_with_note": {
+      "awareness": {
+        "availability": "unknown",
+        "channel": "main",
+        "checked_at": "2026-09-08T12:00:00+00:00",
+        "current_commit": null,
+        "note": "remote query failed",
+        "remote_commit": null,
+        "title": null,
+        "version": null
+      },
+      "bytes": "{\n  \"availability\": \"unknown\",\n  \"channel\": \"main\",\n  \"checked_at\": \"2026-09-08T12:00:00+00:00\",\n  \"current_commit\": null,\n  \"note\": \"remote query failed\",\n  \"remote_commit\": null,\n  \"title\": null,\n  \"version\": null\n}\n"
+    },
+    "up_to_date_minimal": {
+      "awareness": {
+        "availability": "up_to_date",
+        "channel": "stable",
+        "checked_at": "2026-09-08T12:00:00+00:00",
+        "current_commit": null,
+        "note": null,
+        "remote_commit": null,
+        "title": null,
+        "version": null
+      },
+      "bytes": "{\n  \"availability\": \"up_to_date\",\n  \"channel\": \"stable\",\n  \"checked_at\": \"2026-09-08T12:00:00+00:00\",\n  \"current_commit\": null,\n  \"note\": null,\n  \"remote_commit\": null,\n  \"title\": null,\n  \"version\": null\n}\n"
+    },
+    "update_available_full": {
+      "awareness": {
+        "availability": "update_available",
+        "channel": "stable",
+        "checked_at": "2026-09-08T12:00:00+00:00",
+        "current_commit": "abc1234",
+        "note": null,
+        "remote_commit": "def5678",
+        "title": "Uma travessia — with an em dash",
+        "version": "v9.9.9"
+      },
+      "bytes": "{\n  \"availability\": \"update_available\",\n  \"channel\": \"stable\",\n  \"checked_at\": \"2026-09-08T12:00:00+00:00\",\n  \"current_commit\": \"abc1234\",\n  \"note\": null,\n  \"remote_commit\": \"def5678\",\n  \"title\": \"Uma travessia \\u2014 with an em dash\",\n  \"version\": \"v9.9.9\"\n}\n"
+    }
+  },
+  "cards": {
+    "cached_update_with_title": "◇ Mirror · status-home\nVersion 9.9.9 · channel stable\n2 journeys · 2 personas · 0 memories · 0 conversations · since today\n✨ New Version Available: v9.9.9 — Uma travessia — with an em dash\nAsk: \"what's new in this update?\" or \"update my Mirror\"\n\n→ Where shall we begin?",
+    "cached_update_without_title": "◇ Mirror · status-home\nVersion 9.9.9 · channel stable\n2 journeys · 2 personas · 0 memories · 0 conversations · since today\n✨ New Version Available: v9.9.9\nAsk: \"what's new in this update?\" or \"update my Mirror\"\n\n→ Where shall we begin?",
+    "cached_update_without_version": "◇ Mirror · status-home\nVersion 9.9.9 · channel stable\n2 journeys · 2 personas · 0 memories · 0 conversations · since today\n✨ New Version Available on stable\nAsk: \"what's new in this update?\" or \"update my Mirror\"\n\n→ Where shall we begin?",
+    "empty_database": "◇ Mirror · no-db-home\nVersion 9.9.9 · channel stable\n0 journeys · 0 personas · 0 memories · 0 conversations · since today\nNew Version Available: 1 commit behind origin/stable · run runtime update\nAsk Mirror: \"What's new in the latest Mirror Mind release?\"\n\n→ Where shall we begin?",
+    "remote_check_disabled_behind": "◇ Mirror · status-home\nVersion 9.9.9 · channel stable\n2 journeys · 2 personas · 0 memories · 0 conversations · since today\nNew Version Available: 1 commit behind origin/stable · run runtime update\nAsk Mirror: \"What's new in the latest Mirror Mind release?\"\n\n→ Where shall we begin?",
+    "remote_check_disabled_unfetched": "◇ Mirror · status-home\nVersion 9.9.9 · channel stable\n2 journeys · 2 personas · 0 memories · 0 conversations · since today\n\n→ Where shall we begin?",
+    "stats_since_earliest_conversation": "◇ Mirror · stats-home\nVersion 9.9.9 · channel stable\n0 journeys · 0 personas · 0 memories · 2 conversations · since Mar 2025\n\n→ Where shall we begin?",
+    "unresolvable_home": ""
+  },
+  "meta": {
+    "cache_bytes_contract": "`_write_update_cache` uses json.dumps(indent=2, sort_keys=True) and leaves ensure_ascii at Python's DEFAULT (True), so the em dash in the release title must be written as \\u2014. Both cores read and write this file during the transition; differing bytes would rewrite it on every alternating invocation and thrash the 6h TTL.",
+    "fixed_now": "2026-09-08T12:00:00+00:00",
+    "fixture_version": "9.9.9",
+    "note": "Oracle: src/memory/cli/welcome.py over fixture mirror homes and a fixture git clone with a file:// bare remote, built by this generator and rebuilt identically by the TypeScript test.",
+    "release_title": "Uma travessia — with an em dash",
+    "release_version": "v9.9.9",
+    "remote_tag": {
+      "status": "update_available",
+      "tag": "v9.9.9",
+      "title_after_pull": "Uma travessia — with an em dash",
+      "title_from_clone": null,
+      "upstream": "origin/stable"
+    },
+    "staleness": {
+      "beyond_ttl": true,
+      "fresh": false,
+      "just_inside_ttl": false,
+      "just_outside_ttl": true,
+      "naive_timestamp": false,
+      "unparseable": true
+    }
+  },
+  "status_lines": {
+    "builder_mode_with_journey": "◇ status-home · Mirror TypeScript Core Port on ■ Builder Mode · ✓",
+    "cached_up_to_date": "◇ status-home · Mirror TypeScript Core Port on ■ Builder Mode · ✓",
+    "cached_update_available": "◇ status-home · Mirror TypeScript Core Port on ■ Builder Mode · ⬆ v9.9.9",
+    "cached_update_without_version": "◇ status-home · Mirror TypeScript Core Port on ■ Builder Mode · ⬆",
+    "development_env": "◇ status-home · 🛠 development · ✓",
+    "journey_without_heading": "◇ status-home · plain first line on △ Explorer Mode · ✓",
+    "no_database": "◇ no-db-home · ✓",
+    "no_mode_no_cache": "◇ status-home · ◌ Mirror Mode · ✓",
+    "other_session_sees_no_mode": "◇ status-home · ◌ Mirror Mode · ✓",
+    "soul_mode_no_journey": "◇ status-home · ☾ Soul Mode · ✓",
+    "test_env": "◇ status-home · 🧪 test · ✓",
+    "unknown_mode_has_no_icon": "◇ status-home · Custom Lens · ✓",
+    "unresolvable_home": ""
+  }
+}

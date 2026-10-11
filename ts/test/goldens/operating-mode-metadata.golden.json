@@ -1,0 +1,47 @@
+{
+  "global_session_id": "__global_operating_mode__",
+  "scenarios": [
+    {
+      "expected_metadata": "{\"operating_mode\": {\"active_mode\": \"Soul Mode\", \"active_journey\": \"mirror-ts-core\"}}",
+      "name": "activate_session_no_prior_metadata",
+      "read_session": "operating-mode-session",
+      "seed_metadata": null
+    },
+    {
+      "expected_metadata": "{\"soul\": {\"fruit_in_maturation\": \"a fruit already maturing\"}, \"operating_mode\": {\"active_mode\": \"Soul Mode\", \"active_journey\": \"mirror-ts-core\"}}",
+      "name": "activate_session_beside_soul_key",
+      "read_session": "operating-mode-session",
+      "seed_metadata": "{\"soul\": {\"fruit_in_maturation\": \"a fruit already maturing\"}}"
+    },
+    {
+      "expected_metadata": "{\"operating_mode\": {\"active_mode\": \"Soul Mode\", \"active_journey\": null}}",
+      "name": "activate_session_without_journey",
+      "read_session": "operating-mode-session",
+      "seed_metadata": null
+    },
+    {
+      "expected_metadata": "{\"operating_mode\": {\"active_mode\": \"Soul Mode\", \"active_journey\": \"jornada-café-沉默\"}}",
+      "name": "activate_session_unicode_journey",
+      "read_session": "operating-mode-session",
+      "seed_metadata": null
+    },
+    {
+      "expected_metadata": "{\"active_mode\": \"Builder Mode\", \"active_journey\": \"mirror-ts-core\"}",
+      "name": "activate_global_without_session",
+      "read_session": "__global_operating_mode__",
+      "seed_metadata": null
+    },
+    {
+      "expected_metadata": "{\"soul\": {\"fruit_in_maturation\": \"a fruit already maturing\"}}",
+      "name": "deactivate_session_leaves_soul_key",
+      "read_session": "operating-mode-session",
+      "seed_metadata": "{\"soul\": {\"fruit_in_maturation\": \"a fruit already maturing\"}, \"operating_mode\": {\"active_mode\": \"Soul Mode\", \"active_journey\": \"j\"}}"
+    },
+    {
+      "expected_metadata": null,
+      "name": "deactivate_session_leaves_nothing",
+      "read_session": "operating-mode-session",
+      "seed_metadata": "{\"operating_mode\": {\"active_mode\": \"Soul Mode\", \"active_journey\": \"j\"}}"
+    }
+  ]
+}

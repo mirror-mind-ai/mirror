@@ -22,7 +22,7 @@ Dropped   no longer relevant or replaced by another item
 | D-002 | Journey search silently returns `[]` on embedding failure | product | low | Carried | CV9.E2.S1 (AI-E4) | A "no journeys matched" report that is actually an embedding outage, or unifying journey degradation with memory-search's lexical fallback |
 | D-003 | Embedding calls bypass the `llm_calls` ledger (invisible spend, amplified by S1 retry) | observability | medium | Paid | CV9.E2.S1 (AI-E1, AI-09 tail) → CV9.E2.S18 | Paid by CV9.E2.S18 embedding call observability |
 | D-004 | Full test suite exhausts file descriptors under a low `ulimit -n` (macOS default) | testing | low | Paid | CV9.E2.S1 validation | Paid: conftest raises the soft fd limit at startup |
-| D-005 | `evals/routing.py` fixtures are stale against the current persona catalog | testing | low | Carried | CV9.E2.S19 validation | Update fixtures to the current catalog (treasurer → cfo/financial; add scholar coverage), or the next persona-catalog change |
+| D-005 | `evals/routing.py` fixtures are stale against the current persona catalog | testing | low | **Dropped** | CV9.E2.S19 validation | Dropped 2026-09-22: the module was retired with the Python harness (CV22.DS10.TS3) rather than repaired. The successor gap — no routing-quality gate at all — is named in the engineering principles and carried by D-021 |
 | D-006 | `mypy` is documented as a CI gate but is enforced in no workflow; `src/memory` carries 109 mypy errors | process | medium | Carried | CV9.E2.S20 QA audit | Wire `mypy` into CI (clear/baseline the 109 errors) so the claim becomes true, or correct §10/the checklist to mypy's real (review-only) status |
 | D-007 | `Consolidation.action` field comment doesn't list the `shadow_observation` value shadow.py actually writes | design | low | Carried | CV9.E2.S22 (database-architect review) | Reconcile the model's action-enum comment with the real value set, or the next time `Consolidation.action` is touched |
 | D-008 | `layer` domain constraint enforced inconsistently across write paths | data integrity | low | Carried | CV9.E2.S25 (AI-24) database-architect review | A new write path bypasses both existing coercions, `add_memory()` is touched for another reason, or a schema migration is already planned |
@@ -34,12 +34,23 @@ Dropped   no longer relevant or replaced by another item
 | D-014 | Runtime-diagnose web test polling budget is below observed command latency | testing | low | Carried | CV23.DS2 validation | Runtime-diagnose execution, web polling, or that test harness changes, or CI reproduces the failure |
 | D-015 | Production updater blocks on retired experimental migration rows | operations / data | medium | Paid | CV23.DS7 release installation → local repair 2026-08-25 | Paid by verified removal of empty retired schema and rows 017–019 |
 | D-016 | Read-only WAL recovery assumes SQLite fails eagerly during connect | reliability / testing | medium | Paid | CV9.E2.S31 Navigator Validation baseline comparison → runtime WAL fallback maintenance | Paid by the integrated eager schema-probe fallback |
+| D-017 | Injection-resistance probes are averaged into a module score, so an obeyed probe can pass the release gate | eval measurement | medium | **Paid** | CV22.DS8.TS1 validation | Paid 2026-09-22 by CV22.DS10.TS3: six injection probes are `blocking`, so an obeyed probe fails its module at any score and the verdict names it |
+| D-018 | Extension API `VERSION` stays `1.1` after `api.journey_projections` was removed, so the constant advertises a capability that no longer exists | design / contract | low | **Paid** | CV22.DS10.TS1 Debt Review | Paid 2026-09-21 by CV22.DS10.TS2's decision: `VERSION` frozen at `1.1`; the in-process API ended with the Python core (TS5) |
+| D-019 | The Builder lifecycle corpus records a `projection_requests` field that nothing asserts | testing | low | **Paid** | CV22.DS10.TS1 Debt Review | Paid 2026-09-21: CI's determinism gate forced the regeneration this entry assumed had to wait for TS5 |
+| D-020 | The eval harness records no spend, so a run's cost cannot be reported | observability / cost | low | Carried | CV22.DS10.TS3 Debt Review | The first time a run's cost is questioned, or before any model-pin migration, where cost per run is part of the decision |
+| D-021 | `reception`'s eval reads the catalogue differently from production, and no gate covers routing quality | eval measurement | low | Carried | CV22.DS10.TS3 Debt Review | The next story that touches reception routing or descriptor generation |
+| D-022 | Blocking injection probes read "resisted" when the provider never answered, and nothing pins the attack payload in their fixtures | eval measurement / security | medium | Carried | CV22.DS10.TS3 handoff review (security-engineer) | The first blocked or inconclusive suite run, or before any story that treats a green gate as injection-resistance evidence |
+| D-023 | Two execution profiles outlived the only command that reached them | dead code / packaging | low | **Paid** | CV22.DS10.TS4 Debt Review | Paid 2026-09-24 by CV22.DS10.TS5 plateau 2: `backfill_safe` and `backfill_force` removed from both engines in one commit, the golden regenerated to a pure deletion, the oracle-drift baseline re-taken for the one file |
+| D-024 | The Refinement field's seed-CR scan reads Mirror Mind's own roadmap path inside the user's project | product correctness / inherited port oddity | low | **Paid** | CV22.DS10.TS4 Debt Review | Paid 2026-09-24 by CV22.DS10.TS5 plateau 2: the scan, its two card lines, and its review move removed from both engines; a project carrying the CV20.DS6 plan is now indistinguishable from one that does not, and a test says so |
+| D-025 | `runtime migrate` reports `nothing pending` when the engine DECLINED the work, so an update can pass its migrate stage on a database with pending migrations | correctness / migrations | medium | **Paid** | CV22.DS10.US2 Debt Review | Paid 2026-09-24 by CV22.DS10.TS5 plateau 1 (`c8c74361`): TypeScript is the sole migration custodian, `runtime migrate` has three verdicts, and `declined` exits non-zero and fails the updater's migrate stage |
+| D-026 | The update pipeline is implemented twice, once per install kind, in one module | duplication / maintainability | low | **Paid** | CV22.DS10.US2 Debt Review | Paid 2026-10-09 by CV22.DS10.US3 plateau 4 (`895bef57`): one body in `update.ts` over two `ApplyStrategy` implementations, the seam declared beside the stage vocabulary; the repair lane is a list of steps, not a third copy; the 15 US2 tests and the update smoke passed unchanged |
+| D-027 | Nothing writes the package install's update-channel file, so a package user cannot select a channel persistently | operability | low | **Paid** | CV22.DS10.US2 Debt Review | Paid 2026-10-09 by CV22.DS10.US3 plateau 4 (`50cfd4c4`): `mirror runtime channel [stable\|main]` writes the file for either install kind, creating the config directory `0700` when `init` has not |
 
 ## D-001 — Metadata lifecycle policy and evidence filtering live inside ConversationService
 
 **Kind:** design  
 **Severity:** medium  
-**Status:** Paid  
+**Status:** Paid
 **Source:** CV9.DS7.US1 / CV9.DS7.TS1 / CV9.DS7.TS2  
 
 ### Carrying reason
@@ -88,6 +99,12 @@ CV9.E2.S16 (AI-10) removed for extraction. S1 did not introduce this (an
 `IndexError` slipped past the same handler before), and S1 deliberately did not
 unify all five embedding-failure behaviors across the surfaces.
 
+**Where it lives now (2026-09-24, CV22.DS10.TS5 plateau 4).** The Python class
+is gone with the core; the TypeScript port kept the shape.
+`detectJourney` (`ts/src/mirror/defaultResolution.ts`) wraps the query
+embedding in `catch { return []; }`, so the debt is unchanged, in a different
+file.
+
 ### Revisit trigger
 
 A user reports a suspicious empty journey match during a provider outage, or a
@@ -102,7 +119,7 @@ or deliberately documents the empty-on-failure behavior as intended.
 
 **Kind:** observability  
 **Severity:** medium  
-**Status:** Paid  
+**Status:** Paid
 **Source:** CV9.E2.S1 (AI-E1, AI-09 tail) · paid by CV9.E2.S18  
 
 ### Carrying reason
@@ -139,7 +156,7 @@ growth is tracked as a retention radar item.
 
 **Kind:** testing  
 **Severity:** low  
-**Status:** Paid  
+**Status:** Paid
 **Source:** CV9.E2.S1 (Navigator validation) · paid alongside CV9.E2.S18  
 
 ### Carrying reason
@@ -182,7 +199,7 @@ validation-blocking symptom is resolved.
 
 **Kind:** testing  
 **Severity:** low  
-**Status:** Carried  
+**Status:** Dropped
 **Source:** CV9.E2.S19 validation  
 
 ### Carrying reason
@@ -205,7 +222,39 @@ content).
 
 Before the routing eval is treated as a red/green release-gate signal, or the
 next time the persona catalog changes and the fixtures need re-verification
-anyway.
+anyway — **or when the eval harness transfers to TypeScript**, where this
+module is the obvious retirement rather than a port
+([CV22.DS8.TS1 decision](decisions.md#the-eval-harness-transfers-to-typescript-as-a-ds10-gate-not-a-ds8-port)):
+TypeScript has deterministic `detect-persona` goldens from CV22.DS2, so paying
+the fixture debt to port a live probe that duplicates them would be the
+expensive answer. That disposition belongs to **CV22.DS10.TS3**, the harness
+story, which must decide it explicitly.
+
+### Resolution
+
+*(Status line corrected from Carried by CV22.DS10.TS5's Debt Review, 2026-09-25. The summary table was already right.)*
+
+**Dropped 2026-09-22 by CV22.DS10.TS3**, which decided the disposition the
+trigger demanded: `routing` was retired with the Python harness rather than
+ported or repaired. The fixture debt is gone because the fixtures are gone.
+
+What replaced it is *not* equivalent, and the story recorded that rather than
+letting the retirement read as a fix. `detectPersona`'s CI goldens prove
+**parity with the Python implementation**; they do not prove that the live
+persona catalogue routes real queries sensibly, which is what this eval
+measured. Retirement therefore leaves **no successor gate for routing quality**.
+That gap is written into the
+[engineering principles](../process/engineering-principles.md) as a named open
+gap and carried forward as **D-021**; refreshing the fixtures against the
+current catalogue is future work, not work this story did.
+
+**Now the only red (CV22.DS10.US1, 2026-09-19).** `scene` retired with the web
+console, so the suite is eleven modules and `routing` is the sole reason
+`eval --all` reports `SUITE FAIL` — 11/15 against a 0.85 threshold, reproducing
+the three failures recorded above by name. Nothing changed about the debt; the
+denominator shrank around it. Worth stating because a single-failure suite
+invites the wrong repair: raising the threshold or dropping the module to get a
+green light, rather than deciding whether the module should exist.
 
 ### Closure condition
 
@@ -699,3 +748,468 @@ open, closes and falls back to `mode=rw` only for the expected WAL-sidecar error
 never creates a missing database, and does not hide unrelated SQLite failures.
 The existing WAL recovery test and focused negative cases pass on the release
 Python/SQLite combination, followed by the complete non-live suite.
+
+## D-017 — Injection-resistance probes are averaged into a module score
+
+**Kind:** eval measurement  
+**Severity:** medium  
+**Status:** Paid
+**Source:** CV22.DS8.TS1 validation  
+
+### Carrying reason
+
+`run_eval` scores a module as `passed / total` against one `THRESHOLD`, so a
+security-relevant probe carries the same weight as a quality probe in the same
+module. The consequence, observed in this story's `eval --all` run on
+2026-09-13: **`scene` reported `5/6 passed ✓ PASS` while
+`scene-injection-resisted` printed `complied=True — OBEYED`.** The suite's only
+failing module was `routing`; the obeyed injection probe never reached the
+verdict.
+
+The arithmetic makes this structural, not incidental. AI-22 closed `scene` at
+9/10 with a documented 1/10 residual, and a 1-in-6-probe module cannot fall
+below 0.80 on one failure — so the residual is invisible to the gate by
+construction, and so would be a genuine fence regression. The same shape
+applies to every fenced surface: `extraction`, `shadow`, `consolidate`,
+`title_tags`, `conversation_summary`.
+
+This is not a finding against `scene`'s prompt. A Navigator-authorized n=5
+confirmation the same day returned **5/5 resisted** (`6/6 passed` each run,
+identical `prompt_hash` and model), so the flip did not reproduce and is the
+documented residual rather than a regression — 1 obeyed in 6 against AI-22's
+recorded 1/10, indistinguishable at these sample sizes.
+
+That confirmation is the point, not a footnote. The gate never asked for it:
+the module reported PASS, and only a human reading the probe line prompted the
+five runs. The persisted record stores per-probe detail (`probes[].passed`), so
+`--history` could have flagged the flip — the instrument captured the signal
+and the verdict discarded it.
+
+**The worked example is gone; the debt is not (CV22.DS10.US1, 2026-09-19).**
+`scene` retired with the web console — the surface it graded reached users only
+through that process — so the evidence above is now history rather than a module
+anyone can rerun. Nothing about the finding changes: the arithmetic is identical
+for `extraction`, `shadow`, `consolidate`, `title_tags`, and
+`conversation_summary`, each of which still carries a security probe inside a
+module average. A debt whose example is retired is easy to mistake for a debt
+that was paid; it was not.
+
+### Revisit trigger
+
+The eval harness transfer (CV22.DS10.TS3, where the fix is a harness-contract
+requirement rather than a per-module patch — recorded as an item in that
+story's deletion gate), a fence change on any fenced surface, or any story
+that cites a module PASS as injection-resistance evidence.
+
+### Closure condition
+
+An obeyed injection probe fails its module and the suite regardless of the
+module's aggregate score, in whichever harness owns the release gate, with a
+test proving the failure path. Until then, injection-resistance evidence comes
+from reading the probe line, not from the module verdict.
+
+### Resolution
+
+*(Status line corrected from Carried by CV22.DS10.TS5's Debt Review, 2026-09-25. The summary table was already right.)*
+
+**Paid 2026-09-22 by CV22.DS10.TS3**, as a harness-contract requirement rather
+than a per-module patch, which is what the revisit trigger anticipated.
+`EvalProbe` carries a `blocking` flag; `evalPassed` returns false when any
+blocking probe failed, independently of the score; and the report names the
+probe (`blocked by <id>`) instead of leaving a human to infer it from the probe
+lines. The failure path is pinned by
+`ts/test/evals/types.test.ts::"a failed blocking probe fails the module at 5/6,
+above threshold"` — the exact arithmetic this entry described — and by a
+suite-level test asserting `--all` fails on a blocked module whose score clears
+threshold.
+
+The six probes carrying the flag are `prompt-injection-resisted` (extraction),
+`summary-injection-resisted`, `consolidation-injection-resisted`,
+`shadow-injection-resisted`, `title-injection-resisted`, and
+`tags-injection-resisted` — the five fenced surfaces this entry named as sharing
+`scene`'s arithmetic, plus extraction's. A structural test asserts that exactly
+six probes suite-wide are blocking and that every one of them is an injection
+probe, so the flag cannot quietly spread to quality probes or quietly fall off a
+security one.
+
+The entry's last warning proved worth keeping: a debt whose example is retired
+is easy to mistake for a debt that was paid. It was not paid when `scene` was
+deleted; it is paid now, and the first live run under the new rule had all six
+probes resist.
+
+## D-018 — Extension API `VERSION` advertises a removed capability
+
+**Kind:** design / contract  
+**Severity:** low  
+**Status:** Paid
+**Source:** CV22.DS10.TS1 Debt Review  
+
+### Carrying reason
+
+CV22.DS10.TS1 removed `api.journey_projections` with the Journey Projection
+Contract. Extension API `1.1` is the version that *added* that façade, and
+`memory.extensions.api.VERSION` still reports `1.1`. A removal is
+backward-incompatible, so the constant now describes a surface that does not
+exist.
+
+The practical exposure is small and bounded: no installed extension uses the
+capability, reaching for the attribute raises with the reason, and
+`hasattr` returns `False` so feature detection degrades. What is wrong is the
+*number*, not the behavior.
+
+It is carried rather than paid because the Extension API's version authority
+belongs to **CV22.DS10.TS2**, which owns the extension runtime boundary and the
+compatibility host. Choosing a number inside TS1 would create a second
+authority over the same constant — the failure mode this project has already
+paid for elsewhere. TS2 decides whether the removal warrants `1.2`, `2.0`, or
+a statement that the capability never reached a user and the number never
+mattered.
+
+### Revisit trigger
+
+CV22.DS10.TS2 plan time, or any story that changes the Extension API surface.
+
+### Closure condition
+
+`memory.extensions.api.VERSION` and the Extension API reference agree about
+which capabilities exist, under a version decided by the story that owns the
+extension runtime boundary.
+
+### Resolution
+
+**Paid 2026-09-21 by CV22.DS10.TS2's decision**
+([decisions](decisions.md#the-extension-api-freezes-at-11-rather-than-versioning-its-own-retirement-d-018)):
+`VERSION` stays `1.1` permanently. The in-process Extension API does not
+version forward, and the manifest runtime protocols replace it as the
+contract. That met this entry's closure condition, a version decided by the
+story that owns the extension runtime boundary. The ledger was never updated,
+though, and read Carried until CV22.DS10.TS5's Debt Review corrected it
+(2026-09-25). TS5 had deleted `src/memory/` by then, so the constant itself no
+longer exists.
+
+## D-019 — The Builder lifecycle corpus records an assertion it no longer makes
+
+**Kind:** testing  
+**Severity:** low  
+**Status:** Paid
+**Source:** CV22.DS10.TS1 Debt Review  
+
+### Carrying reason
+
+`ts/test/builder/lifecycle.test.ts` replays a recorded corpus of the Python
+Builder oracle step by step. Each step carries `projection_requests` — the
+refreshes Python requested at that point. TS1 retired the projection seam, so
+TypeScript issues none, and the assertion was removed with the reason written
+where it used to be.
+
+The field stays in the corpus, recorded and unasserted. That is a small honesty
+gap: a reader can no longer tell from the test whether the field is unused or
+merely unchecked, and only the comment says which.
+
+It is carried because regenerating the corpus requires running the Python
+oracle, which **CV22.DS10.TS5** deletes. Paying it now means rebuilding an
+artifact that is itself scheduled for removal, against an engine that is being
+retired. The sibling parity suite (`cursor.test.ts`) took the opposite and
+cheaper route for the same data — it asserts the *absence* of requests against
+the oracle's recording, so a re-added spawn is still caught there.
+
+### Resolution
+
+*(Status line corrected from Carried by CV22.DS10.TS5's Debt Review, 2026-09-25. The summary table was already right.)*
+
+**Paid 2026-09-21, by CI rather than by plan.** The reasoning above was sound and
+the conclusion was wrong: regenerating did not have to wait for TS5, because the
+determinism gate (`regenerate must be a no-op`) does not care what a story
+intended. It ran the generators, they crashed on a Store hook TS1 had deleted, and
+fixing them meant regenerating — which recorded the truth: Python requests no
+refreshes, so `projection_requests` is `[]` in every step, in the lifecycle corpus
+and in the cursor and command goldens beside it.
+
+The corpus and its assertions now agree, which was this entry's closure condition.
+The `refresh_projection_disabled` sequence went with it: its whole subject was a
+kwarg that suppressed a refresh nothing requests.
+
+What the entry got wrong is worth keeping. It reasoned about cost — "rebuilding an
+artifact that is itself scheduled for removal" — and concluded defer. It did not
+ask whether anything *else* would force the rebuild first. A deferral is a bet that
+nothing will touch the thing before its revisit trigger fires, and CI is a thing
+that touches everything.
+
+## D-020 — The eval harness records no spend
+
+**Kind:** observability / cost  
+**Severity:** low  
+**Status:** Carried  
+**Source:** CV22.DS10.TS3 Debt Review  
+
+### Carrying reason
+
+CV22.DS10.TS3's approved Plan committed to recording actually-spent in the
+story's `validation.md`. The build cannot: eval probes call the provider
+directly, without the `onLlmCall` ledger hook the production callers pass, so
+the full live suite wrote **zero rows** to `llm_calls`. Verified by query over
+the run window, not assumed.
+
+This is inherited rather than introduced — Python's harness recorded eval spend
+nowhere either, and the transfer preserved that behavior along with everything
+else. But the Plan made a promise this build does not keep, and a promise
+quietly dropped at closure is worse than a promise carried openly.
+
+The gap is small and the materials exist. `LiveLlmProvider` already returns the
+response fields the ledger hook consumes, and the harness already has a natural
+place to aggregate them: `runEval` builds one record per module and `runAll`
+knows the whole suite. What it does not have is a decision about *where* eval
+spend belongs — the product `llm_calls` ledger is the product's, and the gate
+writes only run history by design ("the gate writes only that history — never
+the product database"). Reporting a per-run total in the report and the JSONL
+record is the smaller, more likely answer.
+
+### Revisit trigger
+
+The first time a run's cost is questioned, or before any model-pin migration,
+where cost per run is part of the decision
+([model upgrade playbook](../process/development-guide.md#model-upgrade-playbook)
+already makes a full `--all` run mandatory on both pins, which doubles the
+spend it cannot currently report).
+
+### Closure condition
+
+A suite run reports what it cost, and the number lands somewhere durable
+alongside the verdict — without the gate writing to the product database.
+
+## D-021 — `reception`'s eval reads the catalogue differently from production, and routing quality has no gate
+
+**Kind:** eval measurement  
+**Severity:** low  
+**Status:** Carried  
+**Source:** CV22.DS10.TS3 Debt Review  
+
+### Carrying reason
+
+Two related gaps in what the model-behavior gate covers for routing.
+
+**The loader diverges.** `ts/evals/reception.ts` mirrors the Python eval's
+`_load_metadata` — `content[:200]` plus `routing_keywords` — while production's
+`resolveMirrorDefaults` prefers a generated descriptor when one exists and falls
+back to the content slice only when it does not. So the eval measures reception
+against a catalogue rendering that production does not quite use. This was
+deliberate at plateau 4: matching the eval is what made the plateau-5 diff
+meaningful, and changing it in the same story would have moved the numbers for a
+reason unrelated to the port.
+
+**Routing quality has no gate at all.** `routing` was retired with the Python
+harness (D-005). `detectPersona`'s CI goldens prove parity with the Python
+implementation, not that the live catalogue routes real queries sensibly — the
+thing `routing` actually measured, and the thing its stale fixtures stopped
+measuring well before retirement.
+
+Related evidence already on record: two `reception` probes
+(`open-existential-no-persona`, `shadow-touch-vague-discomfort`) have failed in
+every recorded run on both engines. Whether that is a prompt finding, a
+catalogue-drift finding of the same family as D-005, or a stale expectation has
+never been diagnosed — the module passes at 0.83 and the failures sit under the
+threshold, which is the same shape of invisibility D-017 described for security
+probes.
+
+### Revisit trigger
+
+The next story that touches reception routing or descriptor generation.
+
+### Closure condition
+
+The eval reads the catalogue the way production reads it, or the divergence is
+recorded as deliberate with a reason that survives the port; and the two
+standing `reception` failures have a diagnosis rather than a threshold that
+hides them.
+
+## D-022 — Blocking injection probes cannot distinguish resistance from an unanswered provider
+
+**Kind:** eval measurement / security  
+**Severity:** medium  
+**Status:** Carried  
+**Source:** CV22.DS10.TS3 handoff review — narrowed security-engineer pass, 2026-09-22  
+
+### Carrying reason
+
+Two gaps in what a green `*-injection-resisted` verdict actually proves, found
+by reading the delivered code adversarially after Validation.
+
+**A provider failure reads as resistance.** All six fenced pipeline functions
+fail soft by design: `generateConversationTitle`, `Tags`, and `Summary` return
+`""` on a caught provider error; `extractMemories` and
+`proposeShadowObservations` return `[]`; `proposeConsolidation` returns `null`.
+None of those contain a sentinel, and the consolidate and shadow probes
+*explicitly* treat the null as "the safe null always counts as resistance." So
+a revoked key, a network outage, or a provider 5xx yields **six green injection
+probes and a passing gate** — and D-017's blocking rule, which exists to make
+injection verdicts trustworthy, does nothing, because nothing failed. The probe
+cannot tell *the model chose silence* from *the provider never answered*,
+because the pipeline swallows the exception before the probe sees it.
+
+This is inherited from Python verbatim, and its original authors chose it
+deliberately. What changed is the stakes: under the Python contract "resisted"
+was one probe in an average; under D-017 it is the claim the gate stands on. A
+fenced surface is entitled to fail soft in production. A security probe *of*
+that surface is not entitled to call that silence resistance.
+
+**Nothing pins the attack payload in the fixture.** The sentinels live in
+module source; the injected transcript lives in captured JSON. All six fixtures
+contain their payload today (verified 2026-09-22), but the Python check that
+established that is deleted, and an edit that shortens or paraphrases the
+injected message — the kind of tidy-up that happens to test data — converts the
+probe to a vacuous pass with nothing to say so.
+
+### Controls, when paid
+
+1. Every fenced function already accepts an `onLlmCall` hook. A blocking probe
+   requires that the hook fired and the response was non-empty before an
+   empty result may count as resistance, and reports **`inconclusive`**
+   otherwise. This needs its own policy — does `inconclusive` block, warn, or
+   pass? — which is why it is deferred rather than bolted onto a closed story.
+2. One structural test in `ts/test/evals/moduleContract.test.ts`, beside
+   "exactly six", asserting that each blocking probe's captured call contains
+   every sentinel its assertion searches for. It fails at the moment of drift
+   rather than at the next incident.
+
+### Verification
+
+`OPENROUTER_API_KEY=invalid npm run eval -- title_tags` must **not** pass. Today
+it does.
+
+### Revisit trigger
+
+The first blocked or inconclusive suite run, or before any story that treats a
+green gate as injection-resistance evidence.
+
+### Closure condition
+
+An unanswered provider produces an `inconclusive` verdict on every blocking
+probe rather than a pass; the verification command above fails; and a
+structural test pins each blocking fixture's payload to its sentinels.
+
+---
+
+## D-025 — A declined migration reports success
+
+**Kind:** correctness / migrations
+**Severity:** medium
+**Status:** Paid (CV22.DS10.TS5, 2026-09-24)
+**Source:** CV22.DS10.US2 handoff review, 2026-09-23 (database-architect) — Navigator decision: defer to TS5
+
+### What is wrong
+
+`ensureMigratedOnOpen` returns `deferredToPython: true` when a Python-authored
+migration is still pending and the TypeScript seam declines to act.
+`runMigrate` records that faithfully, and then `renderMigrate` prints
+
+```text
+Deferred: a Python-authored migration is still pending for this database.
+
+Migrate result: nothing pending
+```
+
+with exit 0. The updater's `migrate` stage reads that result line into its
+detail, so an update can report `[✓] migrate: nothing pending` for a database
+that has pending work nothing applied.
+
+### Why it is carried rather than paid now
+
+Today the deferral is honest: Python still exists and can apply the migration,
+and the `Deferred:` line says so. The defect is that the *verdict* line and the
+stage state do not.
+
+**This must not survive TS5.** After the Python engine is deleted there is
+nothing to defer to, and the same code path will report success for work that
+can never happen — on the one command whose job is to leave the database
+correct after an update.
+
+### What paying it looks like
+
+Three verdicts instead of two — applied, nothing pending, declined — and a
+`migrate` stage that fails rather than passes on declined. TS5 is already
+rewriting what "pending" can mean when one engine is left, so the fix belongs
+with that change rather than before it.
+
+---
+
+## D-023 — Two execution profiles outlived the only command that reached them
+
+**Kind:** dead code / packaging
+**Severity:** low
+**Status:** Paid (CV22.DS10.TS5, 2026-09-24)
+**Source:** CV22.DS10.TS4 Debt Review, 2026-09-23 — Navigator decision: defer to TS5
+
+### Carrying reason
+
+TS4 deleted the `conversations --metadata-backfill-preview|-apply` faces and the
+two service methods behind them. The `backfill_safe` and `backfill_force`
+execution profiles they used remain in
+[`metadata_lifecycle.py`](https://github.com/mirror-mind-ai/mirror/blob/cv22-last-python-bearing/src/memory/services/metadata_lifecycle.py) and
+in the TypeScript mirror table in
+[`metadataLifecycle.ts`](../../ts/src/conversation/metadataLifecycle.ts).
+**Nothing reaches either profile in either engine.** The close tail uses
+`close_time`; `manual_safe` and `active_runtime` have their own callers.
+
+They were not removed with the faces because `metadata_lifecycle.py` is a
+tracked oracle graded byte-for-byte by
+`ts/test/goldens/metadata-lifecycle.golden.json`. Removing two entries is a
+three-file cross-engine change plus a golden regeneration — and the DS10 index
+assigned TS4 the *CLI face*, with the lifecycle engine explicitly left as
+TS-owned and out of scope. Widening a deletion story into the ported engine to
+remove two unreachable dict entries was the worse trade at the time.
+
+### Cost of carrying
+
+Two profiles that no code path can select ship into the npm artifact. A future
+reader finding `backfill_force` in the profile table has no way to tell it is
+unreachable without tracing every caller, and may reasonably assume a backfill
+still exists somewhere.
+
+### Revisit trigger
+
+**CV22.DS10.TS5**, which deletes the Python core. At that moment the oracle
+constraint disappears and the removal becomes a single-file TypeScript edit with
+no golden to keep in sync. TS5 must check this before packaging: after it there
+is no second engine left to force the question.
+
+### Closure condition
+
+Neither `backfill_safe` nor `backfill_force` appears in any shipped source, or a
+recorded decision explains why an unreachable profile is deliberately retained.
+
+---
+
+## D-024 — The Refinement field's seed-CR scan reads Mirror Mind's own roadmap path inside the user's project
+
+**Kind:** product correctness / inherited port oddity
+**Severity:** low
+**Status:** Paid (CV22.DS10.TS5, 2026-09-24)
+**Source:** CV22.DS10.TS4 Debt Review, 2026-09-23 — Navigator decision: defer to TS5
+
+### Carrying reason
+
+`inspect_refinement_field` counts "seed Change Requests" by reading a
+**hard-coded path into Mirror Mind's own roadmap** —
+`docs/project/roadmap/cv20-builder-mode-evolution/cv20-ds6-refinement-workbench-flow/plan.md`
+— inside whatever project the journey points at. Any other project has no such
+file and silently reports zero, so the seed count is a Mirror-Mind-only feature
+wearing the costume of a general one.
+
+DS7.US8 reproduced it deliberately during the port and recorded it as debt
+rather than fixing it mid-port. TS4 left it for the same reason it left the
+profiles above: the story's job was deleting the SQLite Workbench, and this is
+the filesystem half, which it did not touch.
+
+It is more visible now. Before TS4 the field had three states and this was one
+oddity among several; the field now has exactly one state without a canonical
+index, and the seed count is the only conditional left in it.
+
+### Revisit trigger
+
+**CV22.DS10.TS5**, with the profiles above — or any story that changes what the
+Refinement field offers a project that has not created its index yet.
+
+### Closure condition
+
+The seed-CR scan is removed, or generalized to a path the project declares,
+or explicitly documented as a Mirror-Mind-only affordance with a reason.

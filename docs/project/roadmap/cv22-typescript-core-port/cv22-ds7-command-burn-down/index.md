@@ -1,0 +1,410 @@
+[< CV22 TypeScript Core Port](../index.md)
+
+# CV22.DS7 — Command Burn-Down & Re-homed Feature Work
+
+**Delivery Story:** Port the remaining **deterministic** command surface from the Python core to the TypeScript core — the Builder/Ariad tree (re-homing CV20/CV21 in-flight work), Soul, Explorer, mirror-mode orchestration, memory cultivation, the extraction lifecycle, remaining identity/journey reads and writes, and the content/ops tail — behind the DS5 replay-safe `LlmTransport` seam and the DS6 TS-owned database. Carry the bounded non-command Workspace/web hierarchy retirement rider so zero commands cannot conceal a live Python browser contract. DS8, DS9, and DS10 own the later live-provider, MCP, and final runtime/package cutovers.
+**Status:** ✅ **Done — 2026-09-17 (14/14).** US1–US5, US10, TS1, TS2, TS3, US6, US7, US11, US8, and TS4 are done; the deterministic Python command surface is empty. **US9 was retired unported on 2026-09-17** — the web console is retired rather than ported, so DS7's non-command rider is lifted and the story denominator moves 15 → 14 (see [Decisions](../../../decisions.md#the-web-console-is-retired-not-ported-and-ds7-closes-at-1414)). Historical note below preserves the pre-closure sequencing. With TS4 flipped 2026-09-16 the ops/utility tail closes 5/5 and the ledger's *Unported — deterministic* table holds only DS10's retirements. **Re-sequenced 2026-09-09** after a code-level inspection (see [Decisions — CV22 makes the ported work real before porting more](../../../decisions.md#cv22-makes-the-ported-work-real-before-porting-more)): thirteen ported leaves sit behind the opt-in `MIRROR_TS_EXTERNAL_ROUTES` gate and answer from Python in production, and nine skills bypass the front door, so the order is now CR072 (skills) → **US11** → **DS8** → US8 → TS4 → DS9 → US9 → DS10 (with TS5 as its first act). **US11** was created by CR068 to own the three LLM-tail leaves US2 sent to a story that dissolved, plus `descriptor generate` and the ES-001 lifecycle CLI faces; **TS5 was reassigned to DS10** because its publisher cannot land while both cores write, so DS7 could never have closed on it — the story denominator stays 15, the command denominator moves 30 → 29. **US7 flipped 2026-09-09**: `explore` answers from TS by default, 11 of its 14 leaves, with `story promote` on Python by name until US8 owns Builder `load`. Explorer's Story writes reach the Journey projection publisher, whose cross-process `fcntl.flock` contract TypeScript cannot share during the transition, so publication stays Python-owned and US7 requests the refresh through one named Python seam that DS10 deletes — see [Decisions — Journey projection publication stays Python-owned](../../../decisions.md#journey-projection-publication-stays-python-owned-until-the-retirement-window). TS5 was split out of TS4 on 2026-09-09 and, later the same day, reassigned to DS10; US11 took its place, so the story denominator stays 15. US10 closed the extraction lifecycle: `conversation-logger` is 15/15 on TS, its five LLM-crossing subcommands under the replay gate until DS8; TS1 ported `backup` and `repair-encoding` and flipped `repair-journeys --apply` with them on 2026-09-07 (done 2026-09-08). US5 was re-scoped on 2026-09-02 to its deterministic core, with the LLM-close-tail slices moved to the new US10, so the denominator moved from 11 to 12; on 2026-09-07 the ops tail was split into three technical stories (TS1, TS3, TS4) so each slice is its own pull, moving it to 14. TS2 removed US4's whole-command extension fallback through TS-owned `mirror-context-v1`; its finite Python compatibility host has mandatory deletion ownership in DS10.
+**Type:** Delivery Story
+**Depends on:** [CV22.DS3 Pi TS Front Door](../cv22-ds3-pi-ts-front-door/index.md) (done) for the routing table this story flips entries in; [CV22.DS4 Deterministic Writes](../cv22-ds4-deterministic-writes/index.md) (done) for backup-gated, copy-validated write discipline; [CV22.DS5 External-API Commands](../cv22-ds5-external-api-commands/index.md) (done) for the replay-safe `LlmTransport` provider boundary that orchestration ports behind; [CV22.DS6 Schema Custody Transfer](../cv22-ds6-schema-custody-transfer/index.md) (done) so every write/migration a ported command needs is answered by the TS-owned database.
+**Retirement rider dependency:** [RS008](../../../refinement/rs008-v0319-recursive-journey-parity/index.md) CR050–CR053 provide metadata authority, recursive reads, safe movement, and conservative removal; CR054 assigns their Workspace/web convergence owner.
+
+---
+
+## What This Is
+
+Through DS6 the strangler owns the **database** and a validated slice of
+**commands** — the DS2 reads (`detect-persona`, `journeys`, memory listing), the
+DS4 deterministic writes (`identity set`, `journey set-path`), and the DS5
+external surfaces under replay (`memories --search`, `consult`). Read against the
+front-door routing table (`ts/src/frontDoor/routing.ts`), *everything else still
+falls back to Python* — and "everything else" is most of what the product does:
+the Builder/Ariad delivery lifecycle, Soul Mode, Explorer Mode, mirror-mode
+orchestration, memory cultivation (consolidate/shadow), the extraction pipeline,
+the remaining identity/journey reads and writes, and a long content/ops tail
+(`journal`, `tasks`, `week`, `backup`, `extensions`, …).
+
+DS7 is the **command burn-down**: it drains that Python fallback one command
+family at a time, flipping each family's routing entry to TS only after parity is
+proven, until the *deterministic* Python command surface is empty. RS008 also exposed one
+non-command retirement gap: the Python Workspace/web backend still produces released
+recursive journey JSON consumed by the browser. DS7.US9 owned that bounded hierarchy
+projection/adapter/evidence package without changing the command denominator, with DS10
+owning the final web process cutover. **Both were superseded on 2026-09-17:** the console
+is retired rather than ported, US9 closed unported, and DS10 deletes the web backend behind
+a documented cutoff. Unlike DS2's
+pure functions (a ranker, a router), these families are **stateful, branching,
+and side-effecting** — multi-step Ariad state machines, ritual surfaces that emit
+`transport=verbatim` box-drawing, extraction that inserts memories and
+embeddings, cultivation that mutates identity layers. Parity here grades rendered
+surfaces and database transitions, not just a returned list.
+
+Two things make DS7 different from every prior DS and set its whole shape:
+
+1. **It ports a *moving* target.** The Builder/Ariad tree is not frozen — CV20
+   (Builder Mode Evolution) is actively growing new Python behavior on `main`
+   (release/push policies, debt ledger, method preferences, refinement-lifecycle
+   DSL governance). "Re-homed feature work" means DS7 must both **port what
+   exists** and **carry in-flight CV20/CV21 work**, then honor the strangler rule
+   that *new feature work lands in TS* — so the Python Builder tree stops growing
+   the moment TS takes custody of it. This is the dominant risk of the story.
+
+2. **It brushes against DS8's live-provider seam without crossing it.** Several
+   families (extraction, `consult`, live `memories --search`, `eval`) orchestrate
+   an LLM/embedding call. DS7 ports the **orchestration and the deterministic
+   database work** behind the DS5 replay-safe `LlmTransport`; the **live call**
+   stays on Python fallback until DS8 implements `live` mode. The seam between
+   "port the command" (DS7) and "flip the live call" (DS8) must be named per
+   family or the two stories collide.
+
+---
+
+## The Burn-Down Inventory (grounded in the routing table)
+
+The denominator is the top-level `python -m memory <command>` surface. Already on
+TS: `detect-persona`, `journeys`, `memories` (listing + replay search),
+`consult` (replay), `identity set`, `journey set-path`. The DS7 targets, grouped
+into the families that will become child stories:
+
+- **Remaining identity/journey reads & writes** — `identity list|get|edit`,
+  `journey status|update`, `seed`, `init`, `descriptor generate|list`, `list`,
+  `inspect`, `conversations`, `recall`. (`identity edit` spawns `$EDITOR` — an
+  interactive seam that needs an explicit decision, not a silent port.)
+- **Content & planning writes** — `journal`, `tasks`, `week`.
+- **Memory cultivation** — `consolidate scan|apply|reject|list`,
+  `shadow scan|apply|reject|list|show`. Identity-layer writes behind an
+  allowlist and prompt-injection fences (security-critical).
+- **mirror-mode orchestration** — `mirror load|deactivate|log|journeys`,
+  `mode activate|deactivate|status`. The Mirror-mode turn (reception routing →
+  answer → record) behind the replay transport. US4 transfers the extension-free
+  core path and preserves an explicit Python fallback whenever a matching installed
+  extension context binding could contribute.
+- **Extension context provider runtime convergence** — replace the Python-only
+  dynamic extension provider loader with a TS-owned compatibility contract so the
+  bounded US4 fallback can be removed without dropping installed extension context
+  or creating a permanent TS↔Python bridge. This is DS7.TS2 and remains part of the
+  deterministic command burn-down.
+- **Extraction lifecycle** — `conversation-logger` and the extraction pipeline
+  it drives (memory + embedding inserts, idempotency, fences). The largest write
+  orchestration; its live embedding call is the DS8 seam.
+- **Soul Mode** — `soul load|listen|rite|close|review|propose|apply|fruit|`
+  `harvest|prompt`. Large ritual surface: `transport=verbatim` rendering plus
+  identity-writes (`soul apply`).
+- **Explorer Mode** — `explore load|…`. Exploratory-story surfaces.
+- **Builder/Ariad tree** — `build …` (the full Delivery lifecycle: load, pull,
+  prepare, plan, approve, validate, review, done; Refinement Workbench; cadence;
+  flow-unit; inspect/adopt/prepare-templates/sync-cursor). The largest,
+  highest-churn, `transport=verbatim` surface, re-homing in-flight CV20/CV21
+  work. Ported last or in tight lockstep with a frozen oracle snapshot.
+- **Ops/utility tail** — the six top-level `python -m memory` commands still
+  on Python fallback with no other owner: `backup`, `repair-encoding`,
+  `extensions`, `ext`, `welcome`, `journey-projection`; plus the `runtime` read
+  subcommands (`status|version|diagnose|release-notes`, which
+  `welcome` imports), the subcommand branches US1 deferred here
+  (`list extensions|all`, `inspect extension|runtime-catalog|llm-calls|`
+  `embedding-provenance`), and the `repair-journeys --apply` routing line that
+  waits on the `backup` port. Delivered as three technical stories — TS1 DB
+  safety tools, TS3 daily-visible tail, TS4 extension catalog and projection
+  contract (see the [TS1 package](cv22-ds7-ts1-ops-utility-tail/index.md)).
+  Decided 2026-09-07:
+  `runtime`'s git-based update/release half is DS10's to redesign under npm, not
+  ported; `migrate-legacy` and the `memory-rehearse-migration` console script
+  retire unported in DS10; `conversation-logger` mute/switch was flipped in US5;
+  `transcript-export` is not a command (its live seam was ported in US10). The
+  [burn-down ledger](burn-down-ledger.md) is the auditable list; its
+  denominator is 30.
+- **Workspace/web hierarchy retirement rider** — recursive Workspace JSON, hierarchy-
+  bearing selector payloads, parent/create web adapters, and compatibility evidence for
+  the existing static JavaScript consumers. This was DS7.US9, not a CLI command and not
+  part of the numerical burn-down denominator. **Retired unported on 2026-09-17:** the web
+  console is deleted in DS10 rather than converged onto TypeScript, so there is no
+  Python-owned non-command surface left for DS7 to transfer.
+
+Progress is the visible burn-down the strangler promised: *deterministic
+commands-on-TS / total*, tracked per family, so "done = zero" is measurable. DS7 done
+originally also required the separately visible US9 rider, so that a zero command count
+could not hide a Python-owned non-command surface. That requirement was satisfied by
+deletion instead of by transfer: the rider was lifted when the Navigator retired the web
+console, and the surface it guarded leaves the product rather than changing language.
+
+---
+
+## Validation Approach
+
+DS7 inherits, and does not relax, the discipline the earlier stories established:
+
+- **Parity per command family, not per top-level command.** A single `build` or
+  `soul` command fans out into dozens of subcommands and branches; each branch
+  that ports needs coverage. Committed synthetic goldens run in CI; the reusable
+  redacted real-DB-copy harness carries new probe families for realism.
+- **Rendered-surface parity is string-exact.** Ariad/Soul/welcome surfaces are
+  `transport=verbatim` — the golden captures the *rendered* box-drawing output,
+  not just the underlying data, so a re-indent or rewrap is a failure.
+- **Writes proven on copies, backup-gated, never live during proof.** Extraction,
+  cultivation, and the content writes follow the DS4/DS6 rule: prove on a copy of
+  `memory.db`, back up first, redact evidence by default, commit no real database
+  artifact.
+- **Replay, not live.** Orchestration is validated behind the DS5 replay
+  `LlmTransport`; CI never makes a live provider call. `eval` (which hits real
+  LLMs) stays out of CI gating and depends on DS8 to run for real.
+- **Oracle-drift tripwire coverage grows with each family.** Every ported Python
+  oracle is registered in `ts/parity/oracle-baseline.json`; because DS7 ports a
+  *moving* Builder/Ariad tree, this tripwire is the primary defense against
+  silent drift while CV20 keeps changing `main`.
+- **Per-family E2E smoke before the routing flip.** Because both authors dogfood
+  Pi daily, each family's cutover is exercised end to end (a full Mirror turn, a
+  full Ariad Delivery lifecycle, a Soul ritual, a conversation extraction) before
+  its `routing.ts` entry flips — and the flip must produce **no user-visible
+  change**.
+- **Non-command parity is contract-first.** US9 would have frozen Python-generated Workspace
+  JSON, graded exact TS DTO and endpoint shapes, proven selected-journey isolation,
+  exercised the existing JavaScript renderers, and run a browser smoke — without fabricating
+  a CLI routing entry to make the work fit the denominator. The approach stands as the rule
+  for any future non-command transfer; it was not exercised here, because US9 was retired
+  unported on 2026-09-17 and no non-command surface remained to prove.
+
+---
+
+## Critical Seam Boundaries
+
+Named explicitly so no child-story plan can claim they were ambiguous:
+
+- **DS7 ↔ DS8 (live provider).** DS7 ports command orchestration behind the
+  *replay* transport and leaves the *live* call on Python fallback. DS8 flips the
+  transport's `live` mode. A family that needs a live call is "done for DS7" when
+  its deterministic orchestration + DB work run on TS under replay; it is not
+  waiting on DS8 to count as burned down.
+- **DS7 ↔ DS9 (MCP).** DS7 ports the CLI command surface only. The MCP server
+  (`python -m memory mcp`) and its threat model are DS9.
+- **DS7 ↔ DS10 (runtime convergence and deletion).** DS7 empties the deterministic
+  command surface. It no longer transfers the Workspace/web hierarchy contract: US9 was
+  retired unported on 2026-09-17 and DS10 now **deletes** `src/memory/web/` behind a
+  documented cutoff instead of converging it. DS7 does **not** replace the
+  `python -m memory web` process, inventory its endpoints, package static assets, delete
+  Python, resolve the `memory → mirror` rename, or ship npm. Those are DS10, gated on DS7+DS8+DS9 and on every command and non-command
+  runtime carrying explicit TS ownership. DS7 also does **not** port `runtime`'s
+  git-based update/release subcommands (`update|pull|stable|backup|release-doctor|`
+  `release-promote`), `migrate-legacy`, or `memory-rehearse-migration`: DS10 redesigns
+  the updater under npm and retires the other two with a documented cutoff
+  (decision 2026-09-07). Python fallback serves them until then.
+
+---
+
+## Candidate Stories
+
+Codes and titles below are the planned expansion; child folders and links are
+created on pull/expand. Risk-first as originally authored: extend the proven
+read/write patterns on the low-churn deterministic tail first, port the
+security-sensitive cultivation and extraction writes in the middle behind the replay
+seam, and take the highest-churn `transport=verbatim` Builder/Ariad tree last (or in
+tight lockstep with a frozen oracle snapshot), so the moving target is ported against
+the most stable possible oracle. The "last" premise expired on 2026-09-07 with single
+ownership — see the re-sequencing note below the table.
+
+The table uses the canonical `| Code | Story | Type | Outcome | Status |`
+candidate-story grammar so Ariad Expand can resolve and reuse this authored
+package. Row order is the risk-first command sequence as authored: US1 (low-churn
+deterministic tail) first, the security-sensitive cultivation/extraction writes in the
+middle behind the replay seam, the Builder/Ariad tree (US8) after them. Since
+2026-09-09 the executable order is the one in the Status line above — US11 and DS8
+before US8 — and the table's order is historical, not a pull queue.
+The ops tail is three technical stories: TS1 (`backup`, `repair-encoding`) and TS3
+(`welcome`, `runtime` reads) sit before US6 because they close live gaps and `backup` is
+the gate the Soul and Builder write ports lean on; TS4 (extension catalog, plus the
+`identity edit` port) stays in the tail to reach zero. TS5 (Journey projection contract)
+was split out of TS4 on 2026-09-09 and reassigned to DS10 the same day: projection
+publication is linearizable through a `fcntl.flock` lock that TypeScript cannot share with
+Python, so an early port would put two unsynchronized writers on the same
+`.mirror/projections` tree for the whole transition. Once Python is gone there is one
+writer and no problem — which makes TS5 the first act of retirement, not a DS7 story.
+`request_projection_refresh` has exactly two caller families,
+`services/explorer_story.py` (US7) and `builder/` (US8); both delegate the refresh to
+Python through a named seam DS10 deletes, rather than each carrying a partial port.
+TS2 is placed immediately after US4 because it owns US4's explicit extension-binding
+fallback and must close before the `mirror load` command can count as fully burned down.
+US9 was a separately visible non-command retirement rider, sequenced late — next to DS10's
+web cutover — precisely because there were zero `web` conversations in the preceding thirty
+days. On 2026-09-17 that same disuse, plus the `mirror-gui` desktop journey, turned the
+sequencing question into a scope question: the console is retired rather than ported, and
+the rider is lifted.
+
+**US8 is no longer "last".** The risk-first ordering put the Builder tree last because it
+was a moving oracle under a second author. Since the 2026-09-07 single-owner decision the
+repository shows no Builder change on `main` after 2026-09-02, so deferral buys no
+stability. What still goes before US8 is smaller and makes already-ported work real:
+CR072 routes the bypassing skills through the front door, US11 finishes the LLM tail so
+DS8 flips everything with one review, and DS8 puts the thirteen replay-gated leaves —
+including the product's live LLM surface, the session close tail — into production before
+the Builder tree is stacked on the same substrate.
+
+| Code | Story | Type | Outcome | Status |
+|------|-------|------|---------|--------|
+| [CV22.DS7.US1](cv22-ds7-us1-remaining-identity-journey-reads-writes/index.md) | Remaining identity/journey reads & writes | User Story | `identity list/get`, `journey status/update`, `seed`, `init`, `descriptor`, `list`, `inspect`, `conversations`, `recall` answered by TS; carries the DS6.US3 atomic `parent_journey` dual-write and the `kebab_slug` writer/locator port (low–med risk) | ✅ Done |
+| [CV22.DS7.US2](cv22-ds7-us2-content-planning-writes/index.md) | Content & planning writes | User Story | `journal`, `tasks`, `week` writes answered by TS with parity proven on copies (low risk) | ✅ Done |
+| [CV22.DS7.US3](cv22-ds7-us3-memory-cultivation/index.md) | Memory cultivation | User Story | `consolidate` and `shadow` answered by TS with the identity-write allowlist and injection fences ported at parity (med risk — security) | ✅ Done |
+| [CV22.DS7.US4](cv22-ds7-us4-mirror-mode-orchestration/index.md) | mirror-mode orchestration | User Story | Core `mirror` and `mode` paths answered by TS behind replay; matching installed extension context bindings trigger an explicit Python fallback owned by TS2 (med risk) | ✅ Done |
+| [CV22.DS7.TS2](cv22-ds7-ts2-extension-context-provider-runtime-convergence/index.md) | Extension context provider runtime convergence | Technical Story | Replace US4's bounded Python-only extension-provider fallback with a TS-owned compatibility contract; no silent context loss and no permanent language bridge (high risk — extension compatibility) | ✅ Done — `mirror-context-v1` active; finite legacy host deletion gated in DS10 |
+| [CV22.DS7.US5](cv22-ds7-us5-extraction-lifecycle/index.md) | Extraction lifecycle: deterministic core | User Story | Deterministic `conversation-logger` core, hook entries, the `conversations append` boundary, and the budgeted extraction driver answered by TS; seven subcommands flipped (high risk — writes) | ✅ Done |
+| [CV22.DS7.US10](cv22-ds7-us10-extraction-lifecycle-session-composites/index.md) | Extraction lifecycle: session composites & LLM-tail flips | User Story | Session composites, diagnose/repair, backfills, and the flips that cross `end_conversation`'s LLM close tail, behind the replay transport (high risk — writes + provider seam) | ✅ Done |
+| [CV22.DS7.TS1](cv22-ds7-ts1-ops-utility-tail/index.md) | Ops/utility tail 1: DB safety tools | Technical Story | `backup` (dated zip archive; unblocks the `repair-journeys --apply` route) and `repair-encoding` (backup-gated mojibake repair) answered by TS, proven on copies (low risk; DS4 write pattern) | ✅ Done |
+| [CV22.DS7.TS3](cv22-ds7-ts3-utility-tail-2-daily-visible-tail/index.md) | Ops/utility tail 2: daily-visible tail | Technical Story | `welcome` (session-start card and status line) and the `runtime` read subcommands it imports — `status`, `version`, `diagnose`, `release-notes` — answered by TS, each allowlisted explicitly so the DS10-owned mutating half never inherits the route; `diagnose` stops misreporting TS-authored migrations (low–med risk) | ✅ Done |
+| [CV22.DS7.US6](cv22-ds7-us6-soul-mode/index.md) | Soul Mode | User Story | `soul` full surface answered by TS with `transport=verbatim` rendering parity and the `soul apply` identity-write gate (med–high risk) | ✅ Done |
+| CV22.DS7.US7 | Explorer Mode | User Story | `explore` exploratory-story surfaces answered by TS, with projection refresh delegated to Python behind a named DS10-owned seam (med risk) | ✅ Done — flipped 2026-09-09; 11/14 leaves on TS, `story promote` blocked on US8 |
+| [CV22.DS7.US8](cv22-ds7-us8-builder-ariad-tree/index.md) | Builder/Ariad tree | User Story | `build` full Delivery + Refinement lifecycle answered by TS, re-homing in-flight CV20/CV21 work; largest, highest-churn, `transport=verbatim` surface (highest risk — churn) | ✅ Done — flipped 2026-09-16; 27/27 in-scope leaves on TS by default (`MIRROR_TS_BUILD=0` reverts); the twenty SQLite Workbench leaves retire in DS10; closed through the TS front door itself |
+| [CV22.DS7.US9](cv22-ds7-us9-workspace-web-hierarchy-parity/index.md) | Workspace and web hierarchy parity | User Story — retirement rider | Would have given the recursive Workspace DTOs, hierarchy-bearing endpoint adapters, selected-scope isolation, and JavaScript renderer compatibility a named TS owner with parity evidence | ⛔ **Retired unported — 2026-09-17.** Pulled, planned, and panel-reviewed; declined at the approval gate because its own acceptance required no user-visible change while the console it served is barely used and superseded by `mirror-gui`. The web console is deleted in DS10 instead. Hierarchy semantics survive in US1/CR050–CR052; the selected-journey isolation contract is re-homed to `mirror-gui`. Story denominator 15 → 14 |
+| [CV22.DS7.US11](cv22-ds7-us11-content-planning-llm-tail/index.md) | Content & planning LLM tail | User Story | `journal`, `week plan`, `week save`, and `descriptor generate` answered by TS — `week save` ungated (it is deterministic), the three LLM leaves under the replay transport until DS8 — plus the two ES-001 metadata-lifecycle READ faces wired to the engine US10 already ported (the two WRITE faces need the unported `apply_metadata_lifecycle` and went to TS4 on 2026-09-09). Created by CR068 | ✅ Done — flipped 2026-09-09 |
+| [CV22.DS7.TS4](cv22-ds7-ts4-utility-tail-3-extension-catalog/index.md) | Ops/utility tail 3: extension catalog | Technical Story | `extensions`, `ext`, the US1-deferred `list extensions/all` and `inspect extension/runtime-catalog/llm-calls/embedding-provenance` branches, `identity edit` (a `spawnSync($EDITOR)` seam, assigned 2026-09-09), and the two ES-001 lifecycle WRITE faces `--metadata-lifecycle-apply|-demo` (assigned 2026-09-09: both need `apply_metadata_lifecycle`, unported, and `demo` calls `apply`) answered by TS to reach zero deterministic Python commands (med risk — install/uninstall/expose/clean mutate skill directories; `ext <id> <extension-subcommand>` dispatches into an extension's own Python entry and needs a compat-host-or-contract decision at Plan; takes the multi-persona Plan review). `runtime`'s mutating half and `migrate-legacy` are DS10's, not here. | ✅ Done — flipped 2026-09-16 after accepted Navigator validation; 17 leaves on TS by default with three independent reverts (`MIRROR_TS_EXTENSIONS=0`, `MIRROR_TS_IDENTITY_EDIT=0`, `MIRROR_TS_CONVERSATIONS_LIFECYCLE=0`). D1 decided (c) and amended at implementation: the declared `mirror-cli-v1` runtime hangs off the manifest's existing `cli.subcommands[]`, and the fallback to the compat host is per subcommand |
+| CV22.DS7.TS5 | Journey projection contract | Technical Story | *Reassigned to [CV22.DS10](../cv22-ds10-python-retirement-npm-distribution/index.md) on 2026-09-09.* Publication is linearizable through `fcntl.flock`, which TypeScript cannot share with Python; the publisher can only land in the same act that retires Python's, so it is DS10's first act, not a DS7 story. Kept here as a row so the reassignment is visible, not silent | ↗ Moved to DS10 |
+
+`identity edit` (spawns `$EDITOR`) and other interactive seams are called out for
+an explicit port-or-keep decision at plan time rather than a silent port.
+
+---
+
+## Multi-Persona Plan Review (DS-level)
+
+Run per the [collaboration strategy](../collaboration-strategy.md) baton-boundary
+protocol — the Plan-review checkpoint, before implementation — to shape the DS7
+package. Panel: engineer, QA, database architect, devops, security. These are
+**plan inputs**, recorded so no future child-story checkpoint can claim they were
+unknown; each child story runs its own Plan review when pulled.
+
+**◇ engineer — blocking constraints**
+- The Builder/Ariad tree is a *moving oracle*. Port it **last** or in tight
+  lockstep with a frozen oracle snapshot, and treat `oracle-baseline.json` as the
+  gate: every ported oracle registered, every drift a build failure. Non-blocking:
+  re-homed CV20/CV21 features that have no Python counterpart yet should be
+  authored directly in TS (the strangler's "new feature work lands in TS" rule),
+  not back-ported to Python first.
+- Enforce module cohesion: one directory per family (`ts/src/builder/`,
+  `ts/src/soul/`, `ts/src/explore/`, `ts/src/extraction/`, `ts/src/cultivation/`)
+  — no god-module. `kebab_slug` ships as **one** shared function used by both the
+  path writer and the path locator (the original Python bug was writer/locator
+  drift).
+
+**◇ quality-assurance — blocking constraints**
+- The burn-down denominator must be an explicit, tracked artifact
+  (*deterministic commands-on-TS / total*, per family) so "done = zero" is
+  auditable, not asserted. Coverage is **per subcommand/branch**, not per
+  top-level command.
+- Each family gets an E2E smoke of its critical journey **before** its routing
+  flip, and the flip must be invisible to the runtime. No family is "done" on
+  unit goldens alone.
+
+**◇ database-architect — blocking constraints**
+- Extraction, cultivation, and content writes are the highest-integrity writes in
+  the port: prove on copies, backup-gated, preserve transactional boundaries and
+  extraction idempotency. The **DS6.US3 atomic `parent_journey` dual-write** lands
+  here and must be all-or-nothing in one transaction (today it is JSON-first
+  dual-read with a non-authoritative shadow column).
+- Cultivation/soul writes touch identity layers — the CV9.E2.S23 **identity-write
+  allowlist** must be enforced in the TS port, not silently dropped.
+
+**◇ devops-engineer — blocking constraints**
+- Each family's routing flip must be **independently revertible** to Python
+  fallback with no data migration — the seam already supports this; keep it that
+  way. Watch CI wall-clock as golden + real-DB-copy suites multiply; keep
+  live-provider work out of CI (replay only).
+- **RS005/OPS CR026 redaction** extends to every newly-routed command: the
+  front-door log records command names, routing, layers/keys, errors — **never
+  argument payloads** (`--content` carries identity text; stdin can carry whole
+  soul documents). A redaction test is acceptance criteria for each family.
+- DS7 ports a moving target: mandate **regular `main` merges + oracle
+  re-baselining** so CV20's ongoing Python changes don't accumulate as drift.
+
+**◇ security-engineer — blocking constraints**
+- The prompt-injection fences hardened across CV9.E2 (scene S21, shadow S22,
+  consolidate S23, title/tags S25, summary S29) live in Python today. Porting
+  extraction/cultivation/soul **must port the fences with them**, at parity,
+  including the CI-enforced behavioral guards — porting orchestration without the
+  fence reintroduces closed AI-findings.
+- Identity-mutating commands (`identity set/edit`, `seed`, `consolidate apply`,
+  `shadow apply`, `soul apply`) are the tightest gate: their content feeds future
+  system prompts. Enforce the identity-write allowlist and secure-default posture
+  (secrets env/config-only, never argv, never logged, redacted from errors).
+
+**Consolidated recommendation.** Proceed. DS7 is coherent as a Delivery Story but
+too large to expand flat — pull it, expand risk-first into the families above,
+and run a per-child Plan review at each pull. The two structural risks — a moving
+Builder/Ariad oracle and the DS7/DS8 live-provider seam — are managed by
+sequencing the churny tree last against a frozen snapshot, growing oracle-drift
+coverage as families land, and drawing the replay-vs-live line per family. No
+blockers to authoring; the blocking constraints above are child-story plan inputs.
+
+---
+
+## Carried Debt & Riders
+
+- **DS6.US3 deferred atomic dual-write** (`parent_journey`): activate the column
+  as a co-authoritative write (JSON + column in one transaction), retiring the
+  DS6 JSON-first-shadow posture. Belongs to the identity/journey family.
+- **DS7 slug parity (`kebab_slug`), from the v0.31.2 merge (`1c4e55a`):** port
+  `src/memory/utils.py:kebab_slug` (strip accents → kebab → hard 80-char cap;
+  empty result → bare code folder) as one shared writer/locator function, and
+  register it in `ts/parity/oracle-baseline.json` with a golden fixture. Related:
+  **D-012** (candidate-table *code* cell still unsanitized) and **D-013**
+  (`transcript_export.slugify` is a separate capped-kebab sibling).
+- **RS005 front-door observability (OPS CR026):** redaction test per newly-routed
+  command (never log argument payloads).
+- **RS005 identity-mutating gate + CV9.E2.S23 identity-write allowlist:** enforce
+  in the TS port of every identity-writing command.
+- **Injection-fence parity (CV9.E2 S21/S22/S23/S25/S29):** fence parity is part of
+  each cultivation/extraction/soul family's done condition.
+
+---
+
+## Done Condition
+
+CV22.DS7 is done when:
+
+- Every **deterministic** command in the inventory is answered by the TS core
+  with proven ordered/behavioral parity against the Python oracle — Builder/Ariad,
+  Soul, Explorer, mirror-mode, cultivation, extraction orchestration, the
+  remaining identity/journey reads and writes, and the content/ops tail.
+- The only remaining Python runtime dependencies are explicitly owned convergence work:
+  the **live-provider transport (DS8, done)**, the **MCP server (DS9)**, and in **DS10**
+  the `runtime` update/release redesign under npm, the npm package itself, and the
+  retirements — `web` (added 2026-09-17), `migrate-legacy`, and
+  `memory-rehearse-migration` — never an unnamed deterministic surface.
+- Every routing flip produced **no user-visible change**; each family remained
+  independently revertible to Python fallback with no data migration.
+- Writes were proven on copies, backup-gated, redacted by default; no real
+  database artifact was committed.
+- Ported injection fences, the identity-write allowlist, and front-door redaction
+  hold at parity; `oracle-baseline.json` covers every ported oracle.
+- The DS6.US3 atomic `parent_journey` dual-write and the `kebab_slug` contract are
+  landed and registered.
+- The burn-down ledger reads zero remaining deterministic Python commands, including
+  removal of US4's matching-extension fallback through TS2. The non-command Workspace/web
+  hierarchy surface carries an explicit disposition rather than an owner matrix: it is
+  **retired unported** (2026-09-17) and deleted in DS10 — clearing the way for DS9 (MCP)
+  and DS10 (runtime convergence, deletion, and npm), with DS8 (live cutover) already done.
+
+---
+
+## Non-Goals
+
+- **No live-provider cutover.** The `live` mode of the TS `LlmTransport` is DS8;
+  DS7 orchestrates behind the replay seam only.
+- **No MCP server.** `python -m memory mcp` and its threat model are DS9.
+- **No complete web-process cutover, Python deletion, package rename, or npm
+  distribution.** Those are DS10. US9 owns only the hierarchy projection, deterministic
+  adapters, and compatibility evidence needed before that cutover.
+- **No behavior change.** This is parity, not redesign — the Builder lifecycle,
+  Soul ritual, extraction, and cultivation semantics are reproduced, not improved.
+  Re-homed CV20/CV21 work is carried faithfully, not re-specced.
+- **No new Python features.** Once TS takes custody of a family, new feature work
+  in that family lands in TS; Python stops growing there.
+
+---
+
+## See also
+
+- [Burn-Down Ledger](burn-down-ledger.md) — the auditable denominator and
+  per-subcommand flip record (QA's blocking DS7 constraint)
+- [CV22 index](../index.md)
+- [CV22 Collaboration Strategy](../collaboration-strategy.md)
+- [Decisions — CV22.DS6 splits into a risk-ordered retirement chain (DS6–DS10)](../../../decisions.md)
+- [CV22.DS5 External-API Commands](../cv22-ds5-external-api-commands/index.md) — the replay `LlmTransport` seam
+- [CV22.DS6 Schema Custody Transfer](../cv22-ds6-schema-custody-transfer/index.md) — the TS-owned database
+- Front-door routing table: `ts/src/frontDoor/routing.ts`
+- [Worklog](../../../../process/worklog.md)

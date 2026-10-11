@@ -1,0 +1,82 @@
+{
+  "provenance": {
+    "source": "evals/journal.py",
+    "story": "CV22.DS10.TS3",
+    "method": "captured by executing each probe against recording stand-ins"
+  },
+  "threshold": 0.8,
+  "eval_model_pinned": true,
+  "prompt_count": 1,
+  "probes": [
+    {
+      "id": "journal-layer-self",
+      "description": "deep identity / core values → self layer",
+      "blocking": false,
+      "calls": [
+        {
+          "function": "classify_journal_entry",
+          "args": [
+            "I've been thinking about what actually matters to me. Not the day-to-day\n    frustrations or work — but the core of who I am. I realized that freedom\n    and autonomy aren't just preferences; they're fundamental to my sense of\n    purpose. If I'm not navigating my own path, I'm not myself."
+          ],
+          "kwargs": {}
+        }
+      ]
+    },
+    {
+      "id": "journal-layer-ego",
+      "description": "day-to-day operational / practical frustrations → ego layer",
+      "blocking": false,
+      "calls": [
+        {
+          "function": "classify_journal_entry",
+          "args": [
+            "Spent the morning fighting a flaky test that only fails in CI. Frustrating\n    but not deep — just the usual friction of getting work done. Need to fix\n    the test harness and move on."
+          ],
+          "kwargs": {}
+        }
+      ]
+    },
+    {
+      "id": "journal-layer-shadow",
+      "description": "unresolved tension / avoided theme → shadow layer",
+      "blocking": false,
+      "calls": [
+        {
+          "function": "classify_journal_entry",
+          "args": [
+            "I keep postponing the difficult conversation with my collaborator. It's\n    the third time this month I've found a reason to delay. I tell myself it's\n    timing, but I know I'm avoiding the confrontation. This pattern is familiar\n    and I don't like what it says about me."
+          ],
+          "kwargs": {}
+        }
+      ]
+    },
+    {
+      "id": "journal-layer-valid",
+      "description": "layer ∈ VALID_MEMORY_LAYERS (AI-24 invariant)",
+      "blocking": false,
+      "calls": [
+        {
+          "function": "classify_journal_entry",
+          "args": [
+            "Worked on the project today. Made some progress."
+          ],
+          "kwargs": {}
+        }
+      ]
+    },
+    {
+      "id": "journal-well-formed",
+      "description": "dict with title/layer/tags, title bounded",
+      "blocking": false,
+      "calls": [
+        {
+          "function": "classify_journal_entry",
+          "args": [
+            "A test journal entry."
+          ],
+          "kwargs": {}
+        }
+      ]
+    }
+  ]
+}

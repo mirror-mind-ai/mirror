@@ -1,0 +1,1 @@
+CREATE TABLE IF NOT EXISTS ext_beta_later (id TEXT PRIMARY KEY);

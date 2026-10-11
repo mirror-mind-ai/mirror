@@ -1,0 +1,80 @@
+[
+  {
+    "name": "whole_float_one",
+    "float": true,
+    "value": 1.0,
+    "python": "1.0"
+  },
+  {
+    "name": "whole_float_two",
+    "float": true,
+    "value": 2.0,
+    "python": "2.0"
+  },
+  {
+    "name": "fractional",
+    "float": true,
+    "value": 0.85,
+    "python": "0.85"
+  },
+  {
+    "name": "float_artifact",
+    "float": true,
+    "value": 0.30000000000000004,
+    "python": "0.30000000000000004"
+  },
+  {
+    "name": "negative_zero_float",
+    "float": true,
+    "value": -0.0,
+    "python": "-0.0"
+  },
+  {
+    "name": "large_float",
+    "float": true,
+    "value": 1e+22,
+    "python": "1e+22"
+  },
+  {
+    "name": "small_float",
+    "float": true,
+    "value": 1e-07,
+    "python": "1e-07"
+  },
+  {
+    "name": "negative_float",
+    "float": true,
+    "value": -3.5,
+    "python": "-3.5"
+  },
+  {
+    "name": "int_zero",
+    "float": false,
+    "value": 0,
+    "python": "0"
+  },
+  {
+    "name": "int_three",
+    "float": false,
+    "value": 3,
+    "python": "3"
+  },
+  {
+    "name": "int_negative",
+    "float": false,
+    "value": -42,
+    "python": "-42"
+  },
+  {
+    "name": "exponent_positive_fractional",
+    "float": true,
+    "value": 1.5e+30,
+    "python": "1.5e+30"
+  },
+  {
+    "name": "exponent_negative_fractional",
+    "float": true,
+    "value": 2.5e-08,
+    "python": "2.5e-08"
+  }
+]

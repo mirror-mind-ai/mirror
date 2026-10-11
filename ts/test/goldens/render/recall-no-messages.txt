@@ -1,0 +1,9 @@
+# Conversation: Fixture conversation three
+**Date:** 2026-07-03
+**Persona:** therapist
+**Journey:** demo-child
+**ID:** `conv-cccc3333`
+
+---
+
+(conversation has no messages)

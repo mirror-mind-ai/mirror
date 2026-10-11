@@ -1,0 +1,13 @@
+=== journey: demo-child ===
+
+--- identity ---
+# Child Journey
+**Status:** paused
+Child journey description.
+
+--- recent memories ---
+  No recent memories.
+
+--- recent conversations (1) ---
+  [2026-07-03] Fixture conversation three
+

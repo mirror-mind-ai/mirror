@@ -72,6 +72,22 @@ repo's `mirror-extensions/persona-export/extension.py` implements its own
 triple-pattern lookup (`speaking with` / `talking to` / `falando com` / explicit
 `first name:` line). It can be retired to the shared resolver when this CR lands.
 
+**2026-09-13 — the port's state of the three sites.** CV22.DS8.TS2 ported the
+cultivation lookup as `ts/src/cultivation/promptContext.ts:cultivationUserName`
+and deliberately shipped only the `shadow_cmd` form — the `speaking with`
+regex, Unicode-correct (`[\p{L}\p{N}_]+` with the `u` flag, since Python's `\w`
+is Unicode and a plain JS `\w+` yields `Vin`), fallback `"the user"`. The
+`consolidate_cmd` short-circuit on the literal owner's name was **not ported**
+(plan decision D1, [Decisions](../../decisions.md#the-cultivation-owner-name-resolver-ships-without-the-hardcoded-name)).
+The prompt-assembly golden's `resolvers` section now records both Python
+resolvers over the same inputs, and a test asserts the only input where they
+disagree is content that names the owner without a marker phrase. TypeScript
+therefore has **two** resolvers where Python has three: this one, and the close
+tail's `conversation/extraction.ts:resolveUserName` (the `You are talking to`
+form, still returning `"User"` against the seeded phrasing). Unifying them
+remains this CR's job; TS2 removed the hardcoded name from the framework's
+TypeScript source and left the rest untouched.
+
 ## Outcome
 
 Pending.

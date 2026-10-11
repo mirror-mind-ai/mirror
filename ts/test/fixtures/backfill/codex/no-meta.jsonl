@@ -1,0 +1,2 @@
+{"timestamp":"2026-05-02T09:00:01.000Z","type":"event_msg","payload":{"type":"user_message","message":"no session_meta anywhere in this file"}}
+{"timestamp":"2026-05-02T09:00:02.000Z","type":"event_msg","payload":{"type":"agent_message","message":"so nothing is imported"}}

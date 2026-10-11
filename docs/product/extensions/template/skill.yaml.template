@@ -1,4 +1,6 @@
 # Replace <id> with the extension id (lowercase, dash-separated).
+# Replace <id_underscored> with the same id, dashes as underscores: it names
+# SQL tables, where a dash is not allowed (my-widget -> my_widget).
 # Replace <Human Name> with a short display name.
 # Replace <one-line summary> with a single-sentence description.
 
@@ -7,11 +9,7 @@ name: <Human Name>
 category: extension
 kind: command-skill
 summary: <one-line summary>
-table_prefix: ext_<id>_
-
-entrypoint:
-  module: extension          # filename without .py
-  # function: register       # default; omit unless renamed
+table_prefix: ext_<id_underscored>_
 
 runtimes:
   pi:
@@ -28,14 +26,18 @@ mirror_context_providers:
   - id: <capability_id>
     description: <one-line description of what this capability returns>
     suggested_personas: []   # informational only; never auto-binds
+    provider_runtime:
+      protocol: mirror-context-v1
+      command: [node, context-provider.mjs]
 
-# Optional: declared CLI subcommands. Informational; runtime truth is what
-# extension.py registers via api.register_cli.
+# Declared CLI subcommands. The core executes each subcommand's `runtime`
+# directly, in any language; a subcommand declared without one refuses with a
+# message naming the fix. Start from commands/subcommand.mjs.template.
 cli:
   subcommands:
     - name: <subcommand>
       summary: <one-line>
+      runtime:
+        protocol: mirror-cli-v1
+        command: [node, commands/<subcommand>.mjs]
 
-# Optional: declare a minimum core API version.
-requires:
-  extension_api: ">=1.0,<2.0"

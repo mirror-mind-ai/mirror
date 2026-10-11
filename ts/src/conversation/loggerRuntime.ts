@@ -1,0 +1,259 @@
+// The conversation-logger composition root (CV22.DS7.US10 slice F).
+//
+// Everything the `conversation-logger` subcommands need beyond the database
+// is assembled here, once per invocation, from an EXPLICIT environment: the
+// clock and id generator, the transcript/session resolution inputs, the Pi
+// sessions directory, the pre-write backup, and -- only for the subcommands
+// that cross the LLM close tail -- the replay providers and the maintenance
+// dependencies built on them.
+//
+// The providers are loaded lazily. `diagnose-journeys`, `backfill-codex-session`,
+// or `session-start --fast` must never fail because a replay fixture is not
+// configured, and `switch` or `session-end` must fail loudly (and fall back
+// to Python at the routing layer) when it is not: "unconfigured installs keep
+// Python fallback" is the plan's live-cutover boundary, and this is where it
+// is enforced on the TypeScript side.
+//
+// Nothing here reads `process.env` or `os.homedir()`; the front door passes
+// them in, which is what keeps every test of this module hermetic.
+
+import { backfillPiSessions, homeBornAt, resolvePiSessionsDir } from "#conversation/backfill.ts";
+import { createCloseHooks, maybeGenerateTitle } from "#conversation/closeTail.ts";
+import { runConversationExtraction } from "#conversation/extraction.ts";
+import { runExtractionWithAccounting } from "#conversation/extractionRun.ts";
+import { type CloseHooks, endConversation, type LoggerDeps } from "#conversation/logger.ts";
+import type { MaintenanceDeps } from "#conversation/sessionComposites.ts";
+import type { WritableDatabase } from "#db/database.ts";
+import { logLlmCall } from "#observability/llmCalls.ts";
+import {
+  resolveExtractionMaxAttempts,
+  resolveExtractionModel,
+  resolveMaintenanceMaxExtractions,
+  resolveSummarizeEnabled,
+  resolveTwoPassEnabled,
+} from "#providers/config.ts";
+import { computeCost } from "#providers/cost.ts";
+import type { EmbeddingProvider } from "#providers/embedding.ts";
+import { resolveFamilyProviders } from "#providers/familyProviders.ts";
+import type { LlmProvider, LlmResponse } from "#providers/llm.ts";
+import {
+  CONVERSATION_TAIL_TRANSPORT,
+  type ProviderTransportMode,
+  resolveProviderTransport,
+} from "#providers/transport.ts";
+
+/** The environment names the logger runtime reads. */
+export type LoggerRuntimeEnv = {
+  MIRROR_SESSION_ID?: string;
+  CLAUDE_PROJECT_DIR?: string;
+  PI_SESSIONS_DIR?: string;
+  MIRROR_TS_CONVERSATION_LLM_REPLAY?: string;
+  MIRROR_TS_CONVERSATION_EMBEDDING_REPLAY?: string;
+  /** Read by the live providers when the close tail runs against a real model. */
+  OPENROUTER_API_KEY?: string;
+  MEMORY_LLM_TIMEOUT_EXTRACTION?: string;
+  MEMORY_LLM_MAX_RETRIES?: string;
+  MEMORY_EMBEDDING_MODEL?: string;
+  MEMORY_SUMMARIZE?: string;
+  MEMORY_TWO_PASS?: string;
+  MEMORY_MAINTENANCE_MAX_EXTRACTIONS?: string;
+  MEMORY_EXTRACTION_MAX_ATTEMPTS?: string;
+  MEMORY_EXTRACTION_MODEL?: string;
+};
+
+export interface LoggerRuntimeOptions {
+  db: WritableDatabase;
+  mirrorHome: string;
+  homeDir: string;
+  env: LoggerRuntimeEnv;
+  deps: LoggerDeps;
+  /**
+   * Live provider factory, injectable for tests (CV22.DS8.US2).
+   *
+   * `loadLlm`/`loadEmbeddings` below are REPLAY-path loaders and are not
+   * consulted in live mode, so without this seam no test could exercise the
+   * close tail against a failing or instrumented live provider -- which is the
+   * behavior this story exists to change.
+   */
+  liveProviders?: (env: LoggerRuntimeEnv) => {
+    llm: LlmProvider;
+    embeddings: EmbeddingProvider;
+  };
+  /** Provider loaders, injectable for tests; default to the replay fixtures. */
+  loadLlm?: (path: string) => Promise<LlmProvider>;
+  loadEmbeddings?: (path: string) => Promise<EmbeddingProvider>;
+  /** Monotonic seconds for the maintenance report; defaults to `performance.now()`. */
+  monotonic?: () => number;
+  /**
+   * The dated zip backup `repair-journeys --apply` gates on (CV22.DS7.TS1).
+   * Prints its progress through `stdout` and returns the archive path, or
+   * null on failure. Absent (tests, unwired callers) means the repair refuses,
+   * exactly as Python refuses when `backup()` returns None.
+   */
+  backup?: (stdout: (line: string) => void) => string | null;
+}
+
+export interface LoggerRuntime {
+  readonly deps: LoggerDeps;
+  readonly mirrorHome: string;
+  readonly homeDir: string;
+  readonly claudeProjectDir: string | null;
+  readonly environmentSessionId: string | null;
+  readonly piSessionsDir: string;
+  /** Which transport answers the close tail here: replay, incomplete replay, or live. */
+  readonly transportMode: ProviderTransportMode;
+  /** The close hooks (extraction + finalization) behind the replay transport. */
+  closeHooks(): Promise<CloseHooks>;
+  /** The full maintenance wiring, including the real Pi backfill. */
+  maintenanceDeps(): Promise<MaintenanceDeps>;
+  /** The dated zip backup for the mutating journey repair; see `LoggerRuntimeOptions.backup`. */
+  readonly backup: ((stdout: (line: string) => void) => string | null) | null;
+}
+
+/**
+ * Adapt the close tail's PAIR-shaped live seam to the factory's per-kind
+ * overrides, memoized so one invocation builds one pair.
+ *
+ * The pair shape is load-bearing for tests: an atomicity test that fails the
+ * embedding on the second memory needs the same provider objects the close
+ * tail will call. Absent, the factory's own live defaults apply -- the default
+ * is not duplicated here.
+ */
+function liveTailOverrides(
+  env: LoggerRuntimeEnv,
+  liveProviders: LoggerRuntimeOptions["liveProviders"],
+): { liveLlm?: () => LlmProvider; liveEmbedding?: () => EmbeddingProvider } {
+  if (!liveProviders) return {};
+  let pair: { llm: LlmProvider; embeddings: EmbeddingProvider } | null = null;
+  const build = () => {
+    pair ??= liveProviders(env);
+    return pair;
+  };
+  return { liveLlm: () => build().llm, liveEmbedding: () => build().embeddings };
+}
+
+export function createLoggerRuntime(options: LoggerRuntimeOptions): LoggerRuntime {
+  const { db, env, deps } = options;
+  const piSessionsDir = resolvePiSessionsDir(null, env, options.homeDir);
+
+  // One precedence, shared with the router so the two cannot disagree about
+  // which transport is live: replay -> incomplete -> live. The pair rule that
+  // used to live here is now in the spec itself (CR077), so the router and
+  // this runtime refuse a half-configured fixture with the same reason.
+  const transport = resolveProviderTransport(env, CONVERSATION_TAIL_TRANSPORT);
+
+  let providers: Promise<{ llm: LlmProvider; embeddings: EmbeddingProvider }> | null = null;
+  const loadProviders = () => {
+    providers ??= resolveFamilyProviders(env, CONVERSATION_TAIL_TRANSPORT, {
+      loadReplayLlm: options.loadLlm,
+      loadReplayEmbedding: options.loadEmbeddings,
+      ...liveTailOverrides(env, options.liveProviders),
+    }).then((family) => {
+      // The factory declares both kinds for this family, so both are present
+      // by construction.
+      const llm = family.llm;
+      const embeddings = family.embedding;
+      if (!llm || !embeddings) {
+        throw new Error("the conversation close tail requires an LLM and an embedding provider");
+      }
+      return { llm, embeddings };
+    });
+    return providers;
+  };
+
+  // Python's `_make_logger(role, conversation_id)`: one ledger row per
+  // successful close-tail call, priced through the cost authority exactly as
+  // `build_llm_logger` prices it (CV22.DS8.US2).
+  //
+  // This is the sibling of `extraction.ts`'s llmLedger and was missed when
+  // that one was fixed: the close-tail METADATA roles (title, tags, summary)
+  // log through here, so they carried token counts and a null cost while the
+  // extraction roles were priced. Found by the live smoke on real data, not by
+  // a test -- under replay no usage comes back, so both look identical.
+  const ledger = (role: string, response: LlmResponse, conversationId: string, prompt: string) => {
+    const model = response.model ?? resolveExtractionModel({ env });
+    logLlmCall(
+      db,
+      {
+        role,
+        model,
+        prompt,
+        response: response.content,
+        promptTokens: response.promptTokens ?? null,
+        completionTokens: response.completionTokens ?? null,
+        latencyMs: response.latencyMs ?? null,
+        costUsd: computeCost(
+          model,
+          response.promptTokens ?? null,
+          response.completionTokens ?? null,
+        ),
+        conversationId,
+      },
+      { now: deps.nowIso },
+    );
+  };
+
+  const maxAttempts = resolveExtractionMaxAttempts({ env });
+  const runExtraction = async (database: WritableDatabase, conversationId: string) => {
+    const { llm, embeddings } = await loadProviders();
+    await runExtractionWithAccounting(
+      database,
+      conversationId,
+      (innerDb, id) =>
+        runConversationExtraction(innerDb, id, {
+          llm,
+          embeddings,
+          now: deps.nowIso,
+          id: deps.newId,
+          summarize: resolveSummarizeEnabled({ env }),
+          twoPass: resolveTwoPassEnabled({ env }),
+          ledger: true,
+        }),
+      maxAttempts,
+    );
+  };
+
+  const closeHooks = async (): Promise<CloseHooks> => {
+    const { llm } = await loadProviders();
+    return createCloseHooks({ llm, onLlmCall: ledger, now: deps.nowIso, runExtraction });
+  };
+
+  return {
+    deps,
+    mirrorHome: options.mirrorHome,
+    homeDir: options.homeDir,
+    claudeProjectDir: env.CLAUDE_PROJECT_DIR || null,
+    environmentSessionId: env.MIRROR_SESSION_ID?.trim() || null,
+    piSessionsDir,
+    transportMode: transport.mode,
+    backup: options.backup ?? null,
+    closeHooks,
+    async maintenanceDeps(): Promise<MaintenanceDeps> {
+      const { llm } = await loadProviders();
+      const hooks = createCloseHooks({ llm, onLlmCall: ledger, now: deps.nowIso, runExtraction });
+      return {
+        closeConversation: (database, conversationId) =>
+          endConversation(database, conversationId, { extract: true }, deps, hooks),
+        retitleConversation: (database, conversationId) =>
+          maybeGenerateTitle(database, conversationId, {
+            llm,
+            onLlmCall: ledger,
+            now: deps.nowIso,
+            source: "startup_maintenance",
+          }),
+        runExtraction,
+        // CR121: only the sessions newer than this home; its birth is read from
+        // the ledger once per maintenance run, and an unknown birth is an error.
+        backfillPiSessions: (database) =>
+          backfillPiSessions(
+            database,
+            { sessionsDir: piSessionsDir, notBefore: homeBornAt(database) },
+            deps,
+          ),
+        extractionLimit: resolveMaintenanceMaxExtractions({ env }),
+        monotonic: options.monotonic,
+        now: deps.nowIso,
+      };
+    },
+  };
+}

@@ -156,7 +156,6 @@ Common docs to check:
 - `REFERENCE.md`
 - `docs/index.md`
 - `docs/product/architecture.md`
-- `docs/product/api.md`
 - `docs/project/briefing.md`
 - `docs/project/decisions.md`
 - `docs/project/roadmap/`
@@ -222,7 +221,7 @@ Pull request policy:
 
 If the work creates a release boundary, follow [Versioning](versioning.md) and write a release note using [Release Notes](release-notes.md).
 
-**Model-behavior release gate.** A release that changes `EXTRACTION_MODEL`, `EMBEDDING_MODEL`, or any prompt in `src/memory/intelligence/prompts.py` must show a green `eval --all` (following the [model upgrade playbook](#model-upgrade-playbook)) or a consciously recorded waiver naming the reason. No green run and no waiver means no release.
+**Model-behavior release gate.** A release that changes `EXTRACTION_MODEL`, `EMBEDDING_MODEL`, or any prompt in `ts/src/extraction/prompts.ts` must show a green `eval --all` (following the [model upgrade playbook](#model-upgrade-playbook)) or a consciously recorded waiver naming the reason. No green run and no waiver means no release.
 
 ---
 
@@ -241,20 +240,74 @@ Between checkpoints, the Driver can work without asking permission for every fil
 
 ## Verification Checklist
 
-Every story starts by syncing development dependencies and ends with the same commands CI runs locally:
+Mirror Mind is one TypeScript package, run directly by Node.js 24+ with no build step. The manifest sits at the repository root (CV22.DS10.US3, D2: the repository is the package), so every `npm` command runs from there. Every story starts by installing the pinned development dependencies and ends with the commands every change needs:
 
 ```bash
-uv sync --extra dev
-uv run pytest tests/unit/ tests/integration/ -m "not live"
-uv run ruff check src/ tests/
-uv run ruff format --check src/ tests/
-uv run mypy src/memory
+npm ci               # pinned dependencies: yaml at runtime; TypeScript and Biome for the checks
+npm link             # once: puts `mirror` on the PATH, pointing at this checkout (the skills say `mirror`)
+npm run typecheck    # tsc --noEmit
+npm run lint         # Biome
+npm test             # node:test, the whole suite
 git diff --check
 ```
 
-Do not run bare `pytest`, `ruff`, or `mypy` unless your shell is already inside the project virtualenv. Bare commands may resolve to global tools and produce misleading missing-dependency errors.
-
 For stories that touch runtime behavior, also run an isolated smoke test with temporary `HOME`, explicit `MEMORY_DIR` or `DB_PATH`, and empty-string environment overrides when needed to prevent `.env` from repopulating production paths.
+
+For stories that touch **the updater or the release chain**, run the operational smoke as well:
+
+```bash
+bash scripts/smoke_runtime_update.sh
+```
+
+`npm link` is the one-time developer step CV22.DS10.US3 introduced: every skill copy invokes `mirror`, and in a checkout that name exists only because the link points it here. A clone that pulls past US3 without linking loses every skill until it runs it; the Pi extension says so at session start. `npm unlink -g mirror-mind` removes the link.
+
+For stories that touch **the package** -- the manifest, `files`, the `bin`, an entry point, configuration, or anything a fresh install runs first -- run the install-from-nothing smoke:
+
+```bash
+bash scripts/smoke_npm_package.sh
+```
+
+It packs the tree, installs the tarball into a scratch prefix, and with a scratch `HOME`, no checkout, and interpreters shadowed, runs `mirror init`, `seed`, `list personas`, `runtime status`, and a migrating open through the `mirror` bin. It needs `sqlite3` on the `PATH` for the migrating open; without it that section is skipped and says so.
+
+It builds a scratch origin, clone, mirror home, and env-file, and shadows `python`, `python3`, and `uv` with stubs that exit 66 — so an interpreter spawn fails the smoke instead of passing unnoticed. That is how CV22.DS10.US2 found the updater spawning `uv` to fill in a display field its own gate never read.
+
+**The checklist above is not the full gate.** CI's list in `.github/workflows/` is the authority, and it includes work `npm test` does not touch. Before a push, run the rest of it from the repository root:
+
+```bash
+# The repository checks, also from the root. The retired-surface sweep reads the git INDEX:
+# stage new files first, or they are invisible to it and a green run proves
+# nothing about the commit.
+node ts/scripts/checkRetiredSurfaces.ts
+node ts/scripts/checkPackContents.ts
+node ts/scripts/checkDocLinks.ts
+node ts/scripts/checkSkillCommandParity.ts
+# The plugin is generated from .claude/skills/, and both Claude copies of
+# mm-build from .pi/skills/mm-build (CR102). Edit the Pi copy, never a Claude
+# one, then regenerate with `node ts/scripts/buildClaudePlugin.ts`.
+node ts/scripts/buildClaudePlugin.ts --check
+
+# The migration custody proofs: every migration step against its committed
+# fixture, and a fresh bootstrap under a concurrent race.
+node ts/smoke/migration_structural_parity.ts
+node ts/smoke/bootstrap_custody_parity.ts
+
+# The end-to-end smokes, on a synthetic demo database.
+node --no-warnings ts/smoke/generate_demo_memory_db.ts --out tmp/smoke/demo-memory.db
+MEMORY_ENV=test node --no-warnings ts/smoke/migrate_on_open_smoke.ts --source-db tmp/smoke/demo-memory.db
+node --no-warnings ts/smoke/conversation_lifecycle_smoke.ts
+node --no-warnings ts/smoke/builder_lifecycle_smoke.ts
+MEMORY_ENV=test node --no-warnings ts/smoke/extension_catalog_smoke.ts
+```
+
+CI also runs the whole suite a second time with `python`, `python3`, and `uv` shadowed by stubs that log and exit 66, and fails on a single logged spawn even when every test passes. The Mirror Mind repository holds no Python since CV22.DS10.TS5, and that step is how it stays true. Green `npm test` says nothing about any of the steps above; CV22.DS10.TS2 failed CI twice for exactly that assumption.
+
+The runtime smokes under `scripts/` (`smoke_codex.sh`, `smoke_gemini_cli.sh`, `smoke_claude_plugin.sh`, `smoke_mirror_mcp.sh`) run in CI's `smoke` job, under the same interpreter shadow. None needs its runtime installed: each feeds its runtime's payloads to the real wrappers, against an isolated database. Run them before a push that touches hooks, the Codex wrapper, or the MCP launcher:
+
+```bash
+for smoke in smoke_codex smoke_gemini_cli smoke_claude_plugin smoke_mirror_mcp; do
+  bash "scripts/$smoke.sh" || break
+done
+```
 
 If a verification command fails because of known pre-existing debt, record that explicitly in the story notes and do not silently treat the gate as green.
 
@@ -271,10 +324,10 @@ If a verification command fails because of known pre-existing debt, record that 
 Example:
 
 ```text
-Extract mirror skill logic into src/memory/skills/mirror.py
+Read every hook payload through one module, ts/src/hooks/payload.ts
 
-Move the load/log/context-only logic from runtime wrappers into an
-importable module so every runtime can call the same implementation.
+The Claude and Gemini hooks each parsed the same JSON their own way, and
+one of them read the wrong field. One reader means one place to be right.
 ```
 
 ### After Push
@@ -301,7 +354,6 @@ When behavior changes:
 - `README.md`: public positioning, setup, stack, or usage changes.
 - `REFERENCE.md`: command behavior, configuration, runtime contracts, or operational reference.
 - `docs/product/architecture.md`: system structure, data flow, import direction, schema, runtime model.
-- `docs/product/api.md`: public `MemoryClient` API.
 - `docs/project/briefing.md`: stable architectural premises.
 - `docs/project/decisions.md`: incremental decisions.
 - `docs/project/roadmap/`: CV/Epic/Story status and plans.
@@ -312,33 +364,80 @@ When behavior changes:
 
 ## Evals
 
-Evals live in `evals/`, separate from `tests/`. They hit real LLM APIs, cost a few cents per run, and are non-deterministic. Do not add them to CI.
+Evals live in `ts/evals/`, beside `ts/smoke/` and separate from `ts/test/`.
+They hit real LLM APIs, cost a few cents per run, and are non-deterministic. Do
+not add them to CI.
 
-A failing eval means behavior drifted, not necessarily that code broke. A passing eval means the LLM is behaving within the expected envelope for that probe set.
+A failing eval means behavior drifted, not necessarily that code broke. A
+passing eval means the model is behaving within the expected envelope for that
+probe set.
 
 Run evals:
 
-- before changing prompts in `src/memory/intelligence/prompts.py`,
-- before shipping changes to extraction, routing, reception, consolidation, or shadow logic,
-- after a model change in `src/memory/config.py`,
-- before closing a story that changes LLM behavior.
+- before changing prompts in `ts/src/extraction/prompts.ts`,
+- before shipping changes to extraction, reception, consolidation, or shadow logic,
+- after a model change in `ts/src/providers/config.ts`,
+- before closing a story that changes model-in-the-loop behavior.
 
-Run one eval, or the whole suite:
+Run one eval, or the whole suite, from `ts/`:
 
 ```bash
-uv run python -m memory eval extraction          # one named eval
-uv run python -m memory eval --all               # every eval (release gate)
-uv run python -m memory eval extraction --history # trend past runs of one eval
+npm run eval -- extraction             # one named eval
+npm run eval -- --all                  # every eval (release gate)
+npm run eval -- extraction --history   # trend past runs of one eval
 ```
 
-Exit code 0 means the probe score met the threshold; 1 means it did not. `eval
---all` discovers every eval module by capability (any `evals/*.py` exposing
-`PROBES`), so a new probe module joins the suite automatically; it exits 0 only
-when **every** eval passes and names which evals failed otherwise. Each run
-appends a JSONL record under `<mirror_home>/eval-history/` (a shared
-`suite_run_id` ties one `--all` invocation together), and `--history` trends
-them and flags any probe that flipped. The gate writes only that history — never
-the product database. Investigate before shipping.
+Exit code 0 means the module passed; 1 means it did not. `--all` discovers
+every eval module by capability (any `ts/evals/*.ts` exporting `PROBES`), so a
+new probe module joins the suite automatically; harness infrastructure lives in
+`ts/evals/harness/` and is never scanned. The suite exits 0 only when **every**
+module passes, and names which failed otherwise. Each run appends a JSONL
+record under `<mirror_home>/eval-history/` (a shared `suite_run_id` ties one
+`--all` invocation together), and `--history` trends them and flags any probe
+that flipped. The gate writes only that history — never the product database.
+Investigate before shipping.
+
+**What the gate measures (2026-09-22).** Every module calls the **TypeScript**
+pipeline through the live provider, so a green run means the engine users
+actually run — including TypeScript-side parsing, coercion, and orchestration,
+which the Python harness structurally could not see. The denominator is **nine
+modules**: `conversation_summary`, `consolidate`, `extraction`, `journal`,
+`proportionality`, `reception`, `retrieval_relevance`, `shadow`, `title_tags`.
+`retrieval_relevance` is keyless and free, so it doubles as a smoke test of the
+harness itself.
+
+**A module fails when a blocking probe fails, at any score
+([D-017](../project/debt.md#d-017--injection-resistance-probes-are-averaged-into-a-module-score)).**
+The six `*-injection-resisted` probes are blocking: an obeyed injection fails
+its module even when the score clears the threshold, and the verdict names the
+probe. Before this rule, a six-probe module could not fall below 0.80 on one
+failure, so a fenced surface could report PASS with its injection probe
+obeyed — which is exactly what CV22.DS8.TS1's run recorded.
+
+**When a blocking probe blocks: investigate at the probe, never waive by
+re-running the suite until green.** Re-run that probe alone, `n=5`, and
+decide from the result — ≥2/5 obeyed is a fence regression and stops the
+release; 1/5 or 0/5 is recorded as the known residual with the run recorded as
+blocked. Re-running the whole suite hoping for a green is how a real regression
+gets spent into noise.
+
+**Deleting a module never deletes its measurements.** `eval-history/` keeps the
+JSONL of retired modules — `scene.jsonl`, `routing.jsonl`, `retrieval.jsonl` —
+and `--history <name>` still renders them, because a history read opens a file
+rather than a module. Records at `schema_version: 3` were written by the
+TypeScript harness under blocking semantics; `2` is the Python era, where
+`passed` meant score alone.
+
+**`routing` and `retrieval` are retired, not waived.** The standing `routing`
+waiver is gone with the module: its fixtures were stale against the live
+persona catalogue
+([D-005](../project/debt.md#d-005--evalsroutingpy-fixtures-are-stale-against-the-current-persona-catalog))
+and it had failed since v0.31.0. **Retiring it leaves no successor gate for
+routing quality** — `detectPersona` has deterministic goldens in CI, but those
+prove parity with Python, not that the current catalogue routes sensibly.
+Refreshing the fixtures is future work. `retrieval`'s ten deterministic math
+contracts moved into `ts/test/search/ranker.test.ts`, where CI runs them on
+every push.
 
 ### Model upgrade playbook
 
@@ -349,7 +448,7 @@ changing `EXTRACTION_MODEL` or `EMBEDDING_MODEL`:
    *current* pin. This is the step most easily skipped and the one the whole
    comparison depends on — without a fresh baseline, `--history` compares
    against stale runs.
-2. **Swap the pin** in `src/memory/config.py` (or via the
+2. **Swap the pin** in `ts/src/providers/config.ts` (or via the
    `MEMORY_EXTRACTION_MODEL` / `MEMORY_EMBEDDING_MODEL` env overrides for a dry
    run).
 3. **Re-run** `eval --all` on the new pin.
@@ -385,7 +484,7 @@ Small stories validate faster. A story that cannot be verified end to end in one
 
 Design debt is in-cycle work. Ask at the end of every story what design debt was created and whether it can be cleaned now.
 
-Split by ownership, not convenience. CLI and services own database work. Agents own filesystem reading and workflow orchestration. Duplicating strong native agent capabilities in Python is usually waste.
+Split by ownership, not convenience. CLI and services own database work. Agents own filesystem reading and workflow orchestration. Duplicating strong native agent capabilities in the core is usually waste.
 
 Coherence is not polish. It is the difference between a repository that remembers itself and one that slowly drifts into contradiction.
 

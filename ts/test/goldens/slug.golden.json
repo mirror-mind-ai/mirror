@@ -1,0 +1,99 @@
+{
+  "cases": [
+    {
+      "input": "episódio",
+      "slug": "episodio",
+      "stripped": "episodio"
+    },
+    {
+      "input": "CV22.DS7.US1 — Remaining identity/journey reads & writes",
+      "slug": "cv22-ds7-us1-remaining-identity-journey-reads-writes",
+      "stripped": "CV22.DS7.US1 — Remaining identity/journey reads & writes"
+    },
+    {
+      "input": "Café com Açúcar & Ação",
+      "slug": "cafe-com-acucar-acao",
+      "stripped": "Cafe com Acucar & Acao"
+    },
+    {
+      "input": "  leading and trailing spaces  ",
+      "slug": "leading-and-trailing-spaces",
+      "stripped": "  leading and trailing spaces  "
+    },
+    {
+      "input": "___only___underscores___",
+      "slug": "only-underscores",
+      "stripped": "___only___underscores___"
+    },
+    {
+      "input": "!!!",
+      "slug": "",
+      "stripped": "!!!"
+    },
+    {
+      "input": "",
+      "slug": "",
+      "stripped": ""
+    },
+    {
+      "input": "already-kebab-case",
+      "slug": "already-kebab-case",
+      "stripped": "already-kebab-case"
+    },
+    {
+      "input": "Mixed_Case-With.Dots",
+      "slug": "mixed-case-with-dots",
+      "stripped": "Mixed_Case-With.Dots"
+    },
+    {
+      "input": "日本語テキスト",
+      "slug": "",
+      "stripped": "日本語テキスト"
+    },
+    {
+      "input": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "slug": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "stripped": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    },
+    {
+      "input": "café café café café café café café café café café café café café café café café café café café café ",
+      "slug": "cafe-cafe-cafe-cafe-cafe-cafe-cafe-cafe-cafe-cafe-cafe-cafe-cafe-cafe-cafe-cafe",
+      "stripped": "cafe cafe cafe cafe cafe cafe cafe cafe cafe cafe cafe cafe cafe cafe cafe cafe cafe cafe cafe cafe "
+    },
+    {
+      "input": "trailing-hyphen-after-cap-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "slug": "trailing-hyphen-after-cap-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "stripped": "trailing-hyphen-after-cap-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "input": "ação-ação-ação-ação-ação-ação-ação-ação-ação-ação-ação-ação-ação-ação-ação-ação-ação-ação-ação-ação-",
+      "slug": "acao-acao-acao-acao-acao-acao-acao-acao-acao-acao-acao-acao-acao-acao-acao-acao",
+      "stripped": "acao-acao-acao-acao-acao-acao-acao-acao-acao-acao-acao-acao-acao-acao-acao-acao-acao-acao-acao-acao-"
+    },
+    {
+      "input": "üöäÜÖÄß",
+      "slug": "uoauoa",
+      "stripped": "uoaUOAß"
+    },
+    {
+      "input": "naïve café résumé",
+      "slug": "naive-cafe-resume",
+      "stripped": "naive cafe resume"
+    },
+    {
+      "input": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-b",
+      "slug": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "stripped": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-b"
+    },
+    {
+      "input": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "slug": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "stripped": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "input": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "slug": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "stripped": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    }
+  ]
+}

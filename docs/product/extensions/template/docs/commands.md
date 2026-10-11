@@ -4,7 +4,7 @@
 
 For each subcommand, document:
 
-- **Name.** `python -m memory ext <id> <subcommand>`.
+- **Name.** `mirror ext <id> <subcommand>`.
 - **Summary.** One line.
 - **Synopsis.** Full argument syntax, including required and optional flags.
 - **Description.** What it does, when to use it, side effects.

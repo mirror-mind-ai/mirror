@@ -1,0 +1,83 @@
+{
+  "beauty_prompt_sha256": "4d07da013544f42453473fa5a33262d05bfa6da97ced26e8990e8a7e5bd59e80",
+  "placeholder": "{user_self_identity}",
+  "self_cases": [
+    {
+      "expected_injected_value": "No user Self identity layer is available yet. Use only the base Self Voice grammar.",
+      "expected_length": 8406,
+      "expected_prompt_sha256": "0d25655d4edf599aed75ba232c8e2951d8ece8c0559ba80e3c43889c48a34495",
+      "identity": null,
+      "name": "no_identity_row"
+    },
+    {
+      "expected_injected_value": "No user Self identity layer is available yet. Use only the base Self Voice grammar.",
+      "expected_length": 8406,
+      "expected_prompt_sha256": "0d25655d4edf599aed75ba232c8e2951d8ece8c0559ba80e3c43889c48a34495",
+      "identity": "   \n\n  ",
+      "name": "blank_identity"
+    },
+    {
+      "expected_injected_value": "I am the one who keeps returning to the same question.",
+      "expected_length": 8377,
+      "expected_prompt_sha256": "25501c7ce602084bf6d39deff07d585531e65d49df1f33e0dba9c5980a020e94",
+      "identity": "I am the one who keeps returning to the same question.",
+      "name": "simple_identity"
+    },
+    {
+      "expected_injected_value": "padded on both ends",
+      "expected_length": 8342,
+      "expected_prompt_sha256": "c485faf07ff9dc0ed9338925dabacec31fe9efcee593d3feb78377c9d44e1018",
+      "identity": "\n\n   padded on both ends   \n\n",
+      "name": "padded_identity"
+    },
+    {
+      "expected_injected_value": "stripped by Python, kept by trim()",
+      "expected_length": 8357,
+      "expected_prompt_sha256": "d4a0b35b5e790e814cde901885eaa3c6ffb9263ad086e32b2fc8731dc0dff37d",
+      "identity": "\u001fstripped by Python, kept by trim()\u001f",
+      "name": "unit_separator_padded_identity"
+    },
+    {
+      "expected_injected_value": "﻿kept by Python, stripped by trim()﻿",
+      "expected_length": 8359,
+      "expected_prompt_sha256": "43190afb26483111188b2c5de5bcae538ddd676014e1ad961f8dcf245a73a26d",
+      "identity": "﻿kept by Python, stripped by trim()﻿",
+      "name": "bom_padded_identity"
+    },
+    {
+      "expected_injected_value": "First principle.\n\nSecond principle.\n- a bullet",
+      "expected_length": 8369,
+      "expected_prompt_sha256": "2a099e03b9c56257d5c94e652fc1e9d2da22aecb14f9d7d701794f383d52cf0a",
+      "identity": "First principle.\n\nSecond principle.\n- a bullet",
+      "name": "multiline_identity"
+    },
+    {
+      "expected_injected_value": "Silêncio, 沉默, and 🎯 kept raw",
+      "expected_length": 8351,
+      "expected_prompt_sha256": "f23407b055965a243261342c61de66ab9286a56719a1b07605eddc92d33610e0",
+      "identity": "Silêncio, 沉默, and 🎯 kept raw",
+      "name": "unicode_identity"
+    },
+    {
+      "expected_injected_value": "Identity carrying $& and $` and $' and $1 and $$ must survive injection exactly as written.",
+      "expected_length": 8414,
+      "expected_prompt_sha256": "29dcd1328ffb2970ef0eb33bda07d74c1b08d716b8b677e96d9df395f8717b73",
+      "identity": "Identity carrying $& and $` and $' and $1 and $$ must survive injection exactly as written.",
+      "name": "dollar_pattern_identity"
+    },
+    {
+      "expected_injected_value": "before {user_self_identity} after",
+      "expected_length": 8356,
+      "expected_prompt_sha256": "1af02a6e178853472631218fd540ceb6bce631cb18759bf7336710adcd8b651b",
+      "identity": "before {user_self_identity} after",
+      "name": "identity_containing_the_placeholder"
+    }
+  ],
+  "template_sha256": {
+    "beauty": "4d07da013544f42453473fa5a33262d05bfa6da97ced26e8990e8a7e5bd59e80",
+    "self": "9f02907db8bcf7dc3c0a99a09dc033f728995576d22c386f711656dbb374681f",
+    "wisdom": "01c01e55ad61295b2135e75d919e12ce02917246584d18416640fa386c9e0eb0"
+  },
+  "unavailable": "No user Self identity layer is available yet. Use only the base Self Voice grammar.",
+  "wisdom_prompt_sha256": "01c01e55ad61295b2135e75d919e12ce02917246584d18416640fa386c9e0eb0"
+}

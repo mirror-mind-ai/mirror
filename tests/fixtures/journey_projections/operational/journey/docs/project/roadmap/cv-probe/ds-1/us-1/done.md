@@ -1,3 +1,0 @@
-# Done
-
-Synthetic closure artifact.

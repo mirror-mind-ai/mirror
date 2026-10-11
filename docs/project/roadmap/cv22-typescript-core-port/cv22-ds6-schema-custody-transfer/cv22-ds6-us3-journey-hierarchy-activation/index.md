@@ -1,0 +1,110 @@
+[< Parent](../index.md)
+
+# CV22.DS6.US3 — Journey Hierarchy Activation & Migrate-on-Open
+
+**Status:** ✅ Done
+**Type:** User Story
+
+---
+
+## Outcome
+
+Activate the `identity.parent_journey` column that
+[US2](../cv22-ds6-us2-parent-journey-first-class-column/index.md) authored: give
+the TS front door a **migrate-on-open** path so existing databases actually
+receive TS-authored forward migrations (Python cannot apply them), then adopt the
+column at runtime — dual-write (column + JSON), **JSON-authoritative dual-read**
+(column is a not-yet-trusted shadow/index — see plan **D1**), and the ported
+`_validate_parent_journey` integrity rules. Dropping `parent_journey` from JSON,
+any hard FK, and making the column authoritative for reads stay deferred to
+DS7/DS10.
+
+## Why This Exists (split from US2)
+
+US2 proved TS can author schema beyond Python (migration 017 + the column +
+renegotiated seam contracts) and softened `assertSchemaState` so a database
+missing the TS-only migration is *tolerated*. But nothing yet *applies* 017 to an
+existing database, and the runtime read/write path still uses JSON. Turning
+tolerance into activation is a high-blast-radius runtime-seam change.
+
+## Approved Plan Decisions (see [plan.md](plan.md))
+
+- **D1 — JSON authoritative, column is a shadow/index.** Dual-read resolves
+  JSON-first; column-authoritative reads deferred to DS7. Navigator-approved,
+  rewording US2's original "column-when-present" intent.
+- **D2 — Migrate-on-open on read + write opens,** behind a cheap `_migrations`
+  pre-check (steady state ≈ one query, no lock, no backup).
+- **D3 — Conditional backup** owned by the migrate-on-open seam, only when a
+  migration will actually apply.
+
+## Scope
+
+- **Migrate-on-open:** when the front door opens a database missing TS-authored
+  migrations (and no Python migration is pending), run them backup-gated, under
+  the bootstrap lock, before serving.
+- **JSON-first dual-read** in `journeyOptions` + caller; the column is a shadow.
+- Port `_validate_parent_journey` to TS (parent-exists, no-self, single-level
+  nesting, no-parent-if-has-children).
+
+## Out Of Scope
+
+- Dropping `parent_journey` from JSON, hard FK, Python reader re-homing,
+  column-authoritative reads, **atomic dual-write of the column**, the full
+  `journey update` port — DS7/DS10 (dual-write deferred by Navigator decision; see
+  [plan.md](plan.md)).
+- Migration-016 legacy fixture coverage — carried DS6-Done debt, independent of US3.
+
+## Depends On
+
+- [CV22.DS6.US2](../cv22-ds6-us2-parent-journey-first-class-column/index.md) —
+  the column, migration 017, and the softened schema-state guard.
+
+## Validation
+
+See [test-guide.md](test-guide.md). Golden parity covers dual-read and
+`_validate_parent_journey`; migrate-on-open has **no Python oracle** and is proven
+by the real-legacy-DB-copy harness plus a Navigator E2E smoke.
+
+---
+
+## v0.31.9 Mixed-Engine Amendment
+
+The original JSON-authoritative activation is reinstated and strengthened by
+[RS008 / CR050](../../../../refinement/rs008-v0319-recursive-journey-parity/cr050-reconcile-moving-target-and-parent-authority.md):
+metadata is the sole semantic authority while Python can still write parentage. The
+column is not a fallback, because Python unparenting removes the metadata key but cannot
+clear migration `017`'s projection; fallback would resurrect stale structure. Atomic
+TS dual-write remains required, and any later column-authority flip is a separate
+post-transfer decision.
+
+## v0.31.9 Movement And Cycle Amendment
+
+[RS008 / CR052](../../../../refinement/rs008-v0319-recursive-journey-parity/cr052-port-parent-movement-and-cycle-semantics.md)
+supersedes US3's original single-level validator. The TS decision core now accepts
+arbitrary-depth attachment and movement of nodes with descendants, walks the complete
+metadata-authoritative ancestry, and rejects self-parenting, missing proposed parents,
+indirect cycles, and already-cyclic ancestry with the released messages.
+
+`createJourney` now validates any proposed parent inside its immediate transaction, and
+the exported `setParentJourney` core seam moves or unparents an existing journey while
+preserving every other identity and metadata field. Metadata and migration `017`'s
+derived projection update atomically; rollback prevents partial divergence. This does
+not add a CLI command or transfer the Python Workspace/web adapter — that remains CR054.
+
+## v0.31.9 Conservative Removal Amendment
+
+[RS008 / CR053](../../../../refinement/rs008-v0319-recursive-journey-parity/cr053-port-conservative-transactional-journey-removal.md)
+adds an exported TS domain seam that removes only an existing empty leaf. Journey
+existence, the complete released association inventory, and the single identity delete
+share one `BEGIN IMMEDIATE` transaction. Child detection remains metadata-authoritative;
+migration `017`'s derived column cannot permit or prevent removal when it disagrees.
+
+Removal refuses every durable journey association with the released messages, rolls
+back on domain or database failure, and never cascades, reparents, changes schema, or
+touches filesystem content. This is core parity only: no CLI or Workspace/web removal
+surface is claimed.
+
+## Artifacts
+
+- [Plan](plan.md)
+- [Test Guide](test-guide.md)

@@ -27,18 +27,29 @@ is a future, separate track.
 
 ---
 
-### D2 — Python as the core language
+### D2 — TypeScript as the core language, run by Node.js
 
-**Decision:** The memory system (`src/memory/`) is written in Python 3.10+.
-All CLI commands, hooks, and skill scripts are Python.
+**Decision:** The core (`ts/src/`) is TypeScript, run directly by Node.js 24 or
+newer — `node:sqlite` for the database, native type stripping for the source,
+no build step. Every command, hook, and MCP entry is one process into the same
+front door (`ts/src/frontDoor/cli.ts`). The repository is the npm package
+`mirror-mind`; an installed package has the same paths as a checkout.
 
-**Rationale:** Python is the right language for the data pipeline work this
-system does: embedding generation, LLM extraction, SQLite access, YAML parsing,
-and hybrid search. It has the ecosystem and the tooling (pytest, ruff, pyright).
+**Rationale:** The core was Python 3.10+ from CV0 through v0.31.14, and that
+choice was right for the data-pipeline work the system does. What changed is
+where the core runs: inside four Node-based agent runtimes, on a machine where
+the person installs one thing. One language for the core, the Pi extension, the
+hooks, and the MCP server means one runtime to install, one test suite, one
+process model — and no second engine to ship. CV22 ported every command one at
+a time, each proven against the Python engine before it answered users, and
+deleted Python when nothing reached it any more (CV22.DS10.TS5, 2026-09-25;
+[decision](decisions.md#the-python-core-is-gone-and-the-answers-nobody-can-grade-any-more-are-the-front-doors-own)).
 
-**Consequence:** Any Pi interface extension that dispatches to the memory
-system must invoke Python. The TypeScript Pi extension is a thin caller; logic
-stays in Python.
+**Consequence:** Nothing in the product, the package, or the tooling that builds
+or checks it spawns an interpreter; two guards in CI hold that for the tree and
+for the tarball. A runtime integration calls `mirror`; the Pi extension spawns
+the core it ships with. Superseded the Python D2 on 2026-10-09 (CV22.DS10.US3
+plateau 6, decision D11).
 
 ---
 
@@ -102,19 +113,24 @@ architecture has a place for it.
 
 ---
 
-### D6 — Claude Code and Pi are two interfaces over one core
+### D6 — Four runtimes are thin interfaces over one core
 
-**Decision:** The `memory` Python package is the only implementation of
-identity, conversation, memory extraction, search, and task management. Claude
-Code and Pi are thin interfaces that call this shared core.
+**Decision:** The TypeScript core is the only implementation of identity,
+conversation, memory extraction, search, tasks, and the Builder and Explorer
+lifecycles. Pi, Claude Code, Gemini CLI, and Codex are thin interfaces: each
+translates its lifecycle events into front-door calls and loads the same
+skills, per the [runtime interface contract](../product/specs/runtime-interface/index.md).
 
-**Rationale:** Without this decision, Pi support would require duplicating or
-forking the memory logic. Duplication drifts. The right model is one
-implementation with two frontends.
+**Rationale:** Without this decision, each runtime would need its own copy of
+the memory logic, and copies drift. One implementation, four frontends — and a
+guard (`checkSkillCommandParity.ts`) that keeps every runtime's copy of a skill
+invoking the same entry point the same way.
 
-**Consequence:** Skill logic must move from `.claude/skills/mm:*/run.py` into
-`src/memory/skills/` so both interfaces can call it. Claude skills and Pi
-skills become thin wrappers (CV1.E1). Neither interface owns behavior.
+**Consequence:** A runtime owns no behavior. Adding one is a wiring question:
+hooks for its lifecycle events, a place for the skills, and a way to deliver the
+Operating Instructions (`AGENTS.md`). Rewritten from "Claude Code and Pi" on
+2026-10-09 (CV22.DS10.US3 plateau 6, decision D11); the original D6 dates from
+CV1, when those were the two.
 
 ---
 
@@ -134,20 +150,23 @@ hook respects this guard automatically.
 
 ---
 
-### D8 — Skill logic belongs in `src/memory/skills/`
+### D8 — A skill is a prompt that names a front-door command
 
-**Decision:** All non-trivial skill behavior — load context, switch
-conversations, log sessions, run backups — is implemented as importable Python
-modules in `src/memory/skills/`. Interface-specific entry points (Claude skill
-`run.py`, Pi skill `run.py`) are thin wrappers that call these modules.
+**Decision:** A skill (`SKILL.md`) carries no logic. It tells the agent which
+`mirror <command>` to run and how to present the answer; the behavior is in the
+core's domain modules (`ts/src/<domain>/`), reached through the front door's
+routing. The Pi copy under `.pi/skills/` is the source; the Claude Code copies
+and the packaged plugin are generated from it.
 
-**Rationale:** This is the structural consequence of D6. Without it, adding Pi
-support requires copying `.claude/skills/mm:*/run.py` into `.pi/skills/mm-*/run.py`,
-creating two copies of the same logic that will diverge.
+**Rationale:** This is the structural consequence of D6, carried through the
+port. The CV1 form of this decision put shared logic in `src/memory/skills/`
+so that per-runtime `run.py` wrappers would not diverge; the port removed the
+wrappers altogether, so the only thing a skill can diverge on is the invocation
+it names — and the parity guard forbids that.
 
-**Consequence:** CV1.E1 (Shared Command Core) is a prerequisite for CV1.E2
-(Pi Skill Surface). The Pi skill wrappers cannot be written until the shared
-modules exist.
+**Consequence:** Changing what a skill does is a change to the core, tested
+there. Changing what a skill says is a change to one file, propagated by the
+plugin builder. Rewritten on 2026-10-09 (CV22.DS10.US3 plateau 6, D11).
 
 ---
 
@@ -155,26 +174,29 @@ modules exist.
 
 ### Ariad governs Builder delivery for Mirror Mind
 
-**State as of v0.29.0:** Mirror Mind has adopted Ariad prospectively at the
-parent `mirror-mind` journey level. Builder Mode remains backward-compatible for
-journeys that have not adopted Ariad, but Mirror Mind delivery work now uses
-Ariad runtime checkpoints, deterministic marked surfaces, explicit hard gates,
-and first-class Delivery and Refinement work fields.
+**State as of CV22.DS10.US3 (2026-10):** Mirror Mind delivery work runs under
+Ariad: runtime checkpoints, deterministic marked surfaces, explicit hard gates,
+Delivery Stories expanded into User and Technical Stories, Plan approval before
+implementation, Navigator validation before Debt Review, Coherence before Done.
+Builder Mode stays backward-compatible for journeys that have not adopted
+Ariad. Refinement Work is file-first: `docs/project/refinement/index.md` is the
+sole authority (the SQLite Workbench that `v0.29.0` introduced was retired by
+CV22.DS10.TS4; its [cutoff](../releases/pending-cutoffs.md#the-sqlite-refinement-workbench)).
 
-**Completed release boundary:** `v0.29.0 — Ariad Refinement Workbench` closed
-`CV20.DS6`. Builder now exposes Ariad Refinement through Builder Home, durable
-Workbench Refinement Stories and Change Requests, RS pull, CR cycles, and
-RS-level review/coherence/close. Builder also retains the `v0.28.0` Delivery
-Story lifecycle: `story_by_story` and `delivery_story` Navigator flow units,
-aggregate DS checkpoints, canonical checkpoint artifacts, and visual Ariad
-surfaces.
+**Completed release boundary:** `v0.31.14`, the last Python-bearing release,
+tagged `cv22-last-python-bearing`. Everything since is CV22, which
+[releases once, when the migration is complete](decisions.md#cv22-releases-once-when-the-migration-is-complete):
+the next release is the first whose core is TypeScript alone and whose
+distribution is npm.
 
-**Release state:** `v0.29.0` is the current release-preparation boundary for
-DS6. Push, tag, stable promotion, and publication remain separate hard gates.
+**Release state:** the CV22 release is gated on the Ariad trust floor (worked
+before US3; complete), CR121's decision, and the release gate's own checks (the
+production clone's last Python-era hop, F20). Push, tag, stable promotion, and
+`npm publish` remain separate, explicitly authorized hard gates; the promotion
+script prints the publication step and never runs it.
 
-**Current Builder work:** The next planned Builder slice is `CV20.DS7 — Release
-And Push Policies`; do not assume push/release permission from ordinary Done, and
-keep release and stable promotion as separate Navigator-authorized hard gates.
+**Current Builder work:** `CV22.DS10.US3 — npm distribution`, the migration's
+last story. Do not assume push or release permission from an ordinary Done.
 
 ---
 
