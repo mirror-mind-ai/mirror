@@ -2523,6 +2523,64 @@ default branch, and `main` is 864 commits behind the delivery branch; a copy of
 `publish.yml` was committed there alone (`90686b41`) so the button exists. Every dispatch
 runs the file from the chosen ref. The CV22 release merge will meet the same bytes.
 
+### CV22 releases as v0.32.0, not v1.0.0
+
+**Date:** 2026-10-10 · **Context:** the CV22 release gate, with every Delivery Story
+done. The [versioning rule](../process/versioning.md) says MAJOR for a completed
+Capability Value, and the package sits at `0.31.14`.
+
+**The decision: the CV22 release is `v0.32.0`.** The MAJOR rule is bent on purpose,
+and this entry records the bend rather than reinterpreting the rule.
+
+**Why not `v1.0.0`.** That name is reserved by the same rule for CV9, Mirror Mind 1.0,
+the public-release readiness boundary. CV22 changes the language, the install, and the
+distribution channel of the product, and changes no behavior a user can see: every
+command, its arguments, and its output are what they were. A migration that was built
+not to be noticed does not get to be the 1.0. Taking `v1.0.0` here would also empty
+CV9's boundary of its number before CV9 has earned it.
+
+**Why not another `0.31.x`.** It is not a patch. The release removes the Python core,
+the web console, the Frame, and five surfaces behind cutoffs, and adds the npm package
+and the trusted-publisher route. A MINOR is the smallest number that says so.
+
+**What follows.** The release note is `docs/releases/v0.32.0.md` and carries the
+[pending cutoffs](../releases/pending-cutoffs.md). The next MAJOR is CV9's, as the
+rule already says.
+
+### A new Mirror home imports only the Pi sessions that are newer than itself
+
+**Date:** 2026-10-10 · **Context:** [CR121](refinement/rs010-cv22-oracle-and-port-hygiene/cr121-a-new-home-s-first-maintenance-imports-the-whole-pi-history.md)
+and [CR106](refinement/rs010-cv22-oracle-and-port-hygiene/cr106-a-pi-session-in-a-scratch-mirror-home-copies-the-whole-pi-history-into-it.md),
+decided together at the CV22 release gate as a release precondition. The options were
+to keep the whole-history import and document it, to ask once before importing, or to
+import only what is newer than the home.
+
+**The decision: session maintenance backfills a Pi session into a home only when the
+session is newer than the home.** A home's age is the first `applied_at` in its
+`_migrations` ledger, which a fresh database writes at its first open and every
+existing database already carries. A session is dated by its last message. Nothing
+older than the home is imported, backed up, retitled, or extracted from.
+
+**Why this one.** The expected npm user has used Pi before installing Mirror, and the
+first thing a new home did was copy every chat they ever had, from every project, and
+then spend on it, before the first prompt was answered. Keeping that and documenting it
+would make the documentation the only thing standing between a stranger and a bill. Asking
+first needs a surface in a background process that has none, and puts a question in
+front of the first session. Importing only what is newer than the home needs no question,
+no surface, and no new record: the ledger already says when the home was born, and the
+rule reads the same way to a person ("Mirror remembers what happened since it arrived").
+
+**What it keeps.** An existing home is old, so everything it was importing still imports:
+gap-filling for sessions the hooks missed is unchanged for anyone whose home predates
+their sessions. `PI_SESSIONS_DIR` still works. A scratch home made for a validation route
+is born at the route's first open, so it imports nothing from before it, which is what
+CR106 asked for.
+
+**What it does not do.** It does not ask, does not report what it skipped, and does not
+offer an import of earlier history. A person who wants their earlier Pi history in Mirror
+has no command for it in this release; if one is wanted, it is a feature with its own
+story, not a flag on maintenance.
+
 ## Open Discussions
 
 ### Migration rehearsal — long-term status

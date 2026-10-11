@@ -48,15 +48,95 @@ drains.
 
 ## Plan Or Decision
 
-A Navigator decision comes before planning. The options:
-- keep the import and document it;
-- ask first;
-- import only sessions newer than the home.
+A Navigator decision came before planning. The options were to keep the import and
+document it, to ask first, or to import only sessions newer than the home. CR106's
+behavior option, "a home backfills only sessions newer than itself", closes CR106 and
+this CR together, so they were decided together.
 
-CR106's behavior option, "a home backfills only sessions newer than itself", would close
-CR106 and this CR together, so decide them together. Whether the decision must land
-before the CV22 release is part of it: this reaches every npm user who has used Pi.
-Captured without selecting; Current Focus unchanged.
+**Decided 2026-10-10 by the Navigator: import only sessions newer than the home**
+([Decisions](../../decisions.md#a-new-mirror-home-imports-only-the-pi-sessions-that-are-newer-than-itself)).
+A release precondition: it lands before the `v0.32.0` tag. Selected the same day;
+plan below, pending Navigator approval.
+
+### Objective
+
+A home's first maintenance run imports nothing that happened before the home existed.
+A session is Mirror's when its last message is later than the home's birth; everything
+else in the sessions directory is left where it is, unread by a provider, uncopied by a
+backup. For a home that predates its sessions, which is every existing clone user's home,
+nothing changes.
+
+### Design
+
+**The home's birth is the first `applied_at` in `_migrations`.** A fresh database runs
+every migration at its first open and stamps each with `nowIso()`; a Python-era
+database carries the same ledger from its own first open. `MIN(applied_at)` is therefore
+the birth of every home there is, with no new table, column, marker file, or `init`
+step. Read it in `loggerRuntime.ts`, where `deps.backfillPiSessions` is wired, through
+one small function in `backfill.ts` (`homeBornAt(db): string | null`). A ledger with no
+rows, which no opened database has, yields `null` and the import proceeds as before.
+
+**A session is dated by its last message.** `backfillPiSessions` already parses every
+message of a file before importing it; the session's end is `messages.at(-1).createdAt`,
+the same value it stores as `endedAt`. A session whose end is at or before the birth is
+skipped, before `importClosedConversation`, so nothing is written, locked, titled, or
+counted for it. Timestamps are compared as instants (`Date.parse`), since the ledger
+writes `Z` and `parsePiTimestamp` writes `+00:00`. A session with no timestamps dates
+to `now` under the existing rule and is imported: an undated session is newer, not older.
+
+**The option is explicit, not defaulted.** `PiBackfillOptions` gains `notBefore: string
+| null`, required. The golden test passes `null` and keeps grading the corpus exactly
+as before; production passes the birth. A test cannot forget the rule by omitting it.
+
+**Codex is unchanged.** `backfillCodexSession` imports the one session the wrapper
+names, not a history; it is not a backfill of the past and takes no date.
+
+**No skipped-count, no question, no report.** The maintenance log line stays
+`Backfilled Pi sessions: N`. What the rule leaves out is not an event.
+
+### Files
+
+- `ts/src/conversation/backfill.ts`: `homeBornAt`, the `notBefore` option, the skip.
+- `ts/src/conversation/loggerRuntime.ts`: read the birth once per maintenance run, pass it.
+- `ts/test/conversation/backfill.test.ts`: the golden passes `null`; a new test births a
+  database, writes one session ended before the birth and one after, and asserts one import
+  and which; a third case asserts a `null` birth imports both.
+- `ts/test/conversation/sessionComposites.test.ts` or the logger-runtime tests: the wiring
+  reads the ledger (one assertion that a fresh database imports nothing dated yesterday).
+- `REFERENCE.md` (`PI_SESSIONS_DIR` row and the maintenance section): one sentence
+  stating the rule.
+- `docs/getting-started.md` § 8: one sentence, so a Pi user knows their earlier history
+  stays out.
+- `docs/releases/pending-cutoffs.md`: not a cutoff; the release note states the rule
+  under behavior changes instead.
+
+### Acceptance
+
+- A home created by `mirror init` and opened for the first time, with
+  `~/.pi/agent/sessions` holding history, imports no session that ended before the open.
+- The same home imports a session that ends after the open, at the next maintenance run.
+- An existing home whose ledger predates its sessions imports exactly what it imported
+  before this change (the golden corpus, unchanged).
+- A scratch home used by a validation route imports nothing from the machine's history
+  (CR106's expected behavior), with no `PI_SESSIONS_DIR` pin needed.
+- `npm test`, typecheck, lint, and the package smoke stay green.
+
+### Validation Route
+
+Navigator, on this machine, with the real `~/.pi/agent/sessions` and a scratch prefix:
+`mirror init cr121-check` with `MIRROR_HOME` under `/tmp`; run one Claude Code
+SessionStart hook or one `mirror` command that triggers maintenance; read the scratch
+home's `mirror-logger.log`. Pass: `Backfilled Pi sessions: 0`, and the database holds no
+`pi` conversation. Then open Pi once against the scratch home, close it, trigger
+maintenance again. Pass: `Backfilled Pi sessions: 1` or the live hook's own binding, and
+nothing older. Delete the scratch home afterwards.
+
+### Non-Goals
+
+- Asking before importing, or any surface in maintenance.
+- A command to import earlier history on request.
+- CR120 (a failed import aborts the rest of maintenance): separate, still open.
+- Any change to what a session import stores once it is accepted.
 
 **Navigator, 2026-10-09: this must be decided before the CV22 release.** It is a
 release precondition, recorded with the

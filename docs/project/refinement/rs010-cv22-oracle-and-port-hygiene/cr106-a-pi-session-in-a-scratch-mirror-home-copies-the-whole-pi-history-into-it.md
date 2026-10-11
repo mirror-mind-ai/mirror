@@ -35,7 +35,16 @@ requires fails silently: the route looks isolated because the real home is untou
 
 ## Plan Or Decision
 
-Pending. Captured while working the Ariad trust floor on CR001, whose validation
+**Decided 2026-10-10 by the Navigator, together with
+[CR121](cr121-a-new-home-s-first-maintenance-imports-the-whole-pi-history.md): the fix is
+behavior.** A home backfills only sessions newer than itself, the home's birth being the
+first `applied_at` in its `_migrations` ledger
+([Decisions](../../decisions.md#a-new-mirror-home-imports-only-the-pi-sessions-that-are-newer-than-itself)).
+A scratch home is born at the route's first open, so it imports nothing from before it,
+and no route needs a `PI_SESSIONS_DIR` pin to stay isolated. CR121 carries the plan and
+the implementation; this CR closes with it.
+
+Captured while working the Ariad trust floor on CR001, whose validation
 surfaced it
 ([decision](../../decisions.md#the-cv22-release-is-gated-on-an-ariad-trust-floor-worked-before-us3));
 this CR is not on the floor. First decide whether the fix is behavior or guidance.
