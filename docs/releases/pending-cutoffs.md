@@ -2,10 +2,11 @@
 
 # Pending Cutoffs — the CV22 release
 
-CV22 [releases once, when the migration is complete](../project/decisions.md#cv22-releases-once-when-the-migration-is-complete),
-so the stories that remove a surface have no release note of their own to write in.
-This document is where each one records its cutoff, and the eventual release note
-carries them. It is not itself a release note.
+**Carried by [v0.32.0](v0.32.0.md).** CV22 [released once, when the migration was complete](../project/decisions.md#cv22-releases-once-when-the-migration-is-complete),
+so the stories that removed a surface had no release note of their own to write in.
+This document is where each one recorded its cutoff; the release note summarizes them in
+one table and links here for the full record. It is not itself a release note, and it is
+not pending any more: it is the detailed cutoff record of `v0.32.0`.
 
 A cutoff answers three things for a user: **what no longer exists**, **what to do
 instead**, and **what still works if they do nothing**.
