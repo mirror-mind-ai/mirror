@@ -59,7 +59,8 @@ A release precondition: it lands before the `v0.32.0` tag. Selected the same day
 plan below, reviewed by the database architect
 ([record below](#database-architect-review-2026-10-11)) with its two blockers and one
 pin folded in. **Approved 2026-10-11 by the Navigator**; Driver `@viniciusteles`, Delivery
-`mirror-ts-core`, assigned the same turn; `in_progress`.
+`mirror-ts-core`, assigned the same turn. Implemented and validated the same day; **done
+2026-10-11** ([Outcome](#outcome)).
 
 ### Objective
 
@@ -249,4 +250,22 @@ release.
 
 ## Outcome
 
-Pending.
+**Done 2026-10-11.** A home imports only the Pi sessions that ended after it was born;
+its birth is the first `applied_at` in `_migrations`; a file last written before the
+birth is skipped unread. Validated by the Navigator on the real Pi history: a scratch home
+imported nothing from 800+ files, then exactly the sessions written after its birth.
+
+**Debt review.** Nothing introduced here is carried. The ledger-as-birth inference is
+pinned by a comment and a test and named as the trigger for a row of its own should a
+second reader appear (review F3). The one loss the rule creates, a rebuilt database being a
+new home, is the release note's to state (F4), on the `v0.32.0` note's list. The `init`
+defect found on the route is CR124, not this CR's.
+
+**Closes CR106 with it**: a scratch home is born at the route's first open and imports
+nothing from before it, with no `PI_SESSIONS_DIR` pin.
+
+## Provenance
+
+Driver `@viniciusteles` · Delivery `mirror-ts-core` (`cdc9d257` the implementation,
+`48e7866d` the validation record) · plan reviewed by the database architect · validated
+and accepted by the Navigator 2026-10-11.

@@ -77,4 +77,15 @@ scratch home under `/tmp`:
 
 ## Outcome
 
-Pending.
+**Done 2026-10-11, by CR121.** A home backfills only the Pi sessions newer than itself,
+the home's birth being its database's first open. A scratch home made for a route is born
+when the route first opens it and imports nothing from before: on 2026-10-11 the CR121
+route, against the real `~/.pi/agent/sessions` with no `PI_SESSIONS_DIR` pin, imported
+`0` of 800+ sessions into a scratch home, then only the two written after its birth. The
+guidance option (pinning `PI_SESSIONS_DIR` in routes) is no longer needed for isolation,
+though US3's route 3 keeps its pin, harmlessly.
+
+## Provenance
+
+Decided with CR121 · Driver `@viniciusteles` · Delivery `mirror-ts-core` (`cdc9d257`) ·
+validated by the Navigator 2026-10-11 under CR121's route.
