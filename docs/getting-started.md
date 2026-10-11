@@ -382,7 +382,7 @@ Three things to know:
 - **If you updated with the previous release's `runtime update`**, it completes
   and reports success, and shows this release's summary; it knows nothing of
   the lines above. Run them; from then on `mirror runtime update` is the Node
-  one. The old `uv run python -m memory …` form now fails with
+  one. The old interpreter form of the command now fails with
   `No module named memory.__main__`.
 - **`rm -rf src .venv` at the clone root** removes the Python residue: nothing
   tracked lives under `src/` any more, and `uv` can go with it.
