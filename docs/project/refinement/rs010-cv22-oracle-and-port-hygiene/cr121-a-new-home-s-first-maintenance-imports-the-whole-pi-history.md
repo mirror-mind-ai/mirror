@@ -58,7 +58,8 @@ this CR together, so they were decided together.
 A release precondition: it lands before the `v0.32.0` tag. Selected the same day;
 plan below, reviewed by the database architect
 ([record below](#database-architect-review-2026-10-11)) with its two blockers and one
-pin folded in, pending Navigator approval.
+pin folded in. **Approved 2026-10-11 by the Navigator**; Driver `@viniciusteles`, Delivery
+`mirror-ts-core`, assigned the same turn; `in_progress`.
 
 ### Objective
 
