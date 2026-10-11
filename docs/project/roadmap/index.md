@@ -38,7 +38,7 @@ folder and index. Stories that are non-trivial have a `plan.md` and a
 | [CV19](cv19-soul-mode-integration/index.md) | Soul Mode Integration | ✅ Done |
 | [CV20](cv20-builder-mode-evolution/index.md) | Builder Mode Evolution | 🟢 In Progress |
 | [CV21](cv21-runtime-expansion-ii/index.md) | Runtime Expansion II: Plugin & MCP Convergence | 🟢 In Progress |
-| [CV22](cv22-typescript-core-port/index.md) | TypeScript Core Port (Database-Seam Strangler) | 🟢 In Progress — restarted 2026-09-02 |
+| [CV22](cv22-typescript-core-port/index.md) | TypeScript Core Port (Database-Seam Strangler) | ✅ Done — 2026-10-11, released as v0.32.1 |
 | [CV23](cv23-journey-projection-contract/index.md) | Journey Projection Contract | ✅ Done — v0.31.10 contract; v0.31.11 confinement hotfix accepted |
 
 ---

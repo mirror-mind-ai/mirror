@@ -12,6 +12,31 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-10-11 — CV22 released: Mirror Mind is one TypeScript package on npm, and the Python core is history
+
+The TypeScript Core Port, decided 2026-06-23 as a database-seam strangler, closed as
+`v0.32.1` on npm (`latest` and `stable`, SLSA provenance), tag `v0.32.1`, GitHub Release,
+`stable` and `main` at `c94a3f79`. The release gate, in the order it ran: two Navigator
+decisions (`v0.32.0` not `v1.0.0`; a new home imports only Pi sessions newer than
+itself); CR121 planned with a database-architect review, implemented, validated on the
+real Pi history, done with CR106; the release note written, read, and corrected; the
+version bumped and the doctor green; the 1,069-commit merge to `main` with one conflict
+(`publish.yml`, the branch's npm-12 pin taken); the last Python-era hop **rehearsed on a
+copy** of the production clone, which showed the previous updater succeeding in-process
+rather than failing as the note had guessed, and `runtime status` reporting the pending
+migration rather than applying it — the note, its digest, and Getting Started rewritten
+on that evidence; `v0.32.0` tagged and `stable` moved; the real hop on the production
+clone, exactly as rehearsed; F20 closed (`build load` against the production clone
+refuses); the publish workflow refusing `v0.32.0` over one sentence the rehearsal fix had
+put in Getting Started, caught by the retired-surface tripwire because the Docs workflow
+does not run it; `v0.32.1` as the patch, staged from CI with provenance and approved by
+the Navigator with 2FA; `latest` found still on the placeholder and moved by hand; a
+stranger's install walked from the public registry. Captured on the way: CR124 (`init`
+ignores `MIRROR_HOME`), CR125 (the publish route and `latest`), CR126 (the tripwire and
+docs-only pushes). The two-clone owner's `npm link` hazard was met and settled in the
+launcher: the home follows `MIRROR_USER` exported per target, the global name stays on
+the development clone.
+
 ### 2026-10-10 — CV22.DS10 done (8/8): the Python core is retired and Mirror Mind is an npm package; CV22 is at its release gate
 
 The last Delivery Story of the TypeScript Core Port closes with its eighth child. Pulled
