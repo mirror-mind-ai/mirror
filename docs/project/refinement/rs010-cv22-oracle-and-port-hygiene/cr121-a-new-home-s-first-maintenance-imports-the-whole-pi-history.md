@@ -221,6 +221,27 @@ release.
 - **Code.** `ts/src/conversation/sessionComposites.ts`: `sessionMaintenance` backfills,
   then retitles, then extracts. `ts/src/conversation/backfill.ts`: `resolvePiSessionsDir`
   and `backfillPiSessions`.
+- **Implemented 2026-10-11** (`cdc9d257`): `homeBornAt`, the `notBefore` floor with no
+  null, the `stat` pre-filter, the last-message skip; six new backfill cases, the
+  fresh-database birth pin (`ts/test/db/homeBornAt.test.ts`), one real-wiring case with
+  last year's history; the ledger's comment. One existing test corrected: it imported a
+  spring session into a home born today, which the rule now refuses. 3058 tests,
+  typecheck, lint, the five repository checks: clean.
+- **Navigator validation, 2026-10-11, this machine, real `~/.pi/agent/sessions` (800+
+  files, 32 projects), no `PI_SESSIONS_DIR` pin.** `MIRROR_USER=u MIRROR_HOME=/tmp/cr121/u`;
+  `mirror list journeys` opened the database (ledger birth `14:37:04Z`);
+  `mirror conversation-logger session-maintenance` printed `Backfilled Pi sessions: 0
+  (0.1s)` and the database held no `pi` conversation. Then `pi` in `~`, one exchange,
+  quit; maintenance again: `Backfilled Pi sessions: 2 (0.1s)`. The two: the "Hi" session
+  (last message `14:38:59Z`) and a session in the production clone, started the day
+  before, whose last message landed at `14:38:40Z` while the test ran: a session that
+  straddles the birth, imported by design. Nothing older than the birth was imported, and
+  the walk over the whole history took `0.1s`: the pre-filter is doing its work. Scratch
+  home and `~/.mirror-minds/u` deleted afterwards.
+- **Found on the route, not this CR's:** `mirror init u` with `MIRROR_HOME` set created
+  `~/.mirror-minds/u` anyway, and the first attempt opened nothing because
+  `MIRROR_HOME`'s basename must equal `MIRROR_USER`, which the shell already carried.
+  Captured as CR124.
 - **Route 3's mitigation.** US3's route 3 now pins `PI_SESSIONS_DIR` to an empty
   directory for its Claude Code session
   ([story index, plateau 3](../../roadmap/cv22-typescript-core-port/cv22-ds10-python-retirement-npm-distribution/cv22-ds10-us3-npm-distribution/index.md#plateau-progress),
