@@ -359,25 +359,33 @@ Until this release, Mirror Mind ran from a git clone and every skill invoked the
 front door by its path inside that clone. The skills now say `mirror`, and
 nothing provides that name until you do — once:
 
+Node.js 24 or newer is required, and was not before: check `node --version`.
+
 ```bash
 cd <your clone>
-git pull            # or: mirror runtime update, from the next time on
+git pull                 # or: the previous release's runtime update, which completes
 npm ci
-npm link            # puts `mirror` and `mirror-hook` on your PATH from this tree
+npm link                 # puts `mirror` and `mirror-hook` on your PATH from this tree
+mirror runtime migrate   # applies the pending migration, snapshot first
 mirror runtime status
 ```
 
-`runtime status` should report `Install: clone (<your clone>)`. Your `.env`
-stays where it is and keeps working: a clone reads its own `.env` first, then
-`~/.config/mirror/env`. Your mirror home and database are untouched; the first
-command to open the database applies any pending migration, backup first.
+`runtime status` should report `Install: clone (<your clone>)` and `Status:
+ready`. Your `.env` stays where it is and keeps working: a clone reads its own
+`.env` first, then `~/.config/mirror/env`. Your mirror home and database are
+untouched; `runtime migrate`, or the first ordinary command that opens the
+database, applies any pending migration, backup first (`runtime status` only
+reports it).
 
-Two things to know:
+Three things to know:
 
-- **If you updated with the previous release's `runtime update`**, its
-  post-update check fails: it runs the Python engine, and the tree it just
-  fast-forwarded to has none. The update itself completed. Run the lines above;
-  from then on `mirror runtime update` is the Node one.
+- **If you updated with the previous release's `runtime update`**, it completes
+  and reports success, and shows this release's summary; it knows nothing of
+  the lines above. Run them; from then on `mirror runtime update` is the Node
+  one. The old `uv run python -m memory …` form now fails with
+  `No module named memory.__main__`.
+- **`rm -rf src .venv` at the clone root** removes the Python residue: nothing
+  tracked lives under `src/` any more, and `uv` can go with it.
 - **You can move to the npm package instead** of keeping the clone:
   `npm install -g mirror-mind`, then `mirror init <your-name>` writes your user
   to `~/.config/mirror/env`, where you add the same `OPENROUTER_API_KEY` your
