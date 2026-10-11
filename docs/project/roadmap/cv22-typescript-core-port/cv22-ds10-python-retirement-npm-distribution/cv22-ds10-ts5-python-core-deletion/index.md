@@ -215,6 +215,13 @@ production clone of the TypeScript era; the walk checks that.
 The window closes when the production clone takes the CV22 release. Until
 then the refusal is the Navigator's discipline, not the guard's.
 
+**Closed 2026-10-11.** The production clone took `v0.32.0` through the previous
+release's updater (`7cfbfbb7 -> 78dd5836`, the last Python-era hop), and
+`build load mirror` from the development clone against it now refuses:
+`Builder Mode refused: the journey project clone is marked 'production'`,
+exit 2, before the banner. Rehearsed first on a copy of the clone, where the
+guard read the hopped tree the same way. The refusal is the guard's again.
+
 ## Decisions This Story Must Take
 
 Recorded in [plan.md — Decisions](plan.md#decisions-this-plan-asks-the-navigator-to-take),
