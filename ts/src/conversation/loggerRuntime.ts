@@ -17,7 +17,7 @@
 // Nothing here reads `process.env` or `os.homedir()`; the front door passes
 // them in, which is what keeps every test of this module hermetic.
 
-import { backfillPiSessions, resolvePiSessionsDir } from "#conversation/backfill.ts";
+import { backfillPiSessions, homeBornAt, resolvePiSessionsDir } from "#conversation/backfill.ts";
 import { createCloseHooks, maybeGenerateTitle } from "#conversation/closeTail.ts";
 import { runConversationExtraction } from "#conversation/extraction.ts";
 import { runExtractionWithAccounting } from "#conversation/extractionRun.ts";
@@ -242,8 +242,14 @@ export function createLoggerRuntime(options: LoggerRuntimeOptions): LoggerRuntim
             source: "startup_maintenance",
           }),
         runExtraction,
+        // CR121: only the sessions newer than this home; its birth is read from
+        // the ledger once per maintenance run, and an unknown birth is an error.
         backfillPiSessions: (database) =>
-          backfillPiSessions(database, { sessionsDir: piSessionsDir }, deps),
+          backfillPiSessions(
+            database,
+            { sessionsDir: piSessionsDir, notBefore: homeBornAt(database) },
+            deps,
+          ),
         extractionLimit: resolveMaintenanceMaxExtractions({ env }),
         monotonic: options.monotonic,
         now: deps.nowIso,

@@ -12,12 +12,13 @@
 
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
-import { copyFileSync, mkdirSync, mkdtempSync } from "node:fs";
+import { copyFileSync, mkdirSync, mkdtempSync, utimesSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import {
   backfillCodexSession,
   backfillPiSessions,
+  homeBornAt,
   parsePiContent,
   parsePiTimestamp,
   resolvePiSessionsDir,
@@ -33,6 +34,9 @@ import {
 } from "#helpers/backfillFixture.ts";
 import { createRuntimeTables } from "#helpers/runtimeSchema.ts";
 
+/** No floor: the corpus is graded as Python graded it, every untracked session imported. */
+const NO_FLOOR = "1970-01-01T00:00:00Z";
+
 function fixture(): { db: WritableDatabase; dir: string } {
   const dir = mkdtempSync("/tmp/backfill-");
   const db = openDatabaseCopyForWrite(join(dir, "copy.db"));
@@ -47,17 +51,17 @@ test("backfillPiSessions imports the fixture corpus exactly as Python does", () 
   const deps = frozenDeps();
   seedTrackedSession(db, join(PI_SESSIONS_DIR, "tracked.jsonl"), "pi");
 
-  const count = backfillPiSessions(db, { sessionsDir: PI_SESSIONS_DIR }, deps);
+  const count = backfillPiSessions(db, { sessionsDir: PI_SESSIONS_DIR, notBefore: NO_FLOOR }, deps);
   assert.equal(count, golden.pi_sessions.first_count);
   assert.deepEqual(snapshotState(db, PI_SESSIONS_DIR), golden.pi_sessions.state);
 
   // Every imported session is now tracked, so the walk is idempotent.
   assert.equal(
-    backfillPiSessions(db, { sessionsDir: PI_SESSIONS_DIR }, deps),
+    backfillPiSessions(db, { sessionsDir: PI_SESSIONS_DIR, notBefore: NO_FLOOR }, deps),
     golden.pi_sessions.rerun_count,
   );
   assert.equal(
-    backfillPiSessions(db, { sessionsDir: join(dir, "absent") }, deps),
+    backfillPiSessions(db, { sessionsDir: join(dir, "absent"), notBefore: NO_FLOOR }, deps),
     golden.pi_sessions.absent_dir_count,
   );
   db.close();
@@ -216,7 +220,7 @@ test("a binding won by a live hook while the import waits for the lock survives 
 
   // The pre-check reads past the RESERVED lock and sees no binding; the import
   // then blocks on BEGIN IMMEDIATE until the hook commits, and must re-check.
-  const count = backfillPiSessions(db, { sessionsDir }, frozenDeps());
+  const count = backfillPiSessions(db, { sessionsDir, notBefore: NO_FLOOR }, frozenDeps());
   assert.equal(await holder.done, 0);
 
   assert.equal(count, 0);
@@ -231,5 +235,146 @@ test("a binding won by a live hook while the import waits for the lock survives 
       .map((row) => row.id),
     ["conv-live"],
   );
+  db.close();
+});
+
+// --- CR121: a home imports only the Pi sessions newer than itself ---
+
+const BIRTH = "2026-06-01T00:00:00.000000Z";
+
+function piSession(dir: string, name: string, lastMessageAt: string, mtime: Date): string {
+  const path = join(dir, name);
+  writeFileSync(
+    path,
+    [
+      {
+        type: "message",
+        message: {
+          role: "user",
+          content: `hello from ${name}`,
+          timestamp: "2026-01-01T00:00:00+00:00",
+        },
+      },
+      {
+        type: "message",
+        message: { role: "assistant", content: "reply", timestamp: lastMessageAt },
+      },
+    ]
+      .map((line) => JSON.stringify(line))
+      .join("\n"),
+  );
+  utimesSync(path, mtime, mtime);
+  return path;
+}
+
+function trackedSessions(db: WritableDatabase): string[] {
+  return db
+    .prepare("SELECT session_id FROM runtime_sessions ORDER BY session_id")
+    .all()
+    .map((row) => String(row.session_id));
+}
+
+test("a session that ended before the home was born is not imported; one that ended after is", () => {
+  const { db, dir } = fixture();
+  const sessionsDir = join(dir, "sessions");
+  mkdirSync(sessionsDir);
+  piSession(
+    sessionsDir,
+    "old.jsonl",
+    "2026-05-31T23:59:59+00:00",
+    new Date("2026-05-31T23:59:59Z"),
+  );
+  const kept = piSession(
+    sessionsDir,
+    "new.jsonl",
+    "2026-06-02T00:00:00+00:00",
+    new Date("2026-06-02T00:00:00Z"),
+  );
+
+  const count = backfillPiSessions(db, { sessionsDir, notBefore: BIRTH }, frozenDeps());
+  assert.equal(count, 1);
+  assert.deepEqual(trackedSessions(db), [kept]);
+
+  // The skip is not recorded: the file is untracked, and the rule holds again.
+  assert.equal(backfillPiSessions(db, { sessionsDir, notBefore: BIRTH }, frozenDeps()), 0);
+  db.close();
+});
+
+test("a file last written before the birth is skipped unread, whatever it holds", () => {
+  const { db, dir } = fixture();
+  const sessionsDir = join(dir, "sessions");
+  mkdirSync(sessionsDir);
+  // Newer messages than the birth, but an mtime before it: under sane clocks
+  // that cannot happen, so the pre-filter trusts the mtime and never reads.
+  piSession(
+    sessionsDir,
+    "stale-mtime.jsonl",
+    "2026-07-01T00:00:00+00:00",
+    new Date("2026-05-01T00:00:00Z"),
+  );
+
+  assert.equal(backfillPiSessions(db, { sessionsDir, notBefore: BIRTH }, frozenDeps()), 0);
+  assert.deepEqual(trackedSessions(db), []);
+  db.close();
+});
+
+test("the mtime pre-filter is only a pre-filter: a file written after the birth is judged by its last message", () => {
+  const { db, dir } = fixture();
+  const sessionsDir = join(dir, "sessions");
+  mkdirSync(sessionsDir);
+  // Written after the birth (a copy, a sync), but the conversation ended before it.
+  piSession(
+    sessionsDir,
+    "copied-later.jsonl",
+    "2026-03-01T00:00:00+00:00",
+    new Date("2026-07-01T00:00:00Z"),
+  );
+
+  assert.equal(backfillPiSessions(db, { sessionsDir, notBefore: BIRTH }, frozenDeps()), 0);
+  assert.deepEqual(trackedSessions(db), []);
+  db.close();
+});
+
+test("an undated session is newer, not older: it dates to now and is imported", () => {
+  const { db, dir } = fixture();
+  const sessionsDir = join(dir, "sessions");
+  mkdirSync(sessionsDir);
+  const path = join(sessionsDir, "undated.jsonl");
+  writeFileSync(
+    path,
+    [
+      { type: "message", message: { role: "user", content: "no timestamps here" } },
+      { type: "message", message: { role: "assistant", content: "none at all" } },
+    ]
+      .map((line) => JSON.stringify(line))
+      .join("\n"),
+  );
+  // frozenDeps' now is 2026-09-03, after the birth.
+  assert.equal(backfillPiSessions(db, { sessionsDir, notBefore: BIRTH }, frozenDeps()), 1);
+  assert.deepEqual(trackedSessions(db), [path]);
+  db.close();
+});
+
+test("a floor that is not an instant is refused before any file is read", () => {
+  const { db, dir } = fixture();
+  assert.throws(
+    () =>
+      backfillPiSessions(
+        db,
+        { sessionsDir: PI_SESSIONS_DIR, notBefore: "yesterday" },
+        frozenDeps(),
+      ),
+    /notBefore/,
+  );
+  assert.deepEqual(trackedSessions(db), []);
+  db.close();
+  void dir;
+});
+
+test("homeBornAt refuses a database with no migration ledger rows", () => {
+  const { db } = fixture();
+  db.exec("CREATE TABLE IF NOT EXISTS _migrations (id TEXT PRIMARY KEY, applied_at TEXT NOT NULL)");
+  db.exec("DELETE FROM _migrations");
+  assert.throws(() => homeBornAt(db), /_migrations/);
   db.close();
 });

@@ -558,11 +558,14 @@ test("backfill-codex-session reports the released strings and honours --interfac
 test("session-maintenance backfills Pi sessions from PI_SESSIONS_DIR through the real port", async () => {
   const f = fixture();
   const sessionsDir = mkdtempSync("/tmp/logger-cli-pi-");
+  // The home was born a moment ago; a session it imports must end after that
+  // (CR121), so the fixture's conversation happens a minute from now.
+  const at = (offsetMs: number) => new Date(Date.now() + 60_000 + offsetMs).toISOString();
   writeFileSync(
     join(sessionsDir, "one.jsonl"),
     [
-      '{"type":"message","message":{"role":"user","content":"hello from pi","timestamp":"2026-04-17T10:00:00Z"}}',
-      '{"type":"message","message":{"role":"assistant","content":"hi","timestamp":"2026-04-17T10:00:01Z"}}',
+      `{"type":"message","message":{"role":"user","content":"hello from pi","timestamp":"${at(0)}"}}`,
+      `{"type":"message","message":{"role":"assistant","content":"hi","timestamp":"${at(1000)}"}}`,
     ].join("\n"),
   );
   const result = await run(f, ["session-maintenance"], {

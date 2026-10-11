@@ -231,6 +231,10 @@ Then use mirror commands:
 
 Pi is the preferred harness because it makes Mirror Mind effectively multi-model.
 
+If you used Pi before installing Mirror, your earlier sessions stay where they are:
+Mirror remembers what happens from the moment your home exists, and imports no Pi
+conversation that ended before it.
+
 ### Gemini CLI
 
 ```bash

@@ -702,7 +702,7 @@ to the homes root (`~/.mirror-minds`).
 
 | Variable | Default | Role |
 |----------|---------|------|
-| `PI_SESSIONS_DIR` | `~/.pi/agent/sessions` | Source directory for `backfill_pi_sessions`. Override for multi-user setups. |
+| `PI_SESSIONS_DIR` | `~/.pi/agent/sessions` | Source directory for the Pi session backfill that session maintenance runs. Only sessions that ended after the home was born are imported (the home's birth is its database's first open); earlier Pi history stays where it is. Override for multi-user setups. |
 | `MIRROR_SESSION_ID` | (unset) | Session id for CLIs called without `--session-id`: the conversation logger's fallback when no hook payload is present, and a named session for Builder lifecycle commands, which otherwise require `--journey` and never guess one. Do not set it in a shared `.env`: every window would then name the same session, and a Builder command without `--journey` would follow whichever window loaded last. Rarely set by humans. |
 | `MIRROR_WELCOME` | (unset) | Set to `off`, `0`, `false`, or `no` to suppress the welcome card emitted by `mirror welcome`. See `docs/product/specs/welcome/index.md`. |
 | `MIRROR_TS_MCP_GUARDS` | (unset) | Set to `0` to remove the MCP wallet and abuse guards (rate limit, spend ceiling, argument caps). See [Configuration](docs/reference/configuration.md#mcp-wallet-and-abuse-guards-cv22ds9ts1). |

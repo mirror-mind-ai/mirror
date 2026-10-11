@@ -6,7 +6,7 @@
 // that never cross the tail never cause a load at all.
 
 import assert from "node:assert/strict";
-import { mkdtempSync } from "node:fs";
+import { mkdirSync, mkdtempSync, utimesSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import { endConversation, logUserMessage } from "#conversation/logger.ts";
@@ -25,7 +25,7 @@ import { ReplayFixtureIncompleteError } from "#providers/transport.ts";
 
 const deps = { newId: () => "id", nowIso: () => "2026-09-02T12:00:00.000000Z" };
 
-function fixture(env: LoggerRuntimeEnv = {}) {
+function fixture(env: LoggerRuntimeEnv = {}, runtimeDeps = deps) {
   const home = mkdtempSync("/tmp/logger-runtime-");
   const db = bootstrapDatabase(join(home, "memory.db"));
   const loads = { llm: 0, embeddings: 0 };
@@ -35,7 +35,7 @@ function fixture(env: LoggerRuntimeEnv = {}) {
     mirrorHome: home,
     homeDir: home,
     env,
-    deps,
+    deps: runtimeDeps,
     loadLlm: async () => {
       loads.llm += 1;
       return llm;
@@ -344,5 +344,62 @@ test("the full close tail runs in LIVE mode and logs Python's role sequence", as
     .prepare("SELECT COUNT(*) AS n FROM memories WHERE conversation_id = ?")
     .get(conversationId) as { n: number };
   assert.equal(memories.n, 1);
+  db.close();
+});
+
+// --- CR121: the real maintenance wiring reads the home's birth from the ledger ---
+
+test("a new home's maintenance imports nothing from the machine's earlier Pi history", async () => {
+  // The sessions directory predates the home: two sessions from last year,
+  // the way a person's ~/.pi/agent/sessions looks the day they install Mirror.
+  const sessionsDir = mkdtempSync("/tmp/pi-history-");
+  const session = (name: string, at: string) => {
+    const path = join(sessionsDir, name);
+    writeFileSync(
+      path,
+      [
+        { type: "message", message: { role: "user", content: "old chat", timestamp: at } },
+        { type: "message", message: { role: "assistant", content: "old reply", timestamp: at } },
+      ]
+        .map((line) => JSON.stringify(line))
+        .join("\n"),
+    );
+    utimesSync(path, new Date(at), new Date(at));
+    return path;
+  };
+  session("project-a.jsonl", "2025-03-01T10:00:00+00:00");
+  session("project-b.jsonl", "2025-11-20T18:30:00+00:00");
+
+  // An import writes several rows, so ids must differ: a counting newId.
+  let counter = 0;
+  const nextId = () => {
+    counter += 1;
+    return `id${counter}`;
+  };
+  const { runtime, db } = fixture(
+    { PI_SESSIONS_DIR: sessionsDir },
+    { newId: nextId, nowIso: deps.nowIso },
+  );
+  const maintenance = await runtime.maintenanceDeps();
+  assert.equal(await maintenance.backfillPiSessions(db), 0);
+  assert.equal(
+    (db.prepare("SELECT COUNT(*) AS n FROM runtime_sessions").get() as { n: number }).n,
+    0,
+  );
+
+  // A session that happens after the home exists is the home's.
+  const later = join(sessionsDir, "after-install.jsonl");
+  mkdirSync(sessionsDir, { recursive: true });
+  const now = new Date(Date.now() + 60_000).toISOString();
+  writeFileSync(
+    later,
+    [
+      { type: "message", message: { role: "user", content: "first Mirror chat", timestamp: now } },
+      { type: "message", message: { role: "assistant", content: "welcome", timestamp: now } },
+    ]
+      .map((line) => JSON.stringify(line))
+      .join("\n"),
+  );
+  assert.equal(await maintenance.backfillPiSessions(db), 1);
   db.close();
 });

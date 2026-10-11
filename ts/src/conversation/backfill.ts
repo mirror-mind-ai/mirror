@@ -18,6 +18,14 @@
 //
 // Nothing here touches a provider or the clock directly: `now` is injected
 // through `LoggerDeps`, which is what makes "no timestamp -> now" pinnable.
+//
+// CR121 (2026-10-11): a home imports only the Pi sessions newer than itself.
+// Python imported every untracked session on the machine, which for a new
+// home meant the person's whole Pi history, copied and spent on before the
+// first prompt. The floor is explicit (`notBefore`), never defaulted, and
+// the rule fails closed: there is no value that means "everything" except
+// the epoch, which says so. The Codex importer is untouched: it imports the
+// one session the wrapper names, not a history.
 
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, sep } from "node:path";
@@ -164,6 +172,42 @@ function listPiSessionFiles(sessionsDir: string): string[] {
 export interface PiBackfillOptions {
   /** Already resolved through `resolvePiSessionsDir`. */
   sessionsDir: string;
+  /**
+   * An ISO instant: a session that ended at or before it is not imported
+   * (CR121). Production passes the home's birth (`homeBornAt`); a caller
+   * that wants no floor passes the epoch and says so.
+   */
+  notBefore: string;
+}
+
+/**
+ * When this home was born: the first `applied_at` in the `_migrations`
+ * ledger. A fresh database stamps its whole ledger at its first open, and a
+ * database from any earlier era carries the ledger from its own first open,
+ * so the minimum is the birth of every home there is -- with no new table,
+ * column, or marker. Read once per maintenance run.
+ *
+ * The ledger means "which migrations ran, when"; reading its minimum as a
+ * birth is an inference, accepted because every plausible edit to the ledger
+ * moves the minimum forward and imports less, never more. `migrations.ts`
+ * names this consumer at the ledger's definition. A second consumer of
+ * "birth" is the trigger to model it as a row of its own.
+ *
+ * Fails closed: an empty ledger is an error, not a home born at the epoch.
+ */
+export function homeBornAt(db: WritableDatabase): string {
+  const row = db.prepare("SELECT MIN(applied_at) AS born FROM _migrations").get() as
+    | { born: string | null }
+    | undefined;
+  if (typeof row?.born !== "string" || !row.born) {
+    throw new Error("the _migrations ledger is empty: this home's birth is unknown");
+  }
+  return row.born;
+}
+
+/** The instant of an ISO timestamp, or NaN for anything `Date.parse` rejects. */
+function instant(iso: string): number {
+  return Date.parse(iso);
 }
 
 /**
@@ -174,12 +218,27 @@ export interface PiBackfillOptions {
  * The session id is the session file's path, exactly as Python's
  * `str(session_file)` -- which is also what the live Pi extension binds, so a
  * session the hooks already track is skipped before its file is even read.
+ *
+ * CR121: a session is Mirror's only if it ended after `notBefore`. Two
+ * checks, in cost order. A file whose mtime is at or before the floor is
+ * skipped unread: its last message was written at or before its last write,
+ * so it cannot be newer. (This is what keeps a skipped session, which is
+ * never tracked, from being parsed again at every start for the rest of the
+ * home's life.) A file written after the floor is parsed and judged by its
+ * last message, the same instant it stores as `endedAt` -- a copy or a sync
+ * can touch a file long after its conversation ended. A session whose
+ * messages carry no parseable instant dates to `now` under the existing rule
+ * and is imported: undated is newer, not older.
  */
 export function backfillPiSessions(
   db: WritableDatabase,
   options: PiBackfillOptions,
   deps: LoggerDeps,
 ): number {
+  const floor = instant(options.notBefore);
+  if (Number.isNaN(floor)) {
+    throw new Error(`notBefore is not an instant: ${JSON.stringify(options.notBefore)}`);
+  }
   if (!existsSync(options.sessionsDir)) return 0;
 
   let count = 0;
@@ -188,6 +247,7 @@ export function backfillPiSessions(
     if (db.prepare("SELECT 1 FROM runtime_sessions WHERE session_id = ?").get(sessionId)) {
       continue;
     }
+    if (statSync(sessionFile).mtimeMs <= floor) continue;
     let messages: ImportedMessage[];
     try {
       messages = parsePiSessionFile(sessionFile, deps.nowIso);
@@ -195,6 +255,8 @@ export function backfillPiSessions(
       continue;
     }
     if (messages.length < 2) continue;
+    const endedAt = instant((messages.at(-1) as ImportedMessage).createdAt);
+    if (endedAt <= floor) continue;
 
     const conversationId = importClosedConversation(
       db,
