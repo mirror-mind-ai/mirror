@@ -96,5 +96,8 @@ real mirror home.
 
 Recorded in [validation.md](validation.md): the automated gate, the
 pre-registered front-door timing (851 ms → 387 ms median of five), the
-`front-door.log` excerpt, and the pre-change card capture. The in-Pi routes
-(steps 1–6) remain for the Navigator.
+`front-door.log` excerpt, and the pre-change card capture. The Navigator's
+in-Pi validation (steps 1–6, 2026-10-12) is recorded there too, including where
+steps 2 and 6 as written did not test what they meant to: a prompt sent during
+a run joins that run, and a bare `pi` in the checkout sends the skills to
+another home. The routes above are left as pre-registered.

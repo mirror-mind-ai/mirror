@@ -12,7 +12,7 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
-### 2026-10-12 — CV9.E2.S32 implemented: Pi opens a session in one front-door process, and the prompt log no longer gates the turn
+### 2026-10-12 — CV9.E2.S32 done: Pi opens a session in one front-door process, and the prompt log no longer gates the turn
 
 The question that started it was whether the extension should load the core as a
 library now that both are TypeScript. The answer, measured, was no: ~150 ms of
@@ -35,7 +35,17 @@ refused in any SKILL.md by the parity guard, the timing pass condition
 pre-registered, a test knob (`MIRROR_TEST_FRONT_DOOR_DELAY_MS` under
 `MEMORY_ENV=test`) so quit-mid-write is automated, and D-028 registered for the
 argv-visible prompt rather than widening scope. Front-door path median of five:
-851 ms → 387 ms. 23 new tests; 3,079 pass. Navigator validation in Pi pending.
+851 ms → 387 ms. 23 new tests; 3,079 pass.
+
+Validated in Pi the same day, in the dev home: startup 846 → 470 ms to the status
+set (median of the five starts either side of the change, against a 300 ms bar),
+one awaited front-door process per startup, and the record in turn order across
+runs. The route had two things wrong, recorded as they happened rather than
+rewritten. Prompts typed during a run are steering messages inside it, so they
+never contend on the chain, and only the run's first prompt reaches the record
+at all; the extension already did this before the story (`470c4107`), and it is
+registered as D-029. And a bare `pi` in the checkout runs the skills against the
+production home, so the in-Pi routes go through `mirror-dev`.
 
 ### 2026-10-11 — CV22 released: Mirror Mind is one TypeScript package on npm, and the Python core is history
 

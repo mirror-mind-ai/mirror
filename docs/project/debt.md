@@ -46,6 +46,7 @@ Dropped   no longer relevant or replaced by another item
 | D-026 | The update pipeline is implemented twice, once per install kind, in one module | duplication / maintainability | low | **Paid** | CV22.DS10.US2 Debt Review | Paid 2026-10-09 by CV22.DS10.US3 plateau 4 (`895bef57`): one body in `update.ts` over two `ApplyStrategy` implementations, the seam declared beside the stage vocabulary; the repair lane is a list of steps, not a third copy; the 15 US2 tests and the update smoke passed unchanged |
 | D-027 | Nothing writes the package install's update-channel file, so a package user cannot select a channel persistently | operability | low | **Paid** | CV22.DS10.US2 Debt Review | Paid 2026-10-09 by CV22.DS10.US3 plateau 4 (`50cfd4c4`): `mirror runtime channel [stable\|main]` writes the file for either install kind, creating the config directory `0700` when `init` has not |
 | D-028 | The Pi extension passes the user's prompt to `log-user` as an argv element, so it is `ps`-visible for the life of the process | privacy | low | Carried | CV9.E2.S32 (security-engineer review) | The next change to `conversation-logger log-user`, or the first multi-user host; `STDIN_SUBCOMMANDS` already exists for the hook subcommands, so the move is to that path |
+| D-029 | The Pi extension records only the first prompt of an agent run; prompts Pi queues into the run never reach the conversation record | data integrity | medium | Carried | CV9.E2.S32 Navigator validation (step 2) | The next change to the extension's `agent_end` handler, or the next question about the fidelity of Pi conversation records |
 
 ## D-001 — Metadata lifecycle policy and evidence filtering live inside ConversationService
 
@@ -1247,3 +1248,53 @@ first time Mirror runs on a host shared with another user account.
 `log-user` and `log-assistant` accept the content on stdin (a `--stdin` flag or
 membership in `STDIN_SUBCOMMANDS`), the Pi extension uses it, and a test
 asserts the prompt is absent from the spawned argv.
+
+## D-029 — The Pi extension records only the first prompt of an agent run
+
+**Kind:** data integrity
+**Severity:** medium
+**Status:** Carried
+**Source:** CV9.E2.S32 Navigator validation (step 2), 2026-10-12
+
+### Carrying reason
+
+In interactive Pi, a prompt submitted while the agent is working does not start
+a new run. Pi queues it as a steering message, delivered after the current
+assistant turn, or as a follow-up, delivered when the agent would otherwise
+stop, and both are processed inside the run already in progress:
+`pi-agent-core`'s `runLoop` pushes them into the same `newMessages` list it
+emits as `agent_end.messages`. `before_agent_start` fires once per run, with
+the first prompt.
+
+`.pi/extensions/mirror-logger.ts` logs that first prompt from
+`before_agent_start`, and at `agent_end` keeps only the `assistant` messages and
+joins them into one `log-assistant` write. Every later prompt of the run is
+dropped, and the replies to them are merged into the reply to the first. In the
+validation run, the Pi transcript holds `one`, reply, `two`, reply, `three`,
+reply; the conversation record (`16c951d5`) holds `one` and a single assistant
+message with the three replies separated by `---`.
+
+Nothing recovers them. The Pi session backfill skips any session the hooks
+already track (`ts/src/conversation/backfill.ts`), so the JSONL that still has
+the prompts is never read for a logged session. Extraction and recall see only
+what the record holds; a correction typed while the agent works is lost to both.
+
+The behavior predates CV9.E2.S32: the extension at `470c4107` had the same single
+hook and the same assistant-only extraction. S32 neither caused nor changed it.
+Fixing it changes what the extension records and how the order of its writes is
+kept, which needs its own plan and tests, not a validation amendment.
+
+### Revisit trigger
+
+The next change to the extension's `agent_end` handler, or the next question
+about the fidelity of Pi conversation records.
+
+### Closure condition
+
+Every user message of a Pi run (the first prompt, steering messages, and
+follow-ups) is in the conversation record in transcript order; each assistant
+reply is its own message, after the prompt it answers; and S32's invariant holds
+for every write of the run: each write's process has exited before the next is
+spawned. Today `log-assistant` is spawned detached and is not on the chain. An
+extension harness test drives an `agent_end` whose messages interleave three user
+and three assistant messages, and asserts the writes land in that order.

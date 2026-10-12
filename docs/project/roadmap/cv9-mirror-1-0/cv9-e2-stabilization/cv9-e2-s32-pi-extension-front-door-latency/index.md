@@ -2,7 +2,7 @@
 
 # CV9.E2.S32 — Pi Extension Front-Door Latency
 
-**Status:** 🟢 Implemented — automated gate green, Navigator validation pending
+**Status:** ✅ Done — Navigator validation recorded 2026-10-12 ([validation](validation.md))
 **Type:** Technical Story
 **Epic:** CV9.E2 Stabilization & Robustness
 **Release intent:** PATCH
@@ -164,6 +164,7 @@ Then one routed entry appears for startup where three appeared before
 - `.pi/extensions/mirror-logger.ts` — the dispatcher this story changes
 - `ts/src/frontDoor/sessionStartWelcomeRoute.ts` — the composite route
 - [D-028](../../../../debt.md#d-028--the-pi-extension-passes-the-users-prompt-to-log-user-as-an-argv-element) — argv→stdin, registered by this story
+- [D-029](../../../../debt.md#d-029--the-pi-extension-records-only-the-first-prompt-of-an-agent-run) — prompts queued into a Pi run are not recorded, found by this story's validation
 - `ts/src/conversation/sessionComposites.ts` — `sessionStartFast`
 - `bin/loader.js` — why the front door is a shim, and why it stays one
 - [Versioning](../../../../../process/versioning.md)
