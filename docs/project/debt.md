@@ -47,6 +47,7 @@ Dropped   no longer relevant or replaced by another item
 | D-027 | Nothing writes the package install's update-channel file, so a package user cannot select a channel persistently | operability | low | **Paid** | CV22.DS10.US2 Debt Review | Paid 2026-10-09 by CV22.DS10.US3 plateau 4 (`50cfd4c4`): `mirror runtime channel [stable\|main]` writes the file for either install kind, creating the config directory `0700` when `init` has not |
 | D-028 | The Pi extension passes the user's prompt to `log-user` as an argv element, so it is `ps`-visible for the life of the process | privacy | low | Carried | CV9.E2.S32 (security-engineer review) | The next change to `conversation-logger log-user`, or the first multi-user host; `STDIN_SUBCOMMANDS` already exists for the hook subcommands, so the move is to that path |
 | D-029 | The Pi extension records only the first prompt of an agent run; prompts Pi queues into the run never reach the conversation record | data integrity | medium | Carried | CV9.E2.S32 Navigator validation (step 2) | The next change to the extension's `agent_end` handler, or the next question about the fidelity of Pi conversation records |
+| D-030 | The prompt that runs `build load` is recorded in the conversation `build load` closes; the reply opens the new one without it | data integrity | low | Carried | CV9.E2.S32 Navigator validation (observed) | The next change to `switchConversation` or to where a runtime records the prompt, or the fix for D-029 |
 
 ## D-001 — Metadata lifecycle policy and evidence filtering live inside ConversationService
 
@@ -1298,3 +1299,52 @@ for every write of the run: each write's process has exited before the next is
 spawned. Today `log-assistant` is spawned detached and is not on the chain. An
 extension harness test drives an `agent_end` whose messages interleave three user
 and three assistant messages, and asserts the writes land in that order.
+
+## D-030 — The prompt that runs `build load` is recorded in the conversation `build load` closes
+
+**Kind:** data integrity
+**Severity:** low
+**Status:** Carried
+**Source:** CV9.E2.S32 Navigator validation (observed), 2026-10-12
+
+### Carrying reason
+
+A runtime records the user's prompt when the turn starts, in the conversation
+bound to its session. When that prompt activates Builder Mode, the turn then
+runs `mirror build load`, which calls `switchConversation`
+(`ts/src/conversation/logger.ts`): it closes the bound conversation and binds a
+new one. The reply is recorded when the turn ends, in the new conversation. So
+the turn is split. The previous conversation keeps the prompt, alone, and the
+Builder conversation opens with a reply to a prompt it does not hold.
+
+On 2026-10-12 the dev home holds ten conversations whose only message is a
+`Change to journey <slug>` prompt, the one the `mirror-dev <slug>` launcher
+sends: six from before CV9.E2.S32 and four after. The Builder conversation
+`3b96470a` opens with the reply. The split predates S32, because before the
+story the extension also recorded the prompt at turn start (awaited rather than
+chained).
+
+Nothing is lost and nothing is spent. Both messages are recorded, and the
+`llm_calls` ledger holds no call for any of the ten, since extraction skips a
+conversation with fewer than four messages. The cost is the shape of the
+record: one orphan per activation in the conversation list, and a Builder
+conversation whose first instruction, when the activating prompt carries one,
+sits in another conversation, out of extraction's sight.
+
+`/mm-new` runs the same switch (`conversation-logger switch`), so its turn
+splits by the same mechanism; that was not observed here. Other runtimes were
+not checked.
+
+### Revisit trigger
+
+The next change to `switchConversation`, or to the point where a runtime records
+the prompt; or the fix for D-029, which reworks the same per-run recording in
+the Pi extension.
+
+### Closure condition
+
+The turn that runs `build load` is recorded whole in the conversation
+`build load` opens, its prompt first and then its reply, and the conversation it
+closes does not keep that prompt. A test drives `log-user`, the switch, and
+`log-assistant` for one runtime session and asserts both. Where `/mm-new`'s own
+request belongs is for the fix to decide.

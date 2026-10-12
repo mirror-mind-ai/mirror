@@ -44,7 +44,8 @@ runs. The route had two things wrong, recorded as they happened rather than
 rewritten. Prompts typed during a run are steering messages inside it, so they
 never contend on the chain, and only the run's first prompt reaches the record
 at all; the extension already did this before the story (`470c4107`), and it is
-registered as D-029. And a bare `pi` in the checkout runs the skills against the
+registered as D-029. The validation also registered D-030: the turn that runs
+`build load` leaves its prompt alone in the conversation `build load` closes. And a bare `pi` in the checkout runs the skills against the
 production home, so the in-Pi routes go through `mirror-dev`. The first push went
 red on CI. Three harness tests asserted the list of UI notices, and the extension's
 `mirror`-not-on-the-PATH warning fires on any runner without `npm link`, which a

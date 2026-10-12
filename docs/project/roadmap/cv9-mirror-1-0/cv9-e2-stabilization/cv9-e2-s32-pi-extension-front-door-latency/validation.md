@@ -211,6 +211,8 @@ exited".
 - **The turn that runs `build load` is split across two conversations.** The
   activating prompt is logged before `build load` opens the new conversation,
   so the prompt stays alone in the previous conversation and the reply opens the
-  new one. On 2026-10-12 the dev home holds ten lone, one-message
-  `Change to journey mirror` conversations: six opened on the old path (14:42
-  to 17:38) and four on the new. Not registered; raised to the Navigator.
+  new one. On 2026-10-12 the dev home holds ten conversations whose only
+  message is a `Change to journey <slug>` prompt (seven for `mirror`, three for
+  `mirror-ts-core`): six opened on the old path (14:42 to 17:38) and four on the
+  new. Registered as
+  [D-030](../../../../debt.md#d-030--the-prompt-that-runs-build-load-is-recorded-in-the-conversation-build-load-closes).

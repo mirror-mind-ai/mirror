@@ -165,6 +165,7 @@ Then one routed entry appears for startup where three appeared before
 - `ts/src/frontDoor/sessionStartWelcomeRoute.ts` — the composite route
 - [D-028](../../../../debt.md#d-028--the-pi-extension-passes-the-users-prompt-to-log-user-as-an-argv-element) — argv→stdin, registered by this story
 - [D-029](../../../../debt.md#d-029--the-pi-extension-records-only-the-first-prompt-of-an-agent-run) — prompts queued into a Pi run are not recorded, found by this story's validation
+- [D-030](../../../../debt.md#d-030--the-prompt-that-runs-build-load-is-recorded-in-the-conversation-build-load-closes) — the turn that runs `build load` is split across two conversations, observed during this story's validation
 - `ts/src/conversation/sessionComposites.ts` — `sessionStartFast`
 - `bin/loader.js` — why the front door is a shim, and why it stays one
 - [Versioning](../../../../../process/versioning.md)
