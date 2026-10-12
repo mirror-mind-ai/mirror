@@ -12,6 +12,31 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-10-12 — CV9.E2.S32 implemented: Pi opens a session in one front-door process, and the prompt log no longer gates the turn
+
+The question that started it was whether the extension should load the core as a
+library now that both are TypeScript. The answer, measured, was no: ~150 ms of
+loader cost per call was the whole prize, against losing the fail-quietly boundary,
+`process.env` and warning-listener isolation, one loader instead of two, and the
+front-door log. The story took the latency the cheap way. `session-start --fast
+--welcome --format json` runs the orientation write and the two renders that read it
+in one process, write first, renders through `runWelcomeRoute` with captured io so
+the card and the status line are byte-identical to the standalone commands; a
+render failure after the write still emits the envelope, so the unmute is never
+lost. The extension's `log-user` is enqueued on a per-session promise chain instead
+of awaited, and `agent_end` and `session_shutdown` settle the chain before
+`log-assistant` and `session-end-pi` — the invariant is that the user message's
+process has exited before the assistant's is spawned, and the harness asserts on
+exec resolution, not call order. Four-persona plan review (engineer,
+database-architect, security-engineer, quality-assurance) folded ten amendments
+before a line was written: only the renderer injectable, the 30 s worst case named,
+the map entry deleted at shutdown, the envelope marked extension-internal and
+refused in any SKILL.md by the parity guard, the timing pass condition
+pre-registered, a test knob (`MIRROR_TEST_FRONT_DOOR_DELAY_MS` under
+`MEMORY_ENV=test`) so quit-mid-write is automated, and D-028 registered for the
+argv-visible prompt rather than widening scope. Front-door path median of five:
+851 ms → 387 ms. 23 new tests; 3,079 pass. Navigator validation in Pi pending.
+
 ### 2026-10-11 — CV22 released: Mirror Mind is one TypeScript package on npm, and the Python core is history
 
 The TypeScript Core Port, decided 2026-06-23 as a database-seam strangler, closed as

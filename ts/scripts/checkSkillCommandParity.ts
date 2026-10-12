@@ -70,6 +70,15 @@ const CHECKOUT_FORMS: readonly { pattern: RegExp; name: string }[] = [
   { pattern: /NODE_OPTIONS/, name: "NODE_OPTIONS" },
   { pattern: /--env-file/, name: "--env-file" },
 ];
+/**
+ * Extension-internal forms, forbidden in every skill copy (CV9.E2.S32). The
+ * `session-start --welcome` envelope exists for the Pi extension; a skill that
+ * told the model to call it would put the welcome card in front of the model
+ * through a structured channel the Ariad surface rules do not cover.
+ */
+const EXTENSION_INTERNAL_FORMS: readonly { pattern: RegExp; name: string }[] = [
+  { pattern: /session-start\b[^\n]*--welcome/, name: "session-start --welcome" },
+];
 
 type EntryPoint = "front-door" | "python";
 
@@ -206,6 +215,14 @@ function checkForbiddenFormsAbsent(problems: string[]): void {
             problems.push(
               `${relative(REPO_ROOT, path)}:${index + 1} names \`${form.name}\` — ` +
                 "a skill invokes `mirror`, which is on the PATH from npm link or npm install -g (CV22.DS10.US3 D7)",
+            );
+          }
+        }
+        for (const form of EXTENSION_INTERNAL_FORMS) {
+          if (isSkill && form.pattern.test(line)) {
+            problems.push(
+              `${relative(REPO_ROOT, path)}:${index + 1} names \`${form.name}\` — ` +
+                "that envelope is for the Pi extension, never for a skill (CV9.E2.S32)",
             );
           }
         }

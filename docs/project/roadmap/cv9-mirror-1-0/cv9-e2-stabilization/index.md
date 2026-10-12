@@ -71,6 +71,7 @@ recoverable.
 | [CV9.E2.S29](cv9-e2-s29-fence-title-tags-summary/index.md) | Fence Title/Tags/Summary Injection Family (closes AI-25) | Done |
 | [CV9.E2.S30](cv9-e2-s30-widen-distancing-markers/index.md) | Recognize Reported-Speech Framing In DISTANCING_MARKERS (closes D-009, registers D-010) | Done |
 | [CV9.E2.S31](cv9-e2-s31-explicit-conversation-append/index.md) | Explicit Conversation Append Boundary | ✅ Done |
+| [CV9.E2.S32](cv9-e2-s32-pi-extension-front-door-latency/index.md) | Pi Extension Front-Door Latency | 🟢 Implemented, Navigator validation pending |
 
 ---
 

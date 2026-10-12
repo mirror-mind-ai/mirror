@@ -38,10 +38,21 @@ function readStdin(): string {
   }
 }
 
+/**
+ * Where the route's lines go. The default is the process's own streams; the
+ * `session-start --welcome` composite (CV9.E2.S32) captures them instead, so
+ * the logger's stdout can travel inside one JSON envelope.
+ */
+export interface ConversationLoggerRouteIo {
+  stdout?: (line: string) => void;
+  stderr?: (line: string) => void;
+}
+
 export async function runConversationLoggerRoute(
   db: WritableDatabase,
   dbPath: string,
   argv: readonly string[],
+  io: ConversationLoggerRouteIo = {},
 ): Promise<number> {
   const args = argv.slice(1);
   const subcommand = subcommandOf(args);
@@ -67,7 +78,9 @@ export async function runConversationLoggerRoute(
   const result = await runConversationLoggerCommand(db, args, runtime, {
     stdin: STDIN_SUBCOMMANDS.has(subcommand) ? readStdin() : undefined,
   });
-  for (const line of result.stdout) process.stdout.write(`${line}\n`);
-  for (const line of result.stderr) process.stderr.write(`${line}\n`);
+  const out = io.stdout ?? ((line: string) => process.stdout.write(`${line}\n`));
+  const err = io.stderr ?? ((line: string) => process.stderr.write(`${line}\n`));
+  for (const line of result.stdout) out(line);
+  for (const line of result.stderr) err(line);
   return result.exitCode;
 }

@@ -73,7 +73,7 @@ skill's own name; the `/mm:` column below is the checkout's form.
 | `/mm-update` | `$mm-update` | `/mm:update` | Updates the local Mirror runtime through the safe updater | no arguments |
 | `/mm-help` | `$mm-help` | `/mm:help` | Lists available commands | no arguments |
 | `mirror runtime` | — | — | Inspects Mirror runtime status, version, drift, backups, release notes, release promotion readiness, plans updates, and executes safe updates | `status [--mirror-home PATH] [--channel stable|main]`, `version [--start PATH] [--channel stable|main]`, `diagnose [--mirror-home PATH]`, `backup [--mirror-home PATH]`, `backup --verify PATH`, `release-notes [latest|vX.Y.Z]`, `release-notes pending [--from vX.Y.Z] [--ref REF] [--no-fetch]`, `migrate [--mirror-home PATH]`, `update --dry-run [--mirror-home PATH] [--channel stable|main]`, `update --check [--channel stable|main]`, `update [--no-fetch] [--skip-migrations] [--mirror-home PATH] [--channel stable|main]`, `update --repair-updater [--no-fetch] [--mirror-home PATH] [--channel stable|main]`, `channel [stable|main]` |
-| `mirror conversation-logger` | — | — | Runtime conversation logging and repair utilities | `discard-current [--interface pi] [--session-id ID]`, `repair-journeys [--limit N] [--apply]` |
+| `mirror conversation-logger` | — | — | Runtime conversation logging and repair utilities | `discard-current [--interface pi] [--session-id ID]`, `repair-journeys [--limit N] [--apply]`, `session-start --fast --welcome --format json [--session-id ID]` (extension-internal, see below) |
 | `ext-review-copy` | — | `ext:review-copy` | External multi-LLM copy review skill; install and expose it before use | skill-driven workflow |
 
 ### Journey slugs and persona ids
@@ -96,6 +96,31 @@ it carries, so such a key still arrives as one argument. An agent writing a
 command of its own may not quote it, so `mirror runtime diagnose` reports each
 such key as `identity_key_outside_grammar`
 ([CR104](docs/project/refinement/rs004-identity-resolution-fidelity/cr104-journey-slugs-are-not-validated-and-command-hints-print-them-raw.md)).
+
+### Session open envelope (extension-internal)
+
+```bash
+mirror conversation-logger session-start --fast --welcome --format json [--session-id ID]
+```
+
+One process for what the Pi `mirror-logger` extension used to do in three:
+unmute and reset session orientation (`session-start --fast`), then render the
+welcome card and the status line that read that orientation. Stdout is one
+JSON line:
+
+```json
+{"schemaVersion":"1.0.0","sessionStart":"Conversation logging ACTIVE. Maintenance deferred.","welcome":"…","statusLine":"…"}
+```
+
+`welcome` and `statusLine` are byte-identical to `mirror welcome` and
+`mirror welcome --status-line` minus the trailing newline, and `""` when
+`MIRROR_WELCOME=off`. A render failure after the write still emits the
+envelope with the failed field empty; the unmute is never lost. `--welcome`
+requires `--fast` and `--format json` (exit 2 otherwise).
+
+**This envelope is for the extension, not for skills.** No `SKILL.md` may
+name it; `checkSkillCommandParity.ts` refuses it. A skill wanting the card
+runs `mirror welcome`. (CV9.E2.S32)
 
 ## Explicit Conversation Append
 

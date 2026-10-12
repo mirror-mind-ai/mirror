@@ -4,10 +4,12 @@
  * Integrates Pi with the Mirror Mind memory system.
  *
  * Events handled:
- * - session_start      → unmute + close stale orphans + extract pending memories
- * - before_agent_start → log user prompt with explicit session id
- * - agent_end          → log assistant response (all messages in the turn)
- * - session_shutdown   → close conversation + backup database
+ * - session_start      → unmute + welcome card + status line, in ONE front-door
+ *                        process (CV9.E2.S32); maintenance detached
+ * - before_agent_start → log user prompt, NOT awaited: queued on a per-session
+ *                        chain so the turn starts at once (CV9.E2.S32)
+ * - agent_end          → log assistant response, after the chain settles
+ * - session_shutdown   → close conversation (after the chain settles) + backup
  *
  * All heavy logic lives in the TypeScript core, reached through the `mirror`
  * bin that ships beside this file (`bin/mirror.js`). This extension is a thin
@@ -274,8 +276,21 @@ export default function (pi: ExtensionAPI) {
 		}
 	}
 
+	/**
+	 * CV9.E2.S32 test knob: a delay before each awaited front-door exec, so the
+	 * quit-mid-write and ordering cases can be driven deterministically.
+	 * Honored ONLY under `MEMORY_ENV=test`; a production session never sleeps.
+	 */
+	function testFrontDoorDelayMs(): number {
+		if (process.env.MEMORY_ENV !== "test") return 0;
+		const raw = Number.parseInt(process.env.MIRROR_TEST_FRONT_DOOR_DELAY_MS ?? "", 10);
+		return Number.isFinite(raw) && raw > 0 ? raw : 0;
+	}
+
 	async function runMirror(args: string[]): Promise<string> {
 		try {
+			const delay = testFrontDoorDelayMs();
+			if (delay > 0) await new Promise((resolve) => setTimeout(resolve, delay));
 			const result = await pi.exec("node", [...FRONT_DOOR_ARGV, ...args], {
 				timeout: 30_000,
 			});
@@ -289,6 +304,60 @@ export default function (pi: ExtensionAPI) {
 			log("ERROR", `runMirror failed [${args.slice(0, 2).join(" ")}]: ${message.slice(0, 500)}`);
 			return "";
 		}
+	}
+
+	/**
+	 * The `session-start --fast --welcome --format json` envelope (CV9.E2.S32).
+	 * One process answers what used to take three: the unmute, the welcome
+	 * card, and the status line. A parse failure is a WARN and the same empty
+	 * result the three calls used to yield when one of them failed.
+	 */
+	interface SessionOpenEnvelope {
+		sessionStart: string;
+		welcome: string;
+		statusLine: string;
+	}
+
+	function parseSessionOpenEnvelope(stdout: string): SessionOpenEnvelope | null {
+		if (!stdout.trim()) return null;
+		try {
+			const parsed: unknown = JSON.parse(stdout);
+			if (!parsed || typeof parsed !== "object") throw new Error("not an object");
+			const record = parsed as Record<string, unknown>;
+			const field = (name: string): string => (typeof record[name] === "string" ? (record[name] as string) : "");
+			return { sessionStart: field("sessionStart"), welcome: field("welcome"), statusLine: field("statusLine") };
+		} catch (err: unknown) {
+			log("WARN", `session-open envelope unreadable: ${err instanceof Error ? err.message : String(err)}`);
+			return null;
+		}
+	}
+
+	/**
+	 * CV9.E2.S32: the per-session chain of pending `log-user` writes.
+	 *
+	 * The invariant protected: the `log-user` process has EXITED before the
+	 * `log-assistant` process for the same turn is SPAWNED, and before
+	 * `session-end-pi` runs. Message reads are `ORDER BY created_at, id` and
+	 * `created_at` is stamped by the writing process at insert time, so order
+	 * in the database is wall-clock order of the inserts; the chain is what
+	 * makes that order the prompt order. Consecutive prompts serialize on the
+	 * same chain. A link that fails (or times out at `pi.exec`'s 30 s) settles
+	 * the chain all the same: `runMirror` swallows, and the `.then(\u2026, \u2026)` is
+	 * belt and braces so a rejection can never wedge it.
+	 */
+	const pendingUserLog = new Map<string, Promise<void>>();
+
+	function enqueueUserLog(sessionId: string, args: string[]): void {
+		const prior = pendingUserLog.get(sessionId) ?? Promise.resolve();
+		const next = prior.then(() => runMirror(args)).then(
+			() => undefined,
+			() => undefined,
+		);
+		pendingUserLog.set(sessionId, next);
+	}
+
+	async function settleUserLog(sessionId: string): Promise<void> {
+		await (pendingUserLog.get(sessionId) ?? Promise.resolve());
 	}
 
 	/** Extract readable text from a content blocks array or plain string. */
@@ -307,14 +376,9 @@ export default function (pi: ExtensionAPI) {
 		return text.slice(0, MAX_CONTENT_SIZE) + "\n[… truncated]";
 	}
 
-	async function refreshMirrorStatus(ctx: MirrorStatusContext): Promise<void> {
+	/** The status bar line: the front door's compact status, or `?`, plus the external-skill count. */
+	function setMirrorStatus(ctx: MirrorStatusContext, compactStatus: string): void {
 		if (!ctx.hasUI) return;
-		const sessionId = ctx.sessionManager.getSessionFile() ?? null;
-		const statusArgs = ["welcome", "--status-line"];
-		if (sessionId) {
-			statusArgs.push("--session-id", sessionId);
-		}
-		const compactStatus = (await runMirror(statusArgs)).trim();
 		const externalCatalog = loadInstalledPiExternalSkills();
 		const externalSkills = externalCatalog?.extensions ?? [];
 		const status = compactStatus || "◇ Mirror · ?";
@@ -322,6 +386,16 @@ export default function (pi: ExtensionAPI) {
 			"mirror",
 			externalSkills.length > 0 ? `${status} · ext ${externalSkills.length}` : status,
 		);
+	}
+
+	async function refreshMirrorStatus(ctx: MirrorStatusContext): Promise<void> {
+		if (!ctx.hasUI) return;
+		const sessionId = ctx.sessionManager.getSessionFile() ?? null;
+		const statusArgs = ["welcome", "--status-line"];
+		if (sessionId) {
+			statusArgs.push("--session-id", sessionId);
+		}
+		setMirrorStatus(ctx, (await runMirror(statusArgs)).trim());
 	}
 
 	// Resolve the active Mirror home the same way the Python core does
@@ -436,7 +510,12 @@ export default function (pi: ExtensionAPI) {
 		log("INFO", `operating instructions appended from ${AGENTS_FILE}`);
 	});
 
-	// --- 1. session_start → unmute + close stale orphans + extract pending ---
+	// --- 1. session_start → unmute + welcome + status line in one process ---
+	//
+	// CV9.E2.S32. `session-start --fast` WRITES the orientation that `welcome`
+	// and `welcome --status-line` READ, so the three cannot run in parallel;
+	// the composite runs them in one process, write first. Maintenance stays
+	// detached. Fires on startup, reload, new, resume, and fork alike.
 
 	pi.on("session_start", async (_event, ctx) => {
 		log("INFO", "session_start fired");
@@ -452,10 +531,11 @@ export default function (pi: ExtensionAPI) {
 			log("WARN", line);
 			if (ctx.hasUI) ctx.ui.notify(line, "warning");
 		}
-		const summary = await runMirror(["conversation-logger", "session-start", "--fast"]);
-		if (ctx.hasUI) {
-			ctx.ui.setStatus("mirror", "◇ Mirror · checking release status…");
-		}
+		const sessionId = ctx.sessionManager.getSessionFile() ?? null;
+		const openArgs = ["conversation-logger", "session-start", "--fast", "--welcome", "--format", "json"];
+		if (sessionId) openArgs.push("--session-id", sessionId);
+		const envelope = parseSessionOpenEnvelope(await runMirror(openArgs));
+		const summary = envelope?.sessionStart ?? "";
 		const externalCatalog = loadInstalledPiExternalSkills();
 		const externalSkills = externalCatalog?.extensions ?? [];
 		const externalSkillSummary = externalSkills.length
@@ -464,7 +544,7 @@ export default function (pi: ExtensionAPI) {
 		log("INFO", `session-start result: ${summary || "(empty)"}`);
 		log("INFO", externalSkillSummary);
 
-		const welcome = (await runMirror(["welcome"])).trim();
+		const welcome = (envelope?.welcome ?? "").trim();
 		if (welcome) {
 			log("INFO", `welcome: ${welcome.split("\n")[0]}`);
 		}
@@ -473,11 +553,9 @@ export default function (pi: ExtensionAPI) {
 			if (welcome) {
 				ctx.ui.notify(welcome, "info");
 			}
-			await refreshMirrorStatus(ctx);
-			runMirrorBackground(["conversation-logger", "session-maintenance"], "session-maintenance");
-		} else {
-			runMirrorBackground(["conversation-logger", "session-maintenance"], "session-maintenance");
+			setMirrorStatus(ctx, (envelope?.statusLine ?? "").trim());
 		}
+		runMirrorBackground(["conversation-logger", "session-maintenance"], "session-maintenance");
 	});
 
 	// --- 2. before_agent_start → log user prompt with explicit session id ---
@@ -490,7 +568,9 @@ export default function (pi: ExtensionAPI) {
 		if (!prompt || prompt.startsWith("/")) return;
 
 		log("INFO", `log-user: ${prompt.slice(0, 80)}...`);
-		await runMirror([
+		// Not awaited (CV9.E2.S32): the turn starts now; `agent_end` and
+		// `session_shutdown` settle the chain before anything that must follow.
+		enqueueUserLog(sessionId, [
 			"conversation-logger",
 			"log-user",
 			sessionId,
@@ -535,6 +615,8 @@ export default function (pi: ExtensionAPI) {
 		const combined = assistantTexts.join("\n\n---\n\n");
 		const content = truncate(combined);
 
+		// The user message's process has exited before this one is spawned.
+		await settleUserLog(sessionId);
 		runMirrorBackground(
 			["conversation-logger", "log-assistant", sessionId, content, "--interface", "pi"],
 			"log-assistant",
@@ -551,6 +633,9 @@ export default function (pi: ExtensionAPI) {
 		const sessionId = ctx.sessionManager.getSessionFile() ?? null;
 
 		if (sessionId) {
+			// A prompt still in flight must land before the conversation closes.
+			await settleUserLog(sessionId);
+			pendingUserLog.delete(sessionId);
 			await runMirror(["conversation-logger", "session-end-pi", sessionId]);
 			log("INFO", `session closed: ${sessionId}`);
 		}

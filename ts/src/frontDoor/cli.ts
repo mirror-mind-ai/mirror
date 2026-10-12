@@ -164,6 +164,7 @@ import { retiredRefusal, routeMemoryCommand } from "./routing.ts";
 import { runRuntimeReadRoute, runWelcomeRoute } from "./runtimeRoute.ts";
 import { runMemorySearchRoute } from "./searchRoute.ts";
 import { resolveSeedPaths } from "./seedPaths.ts";
+import { isSessionStartWelcome, runSessionStartWelcomeRoute } from "./sessionStartWelcomeRoute.ts";
 import { runSoulRoute } from "./soulRoute.ts";
 import {
   applyTasksImport,
@@ -1692,7 +1693,13 @@ async function dispatch(argv: readonly string[]): Promise<DispatchOutcome> {
 
 /** Every route the front door answers once routing has chosen it. */
 async function dispatchTs(argv: readonly string[]): Promise<number | DispatchOutcome> {
-  if (isConversationLoggerCommand(argv)) return runConversationLoggerWrite(argv);
+  if (isConversationLoggerCommand(argv)) {
+    // CV9.E2.S32: the Pi extension's one-process session open. The write is
+    // the same `withMirrorWriteDb`; the welcome renders follow it in-process.
+    if (isSessionStartWelcome(argv))
+      return runSessionStartWelcomeRoute(argv, { withMirrorWriteDb });
+    return runConversationLoggerWrite(argv);
+  }
   if (argv[0] === "build") {
     // The Builder command tree is deliberately lazy: the other commands never
     // pay for loading it, and a broken Builder core cannot take them down.

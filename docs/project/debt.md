@@ -45,6 +45,7 @@ Dropped   no longer relevant or replaced by another item
 | D-025 | `runtime migrate` reports `nothing pending` when the engine DECLINED the work, so an update can pass its migrate stage on a database with pending migrations | correctness / migrations | medium | **Paid** | CV22.DS10.US2 Debt Review | Paid 2026-09-24 by CV22.DS10.TS5 plateau 1 (`c8c74361`): TypeScript is the sole migration custodian, `runtime migrate` has three verdicts, and `declined` exits non-zero and fails the updater's migrate stage |
 | D-026 | The update pipeline is implemented twice, once per install kind, in one module | duplication / maintainability | low | **Paid** | CV22.DS10.US2 Debt Review | Paid 2026-10-09 by CV22.DS10.US3 plateau 4 (`895bef57`): one body in `update.ts` over two `ApplyStrategy` implementations, the seam declared beside the stage vocabulary; the repair lane is a list of steps, not a third copy; the 15 US2 tests and the update smoke passed unchanged |
 | D-027 | Nothing writes the package install's update-channel file, so a package user cannot select a channel persistently | operability | low | **Paid** | CV22.DS10.US2 Debt Review | Paid 2026-10-09 by CV22.DS10.US3 plateau 4 (`50cfd4c4`): `mirror runtime channel [stable\|main]` writes the file for either install kind, creating the config directory `0700` when `init` has not |
+| D-028 | The Pi extension passes the user's prompt to `log-user` as an argv element, so it is `ps`-visible for the life of the process | privacy | low | Carried | CV9.E2.S32 (security-engineer review) | The next change to `conversation-logger log-user`, or the first multi-user host; `STDIN_SUBCOMMANDS` already exists for the hook subcommands, so the move is to that path |
 
 ## D-001 — Metadata lifecycle policy and evidence filtering live inside ConversationService
 
@@ -1213,3 +1214,36 @@ Refinement field offers a project that has not created its index yet.
 
 The seed-CR scan is removed, or generalized to a path the project declares,
 or explicitly documented as a Mirror-Mind-only affordance with a reason.
+
+## D-028 — The Pi extension passes the user's prompt to `log-user` as an argv element
+
+**Kind:** privacy
+**Severity:** low
+**Status:** Carried
+**Source:** CV9.E2.S32 (security-engineer review)
+
+### Carrying reason
+
+`.pi/extensions/mirror-logger.ts` spawns
+`mirror conversation-logger log-user <session> <prompt> --interface pi` with the
+truncated prompt in argv. On a shared host, argv is readable by other users
+through `ps` for the ~200 ms the process lives. The Gemini and Claude hook
+subcommands already read their payload from stdin (`STDIN_SUBCOMMANDS` in
+`loggerCli.ts`); `log-user` and `log-assistant` predate that path.
+
+CV9.E2.S32 made the `log-user` call non-blocking and was asked whether that
+changed the exposure. It does not: the process lives the same ~200 ms whether
+or not the extension waits for it. The story records the debt rather than
+widening its scope; the fix is a transport change on a write path, and belongs
+to its own story with its own test.
+
+### Revisit trigger
+
+The next change to `conversation-logger log-user` or `log-assistant`, or the
+first time Mirror runs on a host shared with another user account.
+
+### Closure condition
+
+`log-user` and `log-assistant` accept the content on stdin (a `--stdin` flag or
+membership in `STDIN_SUBCOMMANDS`), the Pi extension uses it, and a test
+asserts the prompt is absent from the spawned argv.
