@@ -301,6 +301,25 @@ MEMORY_ENV=test node --no-warnings ts/smoke/extension_catalog_smoke.ts
 
 CI also runs the whole suite a second time with `python`, `python3`, and `uv` shadowed by stubs that log and exit 66, and fails on a single logged spawn even when every test passes. The Mirror Mind repository holds no Python since CV22.DS10.TS5, and that step is how it stays true. Green `npm test` says nothing about any of the steps above; CV22.DS10.TS2 failed CI twice for exactly that assumption.
 
+One more difference between a development machine and a CI runner has already failed a push. On the machine, `mirror` resolves: `npm link` puts it on the PATH, and a global install may too. On a runner it does not. A test whose outcome depends on that passes locally and fails in CI, as CV9.E2.S32's first push did. Before a push, run the suite once on a PATH that finds `node` and not `mirror`. The block below does three things:
+
+- It links `node`, `npm`, and `npx` into an empty directory, because their own directory may also hold a global `mirror` (a Homebrew prefix does).
+- It runs `npm test`'s command directly, because npm adds directories to a script's PATH.
+- It refuses to run, and says why, when `mirror` still resolves.
+
+It has no comment lines, so it pastes into an interactive zsh as well as bash:
+
+```bash
+bare="$(mktemp -d)"
+for tool in node npm npx; do ln -s "$(command -v "$tool")" "$bare/$tool"; done
+if PATH="$bare:/usr/bin:/bin" /bin/sh -c 'command -v mirror' >/dev/null; then
+  echo "not run: mirror still resolves on $bare:/usr/bin:/bin"
+else
+  PATH="$bare:/usr/bin:/bin" node --test "ts/test/**/*.test.ts" && echo "suite green with no mirror on the PATH"
+fi
+rm -rf "$bare"
+```
+
 The runtime smokes under `scripts/` (`smoke_codex.sh`, `smoke_gemini_cli.sh`, `smoke_claude_plugin.sh`, `smoke_mirror_mcp.sh`) run in CI's `smoke` job, under the same interpreter shadow. None needs its runtime installed: each feeds its runtime's payloads to the real wrappers, against an isolated database. Run them before a push that touches hooks, the Codex wrapper, or the MCP launcher:
 
 ```bash
