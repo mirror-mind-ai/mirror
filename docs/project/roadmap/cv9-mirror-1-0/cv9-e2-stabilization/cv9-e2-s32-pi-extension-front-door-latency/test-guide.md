@@ -59,6 +59,7 @@ Expected:
 | extension | welcome disabled then enabled across two `session_start` | second envelope carries the card |
 | extension | quit-mid-write via `MIRROR_TEST_FRONT_DOOR_DELAY_MS` under `MEMORY_ENV=test` | `session-end-pi` waits for the delayed `log-user` |
 | extension | slash-command prompt | no `log-user` |
+| extension | `session_start` with no `mirror` on the PATH (added after the first CI run) | the warning notice, then the card; one composite exec; `WARN` in `mirror-logger.log` |
 | guard | `--welcome` in any `SKILL.md` | `checkSkillCommandParity` refuses |
 | test hygiene | assertion messages | never contain argv payloads |
 

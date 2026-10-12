@@ -45,7 +45,11 @@ rewritten. Prompts typed during a run are steering messages inside it, so they
 never contend on the chain, and only the run's first prompt reaches the record
 at all; the extension already did this before the story (`470c4107`), and it is
 registered as D-029. And a bare `pi` in the checkout runs the skills against the
-production home, so the in-Pi routes go through `mirror-dev`.
+production home, so the in-Pi routes go through `mirror-dev`. The first push went
+red on CI. Three harness tests asserted the list of UI notices, and the extension's
+`mirror`-not-on-the-PATH warning fires on any runner without `npm link`, which a
+development machine never shows. The harness now links its own `mirror`, and one
+more test covers the warning, for 24 new tests in all.
 
 ### 2026-10-11 — CV22 released: Mirror Mind is one TypeScript package on npm, and the Python core is history
 

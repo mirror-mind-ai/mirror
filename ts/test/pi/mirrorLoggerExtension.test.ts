@@ -14,10 +14,10 @@
 // discipline): a failing test must not print a prompt.
 
 import assert from "node:assert/strict";
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
-import { join } from "node:path";
+import { mkdtempSync, readFileSync, rmSync, symlinkSync } from "node:fs";
+import { delimiter, join } from "node:path";
 import test from "node:test";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const EXTENSION_PATH = new URL("../../../.pi/extensions/mirror-logger.ts", import.meta.url)
   .pathname;
@@ -32,6 +32,20 @@ const LOG_DIR = mkdtempSync("/tmp/mirror-logger-ext-");
 process.env.MEMORY_DIR = LOG_DIR;
 const LOG_PATH = join(LOG_DIR, "mirror-logger.log");
 test.after(() => rmSync(LOG_DIR, { recursive: true, force: true }));
+
+// The extension warns at session_start when `mirror` does not resolve on the
+// PATH (CV22.DS10.US3). Whether it does is a fact about the host, not about
+// the test: a developer's `npm link` puts it there, a CI runner has none. So
+// the harness supplies its own, the way `npm link` does -- `mirror` pointing
+// at this tree's bin -- first on the PATH for every test; the one test about
+// the warning takes it away.
+const LINKED_BIN_DIR = mkdtempSync("/tmp/mirror-logger-ext-bin-");
+symlinkSync(
+  fileURLToPath(new URL("../../../bin/mirror.js", import.meta.url)),
+  join(LINKED_BIN_DIR, "mirror"),
+);
+process.env.PATH = `${LINKED_BIN_DIR}${delimiter}${process.env.PATH ?? ""}`;
+test.after(() => rmSync(LINKED_BIN_DIR, { recursive: true, force: true }));
 
 // --- the fake pi -----------------------------------------------------------
 
@@ -309,6 +323,37 @@ test("session_start without a UI still opens the session and detaches maintenanc
     assert.ok(h.logLines().some((l) => l.includes("session-maintenance started")));
   } finally {
     h.cleanup();
+  }
+});
+
+test("session_start without `mirror` on the PATH warns before the card, naming the fix, and still opens the session", async () => {
+  // A PATH that still finds `node`, which the detached maintenance spawn
+  // needs, and finds no `mirror`. `node`'s own directory will not do: on a
+  // Homebrew host it holds the global package's `mirror` too.
+  const bareBinDir = mkdtempSync("/tmp/mirror-logger-ext-bare-");
+  symlinkSync(process.execPath, join(bareBinDir, "node"));
+  const savedPath = process.env.PATH;
+  process.env.PATH = bareBinDir;
+  const h = await harness();
+  try {
+    const ctx = fakeCtx("/sessions/a.jsonl");
+    const done = h.fireNoWait("session_start", { type: "session_start", reason: "startup" }, ctx);
+    h.pi.execs[0]?.resolve(ENVELOPE);
+    await done;
+
+    assert.equal(ctx.ui.notices.length, 2, "the warning, then the card");
+    assert.match(
+      ctx.ui.notices[0] ?? "",
+      /^Mirror: `mirror` is not on the PATH — (run `npm link` once in .+|add `\$\(npm prefix -g\)\/bin` to the PATH)\. Skills will fail until it is\.$/,
+    );
+    assert.equal(ctx.ui.notices[1], "◇ Mirror · test\n\n→ Where shall we begin?");
+    assert.equal(h.pi.execs.length, 1, "the session still opened through the composite");
+    assert.ok(h.logLines().some((l) => l.includes("[WARN] Mirror: `mirror` is not on the PATH")));
+    assert.ok(h.logLines().some((l) => l.includes("session-maintenance started")));
+  } finally {
+    process.env.PATH = savedPath;
+    h.cleanup();
+    rmSync(bareBinDir, { recursive: true, force: true });
   }
 });
 

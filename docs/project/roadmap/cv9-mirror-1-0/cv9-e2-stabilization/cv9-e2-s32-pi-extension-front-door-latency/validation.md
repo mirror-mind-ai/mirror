@@ -27,6 +27,19 @@ New suites:
   aborted turn, shutdown-after-chain with map delete, session switch
   independence, the test knob on and inert.
 
+### CI after the first push (2026-10-12)
+
+The first push (`b1b3600a`) went red on `ts (ubuntu-latest)` in run
+38303489692. Three `session_start` tests asserted the exact list of UI notices,
+and the extension adds its `mirror`-not-on-the-PATH warning (CV22.DS10.US3)
+whenever `mirror` does not resolve. On a CI runner, with no `npm link`, that is
+always. The local gate could not see it, because `mirror` resolves on the
+development machine. The harness now puts its own `mirror` first on the PATH
+(a link to this tree's bin, as `npm link` makes it), and a sixteenth test covers
+the warning path itself. A mutation that silences the warning fails that test
+and no other. The whole suite also passes locally under a PATH that has `node`
+and no `mirror`: 3,082 tests, 3,080 pass, 2 skipped (pre-existing).
+
 ## Front-door path timing (pre-registered: median of five, pass `after ≤ before − 300 ms`)
 
 Same isolated home, same env (`MIRROR_WELCOME_REMOTE_UPDATE_CHECK=off`), the
