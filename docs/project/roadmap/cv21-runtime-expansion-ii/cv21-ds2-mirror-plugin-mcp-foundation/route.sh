@@ -348,6 +348,326 @@ entry_step() {
 }
 
 # ---------------------------------------------------------------------------
+# The static step: what the shipped package does, with no model call.
+
+# The installed package's plugin, copied out of the tree the way a runtime
+# copies it into its cache: no relative path from it reaches the package.
+plugin_cache() {
+  local CACHE="$D/cache/mirror-mind"
+  rm -rf "$CACHE" && mkdir -p "$(dirname "$CACHE")" && cp -R "$PKG/plugins/mirror-mind" "$CACHE"
+  printf '%s' "$CACHE"
+}
+
+# The scripted journey, per runtime shape, through a plugin copy's wrappers into
+# the scratch Mirror home. The payload shapes are DS12's (TS1 binary read, TS2 L11,
+# TS4 L8) and Grok's guide; the expected table is the test guide's.
+write_journey_js() {
+  cat >"$D/journey.js" <<'JS'
+const { spawnSync } = require("node:child_process");
+const [hooks, shape, session] = process.argv.slice(2);
+const forms = {
+  claude_code: "/mirror-mind:mm-mirror should I raise my price?",
+  codex: "$mirror-mind:mm:mirror should I raise my price?",
+  grok_build: "/mm-mirror should I raise my price?",
+};
+const grok = shape === "grok_build";
+const turnKey = { claude_code: "prompt_id", codex: "turn_id", grok_build: "promptId" }[shape];
+const prompt = (turn, text) =>
+  grok
+    ? { hookEventName: "user_prompt_submit", hook_event_name: "UserPromptSubmit", sessionId: session, session_id: session, promptId: turn, prompt: text }
+    : { session_id: session, [turnKey]: turn, hook_event_name: "UserPromptSubmit", prompt: text };
+const stop = (turn, text) =>
+  grok
+    ? { hookEventName: "stop", hook_event_name: "Stop", sessionId: session, session_id: session, ...(turn ? { promptId: turn } : { reason: "session_end" }), lastAssistantMessage: text }
+    : { session_id: session, ...(turn ? { [turnKey]: turn } : {}), hook_event_name: "Stop", last_assistant_message: text };
+const env = { ...process.env, ...(grok ? { GROK_HOOK_EVENT: "stop", GROK_SESSION_ID: session } : {}) };
+const steps = [
+  ["log-user-prompt.sh", prompt("t1", forms[shape])],
+  ["log-assistant-reply.sh", stop("t1", "the Mirror answer")],
+  ["log-user-prompt.sh", prompt("t2", "which tools can you see?")],
+  ["log-assistant-reply.sh", stop("t2", "seven mirror-mind tools")],
+  ["log-assistant-reply.sh", stop("t2", "seven mirror-mind tools")],
+  ["log-user-prompt.sh", prompt("t3", "/mm-journeys")],
+  ["log-assistant-reply.sh", stop("t3", "the journey list")],
+  ...(grok ? [["log-assistant-reply.sh", stop(null, "the journey list")]] : []),
+];
+let printed = "";
+for (const [wrapper, payload] of steps) {
+  const r = spawnSync("bash", [`${hooks}/${wrapper}`], { input: JSON.stringify(payload), env, encoding: "utf8" });
+  printed += r.stdout;
+  if (r.status !== 0) { console.log(`exit ${r.status} from ${wrapper}`); process.exit(1); }
+}
+console.log(printed === "" ? "silent" : `printed: ${printed.slice(0, 80)}`);
+JS
+}
+
+static_step() {
+  need_install
+  say "Static — TS5, US6, US7, and US8 on the shipped package (no model call)"
+  for cmd in claude codex grok; do stamp "$cmd"; done
+  local CACHE; CACHE="$(plugin_cache)"
+
+  echo; look "TS5. the plugin against each runtime's validator:"
+  local S="$D/validate-config"; rm -rf "$S" && mkdir -p "$S" && chmod 700 "$S"
+  keep ts5-claude-validate with_home "$S" env CLAUDE_CONFIG_DIR="$S" claude plugin validate "$PKG/plugins/mirror-mind"
+  tail -2 "$EVIDENCE/ts5-claude-validate.out" | show
+  if grep -q "Validation passed" "$EVIDENCE/ts5-claude-validate.out" && ! grep -qi "warning" "$EVIDENCE/ts5-claude-validate.out"; then
+    ok "claude plugin validate: passed, no warnings ($(claude --version 2>&1 | head -1))"
+  else bad "claude plugin validate: not a clean pass (evidence/ts5-claude-validate.out)"; fi
+  keep ts5-grok-validate with_home "$S" grok plugin validate "$PKG/plugins/mirror-mind"
+  grep -q "^exit 0" "$EVIDENCE/ts5-grok-validate.out" \
+    && ok "grok plugin validate: passed ($(grok --version 2>&1 | head -1))" || bad "grok plugin validate failed (evidence/ts5-grok-validate.out)"
+
+  echo; look "US6. the shipped MCP entry, as written and as each runtime renders and starts it:"
+  measure_entry shipped "$PKG/plugins/mirror-mind"
+
+  echo; look "US7. the plugin's inject wrapper, from a copy outside the tree, fed each form (bytes of context):"
+  local form out n=0
+  for form in "/mm:mirror" "/mirror-mind:mm-mirror" "/mirror-mind:mm:mirror" "\$mirror-mind:mm:mirror" "/mm-mirror" "\$mm-mirror"; do
+    n=$((n + 1))
+    out="$(node -e 'process.stdout.write(JSON.stringify({session_id:process.argv[1],prompt:process.argv[2]+" should I raise my price?"}))' "ds2-inject-$n" "$form" \
+      | (cd "$D/project" && as_scratch bash "$CACHE/hooks/mirror-inject.sh") 2>/dev/null | wc -c | tr -d ' ')"
+    [ "$out" -gt 0 ] && ok "$form: $out bytes" || bad "$form: no context"
+  done
+  for form in "/mm-mirrors" "/mm:journeys"; do
+    n=$((n + 1))
+    out="$(node -e 'process.stdout.write(JSON.stringify({session_id:process.argv[1],prompt:process.argv[2]+" should I raise my price?"}))' "ds2-inject-$n" "$form" \
+      | (cd "$D/project" && as_scratch bash "$CACHE/hooks/mirror-inject.sh") 2>/dev/null | wc -c | tr -d ' ')"
+    [ "$out" -eq 0 ] && ok "$form (not the Mirror skill): nothing" || bad "$form: $out bytes of context"
+  done
+
+  echo; look "US8. the scripted journey, per runtime shape, through the plugin copy's wrappers:"
+  write_journey_js
+  local shape result rows expected skips before
+  before="$( [ -f "$MHOME/hooks.log" ] && wc -l <"$MHOME/hooks.log" | tr -d ' ' || echo 0)"
+  for shape in claude_code codex grok_build; do
+    result="$(cd "$D/project" && as_scratch node "$D/journey.js" "$CACHE/hooks" "$shape" "ds2-journey-$shape")"
+    rows="$(sqlite3 "$MHOME/memory.db" "SELECT group_concat(m.role || ':' || ifnull(json_extract(m.metadata,'\$.turn_id'),'-') || ':' || m.content, ' | ') FROM (SELECT m.* FROM messages m JOIN runtime_sessions s ON s.conversation_id = m.conversation_id WHERE s.session_id = 'ds2-journey-$shape' ORDER BY m.created_at, m.rowid) m")"
+    expected="user:t1:should I raise my price? | assistant:t1:the Mirror answer | user:t2:which tools can you see? | assistant:t2:seven mirror-mind tools"
+    local label
+    label="$(sqlite3 "$MHOME/memory.db" "SELECT c.interface || '/' || s.interface FROM runtime_sessions s JOIN conversations c ON c.id = s.conversation_id WHERE s.session_id = 'ds2-journey-$shape'")"
+    if [ "$rows" = "$expected" ] && [ "$label" = "$shape/$shape" ] && [ "$result" = "silent" ]; then
+      ok "$shape: the four rows, labelled $shape on the conversation and the session, nothing printed"
+    else
+      bad "$shape: $result · $label · $rows"
+    fi
+  done
+  skips="$(tail -n +"$((before + 1))" "$MHOME/hooks.log" 2>/dev/null | grep -c 'reply skipped: nothing_waiting' || true)"
+  [ "$skips" = "4" ] && ok "hooks.log counted 4 skipped replies (a command turn per shape, and Grok's session-end Stop), without their text" \
+    || bad "hooks.log counted $skips skipped replies, expected 4"
+  if tail -n +"$((before + 1))" "$MHOME/hooks.log" 2>/dev/null | grep -qE "journey list|raise my price|mirror-mind tools"; then
+    bad "hooks.log quotes a prompt or a reply"
+  else ok "hooks.log quotes no prompt and no reply"; fi
+  result
+}
+
+# ---------------------------------------------------------------------------
+# The Navigator's live sessions: one per runtime, two turns each, all scratch.
+
+# The person's config file a real install has: it names the Mirror home, so a
+# runtime that hands a hook or a server a filtered environment still finds it.
+person_home() {
+  local home="$1"
+  mkdir -p "$home/.config/mirror" && chmod 700 "$home"
+  printf 'MIRROR_HOME=%s\n' "$MHOME" >"$home/.config/mirror/env"
+}
+
+live_prepare() {
+  local rt="$1"
+  LIVE="$D/live/$rt"
+  [ -d "$LIVE" ] && mv "$LIVE" "$LIVE.$(date -u +%Y%m%dT%H%M%SZ)"
+  mkdir -p "$LIVE" && chmod 700 "$D/live"
+  LC_ALL=C tr -dc 'a-z0-9' </dev/urandom | head -c 6 >"$LIVE/id"
+  date -u +%Y-%m-%dT%H:%M:%SZ >"$LIVE/started"
+  stamp "$2"
+  ID="$(cat "$LIVE/id")"
+}
+
+# The session's environment: the scratch install first on the PATH, the scratch
+# Mirror home named, no provider key, no Pi history.
+session_env() {
+  SESSION_ENV=(env -u XDG_CONFIG_HOME -u MIRROR_BIN -u MIRROR_NODE -u NODE_OPTIONS -u OPENROUTER_API_KEY
+    -u MIRROR_USER MIRROR_HOME="$MHOME" PI_SESSIONS_DIR="$D/pi-sessions" PATH="$D/prefix/bin:$REAL_PATH")
+}
+
+turns_text() {
+  local form="$1" rt="$2"
+  cat <<EOF
+
+  Two turns, typed exactly. Approve any trust or permission prompt the runtime shows.
+
+    Turn 1:  $form DS2-$ID: should I raise my course price from 297 to 497 reais?
+             Expect: Mirror Mode answers, in the first person.
+
+    Turn 2:  DS2-$ID probe: without using any tool, list the names of the tools you have
+             from an MCP server called mirror-mind, or say NONE.
+
+  Then quit the session, and run:   bash $SELF check $rt
+EOF
+}
+
+live_claude() {
+  need_install
+  say "Live — Claude Code"
+  live_prepare claude claude
+  local CACHE; CACHE="$(plugin_cache)"
+  # A scratch config dir: your ~/.claude/skills already loads Mirror, and a second
+  # mirror-mind would load beside this copy. Claude Code keeps its login outside it.
+  local CC="$D/claude-live/.claude"
+  mkdir -p "$CC" && chmod 700 "$D/claude-live"
+  session_env
+  SESSION_ENV+=(CLAUDE_CONFIG_DIR="$CC")
+  note "Claude Code runs with a scratch config dir ($CC) and the plugin copy $CACHE."
+  turns_text "/mirror-mind:mm-mirror" claude
+  local P="$D/project-claude"
+  rm -rf "$P" && mkdir -p "$P"
+  [ "${DS2_DRY:-0}" = 1 ] && { note "DS2_DRY=1: prepared, session not started"; return 0; }
+  cd "$P" && exec "${SESSION_ENV[@]}" claude --plugin-dir "$CACHE"
+}
+
+# A minimal MCP server that records the NAMES of the variables Codex hands it,
+# never their values, and offers no tool.
+write_env_probe() {
+  cat >"$D/live/env-probe.js" <<'JS'
+const fs = require("node:fs");
+fs.writeFileSync(process.argv[2], Object.keys(process.env).sort().join("\n") + "\n");
+let buffer = "";
+process.stdin.on("data", (chunk) => {
+  buffer += chunk;
+  let i;
+  while ((i = buffer.indexOf("\n")) >= 0) {
+    const line = buffer.slice(0, i); buffer = buffer.slice(i + 1);
+    let msg; try { msg = JSON.parse(line); } catch { continue; }
+    if (msg.id === undefined) continue;
+    const result = msg.method === "initialize"
+      ? { protocolVersion: msg.params?.protocolVersion ?? "2025-06-18", capabilities: { tools: {} }, serverInfo: { name: "ds2-env-probe", version: "0" } }
+      : msg.method === "tools/list" ? { tools: [] } : null;
+    process.stdout.write(JSON.stringify(result ? { jsonrpc: "2.0", id: msg.id, result }
+      : { jsonrpc: "2.0", id: msg.id, error: { code: -32601, message: "no such method" } }) + "\n");
+  }
+});
+JS
+}
+
+live_codex() {
+  need_install
+  say "Live — Codex"
+  live_prepare codex codex
+  local CX="$D/codex-live" PERSON="$D/codex-live-person"
+  [ -f "$CX/auth.json" ] || { rm -rf "$CX" && mkdir -p "$CX" && chmod 700 "$CX"; }
+  person_home "$PERSON"
+  local MP="$D/codex-live-marketplace"
+  rm -rf "$MP" && mkdir -p "$MP/.agents/plugins" && cp -R "$PKG/plugins/mirror-mind" "$MP/mirror-mind"
+  node -e 'require("fs").writeFileSync(process.argv[1],JSON.stringify({name:"ds2-live",owner:{name:"CV21.DS2 route"},
+    plugins:[{name:"mirror-mind",source:{source:"local",path:"./mirror-mind"},description:"Mirror Mind, this package"}]},null,2)+"\n")' \
+    "$MP/.agents/plugins/marketplace.json"
+  with_home "$PERSON" env CODEX_HOME="$CX" codex plugin uninstall mirror-mind@ds2-live >/dev/null 2>&1 || true
+  with_home "$PERSON" env CODEX_HOME="$CX" codex plugin marketplace add "$MP" >"$LIVE/marketplace.out" 2>&1 || true
+  with_home "$PERSON" env CODEX_HOME="$CX" codex plugin add mirror-mind@ds2-live >"$LIVE/plugin-add.out" 2>&1 || true
+  tail -1 "$LIVE/plugin-add.out" | show
+  write_env_probe
+  with_home "$PERSON" env CODEX_HOME="$CX" codex mcp remove ds2-env-probe >/dev/null 2>&1 || true
+  with_home "$PERSON" env CODEX_HOME="$CX" codex mcp add ds2-env-probe -- "$NODE_DIR/node" "$D/live/env-probe.js" "$LIVE/mcp-env-names.txt" >/dev/null 2>&1 \
+    && note "a probe MCP server (ds2-env-probe, no tools) records which variable NAMES Codex hands a server"
+  [ -f "$CX/auth.json" ] || note "Codex will ask you to log in: that login is stored in $CX only."
+  note "Codex asks once to trust the plugin's hooks: trust them."
+  session_env
+  turns_text "\$mirror-mind:mm:mirror" codex
+  local P="$D/project-codex"
+  rm -rf "$P" && mkdir -p "$P"
+  [ "${DS2_DRY:-0}" = 1 ] && { note "DS2_DRY=1: prepared, session not started"; return 0; }
+  cd "$P" && exec "${SESSION_ENV[@]}" HOME="$PERSON" CODEX_HOME="$CX" codex
+}
+
+live_grok() {
+  need_install
+  say "Live — Grok Build"
+  live_prepare grok grok
+  local GH="$D/grok-live"
+  [ -d "$GH/.grok" ] || { rm -rf "$GH" && mkdir -p "$GH"; }
+  person_home "$GH"
+  with_home "$GH" grok plugin uninstall mirror-mind >/dev/null 2>&1 || true
+  with_home "$GH" grok plugin install "$PKG/plugins/mirror-mind" --trust >"$LIVE/plugin-install.out" 2>&1 || true
+  tail -1 "$LIVE/plugin-install.out" | show
+  rm -f "$GH/.grok/logs/mcp/mirror-mind.stderr.log"
+  local P="$D/project-grok"
+  rm -rf "$P" && mkdir -p "$P" && cp "$PKG/AGENTS.md" "$P/AGENTS.md"
+  note "the project has Mirror's AGENTS.md: Grok shows a SessionStart message on screen only (DS12.TS4 L2)."
+  [ -f "$GH/.grok/auth.json" ] || note "Grok will ask you to log in: that login is stored in $GH only."
+  session_env
+  turns_text "/mm-mirror" grok
+  [ "${DS2_DRY:-0}" = 1 ] && { note "DS2_DRY=1: prepared, session not started"; return 0; }
+  cd "$P" && exec "${SESSION_ENV[@]}" HOME="$GH" grok
+}
+
+# What a live session left in the scratch Mirror home, and what started.
+check_step() {
+  local rt="${1:-}"
+  need_install
+  case "$rt" in claude|codex|grok) ;; *) echo "usage: bash $SELF check <claude|codex|grok>"; exit 2 ;; esac
+  local LIVE="$D/live/$rt" label
+  label="$(case "$rt" in claude) echo claude_code ;; codex) echo codex ;; grok) echo grok_build ;; esac)"
+  [ -f "$LIVE/started" ] || { echo "No $rt session recorded; run: bash $SELF live-$rt"; exit 2; }
+  local START ID CONV
+  START="$(cat "$LIVE/started")"; ID="$(cat "$LIVE/id")"
+  say "Check — what the $rt session left (DS2-$ID, since $START)"
+  CONV="$(sqlite3 "$MHOME/memory.db" "SELECT c.id FROM conversations c JOIN messages m ON m.conversation_id = c.id WHERE m.content LIKE '%DS2-$ID%' ORDER BY c.started_at LIMIT 1")"
+  [ -n "$CONV" ] || { bad "no conversation in the scratch home holds DS2-$ID"; result; return; }
+  local LABELS
+  LABELS="$(sqlite3 "$MHOME/memory.db" "SELECT c.interface || ' / ' || ifnull((SELECT group_concat(DISTINCT s.interface) FROM runtime_sessions s WHERE s.conversation_id = c.id), '-') FROM conversations c WHERE c.id = '$CONV'")"
+  [ "$LABELS" = "$label / $label" ] && ok "conversation / runtime session: $LABELS" || bad "conversation / runtime session: $LABELS (expected $label / $label)"
+  look "its messages (role · turn id · text):"
+  sqlite3 -separator ' · ' "$MHOME/memory.db" "SELECT role, ifnull(json_extract(metadata,'\$.turn_id'),'-'), substr(replace(content, char(10), ' '), 1, 90) FROM messages WHERE conversation_id = '$CONV' ORDER BY created_at, rowid" | show
+  local PAIRS
+  PAIRS="$(sqlite3 "$MHOME/memory.db" "SELECT group_concat(role, ',') FROM (SELECT role FROM messages WHERE conversation_id = '$CONV' ORDER BY created_at, rowid)")"
+  case "$PAIRS" in
+    user,assistant,user,assistant) ok "two turns, each prompt followed by one reply" ;;
+    *) bad "roles in order: $PAIRS (expected user,assistant,user,assistant)" ;;
+  esac
+  local UNPAIRED
+  UNPAIRED="$(sqlite3 "$MHOME/memory.db" "SELECT count(*) FROM messages a WHERE a.conversation_id = '$CONV' AND a.role = 'assistant' AND json_extract(a.metadata,'\$.turn_id') IS NOT NULL AND NOT EXISTS (SELECT 1 FROM messages u WHERE u.conversation_id = a.conversation_id AND u.role = 'user' AND json_extract(u.metadata,'\$.turn_id') = json_extract(a.metadata,'\$.turn_id'))")"
+  [ "$UNPAIRED" = "0" ] && ok "every reply carries its prompt's turn id" || bad "$UNPAIRED reply(ies) carry a turn id no prompt carries"
+  if sqlite3 "$MHOME/memory.db" "SELECT content FROM messages WHERE conversation_id = '$CONV' AND role = 'user' ORDER BY created_at LIMIT 1" | grep -qE '^[/$]'; then
+    bad "the Mirror question was logged with its form"
+  else ok "the Mirror question was logged without its form"; fi
+  look "turn 2's reply, to compare with what you saw:"
+  sqlite3 "$MHOME/memory.db" "SELECT content FROM messages WHERE conversation_id = '$CONV' AND role = 'assistant' ORDER BY created_at DESC, rowid DESC LIMIT 1" | head -12 | show
+  local SKIPS
+  SKIPS="$(awk -v s="$START" 'substr($1,1,19) >= substr(s,1,19)' "$MHOME/hooks.log" 2>/dev/null | grep -c 'reply skipped: nothing_waiting' || true)"
+  if [ "$rt" = grok ]; then
+    note "skipped-reply lines since the session started: $SKIPS (Grok's session-end Stop accounts for one)"
+  else
+    [ "$SKIPS" = "0" ] && ok "no reply skipped for want of a prompt (the async race did not show)" \
+      || note "$SKIPS reply(ies) skipped for want of a prompt: the async race, which decides the prompt logger's async"
+  fi
+  awk -v s="$START" 'substr($1,1,19) >= substr(s,1,19)' "$MHOME/hooks.log" 2>/dev/null | grep -v 'reply skipped' | grep . \
+    && bad "hooks.log recorded a failure (above)" || ok "no hook recorded a failure"
+  case "$rt" in
+    claude|codex)
+      local TOOLS
+      TOOLS="$(sqlite3 "$MHOME/memory.db" "SELECT content FROM messages WHERE conversation_id = '$CONV' AND role = 'assistant' ORDER BY created_at DESC, rowid DESC LIMIT 1" | grep -oE 'mirror_context|list_journeys|journey_status|search_memories|list_conversations|recall_conversation|detect_persona' | sort -u | wc -l | tr -d ' ')"
+      look "the MCP server: turn 2's reply names $TOOLS of the server's tool names (read the reply above; the tool list is the model's)"
+      ;;
+    grok)
+      local LOG="$D/grok-live/.grok/logs/mcp/mirror-mind.stderr.log"
+      if [ -f "$LOG" ] && [ ! -s "$LOG" ]; then ok "Grok started the server: its stderr log exists and is empty (attachment is DS10's)"
+      elif [ -f "$LOG" ]; then bad "Grok's server log holds: $(head -1 "$LOG" | cut -c1-120)"
+      else note "Grok wrote no mirror-mind.stderr.log"; fi
+      ;;
+  esac
+  if [ "$rt" = codex ]; then
+    if [ -f "$LIVE/mcp-env-names.txt" ]; then
+      look "variables Codex handed an MCP server (names only): $(grep -E '^(PATH|HOME|MIRROR_BIN|MIRROR_NODE|MIRROR_HOME|MIRROR_USER|CLAUDE_PLUGIN_ROOT)$' "$LIVE/mcp-env-names.txt" | tr '\n' ' ')"
+      look "all names: $(tr '\n' ' ' <"$LIVE/mcp-env-names.txt" | cut -c1-200)"
+    else note "the env probe recorded nothing (Codex did not start it)"; fi
+    local ENDED
+    ENDED="$(sqlite3 "$MHOME/memory.db" "SELECT ifnull(ended_at, 'open') FROM conversations WHERE id = '$CONV'")"
+    note "Codex's conversation at exit: $ENDED (a finding, DS4's: DS12.TS2 L8)"
+  fi
+  result
+}
+
+# ---------------------------------------------------------------------------
 untouched() {
   say "Untouched — real runtime configs vs the baseline, and the real Mirror homes"
   [ -f "$D/real-baseline.txt" ] || { echo "No baseline. Run: bash $SELF setup"; exit 2; }
@@ -365,6 +685,17 @@ untouched() {
     fi
   done
   [ "$hit" -eq 0 ] && ok "no scratch session in a real Mirror home"
+  # The live sessions' turns carry DS2-<id>; none may reach a real Mirror home.
+  local id
+  for id in $(cat "$D"/live/*/id 2>/dev/null); do
+    for db in "$REAL_HOME"/.mirror-minds/*/memory.db "$REAL_HOME"/.mirror/*/memory.db; do
+      [ -f "$db" ] || continue
+      if sqlite3 "$db" "SELECT count(*) FROM messages WHERE content LIKE '%DS2-$id%'" 2>/dev/null | grep -qv '^0$'; then
+        bad "a live turn (DS2-$id) reached $db"; hit=1
+      fi
+    done
+  done
+  [ "$hit" -eq 0 ] && ok "no live turn in a real Mirror home"
   result
 }
 
@@ -393,6 +724,11 @@ verify() {
 case "${1:-}" in
   setup) setup ;;
   entry) entry_step ;;
+  static) static_step ;;
+  live-claude) live_claude ;;
+  live-codex) live_codex ;;
+  live-grok) live_grok ;;
+  check) check_step "${2:-}" ;;
   untouched) untouched ;;
   clean) clean ;;
   verify) verify ;;

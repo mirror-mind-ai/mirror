@@ -97,7 +97,9 @@ failed.
    - **Fail:** any warning, a rewritten entry, a form that returns no context, a
      look-alike that returns some, or a journey row that differs.
 2. **`bash route.sh live-claude`, then `live-codex`, then `live-grok`**: one session
-   each, two turns, typed as the step prints them.
+   each, two turns, typed as the step prints them. After each session, run
+   `bash route.sh check <claude|codex|grok>` (step 3). Each turn carries a `DS2-<id>`
+   marker, which `untouched` searches the real Mirror homes for.
    - **Turn 1:** a Mirror Mode question in that runtime's own form:
      - Claude Code: `/mirror-mind:mm-mirror …`;
      - Codex: `$mirror-mind:mm:mirror …`;
@@ -111,7 +113,9 @@ failed.
    - **Pass:** both turns complete, and no runtime shows an MCP start failure.
    - **Fail:** a third turn was needed, the server failed to start, or a step needed a
      login or a change outside the scratch config.
-3. **`bash route.sh check`**: reads the scratch Mirror home and the runtimes' logs.
+3. **`bash route.sh check <runtime>`**: reads the scratch Mirror home and the runtime's
+   logs. For Codex it also prints the variable names a scratch-only probe server
+   (`ds2-env-probe`, no tools) received, which shows what Codex hands an MCP server.
    - **Expected:** one conversation per runtime, labelled `claude_code`, `codex`, and
      `grok_build`, and its runtime session labelled the same. Each holds four messages:
      the Mirror question without its form, its answer, turn 2's prompt, and turn 2's
@@ -141,5 +145,32 @@ failed.
 
 ## Validation Evidence
 
-Recorded here during implementation, from the Driver's checks, and at Validation, from
-the Navigator's sessions.
+### The Driver's checks, 2026-10-13
+
+On Claude Code 2.1.296, Codex 0.162.1, and Grok 1.0.52, the versions DS12 recorded.
+
+| Check | Result |
+|-------|--------|
+| `npm run typecheck`, `npm run lint` | ✓ clean |
+| `npm test` | ✓ 3150 pass, 0 fail, 3 skipped (two are the entry's "nothing anywhere" cases, which skip where a global install exists and run on CI) |
+| `generate_hook_wrappers.sh --check`, the plugin drift guard, `checkPackContents`, `checkRetiredSurfaces`, `checkDocLinks`, `checkSkillCommandParity` | ✓ in sync, clean |
+| `smoke_npm_package.sh` | ✓ 68 pass, 0 fail, the installed plugin's manifest entry starting the server included |
+| `smoke_mirror_mcp.sh` | ✓ 7 tools through the manifest entry; 2 production databases checked |
+| `smoke_claude_plugin.sh` | ✓ steps 1–5, the MCP entry included. Step 6 stops on a machine with a global `mirror-hook` (CR123, CR128), as before this story |
+| `bash route.sh setup`, then `bash route.sh static`, fresh scratch install of this tree | ✓ 7/0, then 22/0 |
+| `DS2_DRY=1 bash route.sh live-claude`, `live-codex`, `live-grok` | ✓ each prepared, no session started |
+| `bash route.sh untouched` | ✓ 3/0: no real config changed, no scratch session or live turn in a real home |
+
+`route.sh static`, in detail: Claude Code's validator passed with no warnings (4
+before TS5) and Grok's passed. The shipped MCP entry started as written, from a
+GUI-launch PATH, inside Claude Code (`claude mcp list`, both PATHs), and through
+Grok's handshake (`grok mcp doctor`, 7 tools), and Codex rendered it byte for byte.
+The plugin's inject wrapper returned 7,065 bytes of context for each of the six forms
+and nothing for `/mm-mirrors` or `/mm:journeys`; before US7 the plugin's own form
+returned 0 (DS12.TS1 static 6). The scripted journey wrote the four expected rows
+under each runtime's label on the Claude Code, Codex, and Grok shapes, printed
+nothing, and counted 4 skipped replies in `hooks.log` without their text.
+
+### The Navigator's sessions
+
+Recorded at Validation.
