@@ -75,4 +75,27 @@ implementation, when the Driver hands them over. Steps 2–5 are the Validation 
 
 ## Validation Evidence
 
-Pending implementation and validation.
+**Validated by the Navigator on 2026-10-13.** The decision and the reshaped CV21 index were
+accepted without corrections, including dropping CV21.DS2.US3.
+
+- **Driver checks.**
+  - `route.sh` passes `bash -n` and shellcheck, and every Driver step ran end to end.
+  - The doc link and duplicate-heading checks are clean after every commit.
+  - The builder and script suites pass (459/459).
+  - The retired-surface tripwire is clean.
+- **Versions.** `bash route.sh verify` gave 20/20 on 2026-10-13, after the sessions: claude 2.1.296, codex
+  0.162.1, agy 1.3.4, and grok 1.0.52, as `recorded-versions.tsv` holds them. There was
+  no drift during the story.
+- **Live probes (E2E).** The Navigator ran four sessions on 2026-10-13 between 14:18 and
+  14:53 UTC, two turns each, on scratch configs, each followed by its `check-<runtime>`
+  step. The findings are in TS1–TS4, under "Findings — live".
+- **Untouched.** After all four sessions, `bash route.sh untouched` passed 2/2 (15:06
+  UTC). The real runtime configuration matched its 315-entry baseline, and no real
+  Mirror database held a DS12 canary or probe prompt. The Navigator then ran the
+  route's closing steps, and the scratch directory, with its logins, is gone.
+- **Deviations, recorded in the findings and fixed in the route (`bf588138`).**
+  - A Driver dry run left Mirror's `AGENTS.md` in the shared project folder that the
+    Claude Code and Codex sessions used. Both sessions still kept the hook's copy apart
+    from the file's.
+  - A dry check run after the sessions deleted three raw probe captures. Their
+    summaries had been read first, and the runtimes' transcripts carried the canaries.
