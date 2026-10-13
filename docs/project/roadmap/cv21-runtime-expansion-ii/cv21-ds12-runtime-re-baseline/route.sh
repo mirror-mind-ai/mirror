@@ -11,6 +11,7 @@
 #   bash route.sh codex         TS2 static: discovery, hooks, Claude-format plugin
 #   bash route.sh antigravity   TS3 static: validate, `agy plugin import claude`
 #   bash route.sh grok          TS4 static: validate, install, inspect, docs
+#   bash route.sh extensions    TS5: how a user extension reaches each runtime
 #   bash route.sh untouched     real runtime configs vs the baseline; canary search
 #   bash route.sh clean         remove the scratch directory (and any login in it)
 #
@@ -494,6 +495,43 @@ grok_step() {
 }
 
 # ---------------------------------------------------------------------------
+extensions_step() {
+  need_install
+  say "TS5 — how a user-owned extension reaches each runtime (review-copy, scratch home)"
+  stamp codex >/dev/null; stamp grok >/dev/null
+  echo; look "1. install the reference extension into the scratch Mirror home:"
+  as_scratch mirror extensions install review-copy --extensions-root "$ROOT/examples/extensions" \
+    >"$EVIDENCE/ext-install.out" 2>&1
+  sed -n '1,12p' "$EVIDENCE/ext-install.out" | show
+  local rt
+  for rt in claude pi codex antigravity grok; do
+    if [ -f "$MHOME/runtime/skills/$rt/extensions.json" ]; then ok "a $rt catalog exists (its skill.yaml declares $rt)"
+    else note "no $rt catalog: review-copy's skill.yaml declares no $rt block"; fi
+  done
+
+  echo; look "2. expose-claude into the scratch HOME: a personal Claude Code skill"
+  as_scratch mirror extensions expose-claude --target-root "$SHOME" >"$EVIDENCE/ext-expose.out" 2>&1
+  tail -2 "$EVIDENCE/ext-expose.out" | show
+  [ -f "$SHOME/.claude/skills/ext-review-copy/SKILL.md" ] && ok "written to ~/.claude/skills/ext-review-copy" || bad "not written"
+
+  echo; look "3. who else reads that Claude path, and who reads ~/.agents/skills (no model call):"
+  local seen
+  seen="$(cd "$D/project" && with_home "$SHOME" grok inspect --json 2>/dev/null | node -e 'let s="";process.stdin.on("data",c=>s+=c).on("end",()=>{try{console.log(/review-copy/.test(JSON.stringify(JSON.parse(s).skills)))}catch{console.log("?")}})')"
+  [ "$seen" = "true" ] && ok "Grok finds it in ~/.claude/skills (Claude compatibility)" || note "Grok does not find it there ($seen)"
+  local AP="$D/agents-home"
+  rm -rf "$AP" && mkdir -p "$AP/.agents/skills" "$D/agents-codex" && chmod 700 "$AP"
+  cp -R "$SHOME/.claude/skills/ext-review-copy" "$AP/.agents/skills/"
+  local n
+  n="$(cd "$D/project" && with_home "$AP" env CODEX_HOME="$D/agents-codex" codex debug prompt-input hello 2>/dev/null | grep -c review-copy)"
+  [ "${n:-0}" -ge 1 ] && ok "Codex finds a skill in ~/.agents/skills" || note "Codex does not read ~/.agents/skills"
+  seen="$(cd "$D/project" && with_home "$AP" grok inspect --json 2>/dev/null | node -e 'let s="";process.stdin.on("data",c=>s+=c).on("end",()=>{try{console.log(/review-copy/.test(JSON.stringify(JSON.parse(s).skills)))}catch{console.log("?")}})')"
+  [ "$seen" = "true" ] && ok "Grok finds a skill in ~/.agents/skills" || note "Grok does not read ~/.agents/skills"
+  grep -n -E 'Global +\| `<name>` +\| `~/.gemini/config/(global_)?workflows' "$EVIDENCE/agy-strings.txt" 2>/dev/null | head -2 | cut -c1-160 | show
+  note "agy's guide puts global skills in ~/.gemini/config/skills/ and workspace skills in .agents/skills/ (run the antigravity step first for agy-strings.txt)"
+  result
+}
+
+# ---------------------------------------------------------------------------
 untouched() {
   say "Untouched — your real runtime configs and Mirror homes"
   [ -f "$D/real-baseline.txt" ] || { echo "No baseline; run setup first."; exit 2; }
@@ -530,7 +568,8 @@ case "${1:-}" in
   codex) codex_step ;;
   antigravity) antigravity_step ;;
   grok) grok_step ;;
+  extensions) extensions_step ;;
   untouched) untouched ;;
   clean) clean ;;
-  *) sed -n '2,24p' "$SELF" | sed 's/^# \{0,1\}//'; exit 2 ;;
+  *) sed -n '2,25p' "$SELF" | sed 's/^# \{0,1\}//'; exit 2 ;;
 esac
