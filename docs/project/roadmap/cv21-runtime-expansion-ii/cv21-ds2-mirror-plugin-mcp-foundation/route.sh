@@ -10,6 +10,7 @@
 #   bash route.sh static        TS5 validation, the entry as rendered and as written,
 #                               the inject forms, the scripted journey (no model call)
 #   bash route.sh live-claude   the Navigator's session (likewise live-codex, live-grok)
+#   bash route.sh mcp-codex     reopen Codex, no prompt, to read its own /mcp view
 #   bash route.sh check         what the three sessions logged, and what started
 #   bash route.sh verify        recorded versions vs installed
 #   bash route.sh untouched     real runtime configs vs the baseline; scratch-session search
@@ -649,6 +650,26 @@ live_grok() {
   cd "$P" && exec "${SESSION_ENV[@]}" HOME="$GH" grok
 }
 
+# Codex again, in the same scratch home, to read its own MCP view: no prompt, no
+# model turn, and the live session's record is left as it is.
+mcp_codex() {
+  need_install
+  say "Codex's own view of its MCP servers (no model turn)"
+  local CX="$D/codex-live" PERSON="$D/codex-live-person"
+  [ -f "$CX/auth.json" ] || { echo "No Codex login in the scratch home yet; run: bash $SELF live-codex"; exit 2; }
+  session_env
+  preflight "$PERSON"
+  cat <<EOF
+
+  In Codex, send no prompt. Type:   /mcp verbose
+  Expect: mirror-mind listed as started, with its 7 tools: mirror_context, list_journeys,
+  journey_status, search_memories, list_conversations, recall_conversation, detect_persona.
+  (ds2-env-probe is listed too, with no tools.) Then quit Codex.
+EOF
+  [ "${DS2_DRY:-0}" = 1 ] && { note "DS2_DRY=1: prepared, session not started"; return 0; }
+  cd "$D/project-codex" && exec "${SESSION_ENV[@]}" HOME="$PERSON" CODEX_HOME="$CX" codex
+}
+
 # What a live session left in the scratch Mirror home, and what started.
 check_step() {
   local rt="${1:-}"
@@ -717,8 +738,21 @@ check_step() {
     claude|codex)
       local TOOLS
       TOOLS="$(sqlite3 "$MHOME/memory.db" "SELECT content FROM messages WHERE conversation_id = '$CONV' AND role = 'assistant' ORDER BY created_at DESC, rowid DESC LIMIT 1" | grep -oE 'mirror_context|list_journeys|journey_status|search_memories|list_conversations|recall_conversation|detect_persona' | sort -u | wc -l | tr -d ' ')"
-      [ "$TOOLS" = "7" ] && ok "the MCP server: turn 2's reply names all 7 of its tools" \
-        || bad "the MCP server: turn 2's reply names $TOOLS of its 7 tools (read the reply above)"
+      if [ "$TOOLS" = "7" ]; then
+        ok "the MCP server: turn 2's reply names all 7 of its tools"
+      elif [ "$rt" = codex ]; then
+        # Codex lazy-loads a plugin's MCP tools behind `tool_search` (its own
+        # instructions say so, in the rollout), and the probe forbids tools,
+        # so the model cannot name them. Codex's log and its /mcp view can.
+        note "turn 2's reply names $TOOLS of the 7 tools: Codex keeps a plugin's MCP tools behind tool_search, which the probe forbids"
+        local HANDSHAKE
+        HANDSHAKE="$(sqlite3 "$D/codex-live/logs_2.sqlite" "SELECT count(*) FROM logs WHERE ts >= strftime('%s','${START%Z}') AND feedback_log_body LIKE '%server_name=mirror-mind%' AND feedback_log_body LIKE '%Service initialized as client%'" 2>/dev/null || echo 0)"
+        [ "${HANDSHAKE:-0}" -gt 0 ] && ok "Codex started the server and completed its handshake (Codex's own log)" \
+          || bad "Codex's log shows no handshake with mirror-mind since $START"
+        look "to see its 7 tools without a model turn: bash $SELF mcp-codex, then type /mcp verbose"
+      else
+        bad "the MCP server: turn 2's reply names $TOOLS of its 7 tools (read the reply above)"
+      fi
       ;;
     grok)
       local LOG="$D/grok-live/.grok/logs/mcp/mirror-mind.stderr.log"
@@ -734,7 +768,11 @@ check_step() {
     else note "the env probe recorded nothing (Codex did not start it)"; fi
     local ENDED
     ENDED="$(sqlite3 "$MHOME/memory.db" "SELECT ifnull(ended_at, 'open') FROM conversations WHERE id = '$CONV'")"
-    note "Codex's conversation at exit: $ENDED (a finding, DS4's: DS12.TS2 L8)"
+    if [ "$ENDED" = open ]; then
+      note "Codex's conversation: still open. If Codex is still running, quit it and run this check again (DS12.TS2 L8 saw it stay open)"
+    else
+      ok "Codex's SessionEnd closed the conversation at exit: $ENDED (DS12.TS2 L8 saw it stay open)"
+    fi
   fi
   result
 }
@@ -800,6 +838,7 @@ case "${1:-}" in
   live-claude) live_claude ;;
   live-codex) live_codex ;;
   live-grok) live_grok ;;
+  mcp-codex) mcp_codex ;;
   check) check_step "${2:-}" ;;
   untouched) untouched ;;
   clean) clean ;;

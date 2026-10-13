@@ -108,13 +108,17 @@ failed.
      tools it can see.
    - **Expected:**
      - Mirror Mode answers in each runtime.
-     - On Claude Code and Codex, turn 2 lists the server's 7 tools.
+     - On Claude Code, turn 2 lists the server's 7 tools. On Codex the model may say
+       NONE: Codex keeps a plugin's MCP tools behind `tool_search`, which the probe
+       forbids. There, `check codex` reads the handshake from Codex's log, and
+       `bash route.sh mcp-codex`, then `/mcp verbose`, shows the 7 tools with no model
+       turn.
      - No "MCP startup failed" warning on any runtime.
    - **Pass:** both turns complete, and no runtime shows an MCP start failure.
    - **Fail:** a third turn was needed, the server failed to start, or a step needed a
      login or a change outside the scratch config.
-3. **`bash route.sh check <runtime>`**: reads the scratch Mirror home and the runtime's
-   logs. For Codex it also prints the variable names a scratch-only probe server
+3. **`bash route.sh check <runtime>`**, after the runtime has quit: reads the scratch
+   Mirror home and the runtime's logs. For Codex it also prints the variable names a scratch-only probe server
    (`ds2-env-probe`, no tools) received, which shows what Codex hands an MCP server.
    - **Expected:** one conversation per runtime, labelled `claude_code`, `codex`, and
      `grok_build`, and its runtime session labelled the same. Each holds four messages:
@@ -225,5 +229,35 @@ config): passed, `route.sh check claude` 8/0.**
   built-in `plugin:adobe-for-creativity`, not Mirror.
 - No reply skipped for want of a prompt (the async race did not show), and no hook
   recorded a failure.
+
+**Codex (live step `DS2-5qcy0r`, 2026-10-13T20:53:34Z; the turns carried `DS2-mczk01`):
+logging, labels, closing, and the server's start passed; the seven tools are read in
+Codex's own view, pending the Navigator's look.**
+
+- Codex 0.162.1 asked once to trust the plugin's five hooks. Its review showed each
+  command quoted, SessionStart 300 s and inject 30 s (read as seconds, as TS5 set them),
+  Stop async 600 s, and SessionEnd 1 s, Codex's default for a handler with no timeout.
+- One conversation, `codex` on the conversation and the runtime session: the Mirror
+  question without its `$mirror-mind:mm:mirror` form, the `◇ financial` answer after
+  `mirror mirror load … --persona financial`, the probe, and its reply, each reply with
+  its prompt's turn id. No skipped reply, no hook failure. The Operating Instructions
+  reached the model as a developer message (D13), as in DS12.TS2 L4.
+- SessionEnd closed the conversation at exit (20:59:40.390Z, inside Codex's 1 s) and the
+  backup ran (20:59:40.476Z): DS12.TS2 L8's open conversation did not recur. A check run
+  while Codex was still open had read it as open; `check` now says so.
+- The MCP server started. Codex's log records `mirror-mind 0.32.1` initialized as a
+  client at session start (20:54:34Z), with its tools capability, and shut down at exit.
+  DS12.TS2 L6 had "MCP startup failed: No such file or directory".
+- The model answered NONE to the probe because Codex keeps a plugin's MCP tools behind
+  `tool_search`: the session's instructions say an installed app's MCP tools "can be
+  lazy-loaded through the `tool_search` tool", no `mirror-mind` tool name appears in the
+  rollout, and the probe forbade tools. **Criterion changed after the result, for the
+  Navigator to accept or refuse:** on Codex, "offers its 7 tools" is read as Codex's log
+  handshake plus its `/mcp verbose` view (`route.sh mcp-codex`, no model turn), rather than
+  the model naming them.
+- Codex handed an MCP server `HOME`, `LANG`, `LOGNAME`, `PATH`, `SHELL`, `TERM`, `TMPDIR`,
+  `USER`, and `__CF_USER_TEXT_ENCODING`: no `MIRROR_*` variable. The server found `mirror`
+  through the `PATH` and its home through the person's config file, the case US6's
+  locator and the route's `person_home` were built for.
 
 The remaining sessions are recorded at Validation.
