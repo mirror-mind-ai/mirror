@@ -299,9 +299,11 @@ never the journey briefing used as the embedding query.
 
 ### The MCP server (CV22.DS9.TS2)
 
-The Claude plugin manifest launches `${CLAUDE_PLUGIN_ROOT}/mcp/launch.sh`,
-not an engine. The launcher `exec`s the TypeScript server, so the entry point
-can change without editing a plugin installed inside a runtime.
+The plugin manifest's MCP entry is `/bin/sh -c <locator>`, not an engine and
+not a file of the plugin's: the locator finds the installed `mirror` and `node`
+(`MIRROR_BIN`, the `PATH`, the global bin directories; `MIRROR_NODE` first for
+node) and `exec`s `mirror mcp` (CV21.DS2.US6; it named
+`${CLAUDE_PLUGIN_ROOT}/mcp/launch.sh` until then, which Codex never expanded).
 
 The server needs `node` (â¥ 24) on the `PATH` the MCP client spawns it with,
 and a configured database (`.env` in the repository, or
@@ -322,9 +324,9 @@ read-only at the driver level.
 | `MIRROR_MCP_EMBED_RATE_WINDOW_MINUTES` | `10` | The sliding window. |
 | `MIRROR_MCP_DAILY_USD_CEILING` | unset | Trailing-24h ceiling on attributed MCP spend. Unset means no ceiling. |
 
-Set these where the launcher will find them â the repository `.env`, which
-`launch.sh` passes to node â or in the environment the MCP client is started
-with. **A malformed value fails the launch** with the variable named on stderr,
+Set these where `mirror mcp` reads its configuration: the environment the MCP
+client starts it with, then a checkout's `.env`, then the user's config file,
+`~/.config/mirror/env` (CV22.DS10.US3, D3). **A malformed value fails the launch** with the variable named on stderr,
 rather than silently serving unguarded; the client shows the server as failed
 and its MCP log carries the reason.
 

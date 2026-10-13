@@ -56,7 +56,7 @@ export const REQUIRED_FILES: readonly string[] = [
   ".pi/skills/mm-mirror/SKILL.md",
   ".claude/hooks/session-start.sh",
   ".gemini/hooks/session-start.sh",
-  "plugins/mirror-mind/mcp/launch.sh",
+  "plugins/mirror-mind/hooks/hooks.json",
   "scripts/codex-hooks/session-start.sh",
   "scripts/codex-mirror.sh",
 ];

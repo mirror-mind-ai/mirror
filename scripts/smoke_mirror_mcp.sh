@@ -4,14 +4,15 @@ set -euo pipefail
 # CV21.E2.S2 — Mirror MCP server stdio smoke test.
 #
 # Drives a real stdio JSON-RPC round-trip against the MCP server the packaged
-# plugin launches (`plugins/mirror-mind/mcp/launch.sh`):
+# plugin's manifest entry starts (run as written by `ts/smoke/mcp_entry.ts`):
 #   initialize -> notifications/initialized -> tools/list -> tools/call,
 # asserts the protocol responses, and proves the run leaks nothing into any
 # production database.
 #
-# The server is TypeScript since CV22.DS9, and the launcher lost its Python
-# branch at CV22.DS10.TS5 plateau 1. Since CV22.DS10.US3 plateau 3 the launcher
-# finds the installed `mirror` bin rather than a tree, so this smoke puts THIS
+# The server is TypeScript since CV22.DS9. Since CV22.DS10.US3 plateau 3 the
+# plugin finds the installed `mirror` bin rather than a tree -- since
+# CV21.DS2.US6 through the manifest's inline locator, which replaced
+# `mcp/launch.sh` -- so this smoke puts THIS
 # checkout's `bin/mirror.js` on a scratch PATH the way npm's global bin links
 # it -- a machine with no `npm link` (CI) must not fail here, and a machine
 # with one must not pass on the linked copy.
@@ -53,7 +54,7 @@ printf '%s\n' \
   '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
   '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
   '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"list_journeys","arguments":{}}}' \
-  | bash "$REPO_ROOT/plugins/mirror-mind/mcp/launch.sh" 2>/dev/null > "$SANDBOX/out.jsonl"
+  | node --no-warnings "$REPO_ROOT/ts/smoke/mcp_entry.ts" "$REPO_ROOT/plugins/mirror-mind" 2>/dev/null > "$SANDBOX/out.jsonl"
 
 # Assert the protocol responses with a strict parser: every line must be JSON.
 node - "$SANDBOX/out.jsonl" <<'JS' || fail "protocol assertions"

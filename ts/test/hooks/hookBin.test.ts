@@ -274,62 +274,6 @@ describe("the plugin's wrappers, copied out of the tree (the TS5 hook window)", 
   });
 });
 
-describe("the MCP launcher, copied out of the tree", () => {
-  test("starts the server through the mirror bin it finds", () => {
-    const root = scratch();
-    const pkg = packageCopy(root);
-    const bin = scratchBin(root, pkg);
-    symlinkSync(join(pkg, "bin/mirror.js"), join(bin, "mirror"));
-    const launcher = join(root, "claude-cache", "plugins", "mirror-mind", "mcp", "launch.sh");
-    mkdirSync(join(launcher, ".."), { recursive: true });
-    cpSync(join(REPO_ROOT, "plugins/mirror-mind/mcp/launch.sh"), launcher);
-    const mirrorHome = join(root, "mirror-home");
-    mkdirSync(mirrorHome);
-
-    const result = spawnSync("bash", [launcher], {
-      cwd: root,
-      env: {
-        HOME: join(root, "home"),
-        PATH: `${bin}:/usr/bin:/bin`,
-        MIRROR_HOME: mirrorHome,
-        MEMORY_ENV: "production",
-      },
-      input: `${JSON.stringify({
-        jsonrpc: "2.0",
-        id: 1,
-        method: "initialize",
-        params: {
-          protocolVersion: "2025-06-18",
-          capabilities: {},
-          clientInfo: { name: "t", version: "0" },
-        },
-      })}\n`,
-      encoding: "utf8",
-      timeout: 60_000,
-    });
-
-    assert.equal(result.status, 0, result.stderr);
-    assert.equal(result.stderr, "", "stderr is the client's log and stays empty");
-    const reply = JSON.parse(result.stdout.split("\n")[0] ?? "{}") as {
-      result?: { serverInfo?: { name?: string } };
-    };
-    assert.equal(reply.result?.serverInfo?.name, "mirror-mind");
-  });
-
-  test("with no mirror anywhere: says so on stderr and exits 1", {
-    skip: globalBinHolds("mirror") && "a global mirror is installed on this machine",
-  }, () => {
-    const root = scratch();
-    const launcher = join(root, "launch.sh");
-    cpSync(join(REPO_ROOT, "plugins/mirror-mind/mcp/launch.sh"), launcher);
-    const result = spawnSync("bash", [launcher], {
-      cwd: root,
-      env: { HOME: join(root, "home"), PATH: "/usr/bin:/bin" },
-      input: "",
-      encoding: "utf8",
-      timeout: 30_000,
-    });
-    assert.equal(result.status, 1);
-    assert.match(result.stderr, /`mirror` not found on PATH; the MCP server cannot start/);
-  });
-});
+// The MCP launcher's cases, copied out of the tree, moved to
+// `ts/test/mcp/mcpEntry.test.ts`: the manifest's entry is run as written
+// there, from a cwd that is not the tree, with the same bin search.

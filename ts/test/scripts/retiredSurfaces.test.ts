@@ -375,7 +375,6 @@ describe("the live python-core-mentions row (plateau 4, decision D12)", () => {
       ".claude/hooks/",
       ".gemini/hooks/",
       "plugins/mirror-mind/hooks/",
-      "plugins/mirror-mind/mcp/launch.sh",
       "scripts/codex-mirror.sh",
       "scripts/codex-hooks/",
       ".claude/settings.json",

@@ -615,35 +615,9 @@ describe("the Codex wrapper", () => {
   });
 });
 
-describe("the MCP launcher", () => {
-  const body = readFileSync(join(REPO_ROOT, "plugins/mirror-mind/mcp/launch.sh"), "utf8");
-  const code = body
-    .split("\n")
-    .filter((line) => !line.trimStart().startsWith("#"))
-    .join("\n");
-
-  test("has no Python branch and no engine gate left", () => {
-    assert.doesNotMatch(code, /exec python3/);
-    assert.doesNotMatch(code, /MIRROR_TS_MCP[^ ]*=/);
-  });
-
-  test("starts the server through the installed `mirror` bin, found as the wrappers find theirs", () => {
-    // The plugin's launcher has the plugin's problem: no relative path to the
-    // tree. Same search as the bin-form wrappers, same variable, same places.
-    assert.doesNotMatch(code, /BASH_SOURCE|\.\.\/|ts\/src\/mcp\/main\.ts|--env-file/);
-    assert.match(code, /exec "\$NODE" "\$ENTRY" mcp$/m);
-    const wrapper = readFileSync(
-      join(REPO_ROOT, "plugins/mirror-mind/hooks/session-start.sh"),
-      "utf8",
-    );
-    const binDirs = (text: string) => text.match(/^for candidate in (.*); do$/gm) ?? [];
-    assert.deepEqual(
-      binDirs(code),
-      binDirs(wrapper),
-      "the launcher and the wrappers search the same places",
-    );
-  });
-});
+// The MCP launcher's cases moved to `ts/test/mcp/mcpEntry.test.ts` with the
+// launcher itself: since CV21.DS2.US6 the manifest carries its search inline,
+// and the entry's text is held equal to the wrappers' search there.
 
 describe("the Claude allowlist", () => {
   const allow = (

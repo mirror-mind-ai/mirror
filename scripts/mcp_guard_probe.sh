@@ -20,7 +20,8 @@
 set -uo pipefail
 cd "$(git rev-parse --show-toplevel)"
 
-LAUNCHER="plugins/mirror-mind/mcp/launch.sh"
+# The server as the plugin's manifest starts it (CV21.DS2.US6), run as written.
+LAUNCHER=(node --no-warnings ts/smoke/mcp_entry.ts plugins/mirror-mind)
 SOURCE="${1:-}"
 if [ -z "$SOURCE" ]; then
   # The production database, resolved the way the front door resolves it.
@@ -47,7 +48,7 @@ CONVERSATION="$(sqlite3 "$COPY" 'SELECT id FROM conversations ORDER BY started_a
 
 launch() {  # launch <env-assignments...> -- reads one JSON-RPC line on stdin
   env -u NODE_OPTIONS -u MIRROR_MCP_VERSION -u MIRROR_TS_MCP \
-    DB_PATH="$COPY" MEMORY_ENV=production "$@" "$LAUNCHER" 2>>"$WORK/stderr.log"
+    DB_PATH="$COPY" MEMORY_ENV=production "$@" "${LAUNCHER[@]}" 2>>"$WORK/stderr.log"
 }
 
 # A SUCCESSFUL payload is memory, identity, or transcript content, so it is reported by

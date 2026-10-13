@@ -624,8 +624,8 @@ runtime: the Python engine was deleted in CV22.DS10.TS5. `runtime status`
 reports the Node version; the front door refuses to run on Node below 24 with
 an actionable message.
 
-**Supported today: POSIX (macOS, Linux).** The hook wrappers, the MCP launcher,
-and the Codex wrapper are POSIX shell scripts, CI runs on Linux, and the
+**Supported today: POSIX (macOS, Linux).** The hook wrappers, the plugin's MCP
+entry (a `/bin/sh` command), and the Codex wrapper are POSIX shell, CI runs on Linux, and the
 data-at-rest posture below is POSIX file modes. **There is no Windows product.**
 The PowerShell installer and the Windows Frame were retired by CV22.DS10.US3
 (decision D4): they installed and called the Python engine, and they still do at
@@ -731,14 +731,17 @@ to the homes root (`~/.mirror-minds`).
 | `MIRROR_SESSION_ID` | (unset) | Session id for CLIs called without `--session-id`: the conversation logger's fallback when no hook payload is present, and a named session for Builder lifecycle commands, which otherwise require `--journey` and never guess one. Do not set it in a shared `.env`: every window would then name the same session, and a Builder command without `--journey` would follow whichever window loaded last. Rarely set by humans. |
 | `MIRROR_WELCOME` | (unset) | Set to `off`, `0`, `false`, or `no` to suppress the welcome card emitted by `mirror welcome`. See `docs/product/specs/welcome/index.md`. |
 | `MIRROR_TS_MCP_GUARDS` | (unset) | Set to `0` to remove the MCP wallet and abuse guards (rate limit, spend ceiling, argument caps). See [Configuration](docs/reference/configuration.md#mcp-wallet-and-abuse-guards-cv22ds9ts1). |
-| `MIRROR_NODE` | (unset) | The `node` binary the hook wrappers and the plugin's MCP launcher run, when the runtime's `PATH` does not hold one (a GUI launch). Searched after it: `PATH`, the directory the Mirror entry was found in, `~/.nvm/current/bin`, `/opt/homebrew/bin`, `/usr/local/bin`. |
-| `MIRROR_BIN` | (unset) | The directory holding `mirror` and `mirror-hook` (`$(npm prefix -g)/bin`), for the Claude plugin's hook wrappers and MCP launcher, which live in Claude Code's cache and cannot reach the tree by a relative path. Searched after it: `PATH`, `~/.nvm/current/bin`, `/opt/homebrew/bin`, `/usr/local/bin`. Same trust class as `MIRROR_NODE`: whoever sets it chooses what runs. |
+| `MIRROR_NODE` | (unset) | The `node` binary the hook wrappers and the plugin's MCP entry run, when the runtime's `PATH` does not hold one (a GUI launch). Searched after it: `PATH`, the directory the Mirror entry was found in, `~/.nvm/current/bin`, `/opt/homebrew/bin`, `/usr/local/bin`. |
+| `MIRROR_BIN` | (unset) | The directory holding `mirror` and `mirror-hook` (`$(npm prefix -g)/bin`), for the plugin's hook wrappers and MCP entry, which run from a runtime's plugin cache and cannot reach the tree by a relative path. Searched after it: `PATH`, `~/.nvm/current/bin`, `/opt/homebrew/bin`, `/usr/local/bin`. Same trust class as `MIRROR_NODE`: whoever sets it chooses what runs. |
 
-The plugin manifest launches `${CLAUDE_PLUGIN_ROOT}/mcp/launch.sh`, which
-finds the installed `mirror` (as above) and `exec`s `mirror mcp`, so the entry
-point can change without editing a plugin installed inside a runtime. A
-launcher that finds neither `mirror` nor `node` says so on stderr, the MCP
-client's log, and exits 1. The `MIRROR_TS_*` revert variables of the
+The plugin manifest's MCP entry is `/bin/sh -c <locator>`: it finds the
+installed `mirror` and `node` (as above) and `exec`s `mirror mcp`. It names no
+file of the plugin's and no `${CLAUDE_PLUGIN_ROOT}`, which Codex does not
+expand in an MCP command, so Claude Code, Codex, and Grok start it as written
+(CV21.DS2.US6). An entry that finds neither `mirror` nor `node` says so in one
+line on stderr, the MCP client's log, and exits 1. Codex copies a plugin into
+its cache at a version: a Codex user re-installs the plugin to receive a
+changed entry, where Claude Code's `@skills-dir` link reads it in place. The `MIRROR_TS_*` revert variables of the
 migration, `MIRROR_TS_MCP` among them, are inert since CV22.DS10.TS5: nothing
 reads them, and `runtime diagnose` names any still set.
 

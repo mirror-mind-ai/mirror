@@ -119,12 +119,12 @@ echo "Interface label: $INTERFACE"
 [ "$INTERFACE" = "claude_code" ] || fail "interface label is not claude_code"
 echo "✓ the installed plugin's hooks reached the configured home through mirror-hook"
 
-# --- 5. the MCP launcher, from the plugin copy ------------------------------
+# --- 5. the MCP entry, as the plugin copy's manifest states it --------------
 INIT_REPLY="$(printf '%s\n' \
   '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"plugin-smoke","version":"0"}}}' \
-  | bash "$PLUGIN_DIR/mcp/launch.sh" 2>"$SANDBOX/mcp.err" | head -1)"
+  | node --no-warnings "$REPO_ROOT/ts/smoke/mcp_entry.ts" "$PLUGIN_DIR" 2>"$SANDBOX/mcp.err" | head -1)"
 case "$INIT_REPLY" in
-  *'"serverInfo"'*'"mirror-mind"'*) echo "✓ the MCP launcher started the server through the mirror bin" ;;
+  *'"serverInfo"'*'"mirror-mind"'*) echo "✓ the manifest's MCP entry started the server through the mirror bin it found" ;;
   *) fail "MCP initialize did not answer: $INIT_REPLY $(cat "$SANDBOX/mcp.err")" ;;
 esac
 [ ! -s "$SANDBOX/mcp.err" ] || fail "the MCP server wrote to stderr: $(cat "$SANDBOX/mcp.err")"

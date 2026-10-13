@@ -59,17 +59,20 @@ after(() => {
 });
 
 describe("manifest", () => {
-  test("declares the launcher, never an engine", () => {
-    // DS9 decision D5: the manifest points at the plugin's own launcher so the
-    // engine can be reverted without editing a plugin installed inside
-    // someone's runtime. TS5 removes that launcher's Python branch; US3
-    // repoints it at the npm entry. Either way the manifest does not name an
-    // interpreter, and must not start to.
+  test("declares the locator that starts `mirror mcp`, never an engine or a plugin file", () => {
+    // CV21.DS2.US6: the manifest used to point at the plugin's own launcher,
+    // `${CLAUDE_PLUGIN_ROOT}/mcp/launch.sh`, which Codex never expanded in an
+    // MCP command (DS12.TS2 L6). The entry is now the launcher's search,
+    // inline, run by /bin/sh; its own cases are in `mcpEntry.test.ts`. What
+    // holds from DS9's D5 is that the manifest names no interpreter, and must
+    // not start to.
     const manifest = buildManifest("1.2.3") as Record<string, Record<string, unknown>>;
-    const command = (manifest.mcpServers?.["mirror-mind"] as { command: string }).command;
+    const entry = manifest.mcpServers?.["mirror-mind"] as { command: string; args: string[] };
 
-    // biome-ignore lint/suspicious/noTemplateCurlyInString: Claude expands this at load time, not JS
-    assert.equal(command, "${CLAUDE_PLUGIN_ROOT}/mcp/launch.sh");
+    assert.equal(entry.command, "/bin/sh");
+    assert.equal(entry.args[0], "-c");
+    assert.match(entry.args[1] ?? "", /exec "\$mmnode" "\$mmbin" mcp$/);
+    assert.ok(!JSON.stringify(manifest).includes("CLAUDE_PLUGIN_ROOT"));
     assert.ok(!JSON.stringify(manifest).includes("python"));
   });
 

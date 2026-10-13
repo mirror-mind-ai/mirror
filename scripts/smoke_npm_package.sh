@@ -238,11 +238,11 @@ mkdir -p "$WORK/project"
   "$(rows "SELECT group_concat(c.interface || '|' || m.role, ',') FROM messages m JOIN conversations c ON c.id = m.conversation_id WHERE m.content IN ('Hello from the installed Codex wrapper','Codex answered from the package') ORDER BY m.created_at")" \
   "codex|user,codex|assistant"
 
-say "11. the MCP server, through the plugin's launcher and through mirror mcp"
+say "11. the MCP server, through the plugin's manifest entry and through mirror mcp"
 MCP_INIT='{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"npm-smoke","version":"0"}}}'
-LAUNCH_REPLY="$(printf '%s\n' "$MCP_INIT" | bash "$CLAUDE_PLUGIN/mcp/launch.sh" 2>"$WORK/mcp-launch.err" | head -1)"
-contains "the installed plugin's launcher started the server" "$LAUNCH_REPLY" '"name": "mirror-mind"'
-check "the launcher's server wrote nothing to stderr" "$(wc -c <"$WORK/mcp-launch.err" | tr -d ' ')" "0"
+LAUNCH_REPLY="$(printf '%s\n' "$MCP_INIT" | node --no-warnings "$ROOT_DIR/ts/smoke/mcp_entry.ts" "$CLAUDE_PLUGIN" 2>"$WORK/mcp-launch.err" | head -1)"
+contains "the installed plugin's manifest entry started the server" "$LAUNCH_REPLY" '"name": "mirror-mind"'
+check "the entry's server wrote nothing to stderr" "$(wc -c <"$WORK/mcp-launch.err" | tr -d ' ')" "0"
 DIRECT_REPLY="$(printf '%s\n' "$MCP_INIT" | mirror mcp 2>"$WORK/mcp-direct.err" | head -1)"
 contains "mirror mcp answers initialize" "$DIRECT_REPLY" '"name": "mirror-mind"'
 check "mirror mcp wrote nothing to stderr" "$(wc -c <"$WORK/mcp-direct.err" | tr -d ' ')" "0"

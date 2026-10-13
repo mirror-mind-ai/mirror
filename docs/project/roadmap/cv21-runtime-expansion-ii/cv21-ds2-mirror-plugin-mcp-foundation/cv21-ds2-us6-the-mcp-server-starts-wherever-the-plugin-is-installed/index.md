@@ -2,7 +2,7 @@
 
 # CV21.DS2.US6 — The MCP server starts wherever the plugin is installed
 
-**Status:** 🟢 In Progress
+**Status:** ✅ Done
 **Type:** User Story
 **Delivery Story:** CV21.DS2 — Mirror Plugin & MCP Foundation
 
@@ -92,6 +92,34 @@ fallback directory, so its proof is the unit test, on CI.
   candidate.
 - Grok's `inspect --json` lists the server under `mcpServers` and reports
   `provides.mcpServers: 0` for the plugin at the same time. Grok's, noted for DS10.
+- `docs/reference/configuration.md` holds 23 double-encoded em dashes (`â€”`), from
+  `ccf8b1cc`. Only the two paragraphs this story rewrote were touched; a Change Request
+  candidate.
+
+## The Implementation
+
+- `ts/src/guards/claudePlugin.ts`: `MCP_LOCATOR` and `MCP_ENTRY`, with
+  `GLOBAL_BIN_DIRS` shared with the wrappers' search; `buildManifest` emits the entry.
+  The generated locator is byte-identical to the one the spike measured.
+- `plugins/mirror-mind/mcp/launch.sh` and `ts/test/mcp/launcher.test.ts` retired. The
+  launcher's cases moved to `ts/test/mcp/mcpEntry.test.ts`, run against the entry as
+  written.
+- `ts/smoke/mcp_entry.ts` runs a plugin's entry exactly as its manifest states it. The
+  three smokes that ran the launcher (`smoke_claude_plugin.sh`, `smoke_npm_package.sh`,
+  `smoke_mirror_mcp.sh`) and `mcp_guard_probe.sh` run it through that.
+- REFERENCE, `docs/reference/configuration.md`, the runtime-interface spec, and a
+  decision record.
+
+## Evidence Of The Implementation
+
+| # | Finding | How it was measured | Result |
+|---|---------|---------------------|--------|
+| 9 | The entry's text: `/bin/sh -c <locator>`; no `${…}`, positional parameter, or backtick; variables `HOME`, `MIRROR_BIN`, `MIRROR_NODE`, `mmbin`, `mmdir`, `mmnode` and no others; POSIX `sh` parses it; its search directories equal the wrappers' | `node --test ts/test/mcp/mcpEntry.test.ts` | ✓ |
+| 10 | Run as written: starts from a scratch bin on the PATH, from a GUI-launch PATH with `MIRROR_BIN`, with `MIRROR_NODE` outranking the PATH; a `.env` beside it is not read | the same | ✓ 9 pass. The two "nothing anywhere" cases skip on a machine with a global install, and run on CI |
+| 11 | The installed package's plugin starts the server through its manifest entry, with nothing on stderr | `bash scripts/smoke_npm_package.sh` | ✓ 68 pass, 0 fail |
+| 12 | The stdio round-trip through the entry, and no smoke data in a production database | `bash scripts/smoke_mirror_mcp.sh` | ✓ 7 tools; 2 databases checked |
+| 13 | The plugin smoke's MCP step passes through the entry | `bash scripts/smoke_claude_plugin.sh` | ✓ step 5. Step 6 stops on a machine with a global `mirror-hook`, as CR123 and CR128 record; not this story's |
+| 14 | The whole suite | `npm test` | ✓ 3150 pass, 0 fail, 3 skipped |
 
 ## Validation
 

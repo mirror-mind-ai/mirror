@@ -67,13 +67,63 @@ export function readVersion(repoRoot: string): string {
 }
 
 /**
+ * The directories the MCP entry and the plugin's hook wrappers search for
+ * `mirror` and `node` when the PATH does not hold them: a GUI launch leaves
+ * the npm global bin off it. One list, so `mcpEntry.test.ts` can hold the
+ * entry's search equal to the wrappers' (`generate_hook_wrappers.sh`).
+ */
+export const GLOBAL_BIN_DIRS = ['"$HOME/.nvm/current/bin"', "/opt/homebrew/bin", "/usr/local/bin"];
+
+/**
+ * The MCP entry's locator (CV21.DS2.US6).
+ *
+ * The manifest used to name `${CLAUDE_PLUGIN_ROOT}/mcp/launch.sh`. Claude Code
+ * expands that variable; Codex does not expand it in an MCP command (DS12.TS2
+ * L6), so the server never started there. The locator is the launcher's
+ * search, inline: `MIRROR_BIN`, the PATH, then the global bin directories for
+ * `mirror`; `MIRROR_NODE`, the PATH, the directory `mirror` was found in, then
+ * the same directories for `node`. A client whose PATH holds neither (a GUI
+ * launch) still starts the server, and one with no `mirror` anywhere gets one
+ * stderr line naming the install step, and exit 1.
+ *
+ * Written for what three runtimes do to the string (the US6 spike):
+ *
+ *   * POSIX `sh`: `/bin/sh` is dash on Linux;
+ *   * no `${...}`: Claude Code expands that form in MCP configuration, and a
+ *     runtime that did so with an unset name would blank it;
+ *   * no positional parameter (`$1`, `$@`, ...) and no backtick, for the same
+ *     reason, and because the text travels through two JSON encoders;
+ *   * variables named `mmbin`, `mmnode`, `mmdir`: Grok substitutes SET
+ *     environment variables by name inside MCP args at load time (`$HOME`
+ *     became the path), so a script variable with a name a person exports
+ *     would be replaced before the shell ever saw it.
+ */
+export const MCP_LOCATOR = [
+  'mmbin=""',
+  '[ -n "$MIRROR_BIN" ] && [ -x "$MIRROR_BIN/mirror" ] && mmbin="$MIRROR_BIN/mirror"',
+  '[ -n "$mmbin" ] || mmbin="$(command -v mirror 2>/dev/null)"',
+  `for mmdir in ${GLOBAL_BIN_DIRS.join(" ")}; do [ -n "$mmbin" ] && break; [ -x "$mmdir/mirror" ] && mmbin="$mmdir/mirror"; done`,
+  '[ -n "$mmbin" ] || { echo "mirror-mind: mirror not found on PATH; the MCP server cannot start. Install mirror-mind (npm install -g mirror-mind) or set MIRROR_BIN to its bin directory." >&2; exit 1; }',
+  'mmnode="$MIRROR_NODE"',
+  '[ -n "$mmnode" ] && [ -x "$mmnode" ] || mmnode="$(command -v node 2>/dev/null)"',
+  `for mmdir in "$(dirname "$mmbin")" ${GLOBAL_BIN_DIRS.join(" ")}; do [ -n "$mmnode" ] && break; [ -x "$mmdir/node" ] && mmnode="$mmdir/node"; done`,
+  '[ -n "$mmnode" ] || { echo "mirror-mind: node not found on PATH; the MCP server cannot start. Set MIRROR_NODE." >&2; exit 1; }',
+  'exec "$mmnode" "$mmbin" mcp',
+].join("; ");
+
+/** The `mcpServers` entry: the locator, run by the system shell. */
+export const MCP_ENTRY: { readonly command: string; readonly args: readonly string[] } = {
+  command: "/bin/sh",
+  args: ["-c", MCP_LOCATOR],
+};
+
+/**
  * The Claude plugin manifest (minimal; no unsupported keys).
  *
- * Declares the Mirror MCP server so the canonical package carries it. Since
- * CV22.DS9.TS2 the entry is the plugin's own launcher rather than an engine,
- * so reverting never requires editing a plugin installed inside someone's
- * runtime (DS9 decision D5). TS5 removes that launcher's Python branch; US3
- * repoints this at the npm entry point.
+ * Declares the Mirror MCP server so the canonical package carries it. The
+ * entry names no file of the plugin's and no variable a runtime must expand
+ * (`MCP_LOCATOR`): Claude Code, Codex, and Grok render it as written, and
+ * each starts the server from it (CV21.DS2.US6).
  */
 export function buildManifest(version: string): Record<string, unknown> {
   return {
@@ -82,11 +132,7 @@ export function buildManifest(version: string): Record<string, unknown> {
     description: PLUGIN_DESCRIPTION,
     author: { name: PLUGIN_AUTHOR },
     mcpServers: {
-      // The placeholder is Claude Code's, expanded when it loads the plugin. A
-      // JavaScript template would resolve at BUILD time, against this
-      // repository, shipping an absolute path from the release machine.
-      // biome-ignore lint/suspicious/noTemplateCurlyInString: Claude expands this at load time, not JS
-      [PLUGIN_NAME]: { command: "${CLAUDE_PLUGIN_ROOT}/mcp/launch.sh" },
+      [PLUGIN_NAME]: { command: MCP_ENTRY.command, args: [...MCP_ENTRY.args] },
     },
   };
 }
