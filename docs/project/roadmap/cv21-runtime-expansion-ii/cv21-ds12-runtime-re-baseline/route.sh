@@ -14,6 +14,7 @@
 #   bash route.sh extensions    TS5: how a user extension reaches each runtime
 #   bash route.sh live-claude   the Navigator's session, then: bash route.sh check-claude
 #   bash route.sh live-codex    (likewise live-antigravity, live-grok; at most two turns each)
+#   bash route.sh verify        recorded versions vs installed; the static claims re-run
 #   bash route.sh untouched     real runtime configs vs the baseline; canary search
 #   bash route.sh clean         remove the scratch directory (and any login in it)
 #
@@ -568,8 +569,17 @@ process.stdout.write(JSON.stringify(out));
 
 live_prepare() {
   local rt="$1"
-  LIVE="$D/live/$rt"
-  rm -rf "$LIVE" && mkdir -p "$LIVE" "$D/pi-sessions"
+  # A dry run prepares in its own folder; a real run archives the previous capture
+  # instead of deleting it. (The first version deleted it, and a dry check run after
+  # three live sessions wiped their raw captures: the evidence survived only in the
+  # runtimes' own transcripts.)
+  if [ "${DS12_DRY:-0}" = 1 ]; then
+    LIVE="$D/live-dry/$rt"; rm -rf "$LIVE"
+  else
+    LIVE="$D/live/$rt"
+    [ -d "$LIVE" ] && mv "$LIVE" "$LIVE.$(date -u +%Y%m%dT%H%M%SZ)"
+  fi
+  mkdir -p "$LIVE" "$D/pi-sessions"
   LC_ALL=C tr -dc 'a-z0-9' </dev/urandom | head -c 6 >"$LIVE/canary"
   printf '%s\n' "$PROBE_JS" >"$D/live/probe.js"
   date -u +%Y-%m-%dT%H:%M:%SZ >"$LIVE/started"
@@ -586,7 +596,7 @@ probe_cmd() { printf '%s %s %s %s' "$NODE_BIN" "$D/live/probe.js" "$1" "$2"; }
 # Mirror home pinned, an empty Pi sessions dir, and no provider key.
 session_env() {
   SESSION_ENV=(env -u XDG_CONFIG_HOME -u MIRROR_BIN -u MIRROR_NODE -u NODE_OPTIONS -u OPENROUTER_API_KEY
-    MIRROR_USER=ds12 MIRROR_HOME="$MHOME" PI_SESSIONS_DIR="$D/pi-sessions" DS12_LIVE="$D/live"
+    MIRROR_USER=ds12 MIRROR_HOME="$MHOME" PI_SESSIONS_DIR="$D/pi-sessions" DS12_LIVE="$(dirname "$LIVE")"
     PATH="$D/prefix/bin:$REAL_PATH")
 }
 
@@ -658,9 +668,11 @@ live_claude() {
   note "Claude Code runs with a scratch config dir ($CC): none of your settings, skills, or"
   note "plugins load. If it asks you to log in, do; say so when you report back."
   turns_text claude
-  echo; look "Starting Claude Code in $D/project with the plugin copy $CACHE …"
+  local P="$D/project-claude"
+  rm -rf "$P" && mkdir -p "$P"
+  echo; look "Starting Claude Code in $P with the plugin copy $CACHE …"
   dry_stop && return
-  cd "$D/project" && exec "${SESSION_ENV[@]}" claude --plugin-dir "$CACHE" --settings "$LIVE/settings.json"
+  cd "$P" && exec "${SESSION_ENV[@]}" claude --plugin-dir "$CACHE" --settings "$LIVE/settings.json"
 }
 
 live_codex() {
@@ -689,9 +701,11 @@ EOF
   [ -f "$CX/auth.json" ] || note "Codex will ask you to log in: that login is stored in $CX only."
   session_env
   turns_text codex
-  echo; look "Starting Codex in $D/project with CODEX_HOME=$CX …"
+  local P="$D/project-codex"
+  rm -rf "$P" && mkdir -p "$P"
+  echo; look "Starting Codex in $P with CODEX_HOME=$CX …"
   dry_stop && return
-  cd "$D/project" && exec "${SESSION_ENV[@]}" HOME="$D/codex-live-person" CODEX_HOME="$CX" codex
+  cd "$P" && exec "${SESSION_ENV[@]}" HOME="$D/codex-live-person" CODEX_HOME="$CX" codex
 }
 
 live_antigravity() {
@@ -735,15 +749,16 @@ live_grok() {
   "SessionEnd": [{ "hooks": [{ "type": "command", "command": "$(probe_cmd grok SessionEnd)" }] }]
 } }
 EOF
-  cp "$PKG/AGENTS.md" "$D/project/AGENTS.md"
+  local P="$D/project-grok"
+  rm -rf "$P" && mkdir -p "$P" && cp "$PKG/AGENTS.md" "$P/AGENTS.md"
   note "the project has Mirror's AGENTS.md; the Mirror plugin (installed by the static step)"
   note "brings its skills, its hooks, and the MCP server."
   [ -f "$GH/.grok/auth.json" ] || note "Grok will ask you to log in: that login is stored in $GH only."
   session_env
   turns_text grok
-  echo; look "Starting Grok in $D/project with HOME=$GH …"
+  echo; look "Starting Grok in $P with HOME=$GH …"
   dry_stop && return
-  cd "$D/project" && exec "${SESSION_ENV[@]}" HOME="$GH" grok
+  cd "$P" && exec "${SESSION_ENV[@]}" HOME="$GH" grok
 }
 
 # What a live session left: the probe's capture, the scratch Mirror, hooks.log.
@@ -785,6 +800,26 @@ live_check() {
     - anything the runtime asked you to approve or log into
 EOF
   [ "$rt" = "claude" ] && echo "    - whether turn 1 answered in Mirror Mode, and whether the status line read DS12-STATUSLINE-PROBE"
+  result
+}
+
+# ---------------------------------------------------------------------------
+verify() {
+  need_install
+  say "Verify — the versions the findings rest on, against what is installed now"
+  local rec rt version binary measured now drift=0
+  rec="$(dirname "$SELF")/recorded-versions.tsv"
+  while IFS=$'\t' read -r rt version binary measured; do
+    [ "$rt" = "runtime" ] && continue
+    now="$("$rt" --version 2>&1 | head -1)"
+    if [ "$now" = "$version" ]; then ok "$rt: $now, as recorded on $measured ($binary)"
+    else bad "$rt: recorded $version on $measured, installed now $now (re-run: bash $SELF $rt)"; drift=1; fi
+  done <"$rec"
+  [ "$drift" -eq 0 ] && note "no drift: the findings' versions are the installed ones"
+  say "Verify — the cheap static claims, re-run"
+  claude_step >/dev/null 2>&1; codex_step >/dev/null 2>&1
+  antigravity_step >/dev/null 2>&1; grok_step >/dev/null 2>&1
+  look "static steps re-run: see the per-step output with bash $SELF <runtime>"
   result
 }
 
@@ -834,7 +869,8 @@ case "${1:-}" in
   check-codex) live_check codex ;;
   check-antigravity) live_check antigravity ;;
   check-grok) live_check grok ;;
+  verify) verify ;;
   untouched) untouched ;;
   clean) clean ;;
-  *) sed -n '2,27p' "$SELF" | sed 's/^# \{0,1\}//'; exit 2 ;;
+  *) sed -n '2,28p' "$SELF" | sed 's/^# \{0,1\}//'; exit 2 ;;
 esac

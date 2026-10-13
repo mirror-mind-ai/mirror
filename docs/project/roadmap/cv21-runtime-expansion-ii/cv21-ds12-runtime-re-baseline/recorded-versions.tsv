@@ -1,0 +1,5 @@
+runtime	version	binary	measured
+claude	2.1.296 (Claude Code)	~/.local/bin/claude -> ~/.local/share/claude/versions/2.1.296	2026-10-13
+codex	codex-cli 0.162.1	/opt/homebrew/bin/codex -> /opt/homebrew/Caskroom/codex/0.162.1/bin/codex	2026-10-13
+agy	1.3.4	~/.local/bin/agy	2026-10-13
+grok	grok 1.0.52 (0920c8169e27)	~/.grok/bin/grok -> ~/.grok/downloads/grok-1.0.52-macos-aarch64	2026-10-13
