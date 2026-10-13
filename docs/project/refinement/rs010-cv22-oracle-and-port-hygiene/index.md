@@ -73,3 +73,4 @@ evidence stays honest as both cores move.
 - [CR129 — `mirror mcp` with no Mirror home prints a Node stack trace where every other failure is one line](cr129-mirror-mcp-with-no-home-prints-a-stack-trace.md)
 - [CR130 — Double-encoded em dashes in the configuration reference, and nothing that catches them](cr130-double-encoded-em-dashes-in-the-configuration-reference.md)
 - [CR131 — `runtime diagnose` does not say what the plugin's MCP entry would find](cr131-runtime-diagnose-does-not-run-the-mcp-locator.md)
+- [CR132 — `release:promote` pushes with the two-second local git timeout, and stops half-promoted](cr132-release-promote-pushes-with-the-local-two-second-timeout.md)
