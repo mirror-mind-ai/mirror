@@ -2,7 +2,7 @@
 
 # CV21.DS2 — Mirror Plugin & MCP Foundation
 
-**Status:** 🟢 In Progress
+**Status:** ✅ Done
 **Type:** Delivery Story
 **Renamed from:** CV21.E2, in the CV21 Ariad taxonomy migration (2026-10-13). Text
 written before then keeps the codes it was written with; the

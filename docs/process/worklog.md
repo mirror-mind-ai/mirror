@@ -12,6 +12,42 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-10-13 — CV21.DS2 done: the canonical plugin, as it is, on Claude Code, Codex, and Grok
+
+DS2 made the one plugin right for the three runtimes that take it as it is. It ran in
+Delivery Story flow, after a plan reviewed through six persona lenses:
+- **TS5:** hook commands quote the plugin root, so `claude plugin validate` passes with
+  no warnings, where it gave four. Hook timeouts are now the seconds the runtimes read:
+  15000 and 30000 had meant hours.
+- **US6:** the MCP entry is an inline locator with no `${CLAUDE_PLUGIN_ROOT}`, which
+  Codex never expanded. It was chosen by measuring two candidates on all three runtimes:
+  only the locator starts from a GUI-launch PATH.
+- **US7:** the inject hook knows the Mirror skill in all six spellings the runtimes send.
+- **US8:** the shared hooks label each session `claude_code`, `codex`, or `grok_build`.
+  A Mirror turn is logged as its question, and every reply from Stop is logged beside its
+  prompt, by turn id.
+
+The Navigator validated it in isolated live sessions:
+- **Claude Code:** the seven MCP tools named by the model.
+- **Codex:** the server connected in Codex's log and in `/mcp`, and the conversation
+  closed at exit, where DS12 saw it stay open.
+- **Grok:** the server ready with its seven tools in Grok's own view. Grok attaching it
+  to a session is DS10's.
+
+The review changed the reply rule before a line was written: pairing alone would have
+dropped the Mirror answers today's transcript backfill records. Validation found four
+defects in the route itself, each fixed and recorded:
+- the real config file reaching the Claude session;
+- Claude Code's remembered MCP failure;
+- macOS bash 3.2;
+- a static step that could not repeat.
+
+Debt Review paid one defect of DS2's own: a skipped reply had been written where
+`runtime diagnose` counts failures. Proving the fix found Codex's app-server daemon
+still running from a scratch home after `clean`, DS12's included. Both daemons are
+stopped, and `clean` now stops them. CR129–CR131 were captured. The SessionEnd bounds
+(Codex 1 s, Grok 1.5 s) go to DS4 and DS10. Not pushed or released.
+
 ### 2026-10-13 — CV21.DS2.TS4 done: the reference-runtime smoke, closed on evidence; CR128 captured
 
 E2.S4's smoke closed with no code change. Four records carry it:
