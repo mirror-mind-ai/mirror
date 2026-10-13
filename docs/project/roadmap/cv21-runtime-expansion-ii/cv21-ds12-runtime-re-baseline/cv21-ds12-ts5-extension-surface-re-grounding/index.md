@@ -2,7 +2,7 @@
 
 # CV21.DS12.TS5 — Extension surface re-grounding
 
-**Status:** 🟢 In Progress — findings complete, awaiting Validation
+**Status:** ✅ Done
 **Type:** Technical Story (spike)
 **Delivery Story:** CV21.DS12 — Runtime Re-Baseline
 

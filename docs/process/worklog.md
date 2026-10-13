@@ -12,6 +12,36 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-10-13 — CV21.DS12 done: the runtimes re-measured, and CV21 reshaped around what they do
+
+DS12 re-measured CV21's June evidence on the installed runtimes: Claude Code 2.1.296,
+Codex 0.162.1, agy 1.3.4, and Grok Build 1.0.52, each with its binary and date recorded.
+The Driver ran static probes in scratch configs. The Navigator ran four live sessions of
+two turns each, in which canary lines tested whether injected context reached the model.
+
+- **Claude Code** stays L4 through the plugin.
+- **Codex** installs the Claude-format plugin as it is, from a local marketplace. Its
+  hooks inject at session start and on every turn, and the Operating Instructions
+  arrive from the plugin's own hook. It is L4 reachable.
+- **Antigravity** injects at SessionStart and before every model call. June's L3 becomes
+  L4 reachable, through `agy plugin install` for the skills plus a thin native layer.
+  `agy plugin import claude`, the bridge DS1 assumed, finds nothing.
+- **Grok Build** takes the plugin but shows hook context only on screen, so it stays L3.
+
+The decision keeps the canonical plugin as the one package, and DS2 becomes the work
+that makes it right for every runtime that takes it:
+- quoted hook paths;
+- an MCP entry that starts everywhere;
+- every skill form recognized for Mirror Mode;
+- sessions labelled by runtime, with replies logged from Stop.
+
+Further, DS7 must meet a parity bar before DS8 removes Gemini CLI. The core defect the
+sessions exposed, `mirror mirror log` writing into another session's conversation, is
+deferred as evidence on CR100.
+
+The route records two of its own mistakes, both fixed: a dry run leaked an `AGENTS.md`
+into two sessions, and a dry check deleted three raw captures.
+
 ### 2026-10-13 — CV21 resumes under Ariad: one-to-one Delivery Stories, Gemini CLI retired, and a re-baseline first
 
 With CV22 released, CV21 picks up where it stopped on 2026-06-23, after DS2.US2. Four

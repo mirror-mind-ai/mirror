@@ -5,18 +5,15 @@
 **Status:** 🟢 In Progress
 **Goal:** Bring Mirror Mind's runtime adapters into the plugin/hook/MCP era. Package Mirror once as a canonical plugin (Claude-compatible) plus an MCP server, prove it on Claude, then propagate it to Codex (upgrade L3→L4), Antigravity (migrate off the deprecated Gemini CLI), and Grok Build (new) — including the external extension surface, without duplicating business logic.
 
-> **Restart notice (2026-10-13):** CV21 stopped after DS2.US2 on 2026-06-23,
-> the last Python baseline before CV22 ported the core to TypeScript and moved
-> distribution to npm. It resumes under Ariad on the `mirror` journey, with its
-> epics mapped one-to-one to Delivery Stories. Its spike evidence (DS1, DS3, DS6,
-> DS9) describes the June runtime versions and a Python core. Before any
-> per-runtime Delivery Story is pulled,
-> [DS12](cv21-ds12-runtime-re-baseline/index.md) re-measures that evidence on the
-> installed versions
-> ([decision](../../decisions.md#cv21-re-baselines-its-runtime-evidence-before-building-on-it)).
-> Gemini CLI is
+> **Restart notice (2026-10-13):** CV21 stopped after DS2.US2 on 2026-06-23, the last
+> Python baseline before CV22 ported the core to TypeScript and moved distribution to
+> npm. It resumed under Ariad on the `mirror` journey, with its epics mapped one-to-one
+> to Delivery Stories.
+> [DS12](cv21-ds12-runtime-re-baseline/index.md) re-measured the June evidence on the
+> installed runtimes and closed on 2026-10-13. Its [decision](../../decisions.md#cv21-converges-on-the-canonical-plugin-with-a-native-layer-for-antigravity-and-shared-hooks-that-know-their-runtime) reshaped the rest of
+> CV21. Gemini CLI is
 > [retired](../../decisions.md#gemini-cli-is-retired-and-antigravity-is-its-successor),
-> and Antigravity succeeds it.
+> and Antigravity succeeds it once DS7 meets the bar.
 
 ---
 
@@ -187,7 +184,7 @@ package gets one when it is pulled, and expands into User and Technical Stories.
 | [CV21.DS9](cv21-ds9-grok-build-runtime-spike/index.md) | Grok Build Runtime Spike | Confirmed (read-only, no config mutated): full Claude-style hook lifecycle read from `.claude/settings.json` (native logging, **not** export/backfill); `UserPromptSubmit` passive → no injection → honest parity **L3** (strong L1); skills via `.agents/skills/` (no migration); plugins via `.claude/plugins/` compat; MCP in `config.toml` | ✅ Done |
 | CV21.DS10 | Grok Build Through The Canonical Plugin | Grok already takes the plugin's skills, and the Claude wiring alone also gives them. It logs as `grok_build`, replies included, after DS2.US8. The MCP attachment is investigated (DS12.TS4 L6), and the honest L3 is documented: Grok has no per-turn injection | 🟡 Planned |
 | CV21.DS11 | Contract & Docs Refresh | All runtimes folded into the runtime interface contract, decisions, and the parity matrix across README, Getting Started, REFERENCE, and architecture. The matrix carries version, binary, and date. Also documented: the status line as a user step (DS2.US3 dropped), and Claude Code reading a project `AGENTS.md` natively (DS12.TS1 L8) | 🟡 Planned |
-| [CV21.DS12](cv21-ds12-runtime-re-baseline/index.md) | Runtime Re-Baseline | Every runtime finding re-measured in isolation on the installed version, with version, binary, and date recorded. The plugin imports DS1 deferred run live, and the extension surface is re-grounded on the TypeScript extension contract. A decision confirms or reshapes DS2's remainder and DS4–DS11. Pulled before any per-runtime Delivery Story | 🟢 Active |
+| [CV21.DS12](cv21-ds12-runtime-re-baseline/index.md) | Runtime Re-Baseline | Every runtime finding re-measured in isolation on the installed version, with version, binary, and date recorded. The plugin imports DS1 deferred run live, and the extension surface is re-grounded on the TypeScript extension contract. A decision confirms or reshapes DS2's remainder and DS4–DS11. Pulled before any per-runtime Delivery Story | ✅ Done |
 
 ---
 

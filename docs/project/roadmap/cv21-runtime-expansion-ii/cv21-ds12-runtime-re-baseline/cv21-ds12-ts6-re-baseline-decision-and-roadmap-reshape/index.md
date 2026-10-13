@@ -2,7 +2,7 @@
 
 # CV21.DS12.TS6 — Re-baseline decision and roadmap reshape
 
-**Status:** 🟢 In Progress — decision and reshape written, awaiting Validation
+**Status:** ✅ Done
 **Type:** Technical Story (decision)
 **Delivery Story:** CV21.DS12 — Runtime Re-Baseline
 

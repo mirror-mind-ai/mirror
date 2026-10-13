@@ -2,7 +2,7 @@
 
 # CV21.DS12.TS4 — Grok Build re-probe
 
-**Status:** 🟢 In Progress — findings complete, awaiting Validation
+**Status:** ✅ Done
 **Type:** Technical Story (spike)
 **Delivery Story:** CV21.DS12 — Runtime Re-Baseline
 
