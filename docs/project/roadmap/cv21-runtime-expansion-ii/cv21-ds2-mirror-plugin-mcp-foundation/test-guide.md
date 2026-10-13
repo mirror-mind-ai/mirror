@@ -292,4 +292,5 @@ passed, `route.sh check grok` 7/0, Grok 1.0.52 on Grok 4.7.**
 session or `DS2-…` turn reached a real Mirror home: every attempt's marker searched,
 `DS2-mczk01` included.
 
-The Navigator's acceptance is recorded with the Validation checkpoint.
+**Validated by the Navigator on 2026-10-13**, on this evidence, the Codex tool reading
+included ([validation.md](validation.md)).
