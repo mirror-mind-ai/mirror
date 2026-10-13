@@ -211,4 +211,19 @@ list 7 of 7, and `static` uses session ids of its own per run. Every step was re
 under `/bin/bash` 3.2: `static` 22/0, `check claude` reports attempt 2 as above (7/1,
 the MCP line), and the three live steps prepare with their preflight green.
 
+**Claude Code, attempt 3 (live step `DS2-kbngqv`, 2026-10-13T20:43:16Z; the turns again
+carried `DS2-mczk01`, recalled from Claude Code's prompt history in the reused scratch
+config): passed, `route.sh check claude` 8/0.**
+
+- One conversation, `claude_code` on the conversation and the runtime session: the
+  Mirror question without its form, the `◇ financial` answer from the scratch identity,
+  the probe, and its reply, each reply carrying its prompt's turn id
+  (`a72e751a-…`, `4bacec60-…`).
+- The MCP server started: `/mcp` showed `plugin:mirror-mind:mirror-mind · 7 tools`, and
+  turn 2's reply named all seven, as `mcp__plugin_mirror-mind_mirror-mind__<name>`,
+  deferred. The startup banner "1 MCP server needs authentication" was Claude Code's
+  built-in `plugin:adobe-for-creativity`, not Mirror.
+- No reply skipped for want of a prompt (the async race did not show), and no hook
+  recorded a failure.
+
 The remaining sessions are recorded at Validation.
