@@ -52,5 +52,8 @@ story status, commit, push, or release.
 
 ## Next Ariad Movement
 
-CV21 — Runtime Expansion II — moves to the Delivery Story taxonomy and resumes
-under Ariad. See the [CV21 index](cv21-runtime-expansion-ii/index.md).
+CV21 — Runtime Expansion II — is on the Delivery Story taxonomy and resumes
+under Ariad. Its next pull is
+[CV21.DS12 Runtime Re-Baseline](cv21-runtime-expansion-ii/cv21-ds12-runtime-re-baseline/index.md),
+before any per-runtime Delivery Story. See the
+[CV21 index](cv21-runtime-expansion-ii/index.md).

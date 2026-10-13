@@ -12,6 +12,32 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-10-13 — CV21 resumes under Ariad: one-to-one Delivery Stories, Gemini CLI retired, and a re-baseline first
+
+With CV22 released, CV21 picks up where it stopped on 2026-06-23, after DS2.US2. Four
+things changed before any runtime work:
+
+- **Ariad on `mirror`.** The `mirror` journey had never adopted a method. The June
+  adoption names a `mirror-mind` parent that does not exist where this repository's
+  Builder sessions run. `build adopt`, `prepare-templates` (nothing created), and
+  `sync-cursor` (no active item) put it under Ariad.
+- **Epics became Delivery Stories, one-to-one.** `E<n>` is `DS<n>`, E2's stories are
+  `DS2.US1`/`US1b`/`US2`/`US3` and `DS2.TS4`, and the spikes' stories are
+  `TS1`–`TS4`. Folders moved with their codes, finished packages got `done.md`
+  markers, and a code map in the CV21 index resolves every older citation.
+- **Gemini CLI is retired.** The Navigator's 2026-09-25 call is now a decision record.
+  v0.32.1 still ships Gemini CLI as supported, so CV21.DS8 owns a real removal behind
+  a cutoff.
+- **DS12 Runtime Re-Baseline comes first.** The June evidence ran on `claude`
+  2.1.114, `codex` 0.139.0, `agy` 1.0.8, and `grok` 0.2.51, against a Python core.
+  DS1's import bet never ran. Two readings minutes apart on the day CV21 resumed found
+  three runtimes on new versions. DS12 re-measures each runtime in isolation and runs
+  the deferred imports. Every finding now records version, binary, and date, and
+  later stories re-check the installed version at Plan.
+
+Docs only: three decisions, the CV21 tree, the roadmap summary, and the adoption note.
+The doc link and duplicate-heading checks are clean.
+
 ### 2026-10-12 — CV9.E2.S32 done: Pi opens a session in one front-door process, and the prompt log no longer gates the turn
 
 The question that started it was whether the extension should load the core as a

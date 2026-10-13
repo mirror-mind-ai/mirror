@@ -2664,6 +2664,43 @@ runtime as supported, has not happened.
   per-turn Mirror Mode injection, unless the current `agy` offers a mechanism the
   June spike did not find.
 
+### CV21 re-baselines its runtime evidence before building on it
+
+**Date:** 2026-10-13 · **Context:** CV21 resumed with four spikes of runtime evidence
+from June 2026 (DS1, DS3, DS6, DS9). They were measured on `claude` 2.1.114, `codex`
+0.139.0, `agy` 1.0.8, and `grok` 0.2.51, against a Python core and a plugin that
+assumed a checkout. On the day CV21 resumed, two readings minutes apart found Codex,
+Antigravity, and Grok Build on different versions, because the Navigator had updated
+them in between.
+
+**The decision: no per-runtime Delivery Story is pulled until
+[CV21.DS12](roadmap/cv21-runtime-expansion-ii/cv21-ds12-runtime-re-baseline/index.md)
+has re-measured what it builds on. Every runtime finding names the version, the
+binary it ran, and the date. A story that builds on a finding re-checks the installed
+version at its Plan.**
+
+**Why not build on the June evidence.** It was good evidence for June. Since then:
+
+- the core became TypeScript and ships through npm, so the plugin's hooks run an
+  installed `mirror-hook` and its MCP server is `mirror mcp`;
+- Grok went from 0.2.x to 1.x;
+- the honest L3 ceilings for Antigravity and Grok rest on a missing per-turn
+  injection hook, which any release can add;
+- DS1's central bet, that runtimes import a Claude-format plugin, was never run,
+  because DS1 deferred the live imports to the per-runtime epics.
+
+Building DS4, DS7, or DS10 now would build on the one thing nobody ran.
+
+**Why a rule about versions.** A version is evidence at a date, not a property of a
+runtime, and readings that move within minutes make that concrete. Recording
+version, binary, and date makes each finding checkable later. Re-checking at Plan
+bounds how stale a story's evidence can be.
+
+**What follows.** DS12 is CV21's next pull. Its decision record confirms or revises
+the [convergence decision](#cv21-converges-on-a-canonical-plugin-plus-mcp-server-bridged-by-import),
+and it reshapes DS2's remainder and DS4–DS11. The June spike packages stay as
+history.
+
 ## Open Discussions
 
 ### Migration rehearsal — long-term status

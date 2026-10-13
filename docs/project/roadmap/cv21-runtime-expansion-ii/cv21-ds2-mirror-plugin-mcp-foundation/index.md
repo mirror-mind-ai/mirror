@@ -38,6 +38,28 @@ not a forced migration (CV21 non-goal).
 
 ---
 
+## State After CV22 (2026-10-13)
+
+CV21 stopped here after US2, and CV22 changed the ground under this Delivery Story:
+
+- **The MCP server is TypeScript.** CV22.DS9 ported US2's server, and CV22.DS10
+  deleted the Python original. The manifest launches `mirror mcp` through
+  `plugins/mirror-mind/mcp/launch.sh`.
+- **The plugin no longer assumes a checkout.** Its hooks run the installed
+  `mirror-hook` (CV22.DS10.US3). That resolves the finding in the inbound change
+  below.
+- **TS4 has partial evidence.** On 2026-10-09 a real Claude Code 2.1.283 session
+  loaded the plugin from a scratch npm install and reached Mirror Mode through its
+  SessionStart hook (CV22.DS10.US3, route 3). That is an older Claude Code than the
+  one installed now, so [DS12](../cv21-ds12-runtime-re-baseline/index.md) TS1
+  re-measures it.
+- **US3 is untouched.** The plugin wires no status line today.
+
+The scope and done condition below still name `pyproject.toml` and the Python
+server. They are the June text. DS12's decision restates what remains.
+
+---
+
 ## Scope
 
 - A canonical Claude-format plugin directory with a validating
