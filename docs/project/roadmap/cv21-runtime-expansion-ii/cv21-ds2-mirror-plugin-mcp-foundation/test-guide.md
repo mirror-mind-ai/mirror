@@ -260,4 +260,36 @@ Codex's own view, pending the Navigator's look.**
   through the `PATH` and its home through the person's config file, the case US6's
   locator and the route's `person_home` were built for.
 
-The remaining sessions are recorded at Validation.
+**Codex, its own MCP view (`route.sh mcp-codex`, no prompt, no model turn): the seven
+tools.** `/mcp` listed `mirror-mind: connected (7 tools)`: `detect_persona`,
+`journey_status`, `list_conversations`, `list_journeys`, `mirror_context`,
+`recall_conversation`, `search_memories`, beside `ds2-env-probe: connected (0 tools)`.
+`route.sh check codex`, re-run after Codex had quit: 9/0.
+
+**Grok (live step `DS2-nby9fr`, 2026-10-13T21:23:02Z; the turns carried `DS2-mczk01`):
+passed, `route.sh check grok` 7/0, Grok 1.0.52 on Grok 4.7.**
+
+- A first attempt at 21:16Z stopped after `mirror mirror load`, on Grok's "You hit your
+  free usage limit". Its conversation holds the Mirror question alone: the failed turn
+  ended in Grok's `StopFailure`, which the plugin does not register, so no error text
+  was logged as a reply. Grok's SessionEnd closed it (21:17:18Z).
+- The retry, on Grok 4.7 (low): one conversation, `grok_build` on the conversation and
+  the runtime session, the Mirror question without its `/mm-mirror` form, the
+  `◇ financial` answer from the scratch identity, the probe, and NONE, each reply with
+  its prompt's turn id. No hook failure. Grok's SessionEnd closed it at exit
+  (21:26:54Z), inside Grok's 1.5 s bound.
+- No skipped-reply line: the session-end Stop Grok's guide describes either did not
+  reach Mirror or carried the last turn's id and was caught as already answered, which
+  `hooks.log` does not record. No reply was doubled either way.
+- The MCP server started, and its stderr log stayed empty. Grok's MCP Servers view
+  showed `Plugin: mirror-mind → mirror-mind [ready] · 7 tools`, each with its
+  description. Grok still created every session with `"mcp_server_count": 0`
+  (`unified.jsonl`, 21:15Z, 21:23Z, 21:23:39Z), as DS12.TS4 L6 saw, and the model
+  answered NONE. The new entry starts on Grok and lists its tools; Grok does not attach
+  it to the model's session. That stays CV21.DS10's, with this sharper evidence.
+
+**`route.sh untouched`: 3/0.** No real runtime configuration changed, and no scratch
+session or `DS2-…` turn reached a real Mirror home: every attempt's marker searched,
+`DS2-mczk01` included.
+
+The Navigator's acceptance is recorded with the Validation checkpoint.
