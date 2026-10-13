@@ -2,7 +2,7 @@
 
 # CV21.DS12.TS4 — Grok Build re-probe
 
-**Status:** 🟢 In Progress — static probes done, live session pending
+**Status:** 🟢 In Progress — findings complete, awaiting Validation
 **Type:** Technical Story (spike)
 **Delivery Story:** CV21.DS12 — Runtime Re-Baseline
 
@@ -60,12 +60,33 @@ Measured 2026-10-13 (10:20–10:21 UTC) with `bash route.sh grok`. The bundled g
 | 4 | Per the guide: `SessionStart` is observe-only and reads only a top-level `systemMessage`. `UserPromptSubmit` can block a prompt but has no `additionalContext`, which exists only for tool hooks and `Stop` | bundled guide, lines 95–96, 354, 438, 620 | Per-turn prompt injection is still absent per the docs, as in June (live) |
 | 5 | Grok runs Claude hooks from `~/.claude/settings.json` always, and from `<project>/.claude/settings.json` once the project is trusted | bundled guide, lines 69–72 | Mirror's Claude hooks can fire under Grok |
 
-## Open For The Live Session
+## Findings — live
 
-- Do the plugin's hooks fire, and which `interface` label does Mirror record? They are
-  Mirror's `claude:*` family, so `claude_code` is expected, which would be a mislabel.
-- Does a `SessionStart` `systemMessage` reach the model or only the screen (canary)?
-- Does `AGENTS.md` reach the session, and is the MCP server reachable?
+One session on 2026-10-13, 14:44–14:53 UTC, grok 1.0.52 (same binary as above), run by the
+Navigator. It had a scratch `HOME` with the login inside it, the plugin installed by the
+static step, probe hooks in `~/.grok/hooks/`, and Mirror's `AGENTS.md` in the project.
+There were two turns.
+
+| # | Finding | Evidence | Result |
+|---|---------|----------|--------|
+| L1 | The hooks fire: SessionStart ×1, UserPromptSubmit ×2, Stop ×3, SessionEnd ×1 | probe capture summary | ✓ |
+| L2 | **A SessionStart `systemMessage` is shown on screen only.** Grok records it as a `hook_annotation`, and the model answered NONE | screenshot (the canary line above the session); transcript | ✗ no session-start injection |
+| L3 | **UserPromptSubmit `additionalContext` is ignored** | the model answered NONE; the transcript holds no turn canary | ✗ no per-turn injection: L3 confirmed |
+| L4 | The project `AGENTS.md` reaches the model, and 25 skills can be invoked | the model's answer | ✓ |
+| L5 | Mirror Mode through `/mm-mirror …` (Grok's form). Grok asked permission for `mirror mirror load`, then answered under `◇ financial` after 5 m 30 s | screenshots | ✓, slow |
+| L6 | **The plugin's MCP server was started but never attached.** An empty `logs/mcp/mirror-mind.stderr.log` appeared at session start, but `session.create` reports `mcp_server_count: 0`, and only 27 built-in tools were offered | Grok's unified log; the model's answer | ✗ cause unknown, DS10 |
+| L7 | **The session is logged as `claude_code`**, and only the probe prompt was logged. The slash turn is skipped by design, and replies are not imported | scratch database, conversation `d9423a17` | ✗ mislabel; no reply logging |
+| L8 | Payloads carry both `snake_case` and `camelCase` fields, and `lastAssistantMessage` at Stop | probe capture | Replies can be logged from Stop, as on Claude Code and Codex |
+
+## Honest Parity
+
+L3: Mirror's skills, a static `AGENTS.md`, logging through the shared hooks once they
+label the runtime, and Mirror Mode on request. Grok offers no injection at session start or
+per turn, as in June.
+
+The raw probe capture was overwritten by a later dry check, which the route has fixed
+since. The counts were read from it before that, and Grok's transcript and log are kept
+in the scratch evidence folder.
 
 ## Validation
 

@@ -2,7 +2,7 @@
 
 # CV21.DS12.TS2 — Codex re-probe
 
-**Status:** 🟢 In Progress — static probes done, live session pending
+**Status:** 🟢 In Progress — findings complete, awaiting Validation
 **Type:** Technical Story (spike)
 **Delivery Story:** CV21.DS12 — Runtime Re-Baseline
 
@@ -62,16 +62,31 @@ Codex 0.162.1. The binary is `/opt/homebrew/bin/codex` →
 | 8 | Canary hooks in `CODEX_HOME/hooks.json` do not reach the rendered prompt | `codex debug prompt-input` with SessionStart and UserPromptSubmit canaries | Inconclusive: `prompt-input` may not run hooks, or untrusted hooks may be skipped |
 | 9 | The shipped wrapper's header still says "Codex has no hook system" | `scripts/codex-mirror.sh` | Stale since DS3; a DS4 or DS11 item |
 
-## Open For The Live Session
+## Findings — live
 
-- Do the plugin's hooks run (and with what trust prompt), with `${CLAUDE_PLUGIN_ROOT}`
-  resolved?
-- Does SessionStart's `additionalContext` deliver the Operating Instructions without the
-  `AGENTS.md` link? Does `UserPromptSubmit` inject on every turn?
-- Does `SessionEnd` fire?
-- Which `interface` label do logged turns carry? The plugin's hooks are Mirror's
-  `claude:*` family.
-- Does the MCP server start from the plugin cache?
+One session on 2026-10-13, 14:27–14:34 UTC, Codex 0.162.1 (same binary as above), run by
+the Navigator. Mirror was installed as the plugin only, from the local marketplace, in a
+scratch `CODEX_HOME`. There was no skills link and no `~/.codex/AGENTS.md`. Probe hooks
+were added and the login was made inside the scratch home. There were two turns.
+
+| # | Finding | Evidence | Result |
+|---|---------|----------|--------|
+| L1 | Codex asks once to trust the hooks: "8 hooks are new or changed" (the plugin's 4, the probe's 4). After trust they are active | screenshots (`/hooks` table) | ✓ trust is one step |
+| L2 | `async` hooks now run synchronously: "running async SessionEnd hook synchronously" | startup warning | DS3's "async hooks are skipped" caveat is obsolete |
+| L3 | **Context injected at session start and on every turn reaches the model.** The model declined to quote "hidden system or developer context". The transcript settles it | rollout: `…-start`, `…-turn-1`, `…-turn-2` | ✓ the L4 mechanism |
+| L4 | **The plugin's SessionStart hook delivers the Operating Instructions as a developer message (D13)** | rollout line 9 (role `developer`). Line 5 is a project `AGENTS.md` the Driver's dry run had left in the project folder | ✓ The `~/.codex/AGENTS.md` step becomes unnecessary |
+| L5 | **Mirror Mode answers through the plugin's skill:** `$mirror-mind:mm:mirror …` ran `mirror mirror load` ("Mirror Mode active · Persona: financial") | screenshots | ✓ |
+| L6 | **The MCP server does not start:** "MCP startup failed: No such file or directory (os error 2)". `${CLAUDE_PLUGIN_ROOT}` is expanded for hook commands, which run in a shell with it set, but not in the MCP `command` | startup warning; the model's answer "mirror-mind: NONE" | ✗ DS2 or DS4 |
+| L7 | **The session is logged as `claude_code`.** The plugin's hooks are Mirror's `claude:*` family | scratch database, conversation `e6f1b048` | ✗ a mislabel |
+| L8 | Codex's replies were not logged, only the two prompts. The plugin's SessionEnd never reached Mirror (no front-door call after 14:33:12), although the probe's SessionEnd fired, so the conversation stayed open | database; front-door log | ✗ |
+| L9 | That open conversation later received an "assistant" message from another session. At 14:41:53, Antigravity's agent ran `mirror mirror log "…"` with no session of its own, and Mirror appended it here. zsh had expanded `$297` and `$497` to nothing | database timestamps; front-door log | ✗ a core defect, outside CV21's scope (Debt Review) |
+| L10 | A plugin skill reaches UserPromptSubmit as `$mirror-mind:mm:mirror …` | probe capture | The inject hook does not match this form either (TS1 L4) |
+| L11 | Hook payloads carry `session_id`, `turn_id`, `transcript_path`, and, at Stop, `last_assistant_message` | probe capture | Replies can be logged from Stop, without parsing a transcript |
+
+The model's own count of "28" `mm` skills is unverified. The static measurement is 25.
+The raw probe capture was overwritten by a later dry check, which the route has fixed
+since. The counts were read from it before that, and the rollout is kept in the scratch
+evidence folder.
 
 ## Validation
 

@@ -2,7 +2,7 @@
 
 # CV21.DS12.TS1 — Claude Code re-probe
 
-**Status:** 🟢 In Progress — static probes done, live session pending
+**Status:** 🟢 In Progress — findings complete, awaiting Validation
 **Type:** Technical Story (spike)
 **Delivery Story:** CV21.DS12 — Runtime Re-Baseline
 
@@ -61,14 +61,27 @@ directory.
 | 6 | The inject hook's explicit path fires only for `/mm:mirror …`. In a fresh session, `/mirror-mind:mm:mirror …`, the form CV22 saw a plugin install use, injects nothing | `mirror-inject.sh` with each prompt, one fresh session each | `/mm:mirror`: 7,067 bytes. `/mirror-mind:mm:mirror`: 0 bytes. Which form Claude Code sends is the live question |
 | 7 | The MCP server starts through the plugin's launcher and lists 7 tools | `initialize` and `tools/list` through `mcp/launch.sh` | ✓ `mirror-mind 0.32.1 · 7 tools` |
 
-## Open For The Live Session
+## Findings — live
 
-- Do the three hooks fire in a real 2.1.296 session, and does Mirror Mode answer through
-  the plugin? This is DS2.TS4's evidence.
-- What prompt text does UserPromptSubmit receive when a plugin skill is invoked? That
-  decides whether finding 6 is a defect.
-- Does a plugin-root `settings.json` status line show?
-- Is the MCP server reachable from the session?
+One session on 2026-10-13, 14:18–14:25 UTC, Claude Code 2.1.296 (same binary as above),
+run by the Navigator. It used a scratch `CLAUDE_CONFIG_DIR`, the plugin copy through
+`--plugin-dir`, and probe hooks through `--settings`, against the scratch Mirror home.
+There were two turns.
+
+| # | Finding | Evidence | Result |
+|---|---------|----------|--------|
+| L1 | All three plugin hooks fire, and SessionStart hands over the Operating Instructions | probe capture: SessionStart ×1, UserPromptSubmit ×2, Stop ×2, SessionEnd ×1; the transcript carries the hook's context twice | ✓ |
+| L2 | Context injected at session start and on every turn reaches the model | the model quoted `…-start`, `…-turn-1`, and `…-turn-2`, and the transcript holds all three | ✓ the L4 mechanism holds on 2.1.296 |
+| L3 | **Mirror Mode answers through the plugin.** `/mirror-mind:mm-mirror …` ran `mirror mirror load` ("MIRROR MODE ACTIVE"), and the answer came in first person under `◇ financial` | screenshots; front-door log, 14:21:57 | ✓ DS2.TS4's reference turn |
+| L4 | A plugin skill reaches UserPromptSubmit as **`/mirror-mind:mm-mirror …`**. The inject hook's `/^\/mm:mirror/` never matches it, so on a plugin install the explicit inject path is dead. Mirror Mode came from the skill itself | probe capture of the prompt; static finding 6 | ✗ a DS2 defect |
+| L5 | Slash-invoked turns are not logged, by design: `logger.ts` skips prompts that start with `/`. The probe turn was logged (user and assistant, `claude_code`) and closed at SessionEnd | scratch database, conversation `8b04ddde`; front-door log | ✓ by design |
+| L6 | The MCP server's 7 tools are available, deferred, as `mcp__plugin_mirror-mind_mirror-mind__*` | the model's answer | ✓ |
+| L7 | A plugin-root `settings.json` status line did not appear | screenshots: no `DS12-STATUSLINE-PROBE` | ✗ Together with static finding 3, a plugin cannot carry Mirror's status line |
+| L8 | Claude Code 2.1.296 loads a project's `AGENTS.md` natively ("Contents of …/AGENTS.md (project instructions…)") | transcript | New. The project folder held Mirror's `AGENTS.md`, left by the Driver's dry run of the Grok step. The model told the two sources apart |
+
+The raw probe capture was overwritten by a later dry check, which the route has fixed
+since. The counts above were read from it before that. The transcript, kept in the
+scratch evidence folder, is the stronger record.
 
 ## Validation
 
