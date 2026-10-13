@@ -1,10 +1,10 @@
-[< CV21.DS2 Mirror Plugin & MCP Foundation (Claude)](../index.md)
+[< CV21.DS2 Mirror Plugin & MCP Foundation](../index.md)
 
 # CV21.DS2.US2 — Mirror MCP server
 
 **Status:** ✅ Done
 **Type:** User Story
-**Delivery Story:** CV21.DS2 — Mirror Plugin & MCP Foundation (Claude)
+**Delivery Story:** CV21.DS2 — Mirror Plugin & MCP Foundation
 **Renamed from:** CV21.E2.S2, in the CV21 Ariad taxonomy migration (2026-10-13). The text below keeps the codes it was written with; the [code map](../../index.md#code-map) resolves them.
 **User-visible outcome:** Mirror exposes a runtime-agnostic MCP server (`python -m memory mcp`) over stdio, carrying on-demand identity context and read tools. The canonical plugin declares it as an `mcpServers` entry, so any MCP-capable runtime can pull Mirror context and inspect Mirror state through standard tool calls.
 

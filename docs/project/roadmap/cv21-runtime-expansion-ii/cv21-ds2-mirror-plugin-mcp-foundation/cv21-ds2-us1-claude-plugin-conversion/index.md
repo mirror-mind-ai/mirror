@@ -1,10 +1,10 @@
-[< CV21.DS2 Mirror Plugin & MCP Foundation (Claude)](../index.md)
+[< CV21.DS2 Mirror Plugin & MCP Foundation](../index.md)
 
 # CV21.DS2.US1 — Claude plugin conversion
 
 **Status:** ✅ Done
 **Type:** User Story
-**Delivery Story:** CV21.DS2 — Mirror Plugin & MCP Foundation (Claude)
+**Delivery Story:** CV21.DS2 — Mirror Plugin & MCP Foundation
 **Renamed from:** CV21.E2.S1, in the CV21 Ariad taxonomy migration (2026-10-13). The text below keeps the codes it was written with; the [code map](../../index.md#code-map) resolves them.
 **User-visible outcome:** Mirror Mind's standalone `.claude/` integration (skills + lifecycle hooks) is repackaged as a canonical Claude-format plugin that `claude plugin validate` accepts and Claude loads, while the existing standalone `.claude/` path keeps working unchanged.
 

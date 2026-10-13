@@ -1,6 +1,6 @@
 [< CV21](../index.md)
 
-# CV21.DS2 — Mirror Plugin & MCP Foundation (Claude)
+# CV21.DS2 — Mirror Plugin & MCP Foundation
 
 **Status:** 🟢 In Progress
 **Type:** Delivery Story

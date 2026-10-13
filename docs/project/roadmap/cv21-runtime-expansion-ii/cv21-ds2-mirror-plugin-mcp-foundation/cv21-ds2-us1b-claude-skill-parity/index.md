@@ -1,10 +1,10 @@
-[< CV21.DS2 Mirror Plugin & MCP Foundation (Claude)](../index.md)
+[< CV21.DS2 Mirror Plugin & MCP Foundation](../index.md)
 
 # CV21.DS2.US1b — Claude skill parity
 
 **Status:** ✅ Done
 **Type:** User Story
-**Delivery Story:** CV21.DS2 — Mirror Plugin & MCP Foundation (Claude)
+**Delivery Story:** CV21.DS2 — Mirror Plugin & MCP Foundation
 **Renamed from:** CV21.E2.S1b, in the CV21 Ariad taxonomy migration (2026-10-13). The text below keeps the codes it was written with; the [code map](../../index.md#code-map) resolves them.
 **User-visible outcome:** The four Pi-only skills (`discard`, `explore`, `soul`, `update`) gain Claude-tuned versions, so the canonical plugin reaches full 25-skill parity with the Pi runtime and Claude users can invoke every Mirror skill.
 
