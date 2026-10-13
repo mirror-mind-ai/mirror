@@ -12,6 +12,8 @@
 #   bash route.sh antigravity   TS3 static: validate, `agy plugin import claude`
 #   bash route.sh grok          TS4 static: validate, install, inspect, docs
 #   bash route.sh extensions    TS5: how a user extension reaches each runtime
+#   bash route.sh live-claude   the Navigator's session, then: bash route.sh check-claude
+#   bash route.sh live-codex    (likewise live-antigravity, live-grok; at most two turns each)
 #   bash route.sh untouched     real runtime configs vs the baseline; canary search
 #   bash route.sh clean         remove the scratch directory (and any login in it)
 #
@@ -532,6 +534,261 @@ extensions_step() {
 }
 
 # ---------------------------------------------------------------------------
+# Live probes (the Navigator's). One session per runtime, at most two turns.
+#
+# A probe hook captures every hook payload into live/<runtime>/hooks.jsonl and
+# answers in the runtime's own injection format with a canary line:
+# CANARY-DS12-<RT>-<id>-start at session start, ...-turn-<n> on each turn. The
+# model is asked to quote any canary it can see: what it quotes is what reached
+# it. Mirror's own plugin hooks run beside the probe, against the scratch home.
+
+PROBE_JS='
+const fs = require("fs"), path = require("path");
+const [rt, ev] = process.argv.slice(2);
+const dir = path.join(process.env.DS12_LIVE, rt);
+let input = ""; try { input = fs.readFileSync(0, "utf8"); } catch {}
+const id = fs.readFileSync(path.join(dir, "canary"), "utf8").trim();
+const countFile = path.join(dir, "count-" + ev);
+const n = (fs.existsSync(countFile) ? Number(fs.readFileSync(countFile, "utf8")) : 0) + 1;
+fs.writeFileSync(countFile, String(n));
+fs.appendFileSync(path.join(dir, "hooks.jsonl"),
+  JSON.stringify({ at: new Date().toISOString(), event: ev, n, payload: input }) + "\n");
+const tag = (k) => "CANARY-DS12-" + rt.toUpperCase() + "-" + id + "-" + k;
+let out = {};
+if (rt === "antigravity") {
+  if (ev === "SessionStart") out = { injectSteps: [{ systemMessage: { systemMessage: tag("start") } }] };
+  if (ev === "PreInvocation") out = { injectSteps: [{ ephemeralMessage: tag("turn-" + n) }] };
+} else if (rt === "grok" && ev === "SessionStart") {
+  out = { systemMessage: tag("start") };
+} else if (ev === "SessionStart" || ev === "UserPromptSubmit") {
+  out = { hookSpecificOutput: { hookEventName: ev, additionalContext: tag(ev === "SessionStart" ? "start" : "turn-" + n) } };
+}
+process.stdout.write(JSON.stringify(out));
+'
+
+live_prepare() {
+  local rt="$1"
+  LIVE="$D/live/$rt"
+  rm -rf "$LIVE" && mkdir -p "$LIVE" "$D/pi-sessions"
+  LC_ALL=C tr -dc 'a-z0-9' </dev/urandom | head -c 6 >"$LIVE/canary"
+  printf '%s\n' "$PROBE_JS" >"$D/live/probe.js"
+  date -u +%Y-%m-%dT%H:%M:%SZ >"$LIVE/started"
+  NODE_BIN="$(command -v node)"
+  stamp "$2"
+}
+
+# DS12_DRY=1 prepares a live step and stops before the session starts (the Driver's check).
+dry_stop() { [ "${DS12_DRY:-0}" = 1 ] && { note "DS12_DRY=1: prepared, session not started"; return 0; }; return 1; }
+
+probe_cmd() { printf '%s %s %s %s' "$NODE_BIN" "$D/live/probe.js" "$1" "$2"; }
+
+# The session environment: the scratch install first on the PATH, the scratch
+# Mirror home pinned, an empty Pi sessions dir, and no provider key.
+session_env() {
+  SESSION_ENV=(env -u XDG_CONFIG_HOME -u MIRROR_BIN -u MIRROR_NODE -u NODE_OPTIONS -u OPENROUTER_API_KEY
+    MIRROR_USER=ds12 MIRROR_HOME="$MHOME" PI_SESSIONS_DIR="$D/pi-sessions" DS12_LIVE="$D/live"
+    PATH="$D/prefix/bin:$REAL_PATH")
+}
+
+turns_text() {
+  local rt="$1"
+  if [ "$rt" = "claude" ]; then
+    cat <<EOF
+
+  Two turns in all (the Plan's budget), typed exactly. Approve any trust or permission
+  prompt the runtime shows. No config file of yours is written.
+
+    Turn 1:  /mirror-mind:mm:mirror DS12: should I raise my course price from \$297 to \$497?
+             Expect: Mirror Mode, a first-person answer (a "◇ <persona>" line is fine).
+             This is DS2.TS4's reference turn, and the probe records the prompt text a
+             plugin skill hands to the inject hook.
+
+    Turn 2:  DS12 probe. Without using any tool: quote every line in your context that
+             starts with CANARY-DS12, exactly, or say NONE. Then answer: can you see a
+             document titled "Mirror Mind — Operating Instructions" (yes or no)? How many
+             skills whose names start with mm can you invoke? And list the names of any
+             tools from an MCP server called mirror-mind, or say NONE.
+
+  Also look at the status line at the bottom: does it read DS12-STATUSLINE-PROBE?
+  Write down both answers, quit the session, and run:   bash $SELF check-claude
+EOF
+    return
+  fi
+  cat <<EOF
+
+  Two turns, typed exactly. Approve any trust or permission prompt the runtime shows.
+  Logins happen inside the scratch directory; no config file of yours is written.
+
+    Turn 1:  DS12 probe 1. Without using any tool: quote every line in your context
+             that starts with CANARY-DS12, exactly, or say NONE. Then answer yes or no:
+             can you see a document titled "Mirror Mind — Operating Instructions"?
+             And how many skills whose names start with mm can you invoke?
+
+    Turn 2:  DS12 probe 2. Without using any tool: quote every line that starts with
+             CANARY-DS12 that you can see now, exactly, or say NONE. And list the names
+             of any tools from an MCP server called mirror-mind, or say NONE.
+
+  Write down both answers, quit the session, and run:   bash $SELF check-$rt
+EOF
+}
+
+live_claude() {
+  need_install
+  say "Live — Claude Code (TS1; also DS2.TS4's reference session)"
+  live_prepare claude claude
+  [ -d "$CACHE" ] || { mkdir -p "$(dirname "$CACHE")" && cp -R "$PKG/plugins/mirror-mind" "$CACHE"; }
+  printf '%s\n' '{ "statusLine": { "type": "command", "command": "echo DS12-STATUSLINE-PROBE" } }' >"$CACHE/settings.json"
+  local ev
+  {
+    printf '{ "hooks": {'
+    local first=1
+    for ev in SessionStart UserPromptSubmit Stop SessionEnd; do
+      [ $first -eq 1 ] || printf ','
+      first=0
+      printf '"%s": [{ "hooks": [{ "type": "command", "command": "%s" }] }]' "$ev" "$(probe_cmd claude "$ev")"
+    done
+    printf '} }\n'
+  } >"$LIVE/settings.json"
+  # A scratch config dir, not yours: your ~/.claude/skills already loads Mirror (a second
+  # mirror-mind would load beside this copy) and your statusLine would hide the probe's.
+  local CC="$D/claude-live/.claude"
+  mkdir -p "$CC" && chmod 700 "$D/claude-live"
+  session_env
+  SESSION_ENV+=(CLAUDE_CONFIG_DIR="$CC")
+  note "Claude Code runs with a scratch config dir ($CC): none of your settings, skills, or"
+  note "plugins load. If it asks you to log in, do; say so when you report back."
+  turns_text claude
+  echo; look "Starting Claude Code in $D/project with the plugin copy $CACHE …"
+  dry_stop && return
+  cd "$D/project" && exec "${SESSION_ENV[@]}" claude --plugin-dir "$CACHE" --settings "$LIVE/settings.json"
+}
+
+live_codex() {
+  need_install
+  say "Live — Codex (TS2)"
+  live_prepare codex codex
+  [ -d "$D/codex-marketplace" ] || { echo "Run the static step first: bash $SELF codex"; exit 2; }
+  local CX="$D/codex-live"
+  if [ ! -f "$CX/auth.json" ]; then
+    rm -rf "$CX" && mkdir -p "$CX" && chmod 700 "$CX"
+  fi
+  rm -f "$CX/AGENTS.md" "$CX/skills/mirror-mind" "$CX/hooks.json"
+  cat >"$CX/hooks.json" <<EOF
+{ "hooks": {
+  "SessionStart": [{ "hooks": [{ "type": "command", "command": "$(probe_cmd codex SessionStart)" }] }],
+  "UserPromptSubmit": [{ "hooks": [{ "type": "command", "command": "$(probe_cmd codex UserPromptSubmit)" }] }],
+  "Stop": [{ "hooks": [{ "type": "command", "command": "$(probe_cmd codex Stop)" }] }],
+  "SessionEnd": [{ "hooks": [{ "type": "command", "command": "$(probe_cmd codex SessionEnd)" }] }]
+} }
+EOF
+  with_home "$D/codex-live-person" env CODEX_HOME="$CX" codex plugin marketplace add "$D/codex-marketplace" >/dev/null 2>&1 || true
+  with_home "$D/codex-live-person" env CODEX_HOME="$CX" codex plugin add mirror-mind@ds12-local >"$LIVE/plugin-add.out" 2>&1 || true
+  tail -1 "$LIVE/plugin-add.out" | show
+  note "Mirror is installed as the plugin ONLY: no skills link, no AGENTS.md link, so whatever"
+  note "skills and instructions reach the session came through the plugin."
+  [ -f "$CX/auth.json" ] || note "Codex will ask you to log in: that login is stored in $CX only."
+  session_env
+  turns_text codex
+  echo; look "Starting Codex in $D/project with CODEX_HOME=$CX …"
+  dry_stop && return
+  cd "$D/project" && exec "${SESSION_ENV[@]}" HOME="$D/codex-live-person" CODEX_HOME="$CX" codex
+}
+
+live_antigravity() {
+  need_install
+  say "Live — Antigravity (TS3)"
+  live_prepare antigravity agy
+  local AH="$D/agy-home" WS="$D/project-agy"
+  [ -d "$AH/.gemini/config/plugins/mirror-mind" ] || { echo "Run the static step first: bash $SELF antigravity"; exit 2; }
+  rm -rf "$WS" && mkdir -p "$WS/.agents"
+  cp "$PKG/AGENTS.md" "$WS/AGENTS.md"
+  cat >"$WS/.agents/hooks.json" <<EOF
+{ "ds12-probe": {
+  "SessionStart": [{ "type": "command", "command": "$(probe_cmd antigravity SessionStart)" }],
+  "PreInvocation": [{ "type": "command", "command": "$(probe_cmd antigravity PreInvocation)" }],
+  "Stop": [{ "type": "command", "command": "$(probe_cmd antigravity Stop)" }]
+} }
+EOF
+  note "the workspace has Mirror's AGENTS.md and agy-native probe hooks; the Mirror plugin"
+  note "(installed by the static step) carries the skills and Claude's hooks file, staged verbatim."
+  note "agy may keep its login in your macOS keychain rather than in the scratch HOME:"
+  note "if it asks you to log in, say so when you report back."
+  session_env
+  turns_text antigravity
+  echo; look "Starting agy in $WS with HOME=$AH …"
+  dry_stop && return
+  cd "$WS" && exec "${SESSION_ENV[@]}" HOME="$AH" agy
+}
+
+live_grok() {
+  need_install
+  say "Live — Grok Build (TS4)"
+  live_prepare grok grok
+  local GH="$D/grok-home"
+  [ -d "$GH/.grok/installed-plugins" ] || { echo "Run the static step first: bash $SELF grok"; exit 2; }
+  mkdir -p "$GH/.grok/hooks"
+  cat >"$GH/.grok/hooks/ds12-probe.json" <<EOF
+{ "hooks": {
+  "SessionStart": [{ "hooks": [{ "type": "command", "command": "$(probe_cmd grok SessionStart)" }] }],
+  "UserPromptSubmit": [{ "hooks": [{ "type": "command", "command": "$(probe_cmd grok UserPromptSubmit)" }] }],
+  "Stop": [{ "hooks": [{ "type": "command", "command": "$(probe_cmd grok Stop)" }] }],
+  "SessionEnd": [{ "hooks": [{ "type": "command", "command": "$(probe_cmd grok SessionEnd)" }] }]
+} }
+EOF
+  cp "$PKG/AGENTS.md" "$D/project/AGENTS.md"
+  note "the project has Mirror's AGENTS.md; the Mirror plugin (installed by the static step)"
+  note "brings its skills, its hooks, and the MCP server."
+  [ -f "$GH/.grok/auth.json" ] || note "Grok will ask you to log in: that login is stored in $GH only."
+  session_env
+  turns_text grok
+  echo; look "Starting Grok in $D/project with HOME=$GH …"
+  dry_stop && return
+  cd "$D/project" && exec "${SESSION_ENV[@]}" HOME="$GH" grok
+}
+
+# What a live session left: the probe's capture, the scratch Mirror, hooks.log.
+live_check() {
+  local rt="$1"
+  need_install
+  LIVE="$D/live/$rt"
+  say "Check — what the $rt session left"
+  [ -f "$LIVE/started" ] || { echo "No $rt session recorded; run: bash $SELF live-$rt"; exit 2; }
+  local START CANARY
+  START="$(cat "$LIVE/started")"; CANARY="$(cat "$LIVE/canary")"
+  look "canary id: $CANARY (lines the model quoted should end -start or -turn-<n>)"
+  if [ -s "$LIVE/hooks.jsonl" ]; then
+    look "probe hook events (event × times):"
+    node -e 'const l=require("fs").readFileSync(process.argv[1],"utf8").trim().split("\n").map(JSON.parse);
+      const c={};for(const e of l)c[e.event]=(c[e.event]||0)+1;
+      for(const[k,v]of Object.entries(c))console.log(k+" × "+v);
+      const keys=new Set();for(const e of l){try{Object.keys(JSON.parse(e.payload)).forEach(k=>keys.add(k))}catch{}}
+      console.log("payload fields: "+[...keys].sort().join(", "));
+      for(const e of l.filter(e=>/Prompt/.test(e.event))){try{const p=JSON.parse(e.payload);console.log("prompt seen by "+e.event+": "+String(p.prompt??p.userPrompt??"").slice(0,90))}catch{}}' \
+      "$LIVE/hooks.jsonl" | show
+    ok "the probe hook ran"
+  else
+    bad "the probe hook never ran (no live/$rt/hooks.jsonl)"
+  fi
+  local DB="$MHOME/memory.db" ROWS
+  ROWS="$(sqlite3 "$DB" "SELECT c.interface || ' · ' || count(m.id) || ' message(s)' FROM conversations c JOIN messages m ON m.conversation_id = c.id WHERE substr(c.started_at,1,19) >= substr('$START',1,19) GROUP BY c.id" 2>/dev/null)"
+  if [ -n "$ROWS" ]; then look "Mirror conversations the session left in the scratch home (interface · messages):"; printf '%s\n' "$ROWS" | show
+  else note "Mirror logged no conversation from this session"; fi
+  if [ -f "$MHOME/front-door.log" ]; then
+    look "what the session ran through the installed mirror (count, family):"
+    awk -F'\t' -v s="$START" 'substr($1,1,19) >= substr(s,1,19) {print $3}' "$MHOME/front-door.log" | sort | uniq -c | sed 's/^ *//' | show
+  fi
+  [ -f "$MHOME/hooks.log" ] && { look "hooks.log:"; tail -5 "$MHOME/hooks.log" | show; } || ok "no Mirror hook recorded a failure"
+  cat <<EOF
+
+  Now report to the Builder, in your words:
+    - turn 1's and turn 2's answers (the canary lines quoted, or NONE; the yes/no; the counts)
+    - anything the runtime asked you to approve or log into
+EOF
+  [ "$rt" = "claude" ] && echo "    - whether turn 1 answered in Mirror Mode, and whether the status line read DS12-STATUSLINE-PROBE"
+  result
+}
+
+# ---------------------------------------------------------------------------
 untouched() {
   say "Untouched — your real runtime configs and Mirror homes"
   [ -f "$D/real-baseline.txt" ] || { echo "No baseline; run setup first."; exit 2; }
@@ -569,7 +826,15 @@ case "${1:-}" in
   antigravity) antigravity_step ;;
   grok) grok_step ;;
   extensions) extensions_step ;;
+  live-claude) live_claude ;;
+  live-codex) live_codex ;;
+  live-antigravity) live_antigravity ;;
+  live-grok) live_grok ;;
+  check-claude) live_check claude ;;
+  check-codex) live_check codex ;;
+  check-antigravity) live_check antigravity ;;
+  check-grok) live_check grok ;;
   untouched) untouched ;;
   clean) clean ;;
-  *) sed -n '2,25p' "$SELF" | sed 's/^# \{0,1\}//'; exit 2 ;;
+  *) sed -n '2,27p' "$SELF" | sed 's/^# \{0,1\}//'; exit 2 ;;
 esac

@@ -34,11 +34,20 @@ All commands run from this package's directory. The live steps come first, durin
 implementation, when the Driver hands them over. Steps 2–5 are the Validation itself.
 
 1. **Live probes**, run once per runtime when handed over: `bash route.sh live-claude`,
-   `live-codex`, `live-antigravity`, `live-grok`.
-   - **Expected:** one short session, at most two turns. The script prints the
-     runtime's version and binary, which hooks fired, whether the canary reached the
-     model at session start and on the second turn, and whether `mm-*` skills and the
-     MCP server answered.
+   `live-codex`, `live-antigravity`, `live-grok`. After each session, run the matching
+   `bash route.sh check-<runtime>`.
+   - **Expected:** one short session, at most two turns, typed as the step prints them.
+     For Claude Code, the first turn is a Mirror turn through the plugin (DS2.TS4's
+     reference turn). The live step prints the runtime's version and binary. The check
+     step prints which hooks fired, with what payload fields, and which prompt text
+     they saw. It also prints what Mirror logged in the scratch home and under which
+     `interface`, and any hook failure. You report the model's answers: the canary
+     lines it quoted, whether it saw the Operating Instructions, its `mm` skill count,
+     and the `mirror-mind` MCP tools.
+   - **Isolation:** every session runs on a scratch config: a scratch
+     `CLAUDE_CONFIG_DIR`, `CODEX_HOME`, or `HOME`. A login, if asked for, happens there.
+     `DS12_DRY=1` prepares a step without starting the session, which is how the Driver
+     checked them.
    - **Pass:** the step ends with its ✓ / ✗ summary, and you can say what you saw in
      the session.
    - **Fail:** the session needed a third turn, a login outside the scratch `HOME`
