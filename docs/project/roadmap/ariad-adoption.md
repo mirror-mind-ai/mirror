@@ -5,11 +5,9 @@ This project is prepared for Ariad-governed Builder Mode.
 ## Method
 
 - adopted method: ariad
-- adoption date: 2026-06-14
-- adoption mode: prospective
-- project-level journey: `mirror-mind`
-- first dogfooding workstream: `builder-mode-evolution`
-- adoption follows release `v0.27.0 — Ariad Builder Lifecycle Runtime`
+- first adoption: 2026-06-14, prospective, after release `v0.27.0 — Ariad Builder Lifecycle Runtime`
+- project journey: `mirror`, adopted 2026-10-13
+- templates: present; `prepare-templates` on 2026-10-13 checked nine and created none
 
 ## Scope
 
@@ -24,12 +22,28 @@ Prospective adoption means:
 - Plan, Validation, Debt Review, Coherence, and Done checkpoints are explicit;
 - Navigator preferences and project overrides remain future work under CV20.DS9.
 
-## Runtime State
+## Adoption History
 
-- parent journey `mirror-mind`: adopted method `ariad`, delivery cursor synced
-- child journey `builder-mode-evolution`: adopted method `ariad`, delivery cursor synced for current dogfooding continuity
+- **2026-06-14 — prospective adoption.** Recorded on a parent journey named
+  `mirror-mind`, with the child `builder-mode-evolution` as the first
+  dogfooding workstream (CV20).
+- **CV22** ran under its own child journey, `mirror-ts-core`, which adopted
+  Ariad and closed with the CV22 release on 2026-10-11.
+- **2026-10-13 — the `mirror` journey adopts Ariad, and CV21 resumes under it.**
+  `mirror` is the journey this repository's Builder sessions load. Until this
+  date it carried no method, and the runtime state it lives in has no
+  `mirror-mind` journey, so the 2026-06-14 adoption never reached the place the
+  work happens.
+
+## Runtime State At Adoption (2026-10-13)
+
+- journey `mirror`: adopted method `ariad`, delivery cursor synced
+- cadence profile: `stepwise`; flow unit: `story_by_story`
 - active item: none
 - last delivery event: template_preparation
+
+The cursor moves with the work; `mirror build show --journey mirror --method ariad`
+reports where it stands now.
 
 ## Boundaries
 
@@ -38,8 +52,5 @@ story status, commit, push, or release.
 
 ## Next Ariad Movement
 
-Use Ariad prospectively for the current Builder priority order: CV20.DS5
-Delivery Story Level Lifecycle, then CV20.DS6 Refinement Workbench And Flow,
-then CV20.DS7 Release And Push Policies, then CV20.DS8 Debt Ledger And Refactor
-Loop, then CV20.DS9 Method Preferences And Overrides, then CV20.DS10 Builder
-Documentation And Migration.
+CV21 — Runtime Expansion II — moves to the Delivery Story taxonomy and resumes
+under Ariad. See the [CV21 index](cv21-runtime-expansion-ii/index.md).

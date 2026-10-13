@@ -2581,6 +2581,40 @@ offer an import of earlier history. A person who wants their earlier Pi history 
 has no command for it in this release; if one is wanted, it is a feature with its own
 story, not a flag on maintenance.
 
+### CV21 resumes under Ariad on the `mirror` journey, its epics mapped one-to-one to Delivery Stories
+
+**Date:** 2026-10-13 · **Context:** CV22 is released, and
+[CV21](roadmap/cv21-runtime-expansion-ii/index.md) resumes after four months with
+E2 in progress. CV21 was written as CV → Epic → Story. Ariad's pull scanner reads
+only Delivery, User, and Technical Stories, so the CV as written offers it nothing
+to pull: the problem CV22 had before its own migration on 2026-07-02.
+
+**The decision: CV21 is governed by Ariad on the `mirror` journey itself, and its
+epics become Delivery Stories one-to-one: `CV21.E<n>` is `CV21.DS<n>`.** Stories
+keep their numbers and take a type prefix. `CV21.E2.S1` becomes `CV21.DS2.US1`, and
+the spikes' `S1`–`S4` become `TS1`–`TS4`. The CV21 index carries the full map, so
+any code written before the migration still resolves.
+
+**Why `mirror`, and not a child journey.** CV22 ran under its own child journey,
+`mirror-ts-core`, because it lived on a port branch beside a `main` that kept
+moving. CV21 works on `main`, in the journey this repository's Builder sessions
+load, and that journey had never adopted a method: the 2026-06-14 adoption names a
+`mirror-mind` parent that its runtime state does not contain. Adopting on `mirror`
+makes the project-level adoption true where the work happens. The cost is
+accepted: Ariad holds one active item per journey, so other Builder work on
+`mirror`, such as CV9 stabilization and refinement, shares the cursor with CV21.
+
+**Why one-to-one.** Decisions, CV22's story records, the worklog, and two smoke
+scripts cite `CV21.E2`, `CV21.E2.S1`, and `CV21.E2.S2`. Renumbering would make each
+of them name a different package. Keeping the number turns the map into a prefix
+change. Links into a renamed folder move with it. Text written before the
+migration keeps the code it was written with.
+
+**What follows.** The four finished spikes and DS2's three finished stories carry
+`done.md` markers, so they never return as pull candidates. DS2 stays in progress
+with its status line and smoke test to do. The planned Delivery Stories that have
+no package yet get one when they are pulled.
+
 ## Open Discussions
 
 ### Migration rehearsal — long-term status
