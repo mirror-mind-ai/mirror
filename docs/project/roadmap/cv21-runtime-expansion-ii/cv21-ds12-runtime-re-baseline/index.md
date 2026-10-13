@@ -67,6 +67,11 @@ Versions for orientation only: each probe reads its own.
   - Codex's plugin or marketplace install.
 - **The extension surface**, against CV22.DS7.TS4's declared extension contract and the
   npm package.
+- **Steps that need the Navigator** (Navigator, 2026-10-13). Probes that need a logged-in
+  session or a model call become steps of a route script. The Navigator runs them when the
+  Driver hands them over during implementation, because TS6's decision depends on them.
+  Paid calls are kept to the minimum. Mirror itself cannot spend in them: the scratch Mirror
+  home holds no provider key.
 
 Out of scope:
 
@@ -80,7 +85,7 @@ Out of scope:
 |------|-------|------|---------|--------|
 | CV21.DS12.TS1 | Claude Code re-probe | Technical Story (spike) | On the installed Claude Code, the npm-era plugin loads, fires its hooks, delivers the operating instructions at session start, and reaches the MCP server. The probe finds out whether a plugin can carry a status line, and whether DS2.TS4 can close on the evidence | 🟡 Planned |
 | CV21.DS12.TS2 | Codex re-probe | Technical Story (spike) | DS3's hook mapping is re-measured on the installed Codex, starting from the shipped wrapper: per-turn `additionalContext`, the `async` and `SessionEnd` caveats, and whether Codex consumes the Claude-format plugin through a plugin or marketplace install | 🟡 Planned |
-| CV21.DS12.TS3 | Antigravity re-probe | Technical Story (spike) | DS6's hook surface is re-measured on the installed `agy`, including any per-turn or session-start injection. `agy plugin import claude` runs live on `plugins/mirror-mind` in a scratch config. The result is the parity Antigravity can honestly claim as Gemini CLI's successor | 🟡 Planned |
+| CV21.DS12.TS3 | Antigravity re-probe | Technical Story (spike) | DS6's hook surface is re-measured on the installed `agy`, including any per-turn or session-start injection. `agy plugin import claude` runs live on `plugins/mirror-mind` in a scratch config. The result is the parity Antigravity can honestly claim as Gemini CLI's successor. It also sets the bar DS7 must reach before DS8 can remove Gemini CLI (Navigator, 2026-10-13) | 🟡 Planned |
 | CV21.DS12.TS4 | Grok Build re-probe | Technical Story (spike) | DS9's findings are re-measured on the installed `grok`, now 1.x where June's was 0.2.x: whether any hook can now inject, and which Claude locations Grok still reads. A plugin install or import of `plugins/mirror-mind` runs live in a scratch config | 🟡 Planned |
 | CV21.DS12.TS5 | Extension surface re-grounding | Technical Story (spike) | The External Extension Surface Assessment is rewritten against the TypeScript extension contract and the npm package. It states how a user-owned extension reaches each runtime today, and the gap that remains | 🟡 Planned |
 | CV21.DS12.TS6 | Re-baseline decision and roadmap reshape | Technical Story (decision) | A decision record confirms or revises the DS1 convergence decision. It confirms, reshapes, merges, or drops DS2's remainder and DS4–DS11, and states the parity matrix per runtime with version, binary, and date | 🟡 Planned |
@@ -93,6 +98,7 @@ DS12 is done when:
   isolation on its installed version, under the evidence rule;
 - the imports DS1 deferred have run live;
 - the extension surface is re-grounded;
+- the bar DS7 must reach before DS8 can remove Gemini CLI is stated;
 - the decision record and the reshaped DS2 remainder and DS4–DS11 are in the CV21
   index;
 - no production runtime config, Mirror home, or repository state was mutated.
