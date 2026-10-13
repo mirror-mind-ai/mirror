@@ -88,13 +88,16 @@ fallback directory, so its proof is the unit test, on CI.
 
 - `mirror mcp` with no Mirror home configured dies with a Node stack trace on stderr
   (`MirrorHomeNotConfiguredError`), where the launcher's own failures are one line. A
-  client's MCP log should get one line here too. Not changed in US6; a Change Request
-  candidate.
+  client's MCP log should get one line here too. Not changed in US6: CR129, below.
 - Grok's `inspect --json` lists the server under `mcpServers` and reports
   `provides.mcpServers: 0` for the plugin at the same time. Grok's, noted for DS10.
-- `docs/reference/configuration.md` holds 23 double-encoded em dashes (`â€”`), from
-  `ccf8b1cc`. Only the two paragraphs this story rewrote were touched; a Change Request
-  candidate.
+- `docs/reference/configuration.md` holds double-encoded em dashes: each `—` re-encoded
+  byte by byte, so it reads `â` and two invisible control characters. 21 remain, on 17
+  lines, from `83a93477`; this story's edit removed two in passing. Captured as
+  [CR130](../../../../refinement/rs010-cv22-oracle-and-port-hygiene/cr130-double-encoded-em-dashes-in-the-configuration-reference.md),
+  which corrects the first count (23) and commit (`ccf8b1cc`) given here.
+- `mirror mcp` with no home's stack trace is
+  [CR129](../../../../refinement/rs010-cv22-oracle-and-port-hygiene/cr129-mirror-mcp-with-no-home-prints-a-stack-trace.md).
 
 ## The Implementation
 

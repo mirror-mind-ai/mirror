@@ -70,3 +70,6 @@ evidence stays honest as both cores move.
 - [CR122 — The capture normalizer's word-boundary masks are inert under BSD `sed`](cr122-the-capture-normalizer-s-word-boundary-masks-are-inert-under-bsd-sed.md)
 - [CR123 — The plugin smoke's missing-bin case cannot run on a machine with a global link](cr123-the-plugin-smoke-s-missing-bin-case-cannot-run-on-a-machine-with-a-global-link.md)
 - [CR128 — The smokes' production guard checks no database in CI, and the plugin smoke never reaches it on a linked machine](cr128-the-smokes-production-guard-checks-no-database-in-ci.md)
+- [CR129 — `mirror mcp` with no Mirror home prints a Node stack trace where every other failure is one line](cr129-mirror-mcp-with-no-home-prints-a-stack-trace.md)
+- [CR130 — Double-encoded em dashes in the configuration reference, and nothing that catches them](cr130-double-encoded-em-dashes-in-the-configuration-reference.md)
+- [CR131 — `runtime diagnose` does not say what the plugin's MCP entry would find](cr131-runtime-diagnose-does-not-run-the-mcp-locator.md)
