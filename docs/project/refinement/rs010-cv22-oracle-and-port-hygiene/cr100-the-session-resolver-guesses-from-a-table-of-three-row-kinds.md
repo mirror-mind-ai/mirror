@@ -55,6 +55,16 @@ more. What remains is conversation integrity across windows: a guessed
 `switchConversation` closes and replaces a conversation that belongs to a
 different window. Mode display can also land on the wrong window (CR101).
 
+**Raised by CV21.DS12 (2026-10-13).** `mirror mirror log` (`logMirrorResponse`
+in `ts/src/mirror/orchestration.ts`) is a consumer this CR did not list, and it
+writes content, not display. With no session named, it appends the summary to the
+guessed session's current conversation. In DS12's live sessions, an Antigravity
+agent ran `mirror mirror log "…"`. Antigravity has no Mirror hooks yet, so it had no
+runtime session of its own, and the summary landed in the Codex session's
+still-open conversation, credited to the wrong runtime and the wrong session. Each
+runtime CV21 adds before its hooks name their session sends more traffic down this
+path.
+
 ## Plan Or Decision
 
 Not planned. Captured without selecting; Current Focus unchanged. Captured by
@@ -78,6 +88,16 @@ stamp binds only if it was written under the name. Until then
   `interface: "builder_delivery_cursor"`.
 - `ts/src/conversation/logger.ts`: `switchConversation` resolves, ends, and
   restarts on the resolved session.
+- CV21.DS12's live sessions,
+  [TS2 L9](../../roadmap/cv21-runtime-expansion-ii/cv21-ds12-runtime-re-baseline/cv21-ds12-ts2-codex-re-probe/index.md)
+  and
+  [TS3 L8](../../roadmap/cv21-runtime-expansion-ii/cv21-ds12-runtime-re-baseline/cv21-ds12-ts3-antigravity-re-probe/index.md).
+  Message timestamps and the front-door log place the write at 14:41:53 UTC, during
+  the Antigravity session, into conversation `e6f1b048`, the Codex session's.
+- In the same write, the agent's double-quoted argument let zsh expand `$297` and
+  `$497` to nothing. `mm-mirror` already says not to call `mirror log` without a
+  session-aware path. A stdin form of `mirror mirror log` would also keep a
+  summary's text intact when an agent calls it anyway.
 - `.pi/extensions/mirror-logger.ts`: `log-user` at `before_agent_start`, which
   is why the guess is usually the active window.
 - The heuristic was introduced on purpose on 2026-05-25:
