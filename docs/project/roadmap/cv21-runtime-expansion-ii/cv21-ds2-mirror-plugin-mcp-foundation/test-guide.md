@@ -189,4 +189,26 @@ processes will, and starts no session when either is wrong. The preflight reprod
 the attempt's error on the old environment, and passes on the new one for all three
 runtimes.
 
+**Claude Code, attempt 2 (live step `DS2-s4fabs`, 2026-10-13T20:19:32Z; the turns typed
+carried attempt 1's `DS2-mczk01`): US7 and US8 held live, and the MCP server never
+started.**
+
+- One conversation, labelled `claude_code` on the conversation and the runtime session:
+  the Mirror question without its form, the `◇ financial` answer, the probe, and its
+  reply, each reply carrying its prompt's turn id. SessionEnd closed it (20:23:26Z).
+  `hooks.log` holds no line from the session: no failure, no skipped reply.
+- The MCP server did not connect, and Claude Code did not try. It had recorded attempt
+  1's failure at 20:11:48Z in the scratch config dir (`mcp-needs-auth-cache.json`), and
+  holds a failed server back for 15 minutes. With the session's exact environment,
+  `claude mcp list` started the server and connected it (20:34Z).
+- `route.sh check` itself failed: a `case` inside `$(...)`, which macOS's `/bin/bash`
+  3.2 cannot parse. And `route.sh static` could not be repeated on the same scratch
+  home: its fixed session ids appended a second run to the first run's conversations.
+
+The route now clears that cache before each Claude attempt (keeping a copy), `check`
+finds a session by time when its turns carry another run's marker and grades the tool
+list 7 of 7, and `static` uses session ids of its own per run. Every step was re-run
+under `/bin/bash` 3.2: `static` 22/0, `check claude` reports attempt 2 as above (7/1,
+the MCP line), and the three live steps prepare with their preflight green.
+
 The remaining sessions are recorded at Validation.

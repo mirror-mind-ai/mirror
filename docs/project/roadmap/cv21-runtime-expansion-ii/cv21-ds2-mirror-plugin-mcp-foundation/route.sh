@@ -406,6 +406,9 @@ static_step() {
   say "Static — TS5, US6, US7, and US8 on the shipped package (no model call)"
   for cmd in claude codex grok; do stamp "$cmd"; done
   local CACHE; CACHE="$(plugin_cache)"
+  # Session ids of this run's own: the step can be repeated on the same scratch
+  # home without a second run appending to the first run's conversations.
+  local RUN; RUN="$(date -u +%H%M%S)"
 
   echo; look "TS5. the plugin against each runtime's validator:"
   local S="$D/validate-config"; rm -rf "$S" && mkdir -p "$S" && chmod 700 "$S"
@@ -425,13 +428,13 @@ static_step() {
   local form out n=0
   for form in "/mm:mirror" "/mirror-mind:mm-mirror" "/mirror-mind:mm:mirror" "\$mirror-mind:mm:mirror" "/mm-mirror" "\$mm-mirror"; do
     n=$((n + 1))
-    out="$(node -e 'process.stdout.write(JSON.stringify({session_id:process.argv[1],prompt:process.argv[2]+" should I raise my price?"}))' "ds2-inject-$n" "$form" \
+    out="$(node -e 'process.stdout.write(JSON.stringify({session_id:process.argv[1],prompt:process.argv[2]+" should I raise my price?"}))' "ds2-inject-$RUN-$n" "$form" \
       | (cd "$D/project" && as_scratch bash "$CACHE/hooks/mirror-inject.sh") 2>/dev/null | wc -c | tr -d ' ')"
     [ "$out" -gt 0 ] && ok "$form: $out bytes" || bad "$form: no context"
   done
   for form in "/mm-mirrors" "/mm:journeys"; do
     n=$((n + 1))
-    out="$(node -e 'process.stdout.write(JSON.stringify({session_id:process.argv[1],prompt:process.argv[2]+" should I raise my price?"}))' "ds2-inject-$n" "$form" \
+    out="$(node -e 'process.stdout.write(JSON.stringify({session_id:process.argv[1],prompt:process.argv[2]+" should I raise my price?"}))' "ds2-inject-$RUN-$n" "$form" \
       | (cd "$D/project" && as_scratch bash "$CACHE/hooks/mirror-inject.sh") 2>/dev/null | wc -c | tr -d ' ')"
     [ "$out" -eq 0 ] && ok "$form (not the Mirror skill): nothing" || bad "$form: $out bytes of context"
   done
@@ -441,11 +444,11 @@ static_step() {
   local shape result rows expected skips before
   before="$( [ -f "$MHOME/hooks.log" ] && wc -l <"$MHOME/hooks.log" | tr -d ' ' || echo 0)"
   for shape in claude_code codex grok_build; do
-    result="$(cd "$D/project" && as_scratch node "$D/journey.js" "$CACHE/hooks" "$shape" "ds2-journey-$shape")"
-    rows="$(sqlite3 "$MHOME/memory.db" "SELECT group_concat(m.role || ':' || ifnull(json_extract(m.metadata,'\$.turn_id'),'-') || ':' || m.content, ' | ') FROM (SELECT m.* FROM messages m JOIN runtime_sessions s ON s.conversation_id = m.conversation_id WHERE s.session_id = 'ds2-journey-$shape' ORDER BY m.created_at, m.rowid) m")"
+    result="$(cd "$D/project" && as_scratch node "$D/journey.js" "$CACHE/hooks" "$shape" "ds2-journey-$shape-$RUN")"
+    rows="$(sqlite3 "$MHOME/memory.db" "SELECT group_concat(m.role || ':' || ifnull(json_extract(m.metadata,'\$.turn_id'),'-') || ':' || m.content, ' | ') FROM (SELECT m.* FROM messages m JOIN runtime_sessions s ON s.conversation_id = m.conversation_id WHERE s.session_id = 'ds2-journey-$shape-$RUN' ORDER BY m.created_at, m.rowid) m")"
     expected="user:t1:should I raise my price? | assistant:t1:the Mirror answer | user:t2:which tools can you see? | assistant:t2:seven mirror-mind tools"
     local label
-    label="$(sqlite3 "$MHOME/memory.db" "SELECT c.interface || '/' || s.interface FROM runtime_sessions s JOIN conversations c ON c.id = s.conversation_id WHERE s.session_id = 'ds2-journey-$shape'")"
+    label="$(sqlite3 "$MHOME/memory.db" "SELECT c.interface || '/' || s.interface FROM runtime_sessions s JOIN conversations c ON c.id = s.conversation_id WHERE s.session_id = 'ds2-journey-$shape-$RUN'")"
     if [ "$rows" = "$expected" ] && [ "$label" = "$shape/$shape" ] && [ "$result" = "silent" ]; then
       ok "$shape: the four rows, labelled $shape on the conversation and the session, nothing printed"
     else
@@ -551,6 +554,13 @@ live_claude() {
   # Mirror's config file comes from a directory of the session's own: the one
   # a real install has, naming only the scratch home.
   printf 'MIRROR_HOME=%s\n' "$MHOME" >"$XDG/mirror/env"
+  # Claude Code holds a server that failed back for 15 minutes, in this config
+  # dir. An earlier attempt's failure must not decide this one.
+  if [ -f "$CC/mcp-needs-auth-cache.json" ]; then
+    cp "$CC/mcp-needs-auth-cache.json" "$LIVE/mcp-needs-auth-cache.before.json"
+    rm -f "$CC/mcp-needs-auth-cache.json"
+    note "cleared Claude Code's remembered MCP failure from an earlier attempt (kept in $LIVE)"
+  fi
   session_env
   SESSION_ENV+=(CLAUDE_CONFIG_DIR="$CC" XDG_CONFIG_HOME="$XDG")
   preflight
@@ -644,14 +654,32 @@ check_step() {
   local rt="${1:-}"
   need_install
   case "$rt" in claude|codex|grok) ;; *) echo "usage: bash $SELF check <claude|codex|grok>"; exit 2 ;; esac
-  local LIVE="$D/live/$rt" label
-  label="$(case "$rt" in claude) echo claude_code ;; codex) echo codex ;; grok) echo grok_build ;; esac)"
+  # A plain case, never one inside $(...): macOS's /bin/bash 3.2 cannot parse
+  # a case pattern's `)` inside a command substitution.
+  local LIVE="$D/live/$rt" label=""
+  case "$rt" in
+    claude) label=claude_code ;;
+    codex) label=codex ;;
+    grok) label=grok_build ;;
+  esac
   [ -f "$LIVE/started" ] || { echo "No $rt session recorded; run: bash $SELF live-$rt"; exit 2; }
   local START ID CONV
   START="$(cat "$LIVE/started")"; ID="$(cat "$LIVE/id")"
   say "Check — what the $rt session left (DS2-$ID, since $START)"
   CONV="$(sqlite3 "$MHOME/memory.db" "SELECT c.id FROM conversations c JOIN messages m ON m.conversation_id = c.id WHERE m.content LIKE '%DS2-$ID%' ORDER BY c.started_at LIMIT 1")"
-  [ -n "$CONV" ] || { bad "no conversation in the scratch home holds DS2-$ID"; result; return; }
+  if [ -z "$CONV" ]; then
+    # Turns typed from an earlier run's output carry that run's marker. The
+    # session is still the one that started after this step: find it by time.
+    local FOUND COUNT
+    FOUND="$(sqlite3 "$MHOME/memory.db" "SELECT id FROM conversations WHERE substr(started_at,1,19) >= substr('$START',1,19) ORDER BY started_at")"
+    COUNT="$(printf '%s' "$FOUND" | grep -c . || true)"
+    if [ "$COUNT" = "1" ]; then
+      CONV="$FOUND"
+      note "no message carries DS2-$ID; the one conversation started since $START carries $(sqlite3 "$MHOME/memory.db" "SELECT group_concat(DISTINCT substr(content, instr(content, 'DS2-'), 10)) FROM messages WHERE conversation_id = '$CONV' AND content LIKE '%DS2-%'") (turns typed from an earlier run): checking it"
+    else
+      bad "no conversation in the scratch home holds DS2-$ID, and $COUNT started since $START"; result; return
+    fi
+  fi
   local LABELS
   LABELS="$(sqlite3 "$MHOME/memory.db" "SELECT c.interface || ' / ' || ifnull((SELECT group_concat(DISTINCT s.interface) FROM runtime_sessions s WHERE s.conversation_id = c.id), '-') FROM conversations c WHERE c.id = '$CONV'")"
   [ "$LABELS" = "$label / $label" ] && ok "conversation / runtime session: $LABELS" || bad "conversation / runtime session: $LABELS (expected $label / $label)"
@@ -689,7 +717,8 @@ check_step() {
     claude|codex)
       local TOOLS
       TOOLS="$(sqlite3 "$MHOME/memory.db" "SELECT content FROM messages WHERE conversation_id = '$CONV' AND role = 'assistant' ORDER BY created_at DESC, rowid DESC LIMIT 1" | grep -oE 'mirror_context|list_journeys|journey_status|search_memories|list_conversations|recall_conversation|detect_persona' | sort -u | wc -l | tr -d ' ')"
-      look "the MCP server: turn 2's reply names $TOOLS of the server's tool names (read the reply above; the tool list is the model's)"
+      [ "$TOOLS" = "7" ] && ok "the MCP server: turn 2's reply names all 7 of its tools" \
+        || bad "the MCP server: turn 2's reply names $TOOLS of its 7 tools (read the reply above)"
       ;;
     grok)
       local LOG="$D/grok-live/.grok/logs/mcp/mirror-mind.stderr.log"
