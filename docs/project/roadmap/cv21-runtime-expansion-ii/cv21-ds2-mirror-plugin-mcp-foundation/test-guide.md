@@ -174,4 +174,19 @@ nothing, and counted 4 skipped replies in `hooks.log` without their text.
 
 ### The Navigator's sessions
 
-Recorded at Validation.
+**Claude Code, attempt 1 (`DS2-mczk01`, 2026-10-13T20:09Z): stopped at turn 1 by the
+route, not by DS2.** `mirror mirror load` exited 2 with "MIRROR_HOME
+(/private/tmp/cv21-ds2/home/.mirror-minds/ds2) conflicts with MIRROR_USER (vinicius)",
+and the MCP server closed its connection for the same reason. The route kept the
+Navigator's HOME for Claude Code's login and unset `MIRROR_USER`, so Mirror's config
+loader filled it, and `OPENROUTER_API_KEY` with it, from the real
+`~/.config/mirror/env`. Mirror's home check refused the mismatched pair before any
+database was opened or provider called: the scratch home holds nothing from the
+attempt, and `untouched` passed 3/0. The route now gives the Claude session a config
+directory of its own and sets `MIRROR_USER=ds2` beside `MIRROR_HOME`, and every live
+step runs a preflight that resolves the home and the key the way the session's Mirror
+processes will, and starts no session when either is wrong. The preflight reproduces
+the attempt's error on the old environment, and passes on the new one for all three
+runtimes.
+
+The remaining sessions are recorded at Validation.

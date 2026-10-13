@@ -484,10 +484,42 @@ live_prepare() {
 }
 
 # The session's environment: the scratch install first on the PATH, the scratch
-# Mirror home named, no provider key, no Pi history.
+# Mirror home named as a consistent pair (MIRROR_HOME's last segment is the user,
+# and the environment outranks every config file), no provider key, no Pi history.
+#
+# Unsetting MIRROR_USER is not enough: Mirror's config loader fills an unset
+# variable from the person's config file, so a session that keeps a real HOME
+# (Claude Code's, for its login) read MIRROR_USER -- and OPENROUTER_API_KEY --
+# from the real ~/.config/mirror/env. The first live run met that as a home
+# conflict. Each runtime's session therefore also gets a config directory of
+# its own (live_claude), or a scratch HOME (Codex, Grok), and `preflight`
+# resolves what the session's Mirror processes will see before a turn is spent.
 session_env() {
   SESSION_ENV=(env -u XDG_CONFIG_HOME -u MIRROR_BIN -u MIRROR_NODE -u NODE_OPTIONS -u OPENROUTER_API_KEY
-    -u MIRROR_USER MIRROR_HOME="$MHOME" PI_SESSIONS_DIR="$D/pi-sessions" PATH="$D/prefix/bin:$REAL_PATH")
+    MIRROR_USER=ds2 MIRROR_HOME="$MHOME" PI_SESSIONS_DIR="$D/pi-sessions" PATH="$D/prefix/bin:$REAL_PATH")
+}
+
+# Resolve the Mirror home and the provider key exactly as the session's Mirror
+# processes will -- the same loader, the same entry, the session's environment
+# -- and stop before the runtime starts if either is wrong.
+#   preflight [HOME the runtime runs with]
+preflight() {
+  local home="${1:-}" out
+  out="$("${SESSION_ENV[@]}" ${home:+HOME="$home"} node --no-warnings --input-type=module -e '
+    const { pathToFileURL } = await import("node:url");
+    const { loadConfiguration } = await import(pathToFileURL(process.argv[1]).href);
+    const { resolveMirrorHome } = await import(pathToFileURL(process.argv[2]).href);
+    loadConfiguration({ entryPath: process.argv[3] });
+    let home;
+    try { home = resolveMirrorHome(process.env); } catch (error) { home = "ERROR: " + error.message; }
+    console.log(home + "\t" + (process.env.OPENROUTER_API_KEY ? "a provider key" : "no provider key"));
+  ' "$ROOT/ts/src/runtime/config.ts" "$ROOT/ts/src/frontDoor/dbPath.ts" "$PKG/ts/src/frontDoor/cli.ts" 2>&1)"
+  if [ "$out" = "$MHOME"$'\t'"no provider key" ]; then
+    ok "preflight: the session's Mirror resolves the scratch home, with no provider key"
+  else
+    bad "preflight: the session's Mirror would see: $out"
+    echo "  Not starting the session: no turn spent."; exit 2
+  fi
 }
 
 turns_text() {
@@ -513,11 +545,16 @@ live_claude() {
   local CACHE; CACHE="$(plugin_cache)"
   # A scratch config dir: your ~/.claude/skills already loads Mirror, and a second
   # mirror-mind would load beside this copy. Claude Code keeps its login outside it.
-  local CC="$D/claude-live/.claude"
-  mkdir -p "$CC" && chmod 700 "$D/claude-live"
+  local CC="$D/claude-live/.claude" XDG="$D/claude-live/config"
+  mkdir -p "$CC" "$XDG/mirror" && chmod 700 "$D/claude-live"
+  # Claude Code keeps your HOME (its login lives outside the config dir), so
+  # Mirror's config file comes from a directory of the session's own: the one
+  # a real install has, naming only the scratch home.
+  printf 'MIRROR_HOME=%s\n' "$MHOME" >"$XDG/mirror/env"
   session_env
-  SESSION_ENV+=(CLAUDE_CONFIG_DIR="$CC")
-  note "Claude Code runs with a scratch config dir ($CC) and the plugin copy $CACHE."
+  SESSION_ENV+=(CLAUDE_CONFIG_DIR="$CC" XDG_CONFIG_HOME="$XDG")
+  preflight
+  note "Claude Code runs with a scratch config dir ($CC), a scratch Mirror config ($XDG/mirror/env), and the plugin copy $CACHE."
   turns_text "/mirror-mind:mm-mirror" claude
   local P="$D/project-claude"
   rm -rf "$P" && mkdir -p "$P"
@@ -572,6 +609,7 @@ live_codex() {
   [ -f "$CX/auth.json" ] || note "Codex will ask you to log in: that login is stored in $CX only."
   note "Codex asks once to trust the plugin's hooks: trust them."
   session_env
+  preflight "$PERSON"
   turns_text "\$mirror-mind:mm:mirror" codex
   local P="$D/project-codex"
   rm -rf "$P" && mkdir -p "$P"
@@ -595,6 +633,7 @@ live_grok() {
   note "the project has Mirror's AGENTS.md: Grok shows a SessionStart message on screen only (DS12.TS4 L2)."
   [ -f "$GH/.grok/auth.json" ] || note "Grok will ask you to log in: that login is stored in $GH only."
   session_env
+  preflight "$GH"
   turns_text "/mm-mirror" grok
   [ "${DS2_DRY:-0}" = 1 ] && { note "DS2_DRY=1: prepared, session not started"; return 0; }
   cd "$P" && exec "${SESSION_ENV[@]}" HOME="$GH" grok
