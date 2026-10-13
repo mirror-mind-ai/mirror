@@ -38,7 +38,9 @@ each runtime through import/install rather than reimplementation. Four drivers:
   individual backend on **2026-06-18**
   ([notice](https://developers.google.com/gemini-code-assist/docs/deprecations/code-assist-individuals)).
   Its successor is **Google Antigravity** (`agy` CLI), which can import Claude
-  plugins. The Gemini CLI integration is retired.
+  plugins. Mirror retires its Gemini CLI integration
+  ([decision](../../decisions.md#gemini-cli-is-retired-and-antigravity-is-its-successor)),
+  which v0.32.1 still ships.
 - **Add — Grok Build:** **xAI Grok Build** (`grok` CLI, [x.ai/cli](https://x.ai/cli))
   is a new runtime that already discovers our skills and can import plugins.
 
@@ -159,7 +161,7 @@ package gets one when it is pulled, and expands into User and Technical Stories.
 | CV21.DS5 | Codex Skill & Extension Surface | `mm-*` skills already discovered via `.agents/skills/` (DS3 finding — no migration); expose user-owned extensions into `.agents/skills/` and/or a Codex plugin; smoke test | 🟡 Planned |
 | [CV21.DS6](cv21-ds6-antigravity-runtime-spike/index.md) | Antigravity Runtime Spike | Confirmed (read-only, no config mutated): hooks are tool/invocation/stop-centric — **no `UserPromptSubmit`/`additionalContext`** → honest parity **L3** (not L4); skills via `.agents/skills/` (no migration); Mirror Mode via `AGENTS.md`; `agy plugin import claude` path confirmed. `PreInvocation`+`HookSystemMessage` injection flagged for DS7 | ✅ Done |
 | CV21.DS7 | Antigravity Runtime & Extension Surface | Antigravity runs Mirror at **L3** via `.agents/skills/` + `AGENTS.md` + explicit invocation; logging via wrapper/`StopHook` + deferred extraction (`interface='antigravity'`); external extensions ride `.agents/skills/`; probe `PreInvocation`+`HookSystemMessage` injection; isolated smoke test | 🟡 Planned |
-| CV21.DS8 | Gemini CLI Sunset | The `.gemini/` shell-hook integration is honestly retired; Antigravity documented as its successor; all runtime-facing docs updated. Honest note (DS6): Gemini CLI was L4; Antigravity is L3 — automatic per-turn injection is lost in the migration | 🟡 Planned |
+| CV21.DS8 | Gemini CLI Sunset | The Gemini CLI integration v0.32.1 still ships is removed behind a documented cutoff ([decision](../../decisions.md#gemini-cli-is-retired-and-antigravity-is-its-successor)): the `.gemini/hooks` wrappers, the `gemini` hook family, the `mirror init` steps, the Gemini smoke, and every runtime-facing doc; Antigravity named as the successor; released with its own note. Gemini *models* are untouched. Honest note (DS6): Gemini CLI was L4, and Antigravity measured L3 on `agy` 1.0.8, so per-turn injection is lost unless the current `agy` offers it | 🟡 Planned |
 | [CV21.DS9](cv21-ds9-grok-build-runtime-spike/index.md) | Grok Build Runtime Spike | Confirmed (read-only, no config mutated): full Claude-style hook lifecycle read from `.claude/settings.json` (native logging, **not** export/backfill); `UserPromptSubmit` passive → no injection → honest parity **L3** (strong L1); skills via `.agents/skills/` (no migration); plugins via `.claude/plugins/` compat; MCP in `config.toml` | ✅ Done |
 | CV21.DS10 | Grok Build Runtime & Extension Surface | Grok runs Mirror at **L3** via native `.claude/settings.json` hook lifecycle (`interface='grok_build'`, deferred extraction, project-trust aware); skills via `.agents/skills/`; Mirror Mode via `AGENTS.md` + explicit slash invocation; external extensions ride `.agents/skills/`; MCP via `~/.grok/config.toml`; isolated smoke test | 🟡 Planned |
 | CV21.DS11 | Contract & Docs Refresh | All runtimes folded into the runtime interface contract, decisions, and the parity matrix across README, Getting Started, REFERENCE, and architecture; the plugin/MCP convergence documented | 🟡 Planned |

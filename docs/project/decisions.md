@@ -2615,6 +2615,55 @@ migration keeps the code it was written with.
 with its status line and smoke test to do. The planned Delivery Stories that have
 no package yet get one when they are pulled.
 
+### Gemini CLI is retired, and Antigravity is its successor
+
+**Date:** 2026-10-13 · **Context:** the Navigator made this call on 2026-09-25,
+during [CV22.DS10.TS5](roadmap/cv22-typescript-core-port/cv22-ds10-python-retirement-npm-distribution/cv22-ds10-ts5-python-core-deletion/index.md).
+The only record was a line letting that story's deletion walk skip its Gemini step.
+It is confirmed and recorded now, as
+[CV21](roadmap/cv21-runtime-expansion-ii/index.md) resumes. Google set 2026-06-18 as
+the deprecation date of the Gemini Code Assist backend for individuals
+([notice](https://developers.google.com/gemini-code-assist/docs/deprecations/code-assist-individuals)).
+Its successor is Antigravity (`agy`), which imports Claude-format plugins.
+
+**The decision: Gemini CLI is no longer a Mirror runtime. Antigravity replaces it,
+and CV21 removes the shipped integration behind a documented cutoff.**
+
+**Why it needs recording.** The 2026-09-25 call never reached the product. On
+2026-10-06, after the call, CV22.DS10.US3 built and verified npm-era wiring for
+Gemini CLI 0.61.0. v0.32.1 ships Gemini CLI as one of four supported runtimes:
+
+- four `.gemini/hooks` wrappers, and the `gemini` hook family behind them, in the
+  package;
+- two Gemini setup steps printed by `mirror init`;
+- a Gemini smoke script;
+- the runtime named as supported in the README, Getting Started, REFERENCE, the
+  runtime-interface spec, the operating instructions, and the package's own
+  description and keywords.
+
+A retirement that lives in one story's notes, while the release advertises the
+runtime as supported, has not happened.
+
+**What follows.**
+
+- CV21.DS8 owns the removal: the wrappers, the hook family, the `init` steps, the
+  smoke, and every runtime-facing doc. Its cutoff answers what no longer exists,
+  what to do instead (install Antigravity, wired by CV21.DS7), and what happens to
+  a user who does nothing. That last answer needs care. `mirror init` told Gemini
+  users to write absolute paths into the package into `~/.gemini/settings.json`,
+  and those hooks stop resolving when the files go. Users notice the change, so it
+  ships in a release with its own note, recorded the way
+  [the CV22 cutoffs](../releases/pending-cutoffs.md) were.
+- Gemini *models* are unaffected. Extraction runs on `google/gemini-2.5-flash-lite`
+  through OpenRouter, and `consult` can reach Gemini models. Those are model
+  choices, not the runtime.
+- Conversations already logged with `interface='gemini_cli'` stay in every home,
+  readable. Nothing migrates them.
+- The cost is stated, not hidden. Gemini CLI reached L4 parity. CV21.DS6 measured
+  Antigravity at L3 on `agy` 1.0.8, so a Gemini user who moves loses automatic
+  per-turn Mirror Mode injection, unless the current `agy` offers a mechanism the
+  June spike did not find.
+
 ## Open Discussions
 
 ### Migration rehearsal — long-term status
