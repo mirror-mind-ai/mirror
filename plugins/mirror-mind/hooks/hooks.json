@@ -6,8 +6,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/session-start.sh",
-            "timeout": 15000
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/session-start.sh\"",
+            "timeout": 300
           }
         ]
       }
@@ -18,8 +18,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/mirror-inject.sh",
-            "timeout": 30000
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/mirror-inject.sh\"",
+            "timeout": 30
           }
         ]
       },
@@ -28,7 +28,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/log-user-prompt.sh",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/log-user-prompt.sh\"",
             "async": true
           }
         ]
@@ -40,7 +40,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/log-session-end.sh",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/log-session-end.sh\"",
             "async": true
           }
         ]
