@@ -129,8 +129,9 @@ failed.
      - Whether Codex's conversation closed at exit is printed and recorded as a
        finding. It does not decide pass or fail (Non-Goals).
    - **Pass:** every label is right, every logged prompt has exactly one reply after
-     it with the same turn id, no reply appears without its prompt, and the reply you
-     read is the one you saw.
+     it with the same turn id, no reply appears without its prompt, every assistant row
+     carries a turn id (so the Stop hook wrote it, not a `mirror mirror log` by hand),
+     and the reply you read is the one you saw.
    - **Fail:** a mislabelled conversation, a missing reply, a reply logged twice, a
      reply under the wrong prompt, or a Mirror question missing.
 4. **`bash route.sh untouched`.**

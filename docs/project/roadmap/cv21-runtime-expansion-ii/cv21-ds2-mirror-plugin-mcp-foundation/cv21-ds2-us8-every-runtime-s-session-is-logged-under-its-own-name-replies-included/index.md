@@ -74,8 +74,10 @@ Then it prints nothing and exits 0
 A reply is logged when it answers a logged prompt:
 
 - **by turn id**, when the payload carries one (`prompt_id` on Claude Code, `turn_id`
-  on Codex, `promptId` on Grok) and a logged prompt carries the same, unless that
-  prompt was already answered (a repeat Stop);
+  on Codex, `promptId` on Grok) and a logged prompt carries the same, unless a reply
+  with that turn id already follows it (a repeat Stop). An assistant row without the
+  turn id, such as a summary `mirror mirror log` appended by hand, does not count as the
+  turn's answer, so it can never displace the real reply;
 - **else by position**, when the conversation's last message is a logged prompt,
   unless both sides carry a turn id and they differ, which means this turn's prompt was
   a command and an older prompt is waiting because its own Stop was lost.
@@ -96,6 +98,7 @@ limitation, accepted.
 | 4 | Claude Code's SessionEnd backfill does not double a Stop-logged reply, and closes the conversation | the same | ✓ |
 | 5 | The registrations still validate on both runtimes with the Stop handler added | `claude plugin validate`, `grok plugin validate` | ✓ no warnings; passes |
 | 6 | The whole suite | `npm test` | ✓ 3149 pass, 0 fail |
+| 7 | A summary logged by hand (`mirror mirror log`, no turn id) does not count as the turn's reply: the Stop reply is still logged, after it. Found while writing the Navigator's route: the skill's step 3 read as "record a summary" wherever a session-aware path exists, and `mirror mirror log` with no session id lands in the hook's own session. Step 3 now says to record nothing where the hooks run, and `route.sh check` flags any assistant row without a turn id | `node --test ts/test/conversation/replyLogging.test.ts`; `npm test` | ✓ 19 pass; 3151 pass, 0 fail |
 
 ## Validation
 

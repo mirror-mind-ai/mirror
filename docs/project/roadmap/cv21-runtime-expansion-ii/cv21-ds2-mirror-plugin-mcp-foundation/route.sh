@@ -627,6 +627,10 @@ check_step() {
   local UNPAIRED
   UNPAIRED="$(sqlite3 "$MHOME/memory.db" "SELECT count(*) FROM messages a WHERE a.conversation_id = '$CONV' AND a.role = 'assistant' AND json_extract(a.metadata,'\$.turn_id') IS NOT NULL AND NOT EXISTS (SELECT 1 FROM messages u WHERE u.conversation_id = a.conversation_id AND u.role = 'user' AND json_extract(u.metadata,'\$.turn_id') = json_extract(a.metadata,'\$.turn_id'))")"
   [ "$UNPAIRED" = "0" ] && ok "every reply carries its prompt's turn id" || bad "$UNPAIRED reply(ies) carry a turn id no prompt carries"
+  local UNMARKED
+  UNMARKED="$(sqlite3 "$MHOME/memory.db" "SELECT count(*) FROM messages WHERE conversation_id = '$CONV' AND role = 'assistant' AND json_extract(metadata,'\$.turn_id') IS NULL")"
+  [ "$UNMARKED" = "0" ] && ok "every reply came from the Stop hook (each carries a turn id)" \
+    || bad "$UNMARKED assistant row(s) without a turn id: written by hand (mirror mirror log) or by a backfill, not by the Stop hook"
   if sqlite3 "$MHOME/memory.db" "SELECT content FROM messages WHERE conversation_id = '$CONV' AND role = 'user' ORDER BY created_at LIMIT 1" | grep -qE '^[/$]'; then
     bad "the Mirror question was logged with its form"
   else ok "the Mirror question was logged without its form"; fi

@@ -190,6 +190,24 @@ test("a repeat Stop for an answered turn logs nothing", () => {
   db.close();
 });
 
+test("a summary logged by hand does not count as the turn's reply", () => {
+  // The Mirror skill's step 3 once read as "record a summary" wherever a
+  // session-aware path exists. `mirror mirror log` with no session id guesses
+  // the hook's own session and appends an assistant row with no turn id. Had
+  // that row counted as the answer, the real reply would have been dropped.
+  const { db, home } = fixture();
+  prompt(db, home, { session_id: "s1", prompt: "question", prompt_id: "p1" });
+  logAssistantMessage(db, "s1", "a summary, by hand", { interface: "claude_code" }, deps);
+  const outcome = stop(db, home, { session_id: "s1", last_assistant_message: "the reply", prompt_id: "p1" });
+  assert.deepEqual(outcome, { action: "logged", sessionId: "s1", pairedBy: "turn_id" });
+  assert.deepEqual(rows(db), [
+    { role: "user", content: "question", metadata: '{"turn_id": "p1"}' },
+    { role: "assistant", content: "a summary, by hand", metadata: null },
+    { role: "assistant", content: "the reply", metadata: '{"turn_id": "p1"}' },
+  ]);
+  db.close();
+});
+
 test("Grok's session-end Stop, without a turn id after an answered turn, logs nothing", () => {
   const { db, home } = fixture();
   prompt(db, home, { sessionId: "g1", promptId: "p1", prompt: "question" }, "grok_build");

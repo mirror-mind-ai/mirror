@@ -614,14 +614,26 @@ function promptOfTurn(
   return (row as MessageRow | undefined) ?? null;
 }
 
-function answeredAfter(db: WritableDatabase, conversationId: string, prompt: MessageRow): boolean {
+/**
+ * Whether the turn already has its reply: an assistant row carrying the same
+ * turn id, after the prompt. Only a Stop reply carries one, so an assistant row
+ * written another way -- a summary `mirror mirror log` appended by hand, a
+ * transcript backfill -- never stands in for the turn's answer.
+ */
+function answeredAfter(
+  db: WritableDatabase,
+  conversationId: string,
+  prompt: MessageRow,
+  turnId: string,
+): boolean {
   const row = db
     .prepare(
       `SELECT 1 FROM messages
        WHERE conversation_id = ? AND role = 'assistant'
+         AND json_extract(metadata, '$.turn_id') = ?
          AND (created_at > ? OR (created_at = ? AND rowid > ?)) LIMIT 1`,
     )
-    .get(conversationId, prompt.created_at, prompt.created_at, prompt.rowid);
+    .get(conversationId, turnId, prompt.created_at, prompt.created_at, prompt.rowid);
   return row !== undefined;
 }
 
@@ -636,8 +648,9 @@ function turnIdOfRow(row: MessageRow): string {
  * A reply is logged when it answers a logged prompt, and never otherwise:
  *
  *   * by turn id, when the payload carries one and a logged prompt carries the
- *     same -- unless that prompt was already answered, which is a repeat Stop
- *     (Grok's session-end Stop; a Stop re-fired after another hook blocked);
+ *     same -- unless a reply with that turn id already follows it, which is a
+ *     repeat Stop (a Stop re-fired after another hook blocked). An assistant
+ *     row without the turn id (a hand-logged summary) does not count;
  *   * else by position, when the conversation's last message is a logged
  *     prompt -- unless both sides carry a turn id and they differ, which means
  *     this turn's prompt was a command and an older prompt is waiting because
@@ -680,7 +693,7 @@ export function handleStopHook(
     if (turnId) {
       const prompt = promptOfTurn(db, conversationId, turnId);
       if (prompt) {
-        if (answeredAfter(db, conversationId, prompt)) {
+        if (answeredAfter(db, conversationId, prompt, turnId)) {
           return { action: "skipped", reason: "already_answered" };
         }
         logAssistantMessage(

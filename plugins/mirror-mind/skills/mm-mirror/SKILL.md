@@ -62,4 +62,6 @@ Use the `load` output as the complete response context.
 
 ## 3. Record Response
 
-If the runtime has an explicit session-aware logging path, record a concise 2-3 sentence summary there. Where Mirror's hooks run (Claude Code, Codex, Grok), do **not** invent a session id: the prompt hook logs the question (without the `/mm:mirror` form) and the Stop hook logs your reply beside it, under the runtime's own name.
+Where Mirror's hooks run (Claude Code, Codex, Grok), record **nothing** yourself: do **not** run `mirror mirror log`, and do not invent a session id. The prompt hook logs the question (without the `/mm:mirror` form) and the Stop hook logs your reply beside it, under the runtime's own name; a summary logged by hand would sit beside the reply as a second answer.
+
+Elsewhere, if the runtime has an explicit session-aware logging path, record a concise 2-3 sentence summary there.
