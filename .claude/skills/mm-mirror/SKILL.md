@@ -29,7 +29,7 @@ Use this procedure to answer in Mirror Mode. Automatic routing in `CLAUDE.md` de
 
 This is always the first action, before any visible output to the user.
 
-> **Automatic hook:** When the user invokes `/mm:mirror` explicitly, `mirror-inject.sh` already performs the session-aware mirror activation and injects the base context using the Claude hook `session_id`. You should still run `mirror mirror load` to satisfy the load-first rule and refresh context, but session routing is hook-owned in Claude Code.
+> **Automatic hook:** When the user invokes this skill explicitly, `mirror-inject.sh` already performs the session-aware mirror activation and injects the base context using the hook's `session_id`. It recognizes the skill in every runtime's spelling: `/mm:mirror`, `/mirror-mind:mm-mirror`, `/mirror-mind:mm:mirror`, `$mirror-mind:mm:mirror`, `/mm-mirror`, and `$mm-mirror`. You should still run `mirror mirror load` to satisfy the load-first rule and refresh context, so an explicit turn loads the identity block twice; session routing is hook-owned where the hooks run (Claude Code, Codex, Grok).
 
 ```bash
 mirror mirror load \

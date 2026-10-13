@@ -13,6 +13,7 @@
 
 import { resolveDbPath } from "#frontDoor/dbPath.ts";
 import { openLiveWriteDatabase } from "#frontDoor/liveBackup.ts";
+import { mirrorForm } from "./mirrorForm.ts";
 import { markInjected, needsInject, readMirrorState } from "./mirrorState.ts";
 import { parseHookPayload, readStdin } from "./payload.ts";
 import {
@@ -65,7 +66,9 @@ export async function claudeSessionEnd(): Promise<number> {
  *
  * Two cases, exactly as the shell had them:
  *
- *   1. an explicit `/mm:mirror [query]` -- load context for that query;
+ *   1. an explicit Mirror form -- `/mm:mirror [query]`, or the same skill in
+ *      any runtime's spelling (`mirrorForm.ts`; CV21.DS2.US7) -- load context
+ *      for that query;
  *   2. Mirror Mode already active for this session with context not yet
  *      injected -- load it with the session's persona and journey, then mark
  *      it injected so it happens once.
@@ -79,9 +82,9 @@ export async function claudeInject(stdin: string): Promise<number> {
   const sessionId = payload.sessionId;
 
   // Case 1: the explicit invocation.
-  if (/^\/mm:mirror/.test(payload.prompt)) {
-    const query = payload.prompt.replace(/^\/mm:mirror\s*/, "");
-    const argv = ["mirror", "load", "--context-only", "--query", query];
+  const explicit = mirrorForm(payload.prompt);
+  if (explicit) {
+    const argv = ["mirror", "load", "--context-only", "--query", explicit.query];
     if (sessionId) argv.push("--session-id", sessionId);
     const result = await runFrontDoor(argv);
     if (result.stdout.trim()) process.stdout.write(result.stdout);
