@@ -21,6 +21,7 @@ import { appendFileSync, existsSync, mkdirSync, readFileSync, realpathSync } fro
 import { dirname, join } from "node:path";
 
 import { resolveMirrorHome } from "#frontDoor/dbPath.ts";
+import { provideStdin } from "#frontDoor/stdinSource.ts";
 import { runningTreeRoot } from "#runtime/treeRoot.ts";
 
 /** Where a hook records that it could not do its job. */
@@ -106,6 +107,14 @@ export interface FrontDoorRun {
   readonly stdout: string;
 }
 
+export interface FrontDoorRunOptions {
+  /**
+   * A payload the entry already read from fd 0, for a route that reads its
+   * payload from stdin (CV21.DS2.US8). The route takes it instead of fd 0.
+   */
+  readonly stdin?: string;
+}
+
 /**
  * Run a front-door command in this process, capturing what it printed.
  *
@@ -113,8 +122,12 @@ export interface FrontDoorRun {
  * produced -- the shell version tested `[ -n "$CONTEXT" ]` on command
  * substitution, and this is the same test without a second process.
  */
-export async function runFrontDoor(argv: readonly string[]): Promise<FrontDoorRun> {
+export async function runFrontDoor(
+  argv: readonly string[],
+  options: FrontDoorRunOptions = {},
+): Promise<FrontDoorRun> {
   const { main } = await import("#frontDoor/cli.ts");
+  if (options.stdin !== undefined) provideStdin(options.stdin);
   const chunks: string[] = [];
   const original = process.stdout.write.bind(process.stdout);
   // biome-ignore lint/suspicious/noExplicitAny: matching Node's overloaded write signature
@@ -145,15 +158,22 @@ function commandName(argv: readonly string[]): string {
 
 /**
  * Run a front-door command for its effect, swallowing failure the way the
- * shell hooks did with `|| true` -- but recording it.
+ * shell hooks did with `|| true` -- but recording it. Returns what the route
+ * printed, for an entry that reads an outcome line from it.
  */
-export async function runFrontDoorQuietly(hook: string, argv: readonly string[]): Promise<void> {
+export async function runFrontDoorQuietly(
+  hook: string,
+  argv: readonly string[],
+  options: FrontDoorRunOptions = {},
+): Promise<string> {
   try {
-    const result = await runFrontDoor(argv);
+    const result = await runFrontDoor(argv, options);
     if (result.code !== 0) {
       noteHookFailure(hook, `\`${commandName(argv)}\` exited ${result.code}`);
     }
+    return result.stdout;
   } catch (error) {
     noteHookFailure(hook, error instanceof Error ? error.message : String(error));
+    return "";
   }
 }

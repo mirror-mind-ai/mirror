@@ -12,8 +12,17 @@
 
 import { closeSync, existsSync, mkdirSync, openSync, rmSync } from "node:fs";
 import { join } from "node:path";
+import {
+  lastAssistantMessageOf,
+  parseHookPayloadObject,
+  promptOf,
+  sessionIdOf,
+  subagentTypeOf,
+  turnIdOf,
+} from "#conversation/hookPayload.ts";
 import { backfillAssistantMessages } from "#conversation/transcriptBackfill.ts";
 import { type WritableDatabase, withTransaction } from "#db/database.ts";
+import { mirrorForm } from "#mirror/mirrorForm.ts";
 import {
   decodeMetadata,
   getRuntimeSession,
@@ -187,17 +196,39 @@ function discardMarkerActive(session: RuntimeSessionRow | null): boolean {
   return Boolean(decodeMetadata(session?.metadata ?? null).discard_current_conversation);
 }
 
+/**
+ * What a message row may carry beside its text. The runtime's turn id (US8)
+ * is the one field today: written by the prompt and Stop hooks, read by the
+ * reply rule, and NULL for every message logged another way, as before.
+ */
+export interface MessageMetadata {
+  readonly turn_id?: string;
+}
+
+export interface LogMessageOptions {
+  interface: string;
+  metadata?: MessageMetadata | null;
+}
+
 function addMessage(
   db: WritableDatabase,
   conversationId: string,
   role: "user" | "assistant",
   content: string,
   deps: LoggerDeps,
+  metadata: MessageMetadata | null = null,
 ): void {
   db.prepare(
     `INSERT INTO messages (id, conversation_id, role, content, created_at, token_count, metadata)
-     VALUES (?, ?, ?, ?, ?, NULL, NULL)`,
-  ).run(deps.newId(), conversationId, role, content, deps.nowIso());
+     VALUES (?, ?, ?, ?, ?, NULL, ?)`,
+  ).run(
+    deps.newId(),
+    conversationId,
+    role,
+    content,
+    deps.nowIso(),
+    metadata ? pythonJsonDumps(metadata) : null,
+  );
 }
 
 /** Python `log_user_message`: discard-marker reset, bind, title-on-first, append. */
@@ -205,7 +236,7 @@ export function logUserMessage(
   db: WritableDatabase,
   sessionId: string,
   content: string,
-  options: { interface: string },
+  options: LogMessageOptions,
   deps: LoggerDeps,
 ): void {
   let existing = getRuntimeSession(db, sessionId);
@@ -234,7 +265,7 @@ export function logUserMessage(
   if (isNew) {
     setProvisionalTitle(db, conversationId, generateTitle(content));
   }
-  addMessage(db, conversationId, "user", content, deps);
+  addMessage(db, conversationId, "user", content, deps, options.metadata ?? null);
 }
 
 /** Python `log_assistant_message`: silent no-op while the discard marker holds. */
@@ -242,7 +273,7 @@ export function logAssistantMessage(
   db: WritableDatabase,
   sessionId: string,
   content: string,
-  options: { interface: string },
+  options: LogMessageOptions,
   deps: LoggerDeps,
 ): void {
   const existing = getRuntimeSession(db, sessionId);
@@ -253,7 +284,7 @@ export function logAssistantMessage(
     { interface: options.interface },
     deps,
   );
-  addMessage(db, conversationId, "assistant", content, deps);
+  addMessage(db, conversationId, "assistant", content, deps, options.metadata ?? null);
 }
 
 /** Python `ConversationService.start_conversation`: always a fresh row. */
@@ -444,10 +475,37 @@ export type UserPromptHookOutcome =
   | { action: "muted" }
   | {
       action: "skipped";
-      reason: "malformed_payload" | "missing_session" | "missing_prompt" | "slash_command";
+      reason:
+        | "malformed_payload"
+        | "missing_session"
+        | "missing_prompt"
+        | "slash_command"
+        | "bare_mirror_form";
     }
   | { action: "logged"; sessionId: string }
   | { action: "failed"; error: string };
+
+export type StopHookOutcome =
+  | { action: "muted" }
+  | {
+      action: "skipped";
+      reason:
+        | "malformed_payload"
+        | "missing_session"
+        | "subagent"
+        | "empty_message"
+        | "discarded"
+        | "nothing_waiting"
+        | "already_answered";
+    }
+  | { action: "logged"; sessionId: string; pairedBy: "turn_id" | "last_message" }
+  | { action: "failed"; error: string };
+
+export interface HookLoggingOptions {
+  mirrorHome: string;
+  /** The runtime the hook detected (`claude_code`, `codex`, `grok_build`). */
+  interface?: string;
+}
 
 export type SessionEndHookOutcome =
   | { action: "skipped"; reason: "malformed_payload" | "nothing_to_do" }
@@ -455,45 +513,204 @@ export type SessionEndHookOutcome =
   | { action: "backfilled"; transcriptPath: string }
   | { action: "failed"; error: string };
 
-function parsePayload(raw: string): Record<string, unknown> | null {
-  try {
-    const value: unknown = JSON.parse(raw);
-    if (typeof value !== "object" || value === null || Array.isArray(value)) return null;
-    return value as Record<string, unknown>;
-  } catch {
-    return null;
-  }
-}
+const parsePayload = parseHookPayloadObject;
 
 function payloadString(payload: Record<string, unknown>, key: string): string {
   const value = payload[key];
   return typeof value === "string" ? value : "";
 }
 
-/** Python `hook_user_prompt`: mute gate, slash-command skip, never throw. */
+function turnMetadata(turnId: string): MessageMetadata | null {
+  return turnId ? { turn_id: turnId } : null;
+}
+
+/**
+ * Python `hook_user_prompt`: mute gate, slash-command skip, never throw.
+ *
+ * Two additions since CV21.DS2.US8. The session's label is stamped on every
+ * prompt, skipped or not, before anything else can create the conversation:
+ * the Mirror Mode path creates one with `session?.interface ?? "claude_code"`,
+ * and `guessRuntimeSessionId` ignores a session row with no interface, so a
+ * Grok session whose first turn was a Mirror turn used to be labelled
+ * `claude_code` and bound to someone else's session (DS12.TS4 L7, TS2 L9).
+ * And a Mirror turn is a conversation turn: its question is logged without
+ * the form, where every other slash command stays a command.
+ */
 export function handleUserPromptHook(
   db: WritableDatabase,
   rawPayload: string,
-  options: { mirrorHome: string; interface?: string },
+  options: HookLoggingOptions,
   deps: LoggerDeps,
 ): UserPromptHookOutcome {
   try {
-    if (isMuted(options.mirrorHome)) return { action: "muted" };
-
     const payload = parsePayload(rawPayload);
     if (!payload) return { action: "skipped", reason: "malformed_payload" };
 
-    const sessionId = payloadString(payload, "session_id");
-    const prompt = payloadString(payload, "prompt");
+    const sessionId = sessionIdOf(payload);
+    const prompt = promptOf(payload);
     if (!sessionId) return { action: "skipped", reason: "missing_session" };
-    if (!prompt) return { action: "skipped", reason: "missing_prompt" };
-    // Slash commands never enter conversation history.
-    if (prompt.startsWith("/")) return { action: "skipped", reason: "slash_command" };
 
-    logUserMessage(db, sessionId, prompt, { interface: options.interface ?? "claude_code" }, deps);
+    const interfaceName = options.interface ?? "claude_code";
+    upsertRuntimeSession(db, sessionId, { interface: interfaceName }, deps.nowIso());
+
+    if (isMuted(options.mirrorHome)) return { action: "muted" };
+    if (!prompt) return { action: "skipped", reason: "missing_prompt" };
+
+    const mirror = mirrorForm(prompt);
+    let content = prompt;
+    if (mirror) {
+      if (!mirror.query) return { action: "skipped", reason: "bare_mirror_form" };
+      content = mirror.query;
+    } else if (prompt.startsWith("/")) {
+      // Slash commands never enter conversation history.
+      return { action: "skipped", reason: "slash_command" };
+    }
+
+    logUserMessage(
+      db,
+      sessionId,
+      content,
+      { interface: interfaceName, metadata: turnMetadata(turnIdOf(payload)) },
+      deps,
+    );
     return { action: "logged", sessionId };
   } catch (error) {
     // Python swallows everything here; the runtime must survive a logging fault.
+    return { action: "failed", error: error instanceof Error ? error.message : String(error) };
+  }
+}
+
+interface MessageRow {
+  rowid: number;
+  role: string;
+  created_at: string;
+  metadata: string | null;
+}
+
+/** The conversation's last message, in the order the rows were written. */
+function lastMessage(db: WritableDatabase, conversationId: string): MessageRow | null {
+  const row = db
+    .prepare(
+      `SELECT rowid, role, created_at, metadata FROM messages
+       WHERE conversation_id = ? ORDER BY created_at DESC, rowid DESC LIMIT 1`,
+    )
+    .get(conversationId);
+  return (row as MessageRow | undefined) ?? null;
+}
+
+/** The latest logged prompt of the turn, if the turn's prompt was logged. */
+function promptOfTurn(
+  db: WritableDatabase,
+  conversationId: string,
+  turnId: string,
+): MessageRow | null {
+  const row = db
+    .prepare(
+      `SELECT rowid, role, created_at, metadata FROM messages
+       WHERE conversation_id = ? AND role = 'user' AND json_extract(metadata, '$.turn_id') = ?
+       ORDER BY created_at DESC, rowid DESC LIMIT 1`,
+    )
+    .get(conversationId, turnId);
+  return (row as MessageRow | undefined) ?? null;
+}
+
+function answeredAfter(db: WritableDatabase, conversationId: string, prompt: MessageRow): boolean {
+  const row = db
+    .prepare(
+      `SELECT 1 FROM messages
+       WHERE conversation_id = ? AND role = 'assistant'
+         AND (created_at > ? OR (created_at = ? AND rowid > ?)) LIMIT 1`,
+    )
+    .get(conversationId, prompt.created_at, prompt.created_at, prompt.rowid);
+  return row !== undefined;
+}
+
+function turnIdOfRow(row: MessageRow): string {
+  const value = decodeMetadata(row.metadata).turn_id;
+  return typeof value === "string" ? value : "";
+}
+
+/**
+ * The Stop hook (CV21.DS2.US8): log the turn's final answer beside its prompt.
+ *
+ * A reply is logged when it answers a logged prompt, and never otherwise:
+ *
+ *   * by turn id, when the payload carries one and a logged prompt carries the
+ *     same -- unless that prompt was already answered, which is a repeat Stop
+ *     (Grok's session-end Stop; a Stop re-fired after another hook blocked);
+ *   * else by position, when the conversation's last message is a logged
+ *     prompt -- unless both sides carry a turn id and they differ, which means
+ *     this turn's prompt was a command and an older prompt is waiting because
+ *     its own Stop was lost; attaching the new answer to the old question
+ *     would record a conversation that never happened.
+ *
+ * The handler never creates a conversation: a reply with no prompt waiting is
+ * a reply to a command turn, and command turns are not conversation. The
+ * caller writes one `hooks.log` line for a `nothing_waiting` skip, so the
+ * async race the plan names (a short turn reaching Stop before its prompt is
+ * logged) is counted rather than guessed at.
+ */
+export function handleStopHook(
+  db: WritableDatabase,
+  rawPayload: string,
+  options: HookLoggingOptions,
+  deps: LoggerDeps,
+): StopHookOutcome {
+  try {
+    const payload = parsePayload(rawPayload);
+    if (!payload) return { action: "skipped", reason: "malformed_payload" };
+
+    const sessionId = sessionIdOf(payload);
+    if (!sessionId) return { action: "skipped", reason: "missing_session" };
+    if (isMuted(options.mirrorHome)) return { action: "muted" };
+    if (subagentTypeOf(payload)) return { action: "skipped", reason: "subagent" };
+
+    const message = lastAssistantMessageOf(payload);
+    if (!message.trim()) return { action: "skipped", reason: "empty_message" };
+
+    const session = getRuntimeSession(db, sessionId);
+    if (discardMarkerActive(session)) return { action: "skipped", reason: "discarded" };
+    const conversationId = session?.conversationId ?? null;
+    if (!conversationId) return { action: "skipped", reason: "nothing_waiting" };
+
+    const interfaceName = options.interface ?? session?.interface ?? "claude_code";
+    const turnId = turnIdOf(payload);
+    const last = lastMessage(db, conversationId);
+
+    if (turnId) {
+      const prompt = promptOfTurn(db, conversationId, turnId);
+      if (prompt) {
+        if (answeredAfter(db, conversationId, prompt)) {
+          return { action: "skipped", reason: "already_answered" };
+        }
+        logAssistantMessage(
+          db,
+          sessionId,
+          message,
+          { interface: interfaceName, metadata: turnMetadata(turnId) },
+          deps,
+        );
+        return { action: "logged", sessionId, pairedBy: "turn_id" };
+      }
+      if (last && last.role === "user" && !turnIdOfRow(last)) {
+        logAssistantMessage(
+          db,
+          sessionId,
+          message,
+          { interface: interfaceName, metadata: turnMetadata(turnId) },
+          deps,
+        );
+        return { action: "logged", sessionId, pairedBy: "last_message" };
+      }
+      return { action: "skipped", reason: "nothing_waiting" };
+    }
+
+    if (last && last.role === "user") {
+      logAssistantMessage(db, sessionId, message, { interface: interfaceName }, deps);
+      return { action: "logged", sessionId, pairedBy: "last_message" };
+    }
+    return { action: "skipped", reason: "nothing_waiting" };
+  } catch (error) {
     return { action: "failed", error: error instanceof Error ? error.message : String(error) };
   }
 }

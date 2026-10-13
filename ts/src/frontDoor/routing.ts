@@ -370,6 +370,8 @@ const TS_CONVERSATION_LOGGER_SUBCOMMANDS = new Set([
   "log-user",
   "log-assistant",
   "user-prompt",
+  // CV21.DS2.US8: the Stop hook's reply, deterministic like user-prompt.
+  "stop",
   "discard-current",
   // US10 slice F, group 2 (need slice E): diagnose, dry-run repair, Codex import.
   "diagnose-journeys",

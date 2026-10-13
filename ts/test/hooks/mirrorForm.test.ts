@@ -10,7 +10,7 @@
 
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
-import { mirrorForm } from "#hooks/mirrorForm.ts";
+import { mirrorForm } from "#mirror/mirrorForm.ts";
 
 describe("the explicit Mirror Mode form", () => {
   const recognized: [string, string][] = [

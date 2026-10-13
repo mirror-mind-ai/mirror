@@ -2774,6 +2774,54 @@ the four runtimes take it as it is.**
   instructions, per-turn injection, logging, and no more setup steps. Measured on the
   installed `agy`, it lets the cutoff say nothing is lost.
 
+### A Mirror turn is a conversation turn, and every reply is logged from Stop, beside its prompt
+
+**Date:** 2026-10-13 · **Context:** [CV21.DS2.US8](roadmap/cv21-runtime-expansion-ii/cv21-ds2-mirror-plugin-mcp-foundation/cv21-ds2-us8-every-runtime-s-session-is-logged-under-its-own-name-replies-included/index.md),
+decided at the Delivery Story plan's approval after a six-lens review.
+
+**The decision.** The shared Claude-family hooks log a reply from the Stop
+payload's `last_assistant_message` (`lastAssistantMessage` on Grok), under the
+runtime they detect (`claude_code`, `codex`, `grok_build`), and only when the reply
+answers a logged prompt: by turn id when both carry one, else when the conversation's
+last message is a logged prompt. A prompt that opens with the Mirror skill's explicit
+form is a conversation turn: the question is logged without the form. Every other
+slash command stays a command, and the reply to a command turn is not recorded. The
+transcript backfill at session end stays as the fallback, filling only a
+conversation with no assistant message.
+
+**What was rejected, and why.** The plan first proposed the pairing rule alone, with
+slash turns skipped as today. The AI engineer's review showed it dropped the Mirror
+answers on Claude Code: a Mirror turn is a slash turn, its prompt is skipped, and
+today its answer reaches the database only through the transcript backfill, which
+the Stop-logged replies would then disable for the session. The content memory most
+wants would have been lost. Logging every Stop reply regardless (replies to command
+turns as orphans, as the backfill records them today) was the other candidate;
+logging the Mirror question beside its answer gives extraction the question too.
+
+**Consequences.** The session row is stamped with the runtime on every prompt,
+skipped or not, so a conversation the Mirror Mode path creates inherits the label
+and `guessRuntimeSessionId` finds the hook's own session (the mislabel DS12.TS4 L7
+measured, and the cross-session write TS2 L9 measured). Messages carry the runtime's
+turn id in `metadata`, so a repeat Stop is exact and a reply under the wrong prompt is
+a query. The `mm-mirror` skill no longer relies on the backfill for Claude Code. A
+reply whose prompt was skipped for being a command is counted in `hooks.log`, never
+quoted, so the async race between the prompt logger and Stop is measured on live
+sessions before the prompt logger's `async` is decided.
+
+### The plugin's hook timeouts are seconds, and SessionStart's is generous
+
+**Date:** 2026-10-13 · **Context:** [CV21.DS2.TS5](roadmap/cv21-runtime-expansion-ii/cv21-ds2-mirror-plugin-mcp-foundation/cv21-ds2-ts5-hook-commands-quote-the-plugin-root/index.md)
+
+Claude Code and Grok read a hook's `timeout` in seconds. The plugin's `hooks.json`
+and the checkout's `.claude/settings.json` carried `15000` on SessionStart and
+`30000` on inject, written as milliseconds the way Gemini CLI's settings take them:
+4 and 8 hours, so no hook ever timed out and a hung one held the turn. The values are
+now seconds, and SessionStart's is 300, not the 15 the old value intended, because the
+hook runs the full session maintenance (stale-orphan closes, Pi backfill, retitling,
+extraction, each an LLM call) before it prints the Operating Instructions, and a cut
+hook delivers no instructions. Inject is 30. The loggers keep the runtime default. A
+test bounds every registered timeout at 300.
+
 ## Open Discussions
 
 ### Migration rehearsal — long-term status

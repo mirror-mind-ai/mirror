@@ -13,7 +13,7 @@
 
 import { resolveDbPath } from "#frontDoor/dbPath.ts";
 import { openLiveWriteDatabase } from "#frontDoor/liveBackup.ts";
-import { mirrorForm } from "./mirrorForm.ts";
+import { mirrorForm } from "#mirror/mirrorForm.ts";
 import { markInjected, needsInject, readMirrorState } from "./mirrorState.ts";
 import { parseHookPayload, readStdin } from "./payload.ts";
 import {
@@ -23,6 +23,7 @@ import {
   runFrontDoorQuietly,
   sessionStartOutput,
 } from "./runtime.ts";
+import { detectHookRuntime } from "./runtimeDetection.ts";
 
 /**
  * `session-start.sh`: make sure logging is on for this session, and hand
@@ -40,17 +41,48 @@ export async function claudeSessionStart(env: NodeJS.ProcessEnv = process.env): 
 }
 
 /**
- * `log-user-prompt.sh`: record the user's turn.
+ * `log-user-prompt.sh`: record the user's turn, under the runtime's own label.
  *
- * The shell piped stdin into `hook_user_prompt()`. The front door already owns
- * that surface -- `conversation-logger user-prompt` is one of its two
- * stdin-reading subcommands -- so the payload is handed straight to it rather
- * than re-parsed here.
+ * The shell piped stdin into `hook_user_prompt()`, and the front door owns
+ * that surface: `conversation-logger user-prompt` reads the payload itself.
+ * Since CV21.DS2.US8 the entry reads it first, to tell which runtime it is in
+ * (`runtimeDetection.ts`), and hands it to the route through the one-shot
+ * stdin seam, so fd 0 is read once.
  */
-export async function claudeUserPrompt(): Promise<number> {
-  // stdin is deliberately NOT consumed here: the route reads it itself, so
-  // handing it the payload means not reading it first.
-  await runFrontDoorQuietly("claude:user-prompt", ["conversation-logger", "user-prompt"]);
+export async function claudeUserPrompt(stdin: string): Promise<number> {
+  const runtime = detectHookRuntime(parseHookPayload(stdin).raw);
+  await runFrontDoorQuietly(
+    "claude:user-prompt",
+    ["conversation-logger", "user-prompt", "--interface", runtime],
+    { stdin },
+  );
+  return 0;
+}
+
+/**
+ * `log-assistant-reply.sh`, on Stop: record the turn's final answer beside
+ * its prompt (CV21.DS2.US8). Every Claude-schema runtime hands its Stop hook
+ * `last_assistant_message` (DS12.TS2 L11, TS4 L8; Claude Code 2.1.296's
+ * binary), so the reply needs no transcript.
+ *
+ * This hook prints NOTHING and exits 0, whatever happens: a Stop hook that
+ * printed JSON or exited 2 would keep the agent working instead of logging.
+ * The route's outcome line is captured in-process and never forwarded. A
+ * reply skipped for want of a waiting prompt is recorded in `hooks.log` --
+ * the fact, never the text -- so the race the plan names (a short turn
+ * reaching Stop before its async prompt logger wrote) is counted.
+ */
+export async function claudeStop(stdin: string): Promise<number> {
+  const runtime = detectHookRuntime(parseHookPayload(stdin).raw);
+  const outcome = await runFrontDoorQuietly(
+    "claude:stop",
+    ["conversation-logger", "stop", "--interface", runtime],
+    { stdin },
+  );
+  const line = outcome.trim();
+  if (line.startsWith("reply skipped: nothing_waiting") || line.startsWith("reply failed")) {
+    noteHookFailure("claude:stop", line);
+  }
   return 0;
 }
 
@@ -67,7 +99,7 @@ export async function claudeSessionEnd(): Promise<number> {
  * Two cases, exactly as the shell had them:
  *
  *   1. an explicit Mirror form -- `/mm:mirror [query]`, or the same skill in
- *      any runtime's spelling (`mirrorForm.ts`; CV21.DS2.US7) -- load context
+ *      any runtime's spelling (`#mirror/mirrorForm.ts`; CV21.DS2.US7) -- load context
  *      for that query;
  *   2. Mirror Mode already active for this session with context not yet
  *      injected -- load it with the session's persona and journey, then mark
@@ -167,7 +199,9 @@ export async function claudeHook(name: string): Promise<number> {
     case "session-start":
       return claudeSessionStart();
     case "user-prompt":
-      return claudeUserPrompt();
+      return claudeUserPrompt(readStdin());
+    case "stop":
+      return claudeStop(readStdin());
     case "session-end":
       return claudeSessionEnd();
     case "inject":

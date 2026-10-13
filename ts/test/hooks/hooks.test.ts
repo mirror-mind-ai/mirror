@@ -382,14 +382,15 @@ describe("a hook that cannot run is recorded, never silent (N1)", () => {
 });
 
 describe("the fourteen wrappers", () => {
-  // Two forms (US3, D5): the ten in-tree wrappers resolve the tree from their
-  // own file; the plugin's four find the installed `mirror-hook` bin, because
-  // Claude Code copies a plugin into its own cache.
+  // Two forms (US3, D5): the eleven in-tree wrappers resolve the tree from
+  // their own file; the plugin's five find the installed `mirror-hook` bin,
+  // because Claude Code copies a plugin into its own cache.
   const TREE_WRAPPERS = [
     ".claude/hooks/session-start.sh",
     ".claude/hooks/log-user-prompt.sh",
     ".claude/hooks/log-session-end.sh",
     ".claude/hooks/mirror-inject.sh",
+    ".claude/hooks/log-assistant-reply.sh",
     ".gemini/hooks/session-start.sh",
     ".gemini/hooks/log-user.sh",
     ".gemini/hooks/log-assistant.sh",
@@ -402,6 +403,7 @@ describe("the fourteen wrappers", () => {
     "plugins/mirror-mind/hooks/log-user-prompt.sh",
     "plugins/mirror-mind/hooks/log-session-end.sh",
     "plugins/mirror-mind/hooks/mirror-inject.sh",
+    "plugins/mirror-mind/hooks/log-assistant-reply.sh",
   ];
   const WRAPPERS = [...TREE_WRAPPERS, ...BIN_WRAPPERS];
 

@@ -6,13 +6,13 @@
 // contract. (Until CV22.DS10.TS5 it could also return `null` to hand an LLM-tail
 // subcommand back to Python; that path left with the fallback.)
 
-import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname } from "node:path";
 import { createZipBackup } from "#backup/zipBackup.ts";
 import { runConversationLoggerCommand, STDIN_SUBCOMMANDS } from "#conversation/loggerCli.ts";
 import { createLoggerRuntime } from "#conversation/loggerRuntime.ts";
 import type { WritableDatabase } from "#db/database.ts";
+import { takeStdin } from "#frontDoor/stdinSource.ts";
 import { newId, nowIso } from "#util/pyGenerators.ts";
 
 export function isConversationLoggerCommand(argv: readonly string[]): boolean {
@@ -29,14 +29,11 @@ function subcommandOf(args: readonly string[]): string {
   return remaining[0] ?? "";
 }
 
-/** The hook subcommands read their JSON payload from stdin. */
-function readStdin(): string {
-  try {
-    return readFileSync(0, "utf-8");
-  } catch {
-    return "";
-  }
-}
+/**
+ * The hook subcommands read their JSON payload from stdin -- or take the one
+ * a hook entry already read, to detect its runtime (US8, `stdinSource.ts`).
+ */
+const readStdin = takeStdin;
 
 /**
  * Where the route's lines go. The default is the process's own streams; the

@@ -1,5 +1,9 @@
 // The explicit Mirror Mode form, in every runtime's skill syntax (CV21.DS2.US7).
 //
+// Lives with the mirror core rather than with the hooks because two readers
+// share it: the inject hook (context for the question) and the prompt logger
+// (the question as the conversation turn, US8).
+//
 // A person invokes the Mirror skill by name, and each runtime spells that
 // name its own way before handing the prompt to the hooks (DS12):
 //

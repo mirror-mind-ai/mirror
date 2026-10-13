@@ -11,16 +11,22 @@
 // user's turn. That posture is preserved exactly.
 
 import { readFileSync } from "node:fs";
+import {
+  type HookPayloadObject,
+  parseHookPayloadObject,
+  promptOf,
+  sessionIdOf,
+} from "#conversation/hookPayload.ts";
 
 export interface HookPayload {
   /** The user's prompt text, or "" when the payload has none. */
   readonly prompt: string;
-  /** The runtime's session id, or "" when the payload has none. */
+  /** The runtime's session id (`session_id`, or Grok's `sessionId`), or "". */
   readonly sessionId: string;
   /** The assistant's response text (Gemini's `prompt_response`), or "". */
   readonly response: string;
   /** Everything else, for hooks that need a field these three do not cover. */
-  readonly raw: Record<string, unknown>;
+  readonly raw: HookPayloadObject;
 }
 
 const EMPTY: HookPayload = { prompt: "", sessionId: "", response: "", raw: {} };
@@ -29,19 +35,18 @@ function text(value: unknown): string {
   return typeof value === "string" ? value : "";
 }
 
-/** Parse a hook payload. Never throws: an unparseable payload is empty. */
+/**
+ * Parse a hook payload. Never throws: an unparseable payload is empty.
+ *
+ * The field spellings live in `#conversation/hookPayload.ts`, one reader for
+ * the entries and the logger (CV21.DS2.US8).
+ */
 export function parseHookPayload(input: string): HookPayload {
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(input);
-  } catch {
-    return EMPTY;
-  }
-  if (typeof parsed !== "object" || parsed === null) return EMPTY;
-  const raw = parsed as Record<string, unknown>;
+  const raw = parseHookPayloadObject(input);
+  if (raw === null) return EMPTY;
   return {
-    prompt: text(raw.prompt),
-    sessionId: text(raw.session_id),
+    prompt: promptOf(raw),
+    sessionId: sessionIdOf(raw),
     // Gemini's AfterAgent payload names it `prompt_response`, and that is the
     // field the Python hook read. The first port read three guessed names
     // instead and dropped every Gemini assistant turn in silence until

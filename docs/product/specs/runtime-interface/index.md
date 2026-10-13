@@ -108,15 +108,26 @@ mirror conversation-logger log-user <session_id> <prompt> --interface <name>
 - `prompt` — full text of the user message; truncate at ~50 KB if needed
 - `--interface` — runtime name used for attribution (e.g. `claude_code`, `pi`)
 
-Skip if the prompt begins with `/` (skill invocation, not a conversational message).
+Skip if the prompt begins with `/` (skill invocation, not a conversational
+message), with one exception: a prompt that opens with the Mirror skill's
+explicit form, in any runtime's spelling, is a conversation turn, and the
+question that follows the form is what is logged (CV21.DS2.US8). The forms are
+the inject hook's (see [Mirror Mode Identity Injection](#optional-mirror-mode-identity-injection)).
+
+The Claude-family hooks (`conversation-logger user-prompt`, from Claude Code,
+Codex, and Grok) apply both rules themselves, read the runtime's turn id from
+the payload (`prompt_id`, `turn_id`, or `promptId`) into the message's
+metadata, and stamp `runtime_sessions.interface` with the detected runtime on
+every prompt, skipped or not, so a conversation the Mirror Mode path creates
+inherits the right label.
 
 ---
 
 ### Assistant Response
 
 Runtimes differ here by design. The difference is structural, not accidental:
-Claude Code has access to the full session transcript; Pi logs messages
-explicitly as they arrive.
+the Claude-schema runtimes hand their Stop hook the turn's final answer; Pi
+logs messages explicitly as they arrive.
 
 **Pi** — logs each assistant turn explicitly at `agent_end`:
 
@@ -127,8 +138,24 @@ mirror conversation-logger log-assistant <session_id> <content> --interface pi
 Collect all assistant messages from the turn, concatenate, and log once.
 Truncate at ~50 KB.
 
-**Claude Code** — backfills from the JSONL transcript at session end, in the
-session-end hook (`ts/src/hooks/claude.ts`). No per-turn call is needed.
+**Claude Code, Codex, Grok** — the Stop hook (`claude:stop`, through
+`log-assistant-reply.sh`) logs the payload's `last_assistant_message`
+(`lastAssistantMessage` on Grok) beside its prompt:
+
+```
+mirror conversation-logger stop --interface <name>   # the Stop payload on stdin
+```
+
+A reply is logged when it answers a logged prompt — by turn id when both
+carry one, else when the conversation's last message is a logged prompt — and
+never otherwise: the reply to a command turn is not recorded, a repeat Stop
+(Grok fires one at session end) adds nothing, an empty message (an
+interrupted or tool-only turn) adds nothing, and the hook never creates a
+conversation. The hook prints nothing and exits 0 whatever happens; a reply
+skipped for want of a waiting prompt is one `hooks.log` line, never the text.
+The transcript backfill at session end stays as the fallback, and fills only a
+conversation that holds no assistant message, so a Stop-logged reply is not
+recorded twice (CV21.DS2.US8).
 
 **Gemini CLI** — logs each assistant turn from the `AfterAgent` payload's
 `prompt_response` field. (The Node port first read the wrong field and dropped
@@ -136,8 +163,9 @@ every assistant turn for a day — CV22.DS10.TS5 finding F11. The payload shape
 is the contract, not the variable name a port guesses.)
 
 A new runtime should use whichever model matches its architecture: explicit
-per-turn logging (like Pi) if messages are available as events; transcript
-backfill (like Claude Code) if a session transcript file is available.
+per-turn logging (like Pi) if messages are available as events; the Stop
+hook's payload (like the Claude family) if the runtime hands it the answer;
+transcript backfill if only a session transcript file is available.
 
 ---
 
@@ -170,9 +198,11 @@ hook). Uses `session-end-pi` for deferred extraction, same as Pi.
 mirror conversation-logger session-end-pi <session_id>
 ```
 
-**Codex** — has no lifecycle hooks. Uses a wrapper script that backfills the
-session transcript from JSONL and then calls `session-end-pi` for deferred
-extraction.
+**Codex** — the shipped wiring (v0.32.1) is a wrapper script that backfills
+the session transcript from JSONL and then calls `session-end-pi` for deferred
+extraction. Through the plugin, Codex runs the Claude-family hooks as they are
+(CV21.DS12.TS2), prompts and replies included; its `SessionEnd` did not reach
+Mirror in DS12's live session (L8), which CV21.DS4 owns.
 
 ```
 mirror conversation-logger backfill-codex-session <path>
@@ -253,8 +283,14 @@ note before the model sees the prompt.
 
 **Claude Code** runs this synchronously in its inject hook
 (`.claude/hooks/mirror-inject.sh` → `ts/src/hooks/main.ts claude:inject`) on
-`UserPromptSubmit`, triggered when the prompt begins with `/mm:mirror` or when
-Mirror Mode is already active.
+`UserPromptSubmit`, triggered when the prompt opens with the Mirror skill's
+explicit form or when Mirror Mode is already active. The form is read by one
+grammar (`ts/src/mirror/mirrorForm.ts`, CV21.DS2.US7) in every runtime's
+spelling: `/mm:mirror`, `/mirror-mind:mm-mirror`, `/mirror-mind:mm:mirror`,
+`$mirror-mind:mm:mirror`, `/mm-mirror`, and `$mm-mirror`, followed by
+whitespace or the end of the prompt. The same hook runs on Codex, which reads
+the context it returns; Grok discards UserPromptSubmit context, so Mirror Mode
+there comes from the skill.
 
 **Pi** does not auto-inject. The `/mm-mirror` skill calls `mirror load`
 explicitly at the start of each Mirror Mode response.
@@ -275,14 +311,26 @@ processes the prompt.
 | Session start | `.claude/hooks/session-start.sh` | `claude:session-start` | `SessionStart` |
 | User prompt | `.claude/hooks/log-user-prompt.sh` | `claude:user-prompt` | `UserPromptSubmit` |
 | Mirror inject | `.claude/hooks/mirror-inject.sh` | `claude:inject` | `UserPromptSubmit` |
+| Assistant reply | `.claude/hooks/log-assistant-reply.sh` | `claude:stop` | `Stop` |
 | Session end + backup | `.claude/hooks/log-session-end.sh` | `claude:session-end` | `SessionEnd` |
 
 Hook wrappers are registered in `.claude/settings.json`, whose allowlist grants
 nothing under `ts/src/hooks` and never a bare `node *`, which would be an
 auto-approved arbitrary-execution grant. The packaged plugin carries the same
-four hooks under `plugins/mirror-mind/hooks/`, registered in its `hooks.json`,
+five hooks under `plugins/mirror-mind/hooks/`, registered in its `hooks.json`,
 in the wrapper form that finds the installed `mirror-hook` instead of a tree
-(see [Installed package wiring](#installed-package-wiring)). Its
+(see [Installed package wiring](#installed-package-wiring)). Every command in
+both files quotes its root variable (`"${CLAUDE_PLUGIN_ROOT}/…"`,
+`"$CLAUDE_PROJECT_DIR/…"`), and every `timeout` is in seconds, which is how
+Claude Code and Grok read it (CV21.DS2.TS5).
+
+The same five hooks run as they are on Codex and Grok, which install the
+plugin natively (CV21.DS12). They detect the runtime they are in
+(`ts/src/hooks/runtimeDetection.ts`: Grok's `GROK_HOOK_EVENT` /
+`GROK_SESSION_ID` or its camelCase `hookEventName`; Codex's `turn_id`; Claude
+Code otherwise) and label the session `claude_code`, `codex`, or `grok_build`.
+Opening this checkout in Grok runs the checkout's `.claude/settings.json`
+hooks too, once the project is trusted (CV21.DS2.US8). Its
 `SessionStart` hook also returns the Operating Instructions (`AGENTS.md` from
 the tree the hook runs from) as `hookSpecificOutput.additionalContext`, unless
 the project the session opened in is that same tree — the checkout, whose
@@ -767,7 +815,7 @@ list lives in `ts/src/guards/piSourcedSkills.ts`, and today it holds `mm-build`
 `interface` is a free-text field. Passing `--interface <runtime_name>` is all
 that is needed. No migration is required to add a new runtime label.
 
-Established labels: `claude_code`, `pi`, `gemini_cli`, `codex`.
+Established labels: `claude_code`, `pi`, `gemini_cli`, `codex`, `grok_build`.
 
 ---
 

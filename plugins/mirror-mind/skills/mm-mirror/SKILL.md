@@ -62,4 +62,4 @@ Use the `load` output as the complete response context.
 
 ## 3. Record Response
 
-If the runtime has an explicit session-aware logging path, record a concise 2-3 sentence summary there. In Claude Code, do **not** invent a session id — runtime logging and transcript backfill already capture the response safely.
+If the runtime has an explicit session-aware logging path, record a concise 2-3 sentence summary there. Where Mirror's hooks run (Claude Code, Codex, Grok), do **not** invent a session id: the prompt hook logs the question (without the `/mm:mirror` form) and the Stop hook logs your reply beside it, under the runtime's own name.

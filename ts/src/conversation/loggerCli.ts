@@ -21,6 +21,7 @@ import {
   discardCurrentConversation,
   endSession,
   handleSessionEndHook,
+  handleStopHook,
   handleUserPromptHook,
   isMuted,
   logAssistantMessage,
@@ -54,6 +55,7 @@ export const CONVERSATION_LOGGER_SUBCOMMANDS = [
   "log-user",
   "log-assistant",
   "user-prompt",
+  "stop",
   "discard-current",
   "switch",
   "session-end-pi",
@@ -75,7 +77,11 @@ export const LLM_TAIL_SUBCOMMANDS: ReadonlySet<string> = new Set([
 ]);
 
 /** Subcommands that read their JSON payload from stdin. */
-export const STDIN_SUBCOMMANDS: ReadonlySet<string> = new Set(["user-prompt", "session-end"]);
+export const STDIN_SUBCOMMANDS: ReadonlySet<string> = new Set([
+  "user-prompt",
+  "stop",
+  "session-end",
+]);
 
 function extractOption(
   args: string[],
@@ -146,9 +152,42 @@ export async function runConversationLoggerCommand(
       return ok([isMuted(home) ? "MUTED" : "ACTIVE"]);
 
     case "user-prompt":
-      handleUserPromptHook(db, context.stdin ?? "", { mirrorHome: home }, deps);
+      // `--interface` is the runtime the hook detected (US8); without it the
+      // label is Python's hook default.
+      handleUserPromptHook(
+        db,
+        context.stdin ?? "",
+        { mirrorHome: home, interface: interfaceOption(args, "claude_code") },
+        deps,
+      );
       // The hook is silent and always exits 0, whatever the outcome.
       return ok([]);
+
+    case "stop": {
+      // The Stop hook's payload (US8): the turn's final answer, logged beside
+      // its prompt when one is waiting. Exit 0 whatever the outcome, and the
+      // outcome on stdout in one line: the hook entry runs this route
+      // in-process, reads the line, and forwards nothing -- a Stop hook that
+      // printed would keep the agent working on some runtimes -- while a
+      // person running the command from a shell sees what happened.
+      const outcome = handleStopHook(
+        db,
+        context.stdin ?? "",
+        { mirrorHome: home, interface: interfaceOption(args, "claude_code") },
+        deps,
+      );
+      switch (outcome.action) {
+        case "logged":
+          return ok([`reply logged (${outcome.pairedBy})`]);
+        case "skipped":
+          return ok([`reply skipped: ${outcome.reason}`]);
+        case "muted":
+          return ok(["reply not logged: muted"]);
+        default:
+          // The error text is the fault's, never the payload's.
+          return ok([`reply failed: ${outcome.error}`]);
+      }
+    }
 
     case "session-end":
       await handleSessionEndHook(

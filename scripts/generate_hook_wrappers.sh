@@ -50,6 +50,7 @@ WRAPPERS=$(cat <<'EOF'
 .claude/hooks/log-user-prompt.sh|claude:user-prompt|tree|../..
 .claude/hooks/log-session-end.sh|claude:session-end|tree|../..
 .claude/hooks/mirror-inject.sh|claude:inject|tree|../..
+.claude/hooks/log-assistant-reply.sh|claude:stop|tree|../..
 .gemini/hooks/session-start.sh|gemini:session-start|tree|../..
 .gemini/hooks/log-user.sh|gemini:log-user|tree|../..
 .gemini/hooks/log-assistant.sh|gemini:log-assistant|tree|../..
@@ -58,6 +59,7 @@ plugins/mirror-mind/hooks/session-start.sh|claude:session-start|bin|
 plugins/mirror-mind/hooks/log-user-prompt.sh|claude:user-prompt|bin|
 plugins/mirror-mind/hooks/log-session-end.sh|claude:session-end|bin|
 plugins/mirror-mind/hooks/mirror-inject.sh|claude:inject|bin|
+plugins/mirror-mind/hooks/log-assistant-reply.sh|claude:stop|bin|
 scripts/codex-hooks/session-start.sh|codex:session-start|tree|../..
 scripts/codex-hooks/session-end.sh|codex:session-end|tree|../..
 EOF
