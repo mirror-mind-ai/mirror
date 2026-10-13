@@ -2,7 +2,7 @@
 
 # CV21.DS2.TS4 — Reference-runtime smoke test
 
-**Status:** 🟢 In Progress
+**Status:** ✅ Done
 **Type:** Technical Story
 **Delivery Story:** CV21.DS2 — Mirror Plugin & MCP Foundation
 **Renamed from:** CV21.E2.S4, in the CV21 Ariad taxonomy migration (2026-10-13).

@@ -12,6 +12,21 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-10-13 — CV21.DS2.TS4 done: the reference-runtime smoke, closed on evidence; CR128 captured
+
+E2.S4's smoke closed with no code change. Four records carry it:
+- CI's smoke job (run 38304396661 on `d74b573d`, with docs-only changes since);
+- a fresh local run of `scripts/smoke_claude_plugin.sh` on Claude Code 2.1.296;
+- CV21.DS12.TS1's live session;
+- the plugin generator's drift check.
+
+Writing the evidence down caught an overclaim in the approved Plan. CI skips the manifest
+validation, and its production-database guard checks zero databases. Locally the plugin
+smoke stops before the guard on CR123's case. The Navigator accepted DS12's content-level
+check of the real databases as the claim's support, and deferred the vacuous guard as
+CR128. The rest of DS2 (TS5, US6, US7, US8) resumes in the next session, starting with
+its flow-unit choice.
+
 ### 2026-10-13 — CV21.DS12 done: the runtimes re-measured, and CV21 reshaped around what they do
 
 DS12 re-measured CV21's June evidence on the installed runtimes: Claude Code 2.1.296,

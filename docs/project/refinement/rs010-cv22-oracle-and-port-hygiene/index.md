@@ -69,3 +69,4 @@ evidence stays honest as both cores move.
 - [CR121 — A new home's first maintenance run imports the person's whole Pi history](cr121-a-new-home-s-first-maintenance-imports-the-whole-pi-history.md)
 - [CR122 — The capture normalizer's word-boundary masks are inert under BSD `sed`](cr122-the-capture-normalizer-s-word-boundary-masks-are-inert-under-bsd-sed.md)
 - [CR123 — The plugin smoke's missing-bin case cannot run on a machine with a global link](cr123-the-plugin-smoke-s-missing-bin-case-cannot-run-on-a-machine-with-a-global-link.md)
+- [CR128 — The smokes' production guard checks no database in CI, and the plugin smoke never reaches it on a linked machine](cr128-the-smokes-production-guard-checks-no-database-in-ci.md)

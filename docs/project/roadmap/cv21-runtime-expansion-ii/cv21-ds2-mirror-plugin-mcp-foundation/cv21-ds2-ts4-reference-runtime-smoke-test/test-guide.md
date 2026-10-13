@@ -29,4 +29,16 @@ Required, and already performed: CV21.DS12.TS1's live session on Claude Code 2.1
 
 ## Validation Evidence
 
-Pending implementation and validation.
+**Validated by the Navigator on 2026-10-13**, against the Evidence table in `index.md`.
+
+- **Accepted.** The Navigator accepted that the claim "production untouched" rests on
+  CV21.DS12's content-level check of the real databases after the live session (row 8).
+  No smoke run proves it: CI's guard checks zero databases, and the local run stops
+  before the guard (rows 5 and 6).
+- **Deferred.** That gap in the smokes was deferred at Debt Review and captured as
+  [CR128](../../../../refinement/rs010-cv22-oracle-and-port-hygiene/cr128-the-smokes-production-guard-checks-no-database-in-ci.md).
+- **Checks.**
+  - CI's smoke job is green: run 38304396661 on `d74b573d`, with docs-only changes since.
+  - The local smoke, 2026-10-13 16:13 UTC, Claude Code 2.1.296, passes sections 1–4.
+    Section 5 fails on CR123's known case, as the Plan expected.
+  - The plugin generator's drift check is in sync.
