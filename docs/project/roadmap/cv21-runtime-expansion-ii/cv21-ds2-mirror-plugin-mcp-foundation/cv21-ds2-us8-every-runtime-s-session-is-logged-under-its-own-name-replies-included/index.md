@@ -36,7 +36,12 @@ And the conversation holds the Mirror question without its form, its answer, the
 
 Given a command turn, a repeat Stop, or Grok's session-end Stop
 When the Stop hook receives it
-Then nothing is logged, and the skip is one hooks.log line without the text
+Then nothing is logged, and nothing is written to hooks.log: these skips are expected
+
+Given a Stop for a turn whose prompt never reached Mirror
+When the Stop hook receives it
+Then nothing is logged, and the lost reply is one hooks.log line without its text,
+  which runtime diagnose reports
 
 Given any Stop payload
 When the hook runs
@@ -83,7 +88,12 @@ A reply is logged when it answers a logged prompt:
   a command and an older prompt is waiting because its own Stop was lost.
 
 The hook never creates a conversation. An empty message (an interrupted or tool-only
-turn), a subagent's Stop, mute, and the discard marker all log nothing. Grok's clip
+turn), a subagent's Stop, mute, and the discard marker all log nothing. When nothing is
+waiting, the skip says why: `command_turn` when the prompt hook recorded this turn as a
+command it skipped (the session's `skipped_turn_id`, merged into the shared session
+metadata), `session_event` when the Stop names no turn, and `nothing_waiting` only when
+nothing explains it. That last one alone is written to `hooks.log`, because
+`runtime diagnose` reads every line there as a failure (Debt Review, 2026-10-13). Grok's clip
 marker (`… [+N chars]`) is stored as received. When another Stop hook keeps the agent
 working, the first answer stands and the continuation's is not recorded: a known
 limitation, accepted.
@@ -99,6 +109,7 @@ limitation, accepted.
 | 5 | The registrations still validate on both runtimes with the Stop handler added | `claude plugin validate`, `grok plugin validate` | ✓ no warnings; passes |
 | 6 | The whole suite | `npm test` | ✓ 3149 pass, 0 fail |
 | 7 | A summary logged by hand (`mirror mirror log`, no turn id) does not count as the turn's reply: the Stop reply is still logged, after it. Found while writing the Navigator's route: the skill's step 3 read as "record a summary" wherever a session-aware path exists, and `mirror mirror log` with no session id lands in the hook's own session. Step 3 now says to record nothing where the hooks run, and `route.sh check` flags any assistant row without a turn id | `node --test ts/test/conversation/replyLogging.test.ts`; `npm test` | ✓ 19 pass; 3151 pass, 0 fail |
+| 8 | Debt Review, paid: the first version wrote a `hooks.log` line for every skip, and `runtime diagnose` reported one ordinary command turn as `hook_failures_recorded`. Now a command turn's reply and a session-scoped Stop write nothing, and a reply lost to the race writes one line that diagnose reports | `node --test ts/test/conversation/replyLogging.test.ts ts/test/hooks/journey.test.ts`; `npm test`; `route.sh static` on a fresh scratch install | ✓ 26 pass; 3154 pass, 0 fail; 22/0, three lost-reply lines from the route's race step and none from the expected skips |
 
 ## Validation
 

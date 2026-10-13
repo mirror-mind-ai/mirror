@@ -67,10 +67,11 @@ export async function claudeUserPrompt(stdin: string): Promise<number> {
  *
  * This hook prints NOTHING and exits 0, whatever happens: a Stop hook that
  * printed JSON or exited 2 would keep the agent working instead of logging.
- * The route's outcome line is captured in-process and never forwarded. A
- * reply skipped for want of a waiting prompt is recorded in `hooks.log` --
- * the fact, never the text -- so the race the plan names (a short turn
- * reaching Stop before its async prompt logger wrote) is counted.
+ * The route's outcome line is captured in-process and never forwarded. Only a
+ * reply lost for no known reason -- its turn's prompt neither logged nor
+ * skipped as a command, the race the plan names -- is recorded in `hooks.log`,
+ * the fact and never the text: `runtime diagnose` reads that file as failures,
+ * and a command turn's reply or a session-scoped Stop is not one.
  */
 export async function claudeStop(stdin: string): Promise<number> {
   const runtime = detectHookRuntime(parseHookPayload(stdin).raw);

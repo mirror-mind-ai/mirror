@@ -2804,9 +2804,13 @@ and `guessRuntimeSessionId` finds the hook's own session (the mislabel DS12.TS4 
 measured, and the cross-session write TS2 L9 measured). Messages carry the runtime's
 turn id in `metadata`, so a repeat Stop is exact and a reply under the wrong prompt is
 a query. The `mm-mirror` skill no longer relies on the backfill for Claude Code. A
-reply whose prompt was skipped for being a command is counted in `hooks.log`, never
-quoted, so the async race between the prompt logger and Stop is measured on live
-sessions before the prompt logger's `async` is decided.
+reply lost for no known reason -- its turn's prompt neither logged nor skipped as a
+command, the race between the async prompt logger and Stop -- is one `hooks.log`
+line, never quoted. A command turn's reply and a Stop that names no turn are expected
+skips, and write nothing: the first version wrote a line for them too, which
+`runtime diagnose` read as a hook failure on every slash command (found and paid at
+the Debt Review, 2026-10-13). The live sessions showed no race on Claude Code or
+Codex, so the prompt logger stays `async`.
 
 ### The plugin's hook timeouts are seconds, and SessionStart's is generous
 

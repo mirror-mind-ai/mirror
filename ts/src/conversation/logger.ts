@@ -495,8 +495,14 @@ export type StopHookOutcome =
         | "subagent"
         | "empty_message"
         | "discarded"
-        | "nothing_waiting"
-        | "already_answered";
+        | "already_answered"
+        // Expected: the turn's prompt was a command, which history skips.
+        | "command_turn"
+        // Expected: the Stop names no turn (Grok's at session end).
+        | "session_event"
+        // Unexplained: the turn's prompt was neither logged nor skipped as a
+        // command -- the reply is lost. The only skip the caller reports.
+        | "nothing_waiting";
     }
   | { action: "logged"; sessionId: string; pairedBy: "turn_id" | "last_message" }
   | { action: "failed"; error: string };
@@ -522,6 +528,30 @@ function payloadString(payload: Record<string, unknown>, key: string): string {
 
 function turnMetadata(turnId: string): MessageMetadata | null {
   return turnId ? { turn_id: turnId } : null;
+}
+
+/**
+ * The session-metadata key that names the last turn the prompt hook skipped as a
+ * command, so the Stop hook can tell that turn's reply -- expected to go
+ * unrecorded -- from a reply lost because its prompt never reached Mirror.
+ */
+const SKIPPED_TURN_KEY = "skipped_turn_id";
+
+/**
+ * Record the turn a command prompt occupied. `runtime_sessions.metadata` is a
+ * shared JSON object (the discard marker, the operating mode, Soul, Explorer,
+ * and Builder keep keys there), so the key is merged in, never written over.
+ */
+function recordSkippedTurn(
+  db: WritableDatabase,
+  sessionId: string,
+  turnId: string,
+  deps: LoggerDeps,
+): void {
+  if (!turnId) return;
+  const metadata = decodeMetadata(getRuntimeSession(db, sessionId)?.metadata ?? null);
+  metadata[SKIPPED_TURN_KEY] = turnId;
+  upsertRuntimeSession(db, sessionId, { metadata: pythonJsonDumps(metadata) }, deps.nowIso());
 }
 
 /**
@@ -559,10 +589,15 @@ export function handleUserPromptHook(
     const mirror = mirrorForm(prompt);
     let content = prompt;
     if (mirror) {
-      if (!mirror.query) return { action: "skipped", reason: "bare_mirror_form" };
+      if (!mirror.query) {
+        recordSkippedTurn(db, sessionId, turnIdOf(payload), deps);
+        return { action: "skipped", reason: "bare_mirror_form" };
+      }
       content = mirror.query;
     } else if (prompt.startsWith("/")) {
-      // Slash commands never enter conversation history.
+      // Slash commands never enter conversation history, and neither does
+      // their reply: the turn is recorded so the Stop hook knows why.
+      recordSkippedTurn(db, sessionId, turnIdOf(payload), deps);
       return { action: "skipped", reason: "slash_command" };
     }
 
@@ -657,11 +692,14 @@ function turnIdOfRow(row: MessageRow): string {
  *     its own Stop was lost; attaching the new answer to the old question
  *     would record a conversation that never happened.
  *
- * The handler never creates a conversation: a reply with no prompt waiting is
- * a reply to a command turn, and command turns are not conversation. The
- * caller writes one `hooks.log` line for a `nothing_waiting` skip, so the
- * async race the plan names (a short turn reaching Stop before its prompt is
- * logged) is counted rather than guessed at.
+ * The handler never creates a conversation. When nothing is waiting, it says
+ * why: `command_turn` when the prompt hook skipped this turn as a command,
+ * `session_event` when the Stop names no turn (Grok's at session end), and
+ * `nothing_waiting` only when nothing explains it -- the turn's prompt never
+ * reached Mirror, the async race the plan names, a reply lost. The caller
+ * writes a `hooks.log` line for that one alone: `runtime diagnose` reads every
+ * line there as a failure, and an expected skip is not one (Debt Review,
+ * 2026-10-13).
  */
 export function handleStopHook(
   db: WritableDatabase,
@@ -683,11 +721,18 @@ export function handleStopHook(
 
     const session = getRuntimeSession(db, sessionId);
     if (discardMarkerActive(session)) return { action: "skipped", reason: "discarded" };
+    const turnId = turnIdOf(payload);
+    const nothingWaiting = (): StopHookOutcome => {
+      if (!turnId) return { action: "skipped", reason: "session_event" };
+      if (decodeMetadata(session?.metadata ?? null)[SKIPPED_TURN_KEY] === turnId) {
+        return { action: "skipped", reason: "command_turn" };
+      }
+      return { action: "skipped", reason: "nothing_waiting" };
+    };
     const conversationId = session?.conversationId ?? null;
-    if (!conversationId) return { action: "skipped", reason: "nothing_waiting" };
+    if (!conversationId) return nothingWaiting();
 
     const interfaceName = options.interface ?? session?.interface ?? "claude_code";
-    const turnId = turnIdOf(payload);
     const last = lastMessage(db, conversationId);
 
     if (turnId) {
@@ -715,14 +760,14 @@ export function handleStopHook(
         );
         return { action: "logged", sessionId, pairedBy: "last_message" };
       }
-      return { action: "skipped", reason: "nothing_waiting" };
+      return nothingWaiting();
     }
 
     if (last && last.role === "user") {
       logAssistantMessage(db, sessionId, message, { interface: interfaceName }, deps);
       return { action: "logged", sessionId, pairedBy: "last_message" };
     }
-    return { action: "skipped", reason: "nothing_waiting" };
+    return nothingWaiting();
   } catch (error) {
     return { action: "failed", error: error instanceof Error ? error.message : String(error) };
   }

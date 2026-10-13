@@ -151,8 +151,13 @@ carry one, else when the conversation's last message is a logged prompt — and
 never otherwise: the reply to a command turn is not recorded, a repeat Stop
 (Grok fires one at session end) adds nothing, an empty message (an
 interrupted or tool-only turn) adds nothing, and the hook never creates a
-conversation. The hook prints nothing and exits 0 whatever happens; a reply
-skipped for want of a waiting prompt is one `hooks.log` line, never the text.
+conversation. The hook prints nothing and exits 0 whatever happens. A skip
+says why: the prompt hook records the turn it skipped as a command (the
+session's `skipped_turn_id`), so that turn's reply is an expected skip, as is a
+Stop that names no turn. Only a reply nothing explains -- its turn's prompt
+neither logged nor skipped, the race with an async prompt logger -- is one
+`hooks.log` line, never the text, because `runtime diagnose` reads every line
+there as a failure (CV21.DS2 Debt Review).
 The transcript backfill at session end stays as the fallback, and fills only a
 conversation that holds no assistant message, so a Stop-logged reply is not
 recorded twice (CV21.DS2.US8).

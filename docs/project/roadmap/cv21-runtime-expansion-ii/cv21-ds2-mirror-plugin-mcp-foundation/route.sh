@@ -391,6 +391,8 @@ const steps = [
   ["log-user-prompt.sh", prompt("t3", "/mm-journeys")],
   ["log-assistant-reply.sh", stop("t3", "the journey list")],
   ...(grok ? [["log-assistant-reply.sh", stop(null, "the journey list")]] : []),
+  // A reply whose turn Mirror never saw: the race, the one skip worth a line.
+  ["log-assistant-reply.sh", stop("t9", "a reply nobody asked for")],
 ];
 let printed = "";
 for (const [wrapper, payload] of steps) {
@@ -457,9 +459,9 @@ static_step() {
     fi
   done
   skips="$(tail -n +"$((before + 1))" "$MHOME/hooks.log" 2>/dev/null | grep -c 'reply skipped: nothing_waiting' || true)"
-  [ "$skips" = "4" ] && ok "hooks.log counted 4 skipped replies (a command turn per shape, and Grok's session-end Stop), without their text" \
-    || bad "hooks.log counted $skips skipped replies, expected 4"
-  if tail -n +"$((before + 1))" "$MHOME/hooks.log" 2>/dev/null | grep -qE "journey list|raise my price|mirror-mind tools"; then
+  [ "$skips" = "3" ] && ok "hooks.log holds 3 lines, one lost reply per shape; the command turns, the repeat, and Grok's session-end Stop wrote none" \
+    || bad "hooks.log holds $skips lost-reply lines, expected 3 (one per shape)"
+  if tail -n +"$((before + 1))" "$MHOME/hooks.log" 2>/dev/null | grep -qE "journey list|raise my price|mirror-mind tools|nobody asked"; then
     bad "hooks.log quotes a prompt or a reply"
   else ok "hooks.log quotes no prompt and no reply"; fi
   result
@@ -726,12 +728,8 @@ check_step() {
   sqlite3 "$MHOME/memory.db" "SELECT content FROM messages WHERE conversation_id = '$CONV' AND role = 'assistant' ORDER BY created_at DESC, rowid DESC LIMIT 1" | head -12 | show
   local SKIPS
   SKIPS="$(awk -v s="$START" 'substr($1,1,19) >= substr(s,1,19)' "$MHOME/hooks.log" 2>/dev/null | grep -c 'reply skipped: nothing_waiting' || true)"
-  if [ "$rt" = grok ]; then
-    note "skipped-reply lines since the session started: $SKIPS (Grok's session-end Stop accounts for one)"
-  else
-    [ "$SKIPS" = "0" ] && ok "no reply skipped for want of a prompt (the async race did not show)" \
-      || note "$SKIPS reply(ies) skipped for want of a prompt: the async race, which decides the prompt logger's async"
-  fi
+  [ "$SKIPS" = "0" ] && ok "no reply lost for want of its prompt (the async race did not show)" \
+    || note "$SKIPS reply(ies) lost for want of their prompt: the async race, which decides the prompt logger's async"
   awk -v s="$START" 'substr($1,1,19) >= substr(s,1,19)' "$MHOME/hooks.log" 2>/dev/null | grep -v 'reply skipped' | grep . \
     && bad "hooks.log recorded a failure (above)" || ok "no hook recorded a failure"
   case "$rt" in
@@ -806,11 +804,31 @@ untouched() {
     done
   done
   [ "$hit" -eq 0 ] && ok "no live turn in a real Mirror home"
+  local running
+  running="$(scratch_processes | tr '\n' ' ')"
+  [ -z "$running" ] && ok "no process runs from $D" \
+    || note "still running from $D: $running (Codex's app-server daemon; clean stops it)"
   result
+}
+
+# Processes still running from the scratch directory. Codex leaves its
+# app-server daemon running after a session, from a copy inside CODEX_HOME,
+# holding that home's login; deleted, the home is recreated by the daemon.
+scratch_processes() {
+  ps -axo pid=,command= | awk -v d="$D/" 'index($2, d) == 1 {print $1}'
 }
 
 clean() {
   say "Clean"
+  if [ -d "$D/codex-live" ] && command -v codex >/dev/null; then
+    env CODEX_HOME="$D/codex-live" HOME="$D/codex-live-person" codex app-server daemon stop >/dev/null 2>&1 || true
+  fi
+  local pid stopped=0
+  for pid in $(scratch_processes); do
+    kill -TERM "$pid" 2>/dev/null && stopped=$((stopped + 1))
+  done
+  [ "$stopped" -gt 0 ] && { sleep 2; note "stopped $stopped process(es) running from $D (Codex's app-server daemon)"; }
+  [ -z "$(scratch_processes)" ] && ok "no process runs from $D" || bad "still running from $D: $(scratch_processes | tr '\n' ' ')"
   if [ -f "$D_RAW/.ds2" ]; then
     rm -rf "$D_RAW" && ok "removed $D_RAW (scratch install, homes, evidence, and any login made inside)"
   else

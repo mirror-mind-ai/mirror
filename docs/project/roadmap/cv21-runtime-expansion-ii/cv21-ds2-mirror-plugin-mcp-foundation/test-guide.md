@@ -61,8 +61,9 @@ the same on every shape:
 
 Nothing else: the repeat Stop, the command turn, its reply, Grok's session-end Stop, and
 the transcript add no row. The conversation and the runtime session both carry the
-shape's label. `hooks.log` holds the skipped-reply line for the command turn and for
-the repeat, and no prompt or reply text.
+shape's label. `hooks.log` holds no line: every skip in the journey is expected. The
+route's static step then sends one Stop for a turn Mirror never saw, and that lost
+reply is the only line, without its text (Debt Review, 2026-10-13).
 
 ## Child Work Packages
 
@@ -291,6 +292,16 @@ passed, `route.sh check grok` 7/0, Grok 1.0.52 on Grok 4.7.**
 **`route.sh untouched`: 3/0.** No real runtime configuration changed, and no scratch
 session or `DS2-…` turn reached a real Mirror home: every attempt's marker searched,
 `DS2-mczk01` included.
+
+**Debt Review, paid on 2026-10-13.** The skipped-reply line counted as a hook failure in
+`runtime diagnose`. After the fix, on a fresh scratch install: `npm test` 3154 pass, 0
+fail; `route.sh static` 22/0, with three lost-reply lines from its race step and none
+from the expected skips; `route.sh untouched` 4/0. Writing that proof also found
+Codex's app-server daemon still running from the scratch `CODEX_HOME` after `clean`,
+recreating the folder; DS12's route had left one running since 16:28Z the same day. The
+six processes were stopped. Codex's own `daemon stop` could not find them once the
+home was gone, so `clean` now stops any process running from the scratch directory
+before removing it, and `untouched` reports one.
 
 **Validated by the Navigator on 2026-10-13**, on this evidence, the Codex tool reading
 included ([validation.md](validation.md)).

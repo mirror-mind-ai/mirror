@@ -198,7 +198,11 @@ test("a summary logged by hand does not count as the turn's reply", () => {
   const { db, home } = fixture();
   prompt(db, home, { session_id: "s1", prompt: "question", prompt_id: "p1" });
   logAssistantMessage(db, "s1", "a summary, by hand", { interface: "claude_code" }, deps);
-  const outcome = stop(db, home, { session_id: "s1", last_assistant_message: "the reply", prompt_id: "p1" });
+  const outcome = stop(db, home, {
+    session_id: "s1",
+    last_assistant_message: "the reply",
+    prompt_id: "p1",
+  });
   assert.deepEqual(outcome, { action: "logged", sessionId: "s1", pairedBy: "turn_id" });
   assert.deepEqual(rows(db), [
     { role: "user", content: "question", metadata: '{"turn_id": "p1"}' },
@@ -213,7 +217,7 @@ test("Grok's session-end Stop, without a turn id after an answered turn, logs no
   prompt(db, home, { sessionId: "g1", promptId: "p1", prompt: "question" }, "grok_build");
   stop(db, home, { sessionId: "g1", promptId: "p1", lastAssistantMessage: "answer" }, "grok_build");
   const atEnd = stop(db, home, { sessionId: "g1", lastAssistantMessage: "answer" }, "grok_build");
-  assert.deepEqual(atEnd, { action: "skipped", reason: "nothing_waiting" });
+  assert.deepEqual(atEnd, { action: "skipped", reason: "session_event" });
   assert.equal(rows(db).length, 2);
   db.close();
 });
@@ -254,7 +258,8 @@ test("the reply to a command turn is not logged, and no conversation is created 
     last_assistant_message: "the list",
     prompt_id: "p1",
   });
-  assert.deepEqual(outcome, { action: "skipped", reason: "nothing_waiting" });
+  // An expected skip: the prompt hook recorded the turn it skipped as a command.
+  assert.deepEqual(outcome, { action: "skipped", reason: "command_turn" });
   assert.equal(rows(db).length, 0);
   assert.deepEqual(conversationInterfaces(db), []);
   db.close();
@@ -265,8 +270,56 @@ test("a reply after a logged prompt and its reply, with no new prompt, is not lo
   logUserMessage(db, "s1", "question", { interface: "claude_code" }, deps);
   logAssistantMessage(db, "s1", "answer", { interface: "claude_code" }, deps);
   const outcome = stop(db, home, { session_id: "s1", last_assistant_message: "another" });
-  assert.deepEqual(outcome, { action: "skipped", reason: "nothing_waiting" });
+  assert.deepEqual(outcome, { action: "skipped", reason: "session_event" });
   assert.equal(rows(db).length, 2);
+  db.close();
+});
+
+test("only a reply whose turn was never seen is reported as lost", () => {
+  // The race the plan names: on Claude Code the prompt logger runs async, so a
+  // very short turn can reach Stop before its prompt is written. Nothing
+  // explains that skip -- neither a logged prompt nor a recorded command turn
+  // -- and it is the one skip the caller writes to hooks.log, which
+  // `runtime diagnose` reads as a failure. The expected skips above are not.
+  const { db, home } = fixture();
+  prompt(db, home, { session_id: "s1", prompt: "question", prompt_id: "p1" });
+  stop(db, home, { session_id: "s1", last_assistant_message: "answer", prompt_id: "p1" });
+  const lost = stop(db, home, {
+    session_id: "s1",
+    last_assistant_message: "a reply",
+    prompt_id: "p9",
+  });
+  assert.deepEqual(lost, { action: "skipped", reason: "nothing_waiting" });
+  const first = stop(db, home, {
+    session_id: "fresh",
+    last_assistant_message: "a reply",
+    prompt_id: "q1",
+  });
+  assert.deepEqual(
+    first,
+    { action: "skipped", reason: "nothing_waiting" },
+    "a first turn lost to the race",
+  );
+  db.close();
+});
+
+test("recording a command turn keeps the session's other metadata", () => {
+  // runtime_sessions.metadata is shared: the discard marker, the operating
+  // mode, Soul, Explorer, and Builder all keep keys there.
+  const { db, home } = fixture();
+  upsertRuntimeSession(
+    db,
+    "s1",
+    { metadata: pythonJsonDumps({ discard_current_conversation: true, other_key: 1 }) },
+    deps.nowIso(),
+  );
+  prompt(db, home, { session_id: "s1", prompt: "/mm-journeys", prompt_id: "p1" });
+  const row = db.prepare("SELECT metadata FROM runtime_sessions WHERE session_id = 's1'").get();
+  assert.deepEqual(JSON.parse(String(row?.metadata)), {
+    discard_current_conversation: true,
+    other_key: 1,
+    skipped_turn_id: "p1",
+  });
   db.close();
 });
 

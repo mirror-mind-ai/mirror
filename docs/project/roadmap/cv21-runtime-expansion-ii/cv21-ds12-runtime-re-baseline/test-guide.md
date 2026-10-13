@@ -99,3 +99,20 @@ accepted without corrections, including dropping CV21.DS2.US3.
     from the file's.
   - A dry check run after the sessions deleted three raw probe captures. Their
     summaries had been read first, and the runtimes' transcripts carried the canaries.
+
+
+**A note added by CV21.DS2's Debt Review (2026-10-13).** Two things this route's isolation
+did not cover, found while DS2 reused it:
+
+- The Claude Code live session kept the Navigator's `HOME` for its login, and unset
+  `OPENROUTER_API_KEY` only from the environment. Mirror's config loader fills an unset
+  variable from `~/.config/mirror/env`, so the real provider key could have reached that
+  session's Mirror processes. "The scratch Mirror has no provider key: it cannot spend"
+  held for the static steps, not necessarily for that session. `MIRROR_USER=ds12` was
+  set explicitly, which is why the session did not meet the home conflict DS2's first
+  run did.
+- Codex left its app-server daemon running from the scratch `CODEX_HOME` after the live
+  session, holding that login, and recreating `/tmp/cv21-ds12/codex-live` after
+  `clean`. It ran from 16:28Z until DS2 stopped it.
+
+Neither changes a DS12 finding. DS2's route fixes both for its own runs.

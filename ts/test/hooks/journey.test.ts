@@ -9,11 +9,13 @@
 
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { after, describe, test } from "node:test";
 import { openDatabaseReadOnly } from "#db/database.ts";
+import { hookFailureFindings } from "#runtime/diagnose.ts";
+import type { RuntimeStatusReport } from "#runtime/status.ts";
 
 const REPO_ROOT = resolve(import.meta.dirname, "..", "..", "..");
 const HOOKS = join(REPO_ROOT, ".claude", "hooks");
@@ -196,17 +198,44 @@ describe("the scripted journey, per runtime shape", () => {
         db.close();
       }
 
-      // The skips are counted, never quoted: the command turn's reply (and,
-      // on Grok, the session-end Stop) had nothing waiting.
-      const log = readFileSync(join(home, "hooks.log"), "utf8");
-      const skipped = log
-        .split("\n")
-        .filter((line) => line.includes("reply skipped: nothing_waiting"));
-      assert.equal(skipped.length, shape.label === "grok_build" ? 2 : 1, log);
-      assert.doesNotMatch(log, /journey list|raise my price|mirror-mind tools/);
-      assert.doesNotMatch(log, /exited|failed/, log);
+      // Every skip in this journey is expected -- a command turn's reply, a
+      // repeat Stop, Grok's session-end Stop -- so hooks.log, which
+      // `runtime diagnose` reads as failures, holds nothing (Debt Review,
+      // 2026-10-13: the first version wrote a line for the command turn).
+      const logPath = join(home, "hooks.log");
+      const log = existsSync(logPath) ? readFileSync(logPath, "utf8") : "";
+      assert.equal(log, "", "no hook wrote to hooks.log");
     });
   }
+
+  test("runtime diagnose reports a reply lost to the race, and nothing for the expected skips", () => {
+    const home = mkdtempSync(join(tmpdir(), "mirror-journey-diagnose-"));
+    roots.push(home);
+    const shape = SHAPES[0] as Shape;
+    const session = "journey-diagnose";
+    const findings = () =>
+      hookFailureFindings({ db_path: join(home, "memory.db") } as RuntimeStatusReport, new Date());
+
+    // Expected skips: a command turn's reply, and a Stop that names no turn.
+    run(home, shape, "log-user-prompt.sh", shape.prompt(session, "t1", "/mm-journeys"));
+    run(home, shape, "log-assistant-reply.sh", shape.stop(session, "t1", "the journey list"));
+    run(home, shape, "log-assistant-reply.sh", shape.stop(session, null, "the journey list"));
+    assert.deepEqual(findings(), [], "no warning for expected skips");
+
+    // A reply whose turn was never seen: the prompt never reached Mirror.
+    run(
+      home,
+      shape,
+      "log-assistant-reply.sh",
+      shape.stop(session, "t9", "a reply nobody asked for"),
+    );
+    const reported = findings();
+    assert.equal(reported.length, 1);
+    assert.match(reported[0]?.detail ?? "", /1 hook failure\(s\).*claude:stop/);
+    const log = readFileSync(join(home, "hooks.log"), "utf8");
+    assert.match(log, /claude:stop: reply skipped: nothing_waiting/);
+    assert.doesNotMatch(log, /nobody asked/, "never the reply's text");
+  });
 
   test("Claude Code's SessionEnd backfill does not double a reply the Stop hook logged", () => {
     const home = mkdtempSync(join(tmpdir(), "mirror-journey-backfill-"));
