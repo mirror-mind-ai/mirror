@@ -1,6 +1,6 @@
 [< Story](index.md)
 
-# Plan — CV21.E2.S2 Mirror MCP server
+# Plan — CV21.DS2.US2 Mirror MCP server
 
 ## Design
 

@@ -1,6 +1,6 @@
 [< Story](index.md)
 
-# Test Guide — CV21.E2.S1 Claude plugin conversion
+# Test Guide — CV21.DS2.US1 Claude plugin conversion
 
 ## Automated validation
 

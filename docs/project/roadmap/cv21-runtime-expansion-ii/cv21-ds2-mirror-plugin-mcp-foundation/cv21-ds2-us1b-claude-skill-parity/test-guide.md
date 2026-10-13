@@ -1,6 +1,6 @@
 [< Story](index.md)
 
-# Test Guide — CV21.E2.S1b Claude skill parity
+# Test Guide — CV21.DS2.US1b Claude skill parity
 
 ## Automated validation
 

@@ -1,8 +1,12 @@
 [< CV21](../index.md)
 
-# CV21.E1 — Unified Plugin & MCP Spike
+# CV21.DS1 — Unified Plugin & MCP Spike
 
 **Status:** ✅ Done
+**Type:** Delivery Story (spike)
+**Renamed from:** CV21.E1, in the CV21 Ariad taxonomy migration (2026-10-13). The
+text below is the June 2026 record and keeps the codes it was written with; the
+[code map](../index.md#code-map) resolves them.
 
 ---
 
@@ -59,10 +63,10 @@ per-runtime implementation.
 
 | Code | Story | Type | Outcome | Status |
 |------|-------|------|---------|--------|
-| CV21.E1.S1 | Canonical plugin authoring probe | Spike | A minimal Mirror plugin validates on Claude in an isolated dir | ✅ Done |
-| CV21.E1.S2 | Cross-runtime import probe | Spike | Component taxonomy validates on `agy`; format bridge identified; live import deferred to per-runtime epics | ✅ Done |
-| CV21.E1.S3 | Mirror MCP server feasibility | Spike | MCP carries the command surface + on-demand context, not automatic per-turn injection | ✅ Done |
-| CV21.E1.S4 | Convergence decision record | Decision | `decisions.md` entry choosing converge with thin-adapter fallback; canonical format + MCP scope fixed | ✅ Done |
+| CV21.DS1.TS1 | Canonical plugin authoring probe | Technical Story (spike) | A minimal Mirror plugin validates on Claude in an isolated dir | ✅ Done |
+| CV21.DS1.TS2 | Cross-runtime import probe | Technical Story (spike) | Component taxonomy validates on `agy`; format bridge identified; live import deferred to per-runtime epics | ✅ Done |
+| CV21.DS1.TS3 | Mirror MCP server feasibility | Technical Story (spike) | MCP carries the command surface + on-demand context, not automatic per-turn injection | ✅ Done |
+| CV21.DS1.TS4 | Convergence decision record | Technical Story (decision) | `decisions.md` entry choosing converge with thin-adapter fallback; canonical format + MCP scope fixed | ✅ Done |
 
 ---
 

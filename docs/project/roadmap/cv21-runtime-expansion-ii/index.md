@@ -82,7 +82,7 @@ hypotheses the spike epics must confirm hands-on.
   symlink-aware) plus `~/.codex/skills/`; plugins + marketplaces; MCP client
   (`codex mcp`) and server (`codex mcp-server`); `codex exec` headless;
   configurable `[tui] status_line`; and `codex doctor`.
-- **E3 confirmed: L4 reachable.** `SessionStart`/`Stop` expose `session_id` +
+- **DS3 confirmed: L4 reachable.** `SessionStart`/`Stop` expose `session_id` +
   `transcript_path`; the hook adapter is close kin to Claude's. Caveats: `async`
   hooks are skipped (logging must be synchronous) and there is no `SessionEnd`
   (use deferred extraction).
@@ -93,22 +93,22 @@ hypotheses the spike epics must confirm hands-on.
   Claude-shaped plugin model (`plugin.json` + `SKILL.md` + hooks + rules +
   commands), `agy plugin import [gemini|claude]`, `agy plugin validate`, a
   marketplace, and first-class MCP.
-- **Skills discovered from `.agents/skills/`** (E6) — the surface Mirror already
+- **Skills discovered from `.agents/skills/`** (DS6) — the surface Mirror already
   uses, as on Codex/Grok; static instructions via `AGENTS.md`.
-- **E6 confirmed: L3 (not L4).** The hook system is tool/invocation/stop-centric
+- **DS6 confirmed: L3 (not L4).** The hook system is tool/invocation/stop-centric
   (`PreToolHook`/`PostToolHook`/`PreInvocationHook`/`PostInvocationHook`/`StopHook`)
   with **no `UserPromptSubmit` or `additionalContext`** — the clean per-turn
   injection is absent. Mirror Mode via `AGENTS.md` + explicit invocation; logging
   via wrapper/`StopHook`. An unverified `PreInvocation` + `HookSystemMessage`
-  injection path is flagged for E7 to probe. `agy plugin import claude` consumes
-  the Claude plugin from E1.
+  injection path is flagged for DS7 to probe. `agy plugin import claude` consumes
+  the Claude plugin from DS1.
 
 ### Grok Build (`grok` CLI v0.2.51)
 
 - The **most Claude-compatible** new runtime: reads `.claude/settings.json`
   hooks, `.claude/skills/`, `.claude/plugins/`, `.agents/skills/`, and `AGENTS.md`
   natively (compat on by default).
-- **E9 confirmed: L3 (strong L1).** Full Claude-style hook lifecycle
+- **DS9 confirmed: L3 (strong L1).** Full Claude-style hook lifecycle
   (`SessionStart`/`UserPromptSubmit`/`Stop`/`SessionEnd`) read from
   `.claude/settings.json` — so logging is via **native hooks, not export/backfill**.
   But `UserPromptSubmit` is passive (stdout ignored) — **no `additionalContext`
@@ -142,21 +142,45 @@ No fake parity: each runtime claims only what it honestly supports.
 
 ---
 
-## Epics
+## Delivery Stories
 
-| Code | Epic | User-visible outcome | Status |
-|------|------|----------------------|--------|
-| [CV21.E1](cv21-e1-unified-plugin-mcp-spike/index.md) | Unified Plugin & MCP Spike | Validated (isolated, no config mutated): a Mirror plugin passes `claude plugin validate` and `agy plugin validate`; formats aligned but bridged by `agy plugin import claude`; MCP carries the command surface but not auto-injection. Decision: converge with thin-adapter fallback | ✅ Done |
-| [CV21.E2](cv21-e2-mirror-plugin-mcp-foundation/index.md) | Mirror Plugin & MCP Foundation (Claude) | Author the canonical Mirror Mind plugin (skills + hooks + MCP) + MCP server; convert Mirror's standalone `.claude/` to the plugin; wire `statusLine`; prove on Claude as the reference runtime; isolated smoke test | 🟢 Active |
-| [CV21.E3](cv21-e3-codex-upgrade-spike/index.md) | Codex Upgrade Spike | Confirmed (read-only, no config mutated): full Claude-style hooks (`SessionStart`/`UserPromptSubmit`→`additionalContext`/`Stop`) → **L4 reachable**; `session_id` + `transcript_path` available; skills already discovered via `.agents/skills/` (no migration). Caveats: `async` hooks skipped, no `SessionEnd` | ✅ Done |
-| CV21.E4 | Codex Hook + Plugin Reimplementation | Hooks replace the CV8 wrapper and consume the shared plugin/MCP: `SessionStart`/`UserPromptSubmit`/`Stop` logging + Mirror Mode injection; target L4; keeps `interface='codex'`. Logging must be synchronous (`async` skipped); deferred extraction (no `SessionEnd`); isolated smoke test | 🟡 Planned |
-| CV21.E5 | Codex Skill & Extension Surface | `mm-*` skills already discovered via `.agents/skills/` (E3 finding — no migration); expose user-owned extensions into `.agents/skills/` and/or a Codex plugin; smoke test | 🟡 Planned |
-| [CV21.E6](cv21-e6-antigravity-runtime-spike/index.md) | Antigravity Runtime Spike | Confirmed (read-only, no config mutated): hooks are tool/invocation/stop-centric — **no `UserPromptSubmit`/`additionalContext`** → honest parity **L3** (not L4); skills via `.agents/skills/` (no migration); Mirror Mode via `AGENTS.md`; `agy plugin import claude` path confirmed. `PreInvocation`+`HookSystemMessage` injection flagged for E7 | ✅ Done |
-| CV21.E7 | Antigravity Runtime & Extension Surface | Antigravity runs Mirror at **L3** via `.agents/skills/` + `AGENTS.md` + explicit invocation; logging via wrapper/`StopHook` + deferred extraction (`interface='antigravity'`); external extensions ride `.agents/skills/`; probe `PreInvocation`+`HookSystemMessage` injection; isolated smoke test | 🟡 Planned |
-| CV21.E8 | Gemini CLI Sunset | The `.gemini/` shell-hook integration is honestly retired; Antigravity documented as its successor; all runtime-facing docs updated. Honest note (E6): Gemini CLI was L4; Antigravity is L3 — automatic per-turn injection is lost in the migration | 🟡 Planned |
-| [CV21.E9](cv21-e9-grok-build-runtime-spike/index.md) | Grok Build Runtime Spike | Confirmed (read-only, no config mutated): full Claude-style hook lifecycle read from `.claude/settings.json` (native logging, **not** export/backfill); `UserPromptSubmit` passive → no injection → honest parity **L3** (strong L1); skills via `.agents/skills/` (no migration); plugins via `.claude/plugins/` compat; MCP in `config.toml` | ✅ Done |
-| CV21.E10 | Grok Build Runtime & Extension Surface | Grok runs Mirror at **L3** via native `.claude/settings.json` hook lifecycle (`interface='grok_build'`, deferred extraction, project-trust aware); skills via `.agents/skills/`; Mirror Mode via `AGENTS.md` + explicit slash invocation; external extensions ride `.agents/skills/`; MCP via `~/.grok/config.toml`; isolated smoke test | 🟡 Planned |
-| CV21.E11 | Contract & Docs Refresh | All runtimes folded into the runtime interface contract, decisions, and the parity matrix across README, Getting Started, REFERENCE, and architecture; the plugin/MCP convergence documented | 🟡 Planned |
+CV21 is governed by [Ariad](../ariad-adoption.md) on the `mirror` journey since
+2026-10-13 ([decision](../../decisions.md#cv21-resumes-under-ariad-on-the-mirror-journey-its-epics-mapped-one-to-one-to-delivery-stories)).
+Its former epics are Delivery Stories, one-to-one, and the [code map](#code-map)
+resolves every code written before the migration. A Delivery Story without a
+package gets one when it is pulled, and expands into User and Technical Stories.
+
+| Code | Delivery Story | User-visible outcome | Status |
+|------|----------------|----------------------|--------|
+| [CV21.DS1](cv21-ds1-unified-plugin-mcp-spike/index.md) | Unified Plugin & MCP Spike | Validated (isolated, no config mutated): a Mirror plugin passes `claude plugin validate` and `agy plugin validate`; formats aligned but bridged by `agy plugin import claude`; MCP carries the command surface but not auto-injection. Decision: converge with thin-adapter fallback | ✅ Done |
+| [CV21.DS2](cv21-ds2-mirror-plugin-mcp-foundation/index.md) | Mirror Plugin & MCP Foundation (Claude) | Author the canonical Mirror Mind plugin (skills + hooks + MCP) + MCP server; convert Mirror's standalone `.claude/` to the plugin; wire `statusLine`; prove on Claude as the reference runtime; isolated smoke test | 🟢 Active |
+| [CV21.DS3](cv21-ds3-codex-upgrade-spike/index.md) | Codex Upgrade Spike | Confirmed (read-only, no config mutated): full Claude-style hooks (`SessionStart`/`UserPromptSubmit`→`additionalContext`/`Stop`) → **L4 reachable**; `session_id` + `transcript_path` available; skills already discovered via `.agents/skills/` (no migration). Caveats: `async` hooks skipped, no `SessionEnd` | ✅ Done |
+| CV21.DS4 | Codex Hook + Plugin Reimplementation | Hooks replace the CV8 wrapper and consume the shared plugin/MCP: `SessionStart`/`UserPromptSubmit`/`Stop` logging + Mirror Mode injection; target L4; keeps `interface='codex'`. Logging must be synchronous (`async` skipped); deferred extraction (no `SessionEnd`); isolated smoke test | 🟡 Planned |
+| CV21.DS5 | Codex Skill & Extension Surface | `mm-*` skills already discovered via `.agents/skills/` (DS3 finding — no migration); expose user-owned extensions into `.agents/skills/` and/or a Codex plugin; smoke test | 🟡 Planned |
+| [CV21.DS6](cv21-ds6-antigravity-runtime-spike/index.md) | Antigravity Runtime Spike | Confirmed (read-only, no config mutated): hooks are tool/invocation/stop-centric — **no `UserPromptSubmit`/`additionalContext`** → honest parity **L3** (not L4); skills via `.agents/skills/` (no migration); Mirror Mode via `AGENTS.md`; `agy plugin import claude` path confirmed. `PreInvocation`+`HookSystemMessage` injection flagged for DS7 | ✅ Done |
+| CV21.DS7 | Antigravity Runtime & Extension Surface | Antigravity runs Mirror at **L3** via `.agents/skills/` + `AGENTS.md` + explicit invocation; logging via wrapper/`StopHook` + deferred extraction (`interface='antigravity'`); external extensions ride `.agents/skills/`; probe `PreInvocation`+`HookSystemMessage` injection; isolated smoke test | 🟡 Planned |
+| CV21.DS8 | Gemini CLI Sunset | The `.gemini/` shell-hook integration is honestly retired; Antigravity documented as its successor; all runtime-facing docs updated. Honest note (DS6): Gemini CLI was L4; Antigravity is L3 — automatic per-turn injection is lost in the migration | 🟡 Planned |
+| [CV21.DS9](cv21-ds9-grok-build-runtime-spike/index.md) | Grok Build Runtime Spike | Confirmed (read-only, no config mutated): full Claude-style hook lifecycle read from `.claude/settings.json` (native logging, **not** export/backfill); `UserPromptSubmit` passive → no injection → honest parity **L3** (strong L1); skills via `.agents/skills/` (no migration); plugins via `.claude/plugins/` compat; MCP in `config.toml` | ✅ Done |
+| CV21.DS10 | Grok Build Runtime & Extension Surface | Grok runs Mirror at **L3** via native `.claude/settings.json` hook lifecycle (`interface='grok_build'`, deferred extraction, project-trust aware); skills via `.agents/skills/`; Mirror Mode via `AGENTS.md` + explicit slash invocation; external extensions ride `.agents/skills/`; MCP via `~/.grok/config.toml`; isolated smoke test | 🟡 Planned |
+| CV21.DS11 | Contract & Docs Refresh | All runtimes folded into the runtime interface contract, decisions, and the parity matrix across README, Getting Started, REFERENCE, and architecture; the plugin/MCP convergence documented | 🟡 Planned |
+
+---
+
+## Code Map
+
+The migration of 2026-10-13 kept every number, and folders moved with their codes
+(`cv21-e2-…` became `cv21-ds2-…`). A code written before it resolves as follows.
+
+| Before | After | Where |
+|--------|-------|-------|
+| `CV21.E<n>` | `CV21.DS<n>` | the Delivery Story with the same number |
+| `CV21.E1.S1`–`S4` | `CV21.DS1.TS1`–`TS4` | rows of [DS1](cv21-ds1-unified-plugin-mcp-spike/index.md)'s candidate table |
+| `CV21.E2.S1` | `CV21.DS2.US1` | [Claude plugin conversion](cv21-ds2-mirror-plugin-mcp-foundation/cv21-ds2-us1-claude-plugin-conversion/index.md) |
+| `CV21.E2.S1b` | `CV21.DS2.US1b` | [Claude skill parity](cv21-ds2-mirror-plugin-mcp-foundation/cv21-ds2-us1b-claude-skill-parity/index.md) |
+| `CV21.E2.S2` | `CV21.DS2.US2` | [Mirror MCP server](cv21-ds2-mirror-plugin-mcp-foundation/cv21-ds2-us2-mirror-mcp-server/index.md) |
+| `CV21.E2.S3` | `CV21.DS2.US3` | a row of [DS2](cv21-ds2-mirror-plugin-mcp-foundation/index.md)'s candidate table, no package yet |
+| `CV21.E2.S4` | `CV21.DS2.TS4` | a row of [DS2](cv21-ds2-mirror-plugin-mcp-foundation/index.md)'s candidate table, no package yet |
+| `CV21.E3.S<n>`, `CV21.E6.S<n>`, `CV21.E9.S<n>` | `CV21.DS3.TS<n>`, `CV21.DS6.TS<n>`, `CV21.DS9.TS<n>` | rows of each spike's candidate table |
 
 ---
 
@@ -183,11 +207,11 @@ exposure path.
 
 External-extension exposure to the `.agents/`-discovering runtimes (Gemini CLI,
 Codex — and now Antigravity, Grok) is **not implemented**: only built-in `mm-*`
-skills are surfaced. The foundation (E2) closes this structurally — external
+skills are surfaced. The foundation (DS2) closes this structurally — external
 extensions are bundled into the canonical plugin and/or exposed via the MCP
 server, so each runtime inherits them through the same import/install path rather
 than a per-runtime projection. For Codex, external extensions are exposed through
-the `.agents/skills/` surface it already discovers (E3) — no separate projection.
+the `.agents/skills/` surface it already discovers (DS3) — no separate projection.
 
 ### Concrete extension work
 
@@ -195,11 +219,11 @@ the `.agents/skills/` surface it already discovers (E3) — no separate projecti
    new runtime keys; keep `interface='codex'` and register `antigravity` /
    `grok_build`.
 2. Bundle external `prompt-skill` extensions into the canonical plugin / expose
-   them through the MCP server (E2), so Claude, Antigravity, Grok, and Codex pick
+   them through the MCP server (DS2), so Claude, Antigravity, Grok, and Codex pick
    them up via import/install.
 3. Add `antigravity:`, `grok:`, and `codex:` runtime blocks to
    `review-copy/skill.yaml`.
-4. Prove `review-copy` invocable end-to-end on each runtime (E5/E7/E10) via
+4. Prove `review-copy` invocable end-to-end on each runtime (DS5/DS7/DS10) via
    isolated smoke tests, mirroring the CV6/CV8 reference path.
 
 ---
@@ -216,7 +240,7 @@ the `.agents/skills/` surface it already discovers (E3) — no separate projecti
 - The Codex upgrade keeps `interface='codex'` and must not break existing Codex
   sessions; the CV8-era wrapper is retired only after the hook path proves L4 in
   an isolated smoke test.
-- No betting the per-runtime epics on cross-runtime plugin import before E1 proves
+- No betting the per-runtime epics on cross-runtime plugin import before DS1 proves
   it real; if import is unreliable, fall back to thin per-runtime adapters that
   still consume the shared MCP server.
 - No fake parity; no Antigravity *IDE* (GUI) integration — `agy` CLI only.
@@ -230,27 +254,27 @@ Mirror's users are mostly on Claude and Codex; very few use Gemini, so missing t
 2026-06-18 Gemini cutoff is acceptable.
 
 ```text
-E1 Unified Plugin & MCP spike            (keystone — is cross-runtime import real?)
-  └── E2 Mirror Plugin & MCP foundation on Claude   (canonical package, proven on the most-used runtime)
-        ├── E3 Codex spike → E4 Codex hook+plugin reimpl (L4) → E5 Codex skills + extensions
-        ├── E6 Antigravity spike → E7 Antigravity runtime + extensions   (+ E8 Gemini CLI sunset)
-        └── E9 Grok spike → E10 Grok runtime + extensions
-              └── E11 contract & docs refresh (all runtimes)
+DS1 Unified Plugin & MCP spike            (keystone — is cross-runtime import real?)
+  └── DS2 Mirror Plugin & MCP foundation on Claude   (canonical package, proven on the most-used runtime)
+        ├── DS3 Codex spike → DS4 Codex hook+plugin reimpl (L4) → DS5 Codex skills + extensions
+        ├── DS6 Antigravity spike → DS7 Antigravity runtime + extensions   (+ DS8 Gemini CLI sunset)
+        └── DS9 Grok spike → DS10 Grok runtime + extensions
+              └── DS11 contract & docs refresh (all runtimes)
 ```
 
 Order rationale:
 
-1. **Foundation first.** The canonical plugin + MCP server is the keystone; E1
+1. **Foundation first.** The canonical plugin + MCP server is the keystone; DS1
    proves cross-runtime import is real before the per-runtime epics depend on it.
-2. **Claude as reference (E2).** It is the most-used runtime and the native home of
+2. **Claude as reference (DS2).** It is the most-used runtime and the native home of
    the plugin format, so the canonical package is built and validated where it is
    best understood.
-3. **Codex next (E3–E5).** Second most-used; now hook/plugin/MCP-capable; the
+3. **Codex next (DS3–DS5).** Second most-used; now hook/plugin/MCP-capable; the
    biggest parity gain (L3 → L4) and the cleanest consumer of the foundation.
-4. **Antigravity (E6–E8).** Imports the Claude plugin; Gemini sunset folds in.
+4. **Antigravity (DS6–DS8).** Imports the Claude plugin; Gemini sunset folds in.
    Deprioritized from the deadline because few Mirror users are on Gemini.
-5. **Grok (E9–E10).** Newest and least-used; most uncertain; last.
-6. **Docs refresh (E11).** Folds every runtime into the canonical spec once real
+5. **Grok (DS9–DS10).** Newest and least-used; most uncertain; last.
+6. **Docs refresh (DS11).** Folds every runtime into the canonical spec once real
    parity is known.
 
 ---

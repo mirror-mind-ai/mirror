@@ -1,6 +1,6 @@
 [< Story](index.md)
 
-# Test Guide — CV21.E2.S2 Mirror MCP server
+# Test Guide — CV21.DS2.US2 Mirror MCP server
 
 ## Automated validation
 

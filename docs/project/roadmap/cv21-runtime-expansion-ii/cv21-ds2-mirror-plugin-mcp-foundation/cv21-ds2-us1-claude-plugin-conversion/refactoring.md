@@ -1,6 +1,6 @@
 [< Story](index.md)
 
-# Refactoring — CV21.E2.S1 Claude plugin conversion
+# Refactoring — CV21.DS2.US1 Claude plugin conversion
 
 Deferred cleanup surfaced during the review ritual. None block S1; each has a
 revisit trigger.

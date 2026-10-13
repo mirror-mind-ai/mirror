@@ -1,8 +1,12 @@
 [< CV21](../index.md)
 
-# CV21.E6 — Antigravity Runtime Spike
+# CV21.DS6 — Antigravity Runtime Spike
 
 **Status:** ✅ Done
+**Type:** Delivery Story (spike)
+**Renamed from:** CV21.E6, in the CV21 Ariad taxonomy migration (2026-10-13). The
+text below is the June 2026 record, measured on `agy` 1.0.8, and keeps the codes it
+was written with; the [code map](../index.md#code-map) resolves them.
 
 ---
 
@@ -106,10 +110,10 @@ Confirmed **L3**, a downgrade from the E6 "L3–L4" hypothesis:
 
 | Code | Story | Type | Outcome | Status |
 |------|-------|------|---------|--------|
-| CV21.E6.S1 | Hook surface mapping | Spike | `hooks_pb` event set mapped; no `UserPromptSubmit`/`additionalContext`; `PreInvocation`+`HookSystemMessage` flagged as unverified injection path | ✅ Done |
-| CV21.E6.S2 | Skill + instruction surface | Spike | `.agents/skills/` discovery confirmed (no migration); `AGENTS.md` static instructions confirmed | ✅ Done |
-| CV21.E6.S3 | Plugin import + MCP | Spike | `agy plugin import claude` path confirmed (keyed to Claude plugin); MCP portable | ✅ Done |
-| CV21.E6.S4 | Parity decision | Decision | Honest parity fixed at **L3** (down from L3–L4); E7 reconciled with the `PreInvocation` probe | ✅ Done |
+| CV21.DS6.TS1 | Hook surface mapping | Technical Story (spike) | `hooks_pb` event set mapped; no `UserPromptSubmit`/`additionalContext`; `PreInvocation`+`HookSystemMessage` flagged as unverified injection path | ✅ Done |
+| CV21.DS6.TS2 | Skill + instruction surface | Technical Story (spike) | `.agents/skills/` discovery confirmed (no migration); `AGENTS.md` static instructions confirmed | ✅ Done |
+| CV21.DS6.TS3 | Plugin import + MCP | Technical Story (spike) | `agy plugin import claude` path confirmed (keyed to Claude plugin); MCP portable | ✅ Done |
+| CV21.DS6.TS4 | Parity decision | Technical Story (decision) | Honest parity fixed at **L3** (down from L3–L4); E7 reconciled with the `PreInvocation` probe | ✅ Done |
 
 ---
 
@@ -126,7 +130,7 @@ mutated (live import/hook-firing deferred to E7's smoke test).
 ## References
 
 - [CV21 — Runtime Expansion II](../index.md)
-- [CV21.E1 Unified Plugin & MCP spike](../cv21-e1-unified-plugin-mcp-spike/index.md)
+- [CV21.DS1 Unified Plugin & MCP spike](../cv21-ds1-unified-plugin-mcp-spike/index.md)
 - [Runtime Interface Contract](../../../../product/specs/runtime-interface/index.md)
 - [CV8 Runtime Expansion](../../cv8-runtime-expansion/index.md)
 - Antigravity CLI: <https://github.com/google-antigravity/antigravity-cli>

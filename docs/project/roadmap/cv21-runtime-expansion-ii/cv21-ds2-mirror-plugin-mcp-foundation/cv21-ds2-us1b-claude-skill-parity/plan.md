@@ -1,6 +1,6 @@
 [< Story](index.md)
 
-# Plan — CV21.E2.S1b Claude skill parity
+# Plan — CV21.DS2.US1b Claude skill parity
 
 ## Design
 

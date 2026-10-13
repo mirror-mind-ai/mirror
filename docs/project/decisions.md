@@ -253,7 +253,7 @@ caller wanting one is a new decision, not a precedent already set.
 ### The plugin manifest launches a launcher, not an engine
 
 **Date:** 2026-09-18
-**Reference:** [CV22.DS9.TS2](roadmap/cv22-typescript-core-port/cv22-ds9-ts-mcp-server/cv22-ds9-ts2-cutover-and-plugin-manifest-flip/index.md), [CV22.DS9](roadmap/cv22-typescript-core-port/cv22-ds9-ts-mcp-server/index.md), [CV21.E2](roadmap/cv21-runtime-expansion-ii/cv21-e2-mirror-plugin-mcp-foundation/index.md)
+**Reference:** [CV22.DS9.TS2](roadmap/cv22-typescript-core-port/cv22-ds9-ts-mcp-server/cv22-ds9-ts2-cutover-and-plugin-manifest-flip/index.md), [CV22.DS9](roadmap/cv22-typescript-core-port/cv22-ds9-ts-mcp-server/index.md), [CV21.DS2](roadmap/cv21-runtime-expansion-ii/cv21-ds2-mirror-plugin-mcp-foundation/index.md)
 **Participants:** Vinícius Manhães Teles
 
 Every ported DS7 family reverts through a `MIRROR_TS_*=0` variable the front
@@ -1598,7 +1598,7 @@ Consequences:
 ### CV21 converges on a canonical plugin plus MCP server, bridged by import
 
 **Date:** 2026-06-14
-**Reference:** [CV21 index](roadmap/cv21-runtime-expansion-ii/index.md), [CV21.E1 Unified Plugin & MCP spike](roadmap/cv21-runtime-expansion-ii/cv21-e1-unified-plugin-mcp-spike/index.md)
+**Reference:** [CV21 index](roadmap/cv21-runtime-expansion-ii/index.md), [CV21.DS1 Unified Plugin & MCP spike](roadmap/cv21-runtime-expansion-ii/cv21-ds1-unified-plugin-mcp-spike/index.md)
 
 The CV21.E1 spike validated — in an isolated scratch directory, mutating no
 production runtime config — that the post-CV8 ecosystem convergence is real

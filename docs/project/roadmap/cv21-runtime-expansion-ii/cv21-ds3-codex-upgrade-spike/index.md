@@ -1,8 +1,12 @@
 [< CV21](../index.md)
 
-# CV21.E3 — Codex Upgrade Spike
+# CV21.DS3 — Codex Upgrade Spike
 
 **Status:** ✅ Done
+**Type:** Delivery Story (spike)
+**Renamed from:** CV21.E3, in the CV21 Ariad taxonomy migration (2026-10-13). The
+text below is the June 2026 record, measured on `codex` 0.139.0, and keeps the codes
+it was written with; the [code map](../index.md#code-map) resolves them.
 
 ---
 
@@ -93,10 +97,10 @@ remaining work is implementation (E4) and exposure (E5), not capability.
 
 | Code | Story | Type | Outcome | Status |
 |------|-------|------|---------|--------|
-| CV21.E3.S1 | Hook lifecycle mapping | Spike | SessionStart/UserPromptSubmit/Stop mapped to Mirror's logger contract; `session_id` + `transcript_path` confirmed | ✅ Done |
-| CV21.E3.S2 | Per-turn injection | Spike | `UserPromptSubmit` `hookSpecificOutput.additionalContext` confirmed as the L4 injection field | ✅ Done |
-| CV21.E3.S3 | Skill discovery + invocation | Spike | Codex reads `.agents/skills/` (symlink-aware); no migration; `$`-mention/implicit invocation | ✅ Done |
-| CV21.E3.S4 | Parity decision | Decision | L4 confirmed reachable; E4/E5 reconciled; `async` + no-`SessionEnd` caveats recorded | ✅ Done |
+| CV21.DS3.TS1 | Hook lifecycle mapping | Technical Story (spike) | SessionStart/UserPromptSubmit/Stop mapped to Mirror's logger contract; `session_id` + `transcript_path` confirmed | ✅ Done |
+| CV21.DS3.TS2 | Per-turn injection | Technical Story (spike) | `UserPromptSubmit` `hookSpecificOutput.additionalContext` confirmed as the L4 injection field | ✅ Done |
+| CV21.DS3.TS3 | Skill discovery + invocation | Technical Story (spike) | Codex reads `.agents/skills/` (symlink-aware); no migration; `$`-mention/implicit invocation | ✅ Done |
+| CV21.DS3.TS4 | Parity decision | Technical Story (decision) | L4 confirmed reachable; E4/E5 reconciled; `async` + no-`SessionEnd` caveats recorded | ✅ Done |
 
 ---
 

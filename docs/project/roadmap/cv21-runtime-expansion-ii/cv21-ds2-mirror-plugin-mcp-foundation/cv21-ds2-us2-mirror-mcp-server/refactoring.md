@@ -1,6 +1,6 @@
 [< Story](index.md)
 
-# Refactoring — CV21.E2.S2 Mirror MCP server
+# Refactoring — CV21.DS2.US2 Mirror MCP server
 
 Deferred items surfaced during the review ritual. None block S2.
 

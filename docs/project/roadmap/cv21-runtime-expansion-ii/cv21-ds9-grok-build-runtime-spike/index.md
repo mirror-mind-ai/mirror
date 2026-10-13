@@ -1,8 +1,12 @@
 [< CV21](../index.md)
 
-# CV21.E9 — Grok Build Runtime Spike
+# CV21.DS9 — Grok Build Runtime Spike
 
 **Status:** ✅ Done
+**Type:** Delivery Story (spike)
+**Renamed from:** CV21.E9, in the CV21 Ariad taxonomy migration (2026-10-13). The
+text below is the June 2026 record, measured on `grok` 0.2.51, and keeps the codes
+it was written with; the [code map](../index.md#code-map) resolves them.
 
 ---
 
@@ -116,10 +120,10 @@ Confirmed **L3**, revising the "L1/L3" hypothesis:
 
 | Code | Story | Type | Outcome | Status |
 |------|-------|------|---------|--------|
-| CV21.E9.S1 | Hook lifecycle + injection | Spike | Full Claude-style lifecycle confirmed; `UserPromptSubmit` passive (no injection); `.claude/settings.json` read natively | ✅ Done |
-| CV21.E9.S2 | Skill discovery + invocation | Spike | `.agents/skills/` discovered (no migration); slash `/scope:name` + implicit invocation | ✅ Done |
-| CV21.E9.S3 | Plugin / MCP / import | Spike | Claude-shaped plugins + `.claude/plugins/` compat; MCP in `config.toml`; Claude import path | ✅ Done |
-| CV21.E9.S4 | Parity decision | Decision | Honest parity fixed at **L3** (strong L1 logging); E10 reconciled to native hooks | ✅ Done |
+| CV21.DS9.TS1 | Hook lifecycle + injection | Technical Story (spike) | Full Claude-style lifecycle confirmed; `UserPromptSubmit` passive (no injection); `.claude/settings.json` read natively | ✅ Done |
+| CV21.DS9.TS2 | Skill discovery + invocation | Technical Story (spike) | `.agents/skills/` discovered (no migration); slash `/scope:name` + implicit invocation | ✅ Done |
+| CV21.DS9.TS3 | Plugin / MCP / import | Technical Story (spike) | Claude-shaped plugins + `.claude/plugins/` compat; MCP in `config.toml`; Claude import path | ✅ Done |
+| CV21.DS9.TS4 | Parity decision | Technical Story (decision) | Honest parity fixed at **L3** (strong L1 logging); E10 reconciled to native hooks | ✅ Done |
 
 ---
 
@@ -136,7 +140,7 @@ E10's smoke test).
 ## References
 
 - [CV21 — Runtime Expansion II](../index.md)
-- [CV21.E1 Unified Plugin & MCP spike](../cv21-e1-unified-plugin-mcp-spike/index.md)
+- [CV21.DS1 Unified Plugin & MCP spike](../cv21-ds1-unified-plugin-mcp-spike/index.md)
 - [Runtime Interface Contract](../../../../product/specs/runtime-interface/index.md)
 - [CV8 Runtime Expansion](../../cv8-runtime-expansion/index.md)
 - Grok Build: <https://x.ai/cli> · local docs: `~/.grok/docs/user-guide/`

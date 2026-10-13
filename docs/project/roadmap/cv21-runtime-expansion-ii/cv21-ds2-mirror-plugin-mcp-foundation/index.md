@@ -1,8 +1,12 @@
 [< CV21](../index.md)
 
-# CV21.E2 — Mirror Plugin & MCP Foundation (Claude)
+# CV21.DS2 — Mirror Plugin & MCP Foundation (Claude)
 
 **Status:** 🟢 In Progress
+**Type:** Delivery Story
+**Renamed from:** CV21.E2, in the CV21 Ariad taxonomy migration (2026-10-13). Text
+written before then keeps the codes it was written with; the
+[code map](../index.md#code-map) resolves them.
 **User-visible outcome:** Mirror Mind ships as a canonical Claude-format plugin (skills + lifecycle hooks) plus a Mirror MCP server, validated on Claude as the reference runtime. Claude users install Mirror as a versioned plugin instead of committing `.claude/` scaffolding into their repos.
 
 ---
@@ -10,7 +14,7 @@
 ## What This Is
 
 E2 builds the keystone artifact of CV21: the **canonical package** every other
-runtime consumes by import/install. [E1](../cv21-e1-unified-plugin-mcp-spike/index.md)
+runtime consumes by import/install. [E1](../cv21-ds1-unified-plugin-mcp-spike/index.md)
 proved — in an isolated scratch dir — that the package is real and chose the
 strategy ([decision](../../../decisions.md#cv21-converges-on-a-canonical-plugin-plus-mcp-server-bridged-by-import)):
 converge on a Claude-format plugin plus a Mirror MCP server, propagated per
@@ -52,15 +56,15 @@ not a forced migration (CV21 non-goal).
 
 ---
 
-## Stories
+## Candidate Stories
 
 | Code | Story | Type | Outcome | Status |
 |------|-------|------|---------|--------|
-| [CV21.E2.S1](cv21-e2-s1-claude-plugin-conversion/index.md) | Claude plugin conversion | Implementation | The 21 Claude-tuned skills + lifecycle hooks become a canonical Claude plugin (generated from `.claude/skills/`, drift-guarded) that passes `claude plugin validate`; isolated load smoke test | ✅ Done |
-| [CV21.E2.S1b](cv21-e2-s1b-claude-skill-parity/index.md) | Claude skill parity | Implementation | The four Pi-only skills (`discard`, `explore`, `soul`, `update`) are authored as Claude-tuned skills so the plugin reaches full 25-skill parity | ✅ Done |
-| [CV21.E2.S2](cv21-e2-s2-mirror-mcp-server/index.md) | Mirror MCP server | Implementation | `python -m memory mcp` serves the command surface + on-demand identity context over a zero-dependency stdio JSON-RPC server; declared as an `mcpServers` entry in the manifest; isolated stdio smoke | ✅ Done |
-| CV21.E2.S3 | Plugin status line | Implementation | The plugin `statusLine` renders Mirror's compact status line on Claude | 🟡 Planned · may fold into S1 if trivial |
-| CV21.E2.S4 | Reference-runtime smoke test | Integration | End-to-end isolated smoke test proving the full package (plugin + hooks + MCP) loads and runs equivalently to standalone `.claude/` | 🟡 Planned |
+| [CV21.DS2.US1](cv21-ds2-us1-claude-plugin-conversion/index.md) | Claude plugin conversion | User Story | The 21 Claude-tuned skills + lifecycle hooks become a canonical Claude plugin (generated from `.claude/skills/`, drift-guarded) that passes `claude plugin validate`; isolated load smoke test | ✅ Done |
+| [CV21.DS2.US1b](cv21-ds2-us1b-claude-skill-parity/index.md) | Claude skill parity | User Story | The four Pi-only skills (`discard`, `explore`, `soul`, `update`) are authored as Claude-tuned skills so the plugin reaches full 25-skill parity | ✅ Done |
+| [CV21.DS2.US2](cv21-ds2-us2-mirror-mcp-server/index.md) | Mirror MCP server | User Story | `python -m memory mcp` serves the command surface + on-demand identity context over a zero-dependency stdio JSON-RPC server; declared as an `mcpServers` entry in the manifest; isolated stdio smoke | ✅ Done |
+| CV21.DS2.US3 | Plugin status line | User Story | The plugin `statusLine` renders Mirror's compact status line on Claude | 🟡 Planned |
+| CV21.DS2.TS4 | Reference-runtime smoke test | Technical Story (integration) | End-to-end isolated smoke test proving the full package (plugin + hooks + MCP) loads and runs equivalently to standalone `.claude/` | 🟡 Planned |
 
 ---
 
@@ -79,7 +83,7 @@ not a forced migration (CV21 non-goal).
 
 ## Done Condition
 
-CV21.E2 is done when:
+CV21.DS2 is done when:
 
 - a canonical Claude-format plugin bundling the full `mm-*` skill set + lifecycle
   hooks passes `claude plugin validate`;
@@ -131,7 +135,7 @@ Surfaced while planning S1:
 ## References
 
 - [CV21 — Runtime Expansion II](../index.md)
-- [CV21.E1 Unified Plugin & MCP Spike](../cv21-e1-unified-plugin-mcp-spike/index.md)
+- [CV21.DS1 Unified Plugin & MCP Spike](../cv21-ds1-unified-plugin-mcp-spike/index.md)
 - [Convergence decision](../../../decisions.md#cv21-converges-on-a-canonical-plugin-plus-mcp-server-bridged-by-import)
 - [Runtime Interface Contract](../../../../product/specs/runtime-interface/index.md)
 - Claude Code plugins: <https://docs.claude.com/en/docs/claude-code/plugins>

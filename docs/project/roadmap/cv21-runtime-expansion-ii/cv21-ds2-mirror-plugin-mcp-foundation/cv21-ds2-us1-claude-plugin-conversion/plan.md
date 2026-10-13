@@ -1,6 +1,6 @@
 [< Story](index.md)
 
-# Plan — CV21.E2.S1 Claude plugin conversion
+# Plan — CV21.DS2.US1 Claude plugin conversion
 
 ## Design
 
