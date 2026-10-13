@@ -85,8 +85,19 @@ server. They are the June text. DS12's decision restates what remains.
 | [CV21.DS2.US1](cv21-ds2-us1-claude-plugin-conversion/index.md) | Claude plugin conversion | User Story | The 21 Claude-tuned skills + lifecycle hooks become a canonical Claude plugin (generated from `.claude/skills/`, drift-guarded) that passes `claude plugin validate`; isolated load smoke test | ✅ Done |
 | [CV21.DS2.US1b](cv21-ds2-us1b-claude-skill-parity/index.md) | Claude skill parity | User Story | The four Pi-only skills (`discard`, `explore`, `soul`, `update`) are authored as Claude-tuned skills so the plugin reaches full 25-skill parity | ✅ Done |
 | [CV21.DS2.US2](cv21-ds2-us2-mirror-mcp-server/index.md) | Mirror MCP server | User Story | `python -m memory mcp` serves the command surface + on-demand identity context over a zero-dependency stdio JSON-RPC server; declared as an `mcpServers` entry in the manifest; isolated stdio smoke | ✅ Done |
-| CV21.DS2.US3 | Plugin status line | User Story | The plugin `statusLine` renders Mirror's compact status line on Claude | 🟡 Planned |
-| CV21.DS2.TS4 | Reference-runtime smoke test | Technical Story (integration) | End-to-end isolated smoke test proving the full package (plugin + hooks + MCP) loads and runs equivalently to standalone `.claude/` | 🟡 Planned |
+| CV21.DS2.TS4 | Reference-runtime smoke test | Technical Story (integration) | The full package (plugin, hooks, MCP) loads and runs in a real Claude Code session. Evidence exists: CV21.DS12.TS1's live session on 2.1.296 (L1–L3, L6) | 🟡 Planned |
+| CV21.DS2.TS5 | Hook commands quote the plugin root | Technical Story | The four hook commands quote `${CLAUDE_PLUGIN_ROOT}`, as Claude Code 2.1.296's validator asks (CV21.DS12.TS1, static 1) | 🟡 Planned |
+| CV21.DS2.US6 | The MCP server starts wherever the plugin is installed | User Story | The `mcpServers` entry starts without placeholder expansion on Codex, and Grok attaches it (CV21.DS12.TS2 L6, TS4 L6) | 🟡 Planned |
+| CV21.DS2.US7 | Mirror Mode's explicit form works from every runtime's skill syntax | User Story | The inject hook recognizes `/mirror-mind:mm-mirror`, `$mirror-mind:mm:mirror`, `/mm-mirror`, and `/mm:mirror` (CV21.DS12.TS1 L4, TS2 L10, TS4 L5) | 🟡 Planned |
+| CV21.DS2.US8 | Every runtime's session is logged under its own name, replies included | User Story | The shared hooks detect their runtime (`claude_code`, `codex`, `grok_build`) and log replies from Stop's `last_assistant_message` (CV21.DS12.TS2 L7, L8, L11; TS4 L7, L8) | 🟡 Planned |
+
+**Reshaped by CV21.DS12 (2026-10-13), [decision](../../../decisions.md#cv21-converges-on-the-canonical-plugin-with-a-native-layer-for-antigravity-and-shared-hooks-that-know-their-runtime).**
+DS2 becomes the canonical plugin made ready for every runtime that takes it as it is: Claude
+Code, Codex, and Grok. TS5 and US6–US8 come from the re-baseline's findings.
+**CV21.DS2.US3 (plugin status line) is dropped.** On Claude Code 2.1.296 a manifest
+`statusLine` is an "Unknown field … ignored at load time", and a plugin-root
+`settings.json` status line did not show in a live session (CV21.DS12.TS1, static 3 and L7).
+The status line becomes a documented user step in DS11.
 
 ---
 

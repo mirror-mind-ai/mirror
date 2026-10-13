@@ -66,8 +66,8 @@ reference path, but replacing per-runtime reinvention with one shared package.
 ## Spike Findings (June 2026, evidence-based)
 
 > These describe the runtime versions installed in June 2026 and a Python core.
-> [DS12](cv21-ds12-runtime-re-baseline/index.md) re-measures them. Until it closes,
-> read them as history, not as the current contract.
+> [DS12](cv21-ds12-runtime-re-baseline/index.md) re-measured them on 2026-10-13, and
+> its [decision](../../decisions.md#cv21-converges-on-the-canonical-plugin-with-a-native-layer-for-antigravity-and-shared-hooks-that-know-their-runtime) supersedes them. Read them as history.
 
 Gathered by inspecting installed binaries (`claude` 2.1.114, `codex` 0.139.0,
 `agy` 1.0.8, `grok` 0.2.39), the public `google-antigravity/antigravity-cli` and
@@ -141,7 +141,10 @@ hypotheses the spike epics must confirm hands-on.
 
 CV21 reuses CV8's explicit parity levels (L0 CLI-assisted → L4 full parity). See
 [CV8 Runtime Parity Levels](../cv8-runtime-expansion/index.md#runtime-parity-levels).
-No fake parity: each runtime claims only what it honestly supports. Each claim
+No fake parity: each runtime claims only what it honestly supports.
+
+As measured on 2026-10-13 ([DS12's decision](../../decisions.md#cv21-converges-on-the-canonical-plugin-with-a-native-layer-for-antigravity-and-shared-hooks-that-know-their-runtime)): Claude Code **L4**; Codex **L4
+reachable**; Antigravity **L4 reachable** with a native layer; Grok Build **L3**. Each claim
 names the runtime version, binary, and date it was measured on (the
 [evidence rule](cv21-ds12-runtime-re-baseline/index.md#evidence-rule)).
 
@@ -174,17 +177,17 @@ package gets one when it is pulled, and expands into User and Technical Stories.
 | Code | Delivery Story | User-visible outcome | Status |
 |------|----------------|----------------------|--------|
 | [CV21.DS1](cv21-ds1-unified-plugin-mcp-spike/index.md) | Unified Plugin & MCP Spike | Validated (isolated, no config mutated): a Mirror plugin passes `claude plugin validate` and `agy plugin validate`; formats aligned but bridged by `agy plugin import claude`; MCP carries the command surface but not auto-injection. Decision: converge with thin-adapter fallback | ✅ Done |
-| [CV21.DS2](cv21-ds2-mirror-plugin-mcp-foundation/index.md) | Mirror Plugin & MCP Foundation (Claude) | Author the canonical Mirror Mind plugin (skills + hooks + MCP) + MCP server; convert Mirror's standalone `.claude/` to the plugin; wire `statusLine`; prove on Claude as the reference runtime; isolated smoke test | 🟢 Active |
+| [CV21.DS2](cv21-ds2-mirror-plugin-mcp-foundation/index.md) | Mirror Plugin & MCP Foundation | The canonical plugin, ready for every runtime that takes it as it is: Claude Code, Codex, and Grok ([decision](../../decisions.md#cv21-converges-on-the-canonical-plugin-with-a-native-layer-for-antigravity-and-shared-hooks-that-know-their-runtime)). US1, US1b, and US2 are done. TS4 can close on DS12.TS1's live session. TS5 quotes the plugin root, US6 makes the MCP entry start everywhere, US7 recognizes every runtime's skill form for Mirror Mode, and US8 logs each session under its runtime, replies included. US3 (status line) is dropped: a plugin cannot carry one (DS12.TS1) | 🟢 Active |
 | [CV21.DS3](cv21-ds3-codex-upgrade-spike/index.md) | Codex Upgrade Spike | Confirmed (read-only, no config mutated): full Claude-style hooks (`SessionStart`/`UserPromptSubmit`→`additionalContext`/`Stop`) → **L4 reachable**; `session_id` + `transcript_path` available; skills already discovered via `.agents/skills/` (no migration). Caveats: `async` hooks skipped, no `SessionEnd` | ✅ Done |
-| CV21.DS4 | Codex Hook + Plugin Reimplementation | Hooks replace the CV8 wrapper and consume the shared plugin/MCP: `SessionStart`/`UserPromptSubmit`/`Stop` logging + Mirror Mode injection; target L4; keeps `interface='codex'`. Logging must be synchronous (`async` skipped); deferred extraction (no `SessionEnd`); isolated smoke test | 🟡 Planned |
-| CV21.DS5 | Codex Skill & Extension Surface | `mm-*` skills already discovered via `.agents/skills/` (DS3 finding — no migration); expose user-owned extensions into `.agents/skills/` and/or a Codex plugin; smoke test | 🟡 Planned |
+| CV21.DS4 | Codex Through The Canonical Plugin | Codex installs the plugin from a marketplace Mirror ships and trusts its hooks once. It gets skills, the Operating Instructions (D13), per-turn injection, the MCP server (after DS2.US6), and logging as `codex` (after DS2.US8). v0.32.1's two steps and wrapper retire once parity is shown. Target L4 (DS12.TS2) | 🟡 Planned |
+| CV21.DS5 | User Extensions On Every Runtime | Reshaped: Codex's skills now arrive with the plugin (DS12.TS2). One exposure design for user extensions across Claude Code, Codex, Antigravity, and Grok, chosen from DS12.TS5's three shapes. `review-copy` is proven on each | 🟡 Planned |
 | [CV21.DS6](cv21-ds6-antigravity-runtime-spike/index.md) | Antigravity Runtime Spike | Confirmed (read-only, no config mutated): hooks are tool/invocation/stop-centric — **no `UserPromptSubmit`/`additionalContext`** → honest parity **L3** (not L4); skills via `.agents/skills/` (no migration); Mirror Mode via `AGENTS.md`; `agy plugin import claude` path confirmed. `PreInvocation`+`HookSystemMessage` injection flagged for DS7 | ✅ Done |
-| CV21.DS7 | Antigravity Runtime & Extension Surface | Antigravity runs Mirror at **L3** via `.agents/skills/` + `AGENTS.md` + explicit invocation; logging via wrapper/`StopHook` + deferred extraction (`interface='antigravity'`); external extensions ride `.agents/skills/`; probe `PreInvocation`+`HookSystemMessage` injection; isolated smoke test | 🟡 Planned |
-| CV21.DS8 | Gemini CLI Sunset | The Gemini CLI integration v0.32.1 still ships is removed behind a documented cutoff ([decision](../../decisions.md#gemini-cli-is-retired-and-antigravity-is-its-successor)): the `.gemini/hooks` wrappers, the `gemini` hook family, the `mirror init` steps, the Gemini smoke, and every runtime-facing doc; Antigravity named as the successor; released with its own note. Gemini *models* are untouched. Honest note (DS6): Gemini CLI was L4, and Antigravity measured L3 on `agy` 1.0.8, so per-turn injection is lost unless the current `agy` offers it | 🟡 Planned |
+| CV21.DS7 | Antigravity Through Skills And A Native Layer | `agy plugin install` brings the skills. A thin agy-native layer adds hooks in agy's schema: SessionStart instructions, `PreInvocation` injection once per user turn, and Stop logging from the transcript as `antigravity`. It also adds `mcp_config.json` and `rules/AGENTS.md`. Target L4, and the bar for removing Gemini CLI (DS12.TS3) | 🟡 Planned |
+| CV21.DS8 | Gemini CLI Sunset | The Gemini CLI integration v0.32.1 still ships is removed behind a documented cutoff ([decision](../../decisions.md#gemini-cli-is-retired-and-antigravity-is-its-successor)): the `.gemini/hooks` wrappers, the `gemini` hook family, the `mirror init` steps, the Gemini smoke, and every runtime-facing doc; Antigravity named as the successor; released with its own note. Gemini *models* are untouched. Gated on DS7 meeting the bar in DS12.TS3. Honest note: Gemini CLI was L4, and Antigravity is L4 reachable on agy 1.3.4 (DS12.TS3), so the cutoff should lose nothing | 🟡 Planned |
 | [CV21.DS9](cv21-ds9-grok-build-runtime-spike/index.md) | Grok Build Runtime Spike | Confirmed (read-only, no config mutated): full Claude-style hook lifecycle read from `.claude/settings.json` (native logging, **not** export/backfill); `UserPromptSubmit` passive → no injection → honest parity **L3** (strong L1); skills via `.agents/skills/` (no migration); plugins via `.claude/plugins/` compat; MCP in `config.toml` | ✅ Done |
-| CV21.DS10 | Grok Build Runtime & Extension Surface | Grok runs Mirror at **L3** via native `.claude/settings.json` hook lifecycle (`interface='grok_build'`, deferred extraction, project-trust aware); skills via `.agents/skills/`; Mirror Mode via `AGENTS.md` + explicit slash invocation; external extensions ride `.agents/skills/`; MCP via `~/.grok/config.toml`; isolated smoke test | 🟡 Planned |
-| CV21.DS11 | Contract & Docs Refresh | All runtimes folded into the runtime interface contract, decisions, and the parity matrix across README, Getting Started, REFERENCE, and architecture; the plugin/MCP convergence documented | 🟡 Planned |
-| [CV21.DS12](cv21-ds12-runtime-re-baseline/index.md) | Runtime Re-Baseline | Every runtime finding re-measured in isolation on the installed version, with version, binary, and date recorded. The plugin imports DS1 deferred run live, and the extension surface is re-grounded on the TypeScript extension contract. A decision confirms or reshapes DS2's remainder and DS4–DS11. Pulled before any per-runtime Delivery Story | 🟡 Planned |
+| CV21.DS10 | Grok Build Through The Canonical Plugin | Grok already takes the plugin's skills, and the Claude wiring alone also gives them. It logs as `grok_build`, replies included, after DS2.US8. The MCP attachment is investigated (DS12.TS4 L6), and the honest L3 is documented: Grok has no per-turn injection | 🟡 Planned |
+| CV21.DS11 | Contract & Docs Refresh | All runtimes folded into the runtime interface contract, decisions, and the parity matrix across README, Getting Started, REFERENCE, and architecture. The matrix carries version, binary, and date. Also documented: the status line as a user step (DS2.US3 dropped), and Claude Code reading a project `AGENTS.md` natively (DS12.TS1 L8) | 🟡 Planned |
+| [CV21.DS12](cv21-ds12-runtime-re-baseline/index.md) | Runtime Re-Baseline | Every runtime finding re-measured in isolation on the installed version, with version, binary, and date recorded. The plugin imports DS1 deferred run live, and the extension surface is re-grounded on the TypeScript extension contract. A decision confirms or reshapes DS2's remainder and DS4–DS11. Pulled before any per-runtime Delivery Story | 🟢 Active |
 
 ---
 
@@ -200,13 +203,18 @@ The migration of 2026-10-13 kept every number, and folders moved with their code
 | `CV21.E2.S1` | `CV21.DS2.US1` | [Claude plugin conversion](cv21-ds2-mirror-plugin-mcp-foundation/cv21-ds2-us1-claude-plugin-conversion/index.md) |
 | `CV21.E2.S1b` | `CV21.DS2.US1b` | [Claude skill parity](cv21-ds2-mirror-plugin-mcp-foundation/cv21-ds2-us1b-claude-skill-parity/index.md) |
 | `CV21.E2.S2` | `CV21.DS2.US2` | [Mirror MCP server](cv21-ds2-mirror-plugin-mcp-foundation/cv21-ds2-us2-mirror-mcp-server/index.md) |
-| `CV21.E2.S3` | `CV21.DS2.US3` | a row of [DS2](cv21-ds2-mirror-plugin-mcp-foundation/index.md)'s candidate table, no package yet |
+| `CV21.E2.S3` | `CV21.DS2.US3` | dropped by DS12 on 2026-10-13: a plugin cannot carry a status line |
 | `CV21.E2.S4` | `CV21.DS2.TS4` | a row of [DS2](cv21-ds2-mirror-plugin-mcp-foundation/index.md)'s candidate table, no package yet |
 | `CV21.E3.S<n>`, `CV21.E6.S<n>`, `CV21.E9.S<n>` | `CV21.DS3.TS<n>`, `CV21.DS6.TS<n>`, `CV21.DS9.TS<n>` | rows of each spike's candidate table |
 
 ---
 
 ## External Extension Surface Assessment
+
+> Superseded by [DS12.TS5](cv21-ds12-runtime-re-baseline/cv21-ds12-ts5-extension-surface-re-grounding/index.md)
+> (2026-10-13). The plan below assumed extensions would ride the shared plugin, which
+> ships inside the npm package and so cannot carry each home's extensions. DS5 starts
+> from TS5.
 
 Extensions must work on every runtime, not just built-in `mm-*` skills. The
 convergence changes how: external extensions ride the **same canonical plugin /
@@ -275,34 +283,29 @@ Sequenced by implementation leverage and user base. Mirror's users are mostly on
 Claude Code and Codex. Few used Gemini CLI, which is now retired.
 
 ```text
-Done (June 2026)    DS1 unified plugin & MCP spike · DS3 Codex · DS6 Antigravity · DS9 Grok spikes
-In progress         DS2 plugin & MCP foundation on Claude: US1, US1b, US2 done; US3, TS4 open
-
-Next                DS12 runtime re-baseline        (re-measure before building on it)
-                      ├── DS2 remainder             US3 status line · TS4 reference smoke
-                      ├── DS4 Codex hooks + plugin → DS5 Codex skills + extensions
-                      ├── DS7 Antigravity runtime + extensions → DS8 Gemini CLI removal
-                      └── DS10 Grok runtime + extensions
-                            └── DS11 contract & docs refresh (all runtimes)
+Done        DS1 · DS3 · DS6 · DS9   June spikes, superseded by DS12
+            DS12 runtime re-baseline (2026-10-13)
+Next        DS2  the canonical plugin, ready for Claude Code, Codex, and Grok
+                 (TS4 close, TS5, US6 MCP everywhere, US7 skill forms, US8 runtime labels and replies)
+              ├── DS4  Codex through the canonical plugin        (target L4)
+              ├── DS7  Antigravity: skills + a native layer       (target L4, the Gemini bar)
+              │     └── DS8  Gemini CLI removal                   (only once DS7 meets the bar)
+              └── DS10 Grok through the canonical plugin          (honest L3)
+                    └── DS5  user extensions on every runtime
+                          └── DS11 contract & docs refresh
 ```
 
-Order rationale:
+Order rationale, as DS12 decided it:
 
-1. **Re-baseline first (DS12).** The June evidence ran on older runtime versions and
-   a Python core, and the plugin import it bet on has never run. No per-runtime story
-   builds on evidence nobody re-measured.
-2. **Claude as reference (DS2's remainder).** It is the most-used runtime and the
-   native home of the plugin format. CV22 already proved the npm-era plugin in a real
-   Claude Code session, so TS4 may close on DS12's Claude evidence.
-3. **Codex next (DS4–DS5).** It is the second most-used runtime and has the biggest
-   parity gain (L3 → L4). It starts from the wrapper v0.32.1 ships, not from CV8's.
-4. **Antigravity, then the Gemini removal (DS7 → DS8).** The Gemini cutoff has to
-   tell its users what to do instead, so a wired successor comes first.
-5. **Grok (DS10).** It is the newest and least-used runtime, and the most uncertain.
-6. **Docs refresh (DS11).** It folds every runtime into the canonical spec once real
-   parity is known.
-
-DS12's decision may reorder, merge, or drop any of these.
+1. **DS2 first.** Its four new stories are fixes in the one package three runtimes take.
+   Doing them once, before any runtime story, is the convergence paying off.
+2. **Codex next (DS4).** It is the second most-used runtime, and it now takes the plugin
+   as it is, so its story shrinks to distribution and parity proof.
+3. **Antigravity, then the Gemini removal (DS7 → DS8).** The removal waits for the bar,
+   so the cutoff can say what users keep.
+4. **Grok (DS10).** It is the newest and least-used runtime, and much of it already works
+   through DS2.
+5. **Extensions (DS5),** once every runtime's wiring is settled, then **docs (DS11).**
 
 ---
 

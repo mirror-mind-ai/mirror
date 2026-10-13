@@ -1649,6 +1649,12 @@ keep thin per-runtime hook adapters but still share the MCP server and skill
 surface. The foundation pays off either way, so no per-runtime epic is blocked on
 import working perfectly.
 
+**Revised 2026-10-13** by
+[CV21 converges on the canonical plugin, with a native layer for Antigravity and shared hooks that know their runtime](#cv21-converges-on-the-canonical-plugin-with-a-native-layer-for-antigravity-and-shared-hooks-that-know-their-runtime).
+The import bridge this entry relied on was first run in CV21.DS12, and it does not work.
+Claude Code, Codex, and Grok take the plugin as it is. Antigravity takes its skills and
+needs the thin native layer this entry kept as the fallback.
+
 ---
 
 ### Soul Mode active roadmap narrows after integration and web UI
@@ -2700,6 +2706,73 @@ bounds how stale a story's evidence can be.
 the [convergence decision](#cv21-converges-on-a-canonical-plugin-plus-mcp-server-bridged-by-import),
 and it reshapes DS2's remainder and DS4–DS11. The June spike packages stay as
 history.
+
+### CV21 converges on the canonical plugin, with a native layer for Antigravity and shared hooks that know their runtime
+
+**Date:** 2026-10-13 · **Context:** [CV21.DS12](roadmap/cv21-runtime-expansion-ii/cv21-ds12-runtime-re-baseline/index.md)
+re-measured CV21's evidence on Claude Code 2.1.296, Codex 0.162.1, agy 1.3.4, and Grok
+Build 1.0.52 (binaries in the package's `recorded-versions.tsv`). It used static probes
+and four live sessions the Navigator ran, two turns each. This revises the
+[2026-06-14 convergence decision](#cv21-converges-on-a-canonical-plugin-plus-mcp-server-bridged-by-import),
+whose central bet had never been run.
+
+**The decision: the canonical Claude-format plugin stays the one package, and three of
+the four runtimes take it as it is.**
+
+- Claude Code, Codex, and Grok install or load it natively.
+- Antigravity takes its skills through `agy plugin install <path>`. It also gets a thin
+  native layer for what agy cannot take: hooks in agy's schema, `mcp_config.json`, and
+  `rules/AGENTS.md`.
+- The `agy plugin import claude` bridge is dropped. It finds nothing, whether Mirror is
+  wired as a skills-dir plugin or installed from a Claude marketplace.
+
+**What the evidence changed.**
+
+- **Codex installs the Claude plugin as it is**, from a local marketplace. It brings the
+  skills, and its hooks run after a one-time trust. Injection reaches the model at
+  session start and on every turn. The Operating Instructions arrive as a developer
+  message from the plugin's SessionStart hook. June's caveats are gone: `async` hooks
+  run, and `SessionEnd` exists.
+- **Antigravity can reach L4, not L3.** Its SessionStart and `PreInvocation` hooks
+  inject context that reaches the model, and `invocationNum` resets at each user turn,
+  so injecting once per turn is possible. Its hook payloads carry no message text, but
+  its transcript is readable.
+- **Grok stays L3.** A SessionStart `systemMessage` reaches only the screen, and
+  per-turn context is ignored.
+- **The shared hooks mislabel two runtimes.** They are Mirror's `claude:*` family, so
+  Codex and Grok sessions are logged as `claude_code`, without their replies. Every
+  Claude-schema runtime hands `last_assistant_message` to its Stop hook.
+- **The MCP entry does not start everywhere.** Codex does not expand
+  `${CLAUDE_PLUGIN_ROOT}` in an MCP command. Grok starts the server but never attaches
+  it.
+- **User extensions cannot ride the shared plugin.** It ships inside the npm package,
+  while extensions belong to each Mirror home. Per-home exposure reaches everything:
+  `~/.agents/skills/` is read by Codex and Grok, `~/.claude/skills/` by Claude Code and
+  Grok, and agy reads `~/.gemini/config/skills/`.
+
+**Parity, as measured on 2026-10-13.**
+
+| Runtime | Skills | Instructions at start | Per-turn injection | Logging | MCP | Honest level |
+|---------|--------|-----------------------|--------------------|---------|-----|--------------|
+| Claude Code 2.1.296 | 25, plugin | ✓ hook (D13) | ✓ | ✓ `claude_code` | ✓ 7 tools | **L4** |
+| Codex 0.162.1 | 25, plugin | ✓ hook, as a developer message | ✓ | prompts only, as `claude_code` | ✗ placeholder | **L4 reachable** |
+| Antigravity 1.3.4 | 25, `plugin install` | ✓ native hook | ✓ `PreInvocation` | ✗ none yet | ✗ not carried | **L4 reachable** with the native layer |
+| Grok Build 1.0.52 | 25, plugin or Claude wiring | `AGENTS.md` only | ✗ | prompts only, as `claude_code` | ✗ not attached | **L3** |
+
+**What follows.**
+
+- The shared hooks learn their runtime, and log replies from Stop: one change for
+  three runtimes.
+- The MCP entry is made to start without placeholder expansion.
+- The inject hook learns every skill form: `/mirror-mind:mm-mirror`,
+  `$mirror-mind:mm:mirror`, and `/mm-mirror`.
+- Those changes land in DS2. DS4, DS5, DS7, DS10, and DS11 are reshaped as the
+  [CV21 index](roadmap/cv21-runtime-expansion-ii/index.md) records.
+- **DS8 removes Gemini CLI only after DS7 meets the bar
+  [TS3](roadmap/cv21-runtime-expansion-ii/cv21-ds12-runtime-re-baseline/cv21-ds12-ts3-antigravity-re-probe/index.md#the-bar-for-removing-gemini-cli-proposed-for-ts6)
+  states.** The bar is parity with what v0.32.1's Gemini wiring gives: skills,
+  instructions, per-turn injection, logging, and no more setup steps. Measured on the
+  installed `agy`, it lets the cutoff say nothing is lost.
 
 ## Open Discussions
 
