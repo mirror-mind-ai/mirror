@@ -333,11 +333,27 @@ Recovery:
   already at HEAD`, both pushes passed, `publish` and `latest dist-tag` followed, and the
   run ended with `success`. `show-ref` listed `refs/heads/stable` and `refs/tags/v0.32.0`.
 
-A finding outside this CR: on a machine that exports `MIRROR_USER`, the updater
-smoke's package lane (section 6) fails 24 checks, because the smoke never clears the
+A finding outside this CR, captured as
+[CR137](cr137-the-updater-smoke-fails-on-a-machine-that-exports-mirror-user.md): on a
+machine that exports `MIRROR_USER`, the updater smoke's package lane (section 6) fails
+24 checks, because the smoke never clears the
 variable. The message is "MIRROR_HOME (.../pkg-mirror-home) conflicts with MIRROR_USER
 (vinicius-dev)". CI has no `MIRROR_USER`. The route runs the smoke with
 `env -u MIRROR_USER`.
+
+### Navigator validation (2026-10-14)
+
+The Navigator ran both halves of the [validation route](#validation-route) in their own
+shell, from 20:16 to 20:22.
+
+- **The pushes.** The first run read `[✓] push tag: v0.32.0`, then `[✗] push stable:`
+  with git's message indented beneath it, and the recovery exactly as the Driver's run
+  printed it. The second run read `stable branch: stable already at HEAD`, both pushes
+  passed, `publish` and `latest dist-tag` followed, and it ended with `success`.
+  `show-ref` listed `refs/heads/stable` and `refs/tags/v0.32.0` at `78dd5836`.
+- **The fetch.** `env -u MIRROR_USER bash scripts/smoke_runtime_update.sh
+  /tmp/cr132-smoke`: step 2b read `[✓] fetch: origin main` and `Update result:
+  success`, with HEAD unchanged. The smoke ended with 89 passed, 0 failed.
 
 ## Outcome
 

@@ -78,3 +78,4 @@ evidence stays honest as both cores move.
 - [CR134 — `release-notes pending` reads the cwd's git repository, so it answers for whatever project the person is in](cr134-release-notes-pending-reads-the-cwd-s-git-repository.md)
 - [CR135 — The welcome card's update check asks the cwd's repository, not the install, and the status line keeps a stale verdict](cr135-the-welcome-card-s-update-check-asks-the-cwd-s-repository.md)
 - [CR136 — The `release` environment takes a dispatch from any ref, so a branch's own copy of `publish.yml` can stage](cr136-the-release-environment-takes-a-dispatch-from-any-ref.md)
+- [CR137 — The updater smoke's package lane fails on a machine that exports `MIRROR_USER`](cr137-the-updater-smoke-fails-on-a-machine-that-exports-mirror-user.md)
