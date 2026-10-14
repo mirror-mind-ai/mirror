@@ -261,6 +261,18 @@ whose `~/.config/mirror/env` names `vinicius`:
 - The retired-surface tripwire, the pack guard, the doc-link check, lint, and
   `git diff --check` are all clean. No TypeScript changed.
 
+### Navigator validation (2026-10-14)
+
+The Navigator ran both commands of the [validation route](#validation-route) from their
+own shell as it is, with `MIRROR_USER` exported and `~/.config/mirror/env` in place,
+from 21:54 to 21:55.
+
+- `bash scripts/smoke_runtime_update.sh /tmp/cr137-smoke`: step 0 read "✓ the clone
+  lane resolves the scratch home" and "✓ no MIRROR_USER reached the clone lane". Every
+  section passed, section 6 included, and the run ended with 91 passed, 0 failed.
+- The same with `MIRROR_HOME`, `MEMORY_DIR`, `DB_PATH`, and `MEMORY_ENV` pointing
+  nowhere: the same step 0, and 91 passed, 0 failed.
+
 ## Outcome
 
 Pending.
