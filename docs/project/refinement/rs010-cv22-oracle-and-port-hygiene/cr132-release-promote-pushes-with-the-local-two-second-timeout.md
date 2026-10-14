@@ -37,9 +37,9 @@ Captured, unassigned, at the `v0.33.0` release (2026-10-13). Current Focus uncha
 Likely a one-argument change per push, plus the recovery lines and the test.
 
 Selected 2026-10-14. The plan below was reviewed by a three-lens panel the same day
-([record below](#panel-review-2026-10-14)), and its findings are folded in. It is
-pending approval. The Navigator has agreed on Driver `@viniciusteles` and Delivery
-`main`; both go on the index row when work starts.
+([record below](#panel-review-2026-10-14)), and its findings are folded in.
+**Approved 2026-10-14 by the Navigator.** Driver `@viniciusteles` and Delivery `main`
+were assigned in the same turn.
 
 **Decided 2026-10-14 by the Navigator: the clone updater's fetch joins this CR.** The
 premise "like every other network git call" is not true. The Python oracle gave
