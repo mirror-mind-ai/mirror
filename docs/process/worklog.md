@@ -12,6 +12,30 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-10-14 — v0.33.0 released: One Plugin, Three Runtimes
+
+`v0.33.0` closes CV21.DS2 as a minor release (a Delivery Story, an epic before the Ariad
+migration, closing without its CV). It also carries CV9.E2.S32's faster Pi session start
+and notice of the Gemini CLI retirement.
+
+Where it stands:
+- `stable` and the tag on `5d6fb590`, promoted 2026-10-13;
+- npm `latest` and `stable` on `0.33.0`, with SLSA provenance, published 2026-10-14;
+- the GitHub Release, marked latest.
+
+The route, in order:
+- release note, version bump, and every gate run locally, the retired-surface tripwire
+  included, because CI does not run it on a docs-only push (CR126);
+- CI green on the release commit;
+- `release:promote --push`, which tagged and moved `stable` locally, then failed its push
+  on the two-second local git timeout. It was finished by hand with its own two commands
+  and captured as CR132;
+- the publish workflow staged from CI on the tag;
+- the Navigator approved the `release` environment, the staged version (2FA), and
+  `latest` (CR125's lesson, a step this time rather than a discovery);
+- a stranger's install from the public registry: `0.33.0`, the new plugin manifest and
+  hooks, and the MCP entry answering from a GUI-launch `PATH`.
+
 ### 2026-10-13 — CV21.DS2 done: the canonical plugin, as it is, on Claude Code, Codex, and Grok
 
 DS2 made the one plugin right for the three runtimes that take it as it is. It ran in
