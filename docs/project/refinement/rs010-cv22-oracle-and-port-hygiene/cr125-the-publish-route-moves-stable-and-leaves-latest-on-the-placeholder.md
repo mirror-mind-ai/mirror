@@ -50,7 +50,8 @@ Selected 2026-10-14. The plan below was reviewed by a four-lens panel the same d
 ([record below](#panel-review-2026-10-14)), and its findings are folded in.
 **Approved 2026-10-14 by the Navigator**, including the tag guard the panel added.
 Driver `@viniciusteles` and Delivery `main` were assigned in the same turn.
-Implemented the same day. It awaits the Navigator's [validation route](#validation-route).
+Implemented the same day, validated by the Navigator, and **done 2026-10-14**
+([Outcome](#outcome)).
 
 ### Objective
 
@@ -232,6 +233,9 @@ Not asked:
 - After `npm dist-tag add mirror-mind@0.32.1 latest`: `{ latest: '0.32.1', stable:
   '0.32.1' }`, and a scratch install ran `mirror`, `init`, `seed` (20 created), `list
   personas` (12), `runtime status` (`Install: package (mirror-mind@0.32.1)`).
+- `.github/workflows/publish.yml` input `dist_tag`; `ts/scripts/releasePromote.ts` final
+  printed step;
+  [the publish decision](../../decisions.md#the-npm-package-is-published-by-staging-from-ci-with-provenance-and-a-maintainer-approves-with-2fa).
 - 2026-10-14, `v0.33.0`: the Navigator approved `latest` as a step of the release,
   carried by this CR's lesson; the printed route still did not name it
   ([worklog](../../../process/worklog.md)).
@@ -295,10 +299,64 @@ removed afterwards, and no `next` branch was left behind. The last line of each 
 
 The first run's doctor read `ready`. The second (`--stable next`) read `1 warning(s)`,
 and its `publish` named `dist_tag=next`.
-- `.github/workflows/publish.yml` input `dist_tag`; `ts/scripts/releasePromote.ts` final
-  printed step;
-  [the publish decision](../../decisions.md#the-npm-package-is-published-by-staging-from-ci-with-provenance-and-a-maintainer-approves-with-2fa).
+
+### Navigator validation (2026-10-14)
+
+The Navigator ran the [validation route](#validation-route) in their own shell,
+from 19:00 to 19:01, in a worktree of the development clone at `v0.33.0` (`5d6fb590`).
+
+- The first run's doctor read `ready`. Its last line was `[-] latest dist-tag:
+  separate gate, once mirror-mind@0.33.0 is public under stable: npm dist-tag add
+  mirror-mind@0.33.0 latest with 2FA, [...]; then npm view mirror-mind dist-tags shows
+  both at 0.33.0`.
+- The second run (`--stable next`) read `1 warning(s)`, its `publish` named
+  `dist_tag=next`, and its last line was `[-] latest dist-tag: stays where it is; only a
+  release under stable moves it`.
+- Both runs ended with `Release promotion result: success`. The worktree was removed,
+  and no `next` branch was created.
+
+**Accepted by the Navigator**: the route as run, and the workflow half on the Driver's
+evidence above, as decided at approval.
+
+CI on the implementation (`8cb7de7f`): Docs run `38603994369` passed, and Tests run
+`38603994401` passed: `ts` on ubuntu and macOS, and `smoke`.
+
+## Review
+
+**Proportionality.** A dozen lines of script, a guard and a summary in the workflow,
+and one new test, for a defect that cost a stranger's first install. The panel's
+additions made the change larger than the capture's "printing is the smaller change".
+Those additions are the tag guard and the input read through `env`. Each closes a way
+the tag could still go wrong without anyone noticing. Nothing new parses npm's output
+or runs on its own, and every registry step is still a person's.
+
+**Scope discipline.** The change touched the plan's files and nothing else, plus one
+capture, CR136, for the finding that was policy rather than fix. Under `--stable next`,
+the `push` step still reads "tag and stable". That text predates this CR and is
+cosmetic, so it is noted, not captured.
+
+**Debt: none carried.** The Navigator accepted three named limitations at closure:
+
+- The `stable` rule lives in two places. The script reads `DEFAULT_CHANNEL`, and the
+  workflow names `stable`. Tying them together would mean parsing YAML in the test
+  suite to guard a constant that has never changed, so each comment points to the
+  other instead. Revisit if the default channel changes, or if a third place prints
+  the rule.
+- A mistyped tag asks the `release` reviewer before the guard refuses it, because the
+  environment's approval covers the whole job. A separate job outside the environment
+  would cost more than the risk.
+- The workflow's summary has not yet run on GitHub. The next release reads it, and
+  that observation is recorded below.
 
 ## Outcome
 
-Pending.
+**Done 2026-10-14.** Both places that print the route now end a release under
+`stable` with `npm dist-tag add mirror-mind@<version> latest` and the `npm view` that
+shows both tags at the version. A rehearsal under `next` is told that `latest` stays,
+and the workflow stages under no other tag. The Navigator validated the route at
+`v0.33.0`, and the workflow half was accepted on the Driver's evidence. CI passed on
+`8cb7de7f`.
+
+**Still to observe:** the workflow's real run summary, at the next release. Record
+the run id here, and whether `npm view mirror-mind dist-tags` showed both tags at the
+released version.

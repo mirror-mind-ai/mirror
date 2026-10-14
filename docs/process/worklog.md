@@ -12,6 +12,35 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-10-14 — CR125 done: npm's `latest` is a printed step of the release
+
+The publish route moved `stable` and left `latest` on the placeholder. After `v0.32.1`
+was approved, `npm install -g mirror-mind`, the line Getting Started gives a stranger,
+installed `0.0.1` with no `bin` until the Navigator moved the tag by hand. npm leaves
+nothing to automate:
+
+- a stage carries one tag that cannot be changed;
+- approve takes no tag;
+- the trusted publisher can run nothing but the stage.
+
+Now the route names the step, where before someone had to notice it:
+
+- `release:promote` prints a `latest dist-tag` step after `publish`, with the `npm
+  view` that shows both tags at the version. The step applies only to a release under
+  the updater's default channel; a `--stable next` rehearsal is told that `latest`
+  stays.
+- The publish workflow refuses any tag but `stable` or `next` before staging, reads
+  its input through `env`, and ends with a run summary of what a maintainer does next.
+- REFERENCE.md, which had described a printed `npm publish --tag stable` since the
+  rehearsal, now says the same, and so do the publish decision and the release chain.
+
+A four-lens panel reviewed the plan before approval; its engineer found that the draft
+would have told a rehearsal to move `latest`. The Navigator validated the route at
+`v0.33.0` in their own shell and accepted the workflow half on local evidence. Its real
+summary is read at the next release. CI passed on `8cb7de7f`. No debt is carried, and
+three limitations are named in the CR. Captured on the way: CR136, the `release`
+environment taking a dispatch from any ref.
+
 ### 2026-10-14 — v0.33.0 released: One Plugin, Three Runtimes
 
 `v0.33.0` closes CV21.DS2 as a minor release (a Delivery Story, an epic before the Ariad

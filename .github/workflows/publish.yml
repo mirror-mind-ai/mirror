@@ -119,7 +119,9 @@ jobs:
       # where the run ends: the approve, then for `stable` the `latest` move,
       # then the view that shows both tags. The name and version come from the
       # package.json the stage packed. Nothing parses npm's output, which npm
-      # documents no format for.
+      # documents no format for. `release:promote` prints the same rule
+      # (ts/scripts/releasePromote.ts): only `stable`, the updater's default
+      # channel, moves `latest`. Change one, change both.
       - name: What a maintainer does next
         run: |
           name=$(node -p 'require("./package.json").name')
