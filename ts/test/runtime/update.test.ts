@@ -9,6 +9,7 @@ import test from "node:test";
 import { assertNamesNoInterpreter } from "#helpers/noInterpreter.ts";
 import type { InstallKind } from "#runtime/installKind.ts";
 import type { GitRunner } from "#runtime/strategies/clone.ts";
+import type { NpmRunner } from "#runtime/strategies/package.ts";
 import { postUpdateHints, runUpdate, type UpdateDeps } from "#runtime/update.ts";
 import { renderUpdateResult, updateLogDetail } from "#runtime/updatePipeline.ts";
 
@@ -234,18 +235,20 @@ test("an unknown install refuses to guess", () => {
 
 // --- the package strategy (plateau 4) ---------------------------------------
 
-const PACKAGE: InstallKind = {
+const PACKAGE: Extract<InstallKind, { kind: "package" }> = {
   kind: "package",
   root: "/usr/local/lib/node_modules/mirror-core",
   name: "mirror-core",
   version: "1.2.3",
 };
 
-/** An npm that answers from a table, and records what it was asked. */
+/** An npm that answers from a table, and records what it was asked, and where. */
 function scriptNpm(answers: Record<string, { code?: number; stdout?: string; stderr?: string }>) {
   const calls: string[][] = [];
-  const runner = (args: readonly string[]) => {
+  const cwds: (string | undefined)[] = [];
+  const runner: NpmRunner = (args, call) => {
     calls.push([...args]);
+    cwds.push(call?.cwd);
     const key = args.join(" ");
     for (const [pattern, answer] of Object.entries(answers)) {
       if (key.startsWith(pattern)) {
@@ -254,8 +257,24 @@ function scriptNpm(answers: Record<string, { code?: number; stdout?: string; std
     }
     return { code: 1, stdout: "", stderr: `unscripted npm call: ${key}\n` };
   };
-  return { runner, calls };
+  return { runner, calls, cwds };
 }
+
+test("a package update runs npm in the install's root, never the cwd (CR135)", () => {
+  // npm reads the project config of the directory it runs in, so a project's
+  // `.npmrc` could name the registry the install comes from.
+  const npm = scriptNpm({
+    "view mirror-core dist-tags": { stdout: JSON.stringify({ stable: "1.3.0" }) },
+    "install -g": { stdout: "added 1 package\n" },
+  });
+  const result = runUpdate(deps({ install: PACKAGE, channel: "stable", npm: npm.runner }));
+  assert.equal(result.success, true, JSON.stringify(result.stages));
+  assert.deepEqual(
+    npm.calls.map((call) => call[0]),
+    ["view", "install"],
+  );
+  assert.deepEqual(npm.cwds, [PACKAGE.root, PACKAGE.root]);
+});
 
 test("a package install resolves the dist-tag and installs an EXACT version", () => {
   // Never `npm install -g name@stable`: a bare tag installs whatever it

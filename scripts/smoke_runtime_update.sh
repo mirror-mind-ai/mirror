@@ -139,17 +139,24 @@ CLONE_PATH="$WORK/stubs:$WORK/bin:/usr/bin:/bin"
 # its own, because the front door fills any unset variable from that file.
 CLONE_OS_HOME="$WORK/clone-os-home"
 mkdir -p "$CLONE_OS_HOME"
-run_cli() {
+# The clone's front door, run from a directory of the caller's choosing. Its
+# path is resolved: the entry runs only when argv[1] names the file its own
+# URL does, and on macOS /tmp is a symlink to /private/tmp.
+CLONE_CLI="$(cd "$WORK/clone" && pwd -P)/$CLI"
+run_cli_from() {
+  local dir="$1"
+  shift
   (
-    cd "$WORK/clone"
+    cd "$dir"
     unset XDG_CONFIG_HOME
     PATH="${CLI_PATH:-$CLONE_PATH}" \
     HOME="$CLONE_OS_HOME" \
     MIRROR_HOME="$HOME_DIR" \
     NODE_OPTIONS=--no-warnings \
-    node "$CLI" "$@"
+    node "$CLONE_CLI" "$@"
   )
 }
+run_cli() { run_cli_from "$WORK/clone" "$@"; }
 ledger() { "$REAL_SQLITE" "$HOME_DIR/memory.db" "select count(*) from _migrations;"; }
 integrity() { "$REAL_SQLITE" "$HOME_DIR/memory.db" "PRAGMA integrity_check;"; }
 head_of() { (cd "$WORK/clone" && "$REAL_GIT" rev-parse --short HEAD); }
@@ -226,6 +233,20 @@ case "$OUT" in
   *) bad "the fetch did not complete through the slow transport" ;;
 esac
 check "HEAD unchanged" "$(head_of)" "$BEFORE_HEAD"
+
+# --- 2c. the welcome card answers for the clone, not the cwd ----------------
+say "2c. the welcome card, from a directory outside any repository, reads the clone"
+# CR135: the card read the channel and the "commits behind" line from the
+# repository holding the cwd. From a directory that is no repository it said
+# `channel stable`, the default, and nothing about the clone one commit
+# behind its `origin/main`.
+mkdir -p "$WORK/outside"
+OUT="$(run_cli_from "$WORK/outside" welcome --mirror-home "$HOME_DIR" 2>&1 || true)"
+case "$OUT" in *"channel main"*) ok "the card reads the clone's channel" ;; *) bad "the card's channel is not the clone's: $(echo "$OUT" | sed -n 2p)" ;; esac
+case "$OUT" in
+  *"New Version Available: 1 commit behind origin/main"*) ok "the card counts the clone's commits behind" ;;
+  *) bad "the card does not count the clone: $OUT" ;;
+esac
 
 # --- 3. the real update ----------------------------------------------------
 say "3. runtime update, with python/python3/uv shadowed"
@@ -348,12 +369,17 @@ else
   cat > "$WORK/dist-tags.json" <<TAGS
 {"stable": "$VERSION_B", "main": "$VERSION_B"}
 TAGS
+  # CR135: the shim also records the directory each call ran in. npm reads the
+  # project config of that directory, so every call must run in the install's
+  # own root, never in the person's project.
   cat > "$WORK/npmshim/npm" <<SHIM
 #!/bin/sh
 echo "\$*" >> "$WORK/npm-calls.log"
+pwd -P >> "$WORK/npm-cwds.log"
 case "\$*" in
   "root -g") echo "$PREFIX/lib/node_modules" ;;
   "view mirror-mind dist-tags --json") cat "$WORK/dist-tags.json" ;;
+  "view mirror-mind dist-tags --json --fetch-retries=0") cat "$WORK/dist-tags.json" ;;
   "install -g mirror-mind@$VERSION_A") exec "$REAL_NPM" install -g --prefix "$PREFIX" "$WORK/$TARBALL_A" ;;
   "install -g mirror-mind@$VERSION_B") exec "$REAL_NPM" install -g --prefix "$PREFIX" "$WORK/$TARBALL_B" ;;
   *) echo "unscripted npm call: \$*" >> "$WORK/npm-unexpected.log"; exit 1 ;;
@@ -377,9 +403,11 @@ SHIM
   # XDG_CONFIG_HOME is unset, not blanked (an empty value is not "unset" to
   # the core): the GitHub runner sets it to the runner's own ~/.config, and a
   # channel written there is written outside the smoke.
-  run_pkg() {
+  run_pkg_from() {
+    local dir="$1"
+    shift
     (
-      cd "$PKG_HOME"
+      cd "$dir"
       unset XDG_CONFIG_HOME
       PATH="$WORK/npmshim:$WORK/stubs:$PREFIX/bin:$WORK/bin:/usr/bin:/bin" \
       HOME="$PKG_HOME" \
@@ -387,6 +415,7 @@ SHIM
       mirror "$@"
     )
   }
+  run_pkg() { run_pkg_from "$PKG_HOME" "$@"; }
   check "mirror resolves from the prefix" "$(cd "$PKG_HOME" && PATH="$PREFIX/bin:/usr/bin:/bin" command -v mirror)" "$PREFIX/bin/mirror"
 
   # status: the install, without asking npm
@@ -397,6 +426,36 @@ SHIM
   case "$OUT" in *"Repository: none (package install)"*) ok "status grades no repository for a package" ;; *) bad "status graded the cwd as a repository" ;; esac
   case "$OUT" in *"Status: ready"*) ok "status is ready on a current database, from a directory that is no repository" ;; *) bad "status not ready: $(echo "$OUT" | tail -3)" ;; esac
   check "status asked npm nothing" "$(wc -l < "$WORK/npm-calls.log" | tr -d ' ')" "0"
+
+  # welcome: the registry's answer for this install, from any directory (CR135)
+  # Someone else's project: its origin/stable is one commit ahead, tagged
+  # v9.9.9, and fetched, and its .npmrc names a closed port. The card used to
+  # announce that tag, and a package outside any repository heard nothing.
+  UNRELATED="$WORK/unrelated"
+  "$REAL_GIT" init -q --bare "$WORK/unrelated-remote.git"
+  "$REAL_GIT" init -q --initial-branch=stable "$UNRELATED"
+  (
+    cd "$UNRELATED"
+    printf 'registry=http://127.0.0.1:9/\n' > .npmrc
+    echo a > A && "$REAL_GIT" add -A
+    "$REAL_GIT" -c user.email=smoke@example.invalid -c user.name=Smoke commit -q -m A
+    "$REAL_GIT" remote add origin "$WORK/unrelated-remote.git"
+    "$REAL_GIT" push -q origin stable
+    echo b > B && "$REAL_GIT" add -A
+    "$REAL_GIT" -c user.email=smoke@example.invalid -c user.name=Smoke commit -q -m B
+    "$REAL_GIT" tag v9.9.9
+    "$REAL_GIT" push -q origin stable v9.9.9
+    "$REAL_GIT" reset -q --hard HEAD~1
+    "$REAL_GIT" fetch -q origin
+  )
+  for DIR in "$PKG_HOME" "$UNRELATED"; do
+    OUT="$(run_pkg_from "$DIR" welcome 2>&1 || true)"
+    case "$OUT" in *"Version $VERSION_A · channel stable"*) ok "the card names the package and its channel, from $(basename "$DIR")" ;; *) bad "the card's version line, from $(basename "$DIR"): $(echo "$OUT" | sed -n 2p)" ;; esac
+    case "$OUT" in *"✨ New Version Available: v$VERSION_B"*) ok "the card announces the channel's v$VERSION_B, from $(basename "$DIR")" ;; *) bad "the card missed the registry's version, from $(basename "$DIR"): $OUT" ;; esac
+    case "$OUT" in *"v9.9.9"*|*"commit behind"*) bad "the card answered for the cwd's repository" ;; *) ok "nothing from the cwd's repository, from $(basename "$DIR")" ;; esac
+  done
+  LINE="$(run_pkg_from "$UNRELATED" welcome --status-line 2>&1 || true)"
+  case "$LINE" in *"⬆ v$VERSION_B") ok "the status line carries the package's verdict" ;; *) bad "status line: $LINE" ;; esac
 
   # Now the database needs 017, so the update has a migration to apply.
   node --no-warnings -e '
@@ -453,6 +512,12 @@ SHIM
     && ok "the run is recorded in front-door.log with both versions" || bad "no package update line in front-door.log"
   case "$OUT" in *"npm link"*) bad "a package was told to npm link" ;; *) ok "no npm link line for a package" ;; esac
 
+  # The update said what it installed: the status line stops announcing it (CR135).
+  LINE="$(run_pkg welcome --status-line 2>&1 || true)"
+  case "$LINE" in *" · ✓") ok "after the update, the status line reads ✓" ;; *) bad "after the update, status line: $LINE" ;; esac
+  OUT="$(run_pkg welcome 2>&1 || true)"
+  case "$OUT" in *"New Version Available"*) bad "after the update, the card still announces one: $OUT" ;; *) ok "after the update, the card announces nothing" ;; esac
+
   # up to date now
   OUT="$(run_pkg runtime update --check 2>&1 || true)"
   case "$OUT" in *"Availability: up_to_date"*) ok "--check now reports up_to_date" ;; *) bad "--check after update: $OUT" ;; esac
@@ -480,6 +545,14 @@ TAGS
   if [ -f "$WORK/npm-unexpected.log" ]; then bad "npm was asked something unscripted: $(cat "$WORK/npm-unexpected.log")"; else ok "npm was asked nothing unscripted"; fi
   if grep -q "^publish" "$WORK/npm-calls.log"; then bad "npm publish was called"; else ok "npm publish was never called"; fi
   check "the one install npm made is the exact version" "$(grep -c "^install -g mirror-mind@$VERSION_B\$" "$WORK/npm-calls.log")" "1"
+  # CR135: root -g, view, and install -g alike, from whatever directory the
+  # command was run in.
+  INSTALL_ROOT="$PREFIX_REAL/lib/node_modules/mirror-mind"
+  if [ -s "$WORK/npm-cwds.log" ] && ! grep -qvxF "$INSTALL_ROOT" "$WORK/npm-cwds.log"; then
+    ok "every npm call ran in the install's root ($(wc -l < "$WORK/npm-cwds.log" | tr -d ' ') calls)"
+  else
+    bad "an npm call ran elsewhere: $(sort -u "$WORK/npm-cwds.log" | grep -vxF "$INSTALL_ROOT" | head -3)"
+  fi
 fi
 
 say "Result"

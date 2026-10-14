@@ -156,11 +156,16 @@ test("welcome answers from TS by default, card and status line alike", () => {
     const card = runCli(f, ["welcome", "--mirror-home", f.home], env);
     assert.equal(card.status, 0, card.stderr);
     assert.match(card.stdout, /^◇ Mirror · mirror-home\n/);
-    // The running tree's version (US3), the cwd's channel marker.
+    // The running tree's version (US3), and the channel this install follows,
+    // as `runtime channel` reports it (CR135). It used to be the cwd's marker:
+    // this fixture repository has none, so the card said `stable` while this
+    // checkout could follow `main`.
+    const channel = /^Update channel: (\w+)$/m.exec(runCli(f, ["runtime", "channel"]).stdout)?.[1];
+    assert.ok(channel, "runtime channel named no channel");
     assert.match(
       card.stdout,
       new RegExp(
-        `Version ${(packageVersion(REPO_ROOT) ?? "").replaceAll(".", "\\.")} · channel stable\\n`,
+        `Version ${(packageVersion(REPO_ROOT) ?? "").replaceAll(".", "\\.")} · channel ${channel}\\n`,
       ),
     );
     assert.match(
@@ -177,6 +182,55 @@ test("welcome answers from TS by default, card and status line alike", () => {
       logLines(f).some((entry) => entry.includes("\twelcome\tts\t")),
       "expected the front-door log to record welcome on ts",
     );
+  } finally {
+    f.cleanup();
+  }
+});
+
+test("the card and the status line are the same from any directory (CR135)", () => {
+  // The install is this checkout, wherever the person stands. Three
+  // directories: one outside any repository, someone else's project whose
+  // `origin/stable` is one commit ahead, tagged, and fetched, and the
+  // checkout itself. The remote check stays off, so nothing reaches the
+  // network; the local "commits behind" line and the channel line used to
+  // come from the cwd, and are graded here through the real route.
+  const f = fixture();
+  try {
+    const outside = join(f.root, "outside");
+    mkdirSync(outside);
+    const remote = join(f.root, "unrelated-remote.git");
+    const unrelated = join(f.root, "unrelated");
+    mkdirSync(unrelated);
+    const git = (cwd: string, ...args: string[]): void => {
+      execFileSync("git", args, { cwd, env: { ...process.env, ...GIT_ENV }, encoding: "utf8" });
+    };
+    git(f.root, "init", "-q", "--bare", remote);
+    git(unrelated, "init", "-q", "--initial-branch=stable");
+    writeFileSync(join(unrelated, "A"), "a\n");
+    git(unrelated, "add", ".");
+    git(unrelated, "commit", "-q", "-m", "A");
+    git(unrelated, "remote", "add", "origin", remote);
+    git(unrelated, "push", "-q", "origin", "stable");
+    writeFileSync(join(unrelated, "B"), "b\n");
+    git(unrelated, "add", ".");
+    git(unrelated, "commit", "-q", "-m", "B");
+    git(unrelated, "tag", "v9.9.9");
+    git(unrelated, "push", "-q", "origin", "stable", "v9.9.9");
+    git(unrelated, "reset", "-q", "--hard", "HEAD~1");
+    git(unrelated, "fetch", "-q", "origin");
+
+    const from = (cwd: string): { card: string; line: string } => ({
+      card: runCli(f, ["welcome", "--mirror-home", f.home], {}, cwd).stdout,
+      line: runCli(f, ["welcome", "--status-line", "--mirror-home", f.home], {}, cwd).stdout,
+    });
+    const home = from(REPO_ROOT);
+    assert.match(home.card, /^◇ Mirror · mirror-home\n/);
+    for (const cwd of [outside, unrelated]) {
+      const there = from(cwd);
+      assert.equal(there.card, home.card, `the card changed in ${cwd}`);
+      assert.equal(there.line, home.line, `the status line changed in ${cwd}`);
+      assert.doesNotMatch(there.card, /v9\.9\.9/);
+    }
   } finally {
     f.cleanup();
   }

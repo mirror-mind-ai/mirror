@@ -7,6 +7,12 @@
 //   4. the card, including the git-plan and cached-notice update lines.
 //
 // The spawn spy is the one that guards the reason this story exists.
+//
+// Since CR135 the card asks the running INSTALL, never the cwd: here the
+// fixture clone is passed as that install. The oracle's fixture installed
+// 9.9.9 and cached an update to v9.9.9, a verdict CR135 no longer shows, so
+// the golden's installed version moved to 9.9.8 by hand (see the goldens
+// README). `installUpdateCheck.test.ts` grades the rest of CR135.
 
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
@@ -25,11 +31,10 @@ import { join } from "node:path";
 import test from "node:test";
 import { bootstrapDatabase } from "#db/bootstrap.ts";
 import { activateOperatingMode } from "#mode/operatingMode.ts";
-import { inspectGit, inspectUpdateChannel } from "#runtime/git.ts";
+import { inspectGit } from "#runtime/git.ts";
 import { composeWelcome, localReleaseTitle, remoteTagForCommit } from "#welcome/card.ts";
 import { composeStatusLine } from "#welcome/statusLine.ts";
 import {
-  cacheIsStale,
   readUpdateCache,
   UPDATE_CHECK_CACHE,
   type UpdateAwareness,
@@ -45,7 +50,8 @@ interface Golden {
     fixed_now: string;
     release_version: string;
     release_title: string;
-    staleness: Record<string, boolean>;
+    // `staleness` is still in the file, ungraded: CR135 deleted the TTL it
+    // recorded, which no path reached (decision 5).
     remote_tag: {
       upstream: string | null;
       status: string;
@@ -171,38 +177,6 @@ test("a cache that cannot be trusted reads as no cache", () => {
   }
 });
 
-test("cache staleness follows the oracle's TTL, including a naive timestamp", () => {
-  const now = new Date();
-  const at = (hours: number): string =>
-    new Date(now.getTime() - hours * 3_600_000).toISOString().replace("Z", "+00:00");
-  const cases: Record<string, string> = {
-    fresh: at(1),
-    just_inside_ttl: at(5 + 59 / 60),
-    just_outside_ttl: at(6 + 1 / 60),
-    beyond_ttl: at(7),
-    // No offset. Python explicitly reads this as UTC; JavaScript would
-    // otherwise read it as local time and shift the TTL by the machine's
-    // offset -- a cache that is fresh in London and stale in São Paulo.
-    naive_timestamp: new Date(now.getTime() - 3_600_000).toISOString().replace("Z", ""),
-    unparseable: "not-a-timestamp",
-  };
-  for (const [label, checkedAt] of Object.entries(cases)) {
-    assert.equal(
-      cacheIsStale(awareness({ checked_at: checkedAt }), now),
-      golden.meta.staleness[label],
-      `staleness mismatch for ${label}`,
-    );
-  }
-
-  // The boundary itself. The oracle reads the wall clock inside the check, so
-  // a timestamp exactly at the TTL is microseconds stale by the time it looks
-  // and the corpus can only bracket it -- here the clock is injected, so the
-  // strictness of `>` is pinned directly.
-  const exactly = new Date(now.getTime() - 6 * 3_600_000).toISOString().replace("Z", "+00:00");
-  assert.equal(cacheIsStale(awareness({ checked_at: exactly }), now), false);
-  assert.equal(cacheIsStale(awareness({ checked_at: exactly }), new Date(now.getTime() + 1)), true);
-});
-
 // --------------------------------------------------------------- status line
 
 interface StatusFixture {
@@ -261,7 +235,7 @@ test("every status line renders exactly as the oracle renders it", () => {
   try {
     const env = { MEMORY_ENV: undefined } as NodeJS.ProcessEnv;
     const line = (sessionId: string | null): string =>
-      composeStatusLine({ mirrorHome: f.home, sessionId, env });
+      composeStatusLine({ mirrorHome: f.home, sessionId, env, installedVersion: VERSION });
 
     assert.equal(line(null), golden.status_lines.no_mode_no_cache);
     assert.equal(line("s1"), golden.status_lines.builder_mode_with_journey);
@@ -289,18 +263,23 @@ test("every status line renders exactly as the oracle renders it", () => {
       ["test", "test_env"],
     ] as const) {
       assert.equal(
-        composeStatusLine({ mirrorHome: f.home, sessionId: "s1", env: { MEMORY_ENV: memoryEnv } }),
+        composeStatusLine({
+          mirrorHome: f.home,
+          sessionId: "s1",
+          env: { MEMORY_ENV: memoryEnv },
+          installedVersion: VERSION,
+        }),
         golden.status_lines[label],
         `status line mismatch for ${label}`,
       );
     }
 
     assert.equal(
-      composeStatusLine({ mirrorHome: f.noDbHome, env }),
+      composeStatusLine({ mirrorHome: f.noDbHome, env, installedVersion: VERSION }),
       golden.status_lines.no_database,
     );
     assert.equal(
-      composeStatusLine({ mirrorHome: null, env }),
+      composeStatusLine({ mirrorHome: null, env, installedVersion: VERSION }),
       golden.status_lines.unresolvable_home,
     );
   } finally {
@@ -327,19 +306,19 @@ test("the status line spawns nothing — no git, no network", () => {
         mirrorHome: f.home,
         sessionId: "s1",
         env: { MEMORY_ENV: undefined },
+        installedVersion: VERSION,
       });
       assert.ok(line.length > 0, "expected a rendered status line");
       assert.equal(existsSync(marker), false, "the status line spawned git");
 
-      // The spy works: the CARD does reach for git, and the marker proves the
-      // shim is on PATH and recording. Without this the test above could pass
-      // for the wrong reason.
+      // The spy works: the CARD of a clone does reach for git, and the marker
+      // proves the shim is on PATH and recording. Without this the test above
+      // could pass for the wrong reason.
       composeWelcome({
         mirrorHome: f.home,
-        cwd: f.root,
+        install: { kind: "clone", repository: f.root },
         env: { MEMORY_ENV: undefined, MIRROR_WELCOME_REMOTE_UPDATE_CHECK: "off" },
         version: VERSION,
-        updateChannel: { value: "stable", source: null, note: null },
       });
       assert.equal(existsSync(marker), true, "the spy never recorded a spawn — PATH shim broken");
     } finally {
@@ -417,15 +396,13 @@ test("every welcome card renders exactly as the oracle renders it", () => {
       MEMORY_ENV: undefined,
       MIRROR_WELCOME_REMOTE_UPDATE_CHECK: "off",
     } as NodeJS.ProcessEnv;
-    const channel = inspectUpdateChannel(f.clone, null);
     const card = (home: string | null): string =>
       composeWelcome({
         mirrorHome: home,
-        cwd: f.clone,
+        install: { kind: "clone", repository: f.clone },
         env,
         version: VERSION,
-        updateChannel: channel,
-      });
+      }).card;
 
     const cacheFile = join(f.home, UPDATE_CHECK_CACHE);
     if (existsSync(cacheFile)) unlinkSync(cacheFile);

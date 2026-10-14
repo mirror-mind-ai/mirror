@@ -93,19 +93,19 @@
     }
   },
   "cards": {
-    "cached_update_with_title": "◇ Mirror · status-home\nVersion 9.9.9 · channel stable\n2 journeys · 2 personas · 0 memories · 0 conversations · since today\n✨ New Version Available: v9.9.9 — Uma travessia — with an em dash\nAsk: \"what's new in this update?\" or \"update my Mirror\"\n\n→ Where shall we begin?",
-    "cached_update_without_title": "◇ Mirror · status-home\nVersion 9.9.9 · channel stable\n2 journeys · 2 personas · 0 memories · 0 conversations · since today\n✨ New Version Available: v9.9.9\nAsk: \"what's new in this update?\" or \"update my Mirror\"\n\n→ Where shall we begin?",
-    "cached_update_without_version": "◇ Mirror · status-home\nVersion 9.9.9 · channel stable\n2 journeys · 2 personas · 0 memories · 0 conversations · since today\n✨ New Version Available on stable\nAsk: \"what's new in this update?\" or \"update my Mirror\"\n\n→ Where shall we begin?",
-    "empty_database": "◇ Mirror · no-db-home\nVersion 9.9.9 · channel stable\n0 journeys · 0 personas · 0 memories · 0 conversations · since today\nNew Version Available: 1 commit behind origin/stable · run runtime update\nAsk Mirror: \"What's new in the latest Mirror Mind release?\"\n\n→ Where shall we begin?",
-    "remote_check_disabled_behind": "◇ Mirror · status-home\nVersion 9.9.9 · channel stable\n2 journeys · 2 personas · 0 memories · 0 conversations · since today\nNew Version Available: 1 commit behind origin/stable · run runtime update\nAsk Mirror: \"What's new in the latest Mirror Mind release?\"\n\n→ Where shall we begin?",
-    "remote_check_disabled_unfetched": "◇ Mirror · status-home\nVersion 9.9.9 · channel stable\n2 journeys · 2 personas · 0 memories · 0 conversations · since today\n\n→ Where shall we begin?",
-    "stats_since_earliest_conversation": "◇ Mirror · stats-home\nVersion 9.9.9 · channel stable\n0 journeys · 0 personas · 0 memories · 2 conversations · since Mar 2025\n\n→ Where shall we begin?",
+    "cached_update_with_title": "◇ Mirror · status-home\nVersion 9.9.8 · channel stable\n2 journeys · 2 personas · 0 memories · 0 conversations · since today\n✨ New Version Available: v9.9.9 — Uma travessia — with an em dash\nAsk: \"what's new in this update?\" or \"update my Mirror\"\n\n→ Where shall we begin?",
+    "cached_update_without_title": "◇ Mirror · status-home\nVersion 9.9.8 · channel stable\n2 journeys · 2 personas · 0 memories · 0 conversations · since today\n✨ New Version Available: v9.9.9\nAsk: \"what's new in this update?\" or \"update my Mirror\"\n\n→ Where shall we begin?",
+    "cached_update_without_version": "◇ Mirror · status-home\nVersion 9.9.8 · channel stable\n2 journeys · 2 personas · 0 memories · 0 conversations · since today\n✨ New Version Available on stable\nAsk: \"what's new in this update?\" or \"update my Mirror\"\n\n→ Where shall we begin?",
+    "empty_database": "◇ Mirror · no-db-home\nVersion 9.9.8 · channel stable\n0 journeys · 0 personas · 0 memories · 0 conversations · since today\nNew Version Available: 1 commit behind origin/stable · run runtime update\nAsk Mirror: \"What's new in the latest Mirror Mind release?\"\n\n→ Where shall we begin?",
+    "remote_check_disabled_behind": "◇ Mirror · status-home\nVersion 9.9.8 · channel stable\n2 journeys · 2 personas · 0 memories · 0 conversations · since today\nNew Version Available: 1 commit behind origin/stable · run runtime update\nAsk Mirror: \"What's new in the latest Mirror Mind release?\"\n\n→ Where shall we begin?",
+    "remote_check_disabled_unfetched": "◇ Mirror · status-home\nVersion 9.9.8 · channel stable\n2 journeys · 2 personas · 0 memories · 0 conversations · since today\n\n→ Where shall we begin?",
+    "stats_since_earliest_conversation": "◇ Mirror · stats-home\nVersion 9.9.8 · channel stable\n0 journeys · 0 personas · 0 memories · 2 conversations · since Mar 2025\n\n→ Where shall we begin?",
     "unresolvable_home": ""
   },
   "meta": {
     "cache_bytes_contract": "`_write_update_cache` uses json.dumps(indent=2, sort_keys=True) and leaves ensure_ascii at Python's DEFAULT (True), so the em dash in the release title must be written as \\u2014. Both cores read and write this file during the transition; differing bytes would rewrite it on every alternating invocation and thrash the 6h TTL.",
     "fixed_now": "2026-09-08T12:00:00+00:00",
-    "fixture_version": "9.9.9",
+    "fixture_version": "9.9.8",
     "note": "Oracle: src/memory/cli/welcome.py over fixture mirror homes and a fixture git clone with a file:// bare remote, built by this generator and rebuilt identically by the TypeScript test.",
     "release_title": "Uma travessia — with an em dash",
     "release_version": "v9.9.9",

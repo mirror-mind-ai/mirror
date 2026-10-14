@@ -228,8 +228,17 @@ test("the networked read uses the network budget, not the local one", () => {
   // file:// remote answers instantly, so this cannot be observed behaviorally
   // — it is pinned at the call site instead.
   const source = readFileSync(new URL("../../src/runtime/git.ts", import.meta.url), "utf8");
+  //
+  // Since CR135 the caller may pass a tighter budget of its own (the welcome
+  // card's 5 s), so the call site names the parameter, and the parameter's
+  // default is the network budget.
   const lsRemote = /runGit\(\s*\[\s*"ls-remote"[\s\S]*?\);/.exec(source)?.[0] ?? "";
-  assert.match(lsRemote, /GIT_NETWORK_TIMEOUT_MS/, "ls-remote must use the network budget");
+  assert.match(lsRemote, /networkTimeoutMs/, "ls-remote must pass its network timeout");
+  assert.match(
+    source,
+    /networkTimeoutMs: number = GIT_NETWORK_TIMEOUT_MS/,
+    "and that timeout must default to the network budget",
+  );
   const localReads = source.match(/runGit\(\s*\[\s*"(rev-parse|status|branch)"/g) ?? [];
   assert.ok(localReads.length >= 3, "local reads keep the local budget by default");
 });

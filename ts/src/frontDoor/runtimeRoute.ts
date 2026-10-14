@@ -53,6 +53,7 @@ import {
 import { buildRuntimeStatus, renderRuntimeStatus, statusVerdict } from "#runtime/status.ts";
 import {
   checkPackageUpdateAvailability,
+  type NpmRunner,
   npmRootGlobal,
   renderPackageUpdateAvailability,
 } from "#runtime/strategies/package.ts";
@@ -61,8 +62,9 @@ import { frontDoorSpawner, postUpdateHints, runUpdate, type UpdateSpawn } from "
 import { statusAllowsUpdatePreflight } from "#runtime/updateGate.ts";
 import { renderUpdateResult, updateLogDetail } from "#runtime/updatePipeline.ts";
 import { expandHome } from "#util/paths.ts";
-import { composeWelcome, welcomeDisabled } from "#welcome/card.ts";
+import { composeWelcome, type RemoteCheck, welcomeDisabled } from "#welcome/card.ts";
 import { composeStatusLine } from "#welcome/statusLine.ts";
+import { isoNow, recordUpToDate } from "#welcome/updateCache.ts";
 
 /** The `runtime` subcommands this story ports. */
 export const TS_RUNTIME_READ_SUBCOMMANDS = new Set([
@@ -165,18 +167,33 @@ function writeErr(io: RuntimeRouteIo, text: string): void {
   (io.stderr ?? ((value: string) => process.stderr.write(value)))(text);
 }
 
-/** Port of `welcome.main`. Always exits 0, like the oracle. */
-export function runWelcomeRoute(argv: readonly string[], io: RuntimeRouteIo = {}): number {
+/** The welcome's seams beyond the route's own: the install and its npm, for tests. */
+export interface WelcomeRouteIo extends RuntimeRouteIo {
+  install?: InstallKind;
+  npm?: NpmRunner;
+  /** The OS home whose config directory holds a package's channel file. */
+  osHome?: string;
+}
+
+/**
+ * Port of `welcome.main`. Always exits 0, like the oracle.
+ *
+ * The card and the status line answer for the install that is running, never
+ * for the cwd (CR135): Pi renders both in the person's project.
+ */
+export function runWelcomeRoute(argv: readonly string[], io: WelcomeRouteIo = {}): number {
   const env = io.env ?? process.env;
-  const cwd = io.cwd ?? process.cwd();
   const args = argv.slice(1);
   if (welcomeDisabled(env)) return 0;
 
   const home = resolveWelcomeHome(optionValue(args, "--mirror-home"), env);
+  // The running tree's manifest: a file read, so the status line still spawns nothing.
+  const version = packageVersion(runningTreeRoot()) ?? "unknown";
 
   if (args.includes("--status-line")) {
     const line = composeStatusLine({
       mirrorHome: home,
+      installedVersion: version,
       sessionId: optionValue(args, "--session-id"),
       env,
     });
@@ -184,17 +201,31 @@ export function runWelcomeRoute(argv: readonly string[], io: RuntimeRouteIo = {}
     return 0;
   }
 
-  const version = packageVersion(runningTreeRoot()) ?? "unknown";
-  const card = composeWelcome({
+  const { card, check } = composeWelcome({
     mirrorHome: home,
-    cwd,
-    treeRoot: runningTreeRoot(),
+    install: io.install ?? detectThisInstall(),
     env,
     version,
-    updateChannel: inspectUpdateChannel(cwd, null),
+    ...(io.npm === undefined ? {} : { npm: io.npm }),
+    ...(io.osHome === undefined ? {} : { osHome: io.osHome }),
   });
   if (card) writeOut(io, `${card}\n`);
+  if (home !== null && check !== null) logWelcomeCheck(home, env, check);
   return 0;
+}
+
+/**
+ * One front-door line per remote check, so a slow session start can be
+ * explained later: what was asked, how it answered, how long it took. Never a
+ * path or a version.
+ */
+function logWelcomeCheck(home: string, env: NodeJS.ProcessEnv, check: RemoteCheck): void {
+  logFrontDoor(frontDoorLogPath(join(home, dbNameForEnv(env.MEMORY_ENV || "production"))), {
+    command: "welcome",
+    route: "ts",
+    exitCode: 0,
+    detail: `update-check source=${check.source} verdict=${check.verdict} ms=${check.ms}`,
+  });
 }
 
 /** Port of the read half of `cmd_runtime`. */
@@ -459,9 +490,13 @@ function runRuntimeUpdate(
   // The update lane asks npm, once, whether `-g` addresses this install: a
   // package outside npm's own global root is not the one `npm install -g`
   // would replace. The read routes do not pay for the probe.
+  //
+  // npm runs in the tree the front door runs from -- for a package, the
+  // install's own root -- and never in the cwd, whose `.npmrc` could name
+  // another registry or prefix (CR135). The strategy's own calls do the same.
   const install = detectInstallKind({
     frontDoorPath: frontDoorSelfPath(),
-    npmRootGlobal: npmRootGlobal(),
+    npmRootGlobal: npmRootGlobal(runningTreeRoot()),
   });
   const start = install.kind === "clone" ? install.repository : cwd;
   const channel = channelFor(install, env, homedir(), channelOverride);
@@ -548,6 +583,16 @@ function runRuntimeUpdate(
   });
 
   writeOut(io, renderUpdateResult(result));
+  // The install now holds its channel's version: say so where the welcome card
+  // and the status line read it, or they keep announcing what was just
+  // installed (CR135).
+  if (result.success && !args.includes("--dry-run")) {
+    recordUpToDate(mirrorHome, {
+      channel: channel.value,
+      commit: install.kind === "clone" ? result.newRef : null,
+      checkedAt: isoNow(),
+    });
+  }
   if (repair && result.success) {
     // After the stages, not before them: the instruction is what to do NEXT,
     // and it reads as a caption on a result the operator has already seen.

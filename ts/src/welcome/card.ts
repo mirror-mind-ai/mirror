@@ -2,10 +2,17 @@
 // `compose_welcome` from `src/memory/cli/welcome.py`.
 //
 // Unlike the status line, the card MAY reach the network: on the stable
-// channel it performs a bounded remote update check so a newly published
-// release becomes visible without manual cache repair. That check is
-// TTL-guarded, refresh-guarded, and switched off entirely by
+// channel it performs a bounded remote update check at every render, so a
+// newly published release becomes visible at the next session start. The
+// check is switched off entirely by
 // `MIRROR_WELCOME_REMOTE_UPDATE_CHECK=off|0|false|no`.
+//
+// The check asks the RUNNING INSTALL, never the cwd (CR135). Pi renders the
+// card in the person's project, and the oracle asked whatever repository that
+// was: a project with a tagged `origin/stable` made the card announce its tag.
+// A package now reads its channel's dist-tag, as `runtime update --check`
+// does, with npm run in the install's own root; a clone asks its own checkout
+// and its own remote. One budget bounds the remote reads of a render.
 //
 // Date rendering is done by hand from `_MONTH_ABBR`, never through
 // `toLocaleDateString`: the oracle formats the month itself, so a locale-aware
@@ -13,25 +20,35 @@
 // locale is not English and call it parity.
 
 import { existsSync, readFileSync } from "node:fs";
+import { homedir } from "node:os";
 import { basename, join } from "node:path";
 import { type Database, openDatabaseReadOnly } from "#db/database.ts";
 import { dbNameForEnv } from "#frontDoor/dbPath.ts";
 import { listJourneysForListCommand } from "#identity/journeyListing.ts";
+import { channelFor } from "#runtime/channel.ts";
 import {
   checkUpdateAvailability,
+  GIT_NETWORK_TIMEOUT_MS,
   type GitStatus,
   inspectGit,
   inspectGitUpdatePlan,
   type MarkerValue,
+  NO_REPOSITORY,
   runGit,
 } from "#runtime/git.ts";
+import type { InstallKind } from "#runtime/installKind.ts";
+import {
+  checkPackageUpdateAvailability,
+  defaultNpmRunner,
+  type NpmRunner,
+} from "#runtime/strategies/package.ts";
 import { compareSemver } from "#util/semver.ts";
 import { SEPARATOR } from "./statusLine.ts";
 import {
-  cacheIsStale,
-  cacheShouldRefresh,
+  isoNow,
   readUpdateCache,
   type UpdateAwareness,
+  verdictApplies,
   writeUpdateCache,
 } from "./updateCache.ts";
 
@@ -159,16 +176,21 @@ function commitsMatch(candidate: string, target: string): boolean {
  * Port of `_remote_tag_for_commit`: which published tag names the commit the
  * remote is at. `^{}` refs are the dereferenced peel of an annotated tag and
  * are skipped, so a tag is not counted twice.
+ *
+ * A network read: it ran on git's 2 s LOCAL budget until CR135, so a lookup
+ * slower than that cached an update without its version. The card passes
+ * what is left of its own budget.
  */
 export function remoteTagForCommit(
   upstream: string,
   remoteCommit: string,
   repository: string | null,
+  timeoutMs: number = GIT_NETWORK_TIMEOUT_MS,
 ): string | null {
   if (!upstream.includes("/")) return null;
   const remote = upstream.split("/", 1)[0] as string;
   if (repository === null) return null;
-  const result = runGit(["ls-remote", "--tags", remote, "refs/tags/v*"], repository);
+  const result = runGit(["ls-remote", "--tags", remote, "refs/tags/v*"], repository, timeoutMs);
   if (result.code !== 0 || !result.stdout) return null;
 
   const matches: string[] = [];
@@ -206,76 +228,174 @@ export function localReleaseTitle(version: string | null, treeRoot: string): str
   return null;
 }
 
+/** How long the card's remote reads may take, together (CR135, decision 1). */
+export const WELCOME_REMOTE_BUDGET_MS = 5_000;
+
 export interface WelcomeOptions {
   /** The resolved mirror home. Null renders "", as in the oracle. */
   mirrorHome: string | null;
-  /** Where git is inspected for the update check (a clone's working tree). */
-  cwd?: string;
-  /** The tree holding the running program, where `docs/releases` is read. Defaults to `cwd`. */
-  treeRoot?: string;
+  /**
+   * The running install, detected from where the front door lives. The card's
+   * channel, its update check, and its "commits behind" line are this
+   * install's, whatever the cwd (CR135).
+   */
+  install: InstallKind;
   env?: NodeJS.ProcessEnv;
   version: string;
-  updateChannel: MarkerValue;
+  /** The OS home whose config directory holds a package's channel file. */
+  osHome?: string;
+  /** The npm seam, injected as the update route's is. */
+  npm?: NpmRunner;
+  /** The budget of the remote reads; production takes `WELCOME_REMOTE_BUDGET_MS`. */
+  remoteBudgetMs?: number;
   /** Injected only so the written cache is byte-comparable; production omits it. */
   now?: () => string;
 }
 
-/** Port of `_iso_now`. */
-function isoNow(): string {
-  return new Date().toISOString().replace(/\.(\d{3})Z$/, ".$1000+00:00");
+/** What one render's remote check asked, how it answered, and how long it took. */
+export interface RemoteCheck {
+  source: "registry" | "git";
+  verdict: string;
+  ms: number;
 }
 
-/** Port of `_refresh_update_cache`. Any failure leaves the cache untouched. */
-function refreshUpdateCache(
-  homePath: string,
+export interface WelcomeRender {
+  card: string;
+  /** Null when no remote check ran. */
+  check: RemoteCheck | null;
+}
+
+interface CheckSeams {
+  npm: NpmRunner;
+  budgetMs: number;
+  now: () => string;
+}
+
+type CheckedInstall = Exclude<InstallKind, { kind: "unknown" }>;
+
+/**
+ * A package's verdict: its channel's dist-tag, read as `runtime update
+ * --check` reads it, in the install's own root. One read, so it gets the
+ * whole budget, and no retries: unanswered, npm retries for over a minute.
+ */
+function checkPackage(
+  install: Extract<InstallKind, { kind: "package" }>,
   channel: MarkerValue,
-  cwd: string,
-  treeRoot: string,
+  seams: CheckSeams,
+): UpdateAwareness {
+  const report = checkPackageUpdateAvailability(install, channel, seams.npm, {
+    timeoutMs: seams.budgetMs,
+    fetchRetries: 0,
+  });
+  const version =
+    report.status === "update_available" && report.resolved !== null ? `v${report.resolved}` : null;
+  return {
+    // `unresolved` is the cache's `unknown`: the check could not answer.
+    availability: report.status === "unresolved" ? "unknown" : report.status,
+    checked_at: seams.now(),
+    channel: channel.value,
+    current_commit: null,
+    remote_commit: null,
+    version,
+    title: localReleaseTitle(version, install.root),
+    note: report.note,
+  };
+}
+
+/**
+ * Port of `_refresh_update_cache`'s question, asked of the clone's own
+ * checkout. The `ls-remote` and then the tag lookup share one deadline.
+ */
+function checkClone(
+  repository: string,
+  channel: MarkerValue,
   version: string,
-  now: () => string,
-): UpdateAwareness | null {
-  let report: ReturnType<typeof checkUpdateAvailability>;
-  try {
-    report = checkUpdateAvailability(cwd, channel.value, version);
-  } catch {
-    return null;
-  }
+  seams: CheckSeams,
+): UpdateAwareness {
+  const deadline = Date.now() + seams.budgetMs;
+  // At least 1 ms: a spawn timeout of 0 is no timeout at all.
+  const report = checkUpdateAvailability(
+    repository,
+    channel.value,
+    version,
+    Math.max(1, deadline - Date.now()),
+  );
   let tag: string | null = null;
-  let title: string | null = null;
   if (report.status === "update_available" && report.remote_commit && report.upstream) {
-    tag = remoteTagForCommit(report.upstream, report.remote_commit, inspectGit(cwd).repository);
-    title = localReleaseTitle(tag, treeRoot);
+    const left = deadline - Date.now();
+    if (left >= 1)
+      tag = remoteTagForCommit(report.upstream, report.remote_commit, repository, left);
   }
-  const awareness: UpdateAwareness = {
+  return {
     availability: report.status,
-    checked_at: now(),
+    checked_at: seams.now(),
     channel: channel.value,
     current_commit: report.local_commit,
     remote_commit: report.remote_commit,
     version: tag,
-    title,
+    title: localReleaseTitle(tag, repository),
     note: report.note,
   };
-  if (report.status === "up_to_date" || report.status === "update_available") {
-    writeUpdateCache(homePath, awareness);
-  }
-  return awareness;
 }
 
-/** Port of `_update_awareness`: cache first, remote only when it must. */
+function checkInstall(
+  install: CheckedInstall,
+  channel: MarkerValue,
+  version: string,
+  seams: CheckSeams,
+): UpdateAwareness {
+  try {
+    return install.kind === "package"
+      ? checkPackage(install, channel, seams)
+      : checkClone(install.repository, channel, version, seams);
+  } catch (error) {
+    return {
+      availability: "unknown",
+      checked_at: seams.now(),
+      channel: channel.value,
+      current_commit: null,
+      remote_commit: null,
+      version: null,
+      title: null,
+      note: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
+/**
+ * Port of `_update_awareness`, asking the install instead of the cwd.
+ *
+ * On `stable` the install is asked at every render; on `main`, never. Only
+ * `up_to_date` and `update_available` are written. A check that could not
+ * answer (`unknown`) leaves the cache as it is, and the card shows what the
+ * cache knows, as the status line does. Any other answer (`local_ahead`,
+ * `diverged`, `channel_behind`) is an answer: no update to take, and nothing
+ * written.
+ */
 export function updateAwareness(
   homePath: string,
+  install: InstallKind,
   channel: MarkerValue,
-  cwd: string,
   version: string,
   env: NodeJS.ProcessEnv,
-  now: () => string,
-  treeRoot: string = cwd,
-): UpdateAwareness | null {
+  seams: CheckSeams,
+): { awareness: UpdateAwareness | null; check: RemoteCheck | null } {
   const cached = readUpdateCache(homePath);
-  if (cached && !cacheIsStale(cached) && !cacheShouldRefresh(cached, channel)) return cached;
-  if (remoteUpdateCheckDisabled(env) || channel.value !== "stable") return cached;
-  return refreshUpdateCache(homePath, channel, cwd, treeRoot, version, now) ?? cached;
+  if (remoteUpdateCheckDisabled(env) || channel.value !== "stable" || install.kind === "unknown") {
+    return { awareness: cached, check: null };
+  }
+  const started = Date.now();
+  const fresh = checkInstall(install, channel, version, seams);
+  const check: RemoteCheck = {
+    source: install.kind === "package" ? "registry" : "git",
+    verdict: fresh.availability,
+    ms: Date.now() - started,
+  };
+  if (fresh.availability === "up_to_date" || fresh.availability === "update_available") {
+    writeUpdateCache(homePath, fresh);
+    return { awareness: fresh, check };
+  }
+  return { awareness: fresh.availability === "unknown" ? cached : fresh, check };
 }
 
 /** Port of `_update_line`. */
@@ -315,25 +435,27 @@ export function updateLine(
  * mirror home: a fresh database with nothing in it still renders the full card
  * with zeroes.
  */
-export function composeWelcome(options: WelcomeOptions): string {
+export function composeWelcome(options: WelcomeOptions): WelcomeRender {
   const homePath = options.mirrorHome;
-  if (homePath === null) return "";
-  const cwd = options.cwd ?? process.cwd();
+  if (homePath === null) return { card: "", check: null };
   const env = options.env ?? process.env;
-  const now = options.now ?? isoNow;
+  const install = options.install;
+  // Nothing here reads the cwd (CR135): the channel is the one `runtime
+  // channel` reports for this install, and so is everything below.
+  const channel = channelFor(install, env, options.osHome ?? homedir());
 
   const dbPath = join(homePath, dbNameForEnv(env.MEMORY_ENV || "production"));
   const stats = formatStats(readWelcomeStats(existsSync(dbPath) ? dbPath : null));
-  const versionLine = `${options.version} · channel ${options.updateChannel.value}`;
-  const awareness = updateAwareness(
-    homePath,
-    options.updateChannel,
-    cwd,
-    options.version,
-    env,
-    now,
-    options.treeRoot ?? cwd,
-  );
-  const update = updateLine(options.updateChannel, awareness, inspectGit(cwd));
-  return renderWelcome(basename(homePath), stats, versionLine, update);
+  const versionLine = `${options.version} · channel ${channel.value}`;
+  const { awareness, check } = updateAwareness(homePath, install, channel, options.version, env, {
+    npm: options.npm ?? defaultNpmRunner,
+    budgetMs: options.remoteBudgetMs ?? WELCOME_REMOTE_BUDGET_MS,
+    now: options.now ?? isoNow,
+  });
+  // A cached update the install already has is not shown (CR135).
+  const shown = awareness !== null && verdictApplies(awareness, options.version) ? awareness : null;
+  // A package has no checkout to be behind: its "commits behind" line is none.
+  const git = install.kind === "clone" ? inspectGit(install.repository) : NO_REPOSITORY;
+  const update = updateLine(channel, shown, git);
+  return { card: renderWelcome(basename(homePath), stats, versionLine, update), check };
 }

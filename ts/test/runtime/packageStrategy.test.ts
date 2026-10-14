@@ -10,11 +10,19 @@ import test from "node:test";
 import { assertNamesNoInterpreter } from "#helpers/noInterpreter.ts";
 import {
   checkPackageUpdateAvailability,
+  installGlobal,
+  type NpmCall,
   type NpmRunner,
+  npmRootGlobal,
+  readDistTags,
   renderPackageUpdateAvailability,
 } from "#runtime/strategies/package.ts";
 
-const INSTALL = { name: "mirror-mind", version: "0.31.14" };
+const INSTALL = {
+  name: "mirror-mind",
+  version: "0.31.14",
+  root: "/usr/local/lib/node_modules/mirror-mind",
+};
 const STABLE = { value: "stable", note: null };
 
 function npmAnswering(tags: Record<string, string> | null): NpmRunner {
@@ -100,6 +108,65 @@ test("an unreachable registry or an unknown tag is unresolved, with the reason",
   );
   assert.equal(notAVersion.status, "unresolved");
   assert.match(notAVersion.note ?? "", /is not a version/);
+});
+
+/** An npm that records each call's argv and options, and answers `stdout`. */
+function recording(stdout: string): {
+  runner: NpmRunner;
+  calls: { args: string[]; call: NpmCall | undefined }[];
+} {
+  const calls: { args: string[]; call: NpmCall | undefined }[] = [];
+  return {
+    calls,
+    runner: (args, call) => {
+      calls.push({ args: [...args], call });
+      return { code: 0, stdout, stderr: "" };
+    },
+  };
+}
+
+test("every npm call runs where it is told, so a project's .npmrc cannot answer it (CR135)", () => {
+  // npm reads the project config of the directory it runs in. The person's
+  // project can carry an `.npmrc` that names another registry or prefix, so
+  // the package's own calls run in the install's root.
+  const view = recording(JSON.stringify({ stable: "0.32.0" }));
+  checkPackageUpdateAvailability(INSTALL, STABLE, view.runner);
+  assert.deepEqual(view.calls, [
+    { args: ["view", "mirror-mind", "dist-tags", "--json"], call: { cwd: INSTALL.root } },
+  ]);
+
+  const install = recording("added 1 package\n");
+  installGlobal("mirror-mind", "0.32.0", INSTALL.root, install.runner);
+  assert.deepEqual(install.calls, [
+    { args: ["install", "-g", "mirror-mind@0.32.0"], call: { cwd: INSTALL.root } },
+  ]);
+
+  // `root -g` runs before the install is known: in the tree the front door
+  // runs from, which for a package is its root.
+  const root = recording("/usr/local/lib/node_modules\n");
+  assert.equal(npmRootGlobal(INSTALL.root, root.runner), "/usr/local/lib/node_modules");
+  assert.deepEqual(root.calls, [{ args: ["root", "-g"], call: { cwd: INSTALL.root } }]);
+});
+
+test("readDistTags bounds the read and drops npm's retries only when asked (CR135)", () => {
+  const plain = recording(JSON.stringify({ stable: "0.32.0" }));
+  readDistTags("mirror-mind", plain.runner, { cwd: "/x" });
+  assert.deepEqual(plain.calls[0], {
+    args: ["view", "mirror-mind", "dist-tags", "--json"],
+    call: { cwd: "/x" },
+  });
+
+  const bounded = recording(JSON.stringify({ stable: "0.32.0" }));
+  const read = readDistTags("mirror-mind", bounded.runner, {
+    cwd: "/x",
+    timeoutMs: 1234,
+    fetchRetries: 0,
+  });
+  assert.deepEqual(read, { ok: true, tags: { stable: "0.32.0" } });
+  assert.deepEqual(bounded.calls[0], {
+    args: ["view", "mirror-mind", "dist-tags", "--json", "--fetch-retries=0"],
+    call: { cwd: "/x", timeoutMs: 1234 },
+  });
 });
 
 test("the channel's own note travels with the report", () => {

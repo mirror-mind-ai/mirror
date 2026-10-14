@@ -7,14 +7,19 @@
 // nicety: two cores that serialize the same state differently would rewrite the
 // file on every alternating invocation and thrash the 6h TTL, turning a bounded
 // remote check into one on every turn.
+//
+// CR135 removed that TTL, which gated nothing: on `stable` every verdict the
+// card writes is refreshed at the next render, and on `main` the card never
+// checks. What a reader needs instead is to know whether a verdict still
+// APPLIES to the install reading it (`verdictApplies`), and a successful
+// `runtime update` now says what it installed (`recordUpToDate`).
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import type { MarkerValue } from "#runtime/git.ts";
 import { pythonJsonDumpsIndented } from "#util/pyGenerators.ts";
+import { compareSemver } from "#util/semver.ts";
 
 export const UPDATE_CHECK_CACHE = "runtime/update-check.json";
-export const UPDATE_CHECK_TTL_MS = 6 * 60 * 60 * 1000;
 
 export interface UpdateAwareness {
   availability: string;
@@ -92,38 +97,51 @@ export function writeUpdateCache(homePath: string, awareness: UpdateAwareness): 
   }
 }
 
-/** Port of `_parse_iso`, narrowed to the timestamps this cache carries. */
-export function parseIso(value: string | null): Date | null {
-  if (!value) return null;
-  const parsed = Date.parse(value.replace("Z", "+00:00"));
-  return Number.isNaN(parsed) ? null : new Date(parsed);
+/** Port of `_iso_now`: the cache's timestamp shape, microseconds and all. */
+export function isoNow(): string {
+  return new Date().toISOString().replace(/\.(\d{3})Z$/, ".$1000+00:00");
 }
 
 /**
- * Port of `_cache_is_stale`. A timestamp that cannot be parsed is stale, not
- * fresh -- the safe direction for a cache that gates a network call.
+ * Does a cached verdict still apply to the install reading it? (CR135)
  *
- * A NAIVE timestamp (no offset) is read as UTC, matching the oracle's explicit
- * `replace(tzinfo=timezone.utc)`. JavaScript would otherwise read it as local
- * time and shift the TTL by the machine's offset.
+ * One verdict goes stale in a way the reader can see: an update to a version
+ * the install already has, or has passed -- after an update, after a manual
+ * install, or when another install over the same home wrote it. Such a
+ * verdict is not shown, by the card or by the status line. A verdict without
+ * a version, from a clone's tag lookup that found none, cannot be judged and
+ * stands. A version that does not parse as `vX.Y.Z` sorts below every real one
+ * (`#util/semver.ts`), so it is never newer and is not shown.
  */
-export function cacheIsStale(awareness: UpdateAwareness, now: Date = new Date()): boolean {
-  const hasOffset = /(?:Z|[+-]\d{2}:\d{2})$/.test(awareness.checked_at);
-  const checkedAt = parseIso(hasOffset ? awareness.checked_at : `${awareness.checked_at}Z`);
-  if (checkedAt === null) return true;
-  return now.getTime() - checkedAt.getTime() > UPDATE_CHECK_TTL_MS;
+export function verdictApplies(awareness: UpdateAwareness, installedVersion: string): boolean {
+  if (awareness.availability !== "update_available" || awareness.version === null) return true;
+  return compareSemver(awareness.version, installedVersion) > 0;
+}
+
+export interface UpToDateRecord {
+  /** The channel the update followed. */
+  channel: string;
+  /** A clone's commit after the update; null for a package, which has none. */
+  commit: string | null;
+  checkedAt: string;
 }
 
 /**
- * Port of `_cache_should_refresh`: stable-channel awareness is refreshed even
- * inside the TTL. A cached notice may point at an intermediate release, and a
- * cached up-to-date answer goes wrong the moment stable advances -- opening
- * Mirror should show the newly published version without manually fetching
- * refs or deleting this file.
+ * What a successful `runtime update` knows, written where the card and the
+ * status line read it (CR135): the install now holds its channel's version.
+ * Until CR135 nothing rewrote the cache after an update, so the status line
+ * kept announcing the version just installed until some later check, from
+ * some repository, said otherwise.
  */
-export function cacheShouldRefresh(awareness: UpdateAwareness, channel: MarkerValue): boolean {
-  return (
-    (awareness.availability === "up_to_date" || awareness.availability === "update_available") &&
-    channel.value === "stable"
-  );
+export function recordUpToDate(homePath: string, record: UpToDateRecord): void {
+  writeUpdateCache(homePath, {
+    availability: "up_to_date",
+    checked_at: record.checkedAt,
+    channel: record.channel,
+    current_commit: record.commit,
+    remote_commit: record.commit,
+    version: null,
+    title: null,
+    note: null,
+  });
 }

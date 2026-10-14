@@ -241,8 +241,8 @@ test("stable is refused when it is not an ancestor of HEAD", () => {
 /** An npm that answers from a table, records what it was asked, and where. */
 function scriptNpm(answers: Record<string, { code?: number; stdout?: string; stderr?: string }>) {
   const calls: { args: string[]; cwd: string | undefined }[] = [];
-  const runner: NpmRunner = (args, cwd) => {
-    calls.push({ args: [...args], cwd });
+  const runner: NpmRunner = (args, call) => {
+    calls.push({ args: [...args], cwd: call?.cwd });
     const key = args.join(" ");
     for (const [pattern, answer] of Object.entries(answers)) {
       if (key.startsWith(pattern)) {

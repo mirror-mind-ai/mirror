@@ -24,9 +24,10 @@ single block. One source, four interfaces, one voice.
    to say, the welcome is empty and nothing renders. The command must be safe
    to call in any state.
 4. **Local-first and network-tolerant.** Welcome composition uses SQLite reads,
-   lightweight git inspection, and an optional remote release check. It does not
-   depend on the network: remote failures are silent and never block startup.
-   No LLM, no embeddings. Must run quickly on a warm database.
+   lightweight git inspection, and an optional remote release check bounded to
+   5 seconds. It does not depend on the network: remote failures are silent and
+   never hold startup past that bound. No LLM, no embeddings. Must run quickly
+   on a warm database.
 5. **First person.** The mirror speaks as the user. The closing invitation is
    not "How can I help you?" — it is `Where shall we begin?`.
 
@@ -50,9 +51,9 @@ Version <version> · channel <stable|main>
 | Line | When it appears | Source |
 |------|-----------------|--------|
 | Header (`◇ Mirror · <user>`) | Always, if a Mirror home is resolvable | the resolved Mirror home's name |
-| Version (`Version <version> · channel <channel>`) | Always, when header renders | the product version (`ts/package.json`) plus local update channel |
+| Version (`Version <version> · channel <channel>`) | Always, when header renders | the installed version (`package.json` of the running tree) and the channel this install follows, as `runtime channel` reports it |
 | Stats | Always, when header renders | counts from the database |
-| Update notice | Only when local refs or lightweight remote check show a stable update | update-awareness cache, `git ls-remote`, local release notes when available |
+| Update notice | Only when the install's own check, or a cached verdict that still applies, shows an update | the update-awareness cache; for a package, its channel's dist-tag on the registry; for a clone, `git ls-remote` against its own remote and its own local refs |
 | Invitation (`→ Where shall we begin?`) | Always, when header renders | constant |
 
 If the header cannot be resolved (no `MIRROR_HOME`, no `MIRROR_USER`), the
@@ -63,11 +64,31 @@ still shows the welcome, even when every counter is zero.
 
 The welcome shows the installed Mirror Mind version and update channel so the user can immediately see which runtime they are using and whether it follows the stable release channel or the main dogfooding channel.
 
-The update notice is network-tolerant. The welcome can use a cached update
-check or attempt a lightweight remote check with `git ls-remote` when the cache
-is missing or older than 6 hours. It does not fetch, mutate refs, back up, run
-migrations, or update files. If the remote check fails, the welcome still opens
-normally.
+The update notice answers for the install that is running, never for the
+directory the welcome is rendered in. Pi renders it in the person's project,
+so a check that read the current directory would report on that project
+(CR135). The install is read from where the front door lives:
+
+- a **package** asks the registry for its channel's dist-tag, as
+  `runtime update --check` does (`npm view mirror-mind dist-tags`). npm runs in
+  the install's own directory, so a project's `.npmrc` cannot choose the
+  registry, and without npm's retries;
+- a **clone** asks its own remote with `git ls-remote`, and the local
+  `N commits behind` line counts its own checkout against its fetched channel
+  branch;
+- an install the runtime cannot identify is not checked.
+
+On the `stable` channel the check runs at every render, so a release published
+today appears at the next session start. On `main` it never runs, and the card
+shows the cached verdict. The remote reads of one render share a 5-second
+budget. A check that cannot answer leaves the cache as it was, and the card
+shows what the cache knows. The check does not fetch, mutate refs, back up, run
+migrations, or update files. Each check adds one line to `front-door.log`: what
+it asked, how it answered, and how long it took.
+
+A cached update for the installed version, or for an older one, no longer
+applies: neither the card nor the status line shows it. A successful
+`runtime update` records `up_to_date` for the home it updated.
 
 Update-awareness cache lives under:
 
@@ -136,9 +157,13 @@ Behaviour:
 - Emits an empty string if `MIRROR_WELCOME=off` is set.
 - Emits an empty string if the Mirror home cannot be resolved.
 - Otherwise composes the welcome per the rules above.
-- May perform a lightweight remote release check unless disabled with `MIRROR_WELCOME_REMOTE_UPDATE_CHECK=off`.
+- May perform a remote release check for the running install, bounded to 5
+  seconds, unless disabled with `MIRROR_WELCOME_REMOTE_UPDATE_CHECK=off`. The
+  current directory never changes the answer.
 - Does not fetch, mutate refs, back up, migrate, or update files.
-- `--status-line` renders a compact runtime status signal from cached state only.
+- `--status-line` renders a compact runtime status signal from cached state only,
+  and spawns nothing. It shows `⬆` only for a cached update newer than the
+  installed version.
 
 Stdout is the rendering. There is no JSON variant. Runtimes must not parse —
 they just display the string verbatim.

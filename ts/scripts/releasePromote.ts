@@ -131,7 +131,7 @@ export function runReleasePromotion(options: PromoteOptions): PromotionResult {
   if (dryRun) {
     steps.push(step("publish dry run", "skip", `would run: npm ${publishDryRun.join(" ")}`));
   } else {
-    const packed = (options.npm ?? defaultNpmRunner)(publishDryRun, repository);
+    const packed = (options.npm ?? defaultNpmRunner)(publishDryRun, { cwd: repository });
     if (packed.code !== 0) {
       const reason = packed.stderr.trim().split("\n").at(-1) ?? "npm publish --dry-run failed";
       steps.push(step("publish dry run", "fail", reason));

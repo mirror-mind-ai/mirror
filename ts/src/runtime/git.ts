@@ -13,7 +13,9 @@
 // Timeouts follow the oracle's two budgets, and for the reason recorded there:
 // local inspections are near-instant, while a single shared 2 s budget once
 // made a network operation report failure after it had already succeeded
-// (the v0.30.1 release incident). Network reads get 120 s.
+// (the v0.30.1 release incident). Network reads get 120 s, except where a
+// caller holds a tighter budget of its own: the welcome card's update check
+// runs inside the session start and passes what is left of its 5 s (CR135).
 
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, realpathSync } from "node:fs";
@@ -260,11 +262,15 @@ function availability(
  * Is the channel's remote branch ahead of HEAD? The remote query is the only
  * authority: remote-tracking refs are only as fresh as the last fetch, and
  * trusting them is how a clone two releases behind gets told it is ahead.
+ *
+ * `networkTimeoutMs` bounds that query; `runtime update --check` keeps the
+ * network budget, and the welcome card passes what is left of its own.
  */
 export function checkUpdateAvailability(
   start: string,
   channel: string | null,
   version: string,
+  networkTimeoutMs: number = GIT_NETWORK_TIMEOUT_MS,
 ): UpdateAvailability {
   const startPath = resolve(start);
   const git = inspectGit(startPath);
@@ -303,7 +309,7 @@ export function checkUpdateAvailability(
   const lsRemote = runGit(
     ["ls-remote", remote, `refs/heads/${branch}`],
     git.repository,
-    GIT_NETWORK_TIMEOUT_MS,
+    networkTimeoutMs,
   );
   if (lsRemote.code !== 0 || !lsRemote.stdout) {
     return availability(version, updateChannel, {

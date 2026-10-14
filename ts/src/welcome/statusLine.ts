@@ -10,6 +10,10 @@
 // It reads the update CACHE, never the remote -- refreshing the cache is the
 // full card's job, and the one time that budget was allowed to leak into the
 // per-turn path it cost a 120s network timeout on a status bar.
+//
+// Since CR135 it also drops a cached update the install already has. The
+// installed version is the caller's: the route reads it from the running
+// tree's manifest, a file read, so this module still spawns nothing.
 
 import { existsSync } from "node:fs";
 import { basename, join } from "node:path";
@@ -18,13 +22,15 @@ import { dbNameForEnv } from "#frontDoor/dbPath.ts";
 import { getIdentityContent } from "#identity/identityRead.ts";
 import { GLOBAL_STICKY_DEFAULTS_SESSION_ID, getRuntimeSession } from "#mirror/runtimeSession.ts";
 import { getActiveOperatingMode, modeLabel } from "#mode/operatingMode.ts";
-import { readUpdateCache } from "./updateCache.ts";
+import { readUpdateCache, verdictApplies } from "./updateCache.ts";
 
 export const SEPARATOR = " · ";
 
 export interface StatusLineOptions {
   /** The resolved mirror home. Null renders nothing, as in the oracle. */
   mirrorHome: string | null;
+  /** The running install's version: a cached update to it, or to an older one, is not shown. */
+  installedVersion: string;
   sessionId?: string | null;
   env?: NodeJS.ProcessEnv;
 }
@@ -92,7 +98,11 @@ export function composeStatusLine(options: StatusLineOptions): string {
   if (mode) parts.push(mode);
 
   const awareness = readUpdateCache(homePath);
-  if (awareness && awareness.availability === "update_available") {
+  if (
+    awareness &&
+    awareness.availability === "update_available" &&
+    verdictApplies(awareness, options.installedVersion)
+  ) {
     parts.push(`⬆${awareness.version ? ` ${awareness.version}` : ""}`);
   } else {
     parts.push("✓");

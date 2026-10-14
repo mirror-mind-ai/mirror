@@ -14,26 +14,49 @@ import { execFileSync } from "node:child_process";
 import { type ApplyStrategy, KNOWN_CHANNELS } from "#runtime/updatePipeline.ts";
 import { compareSemver, isPlainSemver } from "#util/semver.ts";
 
-/** `cwd` matters to the one npm command that reads a tree, `publish`; the rest ignore it. */
+/**
+ * Where and how long one npm command runs.
+ *
+ * `cwd` is a trust decision, not a convenience (CR135). npm reads the project
+ * config of the directory it runs in -- the `.npmrc` beside the nearest
+ * `package.json` -- so a command started in the person's project takes its
+ * `registry=` and `prefix=` from whatever that project ships. Every call the
+ * product makes names its directory: the install's own root for the package's
+ * commands, the release's repository for `publish`.
+ */
+export interface NpmCall {
+  cwd?: string;
+  /** Kill npm after this long. Absent, npm runs until it answers. */
+  timeoutMs?: number;
+}
+
 export type NpmRunner = (
   args: readonly string[],
-  cwd?: string,
+  call?: NpmCall,
 ) => {
   code: number;
   stdout: string;
   stderr: string;
 };
 
-export const defaultNpmRunner: NpmRunner = (args, cwd) => {
+export const defaultNpmRunner: NpmRunner = (args, call = {}) => {
   try {
     const stdout = execFileSync("npm", [...args], {
       encoding: "utf8",
       stdio: ["ignore", "pipe", "pipe"],
-      ...(cwd === undefined ? {} : { cwd }),
+      ...(call.cwd === undefined ? {} : { cwd: call.cwd }),
+      ...(call.timeoutMs === undefined ? {} : { timeout: call.timeoutMs }),
     });
     return { code: 0, stdout, stderr: "" };
   } catch (error) {
-    const shaped = error as { status?: number; stdout?: string; stderr?: string };
+    const shaped = error as { status?: number; stdout?: string; stderr?: string; code?: string };
+    if (shaped.code === "ETIMEDOUT") {
+      return {
+        code: -1,
+        stdout: shaped.stdout ?? "",
+        stderr: `npm ${args[0] ?? ""} timed out after ${call.timeoutMs} ms`,
+      };
+    }
     return {
       code: shaped.status ?? -1,
       stdout: shaped.stdout ?? "",
@@ -42,9 +65,14 @@ export const defaultNpmRunner: NpmRunner = (args, cwd) => {
   }
 };
 
-/** `npm root -g`, or null when npm is not usable. Resolved once per run. */
-export function npmRootGlobal(npm: NpmRunner = defaultNpmRunner): string | null {
-  const result = npm(["root", "-g"]);
+/**
+ * `npm root -g`, or null when npm is not usable. Resolved once per run.
+ *
+ * It runs before the install is known, so its directory is the caller's: the
+ * tree the front door runs from, which for a package is the install's root.
+ */
+export function npmRootGlobal(cwd: string, npm: NpmRunner = defaultNpmRunner): string | null {
+  const result = npm(["root", "-g"], { cwd });
   const value = result.stdout.trim();
   return result.code === 0 && value ? value : null;
 }
@@ -54,9 +82,25 @@ export function npmRootGlobal(npm: NpmRunner = defaultNpmRunner): string | null 
 
 export type DistTags = { ok: true; tags: Record<string, string> } | { ok: false; detail: string };
 
+/**
+ * How to read the dist-tags. `cwd` is the install's root. The welcome card
+ * bounds the read and drops npm's retries, which cost over a minute when the
+ * registry cannot be reached (CR135); `runtime update` asks for neither.
+ */
+export interface DistTagRead {
+  cwd: string;
+  timeoutMs?: number;
+  fetchRetries?: number;
+}
+
 /** `npm view <name> dist-tags --json`, read once per run. */
-export function readDistTags(name: string, npm: NpmRunner = defaultNpmRunner): DistTags {
-  const result = npm(["view", name, "dist-tags", "--json"]);
+export function readDistTags(name: string, npm: NpmRunner, read: DistTagRead): DistTags {
+  const args = ["view", name, "dist-tags", "--json"];
+  if (read.fetchRetries !== undefined) args.push(`--fetch-retries=${read.fetchRetries}`);
+  const result = npm(
+    args,
+    read.timeoutMs === undefined ? { cwd: read.cwd } : { cwd: read.cwd, timeoutMs: read.timeoutMs },
+  );
   if (result.code !== 0)
     return { ok: false, detail: firstLine(result.stderr) || "npm view failed" };
   let parsed: unknown;
@@ -117,12 +161,24 @@ export type ChannelDirection =
   | { kind: "behind"; version: string; detail: string; carriedBy: string | null }
   | { kind: "unresolved"; detail: string };
 
+/** What the package's npm commands need to know about the install. */
+export interface PackageInstall {
+  name: string;
+  version: string;
+  /** Where the package lives; its npm commands run here. */
+  root: string;
+}
+
+/** The bound and retries of one dist-tag read; where it runs is the install's. */
+export type DistTagLimits = Omit<DistTagRead, "cwd">;
+
 export function channelDirection(
-  install: { name: string; version: string },
+  install: PackageInstall,
   channel: string,
   npm: NpmRunner = defaultNpmRunner,
+  limits: DistTagLimits = {},
 ): ChannelDirection {
-  const read = readDistTags(install.name, npm);
+  const read = readDistTags(install.name, npm, { cwd: install.root, ...limits });
   if (!read.ok) return { kind: "unresolved", detail: read.detail };
   const resolved = resolveFrom(read.tags, install.name, channel);
   if (!resolved.ok) return { kind: "unresolved", detail: resolved.detail };
@@ -165,12 +221,13 @@ export interface PackageUpdateAvailability {
 }
 
 export function checkPackageUpdateAvailability(
-  install: { name: string; version: string },
+  install: PackageInstall,
   channel: { value: string; note: string | null },
   npm: NpmRunner = defaultNpmRunner,
+  limits: DistTagLimits = {},
 ): PackageUpdateAvailability {
   const base = { name: install.name, installed: install.version, channel, carriedBy: null };
-  const direction = channelDirection(install, channel.value, npm);
+  const direction = channelDirection(install, channel.value, npm, limits);
   switch (direction.kind) {
     case "current":
       return { ...base, resolved: direction.version, status: "up_to_date", note: null };
@@ -220,13 +277,14 @@ export function renderPackageUpdateAvailability(report: PackageUpdateAvailabilit
   return `${lines.join("\n")}\n`;
 }
 
-/** Install one exact version globally. Never a bare tag. */
+/** Install one exact version globally, from the install's own root. Never a bare tag. */
 export function installGlobal(
   name: string,
   version: string,
+  cwd: string,
   npm: NpmRunner = defaultNpmRunner,
 ): { ok: boolean; detail: string } {
-  const result = npm(["install", "-g", `${name}@${version}`]);
+  const result = npm(["install", "-g", `${name}@${version}`], { cwd });
   return result.code === 0
     ? { ok: true, detail: `${name}@${version}` }
     : { ok: false, detail: firstLine(result.stderr) || "npm install failed" };
@@ -249,7 +307,7 @@ export function packageRecoveryCommand(name: string, previousVersion: string | n
  * asked once, at plan.
  */
 export function packageStrategy(
-  install: { name: string; version: string },
+  install: PackageInstall,
   channel: string,
   npm: NpmRunner,
 ): ApplyStrategy {
@@ -268,11 +326,7 @@ export function packageStrategy(
     }),
 
     plan: (previousRef) => {
-      const direction = channelDirection(
-        { name: install.name, version: previousRef },
-        channel,
-        npm,
-      );
+      const direction = channelDirection({ ...install, version: previousRef }, channel, npm);
       switch (direction.kind) {
         case "unresolved":
           return {
@@ -308,7 +362,7 @@ export function packageStrategy(
     },
 
     apply: (_previousRef, target) => {
-      const applied = installGlobal(install.name, target, npm);
+      const applied = installGlobal(install.name, target, install.root, npm);
       return applied.ok
         ? { ok: true, newRef: target, detail: applied.detail, changes: [] }
         : {
