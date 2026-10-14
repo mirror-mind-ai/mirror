@@ -75,3 +75,4 @@ evidence stays honest as both cores move.
 - [CR131 — `runtime diagnose` does not say what the plugin's MCP entry would find](cr131-runtime-diagnose-does-not-run-the-mcp-locator.md)
 - [CR132 — `release:promote` pushes with the two-second local git timeout, and stops half-promoted](cr132-release-promote-pushes-with-the-local-two-second-timeout.md)
 - [CR133 — `runtime release-notes` reads the git repository above the package, so a Homebrew install finds no notes](cr133-release-notes-reads-the-git-repository-above-the-package.md)
+- [CR134 — `release-notes pending` reads the cwd's git repository, so it answers for whatever project the person is in](cr134-release-notes-pending-reads-the-cwd-s-git-repository.md)
