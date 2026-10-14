@@ -8,8 +8,8 @@ If a linked document and this index disagree, this index wins.
 
 ## Current Focus
 
-- Refinement Story: RS001
-- Change Request: none
+- Refinement Story: RS010
+- Change Request: CR125
 
 Selecting a focus is an explicit project decision. Reading this file never selects or
 executes work.
@@ -70,7 +70,7 @@ Open work is ordered intentionally. Terminal history follows open work.
 | 36 | [CR122](rs010-cv22-oracle-and-port-hygiene/cr122-the-capture-normalizer-s-word-boundary-masks-are-inert-under-bsd-sed.md) | RS010 | The capture normalizer's word-boundary masks are inert under BSD `sed` | captured | — | — |
 | 37 | [CR123](rs010-cv22-oracle-and-port-hygiene/cr123-the-plugin-smoke-s-missing-bin-case-cannot-run-on-a-machine-with-a-global-link.md) | RS010 | The plugin smoke's missing-bin case cannot run on a machine with a global link | captured | — | — |
 | 38 | [CR124](rs010-cv22-oracle-and-port-hygiene/cr124-init-ignores-mirror-home-and-leaves-a-home-under-mirror-minds.md) | RS010 | `init` ignores `MIRROR_HOME` and leaves a home under `~/.mirror-minds` when a scratch home was asked for | captured | — | — |
-| 39 | [CR125](rs010-cv22-oracle-and-port-hygiene/cr125-the-publish-route-moves-stable-and-leaves-latest-on-the-placeholder.md) | RS010 | The publish route moves `stable` and leaves `latest` on the placeholder | captured | — | — |
+| 39 | [CR125](rs010-cv22-oracle-and-port-hygiene/cr125-the-publish-route-moves-stable-and-leaves-latest-on-the-placeholder.md) | RS010 | The publish route moves `stable` and leaves `latest` on the placeholder | in_progress | @viniciusteles | `main` |
 | 40 | [CR126](rs010-cv22-oracle-and-port-hygiene/cr126-a-docs-only-push-passes-ci-carrying-what-the-publish-gate-refuses.md) | RS010 | A docs-only push passes CI carrying what the publish gate refuses | captured | — | — |
 | 41 | [CR127](rs010-cv22-oracle-and-port-hygiene/cr127-runtime-diagnose-counts-its-own-exit-as-a-front-door-error.md) | RS010 | `runtime diagnose` counts its own exit as a front-door error, so any finding keeps the warning alive | captured | — | — |
 | 42 | [CR128](rs010-cv22-oracle-and-port-hygiene/cr128-the-smokes-production-guard-checks-no-database-in-ci.md) | RS010 | The smokes' production guard checks no database in CI, and the plugin smoke never reaches it on a linked machine | captured | — | — |
@@ -81,6 +81,7 @@ Open work is ordered intentionally. Terminal history follows open work.
 | 47 | [CR133](rs010-cv22-oracle-and-port-hygiene/cr133-release-notes-reads-the-git-repository-above-the-package.md) | RS010 | `runtime release-notes` reads the git repository above the package, so a Homebrew install finds no notes | captured | — | — |
 | 48 | [CR134](rs010-cv22-oracle-and-port-hygiene/cr134-release-notes-pending-reads-the-cwd-s-git-repository.md) | RS010 | `release-notes pending` reads the cwd's git repository, so it answers for whatever project the person is in | captured | — | — |
 | 49 | [CR135](rs010-cv22-oracle-and-port-hygiene/cr135-the-welcome-card-s-update-check-asks-the-cwd-s-repository.md) | RS010 | The welcome card's update check asks the cwd's repository, not the install, and the status line keeps a stale verdict | captured | — | — |
+| 50 | [CR136](rs010-cv22-oracle-and-port-hygiene/cr136-the-release-environment-takes-a-dispatch-from-any-ref.md) | RS010 | The `release` environment takes a dispatch from any ref, so a branch's own copy of `publish.yml` can stage | captured | — | — |
 | — | [CR121](rs010-cv22-oracle-and-port-hygiene/cr121-a-new-home-s-first-maintenance-imports-the-whole-pi-history.md) | RS010 | A new home's first maintenance run imports the person's whole Pi history | done | @viniciusteles | `mirror-ts-core` |
 | — | [CR106](rs010-cv22-oracle-and-port-hygiene/cr106-a-pi-session-in-a-scratch-mirror-home-copies-the-whole-pi-history-into-it.md) | RS010 | A Pi session started against a scratch Mirror home copies the whole Pi history into it | done | @viniciusteles | `mirror-ts-core` |
 | — | [CR117](rs001-ariad-runtime-trust/cr117-a-delivery-story-s-flow-unit-outlives-it.md) | RS001 | A Delivery Story's flow unit outlives it, and no story after it can be preauthorized | done | @viniciusteles | `mirror-ts-core` |
