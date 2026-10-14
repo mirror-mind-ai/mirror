@@ -11,8 +11,13 @@
 #   * a bare scratch origin cloned from this repository, never a network remote
 #   * a scratch clone that is thrown away
 #   * a scratch mirror home with a generated demo database
-#   * a scratch env-file -- NEVER the repository's .env, which holds the
-#     OpenRouter key; CI is keyless but a local pre-push run is not
+#   * no configuration from the machine (CR137). The repository's .env,
+#     which holds a provider key, is not in the clone. Every variable that
+#     chooses a Mirror home, user, or database is unset before anything runs.
+#     The Mirror commands run with a scratch HOME and no XDG_CONFIG_HOME, so
+#     the OS user's ~/.config/mirror/env, which can hold a user and a provider
+#     key, is never loaded. The smoke's OWN tools, git and npm, still run with
+#     the machine's HOME and read its configuration, ~/.npmrc included.
 #   * python/python3/uv shadowed on PATH with stubs that exit 66, so any
 #     interpreter spawn FAILS THE SMOKE rather than passing unnoticed
 #
@@ -44,6 +49,13 @@ REAL_NPM="$(command -v npm || true)"
 REAL_NODE="$(command -v node)"
 REAL_SQLITE="$(command -v sqlite3 || true)"
 
+# CR137: nothing from the machine chooses a Mirror home, user, or database.
+# These are the variables `DbPathEnv` reads, unset before anything runs, so
+# a maintainer's exported MIRROR_USER cannot collide with a scratch home. It
+# is the list smoke_npm_package.sh unsets; NODE_OPTIONS goes too, since a
+# developer's --require or --inspect is not the smoke's.
+unset MEMORY_ENV DB_PATH MEMORY_PROD_DIR MEMORY_DIR MIRROR_HOME MIRROR_USER NODE_OPTIONS
+
 say() { printf '\n\033[1m%s\033[0m\n' "$*"; }
 ok() { printf '  \033[32m✓\033[0m %s\n' "$*"; PASS=$((PASS + 1)); }
 bad() { printf '  \033[31m✗\033[0m %s\n' "$*"; FAIL=$((FAIL + 1)); }
@@ -67,10 +79,6 @@ exit 66
 STUB
   chmod +x "$WORK/stubs/$bin"
 done
-
-# A scratch env-file. The repository's own .env holds a provider key and must
-# never be loaded by a smoke.
-printf 'MEMORY_ENV=production\n' > "$WORK/smoke.env"
 
 say "Building the scratch origin and clone"
 "$REAL_GIT" clone -q --no-hardlinks "$ROOT_DIR" "$WORK/origin" 2>/dev/null
@@ -125,10 +133,18 @@ CLI="ts/src/frontDoor/cli.ts"
 # The clone's PATH holds the stubs, node, and the system directories (git
 # lives there on both CI runners), and NOT the machine's own `mirror`.
 CLONE_PATH="$WORK/stubs:$WORK/bin:/usr/bin:/bin"
+# The clone lane's OS home (CR137): a scratch HOME and no XDG_CONFIG_HOME, as
+# the package lane has, so the front door never fills a variable from the OS
+# user's ~/.config/mirror/env. Unsetting MIRROR_USER above is not enough on
+# its own, because the front door fills any unset variable from that file.
+CLONE_OS_HOME="$WORK/clone-os-home"
+mkdir -p "$CLONE_OS_HOME"
 run_cli() {
   (
     cd "$WORK/clone"
+    unset XDG_CONFIG_HOME
     PATH="${CLI_PATH:-$CLONE_PATH}" \
+    HOME="$CLONE_OS_HOME" \
     MIRROR_HOME="$HOME_DIR" \
     NODE_OPTIONS=--no-warnings \
     node "$CLI" "$@"
@@ -137,6 +153,24 @@ run_cli() {
 ledger() { "$REAL_SQLITE" "$HOME_DIR/memory.db" "select count(*) from _migrations;"; }
 integrity() { "$REAL_SQLITE" "$HOME_DIR/memory.db" "PRAGMA integrity_check;"; }
 head_of() { (cd "$WORK/clone" && "$REAL_GIT" rev-parse --short HEAD); }
+
+# --- 0. the clone lane sees only the smoke's home ---------------------------
+say "0. runtime status in the clone lane, without --mirror-home, finds the scratch home"
+# CR137: the clone lane loaded the OS user's ~/.config/mirror/env, and the
+# MIRROR_USER there collided with the scratch MIRROR_HOME. That user can be
+# the owner's production user, and the conflict was all that kept such a
+# command off the production home. This step runs one command WITHOUT
+# --mirror-home, which finds the scratch home only if no user reaches the
+# lane from anywhere: the shell, a config file, or XDG_CONFIG_HOME.
+OUT="$(run_cli runtime status 2>&1 || true)"
+case "$OUT" in
+  *"Mirror home: $HOME_DIR"*) ok "the clone lane resolves the scratch home" ;;
+  *) bad "the clone lane resolved '$(printf '%s\n' "$OUT" | sed -n 's/^Mirror home: //p' | head -1)'" ;;
+esac
+case "$OUT" in
+  *"conflicts with MIRROR_USER"*) bad "a MIRROR_USER reached the clone lane" ;;
+  *) ok "no MIRROR_USER reached the clone lane" ;;
+esac
 
 # --- 1. check --------------------------------------------------------------
 say "1. runtime update --check"

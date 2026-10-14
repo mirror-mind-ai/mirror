@@ -144,9 +144,36 @@ jobs:
       # Runs in the `ts` job because it needs Node and a git checkout, and it
       # shadows python/python3/uv so any interpreter spawn FAILS the smoke
       # rather than passing unnoticed. Everything it touches is a scratch
-      # clone, a scratch home, and a scratch env-file.
+      # clone and a scratch home, and its Mirror commands run with a scratch
+      # HOME and no XDG_CONFIG_HOME.
+      #
+      # CR137: it runs against a hostile environment, so every push proves the
+      # smoke reads nothing from the machine. Each variable that chooses a
+      # Mirror home, user, or database points nowhere. A decoy mirror/env that
+      # names a decoy user sits on both paths the front door reads: under
+      # XDG_CONFIG_HOME, and at the runner's own ~/.config/mirror/env, the path
+      # that leaked on a maintainer's machine. The smoke's step 0 fails if the
+      # decoy user reaches it. The trap removes the decoy in HOME when the step
+      # ends, and the step refuses to overwrite a real one.
       - name: Runtime updater smoke (CV22.DS10.US2)
-        run: bash scripts/smoke_runtime_update.sh "${RUNNER_TEMP}/mirror-update-smoke"
+        env:
+          MIRROR_USER: decoy-user
+          MIRROR_HOME: /nonexistent/decoy-home
+          MEMORY_DIR: /nonexistent/decoy-dir
+          MEMORY_PROD_DIR: /nonexistent/decoy-dir
+          DB_PATH: /nonexistent/decoy.db
+          MEMORY_ENV: development
+        run: |
+          if [ -e "$HOME/.config/mirror/env" ]; then
+            echo "the runner already has a ~/.config/mirror/env; not overwriting it" >&2
+            exit 1
+          fi
+          export XDG_CONFIG_HOME="$RUNNER_TEMP/decoy-config"
+          mkdir -p "$XDG_CONFIG_HOME/mirror" "$HOME/.config/mirror"
+          printf 'MIRROR_USER=decoy-user\n' > "$XDG_CONFIG_HOME/mirror/env"
+          trap 'rm -f "$HOME/.config/mirror/env"' EXIT
+          cp "$XDG_CONFIG_HOME/mirror/env" "$HOME/.config/mirror/env"
+          bash scripts/smoke_runtime_update.sh "${RUNNER_TEMP}/mirror-update-smoke"
 
   smoke:
     # End-to-end through the real front-door process, as SEQUENCES: the unit

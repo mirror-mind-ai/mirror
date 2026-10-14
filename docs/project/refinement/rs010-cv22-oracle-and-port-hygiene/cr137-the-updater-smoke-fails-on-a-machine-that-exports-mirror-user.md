@@ -225,6 +225,42 @@ At selection (2026-10-14):
   38) unset the Mirror variables. `smoke_codex.sh`, `smoke_external_review_copy.sh`,
   and `smoke_gemini_cli.sh` do not.
 
+### Implementation and the Driver's checks (2026-10-14)
+
+What is now true:
+
+- Right after capturing its tools, the smoke unsets `MEMORY_ENV`, `DB_PATH`,
+  `MEMORY_PROD_DIR`, `MEMORY_DIR`, `MIRROR_HOME`, `MIRROR_USER`, and `NODE_OPTIONS`.
+- `run_cli` runs the clone lane's Mirror commands with `HOME` at
+  `$WORK/clone-os-home` and `XDG_CONFIG_HOME` unset, as `run_pkg` does.
+- A new step 0 runs `runtime status` in the clone lane without `--mirror-home`. It
+  checks that the status resolves the scratch home, and that no `MIRROR_USER` reached
+  the lane.
+- `smoke.env` is gone. The header's isolation list says what is true, including that
+  git and npm still run with the machine's `HOME`.
+- CI's updater smoke step runs with the hostile variables in its `env:`. A decoy
+  `mirror/env` sits under both `XDG_CONFIG_HOME` and the runner's `$HOME/.config`, and
+  a trap removes the second. The step refuses to overwrite a real config file, and its
+  comment no longer promises a scratch env file.
+
+Checks. All ran on this machine, whose shell exports `MIRROR_USER=vinicius-dev` and
+whose `~/.config/mirror/env` names `vinicius`:
+
+| Run | Environment | Result |
+|---|---|---|
+| Red: step 0 added, nothing else | the shell as it is | 65 passed, 26 failed: step 0's two and section 6's 24 |
+| Red: the same | `MIRROR_USER` unset in the shell | 89 passed, 2 failed: step 0's two, from the config file alone |
+| Green | the shell as it is | 91 passed, 0 failed |
+| Green | `MIRROR_HOME`, `MEMORY_DIR`, `MEMORY_PROD_DIR`, `DB_PATH`, `MEMORY_ENV`, and `NODE_OPTIONS` pointing nowhere | 91 passed, 0 failed |
+| Green | CI's own step, read from `tests.yml` and run with a fake runner `HOME` and `RUNNER_TEMP` | exit 0, 91 passed, 0 failed, and the decoy in `HOME` removed |
+| The step's refusal | a config file already in the runner's `HOME` | exit 1, "not overwriting it", and the file intact |
+
+- `bash -n` on the smoke is clean. With shellcheck, `actionlint` finds nothing new in
+  the step. The file's two `SC2016` infos, at lines 79 and 244, predate this change,
+  which moved the second from line 217.
+- The retired-surface tripwire, the pack guard, the doc-link check, lint, and
+  `git diff --check` are all clean. No TypeScript changed.
+
 ## Outcome
 
 Pending.
