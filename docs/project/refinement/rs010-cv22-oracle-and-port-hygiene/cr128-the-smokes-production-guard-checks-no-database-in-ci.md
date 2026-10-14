@@ -26,6 +26,12 @@ Three runtime smokes end with a production-database guard:
 - An empty list fails the guard unless the run says explicitly that no production home
   exists. "0 checked" should not be a pass.
 - On a linked machine, the plugin smoke reaches its guard once CR123's override lands.
+- Every smoke that runs Mirror commands runs them with a scratch `HOME`, no
+  `XDG_CONFIG_HOME`, and none of the variables that choose a Mirror home, user, or
+  database. `smoke_npm_package.sh` already does, and CR137 makes the updater smoke do
+  the same. Otherwise the front door fills those variables from the OS user's
+  `~/.config/mirror/env`, and a smoke can resolve the production home, or come one
+  variable away from it.
 
 ## Impact
 
@@ -51,6 +57,10 @@ Captured, unassigned, on the Navigator's Debt Review decision for CV21.DS2.TS4
 CR123's fallback override is a precondition for the plugin smoke to reach the guard on a
 linked machine.
 
+Widened 2026-10-14 by the Navigator's decision, from
+[CR137](cr137-the-updater-smoke-fails-on-a-machine-that-exports-mirror-user.md): the
+other smokes' isolation from the machine's configuration belongs here.
+
 ## Evidence
 
 ```text
@@ -65,6 +75,22 @@ linked machine.
 Found while closing
 [CV21.DS2.TS4](../../roadmap/cv21-runtime-expansion-ii/cv21-ds2-mirror-plugin-mcp-foundation/cv21-ds2-ts4-reference-runtime-smoke-test/index.md),
 evidence rows 5 and 6.
+
+Added 2026-10-14 from
+[CR137](cr137-the-updater-smoke-fails-on-a-machine-that-exports-mirror-user.md):
+
+- **The mechanism, observed there.** With the real `HOME`, the front door loads
+  `~/.config/mirror/env` and fills `MIRROR_USER` from it, even with the variable unset
+  in the shell. On the Navigator's machine, that is the production user.
+- **The three smokes CR137 left here.**
+  - `smoke_codex.sh` exports a scratch `MIRROR_HOME` and passes `--mirror-home`.
+  - `smoke_external_review_copy.sh` passes `--mirror-home`.
+  - `smoke_gemini_cli.sh` asks the core to resolve the home, by its own comment (line
+    32).
+
+  None of the three sets a scratch `HOME`, unsets `XDG_CONFIG_HOME`, or unsets the
+  variables that choose a home, user, or database. Whether their results change on a
+  machine whose `~/.config/mirror/env` names a user was not checked.
 
 ## Outcome
 
