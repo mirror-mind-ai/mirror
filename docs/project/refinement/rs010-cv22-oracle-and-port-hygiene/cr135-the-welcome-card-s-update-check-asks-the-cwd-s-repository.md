@@ -123,6 +123,24 @@ An empty scratch home, from `/tmp`: no `update-check.json` is written.
 With a scratch `XDG_CONFIG_HOME`, `runtime channel main` reports `Update channel: main`
 from the package's file, and the card still prints `Version 0.33.0 · channel stable`.
 
+Added 2026-10-14 from
+[CR132](cr132-release-promote-pushes-with-the-local-two-second-timeout.md)'s selection,
+at the Navigator's request. These points are read from the code, not observed:
+
+- When the cache is older than six hours (`UPDATE_CHECK_TTL_MS`), `refreshUpdateCache`
+  (`ts/src/welcome/card.ts`) asks the remote twice, on two different budgets:
+  - `checkUpdateAvailability`'s `ls-remote <remote> refs/heads/<branch>`
+    (`ts/src/runtime/git.ts`) runs with `GIT_NETWORK_TIMEOUT_MS`, 120 seconds;
+  - on `update_available`, `remoteTagForCommit`'s `ls-remote --tags <remote>
+    refs/tags/v*` runs with the default `GIT_LOCAL_TIMEOUT_MS`, 2 seconds.
+- In Pi, the card renders inside `conversation-logger session-start --fast --welcome`,
+  which the extension runs with a 30-second exec timeout (`runMirror` in
+  `.pi/extensions/mirror-logger.ts`). With a stale cache, a remote that does not answer
+  can hold the session start until that timeout, well before the 120-second budget
+  runs out.
+- A tag lookup slower than two seconds fails, `remoteTagForCommit` returns no tag, and
+  the `update_available` verdict is cached without its version.
+
 ## Outcome
 
 Pending.
