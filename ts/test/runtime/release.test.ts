@@ -292,6 +292,16 @@ test("promotion proves the artifact packs with `npm publish --dry-run`, before t
     assert.match(plan?.detail ?? "", /npm stage approve <id>/);
     assert.doesNotMatch(plan?.detail ?? "", /npm publish/);
     assert.match(plan?.detail ?? "", /npm dist-tag add mirror-mind@1\.2\.3 stable/);
+    // CR125: the install line reads `latest`, the updater `stable`, and the
+    // trusted publisher can move neither. Moving `latest` is the release's last
+    // registry step, printed right after the publication and never run, with
+    // the command that shows it moved.
+    const latest = result.steps.find((s) => s.name === "latest dist-tag");
+    assert.equal(latest?.state, "skip");
+    assert.equal(names.indexOf("latest dist-tag"), names.indexOf("publish") + 1);
+    assert.match(latest?.detail ?? "", /once mirror-mind@1\.2\.3 is public under stable:/);
+    assert.match(latest?.detail ?? "", /npm dist-tag add mirror-mind@1\.2\.3 latest with 2FA/);
+    assert.match(latest?.detail ?? "", /npm view mirror-mind dist-tags shows both at 1\.2\.3/);
     assertNamesNoInterpreter(renderPromotion(result));
   } finally {
     f.cleanup();
@@ -314,6 +324,11 @@ test("a dry-run promotion runs no npm at all, and still names the publish steps"
     assert.equal(states.get("publish dry run")?.state, "skip");
     assert.match(states.get("publish dry run")?.detail ?? "", /would run: npm publish --dry-run/);
     assert.equal(states.get("publish")?.state, "skip");
+    assert.equal(states.get("latest dist-tag")?.state, "skip");
+    assert.match(
+      states.get("latest dist-tag")?.detail ?? "",
+      /npm dist-tag add mirror-mind@1\.2\.3 latest/,
+    );
   } finally {
     f.cleanup();
   }
@@ -360,6 +375,31 @@ test("under --push, publication is still not performed", () => {
       npm.calls.every((call) => call.args[0] === "publish" && call.args[1] === "--dry-run"),
     );
     assert.equal(result.steps.find((s) => s.name === "publish")?.state, "skip");
+    const latest = result.steps.find((s) => s.name === "latest dist-tag");
+    assert.equal(latest?.state, "skip");
+    assert.match(latest?.detail ?? "", /npm dist-tag add mirror-mind@1\.2\.3 latest/);
+  } finally {
+    f.cleanup();
+  }
+});
+
+test("a promotion under another channel leaves `latest` where it is (CR125)", () => {
+  // `--stable next` prints a rehearsal's route. A rehearsal must not move the
+  // tag every fresh install reads, so the step says so instead of naming it.
+  const f = fixture();
+  try {
+    const npm = scriptNpm({ "publish --dry-run": { stderr: PUBLISH_DRY_RUN_NOTICE } });
+    const result = runReleasePromotion({
+      target: "v1.2.3",
+      start: f.repo,
+      stableBranch: "next",
+      npm: npm.runner,
+    });
+    assert.equal(result.success, true, JSON.stringify(result.steps));
+    assert.match(result.steps.find((s) => s.name === "publish")?.detail ?? "", /-f dist_tag=next,/);
+    const latest = result.steps.find((s) => s.name === "latest dist-tag");
+    assert.equal(latest?.state, "skip");
+    assert.equal(latest?.detail, "stays where it is; only a release under stable moves it");
   } finally {
     f.cleanup();
   }

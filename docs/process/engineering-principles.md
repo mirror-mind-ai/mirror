@@ -606,10 +606,11 @@ until it is reachable from the previous release through this path.
 **The release chain is explicit.** Prospective version bump per
 [Versioning](versioning.md) → narrative release note per
 [Release Notes](release-notes.md) → `npm run release:doctor` →
-`npm run release:promote` → `stable` channel + GitHub Release. Push, tag,
-and stable promotion remain separate Navigator-authorized hard gates under
-Ariad ([§9](#9-process)) — Done at the story level does not imply release
-permission.
+`npm run release:promote` → `stable` channel → npm: the version staged from
+CI under `stable` and approved with 2FA, then `latest` moved to it → GitHub
+Release. Push, tag, stable promotion, and npm publication remain separate
+Navigator-authorized hard gates under Ariad ([§9](#9-process)) — Done at the
+story level does not imply release permission.
 
 The last two steps are **maintainer tooling, not product commands**
 (CV22.DS10.US2). They were `runtime release-doctor` and `runtime

@@ -25,6 +25,17 @@
 # the `release` environment's required reviewer before the job runs, and the
 # approve with a one-time code after it.
 #
+# A release under `stable` has one more step, also a maintainer's with 2FA
+# (CR125). `npm install -g mirror-mind` installs the `latest` dist-tag, a
+# stage carries one tag, and the trusted publisher can run nothing but the
+# stage, so `latest` is moved by hand once the version is public --
+#
+#   npm dist-tag add mirror-mind@<version> latest
+#   npm view mirror-mind dist-tags    # latest and stable at <version>
+#
+# -- and a rehearsal under `next` leaves it alone. The last step prints this
+# route with the version filled in.
+#
 # Dispatch it only on a commit whose Tests workflow is green.
 
 name: Publish
@@ -33,7 +44,7 @@ on:
   workflow_dispatch:
     inputs:
       dist_tag:
-        description: "dist-tag for the staged version (the updater reads `stable`; use `next` for a rehearsal)"
+        description: "dist-tag for the staged version: `stable` for a release (the updater reads it; a maintainer then moves `latest`), `next` for a rehearsal"
         required: true
         default: next
         type: string
@@ -51,7 +62,25 @@ jobs:
     name: stage ${{ github.ref_name }} as ${{ inputs.dist_tag }}
     runs-on: ubuntu-latest
     environment: release
+    # The input reaches every script through the environment, never pasted
+    # into one (CR125).
+    env:
+      DIST_TAG: ${{ inputs.dist_tag }}
     steps:
+      # Two tags, two meanings (CR125): `stable` is a release, the tag the
+      # updater reads, and `next` is a rehearsal. A staged tag cannot be
+      # changed afterwards, so anything else -- `latest`, a typo -- is refused
+      # here, before a version is staged where the updater would never see it.
+      - name: Known dist-tag
+        run: |
+          case "$DIST_TAG" in
+            stable | next) echo "dist-tag: $DIST_TAG" ;;
+            *)
+              echo "dist_tag must be stable (a release) or next (a rehearsal), not '$DIST_TAG'" >&2
+              exit 1
+              ;;
+          esac
+
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
@@ -72,7 +101,7 @@ jobs:
       - name: What this commit would ship
         run: |
           echo "version: $(node -p 'require("./package.json").version')"
-          echo "dist-tag: ${{ inputs.dist_tag }}"
+          echo "dist-tag: $DIST_TAG"
           npm pack --dry-run 2>&1 | tail -8
 
       # The two guards that make the Zero Python claim for the artifact: the
@@ -84,4 +113,35 @@ jobs:
         run: node ts/scripts/checkPackContents.ts
 
       - name: Stage with provenance
-        run: npm stage publish . --provenance --tag "${{ inputs.dist_tag }}"
+        run: npm stage publish . --provenance --tag "$DIST_TAG"
+
+      # What is left is a maintainer's, with 2FA (CR125), and this prints it
+      # where the run ends: the approve, then for `stable` the `latest` move,
+      # then the view that shows both tags. The name and version come from the
+      # package.json the stage packed. Nothing parses npm's output, which npm
+      # documents no format for.
+      - name: What a maintainer does next
+        run: |
+          name=$(node -p 'require("./package.json").name')
+          version=$(node -p 'require("./package.json").version')
+          {
+            echo "## ${name}@${version} staged as \`${DIST_TAG}\`"
+            echo
+            echo "Nothing is public yet. A maintainer finishes it with 2FA, or drops it with \`npm stage reject <stage-id>\`:"
+            echo
+            echo "\`\`\`"
+            echo "npm stage list ${name}  # the stage id"
+            echo "npm stage download <stage-id>  # inspect the tarball first, if you like"
+            echo "npm stage approve <stage-id>  # public, under ${DIST_TAG}"
+            if [ "$DIST_TAG" = stable ]; then
+              echo "npm dist-tag add ${name}@${version} latest"
+            fi
+            echo "npm view ${name} dist-tags"
+            echo "\`\`\`"
+            echo
+            if [ "$DIST_TAG" = stable ]; then
+              echo "\`npm install -g ${name}\` installs \`latest\` and the updater reads \`stable\`, so the view must show both at ${version}."
+            else
+              echo "\`latest\` stays where it is: only a release under \`stable\` moves it."
+            fi
+          } | tee -a "$GITHUB_STEP_SUMMARY"

@@ -14,6 +14,9 @@
 // release gate decided (2026-10-10): publication is the trusted publisher's
 // route -- `.github/workflows/publish.yml` stages from CI with provenance, a
 // maintainer approves with 2FA -- and the printed plan names that route.
+// CR125 (2026-10-14) appended `latest dist-tag`, printed after the
+// publication: the install line reads `latest`, and nothing in the route moved
+// it.
 //
 // It never moves an existing tag. A tag that points somewhere other than HEAD
 // is a fact about release history, and rewriting it silently is how a release
@@ -22,6 +25,7 @@
 import { runGit } from "#runtime/git.ts";
 import { findPackageIdentity } from "#runtime/packageIdentity.ts";
 import { defaultNpmRunner, type NpmRunner } from "#runtime/strategies/package.ts";
+import { DEFAULT_CHANNEL } from "#runtime/updatePipeline.ts";
 import {
   buildReleaseDoctorReport,
   hasFailures,
@@ -192,13 +196,13 @@ export function runReleasePromotion(options: PromoteOptions): PromotionResult {
   // --- push (the only steps that reach a remote) --------------------------
   if (!options.push) {
     steps.push(step("push", "skip", "use --push to publish tag and stable"));
-    steps.push(publicationPlan(repository, target, stableBranch));
+    steps.push(...publicationPlan(repository, target, stableBranch));
     return done(true);
   }
   if (dryRun) {
     steps.push(step("push tag", "skip", `would push ${target}`));
     steps.push(step("push stable", "skip", `would push ${stableBranch}`));
-    steps.push(publicationPlan(repository, target, stableBranch));
+    steps.push(...publicationPlan(repository, target, stableBranch));
     return done(true);
   }
   for (const [name, ref] of [
@@ -212,7 +216,7 @@ export function runReleasePromotion(options: PromoteOptions): PromotionResult {
     }
     steps.push(step(name, "pass", ref));
   }
-  steps.push(publicationPlan(repository, target, stableBranch));
+  steps.push(...publicationPlan(repository, target, stableBranch));
   return done(true);
 }
 
@@ -226,15 +230,34 @@ export function runReleasePromotion(options: PromoteOptions): PromotionResult {
  * approve` and a one-time code. `dist-tag add` remains for a version already
  * on the registry under another tag. An explicit tag keeps npm from moving
  * `latest` on its own.
+ *
+ * So `latest` is a step of its own (CR125). `npm install -g` installs the
+ * `latest` dist-tag, and the fresh install's updater then follows
+ * `DEFAULT_CHANNEL`, so `latest` belongs on the default channel's version. A
+ * release under that channel ends by moving `latest` to it. A promotion under
+ * any other channel (`--stable next` prints a rehearsal's route) leaves it
+ * alone. A stage carries one tag, and the trusted publisher can run nothing
+ * but the stage, so the move is a maintainer's `dist-tag add` with 2FA. It is
+ * printed with the `npm view` that shows it happened. `publish.yml`'s summary
+ * applies the same rule.
  */
-function publicationPlan(repository: string, target: string, channel: string): PromotionStep {
+function publicationPlan(repository: string, target: string, channel: string): PromotionStep[] {
   const name = findPackageIdentity(repository)?.name ?? "<package>";
   const version = target.replace(/^v/, "");
-  return step(
-    "publish",
-    "skip",
-    `separate gate: gh workflow run publish.yml --ref ${target} -f dist_tag=${channel}, approve the release environment, then npm stage approve <id> with 2FA; or npm dist-tag add ${name}@${version} ${channel} if the version is already published`,
-  );
+  return [
+    step(
+      "publish",
+      "skip",
+      `separate gate: gh workflow run publish.yml --ref ${target} -f dist_tag=${channel}, approve the release environment, then npm stage approve <id> with 2FA; or npm dist-tag add ${name}@${version} ${channel} if the version is already published`,
+    ),
+    step(
+      "latest dist-tag",
+      "skip",
+      channel === DEFAULT_CHANNEL
+        ? `separate gate, once ${name}@${version} is public under ${channel}: npm dist-tag add ${name}@${version} latest with 2FA, because npm install -g reads latest and the updater reads ${channel}; then npm view ${name} dist-tags shows both at ${version}`
+        : `stays where it is; only a release under ${DEFAULT_CHANNEL} moves it`,
+    ),
+  ];
 }
 
 export function renderPromotion(result: PromotionResult): string {

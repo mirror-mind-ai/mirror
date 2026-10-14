@@ -2529,6 +2529,25 @@ default branch, and `main` is 864 commits behind the delivery branch; a copy of
 `publish.yml` was committed there alone (`90686b41`) so the button exists. Every dispatch
 runs the file from the chosen ref. The CV22 release merge will meet the same bytes.
 
+**`latest` is a printed step of the release (2026-10-14,
+[CR125](refinement/rs010-cv22-oracle-and-port-hygiene/cr125-the-publish-route-moves-stable-and-leaves-latest-on-the-placeholder.md)).**
+The first release through this route, `v0.32.1`, moved `stable` and left `latest` on the
+placeholder. Until the Navigator moved it by hand, `npm install -g mirror-mind` installed
+`0.0.1` with no `bin`. npm leaves nothing to automate:
+
+- a stage carries one tag, which cannot be changed;
+- `npm stage approve` takes no tag;
+- short-lived trust tokens can run `npm stage publish` and `npm publish` only, and no
+  `npm stage` subcommand.
+
+Staging under `latest` and adding `stable` by hand would only move the manual step, and
+no existing install would notice if it were forgotten. So the stage keeps `stable`, and
+moving `latest` is a maintainer's `npm dist-tag add` with 2FA. `release:promote` and the
+workflow's run summary both print it, with the `npm view` that shows it happened. Only a
+release under the updater's default channel moves `latest`, because a fresh install takes
+`latest` and then follows that channel. A rehearsal under `next` leaves it alone, and
+the workflow refuses any other tag before staging.
+
 ### CV22 releases as v0.32.0, not v1.0.0
 
 **Date:** 2026-10-10 · **Context:** the CV22 release gate, with every Delivery Story

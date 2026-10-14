@@ -50,6 +50,7 @@ Selected 2026-10-14. The plan below was reviewed by a four-lens panel the same d
 ([record below](#panel-review-2026-10-14)), and its findings are folded in.
 **Approved 2026-10-14 by the Navigator**, including the tag guard the panel added.
 Driver `@viniciusteles` and Delivery `main` were assigned in the same turn.
+Implemented the same day. It awaits the Navigator's [validation route](#validation-route).
 
 ### Objective
 
@@ -250,6 +251,50 @@ Not asked:
     `required_reviewers` only, and `deployment_branch_policy` is `null`.
   - `actionlint` 1.7.12 with shellcheck 0.11.0 is clean on `publish.yml` before the
     change.
+
+### Implementation and the Driver's checks (2026-10-14)
+
+What is now true:
+
+- `release:promote` prints a `latest dist-tag` step after `publish`. A channel equal to
+  the updater's `DEFAULT_CHANNEL` gets the move and the `npm view`. Any other channel
+  gets "stays where it is".
+- `publish.yml` refuses a `dist_tag` other than `stable` or `next` in its first step.
+  It reads the input once, through the job's `env`, and ends with a summary of the
+  remaining steps.
+- REFERENCE.md, the publish decision, and engineering-principles' release chain describe
+  the same route.
+
+Checks:
+
+- `release.test.ts`: the four new assertions failed first (no `latest dist-tag` step),
+  then 14 of 14 passed.
+- `npm test`: 3,155 pass, 0 fail, and 3 skipped. The skips depend on this machine,
+  where `mirror`, `mirror-hook`, and `node` are installed globally (CR123's cases).
+- Typecheck, lint, the retired-surface tripwire, the pack guard (476 files), the doc-link
+  check, and `git diff --check` are all clean.
+- `actionlint` with shellcheck is clean. That actionlint really runs shellcheck was
+  shown on a scratch copy with one variable unquoted, where it reported SC2086.
+- The workflow's own `run:` blocks were parsed from `publish.yml` and run with bash.
+  - `stable`: the guard prints `dist-tag: stable`, and the summary lists `npm stage
+    list mirror-mind`, `download`, `approve`, `npm dist-tag add mirror-mind@0.33.0
+    latest`, and `npm view mirror-mind dist-tags`, then "the view must show both at
+    0.33.0".
+  - `next`: the same list without the `latest` line, then "`latest` stays where it is:
+    only a release under `stable` moves it."
+  - `stabel`: exit 1, `dist_tag must be stable (a release) or next (a rehearsal), not
+    'stabel'`. Nothing after the guard runs.
+
+The Driver ran the [validation route](#validation-route) at `v0.33.0`. The worktree was
+removed afterwards, and no `next` branch was left behind. The last line of each run:
+
+```text
+[-] latest dist-tag: separate gate, once mirror-mind@0.33.0 is public under stable: npm dist-tag add mirror-mind@0.33.0 latest with 2FA, because npm install -g reads latest and the updater reads stable; then npm view mirror-mind dist-tags shows both at 0.33.0
+[-] latest dist-tag: stays where it is; only a release under stable moves it
+```
+
+The first run's doctor read `ready`. The second (`--stable next`) read `1 warning(s)`,
+and its `publish` named `dist_tag=next`.
 - `.github/workflows/publish.yml` input `dist_tag`; `ts/scripts/releasePromote.ts` final
   printed step;
   [the publish decision](../../decisions.md#the-npm-package-is-published-by-staging-from-ci-with-provenance-and-a-maintainer-approves-with-2fa).
