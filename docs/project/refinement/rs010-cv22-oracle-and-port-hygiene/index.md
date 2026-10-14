@@ -76,3 +76,4 @@ evidence stays honest as both cores move.
 - [CR132 — `release:promote` pushes with the two-second local git timeout, and stops half-promoted](cr132-release-promote-pushes-with-the-local-two-second-timeout.md)
 - [CR133 — `runtime release-notes` reads the git repository above the package, so a Homebrew install finds no notes](cr133-release-notes-reads-the-git-repository-above-the-package.md)
 - [CR134 — `release-notes pending` reads the cwd's git repository, so it answers for whatever project the person is in](cr134-release-notes-pending-reads-the-cwd-s-git-repository.md)
+- [CR135 — The welcome card's update check asks the cwd's repository, not the install, and the status line keeps a stale verdict](cr135-the-welcome-card-s-update-check-asks-the-cwd-s-repository.md)
