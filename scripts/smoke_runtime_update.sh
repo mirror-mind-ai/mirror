@@ -165,6 +165,34 @@ else
 fi
 check "no archive written" "$BACKUP_COUNT" "0"
 
+# --- 2b. a fetch slower than the local git budget ---------------------------
+say "2b. runtime update --dry-run fetches through a transport that takes 3 s"
+# CR132: the clone updater's fetch ran on git's 2-second LOCAL budget, so a
+# fetch still in flight was killed and the update reported it failed. This
+# stand-in ssh sleeps 3 s and then serves the scratch origin, so the fetch
+# outlives that budget. On the network budget it completes.
+cat > "$WORK/slow-ssh" <<'STANDIN'
+#!/bin/sh
+sleep 3
+shift
+exec sh -c "$1"
+STANDIN
+chmod +x "$WORK/slow-ssh"
+"$REAL_GIT" -C "$WORK/clone" remote set-url origin "ssh://smoke$WORK/origin"
+BEFORE_HEAD="$(head_of)"
+set +e
+OUT="$(GIT_SSH_COMMAND="$WORK/slow-ssh" GIT_SSH_VARIANT=simple \
+  run_cli runtime update --dry-run --mirror-home "$HOME_DIR" 2>&1)"; CODE=$?
+set -e
+"$REAL_GIT" -C "$WORK/clone" remote set-url origin "$WORK/origin"
+echo "$OUT" | sed 's/^/    /'
+check "exit code" "$CODE" "0"
+case "$OUT" in
+  *"[✓] fetch: origin main"*) ok "the fetch outlived the 2-second local budget" ;;
+  *) bad "the fetch did not complete through the slow transport" ;;
+esac
+check "HEAD unchanged" "$(head_of)" "$BEFORE_HEAD"
+
 # --- 3. the real update ----------------------------------------------------
 say "3. runtime update, with python/python3/uv shadowed"
 set +e

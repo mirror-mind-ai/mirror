@@ -9,15 +9,18 @@
 // decisions can be driven in tests without a remote, and so this module can be
 // read as "what we ask git for" rather than "how we spawn it".
 
-import { runGit } from "#runtime/git.ts";
+import { GIT_NETWORK_TIMEOUT_MS, runGit } from "#runtime/git.ts";
 import type { ApplyStrategy } from "#runtime/updatePipeline.ts";
 
+/** Without a timeout, a command gets `runGit`'s local budget. */
 export type GitRunner = (
   args: readonly string[],
   cwd: string,
+  timeoutMs?: number,
 ) => { code: number; stdout: string; stderr: string };
 
-export const defaultGitRunner: GitRunner = (args, cwd) => runGit([...args], cwd);
+export const defaultGitRunner: GitRunner = (args, cwd, timeoutMs) =>
+  runGit([...args], cwd, timeoutMs);
 
 /** `origin/main` -> `["origin", "main"]`; anything else is refused. */
 export function splitUpstream(upstream: string): [string, string] | null {
@@ -44,7 +47,11 @@ export function fetchUpstream(
   const split = splitUpstream(upstream);
   if (split === null) return { ok: false, detail: "unexpected upstream name" };
   const [remote, branch] = split;
-  const result = git(["fetch", remote, branch], repository);
+  // The one command here that crosses the network, so it gets the network
+  // budget (CR132). On the 2-second local budget a fetch still in flight was
+  // killed and reported failed. The oracle's `_git_fetch` had this since
+  // 521177f8, and the port lost it. Both update lanes run this fetch.
+  const result = git(["fetch", remote, branch], repository, GIT_NETWORK_TIMEOUT_MS);
   return result.code === 0
     ? { ok: true, detail: `${remote} ${branch}` }
     : { ok: false, detail: result.stderr.trim() || "fetch failed" };

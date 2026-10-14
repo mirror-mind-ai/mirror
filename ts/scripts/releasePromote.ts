@@ -22,7 +22,7 @@
 // is a fact about release history, and rewriting it silently is how a release
 // becomes unreproducible.
 
-import { runGit } from "#runtime/git.ts";
+import { GIT_NETWORK_TIMEOUT_MS, runGit } from "#runtime/git.ts";
 import { findPackageIdentity } from "#runtime/packageIdentity.ts";
 import { defaultNpmRunner, type NpmRunner } from "#runtime/strategies/package.ts";
 import { DEFAULT_CHANNEL } from "#runtime/updatePipeline.ts";
@@ -48,6 +48,10 @@ export interface PromotionResult {
   dryRun: boolean;
   recovery: string[];
 }
+
+/** The branch and dist-tag a release promotes unless told otherwise: the updater's default channel. */
+const DEFAULT_STABLE_BRANCH = DEFAULT_CHANNEL;
+const DEFAULT_REMOTE = "origin";
 
 function step(name: string, state: StepState, detail?: string): PromotionStep {
   return detail === undefined ? { name, state } : { name, state, detail };
@@ -80,8 +84,8 @@ function packSummary(output: string): string {
 
 export function runReleasePromotion(options: PromoteOptions): PromotionResult {
   const target = normalizeTarget(options.target);
-  const stableBranch = options.stableBranch ?? "stable";
-  const remote = options.remote ?? "origin";
+  const stableBranch = options.stableBranch ?? DEFAULT_STABLE_BRANCH;
+  const remote = options.remote ?? DEFAULT_REMOTE;
   const dryRun = options.dryRun === true;
   const steps: PromotionStep[] = [];
   const recovery: string[] = [];
@@ -205,19 +209,69 @@ export function runReleasePromotion(options: PromoteOptions): PromotionResult {
     steps.push(...publicationPlan(repository, target, stableBranch));
     return done(true);
   }
-  for (const [name, ref] of [
+  const pushes = [
     ["push tag", target],
     ["push stable", stableBranch],
-  ] as const) {
-    const pushed = runGit(["push", remote, ref], repository);
+  ] as const;
+  for (const [index, [name, ref]] of pushes.entries()) {
+    // A push crosses the network, so it gets the network budget (CR132). On
+    // the 2-second local budget a push still in flight was killed and reported
+    // failed, and it could land anyway: the v0.30.1 incident, which the
+    // oracle fixed in 521177f8 and the port lost.
+    const pushed = runGit(["push", remote, ref], repository, GIT_NETWORK_TIMEOUT_MS);
     if (pushed.code !== 0) {
       steps.push(step(name, "fail", pushed.stderr.trim() || "push failed"));
+      const refs = pushes.map(([, pushedRef]) => pushedRef);
+      recovery.push(
+        ...pushRecovery(target, remote, stableBranch, refs.slice(0, index), refs.slice(index)),
+      );
       return done(false);
     }
     steps.push(step(name, "pass", ref));
   }
   steps.push(...publicationPlan(repository, target, stableBranch));
   return done(true);
+}
+
+/**
+ * What a failed push leaves behind, and how to finish (CR132). The local steps
+ * passed, so the tag and the branch are at HEAD, and the refs pushed before the
+ * failed one reached the remote. A push that timed out may have landed anyway,
+ * and a rejected one fails again until its cause is resolved. The recovery says
+ * both and guesses neither: git's own lines, under the failed step, say which
+ * one happened. The re-run comes first because it ends with the publication
+ * steps, and finishing by hand skips them.
+ */
+function pushRecovery(
+  target: string,
+  remote: string,
+  stableBranch: string,
+  reached: readonly string[],
+  left: readonly string[],
+): string[] {
+  const where =
+    reached.length > 0
+      ? `${reached.join(" and ")} reached ${remote}`
+      : `nothing is confirmed on ${remote}`;
+  return [
+    `The tag ${target} and the branch ${stableBranch} are at HEAD locally; ${where}.`,
+    "A push that timed out may have landed anyway; pushing a ref the remote already has changes nothing.",
+    "A push the remote rejected fails again until what the lines above name is resolved.",
+    `To finish: ${rerunCommand(target, remote, stableBranch)} (it reuses the tag and the branch, and ends with the publication steps)`,
+    `Or push what is left: ${left.map((ref) => `git push ${remote} ${ref}`).join(", then ")}`,
+  ];
+}
+
+/**
+ * This promotion again, with every option it was given that is not a default.
+ * Without them the command would be another promotion, against `origin` and
+ * `stable` (CR132's panel).
+ */
+function rerunCommand(target: string, remote: string, stableBranch: string): string {
+  const parts = ["npm run release:promote --", "--target", target, "--push"];
+  if (remote !== DEFAULT_REMOTE) parts.push("--remote", remote);
+  if (stableBranch !== DEFAULT_STABLE_BRANCH) parts.push("--stable", stableBranch);
+  return parts.join(" ");
 }
 
 /**
@@ -268,9 +322,16 @@ export function renderPromotion(result: PromotionResult): string {
   lines.push("");
   for (const entry of result.steps) {
     const mark = marks[entry.state] ?? "?";
+    // A detail can be git's message, several lines long (CR132). Its first
+    // line stays on the step and the rest go beneath it, trimmed and indented,
+    // so the steps still read one per line.
+    const [first = "", ...rest] = (entry.detail ?? "").split("\n");
     lines.push(
-      entry.detail ? `[${mark}] ${entry.name}: ${entry.detail}` : `[${mark}] ${entry.name}`,
+      entry.detail ? `[${mark}] ${entry.name}: ${first.trimEnd()}` : `[${mark}] ${entry.name}`,
     );
+    for (const line of rest) {
+      if (line.trim() !== "") lines.push(`    ${line.trim()}`);
+    }
   }
   lines.push("");
   lines.push(`Release promotion result: ${result.success ? "success" : "failed"}`);
@@ -298,8 +359,8 @@ export function main(argv: readonly string[]): number {
   }
   const result = runReleasePromotion({
     target,
-    stableBranch: optionValue(argv, "--stable") ?? "stable",
-    remote: optionValue(argv, "--remote") ?? "origin",
+    stableBranch: optionValue(argv, "--stable") ?? DEFAULT_STABLE_BRANCH,
+    remote: optionValue(argv, "--remote") ?? DEFAULT_REMOTE,
     dryRun: argv.includes("--dry-run"),
     push: argv.includes("--push"),
   });

@@ -404,3 +404,150 @@ test("a promotion under another channel leaves `latest` where it is (CR125)", ()
     f.cleanup();
   }
 });
+
+// --- CR132: the pushes cross the network ----------------------------------
+//
+// The pushes ran on git's 2-second LOCAL budget, so a remote slower than that
+// had its push killed while it was still taking it, and the promotion said
+// the push failed: the v0.30.1 incident, which the oracle fixed in 521177f8
+// and the port lost. These remotes are local bare repositories whose
+// `pre-receive` hook makes them slow, or makes them refuse a branch.
+
+/** A bare repository registered on `repo` as `name`, with an optional pre-receive hook. */
+function bareRemote(repo: string, name: string, preReceive?: string): string {
+  const remote = mkdtempSync(join(tmpdir(), "cr132-remote-"));
+  git(repo, "init", "-q", "--bare", remote);
+  if (preReceive !== undefined) {
+    mkdirSync(join(remote, "hooks"), { recursive: true });
+    writeFileSync(join(remote, "hooks", "pre-receive"), preReceive, { mode: 0o755 });
+  }
+  git(repo, "remote", "add", name, remote);
+  return remote;
+}
+
+/** Takes every push, and takes three seconds over a tag's: longer than the local budget. */
+const SLOW_ON_TAGS = `#!/bin/sh
+while read old new ref; do
+  case "$ref" in refs/tags/*) sleep 3 ;; esac
+done
+exit 0
+`;
+
+/** Takes every push but the named branch's. */
+function refusing(branch: string): string {
+  return `#!/bin/sh
+while read old new ref; do
+  if [ "$ref" = "refs/heads/${branch}" ]; then
+    echo "${branch} refused by the test remote" >&2
+    exit 1
+  fi
+done
+exit 0
+`;
+}
+
+test("a push slower than the local git budget completes (CR132)", () => {
+  const f = fixture();
+  const remote = bareRemote(f.repo, "origin", SLOW_ON_TAGS);
+  try {
+    const result = runReleasePromotion({
+      target: "v1.2.3",
+      start: f.repo,
+      push: true,
+      npm: packsFine(),
+    });
+    assert.equal(result.success, true, JSON.stringify(result.steps));
+    assert.equal(result.steps.find((s) => s.name === "push tag")?.state, "pass");
+    assert.equal(result.steps.find((s) => s.name === "push stable")?.state, "pass");
+    const refs = git(remote, "show-ref");
+    assert.match(refs, /refs\/tags\/v1\.2\.3/);
+    assert.match(refs, /refs\/heads\/stable/);
+  } finally {
+    f.cleanup();
+    rmSync(remote, { recursive: true, force: true });
+  }
+});
+
+test("a refused push says what is where and how to finish, with the run's own options (CR132)", () => {
+  const f = fixture();
+  const remote = bareRemote(f.repo, "upstream", refusing("release"));
+  try {
+    const result = runReleasePromotion({
+      target: "v1.2.3",
+      start: f.repo,
+      push: true,
+      remote: "upstream",
+      stableBranch: "release",
+      npm: packsFine(),
+    });
+    assert.equal(result.success, false);
+    assert.equal(result.steps.find((s) => s.name === "push tag")?.state, "pass");
+    assert.equal(result.steps.find((s) => s.name === "push stable")?.state, "fail");
+
+    // Nothing local was undone, and the tag reached the remote.
+    const head = git(f.repo, "rev-parse", "HEAD").trim();
+    assert.equal(git(f.repo, "rev-parse", "v1.2.3^{commit}").trim(), head);
+    assert.equal(git(f.repo, "rev-parse", "release").trim(), head);
+    const refs = git(remote, "show-ref");
+    assert.match(refs, /refs\/tags\/v1\.2\.3/);
+    assert.doesNotMatch(refs, /refs\/heads\/release/);
+
+    // The recovery: what is where, both kinds of failure, and the way to finish
+    // that repeats this run, not a promotion against `origin` and `stable`.
+    const recovery = result.recovery.join("\n");
+    assert.match(
+      recovery,
+      /The tag v1\.2\.3 and the branch release are at HEAD locally; v1\.2\.3 reached upstream\./,
+    );
+    assert.match(recovery, /A push that timed out may have landed anyway/);
+    assert.match(recovery, /A push the remote rejected fails again/);
+    assert.match(
+      recovery,
+      /npm run release:promote -- --target v1\.2\.3 --push --remote upstream --stable release/,
+    );
+    assert.match(recovery, /git push upstream release/);
+    assert.doesNotMatch(recovery, /git push upstream v1\.2\.3/, "the tag already reached it");
+
+    // Git's message stays under its step: one line per line, indented, trimmed.
+    const rendered = renderPromotion(result);
+    assert.match(rendered, /^\[\u2717\] push stable: remote: release refused by the test remote$/m);
+    assert.match(
+      rendered,
+      /^ {4}! \[remote rejected\] +release -> release \(pre-receive hook declined\)$/m,
+    );
+    assert.doesNotMatch(rendered, /[ \t]+$/m, "no line ends in whitespace");
+  } finally {
+    f.cleanup();
+    rmSync(remote, { recursive: true, force: true });
+  }
+});
+
+test("re-running the same promotion after a refused push finishes it (CR132)", () => {
+  const f = fixture();
+  const remote = bareRemote(f.repo, "upstream", refusing("release"));
+  try {
+    const options = {
+      target: "v1.2.3",
+      start: f.repo,
+      push: true,
+      remote: "upstream",
+      stableBranch: "release",
+      npm: packsFine(),
+    };
+    assert.equal(runReleasePromotion(options).success, false);
+    rmSync(join(remote, "hooks", "pre-receive"));
+
+    const rerun = runReleasePromotion(options);
+    assert.equal(rerun.success, true, JSON.stringify(rerun.steps));
+    const steps = new Map(rerun.steps.map((s) => [s.name, s]));
+    assert.equal(steps.get("tag")?.detail, "v1.2.3 already at HEAD");
+    assert.equal(steps.get("stable branch")?.detail, "release already at HEAD");
+    assert.equal(steps.get("push tag")?.state, "pass");
+    assert.equal(steps.get("push stable")?.state, "pass");
+    assert.ok(steps.has("publish") && steps.has("latest dist-tag"), "it ends with publication");
+    assert.match(git(remote, "show-ref"), /refs\/heads\/release/);
+  } finally {
+    f.cleanup();
+    rmSync(remote, { recursive: true, force: true });
+  }
+});
