@@ -12,6 +12,33 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-10-14 — CR137 done: the updater smoke reads nothing from the machine it runs on
+
+The updater smoke inherited the shell's `MIRROR_USER`, and on the Navigator's machine
+its package lane failed 24 checks on a home conflict, while CI stayed green. Tracing why
+only that lane failed found two more leaks:
+
+- The clone lanes ran with the real `HOME`, so the front door loaded the OS user's
+  `~/.config/mirror/env`, holding the production user and the OpenRouter key. Only the
+  conflict rule kept a clone-lane command without `--mirror-home` off the production
+  home.
+- `smoke.env`, the isolation the header named, had been dead since `--env-file` was
+  retired.
+
+Now:
+
+- the smoke unsets every variable that chooses a Mirror home, user, or database;
+- its clone lanes run Mirror with a scratch `HOME` and no `XDG_CONFIG_HOME`;
+- a new step 0 fails if any user reaches the clone lane;
+- CI runs it under hostile variables, with a decoy configuration on both paths the
+  front door reads.
+
+A three-lens panel reviewed the plan. Its quality-assurance lens moved CI's decoy onto
+the path that actually leaked, and its security lens named the production home as the
+asset. The Navigator validated from a shell that exports `MIRROR_USER`, and CI passed on
+`c58781dc`. No debt is carried, and three limitations are named in the CR. CR128 took
+the three smokes that still read the machine.
+
 ### 2026-10-14 — CR132 done: pushes and the clone updater's fetch get git's network budget again
 
 `release:promote`'s pushes and the clone updater's fetch ran on git's 2-second local

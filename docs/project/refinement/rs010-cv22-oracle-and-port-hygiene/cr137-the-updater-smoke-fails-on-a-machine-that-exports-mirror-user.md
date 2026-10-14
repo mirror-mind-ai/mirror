@@ -41,7 +41,8 @@ Current Focus unchanged.
 Selected 2026-10-14. The plan below was reviewed by a three-lens panel the same day
 ([record below](#panel-review-2026-10-14)), and its findings are folded in.
 **Approved 2026-10-14 by the Navigator, with the panel's findings.** Driver
-`@viniciusteles` and Delivery `main` were assigned in the same turn.
+`@viniciusteles` and Delivery `main` were assigned in the same turn. Implemented the
+same day, validated by the Navigator, and **done 2026-10-14** ([Outcome](#outcome)).
 
 **The smoke reads the machine in two more ways than the capture names.** Tracing why
 sections 1 to 5 escape found:
@@ -273,6 +274,40 @@ from 21:54 to 21:55.
 - The same with `MIRROR_HOME`, `MEMORY_DIR`, `DB_PATH`, and `MEMORY_ENV` pointing
   nowhere: the same step 0, and 91 passed, 0 failed.
 
+**Accepted by the Navigator**: both runs, and CI's hostile-environment step.
+
+CI on `c58781dc`: Tests run `38627952747` passed (`ts` on ubuntu and macOS, and
+`smoke`). The updater smoke step ran with `MIRROR_USER: decoy-user` in its environment
+and the decoys in place. On both operating systems, step 0 passed both checks and the
+smoke ended with 91 passed and 0 failed. Docs run `38627952371` passed.
+
+## Review
+
+**Proportionality.** About thirty lines of shell and twenty-five of workflow, for a
+smoke that failed 24 false checks on the Navigator's machine and left the production
+user and the provider key within reach of its clone lanes. Every addition either makes
+the isolation true or keeps proving it. Nothing changed in the product.
+
+**Scope discipline.** The change matches the plan plus the panel's findings. By the
+Navigator's decision, CR128 now holds the three smokes that still read the machine.
+
+**Debt: none carried.** The Navigator accepted three named limitations at closure:
+
+- The smoke's own tools, git and npm, run with the machine's `HOME` and read its
+  configuration, `~/.npmrc` included. The header says so.
+- The smoke clears only the variables that choose a Mirror home, user, or database.
+  Anything else the shell exports, a provider key for instance, still reaches it.
+  Nothing the smoke runs calls a provider, and the Navigator's shell exports no key:
+  `OPENROUTER_API_KEY`, `OPENAI_API_KEY`, and `ANTHROPIC_API_KEY` are unset. Revisit if
+  a smoke step ever reaches a model-backed command.
+- The three other smokes are CR128's.
+
 ## Outcome
 
-Pending.
+**Done 2026-10-14.** The updater smoke gives the same result on any machine. It unsets
+every variable that chooses a Mirror home, user, or database. Its clone lanes run Mirror
+with a scratch `HOME` and no `XDG_CONFIG_HOME`, as its package lane did, so the OS
+user's `~/.config/mirror/env` is never loaded. Its new step 0 fails if any user reaches
+the clone lane. CI runs it under hostile variables and a decoy configuration on both
+paths. The Navigator validated it from a shell that exports `MIRROR_USER`, and CI
+passed on `c58781dc`.
