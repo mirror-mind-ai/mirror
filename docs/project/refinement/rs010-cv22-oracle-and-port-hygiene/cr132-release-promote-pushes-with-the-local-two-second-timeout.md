@@ -165,10 +165,12 @@ Pass:
   both pushes `✓`, the `publish` and `latest dist-tag` steps, and `success`.
 - `show-ref` lists `refs/heads/stable` and `refs/tags/v0.32.0`.
 
-**The fetch.** The updater smoke, from the development clone:
+**The fetch.** The updater smoke, from the development clone, with `MIRROR_USER`
+unset. The smoke inherits it, and its package lane then fails on a home conflict that
+has nothing to do with this CR ([Evidence](#implementation-and-the-drivers-checks-2026-10-14)):
 
 ```bash
-bash scripts/smoke_runtime_update.sh /tmp/cr132-smoke
+env -u MIRROR_USER bash scripts/smoke_runtime_update.sh /tmp/cr132-smoke
 ```
 
 Pass: the new step reports that the fetch passed through the three-second transport
@@ -280,6 +282,62 @@ error: failed to push some refs to '/tmp/cr132-refuse/remote.git'
 
 Release promotion result: failed
 ```
+
+### Implementation and the Driver's checks (2026-10-14)
+
+What is now true:
+
+- `release:promote`'s two pushes pass `GIT_NETWORK_TIMEOUT_MS`. A failed push shows
+  git's message under its step, one line per line, and prints the recovery the plan
+  describes. Its re-run carries `--remote` and `--stable` when they differ from
+  `DEFAULT_REMOTE` and `DEFAULT_STABLE_BRANCH`, which are now named once and used by
+  the CLI too.
+- The clone strategy's `GitRunner` takes an optional timeout, and `fetchUpstream`
+  asks for the network budget. Both update lanes run it.
+- REFERENCE.md describes both, and npm 11's registry read in the publish dry run.
+
+Checks:
+
+- Red first. The slow push failed at `push tag` with `spawnSync git ETIMEDOUT`, the
+  refused push printed an empty recovery, and the fetch asked for no budget. The re-run
+  test passed before the change, because it pins the reuse the recovery relies on.
+- `release.test.ts`: 19 of 19. `cloneStrategy.test.ts`: 2 of 2. `npm test`: 3,160
+  pass, 0 fail, and 3 skipped, the machine-dependent ones.
+- Typecheck, lint, the retired-surface tripwire, the pack guard (476 files), the
+  doc-link check, `git diff --check`, and `bash -n` on the smoke are all clean.
+- The updater smoke's step 2b, before the change (`dcddb33e`): `[✗] fetch: spawnSync
+  git ETIMEDOUT`. After it (`3b16a510`, with `MIRROR_USER` unset): `[✓] fetch: origin
+  main`, `Update result: success`, and HEAD unchanged. The whole smoke: 89 passed, 0
+  failed, in 23 s.
+- The Driver ran the push half of the [validation route](#validation-route) as
+  written. The first run, after the three-second hook:
+
+```text
+[✓] push tag: v0.32.0
+[✗] push stable: remote: stable refused for the route
+    To /tmp/cr132/remote.git
+    ! [remote rejected]   stable -> stable (pre-receive hook declined)
+    error: failed to push some refs to '/tmp/cr132/remote.git'
+
+Release promotion result: failed
+
+Recovery:
+- The tag v0.32.0 and the branch stable are at HEAD locally; v0.32.0 reached origin.
+- A push that timed out may have landed anyway; pushing a ref the remote already has changes nothing.
+- A push the remote rejected fails again until what the lines above name is resolved.
+- To finish: npm run release:promote -- --target v0.32.0 --push (it reuses the tag and the branch, and ends with the publication steps)
+- Or push what is left: git push origin stable
+```
+
+  The second run read `tag: v0.32.0 already at HEAD` and `stable branch: stable
+  already at HEAD`, both pushes passed, `publish` and `latest dist-tag` followed, and the
+  run ended with `success`. `show-ref` listed `refs/heads/stable` and `refs/tags/v0.32.0`.
+
+A finding outside this CR: on a machine that exports `MIRROR_USER`, the updater
+smoke's package lane (section 6) fails 24 checks, because the smoke never clears the
+variable. The message is "MIRROR_HOME (.../pkg-mirror-home) conflicts with MIRROR_USER
+(vinicius-dev)". CI has no `MIRROR_USER`. The route runs the smoke with
+`env -u MIRROR_USER`.
 
 ## Outcome
 
