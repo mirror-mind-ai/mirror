@@ -248,22 +248,45 @@ All six were taken as recommended, 2026-10-14.
 ### Validation Route
 
 Navigator, in their own shell. Scratch homes only. The registry is read, never written,
-and the installed Mirror is not touched.
+the installed Mirror is not touched, and nothing is exported into the shell.
+
+Corrected 2026-10-14, before the Navigator ran it, without changing what it proves:
+
+- the scratch project's git identity is set inside a subshell. The first version
+  exported it, so a later commit in the same terminal would have been authored by it;
+- the clone half names this checkout's front door, since `mirror` can resolve to an
+  installed package that runs other code;
+- the smoke runs from the checkout;
+- the cache directory exists before a cache is written into it;
+- the project's state is shown with `rev-list`, since its branch has no upstream for
+  `status` to compare.
 
 **The package**, packed from the working tree at a version one patch behind the
-registry's `stable`, installed into a scratch prefix, and run from two directories:
+registry's `stable`, installed into a scratch prefix, and run from two directories.
+Build the package, then the project, then define the helper:
 
 ```bash
-rm -rf /tmp/cr135 && mkdir -p /tmp/cr135/src /tmp/cr135/home /tmp/cr135/os && cd /tmp/cr135
+rm -rf /tmp/cr135 && mkdir -p /tmp/cr135/src /tmp/cr135/home/runtime /tmp/cr135/home2 /tmp/cr135/os && cd /tmp/cr135
 (cd ~/dev/workspace/mirror-dev && git ls-files -z --cached --others --exclude-standard | tar --null -T - -cf -) | tar -C src -xf -
-(cd src && npm version 0.32.9 --no-git-tag-version >/dev/null && npm pack --pack-destination /tmp/cr135 >/dev/null)
-npm install -g --prefix /tmp/cr135/prefix /tmp/cr135/mirror-mind-0.32.9.tgz >/dev/null
-export GIT_CONFIG_GLOBAL=/dev/null GIT_AUTHOR_NAME=r GIT_AUTHOR_EMAIL=r@r GIT_COMMITTER_NAME=r GIT_COMMITTER_EMAIL=r@r
-git init -q --bare remote.git && git init -q -b stable proj && cd proj
-echo a > a && git add a && git commit -qm A && git remote add origin /tmp/cr135/remote.git
-echo b > b && git add b && git commit -qm B && git tag v9.9.9 && git push -q origin stable v9.9.9
-git reset -q --hard HEAD~1 && git fetch -q origin
-printf 'registry=http://127.0.0.1:9/\n' > .npmrc && cd /tmp/cr135
+(cd src && npm version 0.32.9 --no-git-tag-version >/dev/null && npm pack --pack-destination /tmp/cr135 >/dev/null 2>&1)
+npm install -g --prefix /tmp/cr135/prefix /tmp/cr135/mirror-mind-0.32.9.tgz >/dev/null 2>&1
+/tmp/cr135/prefix/bin/mirror runtime version | sed -n 3,4p
+```
+
+```bash
+(
+  export GIT_CONFIG_GLOBAL=/dev/null GIT_AUTHOR_NAME=r GIT_AUTHOR_EMAIL=r@r GIT_COMMITTER_NAME=r GIT_COMMITTER_EMAIL=r@r
+  git init -q --bare remote.git && git init -q -b stable proj && cd proj
+  echo a > a && git add a && git commit -qm A && git remote add origin /tmp/cr135/remote.git
+  echo b > b && git add b && git commit -qm B && git tag v9.9.9 && git push -q origin stable v9.9.9
+  git reset -q --hard HEAD~1 && git fetch -q origin
+  printf 'registry=http://127.0.0.1:9/\n' > .npmrc
+)
+git -C /tmp/cr135/proj rev-list --count HEAD..origin/stable
+git -C /tmp/cr135/proj tag
+```
+
+```bash
 pkg() { (cd "$1" && shift && env -u MIRROR_USER -u MIRROR_HOME -u XDG_CONFIG_HOME HOME=/tmp/cr135/os /tmp/cr135/prefix/bin/mirror "$@" --mirror-home /tmp/cr135/home); }
 pkg /tmp/cr135 welcome
 pkg /tmp/cr135/proj welcome
@@ -272,36 +295,41 @@ printf '{\n  "availability": "update_available",\n  "channel": "stable",\n  "che
 pkg /tmp/cr135 welcome --status-line
 pkg /tmp/cr135 runtime channel main
 pkg /tmp/cr135/proj welcome
+grep -o 'update-check.*' /tmp/cr135/home/front-door.log
 ```
 
 Pass:
 
+- The package reads `Version: 0.32.9` and `Install: package (mirror-mind@0.32.9)`. The
+  project is `1` commit behind its `origin/stable`, tagged `v9.9.9`.
 - Both cards read `Version 0.32.9 · channel stable` and `✨ New Version Available:
   v0.33.0`, followed by `— One Plugin, Three Runtimes`: the scratch package is packed
   from the working tree, so it carries v0.33.0's note, which a real 0.32.x would not.
-  Neither names `v9.9.9` or `commit behind`. The second runs in a project
-  whose `.npmrc` points at a closed port, and still answers from the registry.
-- The first status line ends with `⬆ v0.33.0`. With the old verdict, `v0.32.1`, written
-  in, it ends with `✓`.
-- After `runtime channel main`, the card reads `channel main` and shows no update line.
+  Neither names `v9.9.9` or `commit behind`. The second runs in a project whose
+  `.npmrc` points at a closed port, and still answers from the registry.
+- The first status line is `◇ home · ⬆ v0.33.0`. With the old verdict, `v0.32.1`,
+  written in, it is `◇ home · ✓`.
+- `runtime channel main` reads `Update channel: main (was stable)`, and the card then
+  reads `channel main` with no update line.
+- The log holds two `update-check source=registry verdict=update_available ms=…`
+  lines, one per card on `stable`.
 
-**The clone**, this checkout's own `mirror`, from the same two directories and from the
-checkout:
+**The clone**, this checkout's own front door, from the same two directories and from
+the checkout:
 
 ```bash
-mkdir -p /tmp/cr135/home2
 for d in /tmp/cr135 /tmp/cr135/proj ~/dev/workspace/mirror-dev; do
-  (cd "$d" && env -u MIRROR_USER -u MIRROR_HOME mirror welcome --mirror-home /tmp/cr135/home2 | sed -n 2,4p)
+  (cd "$d" && env -u MIRROR_USER -u MIRROR_HOME node ~/dev/workspace/mirror-dev/bin/mirror.js welcome --mirror-home /tmp/cr135/home2 | sed -n 2,4p)
 done
 ```
 
-Pass: three identical blocks, each reading `channel main`, the checkout's marker, and
-none naming `v9.9.9` or `commit behind`.
+Pass: three identical blocks, each reading `Version 0.33.0 · channel main`, the
+checkout's marker, and none naming `v9.9.9` or `commit behind`.
 
 **The update**, with `MIRROR_USER` unset:
 
 ```bash
-env -u MIRROR_USER bash scripts/smoke_runtime_update.sh /tmp/cr135-smoke
+cd ~/dev/workspace/mirror-dev && env -u MIRROR_USER bash scripts/smoke_runtime_update.sh /tmp/cr135-smoke
 rm -rf /tmp/cr135 /tmp/cr135-smoke
 ```
 
