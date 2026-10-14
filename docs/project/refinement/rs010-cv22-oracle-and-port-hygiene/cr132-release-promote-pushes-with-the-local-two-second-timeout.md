@@ -39,7 +39,8 @@ Likely a one-argument change per push, plus the recovery lines and the test.
 Selected 2026-10-14. The plan below was reviewed by a three-lens panel the same day
 ([record below](#panel-review-2026-10-14)), and its findings are folded in.
 **Approved 2026-10-14 by the Navigator.** Driver `@viniciusteles` and Delivery `main`
-were assigned in the same turn.
+were assigned in the same turn. Implemented the same day, validated by the Navigator,
+and **done 2026-10-14** ([Outcome](#outcome)).
 
 **Decided 2026-10-14 by the Navigator: the clone updater's fetch joins this CR.** The
 premise "like every other network git call" is not true. The Python oracle gave
@@ -355,6 +356,44 @@ shell, from 20:16 to 20:22.
   /tmp/cr132-smoke`: step 2b read `[✓] fetch: origin main` and `Update result:
   success`, with HEAD unchanged. The smoke ended with 89 passed, 0 failed.
 
+**Accepted by the Navigator**: both halves of the route, as run.
+
+CI on `679c2b42`: Tests run `38614965867` passed (`ts` on ubuntu and macOS, and
+`smoke`). The updater smoke's step 2b passed on both operating systems, each ending
+with 89 passed and 0 failed. Docs run `38614965854` passed.
+
+## Review
+
+**Proportionality.** About forty lines of script, three in the clone strategy, five
+tests, and one smoke step, for a defect that twice made a release report failure for a
+push that had landed, and that could stop every clone's update on a slow link. The
+panel's additions are the re-run's options, the two kinds of failure, and the indented
+message. Each one closes a way the recovery could mislead the person reading it.
+
+**Scope discipline.** The change touched the plan's files, plus the fetch the Navigator
+folded in before planning finished. It made one correction in the same REFERENCE.md
+paragraph, where npm 11's publish dry run reads the registry, and one capture, CR137.
+CR135 gained the session start's two `ls-remote` budgets, as evidence only.
+
+**Debt: none carried.** The Navigator accepted four named limitations at closure:
+
+- Each git call still chooses its own budget. One policy inside `runGit` was ruled out
+  because it would also lengthen the welcome card's checks, which CR135 has to keep
+  bounded. Revisit when CR135 settles them.
+- The smoke's step 2b needs `git-upload-pack` on the clone's restricted `PATH`. It is
+  there on both CI runners and on this Mac, and a machine without it fails the step
+  loudly.
+- The slow cases cost about four seconds in the unit suite and four in the smoke.
+- The recovery does not tell a timeout from a rejection. By design, git's own lines
+  under the failed step say which one happened.
+
 ## Outcome
 
-Pending.
+**Done 2026-10-14.** `release:promote`'s pushes and the clone updater's fetch, in both
+update lanes, use git's 120-second network budget again, as the oracle's did. A failed
+push shows git's message under its step, and its recovery says what is where, what each
+kind of failure means, and how to finish with commands that repeat the run that failed.
+The Navigator validated both halves of the route, and CI passed on `679c2b42`.
+
+**Still to observe:** the next release's `release:promote --push` to GitHub over SSH,
+the push that timed out at `v0.33.0`. Record here whether both pushes passed.

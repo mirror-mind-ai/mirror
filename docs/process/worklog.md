@@ -12,6 +12,32 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-10-14 — CR132 done: pushes and the clone updater's fetch get git's network budget again
+
+`release:promote`'s pushes and the clone updater's fetch ran on git's 2-second local
+budget, so a remote slower than that had the command killed in flight and reported
+failed. At `v0.33.0` the tag push timed out and the promotion was finished by hand. On
+a scratch remote, the killed push landed anyway, two seconds after it was reported
+failed. The Python oracle had fixed both commands in `521177f8`, after the same
+incident at `v0.30.1`, and the port lost the fix.
+
+Now:
+
+- both pushes and the fetch, in either update lane, use the 120-second network budget;
+- a failed push shows git's message under its step;
+- its recovery says what is where, that a timed-out push may have landed while a
+  rejected one fails again, and how to finish: the re-run, with the run's own
+  `--remote` and `--stable`, or the pushes left.
+
+A three-lens panel reviewed the plan before approval. Its engineer found that the
+draft's printed re-run would have run a different promotion. Its quality-assurance lens
+moved the slow fetch into the updater smoke, which proves it through `runtime update`
+on both operating systems. The Navigator validated both halves in their own shell, and
+CI passed on `679c2b42`. No debt is carried, and four limitations are named in the CR.
+
+Captured on the way: CR137, the updater smoke inheriting `MIRROR_USER`. CR135 gained
+the session start's two `ls-remote` budgets as evidence.
+
 ### 2026-10-14 — CR125 done: npm's `latest` is a printed step of the release
 
 The publish route moved `stable` and left `latest` on the placeholder. After `v0.32.1`

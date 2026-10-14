@@ -8,8 +8,8 @@ If a linked document and this index disagree, this index wins.
 
 ## Current Focus
 
-- Refinement Story: RS010
-- Change Request: CR132
+- Refinement Story: RS001
+- Change Request: none
 
 Selecting a focus is an explicit project decision. Reading this file never selects or
 executes work.
@@ -76,12 +76,12 @@ Open work is ordered intentionally. Terminal history follows open work.
 | 42 | [CR129](rs010-cv22-oracle-and-port-hygiene/cr129-mirror-mcp-with-no-home-prints-a-stack-trace.md) | RS010 | `mirror mcp` with no Mirror home prints a Node stack trace where every other failure is one line | captured | — | — |
 | 43 | [CR130](rs010-cv22-oracle-and-port-hygiene/cr130-double-encoded-em-dashes-in-the-configuration-reference.md) | RS010 | Double-encoded em dashes in the configuration reference, and nothing that catches them | captured | — | — |
 | 44 | [CR131](rs010-cv22-oracle-and-port-hygiene/cr131-runtime-diagnose-does-not-run-the-mcp-locator.md) | RS010 | `runtime diagnose` does not say what the plugin's MCP entry would find | captured | — | — |
-| 45 | [CR132](rs010-cv22-oracle-and-port-hygiene/cr132-release-promote-pushes-with-the-local-two-second-timeout.md) | RS010 | `release:promote` pushes with the two-second local git timeout, and stops half-promoted | in_progress | @viniciusteles | `main` |
-| 46 | [CR133](rs010-cv22-oracle-and-port-hygiene/cr133-release-notes-reads-the-git-repository-above-the-package.md) | RS010 | `runtime release-notes` reads the git repository above the package, so a Homebrew install finds no notes | captured | — | — |
-| 47 | [CR134](rs010-cv22-oracle-and-port-hygiene/cr134-release-notes-pending-reads-the-cwd-s-git-repository.md) | RS010 | `release-notes pending` reads the cwd's git repository, so it answers for whatever project the person is in | captured | — | — |
-| 48 | [CR135](rs010-cv22-oracle-and-port-hygiene/cr135-the-welcome-card-s-update-check-asks-the-cwd-s-repository.md) | RS010 | The welcome card's update check asks the cwd's repository, not the install, and the status line keeps a stale verdict | captured | — | — |
-| 49 | [CR136](rs010-cv22-oracle-and-port-hygiene/cr136-the-release-environment-takes-a-dispatch-from-any-ref.md) | RS010 | The `release` environment takes a dispatch from any ref, so a branch's own copy of `publish.yml` can stage | captured | — | — |
-| 50 | [CR137](rs010-cv22-oracle-and-port-hygiene/cr137-the-updater-smoke-fails-on-a-machine-that-exports-mirror-user.md) | RS010 | The updater smoke's package lane fails on a machine that exports `MIRROR_USER` | captured | — | — |
+| 45 | [CR133](rs010-cv22-oracle-and-port-hygiene/cr133-release-notes-reads-the-git-repository-above-the-package.md) | RS010 | `runtime release-notes` reads the git repository above the package, so a Homebrew install finds no notes | captured | — | — |
+| 46 | [CR134](rs010-cv22-oracle-and-port-hygiene/cr134-release-notes-pending-reads-the-cwd-s-git-repository.md) | RS010 | `release-notes pending` reads the cwd's git repository, so it answers for whatever project the person is in | captured | — | — |
+| 47 | [CR135](rs010-cv22-oracle-and-port-hygiene/cr135-the-welcome-card-s-update-check-asks-the-cwd-s-repository.md) | RS010 | The welcome card's update check asks the cwd's repository, not the install, and the status line keeps a stale verdict | captured | — | — |
+| 48 | [CR136](rs010-cv22-oracle-and-port-hygiene/cr136-the-release-environment-takes-a-dispatch-from-any-ref.md) | RS010 | The `release` environment takes a dispatch from any ref, so a branch's own copy of `publish.yml` can stage | captured | — | — |
+| 49 | [CR137](rs010-cv22-oracle-and-port-hygiene/cr137-the-updater-smoke-fails-on-a-machine-that-exports-mirror-user.md) | RS010 | The updater smoke's package lane fails on a machine that exports `MIRROR_USER` | captured | — | — |
+| — | [CR132](rs010-cv22-oracle-and-port-hygiene/cr132-release-promote-pushes-with-the-local-two-second-timeout.md) | RS010 | `release:promote` pushes with the two-second local git timeout, and stops half-promoted | done | @viniciusteles | `main` |
 | — | [CR125](rs010-cv22-oracle-and-port-hygiene/cr125-the-publish-route-moves-stable-and-leaves-latest-on-the-placeholder.md) | RS010 | The publish route moves `stable` and leaves `latest` on the placeholder | done | @viniciusteles | `main` |
 | — | [CR121](rs010-cv22-oracle-and-port-hygiene/cr121-a-new-home-s-first-maintenance-imports-the-whole-pi-history.md) | RS010 | A new home's first maintenance run imports the person's whole Pi history | done | @viniciusteles | `mirror-ts-core` |
 | — | [CR106](rs010-cv22-oracle-and-port-hygiene/cr106-a-pi-session-in-a-scratch-mirror-home-copies-the-whole-pi-history-into-it.md) | RS010 | A Pi session started against a scratch Mirror home copies the whole Pi history into it | done | @viniciusteles | `mirror-ts-core` |
