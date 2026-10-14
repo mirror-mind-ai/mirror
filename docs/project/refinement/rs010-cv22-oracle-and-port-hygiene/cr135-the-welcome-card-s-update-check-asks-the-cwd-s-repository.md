@@ -556,11 +556,16 @@ The Driver ran the [validation route](#validation-route) as written:
 
 Limitations, for review:
 
-- **The registry read costs about 1.2 s per session start on `stable`, not the 0.3 to
-  0.6 s decision 1 was weighed on.** `npm view` took 1.1 to 1.4 s at implementation from
-  every directory tried (`/tmp`, the install's root, the Homebrew package's root, the
-  home directory), against 0.3 to 0.6 s at selection, so the difference is the network,
-  not the directory. Within the budget, and logged per check.
+- **The registry read's cost was measured twice.** At implementation, `npm view` took
+  1.1 to 1.4 s from every directory tried. The Navigator then pointed out that a VPN was
+  on, and the [re-measurement without it](#the-session-start-re-measured-2026-10-14)
+  puts the check at about 0.27 s per session start, inside decision 1's 0.3 to 0.6 s.
+  Through a VPN it costs about 1.2 s, still inside the budget, and every check logs its
+  milliseconds.
+- **A clone on `stable` pays more than a package, as before CR135.** Each `git
+  ls-remote` over SSH to GitHub takes about 1.35 s: one read when up to date, two when an
+  update exists. CR135 adds only the 5 s ceiling over both. On a slow link the tag
+  lookup can be cut by it, and the update is cached without its version.
 - A clone updated with `--no-fetch` records `up_to_date` against its local refs. The
   next render on `stable` asks the remote anyway.
 - Two installs over one home: an `up_to_date` written by the newer one reads `✓` to the
@@ -573,6 +578,27 @@ Decision 4's capture:
 [CR138](cr138-runtime-status-and-version-read-a-clone-s-repository-and-channel-from-the-cwd.md).
 It found more than the channel row: from outside the checkout, `runtime status` grades
 this healthy clone `attention needed`, exit 1, because it inspects the cwd's git.
+
+### The session start, re-measured (2026-10-14)
+
+At the Navigator's request, after they turned off the VPN that was on during the
+implementation run:
+
+- `npm view mirror-mind dist-tags --json --fetch-retries=0`, five runs each: 0.26 to
+  0.32 s from `/tmp`, the home directory, and the Homebrew package's root, after the
+  first runs from `/tmp` warmed up at 0.43 to 0.75 s.
+- A scratch package packed from `f3d9cc44` at 0.32.9 and installed into a scratch
+  prefix: five card renders logged `update-check source=registry
+  verdict=update_available` at 261 to 273 ms.
+- The Pi session-start composite through that package, `conversation-logger
+  session-start --fast --welcome --format json`, five alternating runs each, wall time:
+  529 to 548 ms with the check, 252 to 271 ms with
+  `MIRROR_WELCOME_REMOTE_UPDATE_CHECK=off`. The check adds about 0.27 s. The envelope
+  carried the card's `✨ New Version Available: v0.33.0` and the status line's `⬆
+  v0.33.0`.
+- For comparison, this checkout's `git ls-remote origin refs/heads/stable` and `git
+  ls-remote --tags origin 'refs/tags/v*'` over SSH to GitHub took 1.34 to 1.42 s each,
+  three runs.
 
 ## Outcome
 
