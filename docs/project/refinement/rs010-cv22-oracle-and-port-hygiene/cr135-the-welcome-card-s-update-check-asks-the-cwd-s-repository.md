@@ -277,7 +277,9 @@ pkg /tmp/cr135/proj welcome
 Pass:
 
 - Both cards read `Version 0.32.9 · channel stable` and `✨ New Version Available:
-  v0.33.0`. Neither names `v9.9.9` or `commit behind`. The second runs in a project
+  v0.33.0`, followed by `— One Plugin, Three Runtimes`: the scratch package is packed
+  from the working tree, so it carries v0.33.0's note, which a real 0.32.x would not.
+  Neither names `v9.9.9` or `commit behind`. The second runs in a project
   whose `.npmrc` points at a closed port, and still answers from the registry.
 - The first status line ends with `⬆ v0.33.0`. With the old verdict, `v0.32.1`, written
   in, it ends with `✓`.
@@ -467,6 +469,110 @@ The panel's checks (2026-10-14):
   `stable`, `cacheShouldRefresh` is true for both values the code ever writes, so the
   check runs whether the cache is fresh or stale; on `main`, the function returns the
   cache before checking, fresh or stale.
+
+### Implementation and the Driver's checks (2026-10-14)
+
+What is now true, at `ff715a43`:
+
+- `composeWelcome` takes the install in place of a cwd, and nothing in it reads the
+  cwd. Its channel is `channelFor(install)`. A package's check is
+  `checkPackageUpdateAvailability`, the read `runtime update --check` makes, with
+  `--fetch-retries=0` and the 5 s budget. A clone's check is `checkUpdateAvailability`
+  in `install.repository`, then the tag lookup on what is left of the same deadline.
+  The "commits behind" line inspects the clone's repository; a package has none.
+- `NpmRunner` takes `{ cwd, timeoutMs }`. `readDistTags`, `installGlobal`, and the
+  package strategy run in `install.root`. `npm root -g` runs before the install is
+  known, in `runningTreeRoot()`, which for a package is the same directory.
+  `release:promote`'s publish dry run passes its repository the same way. A timed-out
+  npm reports `npm view timed out after N ms`.
+- `verdictApplies` hides an `update_available` whose version is not newer than the
+  installed one; the card and the status line both use it. The status line takes the
+  installed version from the route, read from the running tree's manifest.
+- `runtime update` writes `up_to_date` after a success outside `--dry-run`, through
+  `recordUpToDate`, with the clone's new commit or no commit for a package.
+- The welcome route logs `update-check source=<registry|git> verdict=<…> ms=<n>` when a
+  check ran.
+- `cacheIsStale`, `cacheShouldRefresh`, `parseIso`, and `UPDATE_CHECK_TTL_MS` are gone,
+  with the staleness test (decision 5). `cacheShouldRefresh` went with them: its only
+  caller was the gate the TTL fed, and "check at every render on `stable`" is now
+  stated directly.
+- `git.test.ts`'s source pin of the `ls-remote` budget follows the new shape: the call
+  passes `networkTimeoutMs`, whose default is `GIT_NETWORK_TIMEOUT_MS`.
+
+One reading of decision 3, recorded so it can be checked: the card falls back to the
+cache only when the check could not answer (`unknown`). `local_ahead`, `diverged`, and
+`channel_behind` are answers that there is no update to take, so they show none and
+write nothing, as before.
+
+Where the plan's cases landed: everything listed under the new file is there, except
+the update route's own npm calls. Those are pinned where their seams are:
+`update.test.ts` (`view` and `install -g` run in `PACKAGE.root`),
+`packageStrategy.test.ts` (`npmRootGlobal` and `installGlobal` run where told), and
+the updater smoke, whose npm shim records the directory of every call the real route
+makes.
+
+Red first, on the unchanged code:
+
+- `installUpdateCheck.test.ts` did not load: `card.ts` exported no budget.
+- `welcome.test.ts`: the two cases that render the card failed, the oracle-graded cards
+  and the spawn spy, since `composeWelcome` read a channel it was no longer given.
+- `runtimeTailCli.test.ts`: the card from a directory outside any repository differed
+  from the card from the checkout, and the card said `channel stable` where `runtime
+  channel` said `main` (this machine's marker).
+- `packageStrategy.test.ts`, `update.test.ts`, `release.test.ts`: no npm call carried a
+  cwd option.
+- The updater smoke, clone lane at the committed `ca63de65`: step 2c read `channel
+  stable` and no "commits behind" line. Package lane, with the source changes stashed:
+  eight failures. The card from `$PKG_HOME` announced nothing, the card from the
+  unrelated project announced its `v9.9.9`, the status line read `⬆ v9.9.9` before the
+  update and still after it, and an npm call ran in `$PKG_HOME`.
+
+Green:
+
+- `installUpdateCheck.test.ts`: 16 of 16. The registry that never answers returned at
+  about 1 s on a 1 s budget with the cache byte-identical, and the clone remote behind
+  a 3 s transport returned at about 1 s.
+- `npm test`: 3,179 pass, 0 fail, 3 skipped, the machine-dependent ones.
+- Typecheck, lint, the doc-link check, the retired-surface tripwire, the pack guard (476
+  files), skill command parity, `git diff --check`, `bash -n` on the smoke, and the
+  conversation lifecycle smoke are all clean.
+- The updater smoke at `ff715a43`, with `MIRROR_USER` unset: 103 passed, 0 failed, in
+  28 s. Step 2c read `channel main` and `1 commit behind origin/main`. The package lane's
+  card announced `v0.33.1` from `$PKG_HOME` and from the unrelated project, the status
+  line read `⬆ v0.33.1`, then `✓` after the update, and all 15 npm calls ran in the
+  install's root. The real `npm install -g` ran from inside the directory it replaced,
+  and succeeded, as it did in a manual check on this Mac.
+
+The Driver ran the [validation route](#validation-route) as written:
+
+- The package, from `/tmp/cr135` and from the project with the hostile `.npmrc`: both
+  cards read `Version 0.32.9 · channel stable` and `✨ New Version Available: v0.33.0 —
+  One Plugin, Three Runtimes`. The status line read `◇ home · ⬆ v0.33.0`, and `◇ home ·
+  ✓` with `v0.32.1` written into the cache. After `runtime channel main`, the card read
+  `channel main` with no update line. `front-door.log` held two lines,
+  `update-check source=registry verdict=update_available`, at 1,350 and 1,200 ms.
+- The clone: three identical blocks from `/tmp/cr135`, the project, and the checkout,
+  each `Version 0.33.0 · channel main`, with no update line.
+
+Limitations, for review:
+
+- **The registry read costs about 1.2 s per session start on `stable`, not the 0.3 to
+  0.6 s decision 1 was weighed on.** `npm view` took 1.1 to 1.4 s at implementation from
+  every directory tried (`/tmp`, the install's root, the Homebrew package's root, the
+  home directory), against 0.3 to 0.6 s at selection, so the difference is the network,
+  not the directory. Within the budget, and logged per check.
+- A clone updated with `--no-fetch` records `up_to_date` against its local refs. The
+  next render on `stable` asks the remote anyway.
+- Two installs over one home: an `up_to_date` written by the newer one reads `✓` to the
+  older one until its next check. The version rule only catches updates that are not
+  newer.
+- `npm install -g` running inside the directory it replaces is proven on macOS. CI's
+  smoke proves it on ubuntu.
+
+Decision 4's capture:
+[CR138](cr138-runtime-status-and-version-read-a-clone-s-repository-and-channel-from-the-cwd.md).
+It found more than the channel row: from outside the checkout, `runtime status` grades
+this healthy clone `attention needed`, exit 1, because it inspects the cwd's git.
 
 ## Outcome
 
