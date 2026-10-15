@@ -360,3 +360,9 @@ and the workflow stages under no other tag. The Navigator validated the route at
 **Still to observe:** the workflow's real run summary, at the next release. Record
 the run id here, and whether `npm view mirror-mind dist-tags` showed both tags at the
 released version.
+
+**Observed at `v0.33.1`, 2026-10-15: both held.** Publish run `38781365706` staged
+`mirror-mind@0.33.1` as `stable`. Its summary printed `npm stage approve <stage-id>`,
+then `npm dist-tag add mirror-mind@0.33.1 latest` and `npm view mirror-mind dist-tags`,
+and the rule that the view must show both tags at `0.33.1`. After the Navigator ran them,
+the view showed `latest` and `stable` at `0.33.1`.

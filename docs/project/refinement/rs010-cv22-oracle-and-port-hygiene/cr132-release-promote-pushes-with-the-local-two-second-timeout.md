@@ -397,3 +397,7 @@ The Navigator validated both halves of the route, and CI passed on `679c2b42`.
 
 **Still to observe:** the next release's `release:promote --push` to GitHub over SSH,
 the push that timed out at `v0.33.0`. Record here whether both pushes passed.
+
+**Observed at `v0.33.1`, 2026-10-15: both passed.** `release:promote --target v0.33.1
+--push` reported `push tag: v0.33.1` and `push stable: stable`, the whole promotion in
+7 s, and `origin` showed the tag and `stable` at `4dfa4b35`.
