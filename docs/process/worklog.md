@@ -12,6 +12,92 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-10-15 — v0.33.1 released: The Install Answers For Itself
+
+`v0.33.1` is a patch release of six RS010 Change Requests closed since `v0.33.0`: CR125,
+CR132, CR133, CR134, CR135, and CR137. Its subject is the defect three of them share: the
+welcome card, the status line, and both release-notes readers answered for the cwd, or
+for the repository around the install, instead of for the install that was running.
+
+Where it stands:
+- `stable` and the tag on `4dfa4b35`, promoted 2026-10-15;
+- npm `latest` and `stable` on `0.33.1`, with SLSA provenance, published 2026-10-15;
+- the GitHub Release, marked latest.
+
+The route, in order:
+- release note, version bump, and every gate run locally: the suite, typecheck, lint,
+  the retired-surface tripwire, the pack guard (478 files), doc links, skill command
+  parity, the plugin's `--check`, and both smokes;
+- CI green on the release commit, Tests and Docs;
+- `release:promote --push`, which tagged, moved `stable`, and pushed both over SSH in
+  7 s, the push that timed out at `v0.33.0` (CR132's observation);
+- the publish workflow staged from CI on the tag, run `38781365706`, and its summary
+  printed the `latest` move (CR125's observation);
+- the Navigator approved the `release` environment, the staged version (2FA), and
+  `latest`;
+- a stranger's install from the public registry, into a prefix that is a git
+  repository: `0.33.1`, `release-notes latest` reading its own note, `pending --from
+  0.33.0` listing `v0.33.1` from the registry, and a welcome card with no update line.
+
+Still to observe: this machine's Homebrew package, on `0.33.0` until `mirror runtime
+update`. CR133, CR134, and CR135 each name what it should show.
+
+### 2026-10-15 — CR134 done: release-notes pending answers for the install that is running
+
+`release-notes pending` built its answer from the cwd's git repository: `none` outside
+any repository, another project's notes inside one, after a fetch from that project's
+remote, and nothing true for a package at all. Selection found a second defect: split at
+its first slash, a `--ref` value reached `git fetch` as `--upload-pack=<command>`, and git
+ran it.
+
+Now:
+
+- a clone reads `origin/<its channel>`, or `--ref`, in its own checkout;
+- a package asks the registry what its channel holds and, when that is newer, reads the
+  notes from that exact version's tarball, in memory, through a reader bounded at 64 MB;
+- when no source answers, it says `Pending releases: unknown` with a reason, and exits 1;
+- a ref beginning with `-` is refused, and git takes `--end-of-options` before it.
+
+A four-lens panel reviewed the plan, and its security lens bounded the reader. The
+Navigator's first validation run met the Homebrew release, because a bare `mirror`
+resolves there in their shell. The route was corrected to name the checkout's front
+door, and the second run passed. CI's first push then found the reader accepting an
+archive that stops before its end-of-archive block. It was fixed in `cd0aa265`, after
+validation, in a path the route does not read, and CI passed there. No debt is carried.
+
+### 2026-10-15 — CR133 done: release-notes reads the notes the package ships, wherever it sits
+
+`runtime release-notes latest` and `vX.Y.Z` answered `not found` on a Homebrew package on
+Apple Silicon. The reader asked git for the top of the repository holding the running
+tree, and `/opt/homebrew` is itself the Homebrew repository, with no `docs/releases`. The
+reader now reads `docs/releases` under the tree it is given, with no git call. A unit test
+nests a package in an unrelated repository, and the npm package smoke installs into a
+prefix that is a git repository, the shape it could not meet before. A four-lens panel
+added the smoke pin and split the validation route, so the real install is touched only
+by a release. The Navigator validated it, and CI passed on `98436af1`. No debt is
+carried.
+
+### 2026-10-15 — CR135 done: the welcome card and the status line answer for the install
+
+The welcome card asked the cwd's repository whether Mirror had an update. Another
+project's tag could be announced, a package was never told of a release, and the status
+line kept a stale `⬆` after an update.
+
+Now:
+
+- a package reads its channel's dist-tag from the registry, and a clone asks its own
+  checkout and remote;
+- every npm call the product makes runs in the install's root, so a project's `.npmrc`
+  cannot choose the registry the card reads and the update installs from;
+- one 5-second budget bounds the card's remote work;
+- a cached update the install already has is shown by neither surface, and a successful
+  `runtime update` records `up_to_date`.
+
+A four-lens panel reviewed the plan, and its security lens found the `.npmrc` blocker.
+The Navigator validated the route in their own shell, and CI passed on `4005f15a`. No
+debt is carried, and six limitations are named in the CR. CR138 was captured during the
+work.
+
 ### 2026-10-14 — CR137 done: the updater smoke reads nothing from the machine it runs on
 
 The updater smoke inherited the shell's `MIRROR_USER`, and on the Navigator's machine
