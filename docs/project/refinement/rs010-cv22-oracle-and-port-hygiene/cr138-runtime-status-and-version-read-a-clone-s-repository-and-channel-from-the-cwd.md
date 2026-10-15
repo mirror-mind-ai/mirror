@@ -70,7 +70,8 @@ command. **Approved 2026-10-15 by the Navigator**, with Driver `@viniciusteles`.
 Delivery given, `viniciusteles`, is neither a branch nor a pull request, so assignment
 waited for that decision and the status was `planned`. The Navigator then named `main`:
 Driver `@viniciusteles` and Delivery `main` were assigned the same day. Implemented
-2026-10-15 ([evidence](#implementation-and-the-drivers-checks-2026-10-15)).
+2026-10-15 ([evidence](#implementation-and-the-drivers-checks-2026-10-15)) and
+**validated by the Navigator 2026-10-15** ([record](#navigator-validation-2026-10-15)).
 
 ### Objective
 
@@ -425,7 +426,65 @@ Limitations: run on macOS only; CI runs the suite and both smokes on ubuntu at t
 push. The exposure stays live on released clone installs until a release carries this
 change. CR139's count still grows with every verdict that exits 1.
 
-Navigator validation: pending.
+### Navigator validation (2026-10-15)
+
+The Navigator ran the [validation route](#validation-route) in their own shell, at
+23:17 to 23:19, from a scratch project with a modified and an untracked file, the
+front door named as `M=~/dev/workspace/mirror-dev/bin/mirror.js`.
+
+- **Step 0.** `Install: clone (/Users/vinicius/dev/workspace/mirror-dev)`.
+- **Step 1.** `status` from the checkout, `/tmp`, and the scratch project: `exit=0`,
+  `SAME`, and `Repository: /Users/vinicius/dev/workspace/mirror-dev`, `Clone role: dev`,
+  `Update channel: main`, `Status: ready`.
+- **Step 2.** `version` from the checkout and the scratch project: `SAME`. `version
+  --start` on the scratch project: `Repository: /private/tmp/cr138-nav`, `Clone role:
+  production`, `Update channel: stable`, the defaults its missing markers give.
+- **Step 3.** `diagnose` from the scratch project: one finding, `front_door_errors: 44`
+  (CR139), and no line naming `tracked` or `untracked`.
+- **Step 4.** With `core.fsmonitor` set in the scratch project, `status` and `diagnose`
+  left no `FSMON-RAN`: `ls` said `No such file or directory`. `version --start` then
+  created it. The Navigator's prompt, which reads git status for the cwd itself, showed
+  one untracked file before `--start` and two after, so it was `--start` that ran the
+  command, as requested.
+
+**Validation recorded 2026-10-15.** The Navigator returned the full run with every pass
+condition met, in reply to the stated next step: on a pass, CR138 moves to `validated`
+and the review is drafted.
+
+## Review
+
+Drafted for closure 2026-10-15. The terminal decision is the Navigator's.
+
+**Proportionality.** 147 product lines added and 63 removed, across five files, with
+330 lines of tests and smoke and 5 of `REFERENCE.md`. They fix a defect with three
+faces. A healthy clone read `attention needed` from any directory outside its checkout.
+`diagnose` told a person to commit or discard work in a project that was not Mirror's.
+And running these commands inside a checkout someone else made ran a command that
+checkout chose. Most of the product change is one rule, `inspectionRootFor`, and the
+callers that now use it instead of the cwd. Most of the test lines are the new suite,
+whose hostile repository proves git never ran there rather than that its output was
+filtered.
+
+**Scope discipline.** The change touched the plan's files, plus three things recorded
+with the evidence:
+
+- the update route's `--check` answer for an install that cannot be identified, which
+  the plan's own "no `start`" left no other way to give;
+- the `install` seam on that route, for the test;
+- a CLI test that pinned the defect itself, now pinning the fix.
+
+The validation route ran once, as written. Nothing was captured during the work; CR139
+was captured at selection.
+
+**Debt: none carried.** For the Navigator to accept at closure:
+
+1. Run on macOS only. CI runs the suite and both smokes on ubuntu at the next push to
+   `main`.
+2. The exposure stays live on released clone installs until a release carries this
+   change: `runtime status`, `version`, and `diagnose`, run inside a hostile checkout,
+   run its `core.fsmonitor` command. Package installs, the default since CV22, were
+   never exposed. When to release is the Navigator's decision.
+3. CR139's count still grows with every verdict that exits 1, as step 3 showed: 44.
 
 ## Outcome
 
