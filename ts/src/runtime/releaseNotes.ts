@@ -1,12 +1,15 @@
 // Release-note reading for the runtime surface (CV22.DS7.TS3, plateau 2).
 // Port of the release-note half of `src/memory/cli/runtime.py`.
 //
-// Two sources, one document shape. The working tree answers "what does this
-// checkout contain"; a git ref answers "what does the channel contain that I
-// have not merged", which is the question `release-notes pending` exists for
-// and the reason this path shells out to `ls-tree`/`show` instead of reading
-// files. Ordering is by semantic version everywhere: `v0.10.0` follows
-// `v0.9.0`, which a lexical sort gets backwards.
+// Two sources, one document shape. A tree answers "what does this tree
+// contain": `docs/releases` under the root the caller names, read as files
+// with no git call -- the caller passes the running tree, which for a package
+// may sit inside a git work tree it does not own, such as Homebrew's prefix
+// (CR133). A git ref answers "what does the channel contain that I have not
+// merged", which is the question `release-notes pending` exists for and the
+// reason only that path shells out to `ls-tree`/`show`. Ordering is by
+// semantic version everywhere: `v0.10.0` follows `v0.9.0`, which a lexical
+// sort gets backwards.
 //
 // `fetch` is the one command here that writes anything — remote-tracking refs,
 // never the worktree — and only when `release-notes pending` is allowed to
@@ -105,9 +108,13 @@ function repositoryFor(start: string): string {
   return top.code === 0 && top.stdout ? top.stdout : startPath;
 }
 
-/** Notes in the working tree, ordered by semantic version. */
-export function readReleaseNotes(start: string): ReleaseNote[] {
-  const dir = join(repositoryFor(start), "docs", "releases");
+/**
+ * Notes under `<root>/docs/releases`, ordered by semantic version. The root is
+ * read as given: asking git for its repository would climb out of a package
+ * installed under a prefix that is itself a work tree (CR133).
+ */
+export function readReleaseNotes(root: string): ReleaseNote[] {
+  const dir = join(resolve(root), "docs", "releases");
   if (!existsSync(dir)) return [];
   return readdirSync(dir)
     .filter((name) => NOTE_NAME.test(name))
@@ -118,8 +125,8 @@ export function readReleaseNotes(start: string): ReleaseNote[] {
     });
 }
 
-export function readReleaseNote(version: string, start: string): ReleaseNote | null {
-  const notes = readReleaseNotes(start);
+export function readReleaseNote(version: string, root: string): ReleaseNote | null {
+  const notes = readReleaseNotes(root);
   if (version === "latest")
     return notes.length > 0 ? (notes[notes.length - 1] as ReleaseNote) : null;
   const wanted = version.startsWith("v") ? version : `v${version}`;

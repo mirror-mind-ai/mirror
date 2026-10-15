@@ -148,6 +148,35 @@ test("working-tree notes match the oracle, ordered semantically", () => {
   }
 });
 
+test("a package inside an unrelated git work tree reads its own notes (CR133)", () => {
+  // Homebrew on Apple Silicon: the global prefix is /opt/homebrew, which is
+  // the Homebrew repository, so git names it as the top level of an installed
+  // package. The enclosing repository has no docs/releases, so a reader that
+  // climbed to it would find nothing -- which also makes this the proof that
+  // the working-tree reader asks git nothing. No commit is needed: git names
+  // the top level of an empty repository all the same.
+  const prefix = realpathSync(mkdtempSync("/tmp/release-notes-prefix-"));
+  try {
+    git(prefix, "init", "--quiet", "--initial-branch=main");
+    const pkg = join(prefix, "lib", "node_modules", "mirror-mind");
+    const note = join(pkg, "docs", "releases", "v0.1.0.md");
+    mkdirSync(join(pkg, "docs", "releases"), { recursive: true });
+    writeFileSync(note, "# v0.1.0 \u2014 Shipped In The Package\n\n## Highlights\n\n- Found.\n");
+    assert.equal(git(pkg, "rev-parse", "--show-toplevel"), prefix, "the Homebrew shape");
+
+    assert.deepEqual(
+      readReleaseNotes(pkg).map((found) => found.version),
+      ["v0.1.0"],
+    );
+    const latest = readReleaseNote("latest", pkg);
+    assert.equal(latest?.path, note);
+    assert.equal(latest?.title, "Shipped In The Package");
+    assert.equal(readReleaseNote("v0.1.0", pkg)?.path, note);
+  } finally {
+    rmSync(prefix, { recursive: true, force: true });
+  }
+});
+
 test("ref reads see only what the clone has fetched", () => {
   const f = fixture();
   try {

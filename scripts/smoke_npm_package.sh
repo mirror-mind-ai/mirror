@@ -73,6 +73,11 @@ ln -s "$REAL_NODE" "$WORK/bin/node"
 say "1. npm pack, then install into a scratch prefix"
 TARBALL="$(cd "$ROOT_DIR" && "$REAL_NPM" pack --pack-destination "$WORK" 2>/dev/null | tail -1)"
 [ -f "$WORK/$TARBALL" ] && ok "packed $TARBALL" || { bad "npm pack produced nothing"; exit 1; }
+# CR133: Homebrew's prefix on Apple Silicon, /opt/homebrew, is the Homebrew
+# repository itself, so a package installed there sits inside a git work tree
+# it does not own. The scratch prefix takes the same shape, and only the
+# prefix: the smoke's cwd stays outside any repository, as before.
+git init -q "$WORK/prefix"
 if "$REAL_NPM" install -g --prefix "$WORK/prefix" "$WORK/$TARBALL" >"$WORK/install.log" 2>&1; then
   ok "installed into the scratch prefix"
 else
@@ -80,6 +85,7 @@ else
 fi
 PKG="$WORK/prefix/lib/node_modules/mirror-mind"
 [ -f "$PKG/package.json" ] && ok "the package sits at <prefix>/lib/node_modules/mirror-mind" || bad "package not found at $PKG"
+check "git names the prefix as the package's repository, as under Homebrew" "$(git -C "$PKG" rev-parse --show-toplevel)" "$(cd "$WORK/prefix" && pwd -P)"
 [ -f "$PKG/ts/src/frontDoor/cli.ts" ] && ok "the front door has the same path as in the checkout" || bad "front door missing"
 [ -d "$PKG/templates/identity" ] && ok "templates/identity shipped" || bad "templates missing"
 [ ! -f "$PKG/.env" ] && ok "no .env in the package" || bad "the package carries a .env"
@@ -152,6 +158,11 @@ contains "status names the install (no npm on this PATH)" "$STATUS_OUT" "Install
 contains "status names the install root" "$STATUS_OUT" "Install root: $(cd "$PKG" && pwd -P)"
 contains "status grades no repository for a package" "$STATUS_OUT" "Repository: none (package install)"
 [ -z "$(printf '%s' "$STATUS_OUT" | grep '^Git status note:')" ] && ok "no git note for a package" || bad "a package was graded as a git tree"
+# CR133: the notes ship in the package and are read where it sits, never in
+# the repository git names above it (the prefix, step 1), which has none.
+NOTES_OUT="$(mirror runtime release-notes latest 2>&1 || true)"
+contains "release-notes latest finds a note" "$NOTES_OUT" "Release: v"
+contains "release-notes latest reads the package's own notes" "$NOTES_OUT" "Path: $(cd "$PKG" && pwd -P)/docs/releases/v"
 
 say "6. a database that needs migration 017, opened through the installed package"
 if [ -z "$REAL_SQLITE" ]; then
