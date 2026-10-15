@@ -264,7 +264,10 @@ test("runtime version and release-notes answer from TS with exit 0", () => {
 
     // The version is the RUNNING tree's (this checkout's), not the fixture
     // repository's at the cwd (US3): from /tmp an installed package would
-    // otherwise say `unknown`. Git inspection still describes the cwd.
+    // otherwise say `unknown`. Since CR138 the repository rows are too: the
+    // install is this checkout, and the fixture repository the CLI runs from
+    // is never inspected. Until then this test pinned the fixture's `Git
+    // branch: stable` here, the defect itself.
     const version = runCli(f, ["runtime", "version"], env);
     assert.equal(version.status, 0, version.stderr);
     const shipped = packageVersion(REPO_ROOT) ?? "";
@@ -273,8 +276,15 @@ test("runtime version and release-notes answer from TS with exit 0", () => {
       new RegExp(`^Mirror runtime version\\n\\nVersion: ${shipped.replaceAll(".", "\\.")}\\n`),
     );
     assert.doesNotMatch(version.stdout, /Version: 9\.9\.9/);
-    assert.match(version.stdout, /Git branch: stable\n/);
-    assert.match(version.stdout, /Update channel: stable\n/);
+    assert.match(version.stdout, new RegExp(`^Repository: ${realpathSync(REPO_ROOT)}$`, "m"));
+    assert.ok(!version.stdout.includes(f.repo), "the fixture repository at the cwd was inspected");
+    // The channel row is what `runtime channel` says for this checkout, which
+    // differs by machine (a developer's marker, CI's default), so it is
+    // compared, not pinned.
+    const channelLine = (text: string): string | undefined =>
+      /^Update channel: \S+$/m.exec(text)?.[0];
+    const channel = runCli(f, ["runtime", "channel"], env);
+    assert.equal(channelLine(version.stdout), channelLine(channel.stdout), channel.stdout);
 
     // The notes come from the tree that holds the running front door -- this
     // checkout -- not from the cwd's fixture repository (US3 D8: the notes
@@ -300,10 +310,14 @@ test("runtime status and diagnose carry the oracle's exit codes", () => {
   try {
     const env = {};
 
-    // The fixture repo is clean and the database is bootstrapped, but the
-    // fixture home is a fresh temp dir whose permissions are the process
-    // umask's -- so `status` may legitimately be either verdict. What must
-    // hold is that the exit code AGREES with the rendered verdict.
+    // The database is bootstrapped, but since CR138 the repository graded is
+    // the install's own -- this checkout, which runs the CLI -- not the
+    // fixture repo it runs from, and this checkout's tree is the developer's
+    // or CI's. The fixture home is also a fresh temp dir whose permissions are
+    // the process umask's. So `status` may legitimately be either verdict, and
+    // what must hold is that the exit code AGREES with the rendered verdict.
+    // Where the repository rows come from is pinned in-process, in
+    // runtimeInstallReads.test.ts.
     const status = runCli(f, ["runtime", "status", "--mirror-home", f.home], env);
     assert.match(status.stdout, /^Mirror runtime status\n/);
     const ready = /\nStatus: ready\n$/.test(status.stdout);

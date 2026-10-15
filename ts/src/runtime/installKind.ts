@@ -201,6 +201,21 @@ export function detectInstallKind(probe: InstallKindProbe): InstallKind {
   };
 }
 
+/**
+ * Where the repository rows of `status`, `version`, and `diagnose` come from
+ * (CR138): `start` when one is given -- `version --start PATH`, or a test --
+ * else a clone's own checkout, else nowhere. Never the cwd. For a skill the
+ * cwd is the person's project, and git run there reads that project's config,
+ * where `core.fsmonitor` names a command git runs on `status`.
+ */
+export function inspectionRootFor(
+  install: InstallKind,
+  start: string | null | undefined,
+): string | null {
+  if (start !== null && start !== undefined) return resolve(start);
+  return install.kind === "clone" ? install.repository : null;
+}
+
 /** One line for a render or a log entry. */
 export function describeInstallKind(install: InstallKind): string {
   if (install.kind === "clone") return `clone (${install.repository})`;

@@ -551,3 +551,32 @@ test("a package install is graded without git, and the gate lets it through", ()
     f.cleanup();
   }
 });
+
+test("with no start, the report inspects the install's own repository, whatever the cwd (CR138)", () => {
+  // `start` given is the explicit override the case above pins. Absent, the
+  // default was the process's cwd; it is the install's checkout now, so a
+  // report built from a directory in no repository is the one built from the
+  // checkout itself.
+  const f = fixture();
+  const previous = process.cwd();
+  try {
+    const outside = join(f.root, "not-a-repo");
+    mkdirSync(outside, { recursive: true });
+    const options = {
+      mirrorHome: f.homes.get("ext_clean"),
+      env: ENV,
+      version: golden.meta.fixture_version,
+      nodeVersion: "<node-version>",
+      install: { kind: "clone" as const, repository: f.repo },
+    };
+    process.chdir(outside);
+    const byDefault = buildRuntimeStatus(options);
+    process.chdir(previous);
+    const fromCheckout = buildRuntimeStatus({ ...options, start: f.repo });
+    assert.deepEqual(byDefault, fromCheckout);
+    assert.equal(byDefault.git.repository, realpathSync(f.repo));
+  } finally {
+    process.chdir(previous);
+    f.cleanup();
+  }
+});

@@ -21,7 +21,7 @@ import {
   renderRuntimeBackupCreated,
   verifyBackupArchive,
 } from "#runtime/backup.ts";
-import { channelFor, renderChannel, setChannel } from "#runtime/channel.ts";
+import { channelFor, channelForReport, renderChannel, setChannel } from "#runtime/channel.ts";
 import {
   diagnoseRuntime,
   hookFailureFindings,
@@ -33,16 +33,16 @@ import {
 } from "#runtime/diagnose.ts";
 import {
   checkUpdateAvailability,
-  inspectCloneRole,
+  cloneRoleFor,
   inspectGitFor,
   inspectGitWorktree,
-  inspectUpdateChannel,
   packageVersion,
   renderRuntimeUpdateAvailability,
   renderRuntimeVersion,
+  unavailableUpdateCheck,
   upstreamFor,
 } from "#runtime/git.ts";
-import { detectInstallKind, type InstallKind } from "#runtime/installKind.ts";
+import { detectInstallKind, type InstallKind, inspectionRootFor } from "#runtime/installKind.ts";
 import { MIGRATE_DECLINED_EXIT, renderMigrate, runMigrate } from "#runtime/migrate.ts";
 import {
   buildPendingReleaseNotes,
@@ -156,6 +156,11 @@ function resolveWelcomeHome(explicit: string | null, env: NodeJS.ProcessEnv): st
 }
 
 export interface RuntimeRouteIo {
+  /**
+   * Where the command was run. No `runtime` read route consults it: since
+   * CR134 and CR138 they answer for the install, wherever they run. Tests pass
+   * it to show that it does not matter.
+   */
   cwd?: string;
   env?: NodeJS.ProcessEnv;
   stdout?: (text: string) => void;
@@ -244,7 +249,6 @@ export async function runRuntimeReadRoute(
   io: InstallRouteIo = {},
 ): Promise<number> {
   const env = io.env ?? process.env;
-  const cwd = io.cwd ?? process.cwd();
   const args = argv.slice(1);
   const subcommand = args[0] ?? "";
   // The version is the running tree's, never the cwd's: for a skill the cwd
@@ -254,19 +258,24 @@ export async function runRuntimeReadRoute(
 
   if (subcommand === "version") {
     const startArg = optionValue(args, "--start");
-    const start = startArg ? expandHome(startArg) : cwd;
-    const install = detectThisInstall();
+    const install = io.install ?? detectThisInstall();
+    // The install's own repository, or the one `--start` names: the one
+    // explicit way these commands run git outside the install (CR138).
+    const root = inspectionRootFor(install, startArg ? expandHome(startArg) : null);
     writeOut(
       io,
       renderRuntimeVersion({
         version,
         install,
-        git: inspectGitFor(install, start),
-        cloneRole: inspectCloneRole(start),
-        updateChannel:
-          install.kind === "package"
-            ? channelFor(install, env, homedir(), optionValue(args, "--channel"))
-            : inspectUpdateChannel(start, optionValue(args, "--channel")),
+        git: inspectGitFor(install, root),
+        cloneRole: cloneRoleFor(install, root),
+        updateChannel: channelForReport(
+          install,
+          root,
+          env,
+          io.osHome ?? homedir(),
+          optionValue(args, "--channel"),
+        ),
       }),
     );
     return 0;
@@ -274,24 +283,24 @@ export async function runRuntimeReadRoute(
 
   if (subcommand === "status") {
     const report = buildRuntimeStatus({
-      start: cwd,
       mirrorHome: optionValue(args, "--mirror-home"),
       channel: optionValue(args, "--channel"),
       env,
       version,
-      install: detectThisInstall(),
+      install: io.install ?? detectThisInstall(),
     });
     writeOut(io, renderRuntimeStatus(report, env));
     return statusVerdict(report) === "ready" ? 0 : 1;
   }
 
   if (subcommand === "diagnose") {
+    // The install's own tree, so its worktree findings are Mirror's and never
+    // the cwd project's (CR138).
     const report = buildRuntimeStatus({
-      start: cwd,
       mirrorHome: optionValue(args, "--mirror-home"),
       env,
       version,
-      install: detectThisInstall(),
+      install: io.install ?? detectThisInstall(),
     });
     const findings = [
       ...diagnoseRuntime(report, inspectGitWorktree(report.git.repository)),
@@ -340,7 +349,7 @@ export async function runRuntimeReadRoute(
 
   if (subcommand === "backup") return runRuntimeBackup(args.slice(1), io, env);
   if (subcommand === "migrate") return runRuntimeMigrate(args.slice(1), io, env);
-  if (subcommand === "update") return runRuntimeUpdate(args.slice(1), io, env, cwd);
+  if (subcommand === "update") return runRuntimeUpdate(args.slice(1), io, env);
   if (subcommand === "channel") return runRuntimeChannel(args.slice(1), io, env);
 
   // Routing answers every name it does not recognize before dispatch (the
@@ -486,9 +495,8 @@ function runRuntimeChannel(
  */
 function runRuntimeUpdate(
   args: readonly string[],
-  io: RuntimeRouteIo,
+  io: InstallRouteIo,
   env: NodeJS.ProcessEnv,
-  cwd: string,
 ): number {
   const version = packageVersion(runningTreeRoot()) ?? "unknown";
   const channelOverride = optionValue(args, "--channel");
@@ -499,11 +507,16 @@ function runRuntimeUpdate(
   // npm runs in the tree the front door runs from -- for a package, the
   // install's own root -- and never in the cwd, whose `.npmrc` could name
   // another registry or prefix (CR135). The strategy's own calls do the same.
-  const install = detectInstallKind({
-    frontDoorPath: frontDoorSelfPath(),
-    npmRootGlobal: npmRootGlobal(runningTreeRoot()),
-  });
-  const start = install.kind === "clone" ? install.repository : cwd;
+  //
+  // Git runs in the clone's own checkout and nowhere else: the gate's report
+  // and `--check` name no cwd (CR138), whose `.git/config` could name a
+  // command for git to run.
+  const install =
+    io.install ??
+    detectInstallKind({
+      frontDoorPath: frontDoorSelfPath(),
+      npmRootGlobal: npmRootGlobal(runningTreeRoot()),
+    });
   const channel = channelFor(install, env, homedir(), channelOverride);
 
   if (args.includes("--check")) {
@@ -517,7 +530,12 @@ function runRuntimeUpdate(
         ? 0
         : 1;
     }
-    const availability = checkUpdateAvailability(start, channelOverride, version);
+    // An install that cannot be identified has no checkout to ask, and the
+    // cwd is not one (CR138, decision 2). `runtime update` refuses it too.
+    const availability =
+      install.kind === "clone"
+        ? checkUpdateAvailability(install.repository, channelOverride, version)
+        : unavailableUpdateCheck(version, channel, `install kind unknown: ${install.reason}`);
     writeOut(io, renderRuntimeUpdateAvailability(availability));
     return availability.status === "up_to_date" || availability.status === "update_available"
       ? 0
@@ -541,7 +559,6 @@ function runRuntimeUpdate(
 
   const gate = (): { ready: boolean; allowed: boolean; detail: string } => {
     const report = buildRuntimeStatus({
-      start,
       mirrorHome,
       channel: channelOverride,
       env,

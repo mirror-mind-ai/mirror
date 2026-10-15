@@ -168,6 +168,8 @@ contains "status names the install (npm a stub on this PATH)" "$STATUS_OUT" "Ins
 contains "status names the install root" "$STATUS_OUT" "Install root: $(cd "$PKG" && pwd -P)"
 contains "status grades no repository for a package" "$STATUS_OUT" "Repository: none (package install)"
 [ -z "$(printf '%s' "$STATUS_OUT" | grep '^Git status note:')" ] && ok "no git note for a package" || bad "a package was graded as a git tree"
+# CR138: a package has no clone role, and reads none from the cwd.
+contains "status names no clone role for a package" "$STATUS_OUT" "Clone role: none (package install)"
 # CR133: the notes ship in the package and are read where it sits, never in
 # the repository git names above it (the prefix, step 1), which has none.
 NOTES_OUT="$(mirror runtime release-notes latest 2>&1 || true)"

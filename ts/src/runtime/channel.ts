@@ -82,6 +82,24 @@ export function channelFor(
   return { value: DEFAULT_CHANNEL, source: null, note: "install kind unknown" };
 }
 
+/**
+ * The channel row of `status` and `version` (CR138). A package's is its
+ * config file's. A clone's is the marker in the repository the rows come from
+ * (`inspectionRootFor`): its own checkout, or `version --start PATH`, the
+ * flag's documented meaning. With no root, the install's own answer, which for
+ * a clone without `--start` is the same marker, read the same way.
+ */
+export function channelForReport(
+  install: InstallKind,
+  root: string | null,
+  env: ConfigEnv = process.env,
+  home: string = homedir(),
+  override: string | null = null,
+): MarkerValue {
+  if (install.kind === "package" || root === null) return channelFor(install, env, home, override);
+  return inspectUpdateChannel(root, override);
+}
+
 export type ChannelWrite =
   | { ok: true; path: string; value: string; previous: string }
   | { ok: false; reason: string; exitCode: 1 | 2 };

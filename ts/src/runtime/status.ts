@@ -26,16 +26,21 @@ import { inspectMigrationFiles } from "#extensions/migrations.ts";
 import { type DbPathEnv, dbNameForEnv, resolveMirrorHome } from "#frontDoor/dbPath.ts";
 import { DEFAULT_EMBEDDING_MODEL, DEFAULT_EXTRACTION_MODEL } from "#providers/config.ts";
 import { sortByCodePoint } from "#util/pythonText.ts";
-import { channelFor } from "./channel.ts";
+import { channelForReport } from "./channel.ts";
 import type { MarkerValue } from "./git.ts";
 import {
+  cloneRoleFor,
   type GitStatus,
-  inspectCloneRole,
   inspectGitFor,
-  inspectUpdateChannel,
+  renderCloneRoleLines,
   renderRepositoryLines,
 } from "./git.ts";
-import { detectInstallKind, type InstallKind, renderInstallLines } from "./installKind.ts";
+import {
+  detectInstallKind,
+  type InstallKind,
+  inspectionRootFor,
+  renderInstallLines,
+} from "./installKind.ts";
 
 export interface CoreMigrationHealth {
   ready: boolean;
@@ -339,6 +344,11 @@ export function detectNodeVersion(): string | null {
 }
 
 export interface BuildStatusOptions {
+  /**
+   * An explicit repository to inspect. Absent, the install's own: a clone's
+   * checkout, and for anything else none (CR138). It used to default to the
+   * cwd, which for a skill is the person's project.
+   */
   start?: string;
   mirrorHome?: string | null;
   channel?: string | null;
@@ -352,21 +362,6 @@ export interface BuildStatusOptions {
    * front door with no npm probe (see `installKind.ts`).
    */
   install?: InstallKind;
-}
-
-/**
- * The channel the report shows. A clone is inspected at `start`, as the
- * oracle did and `version --start PATH` still means; a package has no tree at
- * `start` and keeps its channel in the user's config file (US3 D9).
- */
-function channelForStatus(
-  install: InstallKind,
-  startPath: string,
-  override: string | null,
-  env: NodeJS.ProcessEnv,
-): MarkerValue {
-  if (install.kind === "package") return channelFor(install, env, undefined, override);
-  return inspectUpdateChannel(startPath, override);
 }
 
 /**
@@ -394,16 +389,17 @@ function mirrorHomeForStatus(env: DbPathEnv): { home: string | null; error: stri
 
 /** Port of `build_runtime_status`. */
 export function buildRuntimeStatus(options: BuildStatusOptions = {}): RuntimeStatusReport {
-  const startPath = resolve(options.start ?? process.cwd());
   const env = options.env ?? process.env;
   const install =
     options.install ??
     detectInstallKind({ frontDoorPath: new URL("../frontDoor/cli.ts", import.meta.url).pathname });
-  // The git facts are a clone's. A package has no repository, and grading the
-  // cwd as one read "not a git repository" as a git error, said `attention
-  // needed`, and so refused every package update at the gate (CV22.DS10.US3
-  // plateau 4, found by the package lane of the update smoke).
-  const git = inspectGitFor(install, startPath);
+  // The repository rows are the install's own, or the one `start` names; never
+  // the cwd's (CR138). The git facts are a clone's: a package has no
+  // repository, and grading the cwd as one read "not a git repository" as a git
+  // error, said `attention needed`, and so refused every package update at the
+  // gate (CV22.DS10.US3 plateau 4, found by the package lane of the update smoke).
+  const root = inspectionRootFor(install, options.start);
+  const git = inspectGitFor(install, root);
 
   let mirrorHome: string | null;
   let mirrorHomeError: string | null;
@@ -430,9 +426,9 @@ export function buildRuntimeStatus(options: BuildStatusOptions = {}): RuntimeSta
     core_migrations: inspectCoreMigrations(dbPath, dbExists),
     extensions: listInstalledExtensions(mirrorHome),
     extension_health: inspectExtensionHealth(mirrorHome, dbPath, dbExists),
-    clone_role: inspectCloneRole(startPath),
+    clone_role: cloneRoleFor(install, root),
     memory_env: memoryEnv,
-    update_channel: channelForStatus(install, startPath, options.channel ?? null, env),
+    update_channel: channelForReport(install, root, env, undefined, options.channel ?? null),
     node_version: options.nodeVersion === undefined ? detectNodeVersion() : options.nodeVersion,
   };
 }
@@ -533,8 +529,7 @@ export function renderRuntimeStatus(
     lines.push("Installed extensions: 0");
   }
   lines.push(...renderExtensionHealth(report.extension_health));
-  lines.push(`Clone role: ${report.clone_role.value}`);
-  if (report.clone_role.note) lines.push(`Clone role note: ${report.clone_role.note}`);
+  lines.push(...renderCloneRoleLines(report.install, report.clone_role));
   lines.push(`Update channel: ${report.update_channel.value}`);
   if (report.update_channel.note) lines.push(`Update channel note: ${report.update_channel.note}`);
   lines.push(`Node: ${report.node_version || "not found (TS front door requires Node >= 24)"}`);

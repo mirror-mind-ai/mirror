@@ -436,12 +436,52 @@ export const NO_REPOSITORY: GitStatus = {
 };
 
 /**
- * The git facts of `start`, for the install's kind: a clone's are inspected,
- * a package's are `NO_REPOSITORY` (CV22.DS10.US3 plateau 4). Grading the cwd
- * of a package install as a tree read "not a git repository" as a git error.
+ * The git facts of the install's `root` (`inspectionRootFor`): a package's
+ * are `NO_REPOSITORY` (CV22.DS10.US3 plateau 4), since grading the cwd of a
+ * package install as a tree read "not a git repository" as a git error. With
+ * no root -- an install that cannot be identified, and no `--start` -- no
+ * repository is inspected at all, and the rows say why (CR138, decision 2).
  */
-export function inspectGitFor(install: InstallKind, start: string): GitStatus {
-  return install.kind === "package" ? NO_REPOSITORY : inspectGit(start);
+export function inspectGitFor(install: InstallKind, root: string | null): GitStatus {
+  if (install.kind === "package") return NO_REPOSITORY;
+  if (root === null) {
+    const reason =
+      install.kind === "unknown" ? `install kind unknown: ${install.reason}` : "no repository";
+    return { ...NO_REPOSITORY, error: reason };
+  }
+  return inspectGit(root);
+}
+
+/**
+ * The clone role the install's checkout declares (CR138). A package has none
+ * to declare. With no root, nothing is read, and the oracle's answer for no
+ * repository stands: the default, with the note that says why.
+ */
+export function cloneRoleFor(install: InstallKind, root: string | null): MarkerValue {
+  if (install.kind === "package") return { value: "none", source: null, note: "package install" };
+  if (root === null) return { value: DEFAULT_CLONE_ROLE, source: null, note: "no repository" };
+  return inspectCloneRole(root);
+}
+
+/** The clone-role rows of `status` and `version`, one renderer for both (CR138). */
+export function renderCloneRoleLines(install: InstallKind, role: MarkerValue): string[] {
+  if (install.kind === "package") return ["Clone role: none (package install)"];
+  const lines = [`Clone role: ${role.value}`];
+  if (role.note) lines.push(`Clone role note: ${role.note}`);
+  return lines;
+}
+
+/**
+ * `update --check` for an install whose repository is not asked: the same
+ * shape as the check's own `unknown`, with the reason (CR138). An install that
+ * cannot be identified has no checkout to ask, and the cwd is not one.
+ */
+export function unavailableUpdateCheck(
+  version: string,
+  updateChannel: MarkerValue,
+  note: string,
+): UpdateAvailability {
+  return availability(version, updateChannel, { note });
 }
 
 /**
@@ -470,8 +510,7 @@ export function renderRuntimeVersion(report: RuntimeVersionReport): string {
   lines.push(`Version: ${report.version}`);
   lines.push(...renderInstallLines(report.install));
   lines.push(...renderRepositoryLines(report.install, report.git, false));
-  lines.push(`Clone role: ${report.cloneRole.value}`);
-  if (report.cloneRole.note) lines.push(`Clone role note: ${report.cloneRole.note}`);
+  lines.push(...renderCloneRoleLines(report.install, report.cloneRole));
   lines.push(`Update channel: ${report.updateChannel.value}`);
   if (report.updateChannel.note) lines.push(`Update channel note: ${report.updateChannel.note}`);
   return `${lines.join("\n")}\n`;

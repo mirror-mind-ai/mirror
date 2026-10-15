@@ -283,13 +283,15 @@ mirror runtime status [--mirror-home PATH] [--channel stable|main]
 
 Reports version, how Mirror is installed (`Install: clone (<path>)`, or `Install: package (mirror-mind@<version>)` with its `Install root:`), repository and git state for a clone (`Repository: none (package install)` for a package, which is not graded as a git tree), mirror home, database, core migration health, installed extensions, extension health, clone role, update channel, Node version, and environment. Exits `attention needed` when the git tree is dirty, the mirror home is not configured, core migrations are missing or unknown, or installed extension migrations are pending, drifted, or unknown. The install kind is read from where the front door lives, with nothing spawned: a checkout by its `.git`, a package by the global layout (`<prefix>/lib/node_modules/mirror-mind` with `<prefix>/bin/mirror` linked into it).
 
+It answers for the install that is running, from any directory. A clone's repository, git state, clone role, and update channel are its own checkout's, and the channel is the one `runtime channel` reports. A package reports `Clone role: none (package install)`. An install that cannot be identified inspects no repository, and its git rows say why. Git runs only in the install's own checkout, never in the current directory, whose `.git/config` could name a command for git to run.
+
 #### `runtime version`
 
 ```bash
 mirror runtime version [--start PATH] [--channel stable|main]
 ```
 
-Reports the installed version, the install (as `runtime status` does), repository, branch, commit, clone role, and update channel. Local and offline. `--start` inspects a repository from a chosen path instead of the current working directory; the install is where the front door lives regardless of `--start`.
+Reports the installed version, the install (as `runtime status` does), repository, branch, commit, clone role, and update channel. Local and offline. Without `--start`, the repository rows are the install's own, as in `runtime status`, from any directory. `--start PATH` inspects the repository at PATH instead, its branch, commit, clone role, and channel markers included. It is the one way these commands run git in a repository the install does not own, by explicit request. The install line is where the front door lives regardless of `--start`.
 
 #### `runtime diagnose`
 
@@ -297,7 +299,7 @@ Reports the installed version, the install (as `runtime status` does), repositor
 mirror runtime diagnose [--mirror-home PATH]
 ```
 
-Classifies attention-needed drift into stable finding codes (`git_dirty`, `core_migration_pending`, `core_migration_unknown`, `extension_migration_pending`, `extension_migration_unknown`, `extension_migration_checksum_drift`, `extension_manifest_invalid`, `database_missing`, `mirror_home_missing`, `identity_key_outside_grammar`). Each finding carries severity, subject, recommendation, and a repair route. Read-only.
+Classifies attention-needed drift into stable finding codes (`git_dirty`, `core_migration_pending`, `core_migration_unknown`, `extension_migration_pending`, `extension_migration_unknown`, `extension_migration_checksum_drift`, `extension_manifest_invalid`, `database_missing`, `mirror_home_missing`, `identity_key_outside_grammar`). Each finding carries severity, subject, recommendation, and a repair route. Read-only. It grades the install's own checkout: run inside another project, it reports none of that project's files.
 
 ### Backup
 
@@ -552,7 +554,7 @@ written.
 
 Each Mirror Mind clone declares its role through a `.mirror-clone-role` file at the repository root. Valid values are `production` and `dev`. The file is local to each clone and ignored by git. When the file is missing, unreadable, or contains an unknown value, the role defaults to `production`.
 
-- `runtime status` and `runtime version` report the current clone role.
+- `runtime status` and `runtime version` report the clone role of the install's own checkout, from any directory; a package reports `none (package install)`.
 - `mirror build load <slug>` applies the clone-role guard only when the journey `project_path` points at a Mirror Mind source checkout. In that case it refuses `production` clones unless `--ignore-production-role` is passed. Non-Mirror journey projects are not blocked by missing `.mirror-clone-role`. When no `project_path` is configured, Builder falls back to inspecting the current directory.
 - Production clones receive code through `runtime update`, not by direct development edits.
 
