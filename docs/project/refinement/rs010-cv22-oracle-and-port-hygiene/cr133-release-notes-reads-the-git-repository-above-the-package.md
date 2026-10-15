@@ -49,8 +49,9 @@ root it is given, plus the test.
 Selected 2026-10-15. The plan below was reviewed by a four-lens panel the same day
 ([record below](#panel-review-2026-10-15)), and its findings are folded in.
 **Approved 2026-10-15 by the Navigator.** Driver `@viniciusteles` and Delivery `main` were
-assigned in the same turn. Implemented 2026-10-15 and **validated by the Navigator
-2026-10-15** ([record](#navigator-validation-2026-10-15)).
+assigned in the same turn. Implemented 2026-10-15, **validated by the Navigator
+2026-10-15** ([record](#navigator-validation-2026-10-15)), and **done 2026-10-15**
+([Outcome](#outcome)).
 
 ### Objective
 
@@ -296,9 +297,14 @@ condition met, in reply to the stated next step: on a pass, with the Navigator's
 acceptance, CR133 moves to `validated`. Step 3 waits for a release and belongs to the
 [Outcome](#outcome).
 
+CI on `98436af1`, pushed at the Navigator's word: Tests run `38759905673` passed (`ts` on
+ubuntu and macOS, and `smoke`). On ubuntu the package smoke ended with 71 passed and 0
+failed: git named the prefix as the package's repository, and both release-notes checks
+passed. Docs run `38759905637` passed.
+
 ## Review
 
-Drafted for closure 2026-10-15. The terminal decision is the Navigator's.
+Closed 2026-10-15 at the Navigator's decision.
 
 **Proportionality.** One line of behavior: the working-tree reader joins
 `docs/releases` to the root it is given, not to the repository git names above it.
@@ -312,16 +318,34 @@ package where this could happen.
 narrower ([recorded](#implementation-and-the-drivers-checks-2026-10-15)), and one
 correction of the validation route before the Navigator ran it. Nothing was captured.
 
-**Debt: none carried.** For the Navigator to accept at closure:
+**Debt: none carried.** The Navigator accepted these three limitations at closure,
+2026-10-15:
 
 1. `release-notes pending` still finds its repository by climbing from the cwd. That
    is [CR134](cr134-release-notes-pending-reads-the-cwd-s-git-repository.md), open and
    `captured`; this CR excluded it by plan.
-2. The smoke's new checks have run on macOS only. CI runs the package smoke on ubuntu
-   at the next push to `main`.
+2. The smoke's new checks had run on macOS only. CI's smoke at `98436af1` has since run
+   them on ubuntu, 71 passed and 0 failed, so this one is closed.
 3. The Homebrew install itself is unobserved until a release carries the change: the
    route's step 3, for the Outcome to record.
 
 ## Outcome
 
-Pending.
+**Done 2026-10-15.** `mirror runtime release-notes latest` and `release-notes vX.Y.Z`
+read the notes shipped in the running tree, with no git call, wherever that tree sits:
+
+- a package under a prefix that is itself a git work tree, Homebrew's on Apple Silicon
+  among them, reads its own `docs/releases`, not the absent one at the repository's top;
+- a checkout and a linked install answer as before, from the checkout;
+- `release-notes pending` is unchanged, its repository still CR134's question;
+- the npm package smoke installs into a prefix shaped like Homebrew's, so CI goes red
+  if the climb comes back.
+
+The Navigator validated the route in their own shell. CI passed on `98436af1`.
+
+**Still to observe:** the first release that carries CR133, on this machine's Homebrew
+package, the route's step 3. After `mirror runtime update` to that release,
+`mirror runtime release-notes latest` and `mirror runtime release-notes v0.33.0` should
+print `Release: ...` with a `Path:` under
+`/opt/homebrew/lib/node_modules/mirror-mind/`. The update is run by the old code, but
+the command after it runs the new one. Record here whether both held.
