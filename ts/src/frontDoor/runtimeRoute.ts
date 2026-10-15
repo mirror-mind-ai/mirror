@@ -42,7 +42,12 @@ import {
   unavailableUpdateCheck,
   upstreamFor,
 } from "#runtime/git.ts";
-import { detectInstallKind, type InstallKind, inspectionRootFor } from "#runtime/installKind.ts";
+import {
+  detectInstallKind,
+  type InstallKind,
+  inspectionRootFor,
+  thisFrontDoorPath,
+} from "#runtime/installKind.ts";
 import { MIGRATE_DECLINED_EXIT, renderMigrate, runMigrate } from "#runtime/migrate.ts";
 import {
   buildPendingReleaseNotes,
@@ -514,7 +519,7 @@ function runRuntimeUpdate(
   const install =
     io.install ??
     detectInstallKind({
-      frontDoorPath: frontDoorSelfPath(),
+      frontDoorPath: thisFrontDoorPath(),
       npmRootGlobal: npmRootGlobal(runningTreeRoot()),
     });
   const channel = channelFor(install, env, homedir(), channelOverride);
@@ -648,11 +653,6 @@ function spawner(env: NodeJS.ProcessEnv): UpdateSpawn {
   return frontDoorSpawner(join(runningTreeRoot(), "bin", "mirror.js"), env);
 }
 
-/** This front door's own path, which is also how the install kind is read. */
-function frontDoorSelfPath(): string {
-  return new URL("./cli.ts", import.meta.url).pathname;
-}
-
 /**
  * How THIS front door is installed, by what the filesystem shows and nothing
  * spawned: a checkout by its `.git`, a package by npm's global layout and the
@@ -660,7 +660,7 @@ function frontDoorSelfPath(): string {
  * lane, probes `npm root -g` itself.
  */
 function detectThisInstall(): InstallKind {
-  return detectInstallKind({ frontDoorPath: frontDoorSelfPath() });
+  return detectInstallKind({ frontDoorPath: thisFrontDoorPath() });
 }
 
 /**

@@ -5,18 +5,35 @@
 // applied to the wrong tree.
 
 import assert from "node:assert/strict";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import test from "node:test";
 import {
   describeInstallKind,
   detectInstallKind,
   renderInstallLines,
+  thisFrontDoorPath,
 } from "#runtime/installKind.ts";
+import { runningTreeRoot } from "#runtime/treeRoot.ts";
+
+/** One spelling for a path, whichever separator `node:path` chose for it. */
+function key(path: string): string {
+  return path.replace(/\\/g, "/").replace(/\/+$/, "");
+}
 
 /** A filesystem that exists only as a set of paths. */
 function fs(paths: readonly string[]) {
-  const set = new Set(paths.map((path) => path.replace(/\/+$/, "")));
-  return (path: string) => set.has(path.replace(/\/+$/, ""));
+  const set = new Set(paths.map(key));
+  return (path: string) => set.has(key(path));
+}
+
+/** A filesystem whose files have contents. */
+function files(contents: Record<string, string>) {
+  const byKey = new Map(Object.entries(contents).map(([path, text]) => [key(path), text]));
+  return (path: string) => {
+    const text = byKey.get(key(path));
+    if (text === undefined) throw new Error(`no such file: ${path}`);
+    return text;
+  };
 }
 
 test("a git checkout carrying a root package.json is a clone", () => {
@@ -240,9 +257,79 @@ test("a checkout without a root package.json is not this project's clone", () =>
 
 test("the real front door in this checkout detects as a clone", () => {
   // The one test that touches the real filesystem: the detector must agree
-  // with reality for the repository it is running in.
+  // with reality for the repository it is running in -- through the same
+  // path the routes hand it. On Windows, `URL.pathname` spelled that path
+  // `/C:/...`, which `resolve` read as `C:\C:\...`, and every install was
+  // `unknown`: the updater refused, and after CR138 the git rows went blank.
+  const kind = detectInstallKind({ frontDoorPath: thisFrontDoorPath() });
+  assert.deepEqual(kind, { kind: "clone", repository: runningTreeRoot() });
+});
+
+// --- The Windows global layout: `<prefix>\node_modules\<name>` and a shim ---
+//
+// npm lays a global install out without `lib/` or `bin/` on Windows. The
+// package sits at `<prefix>\node_modules\<name>` and the bin is
+// `<prefix>\<bin>.cmd`: a file, not a symlink, that runs
+// `%dp0%\node_modules\<name>\<bin path>`. Nothing resolves, so the evidence
+// that the bin reaches INTO the package is the shim's own text.
+
+const CMD_SHIM = [
+  "@ECHO off",
+  'endLocal & goto #_undefined_# 2>NUL || title %COMSPEC% & "%_prog%"  "%dp0%\\node_modules\\mirror-mind\\bin\\mirror.js" %*',
+].join("\r\n");
+
+test("a Windows global prefix layout with a .cmd shim naming the package is a package", () => {
+  const prefix = resolve("/Users/dev/AppData/Roaming/npm");
+  const pkg = join(prefix, "node_modules", "mirror-mind");
+  const shim = join(prefix, "mirror.cmd");
   const kind = detectInstallKind({
-    frontDoorPath: new URL("../../src/frontDoor/cli.ts", import.meta.url).pathname,
+    frontDoorPath: join(pkg, "ts", "src", "frontDoor", "cli.ts"),
+    exists: fs([join(pkg, "package.json"), shim]),
+    readFile: files({ [join(pkg, "package.json")]: GLOBAL_MANIFEST, [shim]: CMD_SHIM }),
   });
-  assert.equal(kind.kind, "clone");
+  assert.deepEqual(kind, { kind: "package", root: pkg, name: "mirror-mind", version: "1.2.3" });
+});
+
+test("on Windows too, the layout alone is not enough: a shim must name the package", () => {
+  // `<x>\node_modules\mirror-mind` with no `<x>\mirror.cmd` is a project's
+  // dependency, not a global install.
+  const prefix = resolve("/Users/dev/someapp");
+  const pkg = join(prefix, "node_modules", "mirror-mind");
+  const manifest = join(pkg, "package.json");
+  const alone = detectInstallKind({
+    frontDoorPath: join(pkg, "ts", "src", "frontDoor", "cli.ts"),
+    exists: fs([manifest]),
+    readFile: files({ [manifest]: GLOBAL_MANIFEST }),
+  });
+  assert.equal(alone.kind, "unknown");
+
+  // And a shim beside it that runs ANOTHER package does not count.
+  const shim = join(prefix, "mirror.cmd");
+  const other = detectInstallKind({
+    frontDoorPath: join(pkg, "ts", "src", "frontDoor", "cli.ts"),
+    exists: fs([manifest, shim]),
+    readFile: files({
+      [manifest]: GLOBAL_MANIFEST,
+      [shim]: CMD_SHIM.replace(/mirror-mind/g, "other-tool"),
+    }),
+  });
+  assert.equal(other.kind, "unknown");
+});
+
+test("an npm-linked checkout under the Windows prefix is still a clone", () => {
+  // `npm link` on Windows makes `<prefix>\node_modules\<name>` a junction into
+  // the checkout. Resolved, the front door's manifest is the checkout's, whose
+  // parent is not `node_modules`, and the `.git` beside it decides.
+  const prefix = resolve("/Users/dev/AppData/Roaming/npm");
+  const linked = join(prefix, "node_modules", "mirror-mind");
+  const checkout = resolve("/VSCode/mirror");
+  const shim = join(prefix, "mirror.cmd");
+  const kind = detectInstallKind({
+    frontDoorPath: join(linked, "ts", "src", "frontDoor", "cli.ts"),
+    exists: fs([join(checkout, ".git"), join(checkout, "package.json"), shim]),
+    readFile: files({ [join(checkout, "package.json")]: GLOBAL_MANIFEST, [shim]: CMD_SHIM }),
+    realpath: (path) =>
+      key(path).startsWith(key(linked)) ? checkout + path.slice(linked.length) : path,
+  });
+  assert.deepEqual(kind, { kind: "clone", repository: checkout });
 });
