@@ -71,7 +71,8 @@ Delivery given, `viniciusteles`, is neither a branch nor a pull request, so assi
 waited for that decision and the status was `planned`. The Navigator then named `main`:
 Driver `@viniciusteles` and Delivery `main` were assigned the same day. Implemented
 2026-10-15 ([evidence](#implementation-and-the-drivers-checks-2026-10-15)) and
-**validated by the Navigator 2026-10-15** ([record](#navigator-validation-2026-10-15)).
+**validated by the Navigator 2026-10-15** ([record](#navigator-validation-2026-10-15)),
+and **done 2026-10-15** ([Outcome](#outcome)).
 
 ### Objective
 
@@ -451,9 +452,14 @@ front door named as `M=~/dev/workspace/mirror-dev/bin/mirror.js`.
 condition met, in reply to the stated next step: on a pass, CR138 moves to `validated`
 and the review is drafted.
 
+CI on `caaa0a85`, pushed at the Navigator's word: Tests run `38809434725` passed (`ts` on
+ubuntu and macOS, and `smoke`). On ubuntu the new suite's six cases and the builder's
+no-`start` case passed, 3,207 tests in all with 0 failing. The package smoke ended with 76
+passed and 0 failed, its clone-role check among them. Docs run `38809434777` passed.
+
 ## Review
 
-Drafted for closure 2026-10-15. The terminal decision is the Navigator's.
+Closed 2026-10-15 at the Navigator's decision.
 
 **Proportionality.** 147 product lines added and 63 removed, across five files, with
 330 lines of tests and smoke and 5 of `REFERENCE.md`. They fix a defect with three
@@ -476,10 +482,11 @@ with the evidence:
 The validation route ran once, as written. Nothing was captured during the work; CR139
 was captured at selection.
 
-**Debt: none carried.** For the Navigator to accept at closure:
+**Debt: none carried.** The Navigator accepted these three limitations at closure,
+2026-10-15:
 
-1. Run on macOS only. CI runs the suite and both smokes on ubuntu at the next push to
-   `main`.
+1. Run on macOS only. CI at `caaa0a85` has since run the suite and the package smoke on
+   ubuntu, so this one is closed.
 2. The exposure stays live on released clone installs until a release carries this
    change: `runtime status`, `version`, and `diagnose`, run inside a hostile checkout,
    run its `core.fsmonitor` command. Package installs, the default since CV22, were
@@ -488,4 +495,20 @@ was captured at selection.
 
 ## Outcome
 
-Pending.
+**Done 2026-10-15.** `runtime status`, `version`, and `diagnose` describe the install
+that is running, from any directory:
+
+- a clone's repository, git state, clone role, and channel are its own checkout's, and
+  the channel is `runtime channel`'s;
+- `diagnose` grades the install's own tree, never the cwd's project;
+- git runs only in the install's own checkout, so these commands no longer run a
+  `core.fsmonitor` command that a checkout someone else made chose. `version --start
+  PATH` is the one explicit exception, documented;
+- a package's clone-role row is `none (package install)`, and an install that cannot be
+  identified inspects no repository and says why.
+
+The Navigator validated the route in their own shell. CI passed on `caaa0a85`.
+
+**Still to observe:** nothing on this machine, whose clone already runs the change.
+Released clone installs keep the exposure until a release carries it, and when to release
+is the Navigator's decision.

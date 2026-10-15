@@ -12,6 +12,38 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-10-15 — CR138 done: status, version, and diagnose answer for the install, and run git nowhere else
+
+For a clone install, `runtime status`, `version`, and `diagnose` named the install on
+their first line and then described the repository holding the cwd. A healthy clone read
+`attention needed` from any directory outside its checkout, the cwd's channel and
+clone-role markers were reported as the install's, and from inside another project
+`diagnose` reported that project's uncommitted files as Mirror drift. Selection brought
+`diagnose` into scope and captured CR139, the loop that counts every verdict that exits 1
+as a front-door error.
+
+The panel's security lens found a third face. Git reads the repository's own config, and
+`core.fsmonitor` there names a command git runs on `status`. So running these commands
+inside a checkout someone else made ran a command that checkout chose. That was measured
+on the released code of a clone install; package installs were never exposed.
+
+Now:
+
+- one rule, `inspectionRootFor`, says where the repository rows come from: `--start`
+  when given, else a clone's own checkout, else nowhere;
+- `status`, `diagnose`, and the update gate name no cwd, and the channel row is
+  `runtime channel`'s;
+- a package's clone role is `none (package install)`, and an install that cannot be
+  identified inspects no repository and says why;
+- `version --start PATH` is the one documented way these commands run git outside the
+  install.
+
+The new suite runs every command from a plain directory and from a hostile project whose
+`core.fsmonitor` creates a marker; the marker never appears. No golden moved. The
+Navigator validated the route in their own shell, and CI passed on `caaa0a85`. No debt
+is carried, and three limitations are named in the CR. Released clone installs keep the
+exposure until a release carries the change.
+
 ### 2026-10-15 — v0.33.1 released: The Install Answers For Itself
 
 `v0.33.1` is a patch release of six RS010 Change Requests closed since `v0.33.0`: CR125,
