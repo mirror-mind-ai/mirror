@@ -44,8 +44,8 @@ the package reads its own notes, and `pending` lists `v0.33.0` and `v0.33.1` fro
 registry, byte-identical from any directory. CR135's status line reads `✓`, but its home
 held no cached verdict by then, so there was nothing stale for the new line to hide.
 
-Still to observe: the first session start in that home on `0.33.1`, which should ask the
-registry and write `up_to_date` (CR135).
+The first session start in that home on `0.33.1`, at 21:15, asked the registry in 595 ms
+and wrote `up_to_date` (CR135). Nothing from the release is left to observe.
 
 ### 2026-10-15 — CR134 done: release-notes pending answers for the install that is running
 

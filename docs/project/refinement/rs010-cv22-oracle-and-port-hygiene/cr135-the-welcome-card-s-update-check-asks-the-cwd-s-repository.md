@@ -742,3 +742,9 @@ file, so no session start has asked the registry there yet.
 log should gain `update-check source=registry verdict=up_to_date`, and
 `runtime/update-check.json` should appear with `up_to_date`. Record here whether both
 happened.
+
+**Observed 2026-10-15: both happened.** The first session start in that home on
+`0.33.1`, at 21:15:59 local time, logged `update-check source=registry verdict=up_to_date
+ms=595` and wrote `runtime/update-check.json` in the same millisecond, with
+`availability: up_to_date` and `channel: stable`. The 595 ms is the cold registry read
+the Navigator measured in validation, 0.55 to 0.6 s.
