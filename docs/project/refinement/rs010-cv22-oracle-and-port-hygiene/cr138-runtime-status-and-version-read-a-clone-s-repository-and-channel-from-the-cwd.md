@@ -69,7 +69,8 @@ found that the defect is also a way for a checkout the person did not make to ru
 command. **Approved 2026-10-15 by the Navigator**, with Driver `@viniciusteles`. The
 Delivery given, `viniciusteles`, is neither a branch nor a pull request, so assignment
 waited for that decision and the status was `planned`. The Navigator then named `main`:
-Driver `@viniciusteles` and Delivery `main` were assigned the same day.
+Driver `@viniciusteles` and Delivery `main` were assigned the same day. Implemented
+2026-10-15 ([evidence](#implementation-and-the-drivers-checks-2026-10-15)).
 
 ### Objective
 
@@ -330,6 +331,101 @@ On the code `v0.33.1` shipped, with this checkout's front door named explicitly
 - **The builder already treats `start` as given.** `status.test.ts` pins a clone graded
   from a non-repository directory as `attention needed`. The default, not the
   parameter, is what reads the cwd, so making the install the default moves no test.
+
+### Implementation and the Driver's checks (2026-10-15)
+
+What is now true, at `eb825695`:
+
+- `inspectionRootFor(install, start)` (`installKind.ts`) says where the repository rows
+  come from: `start` when given, else a clone's checkout, else nowhere. The builder and
+  the `version` route both use it.
+- `buildRuntimeStatus` no longer defaults `start` to the cwd. `status`, `diagnose`, and
+  the update gate pass none; `version` passes `--start` only when it is given.
+- The channel row comes from `channelForReport` (`channel.ts`): the package's config
+  file, else the root's marker, else the install's own answer. `channelForStatus` is
+  gone.
+- `cloneRoleFor` and `renderCloneRoleLines` (`git.ts`): a package's row is `none
+  (package install)`, rendered once for both commands.
+- An unknown install inspects no repository: its git rows carry `install kind unknown:
+  <reason>`, and its verdict is `attention needed`.
+- The read routes and the update route take the `install` seam.
+- `REFERENCE.md` says where each command looks, and names `--start` as the one explicit
+  way these commands run git outside the install.
+
+Four choices the plan did not spell out, recorded so they can be checked:
+
+1. **`update --check` for an unknown install** answers `unknown` with the reason,
+   through `unavailableUpdateCheck`, instead of asking the cwd's git. The plan's "the
+   update route passes no `start`" and decision 2 leave no other answer: its `--check`
+   was the other consumer of that `start`.
+2. **The update route takes the `install` seam** too, so the suite can run `update
+   --check` for a fixture clone and an unknown install. With the seam unset, the route
+   detects the install as before, npm probe included.
+3. **A CLI test that pinned the defect changed.** `runtimeTailCli.test.ts`'s "runtime
+   version and release-notes answer from TS with exit 0" asserted the fixture
+   repository's `Git branch: stable` from the cwd, with the comment "Git inspection still
+   describes the cwd". It now asserts that the repository row is this checkout and that
+   the fixture's path never appears, and it compares the channel row with `runtime
+   channel`'s, since this checkout's channel differs by machine. The plan's Files listed
+   only that file's other test.
+4. **`RuntimeRouteIo.cwd` stays, documented as unread.** No `runtime` read route
+   consults it now; tests pass it to show that it does not matter.
+
+Red first, on the unchanged source (the tests changed, the source not):
+
+- `runtimeInstallReads.test.ts`: 4 of 6 failed. The first failed on "status: the cwd
+  moved the answer". The dirty-install case failed because `diagnose` reported the cwd's
+  files, not `file.txt`, and the package and unknown cases because the routes ignored
+  the install they were given. The two that passed hold on the old code too: `update
+  --check` already asked a clone's own checkout, and `version --start` already read the
+  path it was given.
+- `status.test.ts`: the new no-`start` case failed; the other 9 passed.
+- The released code, probed directly. From a scratch repository whose `core.fsmonitor`
+  creates a marker, this checkout's front door ran the command for `runtime status`,
+  `version`, and `diagnose`. The Homebrew package `0.33.1` ran it for none of them,
+  since a package inspects no repository: the exposure was clone installs, and installs
+  that cannot be identified.
+- The smoke's new clone-role check was added with the fix and not run red. What it
+  would have met is shown on the released package instead: from `/tmp`, `Clone role:
+  production` and `Clone role note: no repository`.
+
+Green, at `eb825695`:
+
+- `runtimeInstallReads.test.ts` 6 of 6; `status.test.ts` 10 of 10; `diagnose.test.ts`
+  8 of 8; `git.test.ts` 6 of 6; `runtimeTailCli.test.ts` 17 of 17; `update.test.ts`
+  23 of 23.
+- `npm test`: 3,208 tests, 3,205 pass, 0 fail, 3 skipped, the machine-dependent ones.
+- No golden changed: `runtime-status`, `runtime-git`, and `runtime-diagnose` are
+  byte-identical.
+- The package smoke: 76 passed, 0 failed, its new clone-role check among them. The
+  updater smoke, with `MIRROR_USER` unset: 103 passed, 0 failed. Its first run's log
+  file was lost before it could be read, and the result here is a rerun's.
+- Typecheck, lint (654 files), the retired-surface tripwire, the pack guard (478 files),
+  the doc-link check, skill command parity, `git diff --check`, and `bash -n` on the
+  smoke are clean.
+
+The Driver ran the [validation route](#validation-route) as written, at `eb825695`:
+
+- **Step 0.** `Install: clone (/Users/vinicius/dev/workspace/mirror-dev)`.
+- **Step 1.** `status` from the checkout, `/tmp`, and a scratch project with a modified
+  and an untracked file: three byte-identical blocks, `Repository:
+  /Users/vinicius/dev/workspace/mirror-dev`, `Clone role: dev`, `Update channel: main`,
+  `Status: ready`, exit 0.
+- **Step 2.** `version` from the same three places: byte-identical. `version --start
+  <scratch project>`: its repository, `Git branch: main`, and the defaults its missing
+  markers give, `production` and `stable`.
+- **Step 3.** `diagnose` from the scratch project and from the checkout: the same
+  findings, the `front_door_errors` count set aside, and none naming the scratch files.
+  The one finding was `front_door_errors` itself, 41 lines in the last 24 hours (CR139).
+- **Step 4.** With `core.fsmonitor` set in the scratch project, `status` and `diagnose`
+  run from inside it left no marker. `version --start` on it created the marker, as
+  requested.
+
+Limitations: run on macOS only; CI runs the suite and both smokes on ubuntu at the next
+push. The exposure stays live on released clone installs until a release carries this
+change. CR139's count still grows with every verdict that exits 1.
+
+Navigator validation: pending.
 
 ## Outcome
 
