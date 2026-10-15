@@ -64,7 +64,7 @@ folded in. **Approved 2026-10-15 by the Navigator.** Driver `@viniciusteles` and
 `main` were assigned in the same turn. Implemented 2026-10-15
 ([evidence](#implementation-and-the-drivers-checks-2026-10-15)) and **validated by the
 Navigator 2026-10-15** ([record](#navigator-validation-2026-10-15)), on a second run of
-a corrected route.
+a corrected route, and **done 2026-10-15** ([Outcome](#outcome)).
 
 ### Objective
 
@@ -499,9 +499,19 @@ run, every step of the route has passed on the code under test. The Navigator re
 the second run with every pass condition met, in reply to the stated next step: on a
 pass, CR134 moves to `validated` and the review is drafted.
 
+CI, pushed at the Navigator's word. At `565b7b97`, Tests run `38776053759` failed. On
+the macOS runner one tar-reader case, a tar cut 10 bytes past its first header, was
+accepted; ubuntu was cancelled when macOS failed, and `smoke` passed. Docs run
+`38776053813` passed. The finding and its fix, `cd0aa265`, are under the Review's scope
+discipline: it came after validation, in a path the validated route does not read. At
+`cd0aa265`, Tests run `38777215027` passed (`ts` on ubuntu and macOS, and `smoke`). On
+ubuntu the tar reader's cases ran on GNU tar's layout and on ustar, 3,200 tests passed
+and 0 failed, and the package smoke ended with 75 passed and 0 failed, its four
+`pending` checks through the npm stub among them.
+
 ## Review
 
-Drafted for closure 2026-10-15. The terminal decision is the Navigator's.
+Closed 2026-10-15 at the Navigator's decision.
 
 **Proportionality.** 466 product lines added and 63 removed, across four files, with
 682 lines of tests and smoke. They fix a defect with three faces: `pending` answered for
@@ -516,7 +526,18 @@ runs from two directories, the property this CR exists for.
 choices the plan had not spelled out, recorded with the evidence: the package's default
 `--from`, a bound on the compressed tarball as well, and one smoke label. The
 validation route was corrected once, after the Navigator's first run met the Homebrew
-release. Nothing was captured.
+release.
+
+One fix came after validation. CI at `565b7b97` showed the tar reader accepting an
+archive that stops before its end-of-archive block, which the plan had promised to
+refuse: a tarball cut between two entries came back with the entries before the cut and
+no word about the rest, for release notes the newest ones. The test had held only on
+tar layouts that lead with a pax header, as this Mac's bsdtar writes; a macOS runner's
+bsdtar wrote plain ustar. `cd0aa265` ends a read only at an end-of-archive block and
+builds every test fixture in two layouts, the system default and `--format=ustar`. The
+validated route reads no truncated tarball, so its results stand, and a real registry
+tarball (`mirror-mind@stable`, written by npm) still reads whole, all 76 notes. Nothing
+was captured.
 
 **A lesson for routes, not product debt.** On a machine that has both a package install
 and a linked checkout, a bare `mirror` in a validation route tests whichever comes first
@@ -524,13 +545,33 @@ on the Navigator's PATH, and the Driver's environment may differ. `runtime versi
 shows the same version for both. A route that tests a checkout names its front door and
 shows the `Install:` line first, as this one does now.
 
-**Debt: none carried.** For the Navigator to accept at closure:
+**Debt: none carried.** The Navigator accepted these two limitations at closure,
+2026-10-15, with the lesson above:
 
-1. Run on macOS only. GNU tar's `L` entries in the tar reader's test, and the package
-   smoke's npm stub, are first met by CI on ubuntu at the next push to `main`.
+1. Run on macOS only. CI at `cd0aa265` has since run the tar reader's cases on GNU tar's
+   layout, and the package smoke's npm stub, on ubuntu, so this one is closed.
 2. The Homebrew install runs the released code, where the defect is live, as the first
    run showed, until a release carries CR134. That is the Outcome's to observe.
 
 ## Outcome
 
-Pending.
+**Done 2026-10-15.** `mirror runtime release-notes pending` answers for the install that
+is running, from any directory:
+
+- a clone reads its own channel's ref, `origin/<channel>`, or `--ref`, in its own
+  checkout, and fetches into nothing else;
+- a package asks the registry what its channel holds and, when that is newer, reads
+  the notes from that exact version's tarball, in memory, within a 64 MB bound, with
+  every npm call in the install's root;
+- when no source answers, it says `Pending releases: unknown` with a reason and exits
+  1, so `none` always means a source answered;
+- `--ref` stays an operand: a ref beginning with `-` is refused, and git takes
+  `--end-of-options` before it.
+
+The Navigator validated the route in their own shell. CI passed on `cd0aa265`.
+
+**Still to observe:** the first release that carries CR134, on this machine's Homebrew
+package, which today still answers from the cwd, as the first validation run showed.
+After `mirror runtime update` to that release, `mirror runtime release-notes pending
+--from 0.32.1`, from `/tmp`, should read `Source: npm mirror-mind@stable (<the
+release>)` and list the releases after `0.32.1`. Record here whether it held.
