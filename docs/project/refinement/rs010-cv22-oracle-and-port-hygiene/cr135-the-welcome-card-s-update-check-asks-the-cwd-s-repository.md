@@ -74,7 +74,10 @@ unchanged. The package half likely reuses the `update --check` route.
 Selected 2026-10-14. The plan below was reviewed by a four-lens panel the same day
 ([record below](#panel-review-2026-10-14)), and its findings are folded in.
 **Approved 2026-10-14 by the Navigator, with every decision as recommended.** Driver
-`@viniciusteles` and Delivery `main` were assigned in the same turn.
+`@viniciusteles` and Delivery `main` were assigned in the same turn. Implemented
+2026-10-14 and **validated by the Navigator 2026-10-15**
+([record](#navigator-validation-2026-10-15)). Closure waits on the Navigator's debt
+decision ([Review](#review)).
 
 Two premises above are not quite true ([evidence at selection](#at-selection-2026-10-14)).
 On `stable`, the card checks at every render, not when the cache is older than six
@@ -627,6 +630,70 @@ implementation run:
 - For comparison, this checkout's `git ls-remote origin refs/heads/stable` and `git
   ls-remote --tags origin 'refs/tags/v*'` over SSH to GitHub took 1.34 to 1.42 s each,
   three runs.
+
+### Navigator validation (2026-10-15)
+
+The Navigator ran the [validation route](#validation-route), as corrected in `0a3eeffd`,
+in their own shell, from 15:43 to 15:50.
+
+- **The package.** `Version: 0.32.9` and `Install: package (mirror-mind@0.32.9)`. The
+  project was `1` commit behind its `origin/stable`, tagged `v9.9.9`. Both cards,
+  from `/tmp/cr135` and from the project with the hostile `.npmrc`, read `Version
+  0.32.9 · channel stable` and `✨ New Version Available: v0.33.0 — One Plugin, Three
+  Runtimes`, with no `v9.9.9` and no `commit behind`. The status line read `◇ home ·
+  ⬆ v0.33.0`, then `◇ home · ✓` with `v0.32.1` written in. `runtime channel main`
+  read `Update channel: main (was stable)`, and the card then read `channel main` with
+  no update line. The log held two `update-check source=registry
+  verdict=update_available` lines, at 549 and 606 ms.
+- **The clone.** Three identical blocks, from `/tmp/cr135`, the project, and the
+  checkout, each `Version 0.33.0 · channel main` with no update line.
+- **The update.** The updater smoke ended with 103 passed and 0 failed. Step 2c read
+  the clone's channel and its commits behind. In the package lane, the card announced
+  `v0.33.1` from `pkg-home` and from `unrelated`, with nothing from the cwd's
+  repository. The status line carried the package's verdict, and read `✓` after the
+  update. All 15 npm calls ran in the install's root.
+
+**Validation recorded 2026-10-15.** The Navigator returned the full run with every
+pass condition met, in reply to the stated next step: on a pass, CR135 moves to
+`validated`.
+
+## Review
+
+**Proportionality.** About 380 product lines added and 125 removed, across six files,
+with 945 lines of tests and 78 of smoke. They fix a defect with three faces: the card
+announced another project's tag, a package was never told of a release, and the status
+line kept a stale verdict across updates. They also close the trust boundary the panel
+found, where a project's `.npmrc` could choose the registry the update installs from.
+The new test file is most of the line count, because each of its cases runs the check
+from two directories, which is the property this CR exists for.
+
+**Scope discipline.** The change touched the plan's files, plus:
+
+- `ts/scripts/releasePromote.ts` and `release.test.ts`: the publish dry run's cwd moves
+  into the new `NpmCall` options, and nothing else;
+- `git.test.ts`: the source pin of the `ls-remote` budget, which the plan's new
+  parameter moved;
+- the smoke's `run_cli`, which now resolves the clone's path: the entry runs only when
+  `argv[1]` names the file its own URL does, and on macOS `/tmp` is a symlink;
+- `cacheShouldRefresh` and `parseIso`, which went with the TTL (decision 5);
+- the route corrections in `0a3eeffd`, before the Navigator ran it, and one capture,
+  [CR138](cr138-runtime-status-and-version-read-a-clone-s-repository-and-channel-from-the-cwd.md).
+
+**Debt: none carried, if the Navigator accepts these limitations:**
+
+1. Two installs over one home: an `up_to_date` written by the newer one reads `✓` to
+   the older one until its next check.
+2. A clone updated with `--no-fetch` records `up_to_date` against its local refs,
+   until its next render on `stable`.
+3. A clone on `stable` pays about 1.35 s per SSH `ls-remote`, one or two per session
+   start, as before. On a slow link the 5 s ceiling can cut the tag lookup, and the
+   update is cached without its version.
+4. A package on `stable` pays about 0.27 s per session start for the registry read,
+   and 0.55 to 0.6 s cold in the Navigator's run.
+5. Decision 3 as implemented: the card falls back to the cache only when the check
+   could not answer.
+6. `npm install -g` running inside the directory it replaces is proven on macOS. On
+   Linux it waits for CI's smoke, which runs once the commits are pushed.
 
 ## Outcome
 
