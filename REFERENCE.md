@@ -345,10 +345,17 @@ Shows the channel this install follows, with its source, or sets it. The file is
 
 ```bash
 mirror runtime release-notes [latest|vX.Y.Z]
-mirror runtime release-notes pending [--from vX.Y.Z] [--ref origin/stable]
+mirror runtime release-notes pending [--from vX.Y.Z] [--ref <git ref>] [--no-fetch]
 ```
 
-Reads narrative release notes from `docs/releases/`. `latest` and explicit versions read the checked-out files. `pending` reads release notes from a git ref, defaults to `origin/stable`, fetches that ref safely before rendering, and lists every release newer than the installed runtime version. The fetch updates only remote-tracking refs; it does not merge, checkout, migrate, or modify the working tree. Use `--from` to simulate an older installed version or support a user report without mutating package metadata. Use `--ref HEAD --no-fetch` for local smoke tests before a release is published, or `--ref origin/stable` for the user-facing stable channel.
+Reads narrative release notes. `latest` and explicit versions read `docs/releases/` in the running install's own tree, whatever the current directory.
+
+`pending` lists every release newer than the installed version, for the install that is running and never for the current directory's project:
+
+- **A clone** reads `docs/releases` at its channel's ref in its own checkout, `origin/<channel>` for the channel `runtime channel` shows, after fetching that ref. The fetch updates only remote-tracking refs; it does not merge, check out, migrate, or modify the working tree. `--no-fetch` reads the ref as last fetched. `--ref` names another ref, such as `HEAD` for a local check before a release is published; a ref that begins with `-` is refused.
+- **A package** asks the npm registry which version its channel's dist-tag points to, as `runtime update --check` does. When that version is newer, it fetches that version's tarball with `npm pack --ignore-scripts`, reads the notes from it in memory, and removes it; otherwise nothing is downloaded. A package keeps no copy of its channel, so `--no-fetch` cannot answer, and `--ref` is refused with exit 2.
+
+When no source answers (a failed fetch, a ref or dist-tag that does not resolve, an unreachable registry, an install that cannot be identified), it prints `Pending releases: unknown` with a `Reason:` line and exits 1. `Pending releases: none` means a source answered and holds nothing newer. Use `--from` to simulate an older installed version or support a user report without mutating package metadata.
 
 Examples:
 
@@ -356,7 +363,7 @@ Examples:
 mirror runtime release-notes latest
 mirror runtime release-notes v0.10.5
 mirror runtime release-notes pending
-mirror runtime release-notes pending --from 0.9.0 --ref origin/stable
+mirror runtime release-notes pending --from 0.9.0
 mirror runtime release-notes pending --from 0.9.0 --ref HEAD --no-fetch
 ```
 

@@ -19,6 +19,8 @@
 #     front door locates its tree from its own entry file
 #   * python/python3/uv shadowed with stubs that exit 66, so an interpreter
 #     spawn FAILS the smoke rather than passing unnoticed
+#   * npm shadowed the same way once the install is done (CR134), so nothing
+#     after it reaches the live registry, whatever the runner's PATH holds
 #
 # The real npm, node, sqlite3 paths are captured BEFORE PATH is replaced
 # (US2's lesson: the stubs would otherwise shadow the tools the smoke needs).
@@ -66,6 +68,14 @@ exit 66
 STUB
   chmod +x "$WORK/stubs/$bin"
 done
+# CR134: npm, once the install is done. The real one is captured above and
+# used only by step 1; after it, every registry question meets this stub.
+cat > "$WORK/stubs/npm" <<'STUB'
+#!/bin/sh
+echo "npm stub: the smoke does not reach the registry ($*)" >&2
+exit 66
+STUB
+chmod +x "$WORK/stubs/npm"
 ln -s "$REAL_NODE" "$WORK/bin/node"
 [ -n "$REAL_SQLITE" ] && ln -s "$REAL_SQLITE" "$WORK/bin/sqlite3"
 
@@ -154,7 +164,7 @@ contains "status sees the database" "$STATUS_OUT" "Database exists: yes"
 # Plateau 4 (§E): the install, read from the layout with npm off this PATH,
 # and no repository graded for a package -- the cwd was read as a git tree
 # and its absence as an error, which left every package `attention needed`.
-contains "status names the install (no npm on this PATH)" "$STATUS_OUT" "Install: package (mirror-mind@"
+contains "status names the install (npm a stub on this PATH)" "$STATUS_OUT" "Install: package (mirror-mind@"
 contains "status names the install root" "$STATUS_OUT" "Install root: $(cd "$PKG" && pwd -P)"
 contains "status grades no repository for a package" "$STATUS_OUT" "Repository: none (package install)"
 [ -z "$(printf '%s' "$STATUS_OUT" | grep '^Git status note:')" ] && ok "no git note for a package" || bad "a package was graded as a git tree"
@@ -163,6 +173,16 @@ contains "status grades no repository for a package" "$STATUS_OUT" "Repository: 
 NOTES_OUT="$(mirror runtime release-notes latest 2>&1 || true)"
 contains "release-notes latest finds a note" "$NOTES_OUT" "Release: v"
 contains "release-notes latest reads the package's own notes" "$NOTES_OUT" "Path: $(cd "$PKG" && pwd -P)/docs/releases/v"
+# CR134: a package's pending notes come from the registry, and the npm stub
+# answers nothing, so the answer is `unknown`, naming the stub -- never `none`,
+# and never the cwd's repository.
+set +e
+PENDING_OUT="$(mirror runtime release-notes pending 2>&1)"; PENDING_CODE=$?
+set -e
+contains "release-notes pending names the package's channel as its source" "$PENDING_OUT" "Source: npm mirror-mind@stable"
+contains "release-notes pending says it could not check, not none" "$PENDING_OUT" "Pending releases: unknown"
+contains "and its reason is the registry read, through the npm stub" "$PENDING_OUT" "Reason: npm stub: the smoke does not reach the registry"
+check "release-notes pending exits 1 when it could not check" "$PENDING_CODE" "1"
 
 say "6. a database that needs migration 017, opened through the installed package"
 if [ -z "$REAL_SQLITE" ]; then

@@ -5,11 +5,20 @@
 
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import {
   buildPendingReleaseNotes,
+  fetchReleaseNotesRef,
   parseSemver,
   type ReleaseNote,
   readReleaseNote,
@@ -190,7 +199,7 @@ test("ref reads see only what the clone has fetched", () => {
         buildPendingReleaseNotes({
           currentVersion: CURRENT,
           ref: "origin/stable",
-          start: f.clone,
+          repository: f.clone,
           fetch: false,
         }),
       ),
@@ -223,7 +232,7 @@ test("ref reads see only what the clone has fetched", () => {
         buildPendingReleaseNotes({
           currentVersion: CURRENT,
           ref: "origin/stable",
-          start: f.clone,
+          repository: f.clone,
           fetch: false,
         }),
       ),
@@ -234,7 +243,7 @@ test("ref reads see only what the clone has fetched", () => {
         buildPendingReleaseNotes({
           currentVersion: "0.12.0",
           ref: "origin/stable",
-          start: f.clone,
+          repository: f.clone,
           fetch: false,
         }),
       ),
@@ -246,7 +255,7 @@ test("ref reads see only what the clone has fetched", () => {
   }
 });
 
-test("an unknown ref yields nothing rather than failing", () => {
+test("an unknown ref yields no notes, and the pending bundle says unknown, not none", () => {
   const f = fixture();
   try {
     assert.deepEqual(readReleaseNotesFromRef("origin/nope", f.clone), golden.unknown_ref.notes);
@@ -255,7 +264,7 @@ test("an unknown ref yields nothing rather than failing", () => {
         buildPendingReleaseNotes({
           currentVersion: CURRENT,
           ref: "origin/nope",
-          start: f.clone,
+          repository: f.clone,
           fetch: false,
         }),
       ),
@@ -273,25 +282,37 @@ test("parseSemver matches the oracle, including what it refuses", () => {
 });
 
 test("a ref shaped like a git option cannot become one", () => {
-  // `--ref` is user-supplied and reaches `git show <ref>:<path>`. Passing argv
-  // (never a shell string) is what keeps it an operand: git reads it as a
-  // revision, fails to resolve it, and the reader returns nothing.
+  // `--ref` is user-supplied and reaches `git fetch`, `ls-tree`, and `show`.
+  // Argv alone did not keep it an operand: split at its first slash, a ref
+  // like `--upload-pack=touch X/y` reached `git fetch` as an option, and git
+  // ran it (CR134). This test used only an absolute marker then, which the
+  // split cuts at its leading `/`, so the command that ran could not create
+  // it. Now a ref that begins with `-` is refused before git runs, and every
+  // verb takes `--end-of-options`, which also covers the half after the slash.
   const f = fixture();
   try {
     const marker = join(f.root, "pwned.txt");
     assert.deepEqual(readReleaseNotesFromRef(`--output=${marker}`, f.clone), []);
     assert.equal(readReleaseNoteFromRef(`--upload-pack=touch ${marker}`, "latest", f.clone), null);
-    assert.equal(
-      renderReleaseNotesBundle(
-        buildPendingReleaseNotes({
-          currentVersion: CURRENT,
-          ref: `--upload-pack=touch ${marker}`,
-          start: f.clone,
-          fetch: true,
-        }),
-      ).includes("Pending releases: none"),
-      true,
-    );
+    for (const ref of [
+      `--upload-pack=touch ${marker}`,
+      "--upload-pack=touch PWNED-A/x",
+      "origin/--upload-pack=touch PWNED-B",
+    ]) {
+      fetchReleaseNotesRef(ref, f.clone);
+      const bundle = buildPendingReleaseNotes({
+        currentVersion: CURRENT,
+        ref,
+        repository: f.clone,
+        fetch: true,
+      });
+      assert.ok(bundle.unknown_reason, `${ref}: answered as if it were a ref`);
+      assert.match(renderReleaseNotesBundle(bundle), /^Pending releases: unknown$/m, ref);
+    }
+    assert.ok(!existsSync(marker), "the absolute marker was created");
+    for (const name of ["PWNED-A", "PWNED-B", "x"]) {
+      assert.ok(!existsSync(join(f.clone, name)), `${name} was created in the repository`);
+    }
     assert.equal(
       readFileSync(join(f.clone, "pyproject.toml"), "utf8").includes(CURRENT),
       true,

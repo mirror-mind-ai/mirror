@@ -11,6 +11,7 @@
 // the pipeline's decisions are testable without a registry.
 
 import { execFileSync } from "node:child_process";
+import { basename, join } from "node:path";
 import { type ApplyStrategy, KNOWN_CHANNELS } from "#runtime/updatePipeline.ts";
 import { compareSemver, isPlainSemver } from "#util/semver.ts";
 
@@ -288,6 +289,40 @@ export function installGlobal(
   return result.code === 0
     ? { ok: true, detail: `${name}@${version}` }
     : { ok: false, detail: firstLine(result.stderr) || "npm install failed" };
+}
+
+/**
+ * `npm pack <name>@<version>` into `destination`: the exact tarball `runtime
+ * update` would install, fetched -- never unpacked here -- so `release-notes
+ * pending` can read what that version brings (CR134). It runs in the install's
+ * own root, as every npm call does (CR135). `--ignore-scripts`: a registry
+ * tarball runs no scripts when packed, and at a trust boundary that is said
+ * rather than assumed.
+ */
+export function packTarball(
+  name: string,
+  version: string,
+  cwd: string,
+  destination: string,
+  npm: NpmRunner = defaultNpmRunner,
+): { ok: true; path: string } | { ok: false; detail: string } {
+  const result = npm(
+    ["pack", `${name}@${version}`, "--pack-destination", destination, "--ignore-scripts", "--json"],
+    { cwd },
+  );
+  if (result.code !== 0)
+    return { ok: false, detail: firstLine(result.stderr) || "npm pack failed" };
+  let filename: unknown;
+  try {
+    filename = (JSON.parse(result.stdout) as Array<{ filename?: unknown }>)[0]?.filename;
+  } catch {
+    return { ok: false, detail: "npm pack returned unreadable JSON" };
+  }
+  // A bare file name, or nothing: the path is ours to build.
+  if (typeof filename !== "string" || filename === "" || basename(filename) !== filename) {
+    return { ok: false, detail: "npm pack named no tarball" };
+  }
+  return { ok: true, path: join(destination, filename) };
 }
 
 /** The pasteable route back, with the captured version in it. */

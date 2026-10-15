@@ -453,8 +453,12 @@ test("release-notes tells a positional from an option value", () => {
     assert.doesNotMatch(refNamedPending.stdout, /Current version:/);
 
     // The bare positional IS the bundle, and it renders the bundle header.
+    // Its exit is not asserted: since CR134 the bundle reads THIS checkout's
+    // channel ref, which a developer machine has and CI's shallow clone does
+    // not, so it is `none` (0) here and `unknown` (1) there. Its sources are
+    // pinned in-process, in pendingReleaseNotes.test.ts.
     const bundle = runCli(f, ["runtime", "release-notes", "pending", "--no-fetch"], env);
-    assert.equal(bundle.status, 0, bundle.stderr);
+    assert.ok(bundle.status === 0 || bundle.status === 1, bundle.stderr);
     assert.match(bundle.stdout, /^Mirror runtime release notes\n/);
     assert.match(
       bundle.stdout,

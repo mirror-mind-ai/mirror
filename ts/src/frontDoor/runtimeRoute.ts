@@ -46,13 +46,17 @@ import { detectInstallKind, type InstallKind } from "#runtime/installKind.ts";
 import { MIGRATE_DECLINED_EXIT, renderMigrate, runMigrate } from "#runtime/migrate.ts";
 import {
   buildPendingReleaseNotes,
+  buildPendingReleaseNotesFromRegistry,
+  type ReleaseNotesBundle,
   readReleaseNote,
   renderReleaseNote,
   renderReleaseNotesBundle,
+  unknownReleaseNotes,
 } from "#runtime/releaseNotes.ts";
 import { buildRuntimeStatus, renderRuntimeStatus, statusVerdict } from "#runtime/status.ts";
 import {
   checkPackageUpdateAvailability,
+  defaultNpmRunner,
   type NpmRunner,
   npmRootGlobal,
   renderPackageUpdateAvailability,
@@ -167,13 +171,19 @@ function writeErr(io: RuntimeRouteIo, text: string): void {
   (io.stderr ?? ((value: string) => process.stderr.write(value)))(text);
 }
 
-/** The welcome's seams beyond the route's own: the install and its npm, for tests. */
-export interface WelcomeRouteIo extends RuntimeRouteIo {
+/**
+ * The seams of the routes that answer for the running install, beyond the
+ * route's own: the install and its npm, for tests. The welcome (CR135) and
+ * `release-notes pending` (CR134) take them.
+ */
+export interface InstallRouteIo extends RuntimeRouteIo {
   install?: InstallKind;
   npm?: NpmRunner;
   /** The OS home whose config directory holds a package's channel file. */
   osHome?: string;
 }
+
+export type WelcomeRouteIo = InstallRouteIo;
 
 /**
  * Port of `welcome.main`. Always exits 0, like the oracle.
@@ -231,7 +241,7 @@ function logWelcomeCheck(home: string, env: NodeJS.ProcessEnv, check: RemoteChec
 /** Port of the read half of `cmd_runtime`. */
 export async function runRuntimeReadRoute(
   argv: readonly string[],
-  io: RuntimeRouteIo = {},
+  io: InstallRouteIo = {},
 ): Promise<number> {
   const env = io.env ?? process.env;
   const cwd = io.cwd ?? process.cwd();
@@ -311,19 +321,14 @@ export async function runRuntimeReadRoute(
   if (subcommand === "release-notes") {
     const target = firstPositional(args.slice(1)) ?? "latest";
     if (target === "pending") {
-      writeOut(
-        io,
-        renderReleaseNotesBundle(
-          buildPendingReleaseNotes({
-            // `--from` omitted falls back to the checkout's own version,
-            // exactly as the oracle does before normalizing.
-            currentVersion: optionValue(args, "--from") ?? version,
-            ref: optionValue(args, "--ref") ?? "origin/stable",
-            fetch: !args.includes("--no-fetch"),
-            start: cwd,
-          }),
-        ),
-      );
+      const pending = pendingReleaseNotes(args, io, env, version);
+      if ("usage" in pending) {
+        writeErr(io, pending.usage);
+        return 2;
+      }
+      writeOut(io, renderReleaseNotesBundle(pending.bundle));
+      // `unknown` exits 1, as `update --check` does on `unresolved` (CR134, decision 3).
+      return pending.bundle.unknown_reason === null ? 0 : 1;
     } else {
       // The notes ship in the package at the same path as in the checkout
       // (US3 D8), read from the tree that holds the running front door --
@@ -639,6 +644,74 @@ function frontDoorSelfPath(): string {
  */
 function detectThisInstall(): InstallKind {
   return detectInstallKind({ frontDoorPath: frontDoorSelfPath() });
+}
+
+/**
+ * `release-notes pending` for the install that is running, never for the cwd
+ * (CR134), which for a skill is the person's project. A clone reads its own
+ * channel's ref -- or `--ref` -- in its own repository; a package asks the
+ * registry what its channel holds; an install that cannot be identified has no
+ * source, and says so.
+ */
+function pendingReleaseNotes(
+  args: readonly string[],
+  io: InstallRouteIo,
+  env: NodeJS.ProcessEnv,
+  version: string,
+): { bundle: ReleaseNotesBundle } | { usage: string } {
+  const install = io.install ?? detectThisInstall();
+  const osHome = io.osHome ?? homedir();
+  const ref = optionValue(args, "--ref");
+  const fetch = !args.includes("--no-fetch");
+
+  if (install.kind === "clone") {
+    return {
+      bundle: buildPendingReleaseNotes({
+        // `--from` omitted falls back to the running tree's own version.
+        currentVersion: optionValue(args, "--from") ?? version,
+        ref: ref ?? upstreamFor(channelFor(install, env, osHome)),
+        repository: install.repository,
+        fetch,
+      }),
+    };
+  }
+
+  if (install.kind === "package") {
+    if (ref !== null) {
+      return {
+        usage:
+          `release-notes pending: --ref names a git ref, and this install is a package ` +
+          `(${install.name}@${install.version}), which reads its channel from the npm registry\n`,
+      };
+    }
+    const currentVersion = optionValue(args, "--from") ?? install.version;
+    const channel = channelFor(install, env, osHome).value;
+    if (!fetch) {
+      return {
+        bundle: unknownReleaseNotes(
+          currentVersion,
+          `npm ${install.name}@${channel}`,
+          "a package keeps no copy of its channel to read offline; run without --no-fetch",
+        ),
+      };
+    }
+    return {
+      bundle: buildPendingReleaseNotesFromRegistry({
+        currentVersion,
+        install,
+        channel,
+        npm: io.npm ?? defaultNpmRunner,
+      }),
+    };
+  }
+
+  return {
+    bundle: unknownReleaseNotes(
+      optionValue(args, "--from") ?? version,
+      null,
+      `install kind unknown (${install.reason})`,
+    ),
+  };
 }
 
 /**

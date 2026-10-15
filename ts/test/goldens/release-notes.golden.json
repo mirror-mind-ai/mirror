@@ -172,7 +172,7 @@
   },
   "unknown_ref": {
     "notes": [],
-    "pending_render": "Mirror runtime release notes\n\nCurrent version: v0.9.0\nSource: origin/nope\nPending releases: none\n"
+    "pending_render": "Mirror runtime release notes\n\nCurrent version: v0.9.0\nSource: origin/nope\nPending releases: unknown\nReason: ref origin/nope does not resolve\n"
   },
   "working_tree": {
     "by_v_prefixed_render": "Mirror runtime release notes\n\nRelease: v0.10.0 — Tenth\nPath: <root>/clone/docs/releases/v0.10.0.md\n\nHighlights:\n- Ordering is semantic, not lexical\n",
