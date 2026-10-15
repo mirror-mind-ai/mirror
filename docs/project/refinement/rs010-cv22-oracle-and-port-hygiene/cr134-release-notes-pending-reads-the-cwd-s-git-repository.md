@@ -210,10 +210,15 @@ All four were taken as recommended, 2026-10-15.
 Driver's checks: the new and changed tests red first where the behavior changes, then
 `npm test`, typecheck, lint, the guards, and both smokes green.
 
-Navigator's route, in your own shell:
+Navigator's route, in your own shell. The clone steps name this checkout's front door,
+`M=~/dev/workspace/mirror-dev/bin/mirror.js`, never a bare `mirror`: on this machine a
+bare `mirror` in an interactive shell is the Homebrew package, the released code
+(corrected after [the first run](#navigator-validation-2026-10-15)).
 
+0. **Which install answers.** `"$M" runtime version` prints `Install: clone
+   (<this checkout>)`. Fail: `Install: package`, which is not the code under test.
 1. **The clone, from anywhere.** From `/tmp`, then from a scratch git project whose
-   `origin` has a `stable` branch with `docs/releases/v9.9.9.md`, run `mirror runtime
+   `origin` has a `stable` branch with `docs/releases/v9.9.9.md`, run `"$M" runtime
    release-notes pending --from 0.32.1 --no-fetch`. Pass: both print the same block,
    `Source: origin/main` (this checkout's channel), listing `v0.33.0`. Fail: the two
    blocks differ, `v9.9.9` appears, or the scratch project gains a `.git/FETCH_HEAD`
@@ -224,10 +229,10 @@ Navigator's route, in your own shell:
    `mirror runtime release-notes pending --from 0.32.1`. Pass: `Source:` names the npm
    channel and `0.33.0`, and `v0.33.0` is listed; without `--from`, `Pending releases:
    none`. Fail: `unknown`, or a note the registry's `0.33.0` does not hold.
-3. **Unknown is said.** The scratch package with `--no-fetch`, and the clone with
-   `--ref origin/nope --no-fetch`. Pass: `Pending releases: unknown`, a `Reason:`, and
-   exit 1. Fail: `none`, or exit 0.
-4. **The ref stays an operand** (decision 4). From a scratch directory, run `mirror
+3. **Unknown is said.** The scratch package with `--no-fetch`, and the clone (`"$M"`)
+   with `--ref origin/nope --no-fetch`. Pass: `Pending releases: unknown`, a `Reason:`,
+   and exit 1. Fail: `none`, or exit 0.
+4. **The ref stays an operand** (decision 4). From a scratch directory, run `"$M"
    runtime release-notes pending --ref '--upload-pack=touch PWNED/x'`. Pass: the answer
    is `unknown` with the refusal as its reason, and no `PWNED` or `x` appears here or in
    the checkout. Fail: either file exists.
@@ -443,7 +448,34 @@ Limitations: run on macOS only, so GNU tar's `L` entries are first met by CI on 
 at the next push. On this checkout, which follows `main`, the default source moved from
 `origin/stable` to `origin/main`, as planned.
 
-Navigator validation: pending.
+### Navigator validation (2026-10-15)
+
+**First run, 18:52 to 18:55: the route tested the wrong install for three steps.** It
+named a bare `mirror`. In the Navigator's interactive zsh that resolves first to
+`/opt/homebrew/bin/mirror`, the released `mirror-mind@0.33.0` from the registry, which
+carries neither CR133 nor CR134. The Driver's tool environment resolves
+`~/.local/mirror-dev/bin/mirror`, this checkout, first, so the Driver's run of the same
+route did not show it. `runtime version` cannot tell the two apart (both are `0.33.0`);
+its `Install:` line can.
+
+- **Steps 2 and 3, package half: passed**, on the scratch install of this tree.
+  `--from 0.32.1` read `Source: npm mirror-mind@stable (0.33.0)`, `Pending releases: 1`,
+  `## v0.33.0 — One Plugin, Three Runtimes`, with its digest and highlights. Without
+  `--from`, `Pending releases: none`. With `--no-fetch`, `Pending releases: unknown`, the
+  offline reason, and `exit=1`.
+- **Steps 1, 3 (clone half), and 4 ran the Homebrew release**, and reproduced the
+  defect on it. From `/tmp`, `Source: origin/stable` and `Pending releases: none`. From
+  the scratch project, a block that differed from the `/tmp` one at line 5. A run
+  without `--no-fetch` left `.git/FETCH_HEAD` in the scratch project. `--ref origin/nope
+  --no-fetch` and `--ref '--upload-pack=touch PWNED/x'` both said `none` with `exit=0`.
+  No `PWNED` or `x` appeared, since the scratch directory is no repository. These three
+  steps validate nothing about CR134. Running both binaries side by side reproduced the
+  split: `/opt/homebrew/bin/mirror` answered `none`, exit 0, and
+  `~/.local/mirror-dev/bin/mirror` answered `unknown`, exit 1.
+
+The route now names the checkout's front door for the clone steps and adds step 0,
+which shows the install that answers. Steps 0, 1, 3 (clone half), and 4 are to be run
+again.
 
 ## Outcome
 
