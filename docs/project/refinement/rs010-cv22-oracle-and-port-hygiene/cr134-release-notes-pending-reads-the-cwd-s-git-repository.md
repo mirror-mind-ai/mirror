@@ -575,3 +575,10 @@ package, which today still answers from the cwd, as the first validation run sho
 After `mirror runtime update` to that release, `mirror runtime release-notes pending
 --from 0.32.1`, from `/tmp`, should read `Source: npm mirror-mind@stable (<the
 release>)` and list the releases after `0.32.1`. Record here whether it held.
+
+**Observed at `v0.33.1`, 2026-10-15: it held.** After `mirror runtime update` took the
+Homebrew package to `0.33.1`, `/opt/homebrew/bin/mirror runtime release-notes pending
+--from 0.32.1`, from `/tmp`, read `Source: npm mirror-mind@stable (0.33.1)` and `Pending
+releases: 2`, listing `v0.33.0` and `v0.33.1`, exit 0. The same command from an
+unrelated git project gave byte-identical output, and the project got no `FETCH_HEAD`.
+Before the update it answered `Source: origin/stable` and `Pending releases: none`.

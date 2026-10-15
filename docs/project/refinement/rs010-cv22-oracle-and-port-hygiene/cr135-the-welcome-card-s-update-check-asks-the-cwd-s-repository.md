@@ -725,3 +725,20 @@ update` to that release it should read `✓`: the update is run by the old code,
 records nothing, but the new status line hides a cached version the install already
 has. The first session start after it should ask the registry and write
 `up_to_date`. Record here whether both held.
+
+**Observed at `v0.33.1`, 2026-10-15: the first only trivially, the second not yet.**
+`mirror runtime update` took the Homebrew package from `0.33.0` to `0.33.1` at 21:08
+local time. The home it uses, `vinicius`, through the config file, then read `◇ vinicius
+· Kia Desktop on ◌ Mirror Mode · ✓`. But that home held no `update-check.json` by then,
+so there was no stale verdict for the new line to hide, and with no cached verdict the
+line shows `✓` by rule. The `⬆ v0.32.1` cache this CR's evidence recorded was there at the
+capture, 2026-10-14 11:54. The home's `runtime/` directory last changed at 11:59:48 the
+same day, and nothing in this record says what removed the file. The hiding itself rests
+on the validation's scratch homes, where the line went from `⬆ v0.33.0` to `✓`. No
+`update-check` line appears in that home's front-door log since the update, and no cache
+file, so no session start has asked the registry there yet.
+
+**Still to observe:** the first session start in that home on `0.33.1`. Its front-door
+log should gain `update-check source=registry verdict=up_to_date`, and
+`runtime/update-check.json` should appear with `up_to_date`. Record here whether both
+happened.

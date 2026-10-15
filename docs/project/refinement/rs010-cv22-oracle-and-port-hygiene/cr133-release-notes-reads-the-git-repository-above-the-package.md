@@ -349,3 +349,10 @@ package, the route's step 3. After `mirror runtime update` to that release,
 print `Release: ...` with a `Path:` under
 `/opt/homebrew/lib/node_modules/mirror-mind/`. The update is run by the old code, but
 the command after it runs the new one. Record here whether both held.
+
+**Observed at `v0.33.1`, 2026-10-15: both held.** `mirror runtime update` took the
+Homebrew package from `0.33.0` to `0.33.1`. Then, from `/tmp`,
+`/opt/homebrew/bin/mirror runtime release-notes latest` printed the `v0.33.1` note and
+`release-notes v0.33.0` the `v0.33.0` note. Both had a `Path:` under
+`/opt/homebrew/lib/node_modules/mirror-mind/docs/releases/`. Before the update, the same
+two commands answered `Release notes: not found`.

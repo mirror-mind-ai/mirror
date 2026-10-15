@@ -39,8 +39,13 @@ The route, in order:
   repository: `0.33.1`, `release-notes latest` reading its own note, `pending --from
   0.33.0` listing `v0.33.1` from the registry, and a welcome card with no update line.
 
-Still to observe: this machine's Homebrew package, on `0.33.0` until `mirror runtime
-update`. CR133, CR134, and CR135 each name what it should show.
+The Homebrew package was updated to `0.33.1` the same evening. CR133 and CR134 held there:
+the package reads its own notes, and `pending` lists `v0.33.0` and `v0.33.1` from the
+registry, byte-identical from any directory. CR135's status line reads `✓`, but its home
+held no cached verdict by then, so there was nothing stale for the new line to hide.
+
+Still to observe: the first session start in that home on `0.33.1`, which should ask the
+registry and write `up_to_date` (CR135).
 
 ### 2026-10-15 — CR134 done: release-notes pending answers for the install that is running
 
