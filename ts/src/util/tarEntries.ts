@@ -11,7 +11,9 @@
 // What is read is what tar writers produce: ustar headers with the POSIX
 // `prefix` field, pax extended headers (`x`, whose `path` names the next
 // entry), and GNU long names (`L`). Every header's checksum is checked, and an
-// entry whose data runs past the end is refused rather than half-read.
+// archive that stops before its end-of-archive block is refused rather than
+// half-read: a tarball cut between two entries would otherwise lose the later
+// ones -- the newest note among them -- without a word.
 
 import { gunzipSync } from "node:zlib";
 
@@ -118,7 +120,9 @@ export function readTarGzEntries(
     }
     offset = start + Math.ceil(size / BLOCK) * BLOCK;
   }
-  // No end-of-archive block: nothing may be left over.
-  if (offset < tar.length) return { ok: false, detail: "the archive is truncated" };
-  return { ok: true, entries };
+  // The archive stopped before its end-of-archive block: inside an entry's
+  // padding, or cleanly between two entries. Entries after the last whole one
+  // may be missing, so nothing read here is presented as the whole (CI at
+  // 565b7b97 met the first; the second is the general case).
+  return { ok: false, detail: "the archive is truncated" };
 }
