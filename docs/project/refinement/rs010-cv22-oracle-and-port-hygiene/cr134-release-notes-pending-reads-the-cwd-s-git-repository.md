@@ -56,6 +56,225 @@ Captured, unassigned, after the `v0.33.0` update of a Homebrew install (2026-10-
 [CR133](cr133-release-notes-reads-the-git-repository-above-the-package.md). Current Focus
 unchanged. The package source needs a decision before there is a plan.
 
+Selected 2026-10-15. Selection found one thing the capture did not say: `--ref` can run
+a command through `git fetch` ([evidence at selection](#at-selection-2026-10-15)). The
+Navigator took all four decisions as recommended, and the plan was reviewed by a
+four-lens panel the same day ([record below](#panel-review-2026-10-15)), its findings
+folded in. **Approved 2026-10-15 by the Navigator.** Driver `@viniciusteles` and Delivery
+`main` were assigned in the same turn.
+
+### Objective
+
+`release-notes pending` answers for the install that is running, from any directory:
+a clone from its own checkout's channel ref, a package from the registry, the version
+its channel resolves to. When no source answers, it says so; it never says `none` for
+"could not tell", and it never reads, fetches into, or runs anything in the cwd's
+repository.
+
+### Design
+
+**The install chooses the source.** The route detects the install as `runtime
+channel` and the welcome card do (CR135), with nothing spawned, and the cwd plays no
+part:
+
+- a **clone** reads `docs/releases` from a ref in `install.repository`. The ref is
+  `--ref` when given, else `origin/<channel>` for the clone's own channel, the ref
+  `runtime update` follows. Today it is `origin/stable` whatever the channel; this
+  checkout follows `main`, so here it will read `origin/main`;
+- a **package** asks the registry the question `runtime update` asks at plan:
+  `channelDirection` resolves its channel's dist-tag to a concrete version. When that
+  version is ahead of the installed one (or of `--from`), `npm pack
+  <name>@<version> --ignore-scripts` fetches that exact tarball into a private
+  temporary directory, and the notes newer than the installed version are read from
+  its `package/docs/releases/v*.md` entries, in memory, then the directory is removed.
+  When the channel is current or behind, nothing is downloaded and the answer is
+  `none`. npm runs in `install.root`, never the cwd (CR135);
+- an **unknown** install answers `unknown`, with the detector's reason.
+
+**The tarball is read, not unpacked, and not past a bound.** A small reader over
+`node:zlib` inflates the gzip stream, walks the tar headers by size, and keeps only
+entries named `package/docs/releases/vX.Y.Z.md`. Nothing is written but the tarball
+itself, so no entry name can choose a path. The registry is a trust boundary (CR135: a
+project's `.npmrc` can name it), so the tarball is attacker-shaped input: the reader
+stops at 64 MB of inflated bytes and the answer is `unknown`. The real tarball inflates
+to 3 MB. No dependency is added, and `tar` is not spawned: a spawned `tar` would take
+archive-chosen member names as arguments, a second seam of the same kind, and its
+option parsing is not under test here. The parser has one input and one cap.
+
+**`unknown` is its own answer.** When no source answers, the bundle says
+`Pending releases: unknown` and a `Reason:` line, the shape `runtime update --check`
+gives `unresolved`. The reasons are a failed fetch (decision 2), a ref that does not
+resolve, a dist-tag that does not resolve, a `npm pack` that fails, an unknown install,
+and a package asked to read offline. A ref that resolves and holds no newer note is
+`none`, as today.
+
+**What each flag means per install.** `--from` keeps its meaning on both. On a clone,
+`--ref` and `--no-fetch` keep theirs. On a package, `--no-fetch` answers `unknown`: a
+package keeps no copy of its channel to read offline. `--ref` names a git ref, and a
+package has none, so it is refused as a usage error with exit 2.
+
+**The ref stays an operand** (decision 4). `fetch`, `ls-tree`, and `show` take
+`--end-of-options` before the ref and the remote, and a ref that begins with `-` is
+refused before git runs.
+
+**`repositoryFor` goes.** Its last callers were the ref readers, and the repository
+is now the install's, given. No git call remains to discover a repository; CR133's
+security note applies here too.
+
+**Tests do not depend on the checkout's refs.** CI's checkout is shallow, so a test
+that reads the real checkout's `origin/stable` would answer `unknown` there. The pending
+tests run the route in-process, with the install and the npm runner injected, as the
+welcome route's tests do.
+
+### Decisions
+
+1. **The package's source.** (a) *Recommended:* the registry tarball of the exact
+   version the channel resolves to. It is the same registry, resolution, and `.npmrc`
+   trust rule as `runtime update`, so the notes are the ones the update would install.
+   It costs one tarball, about 0.9 MB and 1 s, only when an update exists
+   ([measured](#at-selection-2026-10-15)). (b) The published git branch: a second
+   authority that can disagree with the dist-tag, as a half-promoted release does
+   (CR132), and it needs git and the repository's URL on a package install. (c) The
+   pending version numbers without their notes: the cheapest answer, but it does not
+   answer the skill's question, "what's new in this update?".
+2. **A clone whose fetch fails.** (a) *Recommended:* `unknown`, with the fetch's first
+   error line. `--no-fetch` is the explicit way to read the last fetched ref. (b) Read
+   the stale ref and add a note. Today the failure is swallowed, and an offline clone
+   says `none` with confidence.
+3. **Exit code for `unknown`.** (a) *Recommended:* 1, as `update --check` exits on
+   `unresolved`; `none` and a list stay 0. (b) 0, as today. The skill shows the output
+   either way.
+4. **The `--ref` command execution.** (a) *Recommended:* fix it in this CR, since the
+   plan rewrites this fetch and the test that falsely pins it. The test gets a
+   relative marker, the case the split leaves whole. (b) Capture it as its own CR and
+   keep this one to the cwd. It is local and self-inflicted: whoever can pass `--ref`
+   can already run commands. But the test that says it cannot happen is wrong.
+
+All four were taken as recommended, 2026-10-15.
+
+### Files
+
+- `ts/src/runtime/releaseNotes.ts`: the ref source takes the repository it is given;
+  `repositoryFor` is removed; the fetch result is read (decision 2); the bundle gains
+  `unknown` with a reason; the registry source; `--end-of-options` and the ref refusal
+  (decision 4).
+- `ts/src/util/tarEntries.ts` (new): the in-memory reader of named tar.gz entries.
+- `ts/src/runtime/strategies/package.ts`: `packTarball`, beside `installGlobal`, so
+  every npm call still lives in one place and runs in the install's root.
+- `ts/src/frontDoor/runtimeRoute.ts`: `pending` chooses its source by install kind,
+  with no `cwd`; the read route's io gains the `install` and `npm` seams the welcome
+  route has; the exit code (decision 3); the usage refusal for `--ref` on a package.
+- `ts/test/runtime/releaseNotes.test.ts`: the unknown-ref and option-shaped-ref cases
+  follow the new answers; the relative-marker case (decision 4).
+- `ts/test/goldens/release-notes.golden.json`: `unknown_ref.pending_render` advances
+  from `none` to `unknown`. The advance is named in its commit, since the oracle that
+  generated it is gone (CR086's rule).
+- `ts/test/util/tarEntries.test.ts` (new): archives built by the system's own `tar`
+  (bsdtar on macOS, GNU tar on the ubuntu runner), with a path over 100 characters
+  before the note, a non-note entry, and a truncated archive.
+- `ts/test/frontDoor/pendingReleaseNotes.test.ts` (new): the route, in-process, for a
+  clone and a package. It runs from a cwd outside any repository and from a cwd in an
+  unrelated repository with its own `origin/stable` holding `v9.9.9`, and neither
+  changes the answer. The clone case fetches, against the fixture's bare remote, and
+  asserts the unrelated repository has no `.git/FETCH_HEAD` afterwards while the
+  install's clone does: not read, and not fetched into. The fake npm runner asserts
+  the `cwd` of every call is `install.root`, the dist-tag read and the pack alike.
+  Also the unknown install, `--no-fetch` and `--ref` on a package, the current and
+  behind channels, which download nothing, and a tarball past the bound.
+- `ts/test/frontDoor/runtimeTailCli.test.ts`: the positional test stops asserting
+  exit 0 for `pending`, which now depends on the checkout's refs. It keeps asserting
+  that the bundle was chosen.
+- `scripts/smoke_npm_package.sh`: an `npm` stub beside the interpreter stubs, exiting
+  66, so the answer does not depend on the runner's PATH; `release-notes pending` from
+  the installed package answers `unknown` with exit 1 and a `Reason:` that names npm,
+  never `none`.
+- `REFERENCE.md`: the Release notes section says where each install reads from.
+
+### Acceptance
+
+- `pending` reads no repository and runs no git command in the cwd, on every install
+  kind. The two-cwd tests give byte-identical output for a clone and for a package.
+- A clone reads `origin/<its channel>` in its own repository, or `--ref`.
+- A package whose channel is ahead lists the notes newer than the installed version,
+  read from the channel version's tarball. A current or behind channel answers `none`
+  without downloading. Every npm call runs in `install.root`.
+- No source, or a failed fetch, answers `Pending releases: unknown` with a reason and
+  exit 1. A ref that resolves with no newer note answers `none` with exit 0.
+- `--ref '--upload-pack=touch <relative marker>/x'` creates nothing and runs nothing.
+- The golden changes in exactly one entry, `unknown_ref.pending_render`.
+- `latest` and `vX.Y.Z` are unchanged.
+
+### Validation Route
+
+Driver's checks: the new and changed tests red first where the behavior changes, then
+`npm test`, typecheck, lint, the guards, and both smokes green.
+
+Navigator's route, in your own shell:
+
+1. **The clone, from anywhere.** From `/tmp`, then from a scratch git project whose
+   `origin` has a `stable` branch with `docs/releases/v9.9.9.md`, run `mirror runtime
+   release-notes pending --from 0.32.1 --no-fetch`. Pass: both print the same block,
+   `Source: origin/main` (this checkout's channel), listing `v0.33.0`. Fail: the two
+   blocks differ, `v9.9.9` appears, or the scratch project gains a `.git/FETCH_HEAD`
+   after a run without `--no-fetch`.
+2. **The package, against the live registry.** Pack this checkout and install it into
+   a scratch prefix, with a scratch `XDG_CONFIG_HOME` so the channel is `stable`
+   whatever this machine's config says (commands given at handoff). From `/tmp` run its
+   `mirror runtime release-notes pending --from 0.32.1`. Pass: `Source:` names the npm
+   channel and `0.33.0`, and `v0.33.0` is listed; without `--from`, `Pending releases:
+   none`. Fail: `unknown`, or a note the registry's `0.33.0` does not hold.
+3. **Unknown is said.** The scratch package with `--no-fetch`, and the clone with
+   `--ref origin/nope --no-fetch`. Pass: `Pending releases: unknown`, a `Reason:`, and
+   exit 1. Fail: `none`, or exit 0.
+4. **The ref stays an operand** (decision 4). From a scratch directory, run `mirror
+   runtime release-notes pending --ref '--upload-pack=touch PWNED/x'`. Pass: the answer
+   is `unknown` with the refusal as its reason, and no `PWNED` or `x` appears here or in
+   the checkout. Fail: either file exists.
+
+### Non-Goals
+
+- `runtime status` and `runtime version` reading a clone's repository and channel from
+  the cwd: [CR138](cr138-runtime-status-and-version-read-a-clone-s-repository-and-channel-from-the-cwd.md).
+- `latest` and `vX.Y.Z`: CR133, done.
+- The `mm-release-notes` skill's wording: it still says "the current stable release",
+  which stays true on the default channel. Changing it moves every runtime's copy.
+- Bounds on npm: `pending` keeps npm's own timeouts and retries, as `update --check`
+  does. The welcome card's 5 s budget is for session start, which `pending` is not.
+- Reading offline from npm's cache on a package. `npm pack` does add the tarball to
+  that cache, about 1 MB per check that finds an update; that is npm's cache doing its
+  job, not a leak.
+- A `--channel` option on `pending`, which `update --check` and `version` have. A
+  package on `main` answers `unknown` ("no dist-tag 'main'"), as `update --check`
+  does; asking "and on stable?" means `runtime channel stable` first. Named so it is a
+  choice, not an accident.
+
+### Panel review (2026-10-15)
+
+The Navigator asked which lenses fit and had them review. The engineer,
+security-engineer, quality-assurance, and devops-engineer lenses reviewed the Driver's
+draft, each testing its claims against the code, git, npm, and scratch directories.
+Only dissent was recorded.
+
+Synthesis: the plan's shape holds. One blocker, from the security lens: the tarball is
+input from a trust boundary and the reader had no bound. The tar parser stays, for the
+reason that lens gave. The rest is pins the tests were missing, one stub that makes the
+smoke deterministic, and a validation route that does not depend on this machine's
+config.
+
+| Lens | Dissent | Resolution |
+|---|---|---|
+| engineer | Every supported platform ships `tar`, and `tar -tzf` plus `tar -xzOf <tgz> <member>` reads a member to stdout in ten lines, no parser. Say why a parser instead of a tool already trusted as git is. And `pending` has no `--channel` where `update --check` and `version` do; a package on `main` cannot ask about `stable` without rewriting its channel file | The parser stays: a spawned `tar` takes archive-chosen member names as arguments, a second seam at the same trust boundary, and its option parsing is not under test here (security lens). The reason is now in Design. `--channel` is a named non-goal |
+| security-engineer | **Blocker.** The reader inflated the gzip stream with no bound. The registry is a trust boundary this project named in CR135, so a 1 MB tarball that inflates to gigabytes is a denial of service from one `.npmrc` line. `--end-of-options` on all three verbs confirmed by measurement: git refuses the option-shaped ref itself (`strange pathname … blocked`) | A 64 MB cap on inflated bytes, past which the answer is `unknown`; a test feeds a tarball past it. The `-`-prefix refusal stays beside `--end-of-options`, so the refusal and its message are ours. `--ignore-scripts` stays as belt and braces |
+| quality-assurance | The two-cwd test proved the cwd's repository is not read, not that it is not fetched into. The fake npm never asserted its `cwd`. Step 2 read the channel from this machine's real config file, absent today, so `stable` by luck. Steps 1 and 3 named no fail condition | The clone case fetches against the fixture's bare remote and asserts `FETCH_HEAD` in the install's clone and not in the unrelated repository. The fake npm asserts `cwd === install.root` on every call. Step 2 runs with a scratch `XDG_CONFIG_HOME`. Every step names its fail |
+| devops-engineer | The smoke assumed npm off its PATH, true on this Mac and by the ubuntu image's layout, but unasserted: a runner with npm in `/usr/bin` would reach the live registry and the smoke would go nondeterministic silently. `npm pack` also fills npm's cache, about 1 MB per found update | An `npm` stub beside the interpreter stubs, exiting 66, and the check asserts the `Reason:` names npm; the answer is the same on every machine and a reached npm is caught. The cache is a named non-goal |
+
+Not asked:
+
+- the database-architect, ai-engineer, and prompt-engineer: the slice has no data,
+  model, or prompt;
+- the product and experience designers: the bundle's shape gains one line, `Reason:`,
+  in the shape `update --check` already uses.
+
 ## Evidence
 
 All on the Homebrew package `mirror-mind@0.33.0`, where `v0.33.0` is newer than `0.32.1`:
@@ -98,6 +317,36 @@ Highlights:
 A clone shows the same split. With a scratch `MIRROR_HOME`, the clone's own front door
 (`node bin/mirror.js runtime release-notes pending --from 0.32.1 --no-fetch`) says `none`
 from `/tmp` and `1` from the clone.
+
+### At selection (2026-10-15)
+
+**The registry**, read from a scratch directory:
+
+- `npm view mirror-mind dist-tags`: `latest` and `stable` are both `0.33.0`, and there
+  is no `main` tag. A package on `main` answers `unknown` by any route, as `update
+  --check` does.
+- `npm pack mirror-mind@stable --ignore-scripts`: 919,831 bytes and 475 entries, all
+  regular files, in about 1 s. 76 of them are `package/docs/releases/v*.md`.
+
+**This checkout** follows `main` (`.mirror-update-channel`), so the channel default
+makes its `pending` read `origin/main` where today it reads `origin/stable`.
+
+**`--ref` reaches `git fetch` as an option.** `fetchReleaseNotesRef` splits the ref at
+its first slash into a remote and a branch, and passes both to `git fetch` as argv. In
+a scratch repository, these two calls each ran their command through git's
+`upload-pack`:
+
+```text
+fetchReleaseNotesRef("--upload-pack=touch PWNED-BY-REF/x", <repo>)
+fetchReleaseNotesRef("--upload-pack=touch /x", <repo>)
+
+-> <repo>/PWNED-BY-REF and <repo>/x were created
+```
+
+The test "a ref shaped like a git option cannot become one" passes because its marker
+is absolute: the split cuts it at the leading `/`, and `touch` gets a relative path
+whose directory does not exist. Today the command runs in the cwd's repository; with
+the repository fixed, it would run in the install's.
 
 ## Outcome
 
