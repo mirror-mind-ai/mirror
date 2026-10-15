@@ -76,8 +76,8 @@ Selected 2026-10-14. The plan below was reviewed by a four-lens panel the same d
 **Approved 2026-10-14 by the Navigator, with every decision as recommended.** Driver
 `@viniciusteles` and Delivery `main` were assigned in the same turn. Implemented
 2026-10-14 and **validated by the Navigator 2026-10-15**
-([record](#navigator-validation-2026-10-15)). Closure waits on the Navigator's debt
-decision ([Review](#review)).
+([record](#navigator-validation-2026-10-15)), and **done 2026-10-15**
+([Outcome](#outcome)).
 
 Two premises above are not quite true ([evidence at selection](#at-selection-2026-10-14)).
 On `stable`, the card checks at every render, not when the cache is older than six
@@ -657,6 +657,13 @@ in their own shell, from 15:43 to 15:50.
 pass condition met, in reply to the stated next step: on a pass, CR135 moves to
 `validated`.
 
+CI on `4005f15a`, pushed at the Navigator's word: Tests run `38747199528` passed (`ts` on
+ubuntu and macOS, and `smoke`). The updater smoke ended with 103 passed and 0 failed on
+both operating systems, its welcome steps included. On ubuntu, the package lane's real
+`npm install -g` ran inside the directory it replaced and succeeded (`apply:
+mirror-mind@0.33.1`), and all 15 npm calls ran in the install's root. Docs run
+`38747199331` passed.
+
 ## Review
 
 **Proportionality.** About 380 product lines added and 125 removed, across six files,
@@ -679,7 +686,8 @@ from two directories, which is the property this CR exists for.
 - the route corrections in `0a3eeffd`, before the Navigator ran it, and one capture,
   [CR138](cr138-runtime-status-and-version-read-a-clone-s-repository-and-channel-from-the-cwd.md).
 
-**Debt: none carried, if the Navigator accepts these limitations:**
+**Debt: none carried.** The Navigator accepted these six limitations at closure,
+2026-10-15:
 
 1. Two installs over one home: an `up_to_date` written by the newer one reads `✓` to
    the older one until its next check.
@@ -692,9 +700,28 @@ from two directories, which is the property this CR exists for.
    and 0.55 to 0.6 s cold in the Navigator's run.
 5. Decision 3 as implemented: the card falls back to the cache only when the check
    could not answer.
-6. `npm install -g` running inside the directory it replaces is proven on macOS. On
-   Linux it waits for CI's smoke, which runs once the commits are pushed.
+6. `npm install -g` running inside the directory it replaces was proven on macOS only.
+   CI's smoke at `4005f15a` has since proven it on ubuntu, so this one is closed.
 
 ## Outcome
 
-Pending.
+**Done 2026-10-15.** The welcome card and the status line answer for the install that
+is running, from any directory:
+
+- a package reads its channel's dist-tag from the registry, with npm run in its own
+  root, so a project's `.npmrc` cannot choose the registry. The update route's npm
+  calls run there too;
+- a clone asks its own checkout and its own remote;
+- the channel line is the install's;
+- one 5 s budget bounds the check, which adds about 0.27 s to a package's session start;
+- a cached update the install already has is shown by neither surface, and a successful
+  `runtime update` records `up_to_date`.
+
+The Navigator validated the route in their own shell. CI passed on `4005f15a`.
+
+**Still to observe:** the first release that carries CR135, on this machine's Homebrew
+package. Until then its real home's status line keeps `⬆ v0.32.1`. After `runtime
+update` to that release it should read `✓`: the update is run by the old code, which
+records nothing, but the new status line hides a cached version the install already
+has. The first session start after it should ask the registry and write
+`up_to_date`. Record here whether both held.

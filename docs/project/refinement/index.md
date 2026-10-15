@@ -8,8 +8,8 @@ If a linked document and this index disagree, this index wins.
 
 ## Current Focus
 
-- Refinement Story: RS010
-- Change Request: CR135
+- Refinement Story: RS001
+- Change Request: none
 
 Selecting a focus is an explicit project decision. Reading this file never selects or
 executes work.
@@ -78,9 +78,9 @@ Open work is ordered intentionally. Terminal history follows open work.
 | 44 | [CR131](rs010-cv22-oracle-and-port-hygiene/cr131-runtime-diagnose-does-not-run-the-mcp-locator.md) | RS010 | `runtime diagnose` does not say what the plugin's MCP entry would find | captured | — | — |
 | 45 | [CR133](rs010-cv22-oracle-and-port-hygiene/cr133-release-notes-reads-the-git-repository-above-the-package.md) | RS010 | `runtime release-notes` reads the git repository above the package, so a Homebrew install finds no notes | captured | — | — |
 | 46 | [CR134](rs010-cv22-oracle-and-port-hygiene/cr134-release-notes-pending-reads-the-cwd-s-git-repository.md) | RS010 | `release-notes pending` reads the cwd's git repository, so it answers for whatever project the person is in | captured | — | — |
-| 47 | [CR135](rs010-cv22-oracle-and-port-hygiene/cr135-the-welcome-card-s-update-check-asks-the-cwd-s-repository.md) | RS010 | The welcome card's update check asks the cwd's repository, not the install, and the status line keeps a stale verdict | validated | @viniciusteles | `main` |
-| 48 | [CR136](rs010-cv22-oracle-and-port-hygiene/cr136-the-release-environment-takes-a-dispatch-from-any-ref.md) | RS010 | The `release` environment takes a dispatch from any ref, so a branch's own copy of `publish.yml` can stage | captured | — | — |
-| 49 | [CR138](rs010-cv22-oracle-and-port-hygiene/cr138-runtime-status-and-version-read-a-clone-s-repository-and-channel-from-the-cwd.md) | RS010 | `runtime status` and `runtime version` read a clone's repository and channel from the cwd, so a healthy clone is `attention needed` outside its checkout | captured | — | — |
+| 47 | [CR136](rs010-cv22-oracle-and-port-hygiene/cr136-the-release-environment-takes-a-dispatch-from-any-ref.md) | RS010 | The `release` environment takes a dispatch from any ref, so a branch's own copy of `publish.yml` can stage | captured | — | — |
+| 48 | [CR138](rs010-cv22-oracle-and-port-hygiene/cr138-runtime-status-and-version-read-a-clone-s-repository-and-channel-from-the-cwd.md) | RS010 | `runtime status` and `runtime version` read a clone's repository and channel from the cwd, so a healthy clone is `attention needed` outside its checkout | captured | — | — |
+| — | [CR135](rs010-cv22-oracle-and-port-hygiene/cr135-the-welcome-card-s-update-check-asks-the-cwd-s-repository.md) | RS010 | The welcome card's update check asks the cwd's repository, not the install, and the status line keeps a stale verdict | done | @viniciusteles | `main` |
 | — | [CR137](rs010-cv22-oracle-and-port-hygiene/cr137-the-updater-smoke-fails-on-a-machine-that-exports-mirror-user.md) | RS010 | The updater smoke's package lane fails on a machine that exports `MIRROR_USER` | done | @viniciusteles | `main` |
 | — | [CR132](rs010-cv22-oracle-and-port-hygiene/cr132-release-promote-pushes-with-the-local-two-second-timeout.md) | RS010 | `release:promote` pushes with the two-second local git timeout, and stops half-promoted | done | @viniciusteles | `main` |
 | — | [CR125](rs010-cv22-oracle-and-port-hygiene/cr125-the-publish-route-moves-stable-and-leaves-latest-on-the-placeholder.md) | RS010 | The publish route moves `stable` and leaves `latest` on the placeholder | done | @viniciusteles | `main` |
