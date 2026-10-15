@@ -61,7 +61,8 @@ a command through `git fetch` ([evidence at selection](#at-selection-2026-10-15)
 Navigator took all four decisions as recommended, and the plan was reviewed by a
 four-lens panel the same day ([record below](#panel-review-2026-10-15)), its findings
 folded in. **Approved 2026-10-15 by the Navigator.** Driver `@viniciusteles` and Delivery
-`main` were assigned in the same turn.
+`main` were assigned in the same turn. Implemented 2026-10-15
+([evidence](#implementation-and-the-drivers-checks-2026-10-15)).
 
 ### Objective
 
@@ -347,6 +348,102 @@ The test "a ref shaped like a git option cannot become one" passes because its m
 is absolute: the split cuts it at the leading `/`, and `touch` gets a relative path
 whose directory does not exist. Today the command runs in the cwd's repository; with
 the repository fixed, it would run in the install's.
+
+### Implementation and the Driver's checks (2026-10-15)
+
+What is now true, at `29fe689f`:
+
+- The route's `pending` branch chooses its source by install kind, and nothing in it
+  reads the cwd. A clone reads `--ref` or `origin/<its channel>` in
+  `install.repository`; a package goes to the registry; an unknown install answers
+  `unknown` with the detector's reason. The read route takes the welcome route's seams,
+  now named `InstallRouteIo`; `WelcomeRouteIo` is an alias of it.
+- `buildPendingReleaseNotes` takes the repository as given. `repositoryFor` is gone.
+  A failed fetch is `unknown` with git's first error line, and a ref that does not
+  resolve is `unknown` too; `none` is left for a ref that resolves with nothing newer.
+- `buildPendingReleaseNotesFromRegistry` resolves the channel with `channelDirection`,
+  and when it is ahead calls `packTarball` (`npm pack <name>@<version>
+  --pack-destination <private dir> --ignore-scripts --json`, in `install.root`), reads
+  `package/docs/releases/v*.md` with `readTarGzEntries`, and removes the directory.
+- `readTarGzEntries` (`ts/src/util/tarEntries.ts`) inflates with `maxOutputLength` set
+  to 64 MB, checks every header's checksum, reads ustar `prefix`, pax `path`, and GNU
+  `L` names, and refuses a truncated archive.
+- A ref beginning with `-` is refused before git runs, and `fetch`, `ls-tree`, and `show`
+  take `--end-of-options`.
+- `unknown` renders as `Pending releases: unknown` and a `Reason:` line, and exits 1;
+  `--ref` on a package exits 2 with a usage line on stderr.
+- The package smoke shadows npm with a stub after its install and checks that
+  `pending` from the package names `npm mirror-mind@stable`, says `unknown`, gives the
+  stub's line as its reason, and exits 1. `REFERENCE.md` says where each install reads.
+
+Three choices the plan did not spell out, recorded so they can be checked:
+
+1. **A package's default `--from` is the install's own manifest version.** For a real
+   package it is the same file as the running tree's; in tests the install is injected,
+   and the route takes the install's word.
+2. **The compressed tarball is bounded too.** It is read whole before it is inflated, so
+   a file larger than 64 MB on disk is refused before it is read.
+3. **One smoke label changed.** "status names the install (no npm on this PATH)" became
+   "(npm a stub on this PATH)", since the stub made the old label false. The check
+   itself is unchanged.
+
+Red first, on the unchanged source (the tests and the smoke changed, the source not):
+
+- `tarEntries.test.ts` did not load: the module did not exist.
+- `pendingReleaseNotes.test.ts`: 12 of 12 failed. The first reproduces the capture:
+  from a plain directory the old route said `Pending releases: none`; from the
+  unrelated project, `Pending releases: 1` and `## v9.9.9 — Not Mirror`.
+- `releaseNotes.test.ts`: 3 failed. Two because the builder's `start` became
+  `repository`, which the old builder resolved as an undefined path. The third is the
+  option-shaped-ref test, which got no `unknown_reason`.
+- The old fetch, probed directly: `origin/--upload-pack=touch PWNED-AFTER-SLASH` created
+  `PWNED-AFTER-SLASH` in the repository. The half after the slash does not begin with
+  `-`, so the refusal alone would not stop it; `--end-of-options` is the measure that
+  does.
+- The package smoke: 71 passed, 4 failed, in 7 s. A package answered `Source:
+  origin/stable`, `Pending releases: none`, exit 0. With the npm stub in place, the 71
+  existing checks stayed green.
+
+Green, at `29fe689f`:
+
+- `tarEntries.test.ts` 6 of 6. On this Mac, bsdtar writes pax `x` headers even where
+  the ustar prefix would fit, so the pax path is the one met here; GNU tar on the
+  ubuntu runner writes `L`.
+- `pendingReleaseNotes.test.ts` 12 of 12, `releaseNotes.test.ts` 6 of 6,
+  `runtimeTailCli.test.ts` 17 of 17.
+- `npm test`: 3,201 tests, 3,198 pass, 0 fail, 3 skipped, the machine-dependent ones.
+- The package smoke: 75 passed, 0 failed, in 7 s. The updater smoke, with `MIRROR_USER`
+  unset: 103 passed, 0 failed, in 24 s.
+- `release-notes.golden.json` changes in one entry, `unknown_ref.pending_render`.
+- Typecheck, lint (653 files), the retired-surface tripwire, the pack guard (477 files,
+  the reader among them), the doc-link check, skill command parity, `git diff --check`,
+  and `bash -n` on the smoke are clean.
+
+The Driver ran the [validation route](#validation-route) as written:
+
+- **Step 1.** From `/tmp`, and from a scratch project whose `origin/stable` holds
+  `v9.9.9`: byte-identical blocks, `Source: origin/main`, `Pending releases: 1`, `## v0.33.0
+  — One Plugin, Three Runtimes`. A run that fetched, from the project, left no
+  `FETCH_HEAD` there.
+- **Step 2.** This tree packed and installed into a scratch prefix, run from `/tmp` with
+  a scratch `XDG_CONFIG_HOME`, against the live registry: `--from 0.32.1` read `Source:
+  npm mirror-mind@stable (0.33.0)`, `Pending releases: 1`, `## v0.33.0 — One Plugin,
+  Three Runtimes`, in 2 s. `--from 0.31.14` listed `v0.32.0`, `v0.32.1`, and `v0.33.0`,
+  in that order. With no `--from`: `Pending releases: none`. No
+  `mirror-release-notes-*` directory was left in the temp directory.
+- **Step 3.** The scratch package with `--no-fetch`, and the clone with `--ref
+  origin/nope --no-fetch`: `Pending releases: unknown`, a `Reason:`, exit 1. `--ref` on
+  the package: the usage line, exit 2.
+- **Step 4.** `--ref '--upload-pack=touch PWNED/x'` was refused before git ran, and
+  `--ref 'origin/--upload-pack=touch PWNED'` answered `fetch failed: fatal: invalid
+  refspec '--upload-pack=touch PWNED'`. Nothing was created in the scratch directory or
+  the checkout.
+
+Limitations: run on macOS only, so GNU tar's `L` entries are first met by CI on ubuntu,
+at the next push. On this checkout, which follows `main`, the default source moved from
+`origin/stable` to `origin/main`, as planned.
+
+Navigator validation: pending.
 
 ## Outcome
 
