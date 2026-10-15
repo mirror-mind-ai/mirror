@@ -62,7 +62,9 @@ Navigator took all four decisions as recommended, and the plan was reviewed by a
 four-lens panel the same day ([record below](#panel-review-2026-10-15)), its findings
 folded in. **Approved 2026-10-15 by the Navigator.** Driver `@viniciusteles` and Delivery
 `main` were assigned in the same turn. Implemented 2026-10-15
-([evidence](#implementation-and-the-drivers-checks-2026-10-15)).
+([evidence](#implementation-and-the-drivers-checks-2026-10-15)) and **validated by the
+Navigator 2026-10-15** ([record](#navigator-validation-2026-10-15)), on a second run of
+a corrected route.
 
 ### Objective
 
@@ -476,6 +478,58 @@ its `Install:` line can.
 The route now names the checkout's front door for the clone steps and adds step 0,
 which shows the install that answers. Steps 0, 1, 3 (clone half), and 4 are to be run
 again.
+
+**Second run, 19:00 to 19:02, the route as corrected in `7d79c761`.** Before it, the
+`FETCH_HEAD` the Homebrew release had left in the scratch project was removed.
+
+- **Step 0.** `Install: clone (/Users/vinicius/dev/workspace/mirror-dev)`.
+- **Step 1.** From `/tmp`: `Current version: v0.32.1`, `Source: origin/main`, `Pending
+  releases: 1`, `## v0.33.0 — One Plugin, Three Runtimes`. From the scratch project:
+  `SAME`. A run without `--no-fetch`, from the project, left no `.git/FETCH_HEAD` there.
+- **Step 3, clone half.** `--ref origin/nope --no-fetch`: `Pending releases: unknown`,
+  `Reason: ref origin/nope does not resolve`, `exit=1`.
+- **Step 4.** `--ref '--upload-pack=touch PWNED/x'`: `Reason: ref "--upload-pack=touch
+  PWNED/x" begins with '-' and is refused`, `exit=1`. The form the handoff added, the
+  one only `--end-of-options` stops, `--ref 'origin/--upload-pack=touch PWNED'`:
+  `Reason: fetch failed: fatal: invalid refspec '--upload-pack=touch PWNED'`, `exit=1`.
+  No `PWNED` or `x` in the scratch directory or the checkout.
+
+**Validation recorded 2026-10-15.** With steps 2 and 3 (package half) from the first
+run, every step of the route has passed on the code under test. The Navigator returned
+the second run with every pass condition met, in reply to the stated next step: on a
+pass, CR134 moves to `validated` and the review is drafted.
+
+## Review
+
+Drafted for closure 2026-10-15. The terminal decision is the Navigator's.
+
+**Proportionality.** 466 product lines added and 63 removed, across four files, with
+682 lines of tests and smoke. They fix a defect with three faces: `pending` answered for
+whatever project the person was in, a package had no true answer at all, and `--ref`
+could run a command through `git fetch`. The largest new piece is the tar reader, 124
+lines with its comments. It replaces neither a dependency nor a spawned `tar` by
+accident: the panel chose it so that no archive-chosen name becomes an argument, and so
+the bound sits in one place. Most of the test lines are the route test, whose every case
+runs from two directories, the property this CR exists for.
+
+**Scope discipline.** The change touched the plan's files and no other. It made three
+choices the plan had not spelled out, recorded with the evidence: the package's default
+`--from`, a bound on the compressed tarball as well, and one smoke label. The
+validation route was corrected once, after the Navigator's first run met the Homebrew
+release. Nothing was captured.
+
+**A lesson for routes, not product debt.** On a machine that has both a package install
+and a linked checkout, a bare `mirror` in a validation route tests whichever comes first
+on the Navigator's PATH, and the Driver's environment may differ. `runtime version`
+shows the same version for both. A route that tests a checkout names its front door and
+shows the `Install:` line first, as this one does now.
+
+**Debt: none carried.** For the Navigator to accept at closure:
+
+1. Run on macOS only. GNU tar's `L` entries in the tar reader's test, and the package
+   smoke's npm stub, are first met by CI on ubuntu at the next push to `main`.
+2. The Homebrew install runs the released code, where the defect is live, as the first
+   run showed, until a release carries CR134. That is the Outcome's to observe.
 
 ## Outcome
 
