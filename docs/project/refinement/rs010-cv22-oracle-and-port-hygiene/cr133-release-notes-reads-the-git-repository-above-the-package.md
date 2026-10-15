@@ -49,7 +49,8 @@ root it is given, plus the test.
 Selected 2026-10-15. The plan below was reviewed by a four-lens panel the same day
 ([record below](#panel-review-2026-10-15)), and its findings are folded in.
 **Approved 2026-10-15 by the Navigator.** Driver `@viniciusteles` and Delivery `main` were
-assigned in the same turn.
+assigned in the same turn. Implemented 2026-10-15 and **validated by the Navigator
+2026-10-15** ([record](#navigator-validation-2026-10-15)).
 
 ### Objective
 
@@ -276,7 +277,50 @@ Green, at `471ddb5b`:
 Limitations: run on macOS only; CI runs the package smoke on Linux. The Homebrew
 install was not touched, by design: it is the route's step 3, after a release.
 
-Navigator validation: pending.
+### Navigator validation (2026-10-15)
+
+The Navigator ran the [validation route](#validation-route), steps 1 and 2, as corrected
+at implementation, in their own shell at 17:17 and 17:18, from the checkout, on `main`
+three commits ahead of `origin/main`.
+
+- **Step 1.** The package smoke packed `mirror-mind-0.33.0.tgz` and ended `passed: 71
+  failed: 0`. `git names the prefix as the package's repository, as under Homebrew`,
+  `release-notes latest finds a note`, and `release-notes latest reads the package's
+  own notes` were each `✓`.
+- **Step 2.** `mirror runtime release-notes pending --no-fetch`, from the checkout,
+  printed `Current version: v0.33.0`, `Source: origin/stable`, and `Pending releases:
+  none`.
+
+**Validation recorded 2026-10-15.** The Navigator returned the full run with every pass
+condition met, in reply to the stated next step: on a pass, with the Navigator's
+acceptance, CR133 moves to `validated`. Step 3 waits for a release and belongs to the
+[Outcome](#outcome).
+
+## Review
+
+Drafted for closure 2026-10-15. The terminal decision is the Navigator's.
+
+**Proportionality.** One line of behavior: the working-tree reader joins
+`docs/releases` to the root it is given, not to the repository git names above it.
+Around it, 29 lines of test, 11 of smoke, and the module's comments rewritten to say
+which source asks git. That is small for a defect that hid every release note from a
+common install. The smoke is the larger half of the value: before it, no check ran a
+package where this could happen.
+
+**Scope discipline.** The change touched the plan's three files and no other;
+`treeRoot.ts` was left as planned. It made two departures from the plan's wording, both
+narrower ([recorded](#implementation-and-the-drivers-checks-2026-10-15)), and one
+correction of the validation route before the Navigator ran it. Nothing was captured.
+
+**Debt: none carried.** For the Navigator to accept at closure:
+
+1. `release-notes pending` still finds its repository by climbing from the cwd. That
+   is [CR134](cr134-release-notes-pending-reads-the-cwd-s-git-repository.md), open and
+   `captured`; this CR excluded it by plan.
+2. The smoke's new checks have run on macOS only. CI runs the package smoke on ubuntu
+   at the next push to `main`.
+3. The Homebrew install itself is unobserved until a release carries the change: the
+   route's step 3, for the Outcome to record.
 
 ## Outcome
 
