@@ -139,11 +139,15 @@ Driver's checks, recorded under Evidence:
 Navigator's route, in two parts so the real install is never replaced by an unreleased
 build:
 
-1. Now, the geometry: `bash scripts/smoke_npm_package.sh` on this machine. Its prefix
-   is inside the `git init`ed `$WORK`, which is the Homebrew shape, and its
-   `release-notes latest` check passes.
+1. Now, the geometry: `bash scripts/smoke_npm_package.sh` on this machine. Pass: the
+   check `git names the prefix as the package's repository, as under Homebrew` and
+   the two `release-notes latest` checks are `✓`, and the result reads `failed: 0`.
+   Fail: either release-notes check is `✗`, its output `Release notes: not found`.
+   (Corrected at implementation: the prefix itself is the repository, not `$WORK`;
+   see [the departures](#implementation-and-the-drivers-checks-2026-10-15).)
 2. Now, the unchanged half: `mirror runtime release-notes pending --no-fetch`, from a
-   Mirror Mind clone, answers as before the change.
+   Mirror Mind clone, answers as before the change: `Current version:`, `Source:
+   origin/stable`, and a `Pending releases:` line.
 3. After the release that carries this change: `mirror runtime update` on the Homebrew
    install, `mirror runtime version` to confirm it, then `mirror runtime release-notes
    latest` and `mirror runtime release-notes v0.33.0` print `Release: ...` with a
@@ -206,6 +210,73 @@ ls: /opt/homebrew/docs/releases: No such file or directory
 `release-notes latest` gives the same answer. Both are the same from any cwd, including a
 Mirror Mind clone, because the route reads the running tree, not the cwd. Met right after
 `mirror runtime update` took the install from `0.32.1` to `0.33.0`.
+
+### At selection (2026-10-15)
+
+- The test's premise, measured in a scratch directory: after a bare `git init`, with
+  no commit, `git rev-parse --show-toplevel` from a nested package tree names the
+  enclosing directory, and `readReleaseNotes(<package tree>)` returned `[]`.
+- `/tmp`, where the package smoke installs by default, is inside no git work tree
+  (`fatal: not a git repository`), so the smoke could not meet this bug.
+
+### Implementation and the Driver's checks (2026-10-15)
+
+What is now true, at `471ddb5b`:
+
+- `readReleaseNotes(root)` reads `<resolve(root)>/docs/releases`, with no git call;
+  `readReleaseNote` takes the same root. The module header says the tree source reads
+  files under the root it is given, and only the ref source shells out to git.
+- `repositoryFor` and the three ref readers are unchanged.
+- `releaseNotes.test.ts` holds the nested-package test: a `git init`ed prefix with no
+  notes, holding `lib/node_modules/mirror-mind/docs/releases/v0.1.0.md`. It asserts
+  the Homebrew shape first (git names the prefix), then that `readReleaseNotes`,
+  `readReleaseNote("latest")`, and `readReleaseNote("v0.1.0")` find the package's note.
+- `smoke_npm_package.sh` initializes its scratch prefix as a repository before the
+  install, checks that git names the prefix from the installed package, and, after
+  `runtime status`, checks that `release-notes latest` prints a `Release: v` line and
+  a `Path:` under the installed package's `docs/releases`.
+
+Two departures from the plan's wording, both narrower than it:
+
+1. **`git init` runs on `$WORK/prefix`, not `$WORK`.** On Homebrew the prefix *is* the
+   repository (`/opt/homebrew`), so this is the exact shape. It also leaves the smoke's
+   cwd, `$WORK/home`, outside any repository, so no other check's premise moved: the
+   other 69 checks passed on the red run as before.
+2. **The smoke asserts a `Path:` under the package, not `Release: v<version>`.** A
+   commit on `main` may carry a version whose note is not written yet, which
+   `release:doctor` checks at release time. The smoke pins where the reader reads,
+   which is this CR's subject.
+
+The Navigator's validation route, step 1, was corrected to match the first, before it
+was run.
+
+Red first, on the unchanged reader (the test and the smoke change applied, the source
+not):
+
+- `releaseNotes.test.ts`: the new test failed with `actual: []`, `expected:
+  ['v0.1.0']`, after its Homebrew-shape assertion passed. The other five passed.
+- The package smoke: 69 passed, 2 failed, in 7 s. The geometry check passed; both
+  release-notes checks failed, the command printing `Release notes: not found`.
+
+Green, at `471ddb5b`:
+
+- `releaseNotes.test.ts`: 6 of 6.
+- The package smoke: 71 passed, 0 failed, in 6 s.
+- `npm test`: 3,183 tests, 3,180 pass, 0 fail, 3 skipped, the machine-dependent ones.
+- `git diff` of `ts/test/goldens/release-notes.golden.json`: empty.
+- Typecheck, lint (650 files), the retired-surface tripwire, the pack guard (476
+  files), the doc-link check, skill command parity, `git diff --check`, and `bash -n`
+  on the smoke are all clean.
+- From this clone, through the linked `mirror` (`~/.local/mirror-dev/bin/mirror`, a
+  link to this checkout's `bin/mirror.js`): `release-notes latest` prints `Release:
+  v0.33.0 — One Plugin, Three Runtimes` with a `Path:` under the checkout, and
+  `release-notes pending --no-fetch` prints `Current version: v0.33.0`, `Source:
+  origin/stable`, `Pending releases: none`.
+
+Limitations: run on macOS only; CI runs the package smoke on Linux. The Homebrew
+install was not touched, by design: it is the route's step 3, after a release.
+
+Navigator validation: pending.
 
 ## Outcome
 
