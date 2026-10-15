@@ -46,6 +46,145 @@ Captured, unassigned, after the `v0.33.0` update of a Homebrew install (2026-10-
 Current Focus unchanged. Likely small: `readReleaseNotes` reads `docs/releases` under the
 root it is given, plus the test.
 
+Selected 2026-10-15. The plan below was reviewed by a four-lens panel the same day
+([record below](#panel-review-2026-10-15)), and its findings are folded in.
+**Approved 2026-10-15 by the Navigator.** Driver `@viniciusteles` and Delivery `main` were
+assigned in the same turn.
+
+### Objective
+
+`release-notes latest` and `release-notes vX.Y.Z` answer from the tree that holds the
+running front door, on every install kind, with no git call. The route already passes
+that tree (US3 plateau 1); the reader stops climbing out of it.
+
+### Design
+
+**The working-tree reader reads where it is pointed.** `readReleaseNotes(start)` lists
+`<resolve(start)>/docs/releases` and nothing else. `repositoryFor` is no longer on its
+path. This is the shape the welcome card already has for the same notes
+(`ts/src/welcome/card.ts`, `<treeRoot>/docs/releases/<version>.md`, CV22.DS10.US3): one
+file read under the running tree.
+
+**The ref readers keep `repositoryFor`.** `readReleaseNotesFromRef`,
+`readReleaseNoteFromRef`, and `buildPendingReleaseNotes` run `ls-tree`, `show`, and
+`fetch`, which need a repository to run in, and today that repository is found by
+climbing from the cwd. Which repository `pending` should ask is
+[CR134](cr134-release-notes-pending-reads-the-cwd-s-git-repository.md)'s decision;
+this change does not touch it.
+
+**The test pins the reader.** A temporary directory with `git init` and no
+`docs/releases` of its own holds, in a subdirectory, a package tree with
+`docs/releases/v0.1.0.md`. `readReleaseNotes(<package tree>)` finds the note and
+`readReleaseNote("latest", <package tree>)` returns it. No commit is needed:
+`rev-parse --show-toplevel` answers in an empty repository (measured at selection).
+Before the change the reader asks git, is sent to `<repository>/docs/releases`, which
+does not exist, and gets `[]`: red first. The same test is the proof that no git call
+remains, since any reader that climbed would miss the note; the plan promises nothing
+about git that this test cannot see.
+
+**The smoke pins the install kind.** `scripts/smoke_npm_package.sh` installs the packed
+tarball into `$WORK/prefix`, under `/tmp` or `$RUNNER_TEMP`, neither inside a git work
+tree, so today it cannot meet this bug. One `git init -q "$WORK"` before the install
+puts the scratch prefix in the Homebrew geometry, and one check, `mirror runtime
+release-notes latest` containing `Release: v<version>`, keeps it there. `git` is already
+on the smoke's PATH.
+
+**One spawn fewer.** The reader today runs `git` with the config of whatever repository
+sits above the install, on the failing machine Homebrew's own. `rev-parse` runs no hooks,
+so this was never an exploit, but a reader that consults no ancestor's `.git/config` is
+strictly less surface, and that is a second reason not to put git back here.
+
+**One core.** The Python oracle this module was ported from is gone, so there is no
+second side to reconcile and no golden to advance. The existing golden tests read from
+the fixture clone's root, where the climb and the tree root agree, so their expectations
+are unchanged; a changed golden here would mean the change went wider than planned.
+
+### Files
+
+- `ts/src/runtime/releaseNotes.ts`: `readReleaseNotes` uses `resolve(start)` directly.
+  The header comment stops saying the working tree answers "what does this checkout
+  contain": it answers what the tree it is given contains, and only the ref source
+  shells out to git.
+- `ts/test/runtime/releaseNotes.test.ts`: the nested-package test above, using the
+  file's existing `git` helper and `GIT_ENV`.
+- `scripts/smoke_npm_package.sh`: `git init -q "$WORK"` before the install, and the
+  `release-notes latest` check in the package's section.
+
+Not edited: `ts/src/runtime/treeRoot.ts`, whose header already describes the climb in
+the past tense; it becomes true.
+
+### Acceptance
+
+- `mirror runtime release-notes v0.33.0` and `release-notes latest` print the shipped
+  note on a package installed under a prefix that is inside a git work tree.
+- A checkout and an `npm link` install answer as they do today. Neither is pinned anew:
+  Node resolves the link, so `runningTreeRoot()` is the clone either way, and the
+  existing golden tests cover the clone.
+- The new test fails on the current `readReleaseNotes` and passes after the change.
+- The package smoke's prefix sits inside a git work tree and its `release-notes latest`
+  check passes.
+- The release-notes golden file is byte-identical before and after.
+- `release-notes pending` is unchanged in behavior and in output.
+
+### Validation Route
+
+Driver's checks, recorded under Evidence:
+
+- `npm test`, `npm run typecheck`, `npm run lint`, green.
+- The new test run against the pre-change reader, shown red.
+- `bash scripts/smoke_npm_package.sh`, green, with its new check shown red against the
+  pre-change reader.
+- `git diff --stat ts/test/goldens/release-notes.golden.json` empty.
+
+Navigator's route, in two parts so the real install is never replaced by an unreleased
+build:
+
+1. Now, the geometry: `bash scripts/smoke_npm_package.sh` on this machine. Its prefix
+   is inside the `git init`ed `$WORK`, which is the Homebrew shape, and its
+   `release-notes latest` check passes.
+2. Now, the unchanged half: `mirror runtime release-notes pending --no-fetch`, from a
+   Mirror Mind clone, answers as before the change.
+3. After the release that carries this change: `mirror runtime update` on the Homebrew
+   install, `mirror runtime version` to confirm it, then `mirror runtime release-notes
+   latest` and `mirror runtime release-notes v0.33.0` print `Release: ...` with a
+   `Path:` under `/opt/homebrew/lib/node_modules/mirror-mind/`. This step closes the
+   Outcome, not the validation.
+
+### Non-Goals
+
+- Where `release-notes pending` finds its repository: CR134.
+- What the welcome card reads: done under CR135 and US3.
+- Removing `repositoryFor` or the `runGit` import from the module: both remain in use
+  by the ref readers until CR134 decides otherwise.
+- The `Path:` line's shape in the rendered note, which prints the absolute path of
+  the file found. It is unchanged.
+
+### Panel review (2026-10-15)
+
+The Navigator asked which lenses fit and had them review. The engineer,
+quality-assurance, devops-engineer, and security-engineer lenses reviewed the Driver's
+draft, each testing its claims against the code, a scratch repository, and the smoke.
+Only dissent was recorded.
+
+Synthesis: the plan's shape holds; no blocker. Its gap was that the install kind that
+failed was pinned only by a unit test that simulates it, while the one script that
+performs a package install sits where the bug cannot occur. The plan succeeds if a
+package under a git work tree prints its notes, the smoke would go red if the climb came
+back, and the Navigator's real install is touched only by a release.
+
+| Lens | Dissent | Resolution |
+|---|---|---|
+| engineer | The header rewording was promised without saying what it must stop saying. `treeRoot.ts` was listed under Files as "no edit expected"; a file not edited is not an affected file | Files names the sentence that goes. `treeRoot.ts` moved to a "not edited" note |
+| quality-assurance | The test's enclosing repository "with a commit" states a premise that is false: `rev-parse --show-toplevel` answers after a bare `git init` (measured). Acceptance promised "no git call", which nothing in the plan can observe, `runGit` not being injectable. The route's "local `npm install -g` of the built package" would replace the Homebrew install with an unreleased build, with no way back named | The commit is dropped. The test is named as the proof: a reader that climbed would miss the note. The route is split: geometry now through the smoke, the real install after the release |
+| devops-engineer | The package smoke installs into a prefix under `/tmp` or `$RUNNER_TEMP`, outside any git work tree, so CI stays green on today's code and on a regression. `git init -q "$WORK"` plus one `release-notes latest` check makes the smoke the durable pin; `git` is already on its PATH | Both added to Files, Acceptance, and the Driver's checks. The smoke is also the Navigator's step 1 |
+| security-engineer | No dissent. The reader spawned `git` with the config of an untrusted ancestor repository; `rev-parse` runs no hooks, so not an exploit, but the removal is a strict reduction in surface and should be recorded so git is not put back here later | One paragraph in Design |
+
+Not asked:
+
+- the database-architect, ai-engineer, and prompt-engineer: the slice has no data,
+  model, or prompt;
+- the product and experience designers: the rendered note does not change.
+
 ## Evidence
 
 ```text
