@@ -12,6 +12,38 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-10-15 — v0.33.2 released: Git Runs Where Mirror Lives
+
+`v0.33.2` is a patch release of one Change Request, CR138. On a clone install, `runtime
+status`, `version`, and `diagnose` describe the install from any directory, and git runs
+only in the install's own checkout. Before, a checkout someone else made could have its
+`core.fsmonitor` command run through these commands. Package installs were never exposed.
+
+Where it stands:
+- `stable` and the tag on `ccdf2d85`, promoted 2026-10-15;
+- npm `latest` and `stable` on `0.33.2`, with SLSA provenance, published 2026-10-15;
+- the GitHub Release, marked latest.
+
+The route, in order:
+- release note, version bump, and every gate run locally: the suite, typecheck, lint,
+  the retired-surface tripwire, the pack guard (479 files), doc links, skill command
+  parity, the plugin's `--check`, and both smokes;
+- CI green on the release commit, Tests and Docs;
+- `release:promote --push`, which tagged, moved `stable`, and pushed both in 5 s;
+- the publish workflow staged from CI on the tag, run `38812571296`, its summary
+  printing the `latest` move;
+- the Navigator approved the `release` environment, the staged version (2FA), and
+  `latest`;
+- a stranger's install from the public registry, into a prefix that is a git
+  repository: `0.33.2`, `Clone role: none (package install)`, `ready` after `init` and
+  `seed`, the release's own note from `release-notes latest`, `pending --from 0.33.1`
+  listing `v0.33.2` from the registry, and from inside a repository with a hostile
+  `core.fsmonitor`, no command run by `status`, `version`, or `diagnose`;
+- this machine's Homebrew package updated to `0.33.2`, its clone-role row `none (package
+  install)`.
+
+Nothing from the release is left to observe.
+
 ### 2026-10-15 — CR138 done: status, version, and diagnose answer for the install, and run git nowhere else
 
 For a clone install, `runtime status`, `version`, and `diagnose` named the install on
