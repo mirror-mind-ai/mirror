@@ -79,4 +79,5 @@ evidence stays honest as both cores move.
 - [CR135 — The welcome card's update check asks the cwd's repository, not the install, and the status line keeps a stale verdict](cr135-the-welcome-card-s-update-check-asks-the-cwd-s-repository.md)
 - [CR136 — The `release` environment takes a dispatch from any ref, so a branch's own copy of `publish.yml` can stage](cr136-the-release-environment-takes-a-dispatch-from-any-ref.md)
 - [CR137 — The updater smoke's package lane fails on a machine that exports `MIRROR_USER`](cr137-the-updater-smoke-fails-on-a-machine-that-exports-mirror-user.md)
-- [CR138 — `runtime status` and `runtime version` read a clone's repository and channel from the cwd, so a healthy clone is `attention needed` outside its checkout](cr138-runtime-status-and-version-read-a-clone-s-repository-and-channel-from-the-cwd.md)
+- [CR138 — `runtime status`, `version`, and `diagnose` read a clone's repository and channel from the cwd, so a healthy clone is `attention needed` outside its checkout](cr138-runtime-status-and-version-read-a-clone-s-repository-and-channel-from-the-cwd.md)
+- [CR139 — A verdict that exits 1 is logged as a front-door `ERROR`, and `diagnose` counts it as a failure](cr139-a-verdict-that-exits-1-is-logged-as-a-front-door-error.md)

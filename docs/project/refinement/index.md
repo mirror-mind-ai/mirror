@@ -8,8 +8,8 @@ If a linked document and this index disagree, this index wins.
 
 ## Current Focus
 
-- Refinement Story: RS001
-- Change Request: none
+- Refinement Story: RS010
+- Change Request: CR138
 
 Selecting a focus is an explicit project decision. Reading this file never selects or
 executes work.
@@ -77,7 +77,8 @@ Open work is ordered intentionally. Terminal history follows open work.
 | 43 | [CR130](rs010-cv22-oracle-and-port-hygiene/cr130-double-encoded-em-dashes-in-the-configuration-reference.md) | RS010 | Double-encoded em dashes in the configuration reference, and nothing that catches them | captured | — | — |
 | 44 | [CR131](rs010-cv22-oracle-and-port-hygiene/cr131-runtime-diagnose-does-not-run-the-mcp-locator.md) | RS010 | `runtime diagnose` does not say what the plugin's MCP entry would find | captured | — | — |
 | 45 | [CR136](rs010-cv22-oracle-and-port-hygiene/cr136-the-release-environment-takes-a-dispatch-from-any-ref.md) | RS010 | The `release` environment takes a dispatch from any ref, so a branch's own copy of `publish.yml` can stage | captured | — | — |
-| 46 | [CR138](rs010-cv22-oracle-and-port-hygiene/cr138-runtime-status-and-version-read-a-clone-s-repository-and-channel-from-the-cwd.md) | RS010 | `runtime status` and `runtime version` read a clone's repository and channel from the cwd, so a healthy clone is `attention needed` outside its checkout | captured | — | — |
+| 46 | [CR138](rs010-cv22-oracle-and-port-hygiene/cr138-runtime-status-and-version-read-a-clone-s-repository-and-channel-from-the-cwd.md) | RS010 | `runtime status`, `version`, and `diagnose` read a clone's repository and channel from the cwd, so a healthy clone is `attention needed` outside its checkout | planned | — | — |
+| 47 | [CR139](rs010-cv22-oracle-and-port-hygiene/cr139-a-verdict-that-exits-1-is-logged-as-a-front-door-error.md) | RS010 | A verdict that exits 1 is logged as a front-door `ERROR`, and `diagnose` counts it as a failure | captured | — | — |
 | — | [CR134](rs010-cv22-oracle-and-port-hygiene/cr134-release-notes-pending-reads-the-cwd-s-git-repository.md) | RS010 | `release-notes pending` reads the cwd's git repository, so it answers for whatever project the person is in | done | @viniciusteles | `main` |
 | — | [CR133](rs010-cv22-oracle-and-port-hygiene/cr133-release-notes-reads-the-git-repository-above-the-package.md) | RS010 | `runtime release-notes` reads the git repository above the package, so a Homebrew install finds no notes | done | @viniciusteles | `main` |
 | — | [CR135](rs010-cv22-oracle-and-port-hygiene/cr135-the-welcome-card-s-update-check-asks-the-cwd-s-repository.md) | RS010 | The welcome card's update check asks the cwd's repository, not the install, and the status line keeps a stale verdict | done | @viniciusteles | `main` |
