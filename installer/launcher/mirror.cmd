@@ -15,6 +15,10 @@ set "MIRROR_APP=%~dp0.."
 for %%I in ("%MIRROR_APP%") do set "MIRROR_APP=%%~fI"
 set "Path=%MIRROR_APP%\node;%MIRROR_APP%\git\cmd;%Path%"
 if not defined EDITOR set "EDITOR=notepad"
+rem The installer stores the key in the user's environment (registry). A window
+rem opened before the install -- or Explorer before it refreshed -- does not
+rem have it yet; read it from there so Pi never starts without a provider.
+if not defined OPENROUTER_API_KEY for /f "tokens=2,*" %%A in ('reg query HKCU\Environment /v OPENROUTER_API_KEY 2^>nul ^| findstr /i "OPENROUTER_API_KEY"') do set "OPENROUTER_API_KEY=%%B"
 set "MIRROR_WORKSPACE=%USERPROFILE%\Mirror"
 if not exist "%MIRROR_WORKSPACE%" mkdir "%MIRROR_WORKSPACE%"
 
