@@ -483,7 +483,7 @@ describe("url-pathname-as-path (PR #42, CR140)", () => {
   test("the row flags a URL's pathname read as a filesystem path, in src and scripts", () => {
     const root = gitRepo({
       "ts/src/a.ts": 'const p = new URL("./x", import.meta.url).pathname;\n',
-      "ts/scripts/b.ts": "const root = url.pathname.replace(/\/$/, '');\n",
+      "ts/scripts/b.ts": "const root = url.pathname.replace(//$/, '');\n",
       "ts/test/c.test.ts": "assert.match(url.pathname, /C%C3%B3digo/);\n",
       "docs/guide.md": "URL.pathname is not a filesystem path.\n",
     });
