@@ -133,9 +133,12 @@ test("an unknown install names the path it looked up from, as the detector saw i
   // `/Users/x/C%C3%B3digo/...` -- a URL spelling that exists nowhere. Two
   // contributors on two platforms debugged what one line would have shown.
   // The path printed is the probed one, not re-spelled, so a bad spelling
-  // is visible in the report.
-  const probed = "/Users/x/C%C3%B3digo/mirror/ts/src/frontDoor/cli.ts";
-  for (const npmRootGlobal of [undefined, null, "/usr/local/lib/node_modules"]) {
+  // is visible in the report. `P`, because the detector resolves the path it
+  // is given: on Windows that adds the runner's drive, and the first run of
+  // the `windows-latest` job on `main` caught this test comparing against the
+  // POSIX spelling alone.
+  const probed = P("/Users/x/C%C3%B3digo/mirror/ts/src/frontDoor/cli.ts");
+  for (const npmRootGlobal of [undefined, null, P("/usr/local/lib/node_modules")]) {
     const kind = detectInstallKind({
       frontDoorPath: probed,
       ...(npmRootGlobal === undefined ? {} : { npmRootGlobal }),
