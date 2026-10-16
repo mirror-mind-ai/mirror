@@ -1,0 +1,20 @@
+<Configuration>
+  <!-- Mirror Mind installer spike: a clean Windows, the script read-only, the
+       results written back to the host. Double-click to start. -->
+  <Networking>Enable</Networking>
+  <MappedFolders>
+    <MappedFolder>
+      <HostFolder>C:\VSCode\mirror-windows-ts\installer\spike</HostFolder>
+      <SandboxFolder>C:\Spike</SandboxFolder>
+      <ReadOnly>true</ReadOnly>
+    </MappedFolder>
+    <MappedFolder>
+      <HostFolder>C:\VSCode\mirror-windows-ts\.local\sandbox-out</HostFolder>
+      <SandboxFolder>C:\Out</SandboxFolder>
+      <ReadOnly>false</ReadOnly>
+    </MappedFolder>
+  </MappedFolders>
+  <LogonCommand>
+    <Command>powershell.exe -NoExit -ExecutionPolicy Bypass -Command "Set-Location C:\Out; &amp; C:\Spike\install.ps1 -User Rodrigo -OutDir C:\Out -Launch"</Command>
+  </LogonCommand>
+</Configuration>
