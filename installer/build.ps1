@@ -16,7 +16,9 @@
 [CmdletBinding()]
 param(
     [string]$Version,
-    [string]$MirrorVersion = "latest"
+    [string]$MirrorVersion = "latest",
+    # Appended to the output name, e.g. -b2, when the previous .exe is held open (a Sandbox mapping it).
+    [string]$OutputSuffix = ""
 )
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
@@ -35,7 +37,7 @@ if (-not $candidates) {
 }
 $iscc = $candidates | Select-Object -First 1
 
-& $iscc "/DAppVersion=$Version" "/DMirrorVersion=$MirrorVersion" (Join-Path $here "mirror.iss")
+& $iscc "/DAppVersion=$Version" "/DMirrorVersion=$MirrorVersion" "/DOutputSuffix=$OutputSuffix" (Join-Path $here "mirror.iss")
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 $out = Join-Path (Split-Path -Parent $here) "dist\MirrorMind-Setup-$Version.exe"
 Write-Host ("built {0} ({1:N1} MB)" -f $out, ((Get-Item $out).Length / 1MB))

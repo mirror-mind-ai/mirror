@@ -32,6 +32,9 @@
 #ifndef AppVersion
   #define AppVersion "2.0.0"
 #endif
+#ifndef OutputSuffix
+  #define OutputSuffix ""
+#endif
 #ifndef MirrorVersion
   #define MirrorVersion "latest"
 #endif
@@ -47,10 +50,11 @@ DisableProgramGroupPage=yes
 DisableDirPage=yes
 PrivilegesRequired=lowest
 OutputDir=..\dist
-OutputBaseFilename=MirrorMind-Setup-{#AppVersion}
+OutputBaseFilename=MirrorMind-Setup-{#AppVersion}{#OutputSuffix}
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
+WizardSizePercent=100,130
 WizardImageFile=assets\wizard-large.bmp
 WizardImageStretch=yes
 ArchitecturesAllowed=x64compatible
@@ -128,7 +132,7 @@ begin
     else if Key = 'body' then Result :=
       'O Mirror foi instalado. Faltam duas coisas antes de comecar:' + #13#10 + #13#10 +
       '1) Seu nome - uma identidade e memoria privadas, guardadas somente NESTE computador. Nada e enviado para a internet.' + #13#10 + #13#10 +
-      '2) Uma chave da OpenRouter - UMA conta cuida de tudo: a conversa com a IA e a memoria do Mirror. Crie a conta, coloque alguns dolares de credito (US$5 bastam para comecar) e gere uma chave. O botao abaixo abre a pagina certa.'
+      '2) Uma chave da OpenRouter - UMA conta cuida da conversa com a IA e da memoria do Mirror. Crie a conta, coloque US$5 de credito e gere uma chave (o botao ao lado do campo abre a pagina certa).'
     else if Key = 'name' then Result := 'Seu nome:'
     else if Key = 'key' then Result := 'Chave da OpenRouter (sk-or-...):'
     else if Key = 'keysbtn' then Result := 'Criar conta / gerar chave...'
@@ -153,7 +157,7 @@ begin
     else if Key = 'body' then Result :=
       'Mirror is installed. Two last things before you start:' + #13#10 + #13#10 +
       '1) Your name - a private identity and memory kept only on THIS computer. Nothing is uploaded.' + #13#10 + #13#10 +
-      '2) An OpenRouter key - ONE account covers everything: the AI conversation and Mirror''s memory. Create the account, add a few dollars of credit (US$5 is enough to start) and generate a key. The button below opens the right page.'
+      '2) An OpenRouter key - ONE account covers the AI conversation and Mirror''s memory. Create the account, add US$5 of credit and generate a key (the button beside the field opens the right page).'
     else if Key = 'name' then Result := 'Your name:'
     else if Key = 'key' then Result := 'OpenRouter key (sk-or-...):'
     else if Key = 'keysbtn' then Result := 'Create account / get a key...'
@@ -232,9 +236,9 @@ begin
   BannerImage.Parent := IdPage.Surface;
   BannerImage.Bitmap.LoadFromFile(ExpandConstant('{tmp}\wizard-banner.bmp'));
   BannerImage.Stretch := True;
-  BannerImage.Width := ScaleX(246);
-  BannerImage.Height := ScaleY(82);
-  BannerImage.Left := (SW - BannerImage.Width) div 2;
+  BannerImage.Width := ScaleX(192);
+  BannerImage.Height := ScaleY(64);
+  BannerImage.Left := 0;
   BannerImage.Top := 0;
 
   LangCombo := TNewComboBox.Create(WizardForm);
@@ -242,7 +246,7 @@ begin
   LangCombo.Style := csDropDownList;
   LangCombo.Width := ScaleX(160);
   LangCombo.Left := SW - LangCombo.Width;
-  LangCombo.Top := BannerImage.Top + BannerImage.Height + ScaleY(6);
+  LangCombo.Top := BannerImage.Top + (BannerImage.Height - LangCombo.Height) div 2;
   LangCombo.Items.Add('English');
   LangCombo.Items.Add('Portugues (Brasil)');
   if CurLang = 'pt' then LangCombo.ItemIndex := 1 else LangCombo.ItemIndex := 0;
@@ -294,7 +298,7 @@ begin
   BodyText.WordWrap := True;
   BodyText.Left := 0;
   BodyText.Width := SW;
-  BodyText.Top := LangCombo.Top + LangCombo.Height + ScaleY(10);
+  BodyText.Top := BannerImage.Top + BannerImage.Height + ScaleY(12);
   BodyText.Height := NameLabel.Top - BodyText.Top - ScaleY(6);
 
   ConfigMemo := TNewMemo.Create(WizardForm);
