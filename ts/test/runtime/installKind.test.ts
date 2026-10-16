@@ -23,6 +23,15 @@ function key(path: string): string {
   return path.replace(/\\/g, "/").replace(/\/+$/, "");
 }
 
+/**
+ * A fixture path written the POSIX way, as THIS platform spells it: unchanged
+ * on macOS and Linux, `C:\\home\\dev\\mirror` on Windows, where the detector's
+ * `resolve` would otherwise add the drive to one side of the comparison only.
+ */
+function P(posixPath: string): string {
+  return resolve(posixPath);
+}
+
 /** A filesystem that exists only as a set of paths. */
 function fs(paths: readonly string[]) {
   const set = new Set(paths.map(key));
@@ -41,7 +50,7 @@ function files(contents: Record<string, string>) {
 
 test("a git checkout carrying a root package.json is a clone", () => {
   // CV22.DS10.US3 decision D2: the manifest sits at the repository root.
-  const root = "/home/dev/mirror";
+  const root = P("/home/dev/mirror");
   const kind = detectInstallKind({
     frontDoorPath: join(root, "ts/src/frontDoor/cli.ts"),
     exists: fs([join(root, ".git"), join(root, "package.json")]),
@@ -51,7 +60,7 @@ test("a git checkout carrying a root package.json is a clone", () => {
 });
 
 test("a global npm install is a package, named and versioned from its manifest", () => {
-  const globalRoot = "/usr/local/lib/node_modules";
+  const globalRoot = P("/usr/local/lib/node_modules");
   const pkg = join(globalRoot, "mirror-mind");
   const kind = detectInstallKind({
     frontDoorPath: join(pkg, "ts/src/frontDoor/cli.ts"),
@@ -68,8 +77,8 @@ test("a checkout LINKED under the global root (npm link) is a clone, not a packa
   // front door reached through it has a path that LOOKS installed. Updating
   // that with `npm install -g` would replace the developer's link with a
   // registry copy. The detector resolves symlinks before it decides.
-  const globalRoot = "/usr/local/lib/node_modules";
-  const checkout = "/home/dev/mirror";
+  const globalRoot = P("/usr/local/lib/node_modules");
+  const checkout = P("/home/dev/mirror");
   const linked = join(globalRoot, "mirror-mind", "ts/src/frontDoor/cli.ts");
   const kind = detectInstallKind({
     frontDoorPath: linked,
@@ -135,7 +144,7 @@ const GLOBAL_MANIFEST = JSON.stringify({
 });
 
 test("a global prefix layout with the bin linked into the package is a package, with no npm probe", () => {
-  const prefix = "/opt/homebrew";
+  const prefix = P("/opt/homebrew");
   const pkg = join(prefix, "lib/node_modules/mirror-mind");
   const binLink = join(prefix, "bin/mirror");
   const kind = detectInstallKind({
@@ -192,14 +201,18 @@ test("npm's global root is resolved through symlinks before containment is judge
   // Found by the update smoke on macOS, where /tmp is a symlink to
   // /private/tmp: the front door's path is resolved, `npm root -g` answered
   // the unresolved form, and the install under it read as not inside it.
-  const resolvedRoot = "/private/tmp/prefix/lib/node_modules";
+  const resolvedRoot = P("/private/tmp/prefix/lib/node_modules");
   const pkg = join(resolvedRoot, "mirror-mind");
+  const unresolvedRoot = P("/tmp/prefix/lib/node_modules");
   const kind = detectInstallKind({
     frontDoorPath: join(pkg, "ts/src/frontDoor/cli.ts"),
-    npmRootGlobal: "/tmp/prefix/lib/node_modules",
+    npmRootGlobal: unresolvedRoot,
     exists: fs([join(pkg, "package.json")]),
     readFile: () => GLOBAL_MANIFEST,
-    realpath: (path) => path.replace(/^\/tmp\//, "/private/tmp/"),
+    realpath: (path) =>
+      key(path).startsWith(key(unresolvedRoot))
+        ? resolvedRoot + path.slice(unresolvedRoot.length)
+        : path,
   });
   assert.deepEqual(kind, { kind: "package", root: pkg, name: "mirror-mind", version: "1.2.3" });
 });
@@ -208,19 +221,17 @@ test("an npm-linked checkout reached through the global bin is still a clone", (
   // `npm link`: `<prefix>/bin/mirror` resolves into the checkout, whose root
   // is not under a `lib/node_modules`, so the layout evidence does not apply
   // and the `.git` beside the manifest decides.
-  const checkout = "/home/dev/mirror";
+  const checkout = P("/home/dev/mirror");
+  const linked = P("/opt/homebrew/lib/node_modules/mirror-mind");
+  const bin = P("/opt/homebrew/bin/mirror");
   const kind = detectInstallKind({
-    frontDoorPath: "/opt/homebrew/lib/node_modules/mirror-mind/ts/src/frontDoor/cli.ts",
-    exists: fs([
-      join(checkout, ".git"),
-      join(checkout, "package.json"),
-      "/opt/homebrew/bin/mirror",
-    ]),
+    frontDoorPath: join(linked, "ts/src/frontDoor/cli.ts"),
+    exists: fs([join(checkout, ".git"), join(checkout, "package.json"), bin]),
     readFile: () => GLOBAL_MANIFEST,
     realpath: (path) =>
-      path.startsWith("/opt/homebrew/lib/node_modules/mirror-mind/")
-        ? path.replace("/opt/homebrew/lib/node_modules/mirror-mind", checkout)
-        : path === "/opt/homebrew/bin/mirror"
+      key(path).startsWith(`${key(linked)}/`)
+        ? checkout + path.slice(linked.length)
+        : key(path) === key(bin)
           ? join(checkout, "bin/mirror.js")
           : path,
   });
@@ -338,13 +349,13 @@ test("an npm-linked checkout under the Windows prefix is still a clone", () => {
 });
 
 test("a checkout under a non-ASCII path is a clone when its path comes from fileURLToPath", () => {
-  // Reported on PR #42 by lgarciasbr, reproduced on macOS: `URL.pathname`
-  // percent-encodes a directory named `Código` as `C%C3%B3digo`, a path that
-  // does not exist, so no `.git` was found and every install was `unknown`
-  // -- on any platform, not only Windows. The real-checkout test above only
-  // catches this when the repository itself lives under such a name; this
-  // one builds the checkout under one.
-  const root = mkdtempSync(join(tmpdir(), "mirror-Código-ação-"));
+  // A URL's pathname is not a filesystem path: it percent-encodes every
+  // reserved character. Reported on PR #42 by lgarciasbr for `Código` on
+  // macOS; the reviewer added `space only`, which on Windows is every
+  // `C:\\Users\\John Doe`. The real-checkout test above only catches this when
+  // the repository itself lives under such a name; this one builds the
+  // checkout under a name with both.
+  const root = mkdtempSync(join(tmpdir(), "mirror Código ação-"));
   try {
     mkdirSync(join(root, ".git"));
     writeFileSync(join(root, "package.json"), '{"name":"mirror-mind","version":"0.0.0"}\n');
@@ -353,14 +364,13 @@ test("a checkout under a non-ASCII path is a clone when its path comes from file
     writeFileSync(frontDoor, "");
     const url = pathToFileURL(frontDoor);
 
-    // The path as every route now reads it.
+    // The path as the filesystem spells it reads as a clone...
     assert.deepEqual(detectInstallKind({ frontDoorPath: fileURLToPath(url) }), {
       kind: "clone",
       repository: realpathSync(root),
     });
-    // The path as `URL.pathname` spelled it: the recorded bug, pinned.
-    assert.match(url.pathname, /C%C3%B3digo/);
-    assert.equal(detectInstallKind({ frontDoorPath: url.pathname }).kind, "unknown");
+    // ...and the URL's pathname is a different string, which is the whole bug.
+    assert.match(url.pathname, /mirror%20C%C3%B3digo%20a%C3%A7%C3%A3o-/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
