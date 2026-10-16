@@ -41,8 +41,10 @@ $p.WaitForExit()
 # Bring the installer's own logs out to the host (C:\Out is mapped), so the
 # failure can be read without copying anything from inside the Sandbox.
 $appDir = if ($PerfilPT) { "$profile\AppData\Local\Programs\MirrorMind" } else { "$env:LOCALAPPDATA\Programs\MirrorMind" }
-if (Test-Path "$appDir\logs") { Copy-Item "$appDir\logs\*" "C:\Out\" -Force }
 $mirrorHome = if ($PerfilPT) { $profile } else { $env:USERPROFILE }
+if (Test-Path "$appDir\logs") { Copy-Item "$appDir\logs\*" "C:\Out\" -Force }
+# The runtime's own logs too: diagnose counts front-door errors, and the file says which.
+Get-ChildItem "$mirrorHome\.mirror-minds\*\*.log" -ErrorAction SilentlyContinue | ForEach-Object { Copy-Item $_.FullName "C:\Out\mirror-$($_.Name)" -Force }
 $report = @{
     exitCode = $p.ExitCode
     appDir = $appDir

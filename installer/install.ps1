@@ -255,6 +255,10 @@ function Invoke-Configure {
 
     Step "Pi: OpenRouter as the chat provider, Git Bash as the shell" {
         [Environment]::SetEnvironmentVariable("OPENROUTER_API_KEY", $OpenRouterApiKey, "User")
+        # The runtime's hooks and `runtime diagnose` look for Node through MIRROR_NODE
+        # first; it is the repair route diagnose itself names. Points at the Node this
+        # install owns, so the hooks never depend on what else is on the PATH.
+        [Environment]::SetEnvironmentVariable("MIRROR_NODE", (Join-Path $NodeDir "node.exe"), "User")
         New-Item -ItemType Directory -Force -Path $PiDir | Out-Null
         $settingsPath = Join-Path $PiDir "settings.json"
         $settings = if (Test-Path $settingsPath) { Get-Content $settingsPath -Raw -Encoding UTF8 | ConvertFrom-Json } else { [pscustomobject]@{} }
