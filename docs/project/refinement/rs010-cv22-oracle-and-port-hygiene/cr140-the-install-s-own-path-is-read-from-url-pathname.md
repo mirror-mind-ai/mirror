@@ -111,7 +111,7 @@ matters: the people this release is for cannot take it the usual way.
 
 > **Mirror recognizes its own install under any path** (CR140, PR #42 by
 > @rodrigoimmaginario, with the macOS reproduction by @lgarciasbr). The front door's
-> own path was read from `URL.pathname`, which spells a space as `%20`, `C\u00f3digo` as
+> own path was read from `URL.pathname`, which spells a space as `%20`, `Código` as
 > `C%C3%B3digo`, and `C:\` as `/C:/`. Under such a path, a checkout or a package read as
 > `Install: unknown`, the welcome card showed no update, and `runtime update` refused
 > at its status gate with a reason that was not true. The path is now a filesystem
@@ -198,8 +198,8 @@ after a second round that took every review item:
 Verified on a local merge under `/tmp/mirror merged Código`: 75 tests across the
 touched suites, `runtime status` reads `Install: clone (…)`, typecheck and lint clean.
 
-**Done** when the release that carries it ships with the Upgrading section above; the
-release note draft is in Plan Or Decision. Carried forward from the review, not in
+**Done** when [v0.33.3](../../../releases/v0.33.3.md) ships; its Upgrading section
+carries the manual route drafted in Plan Or Decision. Carried forward from the review, not in
 scope here: the `frame-installer` row's `absentSuffixes` (`.cmd`, `.ps1`) will meet the
 installer series and is to be raised there; the guard's `identifier.pathname` pattern
 would flag a legitimate `request.pathname` if `ts/src` grows HTTP routing, and the
