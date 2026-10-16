@@ -131,7 +131,7 @@ function WriteMirrorEnv([string]$user, [string]$key) {
     $envFile = Join-Path $ConfigDir "env"
     $others = @()
     if (Test-Path $envFile) {
-        foreach ($line in @(Get-Content $envFile)) {
+        foreach ($line in @(Get-Content $envFile -Encoding UTF8)) {
             if (-not $key -and $line -match "^OPENROUTER_API_KEY=(sk-or-\S+)$") { $key = $Matches[1]; continue }
             if ($line -and $line -notmatch "MIRROR_USER=" -and $line -notmatch "OPENROUTER_API_KEY=") { $others += $line }
         }
@@ -142,6 +142,12 @@ function WriteMirrorEnv([string]$user, [string]$key) {
     # of the first key. Set-Content -Encoding UTF8 writes a BOM on PowerShell 5.1.
     [IO.File]::WriteAllLines($envFile, [string[]]($lines + $others), (New-Object Text.UTF8Encoding $false))
     return $envFile
+}
+# Every text file this script writes for another program goes through here.
+# UTF-8 without BOM: Set-Content on PowerShell 5.1 writes ANSI (João's shellPath
+# reached Pi as Jo�o and bash was "not found"), and -Encoding UTF8 adds a BOM.
+function WriteUtf8([string]$path, [string]$text) {
+    [IO.File]::WriteAllText($path, $text, (New-Object Text.UTF8Encoding $false))
 }
 
 function Invoke-Bootstrap {
@@ -251,11 +257,11 @@ function Invoke-Configure {
         [Environment]::SetEnvironmentVariable("OPENROUTER_API_KEY", $OpenRouterApiKey, "User")
         New-Item -ItemType Directory -Force -Path $PiDir | Out-Null
         $settingsPath = Join-Path $PiDir "settings.json"
-        $settings = if (Test-Path $settingsPath) { Get-Content $settingsPath -Raw | ConvertFrom-Json } else { [pscustomobject]@{} }
+        $settings = if (Test-Path $settingsPath) { Get-Content $settingsPath -Raw -Encoding UTF8 | ConvertFrom-Json } else { [pscustomobject]@{} }
         $settings | Add-Member -NotePropertyName defaultProvider -NotePropertyValue "openrouter" -Force
         $settings | Add-Member -NotePropertyName defaultModel -NotePropertyValue $ChatModel -Force
         $settings | Add-Member -NotePropertyName shellPath -NotePropertyValue $GitBash -Force
-        $settings | ConvertTo-Json -Depth 5 | Set-Content $settingsPath
+        WriteUtf8 $settingsPath ($settings | ConvertTo-Json -Depth 5)
         "model $ChatModel"
     }
 
