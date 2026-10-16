@@ -127,7 +127,9 @@ function WriteMirrorEnv([string]$user, [string]$key) {
     }
     $lines = @("MIRROR_USER=$user")
     if ($key) { $lines += "OPENROUTER_API_KEY=$key" }
-    ($lines + $others) | Set-Content $envFile -Encoding ASCII
+    # UTF-8 without BOM: a name like João must survive, and a BOM would become part
+    # of the first key. Set-Content -Encoding UTF8 writes a BOM on PowerShell 5.1.
+    [IO.File]::WriteAllLines($envFile, [string[]]($lines + $others), (New-Object Text.UTF8Encoding $false))
     return $envFile
 }
 

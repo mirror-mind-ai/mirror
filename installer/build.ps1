@@ -18,7 +18,9 @@ param(
     [string]$Version,
     [string]$MirrorVersion = "latest",
     # Appended to the output name, e.g. -b2, when the previous .exe is held open (a Sandbox mapping it).
-    [string]$OutputSuffix = ""
+    [string]$OutputSuffix = "",
+    # Where the .exe lands. Default: <repo>\dist. Use another folder when dist is held open.
+    [string]$OutputDir = ""
 )
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
@@ -37,7 +39,8 @@ if (-not $candidates) {
 }
 $iscc = $candidates | Select-Object -First 1
 
-& $iscc "/DAppVersion=$Version" "/DMirrorVersion=$MirrorVersion" "/DOutputSuffix=$OutputSuffix" (Join-Path $here "mirror.iss")
+if (-not $OutputDir) { $OutputDir = Join-Path (Split-Path -Parent $here) "dist" }
+& $iscc "/DAppVersion=$Version" "/DMirrorVersion=$MirrorVersion" "/DOutputSuffix=$OutputSuffix" "/O$OutputDir" (Join-Path $here "mirror.iss")
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-$out = Join-Path (Split-Path -Parent $here) "dist\MirrorMind-Setup-$Version.exe"
+$out = Join-Path $OutputDir "MirrorMind-Setup-$Version$OutputSuffix.exe"
 Write-Host ("built {0} ({1:N1} MB)" -f $out, ((Get-Item $out).Length / 1MB))

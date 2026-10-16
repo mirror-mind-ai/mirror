@@ -1,4 +1,4 @@
-; ===========================================================================
+﻿; ===========================================================================
 ; Mirror Mind - Windows installer v2 (Inno Setup 6), over the npm package.
 ;
 ; Layout under {app} = %LOCALAPPDATA%\Programs\MirrorMind (per-user, no UAC):
@@ -60,6 +60,9 @@ WizardImageStretch=yes
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 SetupLogging=yes
+SetupIconFile=assets\mirror.ico
+WizardSmallImageFile=assets\wizard-small.bmp,assets\wizard-small-200.bmp
+UninstallDisplayIcon={app}\bin\mirror.ico
 ShowLanguageDialog=yes
 UninstallDisplayName={#AppName}
 
@@ -74,13 +77,14 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 Source: "install.ps1";                DestDir: "{app}\bin"; Flags: ignoreversion
 Source: "launcher\mirror.cmd";        DestDir: "{app}\bin"; Flags: ignoreversion
 Source: "launcher\mirror-status.cmd"; DestDir: "{app}\bin"; Flags: ignoreversion
+Source: "assets\mirror.ico";          DestDir: "{app}\bin"; Flags: ignoreversion
 ; Wizard banner illustration, extracted to {tmp} and loaded by [Code].
 Source: "assets\wizard-banner.bmp"; Flags: dontcopy
 
 [Icons]
-Name: "{group}\{#AppName}";          Filename: "{app}\bin\mirror.cmd";        WorkingDir: "{%USERPROFILE}\Mirror"
-Name: "{group}\{#AppName} - Status"; Filename: "{app}\bin\mirror-status.cmd"; WorkingDir: "{app}"
-Name: "{userdesktop}\{#AppName}";    Filename: "{app}\bin\mirror.cmd";        WorkingDir: "{%USERPROFILE}\Mirror"; Tasks: desktopicon
+Name: "{group}\{#AppName}";          Filename: "{app}\bin\mirror.cmd";        WorkingDir: "{%USERPROFILE}\Mirror"; IconFilename: "{app}\bin\mirror.ico"
+Name: "{group}\{#AppName} - Status"; Filename: "{app}\bin\mirror-status.cmd"; WorkingDir: "{app}"; IconFilename: "{app}\bin\mirror.ico"
+Name: "{userdesktop}\{#AppName}";    Filename: "{app}\bin\mirror.cmd";        WorkingDir: "{%USERPROFILE}\Mirror"; IconFilename: "{app}\bin\mirror.ico"; Tasks: desktopicon
 
 [Run]
 Filename: "{app}\bin\mirror.cmd"; Description: "{cm:LaunchProgram,{#AppName}}"; Flags: nowait postinstall skipifsilent shellexec; Check: ConfigureDone
@@ -122,58 +126,62 @@ begin
 end;
 
 { Texts without accents on purpose: the .iss is read as ANSI by the compiler. }
+{ Copy for the identity page and the progress pages. Written as a person
+  would say it across a desk: one idea per sentence, the why before the how,
+  privacy said once and calmly. The file is UTF-8 with BOM so the Portuguese
+  keeps its accents; Inno 6 reads it. }
 function L(const Key: String): String;
 begin
   Result := '';
   if CurLang = 'pt' then
   begin
-    if Key = 'title' then Result := 'Configure seu Mirror'
-    else if Key = 'subtitle' then Result := 'Duas ultimas coisas para o Mirror funcionar'
+    if Key = 'title' then Result := 'Quase lá'
+    else if Key = 'subtitle' then Result := 'Falta só dizer quem é você e conectar a IA'
     else if Key = 'body' then Result :=
-      'O Mirror foi instalado. Faltam duas coisas antes de comecar:' + #13#10 + #13#10 +
-      '1) Seu nome - uma identidade e memoria privadas, guardadas somente NESTE computador. Nada e enviado para a internet.' + #13#10 + #13#10 +
-      '2) Uma chave da OpenRouter - UMA conta cuida da conversa com a IA e da memoria do Mirror. Crie a conta, coloque US$5 de credito e gere uma chave (o botao ao lado do campo abre a pagina certa).'
-    else if Key = 'name' then Result := 'Seu nome:'
-    else if Key = 'key' then Result := 'Chave da OpenRouter (sk-or-...):'
-    else if Key = 'keysbtn' then Result := 'Criar conta / gerar chave...'
+      'O Mirror é um espelho que conversa: guarda o que importa das suas conversas e usa isso para pensar junto com você.' + #13#10 + #13#10 +
+      'Sua memória fica neste computador, numa pasta com o seu nome. Ela não é enviada para lugar nenhum.' + #13#10 + #13#10 +
+      'Para conversar, o Mirror usa um serviço de IA chamado OpenRouter. Uma conta serve para tudo: crie, coloque US$ 5 de crédito e gere uma chave. O botão ao lado abre a página certa.'
+    else if Key = 'name' then Result := 'Como você quer ser chamado?'
+    else if Key = 'key' then Result := 'Sua chave da OpenRouter (começa com sk-or-):'
+    else if Key = 'keysbtn' then Result := 'Criar conta e gerar chave…'
     else if Key = 'lang' then Result := 'Idioma:'
-    else if Key = 'needname' then Result := 'Por favor, informe seu nome.'
-    else if Key = 'badname' then Result := 'Use apenas letras, numeros, espaco, ponto, hifen ou sublinhado no nome.'
-    else if Key = 'needkey' then Result := 'Por favor, informe sua chave da OpenRouter. Ela comeca com sk-or-.'
-    else if Key = 'configuring' then Result := 'Configurando o seu Mirror...'
-    else if Key = 'installing' then Result := 'Instalando Node.js, Git, Pi e Mirror Mind. Isso leva alguns minutos...'
-    else if Key = 'installed' then Result := 'Tudo instalado.'
-    else if Key = 'failed' then Result := 'A instalacao do Mirror Mind nao foi concluida.'
-    else if Key = 'cfgfail' then Result := 'A configuracao nao foi concluida.' + #13#10 + 'Os detalhes aparecem acima e um log completo esta em:'
-    else if Key = 'cfghint' then Result := 'Verifique sua chave e os creditos da OpenRouter e tente novamente.'
-    else if Key = 'instfail' then Result := 'A instalacao nao foi concluida.' + #13#10 + 'Um log completo esta em:'
-    else if Key = 'insthint' then Result := 'Verifique a conexao com a internet e execute o instalador novamente.'
-    else if Key = 'finished' then Result := 'O Mirror abre em uma janela de terminal. Na primeira vez, converse normalmente: ele ja conhece seu nome e aprende com cada conversa. Digite /mm-help para ver os comandos.';
+    else if Key = 'needname' then Result := 'Escreva o seu nome para continuar.'
+    else if Key = 'badname' then Result := 'O nome vira o nome de uma pasta, então não pode ter \ / : * ? " < > | nem começar com hífen.'
+    else if Key = 'needkey' then Result := 'Cole a chave da OpenRouter para continuar. Ela começa com sk-or-.'
+    else if Key = 'configuring' then Result := 'Preparando o seu Mirror…'
+    else if Key = 'installing' then Result := 'Instalando o que o Mirror precisa (Node.js, Git, Pi). Leva alguns minutos; não precisa fazer nada.'
+    else if Key = 'installed' then Result := 'Tudo pronto.'
+    else if Key = 'failed' then Result := 'A instalação do Mirror Mind não terminou.'
+    else if Key = 'cfgfail' then Result := 'A configuração parou no meio.' + #13#10 + 'O motivo aparece acima; o registro completo está em:'
+    else if Key = 'cfghint' then Result := 'Na maioria das vezes é a chave (copiada incompleta) ou a conta da OpenRouter sem crédito. Confira e tente de novo.'
+    else if Key = 'instfail' then Result := 'A instalação parou no meio.' + #13#10 + 'O registro completo está em:'
+    else if Key = 'insthint' then Result := 'Confira a conexão com a internet e rode o instalador de novo. Ele continua de onde parou.'
+    else if Key = 'finished' then Result := 'O Mirror abre numa janela de texto. Converse como conversaria com alguém: ele já sabe seu nome e aprende a cada conversa. Se quiser ver o que ele sabe fazer, digite /mm-help.';
   end
   else
   begin
-    if Key = 'title' then Result := 'Set up your Mirror'
-    else if Key = 'subtitle' then Result := 'Two last things Mirror needs to run'
+    if Key = 'title' then Result := 'Almost there'
+    else if Key = 'subtitle' then Result := 'Say who you are and connect the AI'
     else if Key = 'body' then Result :=
-      'Mirror is installed. Two last things before you start:' + #13#10 + #13#10 +
-      '1) Your name - a private identity and memory kept only on THIS computer. Nothing is uploaded.' + #13#10 + #13#10 +
-      '2) An OpenRouter key - ONE account covers the AI conversation and Mirror''s memory. Create the account, add US$5 of credit and generate a key (the button beside the field opens the right page).'
-    else if Key = 'name' then Result := 'Your name:'
-    else if Key = 'key' then Result := 'OpenRouter key (sk-or-...):'
-    else if Key = 'keysbtn' then Result := 'Create account / get a key...'
+      'Mirror is a mirror that talks back: it keeps what matters from your conversations and uses it to think alongside you.' + #13#10 + #13#10 +
+      'Your memory stays on this computer, in a folder under your name. It is not sent anywhere.' + #13#10 + #13#10 +
+      'To talk, Mirror uses an AI service called OpenRouter. One account does it all: create it, add US$5 of credit and generate a key. The button beside the field opens the right page.'
+    else if Key = 'name' then Result := 'What should Mirror call you?'
+    else if Key = 'key' then Result := 'Your OpenRouter key (starts with sk-or-):'
+    else if Key = 'keysbtn' then Result := 'Create account and get a key…'
     else if Key = 'lang' then Result := 'Language:'
-    else if Key = 'needname' then Result := 'Please enter your name.'
-    else if Key = 'badname' then Result := 'Use only letters, digits, space, dot, hyphen or underscore in the name.'
-    else if Key = 'needkey' then Result := 'Please enter your OpenRouter key. It starts with sk-or-.'
-    else if Key = 'configuring' then Result := 'Configuring your Mirror...'
-    else if Key = 'installing' then Result := 'Installing Node.js, Git, Pi and Mirror Mind. This takes a few minutes...'
-    else if Key = 'installed' then Result := 'Everything installed.'
+    else if Key = 'needname' then Result := 'Type your name to continue.'
+    else if Key = 'badname' then Result := 'The name becomes a folder name, so it cannot contain \ / : * ? " < > | or start with a hyphen.'
+    else if Key = 'needkey' then Result := 'Paste your OpenRouter key to continue. It starts with sk-or-.'
+    else if Key = 'configuring' then Result := 'Getting your Mirror ready…'
+    else if Key = 'installing' then Result := 'Installing what Mirror needs (Node.js, Git, Pi). A few minutes; nothing to do on your side.'
+    else if Key = 'installed' then Result := 'All set.'
     else if Key = 'failed' then Result := 'Mirror Mind installation did not finish.'
-    else if Key = 'cfgfail' then Result := 'Configuration did not finish.' + #13#10 + 'The details are shown above, and a full log is at:'
-    else if Key = 'cfghint' then Result := 'Check your OpenRouter key and credits and try again.'
-    else if Key = 'instfail' then Result := 'The installation did not finish.' + #13#10 + 'A full log is at:'
-    else if Key = 'insthint' then Result := 'Check your internet connection and run the installer again.'
-    else if Key = 'finished' then Result := 'Mirror opens in a terminal window. The first time, just talk: it already knows your name and learns from every conversation. Type /mm-help to see the commands.';
+    else if Key = 'cfgfail' then Result := 'Setup stopped halfway.' + #13#10 + 'The reason is shown above; the full log is at:'
+    else if Key = 'cfghint' then Result := 'Most of the time it is the key (copied incomplete) or an OpenRouter account with no credit. Check and try again.'
+    else if Key = 'instfail' then Result := 'Installation stopped halfway.' + #13#10 + 'The full log is at:'
+    else if Key = 'insthint' then Result := 'Check your internet connection and run the installer again. It picks up where it left off.'
+    else if Key = 'finished' then Result := 'Mirror opens in a text window. Talk to it as you would to a person: it already knows your name and learns from every conversation. To see what it can do, type /mm-help.';
   end;
 end;
 
@@ -425,13 +433,16 @@ begin
   Result := ExitCode;
 end;
 
+{ The name becomes a folder (~\.mirror-minds\<name>) and MIRROR_USER. Accents
+  are letters -- João, Çãõ, Müller -- so only what Windows forbids in a folder
+  name is refused, plus a leading '-', which init reads as a flag. }
 function ValidName(const S: String): Boolean;
 var
   i: Integer;
 begin
-  Result := Length(S) > 0;
+  Result := (Length(S) > 0) and (S[1] <> '-');
   for i := 1 to Length(S) do
-    if Pos(S[i], 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 ._-') = 0 then
+    if Pos(S[i], '\/:*?"<>|' + #9) > 0 then
       Result := False;
 end;
 

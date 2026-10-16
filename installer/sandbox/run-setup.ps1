@@ -33,4 +33,21 @@ if ($PerfilPT) {
     Write-Host "Perfil simulado: $profile"
 }
 Write-Host "Starting $($setup.Name) $($args -join ' ')"
-Start-Process -FilePath $setup.FullName -ArgumentList $args
+$p = Start-Process -FilePath $setup.FullName -ArgumentList $args -PassThru
+$p.WaitForExit()
+
+# Bring the installer's own logs out to the host (C:\Out is mapped), so the
+# failure can be read without copying anything from inside the Sandbox.
+$appDir = if ($PerfilPT) { "$profile\AppData\Local\Programs\MirrorMind" } else { "$env:LOCALAPPDATA\Programs\MirrorMind" }
+if (Test-Path "$appDir\logs") { Copy-Item "$appDir\logs\*" "C:\Out\" -Force }
+$mirrorHome = if ($PerfilPT) { $profile } else { $env:USERPROFILE }
+$report = @{
+    exitCode = $p.ExitCode
+    appDir = $appDir
+    appDirExists = (Test-Path $appDir)
+    mirrorMinds = @(Get-ChildItem "$mirrorHome\.mirror-minds" -Directory -ErrorAction SilentlyContinue | ForEach-Object Name)
+    envFile = @(Get-ChildItem "$mirrorHome\.mirror-minds\*\.env" -ErrorAction SilentlyContinue | ForEach-Object FullName)
+    piSettings = (Test-Path "$mirrorHome\.pi\agent\settings.json")
+} | ConvertTo-Json
+[IO.File]::WriteAllText("C:\Out\report.json", $report, (New-Object Text.UTF8Encoding $false))
+Write-Host $report
