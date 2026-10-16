@@ -18,6 +18,8 @@ $setup = Get-ChildItem "C:\Setup\MirrorMind-Setup-*.exe" | Sort-Object LastWrite
 if (-not $setup) { Write-Host "no MirrorMind-Setup-*.exe in C:\Setup"; Read-Host; exit 1 }
 
 $args = @('/LOG="C:\Out\setup.log"')
+# install.ps1 mirrors its detail log here, line by line; inherited by the setup and its children.
+$env:MIRROR_LOG_DIR = "C:\Out"
 if ($PerfilPT) {
     $name = "Jo" + [char]0xE3 + "o " + [char]0xC7 + [char]0xE3 + [char]0xF5 + " Silva"
     $profile = "C:\Users\$name"

@@ -57,11 +57,19 @@ $GitSha256 = "075e158ef8e1f0ab80b347e245405d3eca735c2dc88fd8e032e137d0ca61f61b"
 
 if (-not $DetailLog) { $DetailLog = Join-Path $InstallDir "logs\install-detail.log" }
 New-Item -ItemType Directory -Force -Path (Split-Path $DetailLog), $InstallDir, $BinDir | Out-Null
+# MIRROR_LOG_DIR: a second copy of the detail log, line by line, as it happens.
+# The Sandbox harness points it at a host-mapped folder, so the log survives
+# the Sandbox being closed mid-install. Unset outside the harness.
+$LogCopy = if ($env:MIRROR_LOG_DIR -and (Test-Path $env:MIRROR_LOG_DIR)) { Join-Path $env:MIRROR_LOG_DIR (Split-Path -Leaf $DetailLog) } else { $null }
+function Log([string]$line) {
+    Add-Content -Path $DetailLog -Value $line
+    if ($LogCopy) { Add-Content -Path $LogCopy -Value $line }
+}
 
 function Say([string]$msg) {
     $line = "[{0}] {1}" -f (Get-Date -Format "HH:mm:ss"), $msg
     Write-Host $line
-    Add-Content -Path $DetailLog -Value $line
+    Log $line
     if ($TranscriptLog) { Add-Content -Path $TranscriptLog -Value $line -Encoding Default }
 }
 function Done([int]$code) {
@@ -86,7 +94,7 @@ function Run([string]$file, [string[]]$arguments) {
     $saved = $ErrorActionPreference
     $ErrorActionPreference = "Continue"
     try { $out = & $file @arguments 2>&1 | ForEach-Object { "$_" } } finally { $ErrorActionPreference = $saved }
-    $out | ForEach-Object { Add-Content -Path $DetailLog -Value ("     | " + $_) }
+    $out | ForEach-Object { Log ("     | " + $_) }
     if ($LASTEXITCODE -ne 0) { throw "$file $($arguments -join ' ') exited $LASTEXITCODE`n$($out -join "`n")" }
     return ($out | Out-String).Trim()
 }
