@@ -48,9 +48,9 @@
 // Usage:  node ts/scripts/checkSkillCommandParity.ts
 
 import { readdirSync, readFileSync, statSync } from "node:fs";
-import { join, relative } from "node:path";
+import { join, relative, resolve } from "node:path";
 
-const REPO_ROOT = new URL("../..", import.meta.url).pathname.replace(/\/$/, "");
+const REPO_ROOT = resolve(import.meta.dirname, "..", "..");
 const PI_ROOT = join(REPO_ROOT, ".pi", "skills");
 const CLAUDE_ROOT = join(REPO_ROOT, ".claude", "skills");
 const PLUGIN_DIR = join(REPO_ROOT, "plugins", "mirror-mind");

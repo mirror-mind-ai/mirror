@@ -10,7 +10,6 @@
 
 import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { basename, dirname, join, resolve, sep } from "node:path";
-import { fileURLToPath } from "node:url";
 
 export type InstallKind =
   | { kind: "clone"; repository: string }
@@ -186,6 +185,12 @@ function binLinkedUnderPosixPrefix(
   });
 }
 
+/**
+ * Not gated by platform, on purpose: the layout is evidence wherever it is
+ * found, and a Windows-only branch could be exercised only on Windows. Kept
+ * open, macOS and Linux run the Windows tests with fixture paths, and the
+ * `windows-latest` job runs the same tests on the real thing.
+ */
 function binShimmedUnderWindowsPrefix(
   manifest: Manifest,
   nodeModules: string,
@@ -216,13 +221,17 @@ function safeRealpath(path: string): string {
 
 /**
  * This front door's own path, as the filesystem spells it: what every route
- * hands `detectInstallKind`. Through `fileURLToPath`, not `URL.pathname`,
- * which on Windows spells `C:\...` as `/C:/...` -- a path `resolve` read as
- * `C:\C:\...`, so no `.git` was ever found above it and every install was
- * `unknown`: the updater refused, and after CR138 the git rows went blank.
+ * hands `detectInstallKind`. From `import.meta.dirname`, so the path never
+ * passes through URL form: a URL's pathname is not a filesystem path. It
+ * percent-encodes every reserved character -- a directory named `Código` or
+ * `John Doe` becomes `C%C3%B3digo`, `John%20Doe` -- and on Windows it spells
+ * `C:\...` as `/C:/...`. Read as a path, none of those exist, so no `.git`
+ * was found above the front door and every such install was `unknown`: the
+ * updater refused, and after CR138 the git rows went blank. The guard row
+ * `url-pathname-as-path` keeps the idiom out of `ts/src` and `ts/scripts`.
  */
 export function thisFrontDoorPath(): string {
-  return fileURLToPath(new URL("../frontDoor/cli.ts", import.meta.url));
+  return join(import.meta.dirname, "..", "frontDoor", "cli.ts");
 }
 
 export function detectInstallKind(probe: InstallKindProbe): InstallKind {
