@@ -249,7 +249,7 @@ export function detectInstallKind(probe: InstallKindProbe): InstallKind {
   if (repository !== null) return { kind: "clone", repository };
 
   // The reason carries the path the walk started from, spelled as the detector
-  // saw it (CR140): a path that is wrong -- a URL's `%C3%B3` for `\u00f3`, a `/C:/`
+  // saw it (CR140): a path that is wrong -- a URL's `%C3%B3` for `ó`, a `/C:/`
   // for `C:\` -- is then wrong in the report, where `not a git checkout` alone
   // sent two contributors on two platforms debugging what this line shows.
   const because =

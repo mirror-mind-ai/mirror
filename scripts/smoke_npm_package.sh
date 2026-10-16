@@ -234,16 +234,19 @@ contains "and they are the package's AGENTS.md" "$(cat "$WORK/claude-start.out")
 
 say "9. the Gemini CLI wrappers, run from under npm root -g"
 GEMINI_HOOKS="$PKG/.gemini/hooks"
-GEMINI_ENV="GEMINI_PROJECT_DIR=$WORK/home GEMINI_SESSION_ID="
-env $GEMINI_ENV bash "$GEMINI_HOOKS/session-start.sh" </dev/null >"$WORK/gemini-start.out" 2>"$WORK/gemini.err" && ok "gemini session-start exited 0" || bad "gemini session-start failed"
+# An array, not a string: the work dir may hold a space -- v0.33.3 is the
+# release that makes such an install work -- and an unquoted string splits it
+# into words that `env` runs as a command.
+GEMINI_ENV=("GEMINI_PROJECT_DIR=$WORK/home" "GEMINI_SESSION_ID=")
+env "${GEMINI_ENV[@]}" bash "$GEMINI_HOOKS/session-start.sh" </dev/null >"$WORK/gemini-start.out" 2>"$WORK/gemini.err" && ok "gemini session-start exited 0" || bad "gemini session-start failed"
 contains "gemini session-start delivers the Operating Instructions as context (D13)" "$(cat "$WORK/gemini-start.out")" '"hookEventName":"SessionStart","additionalContext":"'
 printf '{"session_id":"npm-gemini","hook_event_name":"BeforeAgent","prompt":"Hello from the installed Gemini wrappers"}' \
-  | env $GEMINI_ENV bash "$GEMINI_HOOKS/log-user.sh" >"$WORK/gemini-user.out" 2>>"$WORK/gemini.err" && ok "gemini log-user exited 0" || bad "gemini log-user failed"
+  | env "${GEMINI_ENV[@]}" bash "$GEMINI_HOOKS/log-user.sh" >"$WORK/gemini-user.out" 2>>"$WORK/gemini.err" && ok "gemini log-user exited 0" || bad "gemini log-user failed"
 printf '{"session_id":"npm-gemini","hook_event_name":"AfterAgent","prompt":"Hello from the installed Gemini wrappers","prompt_response":"Answered from the package","stop_hook_active":false}' \
-  | env $GEMINI_ENV bash "$GEMINI_HOOKS/log-assistant.sh" >"$WORK/gemini-assistant.out" 2>>"$WORK/gemini.err" && ok "gemini log-assistant exited 0" || bad "gemini log-assistant failed"
+  | env "${GEMINI_ENV[@]}" bash "$GEMINI_HOOKS/log-assistant.sh" >"$WORK/gemini-assistant.out" 2>>"$WORK/gemini.err" && ok "gemini log-assistant exited 0" || bad "gemini log-assistant failed"
 check "gemini AfterAgent answers the empty hook object" "$(cat "$WORK/gemini-assistant.out")" "{}"
 printf '{"session_id":"npm-gemini","hook_event_name":"SessionEnd"}' \
-  | env $GEMINI_ENV bash "$GEMINI_HOOKS/session-end.sh" >/dev/null 2>>"$WORK/gemini.err" && ok "gemini session-end exited 0" || bad "gemini session-end failed"
+  | env "${GEMINI_ENV[@]}" bash "$GEMINI_HOOKS/session-end.sh" >/dev/null 2>>"$WORK/gemini.err" && ok "gemini session-end exited 0" || bad "gemini session-end failed"
 # Gemini's stderr is "logs only; never parsed": the Mirror Mode status line
 # from `mirror load` lands there by design. What must not is a warning or an error.
 if grep -qiE "warning|error" "$WORK/gemini.err"; then bad "the gemini wrappers wrote a warning or error to stderr: $(cat "$WORK/gemini.err")"; else ok "the gemini wrappers wrote no warning or error to stderr"; fi
