@@ -64,8 +64,17 @@ function Step([string]$name, [scriptblock]$action) {
     }
 }
 function Run([string]$file, [string[]]$arguments) {
-    # Capture both streams into the log; return stdout.
-    $out = & $file @arguments 2>&1
+    # Capture both streams into the log; judge by the exit code only. Under
+    # $ErrorActionPreference = Stop, PowerShell 5.1 turns a native command's
+    # first stderr line into an exception -- `npm warn` would abort a healthy
+    # install -- so stderr is plain text here.
+    $saved = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        $out = & $file @arguments 2>&1 | ForEach-Object { "$_" }
+    } finally {
+        $ErrorActionPreference = $saved
+    }
     $out | ForEach-Object { Add-Content -Path $Log -Value ("     | " + $_) }
     if ($LASTEXITCODE -ne 0) { throw "$file $($arguments -join ' ') exited $LASTEXITCODE`n$($out -join "`n")" }
     return ($out | Out-String).Trim()
@@ -129,12 +138,12 @@ try {
         if (-not (Get-Command pi -ErrorAction SilentlyContinue)) {
             Run "npm" @("install", "-g", "@earendil-works/pi-coding-agent", "--no-fund", "--no-audit") | Out-Null
         }
-        "pi " + (& pi --version 2>&1 | Select-Object -First 1)
+        "pi " + ((Run "pi" @("--version")) -split "`n" | Select-Object -First 1)
     }
 
     Step "mirror-mind@$MirrorVersion" {
         Run "npm" @("install", "-g", "mirror-mind@$MirrorVersion", "--no-fund", "--no-audit") | Out-Null
-        "mirror " + (& mirror runtime version 2>&1 | Select-String "^Version:" | Select-Object -First 1)
+        "mirror " + ((Run "mirror" @("runtime", "version")) -split "`n" | Where-Object { $_ -match "^Version:" } | Select-Object -First 1)
     }
 
     Step "mirror init $User + seed" {
