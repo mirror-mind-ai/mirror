@@ -885,7 +885,9 @@ function isInit(argv: readonly string[]): boolean {
  */
 function runInit(argv: readonly string[], env: NodeJS.ProcessEnv = process.env): number {
   const user = argv[1];
-  if (!user) {
+  // A word that starts with `-` is a flag this command does not have, not a
+  // user: `init --help` once created a home named `--help`.
+  if (!user || user.startsWith("-")) {
     console.error("Usage: init <user>");
     return 2;
   }

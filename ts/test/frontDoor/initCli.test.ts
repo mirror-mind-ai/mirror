@@ -107,6 +107,22 @@ test("front door `init` requires a user argument", () => {
   assert.equal(result.status, 2);
 });
 
+test("front door `init` does not take a flag for a user name", () => {
+  // `mirror init --help` created a home named `--help` under ~/.mirror-minds
+  // (found while dogfooding on Windows): the only positional was read as the
+  // user. A word that starts with `-` is a flag the command does not have,
+  // and the answer is the usage line, with nothing created.
+  const { home, cleanup } = fakeHome();
+  try {
+    const result = spawnFrontDoor(["init", "--help"], { HOME: home, ...NO_USER });
+    assert.equal(result.status, 2);
+    assert.match(result.stderr, /^Usage: init <user>/);
+    assert.equal(existsSync(join(home, ".mirror-minds", "--help")), false);
+  } finally {
+    cleanup();
+  }
+});
+
 test("`init` ends with the wiring step for each runtime found on the PATH, and only those", () => {
   // US3 plateau 3: the person who just created a home is handed the next line
   // for the runtimes they actually have, not a page. A scratch bin holds
