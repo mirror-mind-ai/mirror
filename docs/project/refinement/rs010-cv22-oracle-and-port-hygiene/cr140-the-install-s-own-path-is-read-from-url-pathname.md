@@ -97,6 +97,49 @@ touched test files — the Navigator's answer to the lane question in Expected B
 The probed path in the `unknown` reason and the release-note recovery route stay with
 the project, not the PR. Current Focus unchanged (RS001).
 
+**Landed on `main`, 2026-10-16:** the `unknown` reason ends with `; looked up from
+<front door path>`, the path as the detector saw it, so a wrong spelling is wrong in
+the report (`ts/src/runtime/installKind.ts`, pinned in `installKind.test.ts`;
+REFERENCE.md's `runtime status` entry names the shape). The render is `Install:
+unknown (<reason>; looked up from <path>)`; the reason nests no parentheses.
+
+### Release note draft
+
+For `docs/releases/<version>.md` of the release that carries PR #42; written here so
+the release does not have to rediscover it. The Upgrading section is the part that
+matters: the people this release is for cannot take it the usual way.
+
+> **Mirror recognizes its own install under any path** (CR140, PR #42 by
+> @rodrigoimmaginario, with the macOS reproduction by @lgarciasbr). The front door's
+> own path was read from `URL.pathname`, which spells a space as `%20`, `C\u00f3digo` as
+> `C%C3%B3digo`, and `C:\` as `/C:/`. Under such a path, a checkout or a package read as
+> `Install: unknown`, the welcome card showed no update, and `runtime update` refused
+> at its status gate with a reason that was not true. The path is now a filesystem
+> path, and an `unknown` install names the path it looked up from.
+>
+> **Windows:** npm's Windows global layout is recognized, and npm runs with no shell,
+> as `node.exe` running `npm-cli.js`. Both are verified by their author on Windows 11
+> and executed on Windows in CI for the two test files they touch. There is still no
+> Windows product; REFERENCE.md's line stands.
+>
+> ## Upgrading
+>
+> If your Mirror lives under a path with a space or a non-ASCII character, the version
+> you have cannot update itself: `runtime update` refuses it. Once, by hand:
+>
+> ```bash
+> # a clone: in the checkout
+> git pull --ff-only
+> # a package
+> npm install -g mirror-mind@latest
+> ```
+>
+> From then on `mirror runtime update` works as documented. Everyone else updates as
+> usual. There is no database migration.
+
+If the Windows CI job does not land with the PR, the Windows paragraph reads
+"verified by their author on Windows 11; not CI-verified; not supported" instead.
+
 Reviewed through four lenses on 2026-10-16 — engineer, quality assurance, DevOps
 engineer, security engineer. Security raised no objection: the shell-less npm spawn
 narrows the boundary CVE-2024-27980 is about, and a wrong `package` verdict on Windows

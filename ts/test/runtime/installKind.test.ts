@@ -98,6 +98,29 @@ test("without npm, a non-checkout is unknown and says npm is why", () => {
   assert.match(kind.kind === "unknown" ? kind.reason : "", /npm is unavailable/);
 });
 
+test("an unknown install names the path it looked up from, as the detector saw it", () => {
+  // CR140: for a clone under `/Users/x/Código`, the reason said `not a git
+  // checkout` and nothing more, while the path the detector had walked was
+  // `/Users/x/C%C3%B3digo/...` -- a URL spelling that exists nowhere. Two
+  // contributors on two platforms debugged what one line would have shown.
+  // The path printed is the probed one, not re-spelled, so a bad spelling
+  // is visible in the report.
+  const probed = "/Users/x/C%C3%B3digo/mirror/ts/src/frontDoor/cli.ts";
+  for (const npmRootGlobal of [undefined, null, "/usr/local/lib/node_modules"]) {
+    const kind = detectInstallKind({
+      frontDoorPath: probed,
+      ...(npmRootGlobal === undefined ? {} : { npmRootGlobal }),
+      exists: fs([]),
+      realpath: (path) => path,
+    });
+    assert.equal(kind.kind, "unknown");
+    const reason = kind.kind === "unknown" ? kind.reason : "";
+    assert.ok(reason.endsWith(`; looked up from ${probed}`), reason);
+    // Rendered inside `Install: unknown (...)`, so the reason itself nests no parens.
+    assert.doesNotMatch(reason, /[()]/);
+  }
+});
+
 // --- CV22.DS10.US3 plateau 4: a package is known by its layout, without npm --
 //
 // `runtime status` and `version` read the install kind too, and they run in

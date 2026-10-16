@@ -190,15 +190,17 @@ export function detectInstallKind(probe: InstallKindProbe): InstallKind {
   const repository = cloneRootFor(dirname(frontDoorPath), exists);
   if (repository !== null) return { kind: "clone", repository };
 
-  return {
-    kind: "unknown",
-    reason:
-      probe.npmRootGlobal === null
-        ? "not a git checkout, and npm is unavailable to identify a package install"
-        : probe.npmRootGlobal === undefined
-          ? "not a git checkout, and not laid out as a global npm install"
-          : "not a git checkout, and not under the global npm root",
-  };
+  // The reason carries the path the walk started from, spelled as the detector
+  // saw it (CR140): a path that is wrong -- a URL's `%C3%B3` for `\u00f3`, a `/C:/`
+  // for `C:\` -- is then wrong in the report, where `not a git checkout` alone
+  // sent two contributors on two platforms debugging what this line shows.
+  const because =
+    probe.npmRootGlobal === null
+      ? "not a git checkout, and npm is unavailable to identify a package install"
+      : probe.npmRootGlobal === undefined
+        ? "not a git checkout, and not laid out as a global npm install"
+        : "not a git checkout, and not under the global npm root";
+  return { kind: "unknown", reason: `${because}; looked up from ${frontDoorPath}` };
 }
 
 /**
