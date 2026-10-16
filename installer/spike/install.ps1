@@ -26,6 +26,7 @@ param(
     [string]$OpenRouterKey = "",
     [string]$MirrorVersion = "latest",
     [string]$NodeMajor = "24",
+    [string]$ChatModel = "~anthropic/claude-sonnet-latest",
     [string]$OutDir = "C:\Out",
     [switch]$Launch
 )
@@ -37,6 +38,15 @@ $RunId = [guid]::NewGuid().ToString("N").Substring(0, 8)
 
 $Base   = Join-Path $env:LOCALAPPDATA "Programs\MirrorMind"
 $NodeDir = Join-Path $Base "node"
+$GitDir = Join-Path $Base "git"
+$GitBash = Join-Path $GitDir "bin\bash.exe"
+# Git for Windows, portable: Pi's bash tool needs a bash.exe on Windows and looks
+# for Git Bash or for 'shellPath' in its settings; without one every mm-* skill
+# fails (found by the first clean Sandbox run). Pinned; the hash is the one the
+# release page publishes.
+$GitVersion = "2.56.0.2"
+$GitTag = "v2.56.0.windows.2"
+$GitSha256 = "075e158ef8e1f0ab80b347e245405d3eca735c2dc88fd8e032e137d0ca61f61b"
 $NpmPrefix = Join-Path $env:APPDATA "npm"
 $Workspace = Join-Path $env:USERPROFILE "Mirror"
 $ConfigDir = Join-Path $env:USERPROFILE ".config\mirror"
@@ -157,6 +167,22 @@ try {
         "npm " + (& npm -v) + " | prefix $prefix"
     }
 
+    Step "git bash (PortableGit $GitVersion, per-user, pinned)" {
+        if (Test-Path $GitBash) { return "already present: $GitBash" }
+        $name = "PortableGit-$GitVersion-64-bit.7z.exe"
+        $sfx = Join-Path $env:TEMP "mirror-$RunId-$name"
+        Say "   downloading $name (60 MB)"
+        (New-Object Net.WebClient).DownloadFile("https://github.com/git-for-windows/git/releases/download/$GitTag/$name", $sfx)
+        $actual = (Get-FileHash $sfx -Algorithm SHA256).Hash.ToLower()
+        if ($actual -ne $GitSha256) { throw "SHA-256 mismatch for $name" }
+        # A 7-Zip self-extractor: -o target, -y no prompts. Runs silently.
+        $proc = Start-Process -FilePath $sfx -ArgumentList @(('-o"{0}"' -f $GitDir), "-y") -Wait -PassThru -WindowStyle Hidden
+        if ($proc.ExitCode -ne 0) { throw "PortableGit extraction exited $($proc.ExitCode)" }
+        Remove-Item $sfx -Force -ErrorAction SilentlyContinue
+        if (-not (Test-Path $GitBash)) { throw "bash.exe not found after extraction" }
+        "installed $(& $GitBash --version) at $GitDir (sha256 verified)"
+    }
+
     Step "pi" {
         if (-not (Get-Command pi -ErrorAction SilentlyContinue)) {
             Run "npm" @("install", "-g", "@earendil-works/pi-coding-agent", "--no-fund", "--no-audit") | Out-Null
@@ -206,8 +232,10 @@ try {
         $settingsPath = Join-Path $PiDir "settings.json"
         $settings = if (Test-Path $settingsPath) { Get-Content $settingsPath -Raw | ConvertFrom-Json } else { [pscustomobject]@{} }
         $settings | Add-Member -NotePropertyName defaultProvider -NotePropertyValue "openrouter" -Force
+        $settings | Add-Member -NotePropertyName defaultModel -NotePropertyValue $ChatModel -Force
+        $settings | Add-Member -NotePropertyName shellPath -NotePropertyValue $GitBash -Force
         $settings | ConvertTo-Json -Depth 5 | Set-Content $settingsPath
-        "key valid (label: $($me.data.label); usage $($me.data.usage)); written to $envFile and Pi settings"
+        "key valid (label: $($me.data.label); usage $($me.data.usage)); written to $envFile; Pi: provider openrouter, model $ChatModel, shellPath git bash"
     }
 
     Step "launcher + shortcut" {
@@ -216,7 +244,7 @@ try {
             "@echo off",
             "chcp 65001 >nul 2>&1",
             "set ""EDITOR=notepad""",
-            "set ""Path=$NodeDir;$NpmPrefix;%Path%""",
+            "set ""Path=$NodeDir;$NpmPrefix;$GitDir\cmd;%Path%""",
             "cd /d ""$Workspace""",
             "title Mirror Mind",
             "pi %*"
