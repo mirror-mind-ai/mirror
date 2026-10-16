@@ -48,8 +48,18 @@ $report = @{
     appDir = $appDir
     appDirExists = (Test-Path $appDir)
     mirrorMinds = @(Get-ChildItem "$mirrorHome\.mirror-minds" -Directory -ErrorAction SilentlyContinue | ForEach-Object Name)
-    envFile = @(Get-ChildItem "$mirrorHome\.mirror-minds\*\.env" -ErrorAction SilentlyContinue | ForEach-Object FullName)
+    envFile = (Test-Path "$mirrorHome\.config\mirror\env")
+    desktopShortcut = (Test-Path "$mirrorHome\Desktop\Mirror Mind.lnk")
     piSettings = (Test-Path "$mirrorHome\.pi\agent\settings.json")
 } | ConvertTo-Json
 [IO.File]::WriteAllText("C:\Out\report.json", $report, (New-Object Text.UTF8Encoding $false))
 Write-Host $report
+
+# Under -PerfilPT the desktop shortcut lands on the simulated profile's Desktop,
+# not on the one shown (WDAGUtilityAccount's); and a .lnk opened from Explorer
+# would run without the simulated environment. Offer the launch from here.
+if ($p.ExitCode -eq 0 -and (Test-Path "$appDir\bin\mirror.cmd")) {
+    if ($PerfilPT) { Write-Host "" ; Write-Host "Atalho criado em: $mirrorHome\Desktop\Mirror Mind.lnk (perfil simulado; nao aparece nesta area de trabalho)" }
+    $answer = Read-Host "Abrir o Mirror agora? [S/n]"
+    if ($answer -eq "" -or $answer -match '^[sSyY]') { & "$appDir\bin\mirror.cmd" }
+}
