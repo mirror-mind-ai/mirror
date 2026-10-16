@@ -81,3 +81,4 @@ evidence stays honest as both cores move.
 - [CR137 — The updater smoke's package lane fails on a machine that exports `MIRROR_USER`](cr137-the-updater-smoke-fails-on-a-machine-that-exports-mirror-user.md)
 - [CR138 — `runtime status`, `version`, and `diagnose` read a clone's repository and channel from the cwd, so a healthy clone is `attention needed` outside its checkout](cr138-runtime-status-and-version-read-a-clone-s-repository-and-channel-from-the-cwd.md)
 - [CR139 — A verdict that exits 1 is logged as a front-door `ERROR`, and `diagnose` counts it as a failure](cr139-a-verdict-that-exits-1-is-logged-as-a-front-door-error.md)
+- [CR140 — The install's own path is read from `URL.pathname`, so a Mirror under a path with a space or an accent is `unknown`, and the updater refuses it](cr140-the-install-s-own-path-is-read-from-url-pathname.md)
