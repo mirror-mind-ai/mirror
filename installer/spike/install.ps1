@@ -26,6 +26,10 @@ param(
     [string]$OpenRouterKey = "",
     [string]$MirrorVersion = "latest",
     [string]$NodeMajor = "24",
+    # Decided 2026-10-16: one OpenRouter key powers Pi's chat and Mirror's memory, and
+    # the chat default is Sonnet via the alias that follows upgrades. The first clean run
+    # had let Pi pick the first OpenRouter model it found (kimi-k2.6), which guessed at
+    # the filesystem for 46k tokens; Sonnet answered the same question in one call.
     [string]$ChatModel = "~anthropic/claude-sonnet-latest",
     [string]$OutDir = "C:\Out",
     [switch]$Launch
