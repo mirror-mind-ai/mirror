@@ -79,6 +79,10 @@ function Run([string]$file, [string[]]$arguments) {
     if ($LASTEXITCODE -ne 0) { throw "$file $($arguments -join ' ') exited $LASTEXITCODE`n$($out -join "`n")" }
     return ($out | Out-String).Trim()
 }
+function RunSoft([string]$file, [string[]]$arguments) {
+    # Like Run, but the exit code is reported in the text instead of thrown.
+    try { return Run $file $arguments } catch { return "$_" }
+}
 function AddUserPath([string]$dir) {
     $current = [Environment]::GetEnvironmentVariable("Path", "User")
     if (-not (($current -split ";") -contains $dir)) {
@@ -165,11 +169,17 @@ try {
         if (-not $key.StartsWith("sk-or-")) { throw "that does not look like an OpenRouter key" }
         # Validate once against the API, as the v1 installer did.
         $me = Invoke-RestMethod -Uri "https://openrouter.ai/api/v1/auth/key" -Headers @{ Authorization = "Bearer $key" } -TimeoutSec 30
-        # Mirror: ~/.config/mirror/env (init created it with MIRROR_USER)
+        # Mirror: ~/.config/mirror/env -- rebuilt deterministically. `init` writes the
+        # file without a final newline, and Get-Content hands ONE line back as a string,
+        # which `+` concatenates instead of appending (the first Sandbox run produced
+        # MIRROR_USER=RodrigoOPENROUTER_API_KEY=...).
+        New-Item -ItemType Directory -Force -Path $ConfigDir | Out-Null
         $envFile = Join-Path $ConfigDir "env"
-        if (-not (Test-Path $envFile)) { New-Item -ItemType Directory -Force -Path $ConfigDir | Out-Null; "MIRROR_USER=$User" | Set-Content $envFile }
-        $lines = Get-Content $envFile | Where-Object { $_ -notmatch "^OPENROUTER_API_KEY=" }
-        $lines + "OPENROUTER_API_KEY=$key" | Set-Content $envFile
+        $others = @()
+        if (Test-Path $envFile) {
+            $others = @(Get-Content $envFile) | Where-Object { $_ -and ($_ -notmatch "^(MIRROR_USER|OPENROUTER_API_KEY)=") -and ($_ -notmatch "OPENROUTER_API_KEY=") }
+        }
+        @("MIRROR_USER=$User", "OPENROUTER_API_KEY=$key") + $others | Set-Content $envFile -Encoding ASCII
         # Pi: the same key as a user environment variable, OpenRouter as the startup provider
         [Environment]::SetEnvironmentVariable("OPENROUTER_API_KEY", $key, "User"); $env:OPENROUTER_API_KEY = $key
         New-Item -ItemType Directory -Force -Path $PiDir | Out-Null
@@ -201,7 +211,9 @@ try {
     }
 
     Step "verify" {
-        $status = Run "mirror" @("runtime", "status")
+        # `runtime status` exits 1 whenever its verdict is "attention needed" (upstream
+        # CR139); the verdict is what we record, not a failure of the install.
+        $status = RunSoft "mirror" @("runtime", "status")
         $welcome = Run "mirror" @("welcome")
         $Report.verify = @{ status = $status; welcome = $welcome }
         ($status -split "`n" | Where-Object { $_ -match "^(Version|Install|Mirror home|Database exists|Core migrations|Status):" }) -join " | "
