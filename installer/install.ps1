@@ -56,6 +56,9 @@ $GitTag = "v2.56.0.windows.2"
 $GitSha256 = "075e158ef8e1f0ab80b347e245405d3eca735c2dc88fd8e032e137d0ca61f61b"
 
 if (-not $DetailLog) { $DetailLog = Join-Path $InstallDir "logs\install-detail.log" }
+# npm, pi and mirror print UTF-8; PowerShell 5.1 would otherwise decode their
+# output in the OEM code page and accents would arrive broken in the log.
+[Console]::OutputEncoding = [Text.Encoding]::UTF8
 New-Item -ItemType Directory -Force -Path (Split-Path $DetailLog), $InstallDir, $BinDir | Out-Null
 # MIRROR_LOG_DIR: a second copy of the detail log, line by line, as it happens.
 # The Sandbox harness points it at a host-mapped folder, so the log survives
@@ -174,7 +177,12 @@ function Invoke-Bootstrap {
     }
 
     Step "npm global prefix on PATH" {
-        $prefix = (& npm prefix -g).Trim()
+        # The prefix of a zip-installed Node is its own folder; do not ask npm for it.
+        # PowerShell 5.1 reads native output in the OEM code page while npm prints
+        # UTF-8, so a profile such as C:\Users\João Çãõ came back as Jo+úo and that
+        # went into the user PATH and later into `pi install <pkg>`, which found no
+        # such folder. Only strings from PowerShell itself are safe to reuse as paths.
+        $prefix = $NodeDir
         AddUserPath $prefix
         "npm " + (& npm -v) + " | prefix $prefix"
     }
@@ -234,7 +242,8 @@ function Invoke-Configure {
     }
 
     Step "pi install (Mirror's skills and extension)" {
-        $pkg = Join-Path (& npm prefix -g).Trim() "node_modules\mirror-mind"
+        $pkg = Join-Path $NodeDir "node_modules\mirror-mind"
+        if (-not (Test-Path $pkg)) { throw "not found: $pkg" }
         (Run "pi" @("install", $pkg)) -split "`n" | Select-Object -Last 1
     }
 
