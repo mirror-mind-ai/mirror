@@ -39,7 +39,7 @@ chooses. A deployment policy would make the first gate partly mechanical.
 
 ## Plan Or Decision
 
-Pending. Captured 2026-10-14 from
+Deferred. Captured 2026-10-14 from
 [CR125's panel review](cr125-the-publish-route-moves-stable-and-leaves-latest-on-the-placeholder.md#panel-review-2026-10-14),
 from the security-engineer lens, at the Navigator's request. It is unassigned, and
 Current Focus is unchanged.
@@ -47,6 +47,11 @@ Current Focus is unchanged.
 The fix is a repository setting, not a file. Whoever applies it records the `gh api`
 output from before and after the change here, and a dispatch from a ref outside the
 policy, refused, as the evidence.
+
+Deferred 2026-10-16 by the Navigator: other priorities come first. No ref policy was
+chosen and no revisit trigger was named, so the status stays `captured` rather than
+`parked`. Current Focus is unchanged. The re-check under Evidence widens the fix: a
+policy on the environment alone does not stop someone who can write to the repository.
 
 ## Evidence
 
@@ -56,6 +61,29 @@ policy, refused, as the evidence.
 - `.github/workflows/publish.yml`: `on: workflow_dispatch`, `environment: release`, job
   name `stage ${{ github.ref_name }} as ${{ inputs.dist_tag }}`.
 - The publish decision: "Every dispatch runs the file from the chosen ref."
+
+Re-checked 2026-10-16 at the Navigator's request. Nothing has changed since capture.
+The re-check also recorded what the capture did not:
+
+- The query above returns the same output. The environment's `updated_at` is
+  `2026-10-10T12:18:56Z`, and
+  `gh api .../environments/release/deployment-branch-policies` returns 404.
+  `publish.yml`'s trigger, environment, and job name are unchanged.
+- `gh api repos/mirror-mind-ai/mirror/environments/release`: `can_admins_bypass: true`.
+  The one rule, `required_reviewers`, names one reviewer, `viniciusteles`, with
+  `prevent_self_review: false`, so the reviewer can approve their own dispatch. No
+  wait timer.
+- `gh api repos/mirror-mind-ai/mirror/collaborators`: two, `viniciusteles` and
+  `alissonvale`, both `admin`. `.../teams`: none. Everyone who can dispatch is an
+  admin, and GitHub lets an admin bypass the environment's protection rules, so the
+  reviewer is not a hard gate. That qualifies Impact's "the reviewer must approve the
+  job". Whether the bypass also covers a deployment-branch policy is untested.
+- `gh api repos/mirror-mind-ai/mirror/rulesets`: `[]`. `.../branches/main/protection`:
+  404, `Branch not protected`. Either admin can push a `v*` tag to any commit,
+  including one whose `publish.yml` drops the guards, and can push to `main`. A `v*`
+  policy alone would stop a dispatch from the wrong ref by accident, not on purpose. A
+  gate that holds against a writer would also need a ruleset limiting who can create
+  or move `v*` tags, and `can_admins_bypass: false`.
 
 ## Outcome
 
