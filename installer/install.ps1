@@ -27,7 +27,12 @@ param(
     [string]$NodeMajor = "24",
     # Decided 2026-10-16: one OpenRouter key powers Pi's chat and Mirror's memory;
     # the chat default is Sonnet through the alias that follows upgrades.
-    [string]$ChatModel = "~anthropic/claude-sonnet-latest"
+    [string]$ChatModel = "~anthropic/claude-sonnet-latest",
+    # The wizard streams this file into its page and waits for the MIRRORDONE line.
+    # ANSI on purpose: Inno reads it as an AnsiString.
+    [string]$TranscriptLog = "",
+    # Everything, including native command output. Default: <InstallDir>\logs\install-detail.log.
+    [string]$DetailLog = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -50,13 +55,18 @@ $GitVersion = "2.56.0.2"
 $GitTag = "v2.56.0.windows.2"
 $GitSha256 = "075e158ef8e1f0ab80b347e245405d3eca735c2dc88fd8e032e137d0ca61f61b"
 
-$DetailLog = if ($env:MIRROR_INSTALL_LOG) { $env:MIRROR_INSTALL_LOG } else { Join-Path $InstallDir "logs\install-detail.log" }
+if (-not $DetailLog) { $DetailLog = Join-Path $InstallDir "logs\install-detail.log" }
 New-Item -ItemType Directory -Force -Path (Split-Path $DetailLog), $InstallDir, $BinDir | Out-Null
 
 function Say([string]$msg) {
     $line = "[{0}] {1}" -f (Get-Date -Format "HH:mm:ss"), $msg
     Write-Host $line
     Add-Content -Path $DetailLog -Value $line
+    if ($TranscriptLog) { Add-Content -Path $TranscriptLog -Value $line -Encoding Default }
+}
+function Done([int]$code) {
+    if ($TranscriptLog) { Add-Content -Path $TranscriptLog -Value "MIRRORDONE:$code" -Encoding Default }
+    exit $code
 }
 function Step([string]$name, [scriptblock]$action) {
     Say "== $name"
@@ -246,8 +256,8 @@ try {
     Say "== phase: $Phase | install dir: $InstallDir"
     if ($Phase -eq "bootstrap") { Invoke-Bootstrap } else { Invoke-Configure }
     Say "== ${Phase}: OK"
-    exit 0
+    Done 0
 } catch {
     Say "== ${Phase}: FAILED -- $_"
-    exit 1
+    Done 1
 }

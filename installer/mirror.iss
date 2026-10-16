@@ -351,36 +351,37 @@ begin
   Memo.Update;
 end;
 
-{ Run one phase (bootstrap|configure) through a temp wrapper, streaming its
-  transcript into the memo; returns the child's exit code. The key travels as a
-  command-line argument of a hidden child; it is not written to any log. }
+{ Run one phase (bootstrap|configure): powershell.exe directly, no cmd wrapper.
+  The first wrapper was a .cmd that began with chcp 65001; a code page change
+  inside a batch makes cmd re-read the file with the new one, so an install
+  directory with accents (C:\Users\Joao Cao Silva) turned to garbage, the
+  transcript was never written, and the wizard waited out its 30 minutes.
+  PowerShell receives its arguments as Unicode and writes the transcript and
+  the MIRRORDONE line itself. The key travels as an argument of a hidden
+  child; it is not written to any log. }
 function RunPhase(Phase, UserVal, KeyVal: String; Memo: TNewMemo): Integer;
 var
-  WrapperPath, TranscriptLog, Wrapper, IdentityArgs: String;
+  TranscriptLog, Args, IdentityArgs: String;
   Content, Shown: AnsiString;
   ResultCode, DonePos, Ticks, ExitCode: Integer;
   CodeStr: String;
 begin
   EnsurePaths();
   TranscriptLog := AppLogsDir + '\install-' + Phase + '.log';
+  DeleteFile(TranscriptLog);
   if (UserVal <> '') or (KeyVal <> '') then
     IdentityArgs := ' -MirrorUser "' + UserVal + '" -OpenRouterApiKey "' + KeyVal + '"'
   else
     IdentityArgs := '';
 
-  WrapperPath := ExpandConstant('{tmp}\run-' + Phase + '.cmd');
-  Wrapper :=
-    '@echo off' + #13#10 +
-    'chcp 65001 >nul' + #13#10 +
-    'set "MIRROR_INSTALL_LOG=' + DetailLogPath + '"' + #13#10 +
-    'powershell -NoProfile -ExecutionPolicy Bypass -File "' + AppBinDir + '\install.ps1"' +
+  Args :=
+    '-NoProfile -ExecutionPolicy Bypass -File "' + AppBinDir + '\install.ps1"' +
     ' -Phase ' + Phase +
     ' -InstallDir "' + ExpandConstant('{app}') + '"' +
     ' -MirrorVersion "{#MirrorVersion}"' +
-    IdentityArgs +
-    ' > "' + TranscriptLog + '" 2>&1' + #13#10 +
-    'echo MIRRORDONE:%ERRORLEVEL%>>"' + TranscriptLog + '"' + #13#10;
-  SaveStringToFile(WrapperPath, Wrapper, False);
+    ' -TranscriptLog "' + TranscriptLog + '"' +
+    ' -DetailLog "' + DetailLogPath + '"' +
+    IdentityArgs;
 
   if Memo <> nil then
   begin
@@ -388,7 +389,7 @@ begin
     UpdateMemoCtrl(Memo, 'Starting...');
   end;
 
-  if not Exec(ExpandConstant('{cmd}'), '/C "' + WrapperPath + '"', '', SW_HIDE, ewNoWait, ResultCode) then
+  if not Exec('powershell.exe', Args, '', SW_HIDE, ewNoWait, ResultCode) then
   begin
     if Memo <> nil then UpdateMemoCtrl(Memo, 'Could not start the process.');
     Result := -1;
@@ -421,7 +422,6 @@ begin
   end
   else
     ExitCode := -1;
-  DeleteFile(WrapperPath);
   Result := ExitCode;
 end;
 
