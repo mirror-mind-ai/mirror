@@ -178,4 +178,29 @@ $ mirror runtime update                                   # @lgarciasbr, macOS, 
 
 ## Outcome
 
-Pending.
+**Validated 2026-10-16.** PR #42 merged to `main` as `5e08734b` with its six commits,
+after a second round that took every review item:
+
+- `thisFrontDoorPath()` joins from `import.meta.dirname`; no URL is formed. The guard
+  row `url-pathname-as-path` in `ts/src/guards/retiredSurfaces.ts` sweeps `ts/src/` and
+  `ts/scripts/` for the code shapes, and widening to `ts/scripts/` caught a second
+  instance in `checkSkillCommandParity.ts`. Verified: with `.pathname` put back locally,
+  the guard's live-tree test fails.
+- The fixture is `mirror Código ação-`, a space and accents; the fragile `unknown`
+  assertion is gone.
+- `npmInvocation` answers a named absence when `npm-cli.js` is not beside the running
+  node, reported as npm unavailable; its comment states the accepted difference from
+  `npm.cmd`.
+- `windows-install-kind` on `windows-latest` runs `installKind.test.ts` and
+  `packageStrategy.test.ts`: green in 25s, with no Windows product promise attached.
+- On `main`, the `unknown` reason names the probed path (`734d654e`).
+
+Verified on a local merge under `/tmp/mirror merged Código`: 75 tests across the
+touched suites, `runtime status` reads `Install: clone (…)`, typecheck and lint clean.
+
+**Done** when the release that carries it ships with the Upgrading section above; the
+release note draft is in Plan Or Decision. Carried forward from the review, not in
+scope here: the `frame-installer` row's `absentSuffixes` (`.cmd`, `.ps1`) will meet the
+installer series and is to be raised there; the guard's `identifier.pathname` pattern
+would flag a legitimate `request.pathname` if `ts/src` grows HTTP routing, and the
+row's `exemptions` field is for that day.
