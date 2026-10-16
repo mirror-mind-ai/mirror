@@ -5,8 +5,11 @@
 // applied to the wrong tree.
 
 import assert from "node:assert/strict";
-import { join, resolve } from "node:path";
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join, resolve } from "node:path";
 import test from "node:test";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import {
   describeInstallKind,
   detectInstallKind,
@@ -332,4 +335,33 @@ test("an npm-linked checkout under the Windows prefix is still a clone", () => {
       key(path).startsWith(key(linked)) ? checkout + path.slice(linked.length) : path,
   });
   assert.deepEqual(kind, { kind: "clone", repository: checkout });
+});
+
+test("a checkout under a non-ASCII path is a clone when its path comes from fileURLToPath", () => {
+  // Reported on PR #42 by lgarciasbr, reproduced on macOS: `URL.pathname`
+  // percent-encodes a directory named `Código` as `C%C3%B3digo`, a path that
+  // does not exist, so no `.git` was found and every install was `unknown`
+  // -- on any platform, not only Windows. The real-checkout test above only
+  // catches this when the repository itself lives under such a name; this
+  // one builds the checkout under one.
+  const root = mkdtempSync(join(tmpdir(), "mirror-Código-ação-"));
+  try {
+    mkdirSync(join(root, ".git"));
+    writeFileSync(join(root, "package.json"), '{"name":"mirror-mind","version":"0.0.0"}\n');
+    const frontDoor = join(root, "ts", "src", "frontDoor", "cli.ts");
+    mkdirSync(dirname(frontDoor), { recursive: true });
+    writeFileSync(frontDoor, "");
+    const url = pathToFileURL(frontDoor);
+
+    // The path as every route now reads it.
+    assert.deepEqual(detectInstallKind({ frontDoorPath: fileURLToPath(url) }), {
+      kind: "clone",
+      repository: realpathSync(root),
+    });
+    // The path as `URL.pathname` spelled it: the recorded bug, pinned.
+    assert.match(url.pathname, /C%C3%B3digo/);
+    assert.equal(detectInstallKind({ frontDoorPath: url.pathname }).kind, "unknown");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 });
