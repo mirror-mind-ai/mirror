@@ -151,9 +151,16 @@ try {
     }
 
     Step "mirror init $User + seed" {
-        $initOut = Run "mirror" @("init", $User)
+        # init refuses an identity that already exists (it never overwrites a profile);
+        # a re-run or a repair skips it. seed is idempotent: it only adds what is missing.
+        $identity = Join-Path $env:USERPROFILE ".mirror-minds$Useridentity"
+        if (Test-Path $identity) {
+            $initLine = "identity already present at $identity"
+        } else {
+            $initLine = (Run "mirror" @("init", $User)) -split "`n" | Select-Object -First 1
+        }
         $seedOut = Run "mirror" @("seed")
-        "init: " + ($initOut -split "`n" | Select-Object -First 1) + " | seed: " + ($seedOut -split "`n" | Select-Object -Last 1)
+        "init: $initLine | seed: " + ($seedOut -split "`n" | Select-Object -Last 1)
     }
 
     Step "pi install <mirror-mind package>" {
