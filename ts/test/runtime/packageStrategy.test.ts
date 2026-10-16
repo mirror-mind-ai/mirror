@@ -6,6 +6,7 @@
 // stage asks, and says which way the channel lies.
 
 import assert from "node:assert/strict";
+import { join } from "node:path";
 import test from "node:test";
 import { assertNamesNoInterpreter } from "#helpers/noInterpreter.ts";
 import {
@@ -13,6 +14,7 @@ import {
   installGlobal,
   type NpmCall,
   type NpmRunner,
+  npmInvocation,
   npmRootGlobal,
   readDistTags,
   renderPackageUpdateAvailability,
@@ -178,5 +180,50 @@ test("the channel's own note travels with the report", () => {
   assert.match(
     renderPackageUpdateAvailability(report),
     /^Update channel note: unknown channel 'beta', defaulting to stable$/m,
+  );
+});
+
+// --- Spawning npm on Windows ---
+//
+// npm is npm.cmd there, which Node runs only through a shell (since
+// CVE-2024-27980 it refuses otherwise), and a shell's timeout ends the shell,
+// not the npm under it. Without the shell every probe answered "npm is
+// unavailable" on a machine with npm on its PATH, and the update lane refused
+// for a reason that was not true.
+
+test("elsewhere than Windows, npm is the file on the PATH, spawned directly", () => {
+  assert.deepEqual(npmInvocation(["root", "-g"], "linux", "/usr/bin/node"), {
+    file: "npm",
+    args: ["root", "-g"],
+  });
+  assert.deepEqual(npmInvocation(["root", "-g"], "darwin", "/usr/local/bin/node"), {
+    file: "npm",
+    args: ["root", "-g"],
+  });
+});
+
+test("on Windows, a node with no npm-cli.js beside it is a named absence, not a stack", () => {
+  const node = join("C:\\", "tools", "node", "node.exe");
+  const answer = npmInvocation(["root", "-g"], "win32", node, () => false);
+  assert.ok("unavailable" in answer);
+  assert.match(answer.unavailable, /npm-cli\.js not found beside node: .*tools/);
+});
+
+test("on Windows, npm is npm-cli.js beside node.exe, run by the node already running", () => {
+  // No shell: the budget's kill reaches npm itself, and nothing is
+  // concatenated for a shell to read (DEP0190).
+  const node = join("C:\\", "Program Files", "nodejs", "node.exe");
+  assert.deepEqual(
+    npmInvocation(["view", "mirror-mind", "dist-tags", "--json"], "win32", node, () => true),
+    {
+      file: node,
+      args: [
+        join("C:\\", "Program Files", "nodejs", "node_modules", "npm", "bin", "npm-cli.js"),
+        "view",
+        "mirror-mind",
+        "dist-tags",
+        "--json",
+      ],
+    },
   );
 });

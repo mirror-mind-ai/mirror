@@ -460,6 +460,24 @@ export const RETIRED: readonly RetiredSurface[] = [
     // exploration's record is `docs/project/exploration/es-004-*.md`.
     exemptions: {},
   },
+  {
+    // Not a deleted surface: a retired IDIOM. A URL's pathname is not a
+    // filesystem path -- it percent-encodes `Código` and `John Doe`, and on
+    // Windows spells `C:\...` as `/C:/...` -- and read as one it made every
+    // install under such a directory `unknown` (PR #42, CR140). The fix is
+    // `import.meta.dirname` or `fileURLToPath`; this row keeps the idiom from
+    // coming back in code. Tests may spell the bug to pin it, so the scope is
+    // the product and its scripts.
+    surfaceId: "url-pathname-as-path",
+    story: "PR #42 (CR140)",
+    absentPaths: [],
+    // The code shapes: a property read off a call (`new URL(...).pathname`) or
+    // off a variable (`url.pathname`). Prose writes `URL.pathname`, capital U,
+    // which neither pattern matches, so a comment may still name the cause.
+    forbiddenPatterns: ["\\)\\.pathname\\b", "\\b[a-z_$][\\w$]*\\.pathname\\b"],
+    residueScope: ["ts/src/", "ts/scripts/"],
+    exemptions: {},
+  },
 ];
 
 export interface SurfaceProblem {

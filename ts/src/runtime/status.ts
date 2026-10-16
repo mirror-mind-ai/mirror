@@ -40,6 +40,7 @@ import {
   type InstallKind,
   inspectionRootFor,
   renderInstallLines,
+  thisFrontDoorPath,
 } from "./installKind.ts";
 
 export interface CoreMigrationHealth {
@@ -390,9 +391,7 @@ function mirrorHomeForStatus(env: DbPathEnv): { home: string | null; error: stri
 /** Port of `build_runtime_status`. */
 export function buildRuntimeStatus(options: BuildStatusOptions = {}): RuntimeStatusReport {
   const env = options.env ?? process.env;
-  const install =
-    options.install ??
-    detectInstallKind({ frontDoorPath: new URL("../frontDoor/cli.ts", import.meta.url).pathname });
+  const install = options.install ?? detectInstallKind({ frontDoorPath: thisFrontDoorPath() });
   // The repository rows are the install's own, or the one `start` names; never
   // the cwd's (CR138). The git facts are a clone's: a package has no
   // repository, and grading the cwd as one read "not a git repository" as a git

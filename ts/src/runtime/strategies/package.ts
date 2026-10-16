@@ -11,7 +11,8 @@
 // the pipeline's decisions are testable without a registry.
 
 import { execFileSync } from "node:child_process";
-import { basename, join } from "node:path";
+import { existsSync } from "node:fs";
+import { basename, dirname, join } from "node:path";
 import { type ApplyStrategy, KNOWN_CHANNELS } from "#runtime/updatePipeline.ts";
 import { compareSemver, isPlainSemver } from "#util/semver.ts";
 
@@ -40,9 +41,44 @@ export type NpmRunner = (
   stderr: string;
 };
 
+/**
+ * How npm is spawned on this platform.
+ *
+ * Elsewhere `npm` is a file on the PATH, spawned directly. On Windows it is
+ * `npm.cmd`, which Node runs only through a shell (since CVE-2024-27980 it
+ * refuses otherwise) -- and a shell's timeout ends the shell, not the npm
+ * under it: an orphan that outlives the welcome card's budget and holds the
+ * directory it ran in. So on Windows Mirror runs npm the way `npm.cmd` itself
+ * does: the `npm-cli.js` every Windows distribution of Node ships beside
+ * `node.exe`, through the node already running. No shell, and the budget's
+ * kill reaches npm itself. Without this every probe answered "npm is
+ * unavailable" on a machine with npm on its PATH, and the update lane refused
+ * for a reason that was not true.
+ *
+ * One difference from `npm.cmd`, accepted: the shim prefers an npm the person
+ * upgraded under `<prefix>\node_modules\npm` when there is one; this runs the
+ * npm bundled with the node that is running. And when no `npm-cli.js` sits
+ * beside that node -- a node from a manager that ships npm elsewhere -- the
+ * answer is a named absence, so the status line can say "npm is unavailable"
+ * and where it looked, rather than a module-not-found stack.
+ */
+export function npmInvocation(
+  args: readonly string[],
+  platform: NodeJS.Platform,
+  execPath: string,
+  exists: (path: string) => boolean = existsSync,
+): { file: string; args: string[] } | { unavailable: string } {
+  if (platform !== "win32") return { file: "npm", args: [...args] };
+  const cli = join(dirname(execPath), "node_modules", "npm", "bin", "npm-cli.js");
+  if (!exists(cli)) return { unavailable: `npm-cli.js not found beside node: ${cli}` };
+  return { file: execPath, args: [cli, ...args] };
+}
+
 export const defaultNpmRunner: NpmRunner = (args, call = {}) => {
+  const invocation = npmInvocation(args, process.platform, process.execPath);
+  if ("unavailable" in invocation) return { code: -1, stdout: "", stderr: invocation.unavailable };
   try {
-    const stdout = execFileSync("npm", [...args], {
+    const stdout = execFileSync(invocation.file, invocation.args, {
       encoding: "utf8",
       stdio: ["ignore", "pipe", "pipe"],
       ...(call.cwd === undefined ? {} : { cwd: call.cwd }),

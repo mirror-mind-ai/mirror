@@ -139,13 +139,19 @@ function packageUnderNpmRoot(
 
 /**
  * The installed package holding this front door, by its layout, with no
- * subprocess: the manifest sits at `<prefix>/lib/node_modules/<name>` -- the
- * global layout npm uses on every platform this core supports -- AND one of
- * the manifest's bins exists at `<prefix>/bin/<bin>` and resolves back into
- * the package. The bin is what makes a global install global; a project that
- * happens to live at `<x>/lib` has the first half and not the second.
- * (CV22.DS10.US3 plateau 4: the read-only routes run where npm may be off
- * the PATH and must still say what this is.)
+ * subprocess (CV22.DS10.US3 plateau 4: the read-only routes run where npm may
+ * be off the PATH and must still say what this is). npm has two global
+ * layouts, and in both the bin is what makes a global install global -- a
+ * project that happens to live at `<x>/lib` has the manifest half and not the
+ * bin half:
+ *
+ * - POSIX: the manifest at `<prefix>/lib/node_modules/<name>`, and one of its
+ *   bins at `<prefix>/bin/<bin>`, a symlink that resolves back into the
+ *   package.
+ * - Windows: the manifest at `<prefix>\node_modules\<name>`, and one of its
+ *   bins at `<prefix>\<bin>.cmd`, a shim file that runs
+ *   `%dp0%\node_modules\<name>\...`. Nothing resolves, so the shim's own
+ *   text is the evidence that the bin reaches into THIS package.
  */
 function packageByLayout(
   frontDoorPath: string,
@@ -156,15 +162,52 @@ function packageByLayout(
   const manifest = nearestManifest(frontDoorPath, null, exists, readFile);
   if (manifest === null) return null;
   const nodeModules = dirname(manifest.root);
+  if (basename(nodeModules) !== "node_modules") return null;
+  const linked =
+    binLinkedUnderPosixPrefix(manifest, nodeModules, exists, realpath) ||
+    binShimmedUnderWindowsPrefix(manifest, nodeModules, exists, readFile);
+  if (!linked) return null;
+  return { kind: "package", root: manifest.root, name: manifest.name, version: manifest.version };
+}
+
+function binLinkedUnderPosixPrefix(
+  manifest: Manifest,
+  nodeModules: string,
+  exists: (path: string) => boolean,
+  realpath: (path: string) => string,
+): boolean {
   const lib = dirname(nodeModules);
-  if (basename(nodeModules) !== "node_modules" || basename(lib) !== "lib") return null;
+  if (basename(lib) !== "lib") return false;
   const prefix = dirname(lib);
-  const linked = manifest.bins.some((bin) => {
+  return manifest.bins.some((bin) => {
     const link = join(prefix, "bin", bin);
     return exists(link) && isInside(manifest.root, realpath(link));
   });
-  if (!linked) return null;
-  return { kind: "package", root: manifest.root, name: manifest.name, version: manifest.version };
+}
+
+/**
+ * Not gated by platform, on purpose: the layout is evidence wherever it is
+ * found, and a Windows-only branch could be exercised only on Windows. Kept
+ * open, macOS and Linux run the Windows tests with fixture paths, and the
+ * `windows-latest` job runs the same tests on the real thing.
+ */
+function binShimmedUnderWindowsPrefix(
+  manifest: Manifest,
+  nodeModules: string,
+  exists: (path: string) => boolean,
+  readFile: (path: string) => string,
+): boolean {
+  const prefix = dirname(nodeModules);
+  const runsThisPackage = `node_modules/${manifest.name}/`;
+  return manifest.bins.some((bin) => {
+    const shim = join(prefix, `${bin}.cmd`);
+    if (!exists(shim)) return false;
+    try {
+      return readFile(shim).replace(/\\/g, "/").includes(runsThisPackage);
+    } catch {
+      return false;
+    }
+  });
 }
 
 /** `realpathSync`, except that a path that does not exist is returned as given. */
@@ -174,6 +217,21 @@ function safeRealpath(path: string): string {
   } catch {
     return path;
   }
+}
+
+/**
+ * This front door's own path, as the filesystem spells it: what every route
+ * hands `detectInstallKind`. From `import.meta.dirname`, so the path never
+ * passes through URL form: a URL's pathname is not a filesystem path. It
+ * percent-encodes every reserved character -- a directory named `Código` or
+ * `John Doe` becomes `C%C3%B3digo`, `John%20Doe` -- and on Windows it spells
+ * `C:\...` as `/C:/...`. Read as a path, none of those exist, so no `.git`
+ * was found above the front door and every such install was `unknown`: the
+ * updater refused, and after CR138 the git rows went blank. The guard row
+ * `url-pathname-as-path` keeps the idiom out of `ts/src` and `ts/scripts`.
+ */
+export function thisFrontDoorPath(): string {
+  return join(import.meta.dirname, "..", "frontDoor", "cli.ts");
 }
 
 export function detectInstallKind(probe: InstallKindProbe): InstallKind {

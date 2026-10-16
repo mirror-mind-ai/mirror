@@ -237,7 +237,7 @@ describe("the table itself", () => {
     }
   });
 
-  test("the enforced rows are TS1 through TS4's retirements, TS5's Python core, and US3's Windows product", () => {
+  test("the enforced rows are TS1 through TS4's retirements, TS5's Python core, US3's Windows product, and PR #42's idiom", () => {
     assert.deepEqual(
       ENFORCED.map((surface) => surface.surfaceId),
       [
@@ -252,6 +252,7 @@ describe("the table itself", () => {
         "python-core",
         "python-core-mentions",
         "frame-installer",
+        "url-pathname-as-path",
       ],
     );
   });
@@ -473,5 +474,39 @@ describe("the live frame-installer row (CV22.DS10.US3 plateau 5, decision D4)", 
 
   test("is clean against this repository", () => {
     assert.deepEqual(sweep(REPO_ROOT, RETIRED, { only: "frame-installer" }), []);
+  });
+});
+
+describe("url-pathname-as-path (PR #42, CR140)", () => {
+  const ROW = RETIRED.find((s) => s.surfaceId === "url-pathname-as-path") as RetiredSurface;
+
+  test("the row flags a URL's pathname read as a filesystem path, in src and scripts", () => {
+    const root = gitRepo({
+      "ts/src/a.ts": 'const p = new URL("./x", import.meta.url).pathname;\n',
+      "ts/scripts/b.ts": "const root = url.pathname.replace(//$/, '');\n",
+      "ts/test/c.test.ts": "assert.match(url.pathname, /C%C3%B3digo/);\n",
+      "docs/guide.md": "URL.pathname is not a filesystem path.\n",
+    });
+    const problems = checkResidue(ROW, trackedFiles(root), root);
+    assert.deepEqual(
+      problems.map((p) => p.message.replace(/^\s+/, "").split(" ")[1]),
+      ["ts/scripts/b.ts:1", "ts/src/a.ts:1"],
+    );
+  });
+
+  test("the fixes are not flagged, and prose naming the cause is not either", () => {
+    const root = gitRepo({
+      "ts/src/a.ts": [
+        "// A URL's pathname is not a filesystem path; URL.pathname percent-encodes.",
+        'const p = fileURLToPath(new URL("./x", import.meta.url));',
+        'const q = join(import.meta.dirname, "..", "x");',
+        "",
+      ].join("\n"),
+    });
+    assert.deepEqual(checkResidue(ROW, trackedFiles(root), root), []);
+  });
+
+  test("the live tree is clean", () => {
+    assert.deepEqual(sweep(REPO_ROOT, RETIRED, { only: "url-pathname-as-path" }), []);
   });
 });
