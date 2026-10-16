@@ -6,6 +6,9 @@ rem UTF-8 console (the Mirror writes UTF-8; cmd's default code page would show
 rem accents as mojibake), Notepad as the editor until the runtime defaults to
 rem it, the install's own Node and Git first on the PATH, Pi in the workspace.
 rem Pi keys its sessions by this folder, so every session is found again here.
+rem `call` matters: pi.cmd is an npm shim that ends its own context with a
+rem failing goto; chained without call it would tear down this setlocal too,
+rem and pi would start in the caller's folder with the caller's PATH.
 rem ---------------------------------------------------------------------------
 chcp 65001 >nul 2>&1
 set "MIRROR_APP=%~dp0.."
@@ -23,5 +26,5 @@ where pi >nul 2>&1 || (
 
 cd /d "%MIRROR_WORKSPACE%"
 title Mirror Mind
-pi %*
+call pi %*
 endlocal

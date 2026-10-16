@@ -7,9 +7,9 @@ for %%I in ("%MIRROR_APP%") do set "MIRROR_APP=%%~fI"
 set "Path=%MIRROR_APP%\node;%MIRROR_APP%\git\cmd;%Path%"
 title Mirror Mind - Status
 echo.
-mirror runtime status
+call mirror runtime status
 echo.
-mirror runtime diagnose
+call mirror runtime diagnose
 echo.
 echo Logs: %MIRROR_APP%\logs
 echo.
