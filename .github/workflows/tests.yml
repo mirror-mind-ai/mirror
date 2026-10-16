@@ -175,6 +175,28 @@ jobs:
           cp "$XDG_CONFIG_HOME/mirror/env" "$HOME/.config/mirror/env"
           bash scripts/smoke_runtime_update.sh "${RUNNER_TEMP}/mirror-update-smoke"
 
+  windows-install-kind:
+    # The two Windows changes of PR #42 -- the npm global layout without `lib/`
+    # and npm run as `npm-cli.js` beside `node.exe` -- are read on macOS and
+    # Linux with fixture paths. This job runs the same two files on Windows
+    # itself, so "green on Windows" is a CI fact rather than a report. It is
+    # not a Windows product promise: REFERENCE.md's platform envelope stands
+    # until the suite as a whole runs here. About a minute.
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install kind and npm strategy on Windows (node:test)
+        run: node --test ts/test/runtime/installKind.test.ts ts/test/runtime/packageStrategy.test.ts
+
   smoke:
     # End-to-end through the real front-door process, as SEQUENCES: the unit
     # suites grade each step, these grade what one step hands the next.
