@@ -15,6 +15,6 @@
     </MappedFolder>
   </MappedFolders>
   <LogonCommand>
-    <Command>powershell.exe -NoExit -ExecutionPolicy Bypass -Command "Set-Location C:\Out; &amp; C:\Spike\install.ps1 -User Rodrigo -OutDir C:\Out -Launch"</Command>
+    <Command>cmd.exe /c start "Mirror Mind spike" powershell.exe -NoExit -ExecutionPolicy Bypass -File C:\Spike\install.ps1 -User Rodrigo -OutDir C:\Out -Launch</Command>
   </LogonCommand>
 </Configuration>

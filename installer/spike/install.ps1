@@ -31,7 +31,9 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+$ProgressPreference = "SilentlyContinue"   # PS 5.1 renders progress per chunk; it makes downloads crawl
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+$RunId = [guid]::NewGuid().ToString("N").Substring(0, 8)
 
 $Base   = Join-Path $env:LOCALAPPDATA "Programs\MirrorMind"
 $NodeDir = Join-Path $Base "node"
@@ -102,13 +104,13 @@ try {
         $line = ($shas -split "`n" | Where-Object { $_ -match "node-v[\d.]+-win-x64\.zip" } | Select-Object -First 1)
         if (-not $line) { throw "no win-x64 zip in $dist" }
         $sha, $zipName = ($line.Trim() -split "\s+")
-        $zipPath = Join-Path $env:TEMP $zipName
+        $zipPath = Join-Path $env:TEMP "mirror-$RunId-$zipName"
         Say "   downloading $zipName"
-        Invoke-WebRequest -UseBasicParsing -Uri ($dist + $zipName) -OutFile $zipPath -TimeoutSec 600
+        (New-Object Net.WebClient).DownloadFile($dist + $zipName, $zipPath)
         $actual = (Get-FileHash $zipPath -Algorithm SHA256).Hash.ToLower()
         if ($actual -ne $sha.ToLower()) { throw "SHA-256 mismatch for $zipName" }
         if (Test-Path $NodeDir) { Remove-Item $NodeDir -Recurse -Force }
-        $extract = Join-Path $env:TEMP "node-extract"
+        $extract = Join-Path $env:TEMP "mirror-$RunId-node"
         if (Test-Path $extract) { Remove-Item $extract -Recurse -Force }
         Expand-Archive -Path $zipPath -DestinationPath $extract
         Move-Item (Get-ChildItem $extract | Select-Object -First 1).FullName $NodeDir
