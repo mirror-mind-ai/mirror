@@ -63,11 +63,11 @@ function Step([string]$name, [scriptblock]$action) {
         throw
     }
 }
-function Run([string]$file, [string[]]$args) {
+function Run([string]$file, [string[]]$arguments) {
     # Capture both streams into the log; return stdout.
-    $out = & $file @args 2>&1
+    $out = & $file @arguments 2>&1
     $out | ForEach-Object { Add-Content -Path $Log -Value ("     | " + $_) }
-    if ($LASTEXITCODE -ne 0) { throw "$file $($args -join ' ') exited $LASTEXITCODE`n$($out -join "`n")" }
+    if ($LASTEXITCODE -ne 0) { throw "$file $($arguments -join ' ') exited $LASTEXITCODE`n$($out -join "`n")" }
     return ($out | Out-String).Trim()
 }
 function AddUserPath([string]$dir) {
