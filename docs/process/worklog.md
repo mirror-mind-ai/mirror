@@ -12,6 +12,40 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-10-17 — v0.34.0 released: Codex Through the Canonical Plugin
+
+Minor release closing CV21.DS4. Codex runs Mirror through the canonical
+plugin: two commands install it from the marketplace the package ships,
+measured live at L4 on Codex 0.163.0 (US4). The v0.32.1 wrapper wiring
+retired (TS5, with its cutoff recorded and a retired-surfaces guard), and
+`runtime diagnose` / `runtime update` now report a stale Codex plugin cache
+with the measured re-add command (TS6). Tag and `stable` pushed; the
+trusted-publisher stage dispatched; GitHub Release published. Also closed on
+the way: TS5 (wiring retirement, CR142 captured from its validation) and
+TS6 (plugin-wiring findings and the post-update hint).
+
+### 2026-10-17 — CV21.DS4.TS6: an updated Mirror reaches Codex's plugin cache
+
+`runtime diagnose` reports `codex_plugin_cache_behind` (both versions, the
+re-add command measured on Codex 0.163.0, which has no plugin-update verb)
+and `claude_plugin_link_dangling`; a successful `runtime update` prints the
+re-add line against the landed version read from the updated tree. Readers
+take their roots as arguments (the CR123/128/137/142 hermeticity lesson);
+one shared command constant keeps `init` and diagnose in agreement (CR071).
+Live E2E in a scratch CODEX_HOME: re-add replaces the cached version in
+place, no remove needed. DS4's Done condition met; DS4 closed.
+
+### 2026-10-17 — CV21.DS4.TS5: v0.32.1's Codex wiring retires
+
+Gate met by US4, so the wrapper surface went: `scripts/codex-mirror.sh`,
+`scripts/codex-hooks/`, the `codex:*` hook family, the JSONL backfill (its
+only caller was the wrapper; the plugin's SessionEnd never read it),
+`smoke_codex.sh`, the pack guards, and the CI step. A `codex-wrapper`
+retired-surfaces row seeds every deleted path. Docs name the marketplace
+install alone; the cutoff is recorded in the story package for this
+release's note. CR142 captured from validation: the Claude plugin smoke's
+negative probe fails on machines with a global `mirror-hook`.
+
 ### 2026-10-17 — CV21.DS4.US4: Codex at L4 through the shipped plugin, measured live
 
 Two live sessions on Codex 0.163.0, the second under a pre-registered, self-checked,
