@@ -15,13 +15,13 @@
 | 7 | Configurando | "Clique em «Avançar». O Mirror confere a chave, cria a sua identidade, carrega as doze personas e se conecta ao Pi. Uns trinta segundos." | 06-configurando | Cursor até «Avançar»; clique; realce no transcript |
 | 8 | Concluído | "Pronto. Deixe marcado «Iniciar o Mirror Mind» e clique em «Concluir». Daqui em diante, o atalho na área de trabalho abre o Mirror." | 07-concluido | Realce na caixa; cursor até «Concluir»; clique |
 | 9 | O Mirror abre | "O Mirror abre numa janela de texto. O cartão mostra seu nome, a versão, e o que ele já sabe: uma jornada, doze personas, nenhuma memória ainda. Ela começa agora." | 08-mirror-abre | Realce no cartão `◇ Mirror · Helena` |
-| 10 | A primeira conversa | "Converse como conversaria com alguém. Por exemplo: «listar minhas personas». Ele entende, consulta a memória e responde." | 09-pergunta → 11-resposta-final | Texto digitado; Enter; realce na lista |
+| 10 | A primeira conversa | "Converse como conversaria com alguém. Por exemplo, peça para ele listar as suas personas. Ele entende, consulta a memória e responde." | 09-pergunta → 11-resposta-final | Texto digitado; Enter; realce na lista |
 | 11 | Em resumo | "Um arquivo, sem senha de administrador, cinco minutos. Seu nome e uma chave da OpenRouter. E o Mirror está pronto para conversar, com a memória guardada no seu computador." | Cartão de resumo: três frases | Frases acendem uma a uma |
 | 12 | Fim | "Mirror Mind. Um espelho que conversa." | Cartão final: octaedro, versão, data | — |
 
 **Rótulos a verificar nas telas:** «Instalar» · «Como você quer ser chamado?» · «Criar conta e gerar chave…» · «Avançar» · «Iniciar o Mirror Mind» · «Concluir» · `◇ Mirror · Helena`.
 
-**Voz e estilo:** Thalita (edge-tts `pt-BR-ThalitaMultilingualNeural`, `-12%`, `-5Hz`), a mesma da Luvia. Segunda pessoa, frases curtas, tom calmo. Pronúncia só na fala (legenda mantém a grafia): "Mirror" → "Mírror", "Mirror Mind" → "Mírror Máind", "OpenRouter" → "Open Ráuter", "Pi" → "Pái", "Node" → "Nôud", "sk-or" → "ésse cá ífen ó érre", "Setup" → "Sétap".
+**Voz e estilo:** Thalita (edge-tts `pt-BR-ThalitaMultilingualNeural`, `-12%`, `-5Hz`), a mesma da Luvia. Segunda pessoa, frases curtas, tom calmo. A voz é multilingual e lê o inglês sozinha ("Mirror Mind", "OpenRouter", "Node", "Pi"); respelling forçado dava sotaque estranho. Só na fala: "MirrorMind-Setup" → "MirrorMind Setup", "sk-or" → "s k, hífen, o r". Evitar frases que também existem em espanhol ("listar minhas personas" virava espanhol): a fala pede, a tela mostra o comando.
 
 **Privacidade na gravação:** o nome é fictício (`Helena`); a chave aparece mascarada na tela e só como rótulo (`sk-or-v1-fe0...e29`) no transcript — é a chave de desenvolvimento do Rodrigo, a ser rotacionada.
 

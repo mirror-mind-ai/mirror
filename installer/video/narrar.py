@@ -8,15 +8,11 @@ from pathlib import Path
 FFMPEG = r"C:\Users\rodri\AppData\Local\uv\cache\archive-v0\RNI7xNoJpeelYZzl\Lib\site-packages\imageio_ffmpeg\binaries\ffmpeg-win-x86_64-v7.1.exe"
 VOZ, RATE, PITCH = "pt-BR-ThalitaMultilingualNeural", "-12%", "-5Hz"
 
+# Thalita Multilingual reads English on its own; respelling ("Mírror Máind") gave it
+# a strange accent. Only what the voice cannot guess gets help.
 PRONUNCIA = [
-    (r"MirrorMind-Setup", "Mírror Máind Sétap"),
-    (r"Mirror Mind", "Mírror Máind"),
-    (r"\bMirror\b", "Mírror"),
-    (r"OpenRouter", "Ôpen Ráuter"),
-    (r"\bPi\b", "Pái"),
-    (r"\bNode\b", "Nôud"),
-    (r"\bGit\b", "Guít"),
-    (r"sk-or", "ésse cá, ífen, ó érre"),
+    (r"MirrorMind-Setup", "MirrorMind Setup"),
+    (r"sk-or", "s k, hífen, o r"),
     (r"«|»", ""), (r"·", ","), (r"…", ""), (r"—", ","),
 ]
 
