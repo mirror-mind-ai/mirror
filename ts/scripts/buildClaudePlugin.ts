@@ -1,6 +1,7 @@
 #!/usr/bin/env node
-// Generate the canonical Mirror Mind Claude plugin (manifest + skills), and the
-// Claude Code copies of Pi-sourced skills (CR102).
+// Generate the canonical Mirror Mind Claude plugin (manifest + skills), the Codex
+// marketplace that names it (CV21.DS4.US1), and the Claude Code copies of
+// Pi-sourced skills (CR102).
 //
 // The Node port of `scripts/build_claude_plugin.py` (CV22.DS10.TS5, slice B,
 // decision D6). Output must be byte-identical to the Python original's; the
@@ -13,7 +14,7 @@
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { materialize, PLUGIN_DIR } from "#guards/claudePlugin.ts";
+import { MARKETPLACE_PATH, materialize, PLUGIN_DIR } from "#guards/claudePlugin.ts";
 import { PI_SOURCED_SKILLS } from "#guards/piSourcedSkills.ts";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -33,17 +34,18 @@ function main(argv: readonly string[]): number {
     if (problems.length > 0) {
       console.log(
         "Generated Claude files are out of date (the plugin from .claude/skills/, " +
-          "Pi-sourced skills from .pi/skills/):",
+          "the Codex marketplace, Pi-sourced skills from .pi/skills/):",
       );
       for (const problem of problems) console.log(`  - ${problem}`);
       console.log("\nRegenerate with: node ts/scripts/buildClaudePlugin.ts");
       return 1;
     }
-    console.log("Claude plugin and Pi-sourced Claude skills are in sync.");
+    console.log("Claude plugin, Codex marketplace, and Pi-sourced Claude skills are in sync.");
     return 0;
   }
 
   console.log(`Generated Claude plugin under ${join(PLUGIN_DIR)}`);
+  console.log(`Generated the Codex marketplace at ${MARKETPLACE_PATH}`);
   console.log(`Generated the Claude copies of Pi-sourced skills: ${PI_SOURCED_SKILLS.join(", ")}`);
   return 0;
 }

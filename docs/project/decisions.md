@@ -2877,6 +2877,39 @@ copies a plugin into its cache at a version, where Claude Code's `@skills-dir` l
 it in place. `runtime diagnose` running the same locator is a follow-up. Grok's
 attachment of a started server stays with CV21.DS10.
 
+### Codex installs Mirror from a marketplace the package ships
+
+**Date:** 2026-10-17 · **Context:** [CV21.DS4.US1](roadmap/cv21-runtime-expansion-ii/cv21-ds4-codex-through-the-canonical-plugin/cv21-ds4-us1-codex-installs-mirror-from-the-marketplace-the-package-ships/index.md)
+
+**The decision.** The npm package root is a Codex marketplace: it carries
+`.agents/plugins/marketplace.json`, named `mirror-mind`, with one plugin, `mirror-mind`,
+from the local source `./plugins/mirror-mind`. `mirror init` prints Codex's wiring as
+`codex plugin marketplace add "<pkg>"` and `codex plugin add mirror-mind@mirror-mind`,
+in place of v0.32.1's skills link, `AGENTS.md` link, and wrapper. The file is generated
+by `buildClaudePlugin.ts` beside the plugin manifest, from the same constants, and
+`--check` guards its drift; the pack-contents guard requires it in the tarball.
+
+**Why this path.** DS12.TS2 (static 5-7, L1-L5) measured on Codex 0.162.1 that a local
+marketplace at this path installs the Claude-format plugin as it is, that the plugin
+alone exposes every skill, that its hooks run after one trust dialog, and that its
+SessionStart hook delivers the Operating Instructions as a developer message. DS2 then
+made the hooks, the MCP entry, and the skill form right for Codex. What was left was the
+file and the printed steps.
+
+**What was not chosen.** A `.claude-plugin/marketplace.json`, which Codex also reads: it
+would invite Claude Code onto a marketplace install, and Claude Code's skills-directory
+link reads the plugin in place, which the cache copy does not. A hand-written manifest
+with a comparison test: two mechanisms for one name. Running the two commands from
+`mirror init`: printing is not automating (CV22.DS10.US3), and `codex plugin add`
+writes the user's `config.toml`.
+
+**Consequences.** A v0.32.1 Codex user who keeps the old wiring gets the skills and the
+Operating Instructions twice per prompt, and through the wrapper every turn logged
+twice; Getting Started names what to undo and the two `remove` commands. Codex copies
+the plugin into its cache at a version, so an npm update does not reach Codex until the
+plugin is installed again (DS4.TS6). The wrapper and its files retire in DS4.TS5, after
+US4 measures parity.
+
 ## Open Discussions
 
 ### Migration rehearsal — long-term status

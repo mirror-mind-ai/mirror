@@ -23,11 +23,16 @@
 //               and hooks live in `~/.gemini/settings.json`, absolute paths.
 //               Two steps. The Operating Instructions arrive through the
 //               SessionStart hook (D13).
-//   Codex       `~/.codex/skills/<dir>` is discovered recursively, and
-//               `~/.codex/AGENTS.md` is the global instructions file
-//               (`codex debug prompt-input`, 0.157.0). Two steps, and the
-//               session is run through the shipped wrapper, since Codex has
-//               no hooks this integration uses.
+//   Codex       `codex plugin marketplace add <root>` reads the package's
+//               `.agents/plugins/marketplace.json`, and `codex plugin add
+//               mirror-mind@mirror-mind` copies the plugin into Codex's cache
+//               with its skills, hooks, and MCP server (0.162.1, CV21.DS12.TS2
+//               static 5-7; CV21.DS4.US1). Two steps. Codex asks once, at the
+//               next session, to trust the plugin's hooks (L1); the Operating
+//               Instructions then arrive through its SessionStart hook as a
+//               developer message (L4). Until DS4.US1 the two steps were a
+//               skills link and an AGENTS.md link, with sessions run through
+//               the shipped wrapper.
 
 import { join } from "node:path";
 import { commandOnPath } from "#util/paths.ts";
@@ -94,11 +99,11 @@ export const RUNTIME_WIRING: Readonly<Record<RuntimeName, RuntimeWiring>> = {
     title: "Codex",
     command: "codex",
     steps: [
-      (root) => [`ln -s "${join(root, ".pi/skills")}" ~/.codex/skills/mirror-mind`],
-      (root) => [
-        `ln -s "${join(root, "AGENTS.md")}" ~/.codex/AGENTS.md`,
-        "(or append that file to the ~/.codex/AGENTS.md you already have)",
-        `then start Codex through "${join(root, "scripts/codex-mirror.sh")}" instead of codex`,
+      (root) => [`codex plugin marketplace add "${root}"`],
+      () => [
+        "codex plugin add mirror-mind@mirror-mind",
+        "(Codex asks once, at the next session, to trust the plugin's hooks; the plugin",
+        "then loads every session: its skills, the hooks, and the MCP server)",
       ],
     ],
   },

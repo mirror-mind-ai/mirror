@@ -99,6 +99,16 @@ check "git names the prefix as the package's repository, as under Homebrew" "$(g
 [ -f "$PKG/ts/src/frontDoor/cli.ts" ] && ok "the front door has the same path as in the checkout" || bad "front door missing"
 [ -d "$PKG/templates/identity" ] && ok "templates/identity shipped" || bad "templates missing"
 [ ! -f "$PKG/.env" ] && ok "no .env in the package" || bad "the package carries a .env"
+# CV21.DS4.US1: Codex installs the plugin from the package as a marketplace. CI has
+# no codex, so the smoke reads the file the way `codex plugin marketplace add`
+# would: present, JSON, one local plugin whose path resolves to the installed
+# plugin manifest. The `.agents/skills/` symlinks beside it are the checkout's.
+MARKETPLACE="$PKG/.agents/plugins/marketplace.json"
+[ -f "$MARKETPLACE" ] && ok "the Codex marketplace shipped at .agents/plugins/marketplace.json" || bad "no Codex marketplace in the package"
+MP_PLUGIN="$(node -e 'const m=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"));const p=m.plugins[0];console.log(m.name+"|"+p.name+"|"+p.source.source+"|"+p.source.path)' "$MARKETPLACE" 2>/dev/null || true)"
+check "the marketplace names mirror-mind, one local plugin" "$MP_PLUGIN" "mirror-mind|mirror-mind|local|./plugins/mirror-mind"
+[ -f "$PKG/plugins/mirror-mind/.claude-plugin/plugin.json" ] && ok "its path resolves to the installed plugin manifest" || bad "the marketplace points at nothing"
+[ ! -e "$PKG/.agents/skills" ] && ok "the checkout's .agents/skills links are not in the package" || bad ".agents/skills shipped"
 [ -z "$(find "$PKG" -name '*.py' -o -name 'pyproject.toml' -o -name 'uv.lock' | head -1)" ] && ok "no Python in the installed tree" || bad "Python found in the installed tree"
 
 # --- from here on: no checkout, no real HOME, interpreters shadowed ---------

@@ -77,6 +77,27 @@ test("every required file and prefix is demanded by name", () => {
   );
 });
 
+test("the Codex marketplace is required, and the .agents skills links are not shipped", () => {
+  // CV21.DS4.US1: `codex plugin marketplace add <pkg>` reads
+  // `.agents/plugins/marketplace.json` from the package root. The symlinks under
+  // `.agents/skills/` beside it are the checkout's, and stay out of the tarball.
+  assert.ok(REQUIRED_FILES.includes(".agents/plugins/marketplace.json"));
+  const problems = checkPackContents({
+    files: clean().filter((p) => p !== ".agents/plugins/marketplace.json"),
+    manifest: MANIFEST,
+  });
+  assert.deepEqual(
+    problems.map((p) => p.code),
+    ["missing_file"],
+  );
+  assert.deepEqual(
+    checkPackContents({ files: [...clean(), ".agents/skills/mm-mirror"], manifest: MANIFEST }).map(
+      (p) => p.code,
+    ),
+    ["unlisted_path"],
+  );
+});
+
 test("the manifest is graded: name, private, files, bin, and install lifecycle scripts", () => {
   const files = clean();
   const codes = (manifest: object): string[] =>

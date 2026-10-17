@@ -79,13 +79,18 @@ describe("the wiring steps", () => {
     assert.match(lines, /\/prefix\/lib\/node_modules\/mirror-mind\/\.gemini\/hooks\/log-user\.sh/);
   });
 
-  test("Codex: the skills and the global AGENTS.md, then run through the wrapper", () => {
+  test("Codex: the package as a marketplace, then the plugin from it (CV21.DS4.US1)", () => {
+    // DS12.TS2 static 5: Codex installs the Claude-format plugin from a local
+    // marketplace, `<plugin>@<marketplace>`. The skills link, the AGENTS.md link,
+    // and the wrapper were v0.32.1's wiring; `init` no longer names them.
     const lines = runtimeWiringLines("codex", root).join("\n");
     assert.match(
       lines,
-      /ln -s "\/prefix\/lib\/node_modules\/mirror-mind\/\.pi\/skills" ~\/\.codex\/skills\/mirror-mind/,
+      /1\. codex plugin marketplace add "\/prefix\/lib\/node_modules\/mirror-mind"/,
     );
-    assert.match(lines, /~\/\.codex\/AGENTS\.md/);
-    assert.match(lines, /\/prefix\/lib\/node_modules\/mirror-mind\/scripts\/codex-mirror\.sh/);
+    assert.match(lines, /2\. codex plugin add mirror-mind@mirror-mind/);
+    // L1: Codex asks once to trust the plugin's hooks; the note says so.
+    assert.match(lines, /trust/);
+    assert.doesNotMatch(lines, /~\/\.codex\/skills|~\/\.codex\/AGENTS\.md|codex-mirror\.sh/);
   });
 });

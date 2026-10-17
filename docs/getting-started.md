@@ -184,7 +184,7 @@ with `<pkg>` already filled in; `<pkg>` is `$(npm root -g)/mirror-mind`.
 | **Pi** | `pi install "<pkg>"` — Pi loads the package in place, so `npm install -g` upgrades it too |
 | **Claude Code** | `ln -s "<pkg>/plugins/mirror-mind" ~/.claude/skills/mirror-mind` — the plugin loads every session: its skills, its hooks, and the MCP server |
 | **Gemini CLI** | 1. `gemini skills link --consent "<pkg>/.pi/skills"` 2. merge the four hooks `init` printed into `~/.gemini/settings.json` |
-| **Codex** | 1. `ln -s "<pkg>/.pi/skills" ~/.codex/skills/mirror-mind` 2. link or append `<pkg>/AGENTS.md` to `~/.codex/AGENTS.md`, then start Codex through `<pkg>/scripts/codex-mirror.sh` |
+| **Codex** | 1. `codex plugin marketplace add "<pkg>"` 2. `codex plugin add mirror-mind@mirror-mind` — the package is a marketplace with one plugin, the same one Claude Code loads; at the next session Codex asks once to trust its hooks, and from then on the plugin loads every session: its skills, its hooks, and the MCP server |
 
 Each step was verified against the runtime's own documentation, or the runtime
 itself where the documentation was silent; the versions and what each runtime
@@ -205,7 +205,7 @@ This loads the identity YAML files from your user home into the database. The
 mirror reads from the database at runtime; the YAMLs are the seed source.
 
 If you are already inside a runtime: `/mm-seed` in Pi and Gemini CLI,
-`$mm-seed` in Codex, `/mirror-mind:mm:seed` in Claude Code.
+`$mirror-mind:mm:seed` in Codex, `/mirror-mind:mm:seed` in Claude Code.
 
 ---
 
@@ -248,17 +248,35 @@ Use the same `/mm-*` commands as Pi.
 ### Codex
 
 ```bash
-"$(npm root -g)/mirror-mind/scripts/codex-mirror.sh"
+codex
 ```
 
-The wrapper script handles session start, JSONL backfill, and session end. Use
-`$mm-*` syntax:
+The first session after the install asks you to trust the plugin's hooks — four
+of them, Mirror's — once. That dialog is expected; answer it and it does not
+return until the plugin changes. A plugin's skills carry the plugin's name, as
+they do in Claude Code:
 
 ```text
-$mm-mirror
-$mm-build <slug>
-$mm-consult ...
+$mirror-mind:mm:mirror
+$mirror-mind:mm:build <slug>
+$mirror-mind:mm:consult ...
 ```
+
+**If you wired Codex before this version** (a skills link, an `AGENTS.md` link,
+and the wrapper script), undo those three, or every prompt carries the skills and
+the Operating Instructions twice, and the wrapper's import at exit logs each turn
+a second time beside the plugin's hooks:
+
+```bash
+rm ~/.codex/skills/mirror-mind
+rm ~/.codex/AGENTS.md          # or remove the Mirror section you appended
+```
+
+and start `codex` directly rather than through
+`<pkg>/scripts/codex-mirror.sh`, which still ships for now and retires with
+CV21.DS4.TS5. To take the plugin out again:
+`codex plugin remove mirror-mind@mirror-mind`, then
+`codex plugin marketplace remove mirror-mind`.
 
 ### Claude Code
 
@@ -285,16 +303,16 @@ step above provides, and Mirror's **Operating Instructions** — the four modes,
 the persona signature, the Builder boundary — without which a session answers
 `/mm-mirror` but does not behave as a mirror. The instructions ship in the
 package as `AGENTS.md`, and each runtime receives them its own way: Pi through
-the extension, Claude Code and Gemini CLI through their session-start hook,
-Codex through `~/.codex/AGENTS.md`. None of this needs a step beyond the
-wiring above.
+the extension, Claude Code, Codex, and Gemini CLI through their session-start
+hook (Codex takes the plugin's as a developer message). None of this needs a
+step beyond the wiring above.
 
 **If a runtime is launched from your desktop rather than a terminal**, it may not
 inherit the `PATH` that holds `node` and `mirror`, and its hooks will skip
 logging rather than fail your turn. Each skip writes one line to
 `~/.mirror-minds/your-name/hooks.log`, and `mirror runtime diagnose` reports
 them by count. Set `MIRROR_NODE=/path/to/node` (Node 24 or later) and, for the
-Claude Code plugin, `MIRROR_BIN` to the directory holding `mirror-hook`, in
+plugin on Claude Code or Codex, `MIRROR_BIN` to the directory holding `mirror-hook`, in
 the environment the runtime starts with
 ([troubleshooting](process/troubleshooting.md)).
 

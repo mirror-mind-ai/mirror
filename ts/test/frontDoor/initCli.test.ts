@@ -184,7 +184,7 @@ test("`init` ends with the wiring step for each runtime found on the PATH, and o
     );
     assert.match(
       result.stdout,
-      /Codex:\n {2}1\. ln -s ".*\/\.pi\/skills" ~\/\.codex\/skills\/mirror-mind/,
+      /Codex:\n {2}1\. codex plugin marketplace add "\/.*"\n {2}2\. codex plugin add mirror-mind@mirror-mind/,
     );
     assert.doesNotMatch(result.stdout, /Gemini CLI:|^Pi:/m);
   } finally {

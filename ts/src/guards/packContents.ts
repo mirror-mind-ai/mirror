@@ -38,6 +38,9 @@ export const ALLOWED_FILES: readonly string[] = [
   "AGENTS.md",
   "ts/README.md",
   "scripts/codex-mirror.sh",
+  // CV21.DS4.US1: the Codex marketplace, read from the package root. The
+  // `.agents/skills/` symlinks beside it are the checkout's and stay out.
+  ".agents/plugins/marketplace.json",
 ];
 
 /** Files that must be in every tarball: the entries and one of each runtime's wiring. */
@@ -57,6 +60,7 @@ export const REQUIRED_FILES: readonly string[] = [
   ".claude/hooks/session-start.sh",
   ".gemini/hooks/session-start.sh",
   "plugins/mirror-mind/hooks/hooks.json",
+  ".agents/plugins/marketplace.json",
   "scripts/codex-hooks/session-start.sh",
   "scripts/codex-mirror.sh",
 ];

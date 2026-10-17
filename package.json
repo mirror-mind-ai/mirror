@@ -38,6 +38,7 @@
     ".claude/hooks",
     ".gemini/hooks",
     "plugins/mirror-mind",
+    ".agents/plugins",
     "scripts/codex-hooks",
     "scripts/codex-mirror.sh",
     "AGENTS.md",

@@ -1,5 +1,6 @@
-// Generate the canonical Mirror Mind Claude plugin (manifest + skills), and the
-// Claude Code copies of Pi-sourced skills.
+// Generate the canonical Mirror Mind Claude plugin (manifest + skills), the
+// Codex marketplace that names it (CV21.DS4.US1), and the Claude Code copies of
+// Pi-sourced skills.
 //
 // The Node port of `src/memory/plugins/claude.py` and its wrapper
 // `scripts/build_claude_plugin.py` (CV22.DS10.TS5, slice B).
@@ -42,6 +43,12 @@ export const PLUGIN_AUTHOR = "Mirror Mind";
 export const SKILLS_SOURCE_DIR = ".claude/skills";
 export const PLUGIN_DIR = "plugins/mirror-mind";
 export const SKILL_FILENAME = "SKILL.md";
+
+/**
+ * Where Codex reads a marketplace from, under the marketplace root, which for
+ * the shipped package is the package root (CV21.DS4.US1; DS12.TS2 static 5).
+ */
+export const MARKETPLACE_PATH = ".agents/plugins/marketplace.json";
 
 /** A file the generator owns, addressed relative to the repo root. */
 export interface GeneratedFile {
@@ -143,6 +150,35 @@ export function manifestJson(version: string): string {
 }
 
 /**
+ * The Codex marketplace the package ships (CV21.DS4.US1).
+ *
+ * `codex plugin marketplace add <package root>` reads it, and
+ * `codex plugin add mirror-mind@mirror-mind` copies the plugin it names into
+ * Codex's cache, at the version the plugin manifest carries: the marketplace
+ * itself has none. One local source, the plugin directory, relative to the
+ * root. Generated beside the manifest so the plugin's name lives in one
+ * constant and `--check` guards both files.
+ */
+export function buildMarketplace(): Record<string, unknown> {
+  return {
+    name: PLUGIN_NAME,
+    owner: { name: PLUGIN_AUTHOR },
+    plugins: [
+      {
+        name: PLUGIN_NAME,
+        source: { source: "local", path: `./${PLUGIN_DIR}` },
+        description: PLUGIN_DESCRIPTION,
+      },
+    ],
+  };
+}
+
+/** The marketplace as deterministic JSON text. */
+export function marketplaceJson(): string {
+  return `${JSON.stringify(buildMarketplace(), null, 2)}\n`;
+}
+
+/**
  * The skill markdown file, matching `skill.md` case-insensitively.
  *
  * Case-insensitive makes the generator robust on both case-sensitive and
@@ -232,6 +268,7 @@ export function planGeneratedFiles(repoRoot: string): GeneratedFile[] {
       relativePath: join(PLUGIN_DIR, ".claude-plugin", "plugin.json"),
       content: manifestJson(version),
     },
+    { relativePath: MARKETPLACE_PATH, content: marketplaceJson() },
     ...claudeCopies.values(),
     ...[...pluginSkills].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)).map(([, file]) => file),
   ];

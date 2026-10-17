@@ -14,10 +14,14 @@ import { dirname, join, resolve } from "node:path";
 import { after, describe, test } from "node:test";
 import {
   buildManifest,
+  buildMarketplace,
   discoverSkillSources,
+  MARKETPLACE_PATH,
   manifestJson,
+  marketplaceJson,
   materialize,
   PLUGIN_DIR,
+  PLUGIN_NAME,
   planGeneratedFiles,
   readVersion,
 } from "#guards/claudePlugin.ts";
@@ -91,6 +95,61 @@ describe("manifest", () => {
       "author",
       "mcpServers",
     ]);
+  });
+});
+
+// CV21.DS4.US1: Codex installs the plugin from a marketplace the package ships.
+// The marketplace is generated beside the manifest, from the same constants, so
+// the plugin's name lives in one place and `--check` guards both files.
+describe("Codex marketplace", () => {
+  test("names the package as both the marketplace and its one local plugin", () => {
+    // The install selector is `<plugin>@<marketplace>`: `mirror-mind@mirror-mind`.
+    const marketplace = buildMarketplace() as {
+      name: string;
+      owner: { name: string };
+      plugins: { name: string; source: { source: string; path: string }; description: string }[];
+    };
+
+    assert.equal(marketplace.name, PLUGIN_NAME);
+    assert.deepEqual(Object.keys(marketplace.owner), ["name"]);
+    assert.equal(marketplace.plugins.length, 1);
+    const [plugin] = marketplace.plugins;
+    assert.equal(plugin?.name, PLUGIN_NAME);
+    assert.equal(plugin?.name, buildManifest("1.2.3").name);
+    assert.deepEqual(plugin?.source, { source: "local", path: `./${PLUGIN_DIR}` });
+    assert.ok(plugin?.description);
+  });
+
+  test("its local path resolves from the repository root to the plugin manifest", () => {
+    const marketplace = buildMarketplace() as {
+      plugins: { source: { path: string } }[];
+    };
+    const path = marketplace.plugins[0]?.source.path ?? "";
+
+    assert.ok(existsSync(join(REPO_ROOT, path, ".claude-plugin", "plugin.json")), path);
+  });
+
+  test("renders deterministic JSON with a trailing newline, and carries no version", () => {
+    // Codex reads the version from the plugin manifest it copies into its cache.
+    const first = marketplaceJson();
+    assert.equal(first, marketplaceJson());
+    assert.ok(first.endsWith("}\n"));
+    assert.ok(!("version" in buildMarketplace()));
+  });
+
+  test("is one of the generated files, at the path Codex reads a marketplace from", () => {
+    // DS12.TS2 static 5: `.agents/plugins/marketplace.json` under the marketplace root.
+    assert.equal(MARKETPLACE_PATH, ".agents/plugins/marketplace.json");
+    const root = fixture({ ".claude/skills/one/SKILL.md": "# one\n" });
+
+    const planned = planGeneratedFiles(root).find((file) => file.relativePath === MARKETPLACE_PATH);
+
+    assert.ok(planned);
+    assert.equal(planned.content, marketplaceJson());
+    materialize(root, { write: true });
+    assert.equal(readFileSync(join(root, MARKETPLACE_PATH), "utf8"), marketplaceJson());
+    writeFileSync(join(root, MARKETPLACE_PATH), "{}\n", "utf8");
+    assert.deepEqual(materialize(root, { write: false }), [`out of date: ${MARKETPLACE_PATH}`]);
   });
 });
 
