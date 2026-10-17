@@ -12,6 +12,17 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-10-17 — CV21.DS4.TS3: Codex's `$`-skill turns follow the slash-command rule
+
+DS2's second carried debt, paid. One predicate, `isCommandTurn`, now decides for every
+hook in our process: a prompt opening with `/` (anything) or with `$` and a skill name
+is a command turn — skipped, its turn recorded so the Stop hook skips the reply — with
+the Mirror form's exception in both sigils. On Codex a `$mm-journeys` and its rendered
+table were logged as conversation and read by extraction as if the person had said it;
+no longer. `$5 a month` stays conversation everywhere
+([decision](../project/decisions.md#a-skill-turn-is-a-command-turn-in-every-runtimes-sigil)).
+Validated by the Navigator through the real wrappers on this tree (8/0).
+
 ### 2026-10-17 — CV21.DS4.TS2: SessionEnd's close tail survives Codex's 1 s bound
 
 DS2's carried debt, paid. The shared Claude-family `session-end` now picks its tail by

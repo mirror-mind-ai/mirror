@@ -83,7 +83,7 @@ test("handleUserPromptHook writes nothing while muted", () => {
   db.close();
 });
 
-test("handleUserPromptHook never logs slash commands", () => {
+test("handleUserPromptHook never logs slash commands: a command turn", () => {
   const { db, home } = fixture();
   const outcome = handleUserPromptHook(
     db,
@@ -92,7 +92,7 @@ test("handleUserPromptHook never logs slash commands", () => {
     deps,
   );
 
-  assert.deepEqual(outcome, { action: "skipped", reason: "slash_command" });
+  assert.deepEqual(outcome, { action: "skipped", reason: "command_turn" });
   assert.equal(messageCount(db), 0);
   db.close();
 });

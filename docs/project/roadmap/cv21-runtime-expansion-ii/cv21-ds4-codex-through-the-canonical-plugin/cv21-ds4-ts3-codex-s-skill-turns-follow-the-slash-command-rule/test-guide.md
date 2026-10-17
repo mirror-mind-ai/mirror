@@ -125,4 +125,25 @@ A `claude_code` session, `$5 a month seems fine`.
 
 ## Validation Evidence
 
-Pending implementation and validation.
+**Driver, 2026-10-17.** Tree `2eff6f2c` plus this story's working set.
+
+- Automated: `npm test` 3252 pass, 0 fail (3255 tests); typecheck, lint,
+  `checkDocLinks`, `checkPackContents` (484 files), `checkRetiredSurfaces` clean. Red
+  first: `commandTurn.test.ts` (5, the module missing), the four TS3 cases in
+  `replyLogging.test.ts`, and the two `slash_command` assertions under their new reason.
+- `route.sh static` 8/0, with `/opt/homebrew/bin` first on the PATH to reproduce the
+  Navigator's environment and the entry pinned to this tree: the `codex`
+  `$mirror-mind:mm:journeys` turn and its reply logged nothing and wrote no
+  `hooks.log` line; `$mm-mirror what matters today` and `$mirror-mind:mm:mirror and
+  tomorrow?` logged their questions; on `claude_code`, `$5 a month seems fine` logged
+  as typed and a following `$mm-journeys` did not.
+- One implementation defect caught before any commit: a replacement string holding
+  `` `$` `` was read by `String.replace` as "the text before the match" and
+  duplicated `logger.ts`; restored from the TS2 commit and redone.
+
+**Navigator, 2026-10-17 15:28 UTC.** `bash route.sh static` on tree `2eff6f2c` plus this
+story's working set, the entry `mirror-dev/bin/mirror-hook.js` (the published
+`/opt/homebrew/bin/mirror-hook` on the PATH, not used): **8 passed, 0 failed**. The
+`codex` `$`-skill turn and its reply logged nothing with no `hooks.log` line; both `$`
+Mirror forms logged their questions; `$5 a month seems fine` logged as typed on
+`claude_code`, and `$mm-journeys` after it did not.

@@ -14,6 +14,7 @@
 // `GEMINI_SESSION_ID` still wins over the payload's `session_id`, because the
 // runtime sets it and the payload is the fallback.
 
+import { isCommandTurn } from "#conversation/commandTurn.ts";
 import { parseHookPayload } from "./payload.ts";
 import {
   operatingInstructionsFor,
@@ -37,7 +38,8 @@ export async function geminiLogUser(stdin: string): Promise<number> {
   const payload = parseHookPayload(stdin);
   const sessionId = sessionIdFrom(payload.sessionId);
 
-  if (payload.prompt.startsWith("/")) {
+  // The same rule as the Claude-family logger's (CV21.DS4.TS3): one home.
+  if (isCommandTurn(payload.prompt)) {
     process.stdout.write("{}\n");
     return 0;
   }

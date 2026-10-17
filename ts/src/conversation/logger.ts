@@ -12,6 +12,7 @@
 
 import { closeSync, existsSync, mkdirSync, openSync, rmSync } from "node:fs";
 import { join } from "node:path";
+import { isCommandTurn } from "#conversation/commandTurn.ts";
 import { markCloseTailPending, sessionEndRunsLlmTail } from "#conversation/deferredCloseTail.ts";
 import {
   lastAssistantMessageOf,
@@ -514,7 +515,7 @@ export type UserPromptHookOutcome =
         | "malformed_payload"
         | "missing_session"
         | "missing_prompt"
-        | "slash_command"
+        | "command_turn"
         | "bare_mirror_form";
     }
   | { action: "logged"; sessionId: string }
@@ -599,7 +600,8 @@ function recordSkippedTurn(
  * Grok session whose first turn was a Mirror turn used to be labelled
  * `claude_code` and bound to someone else's session (DS12.TS4 L7, TS2 L9).
  * And a Mirror turn is a conversation turn: its question is logged without
- * the form, where every other slash command stays a command.
+ * the form, where every other skill invocation, in `/` or in Codex's `$`
+ * (CV21.DS4.TS3), stays a command.
  */
 export function handleUserPromptHook(
   db: WritableDatabase,
@@ -629,11 +631,12 @@ export function handleUserPromptHook(
         return { action: "skipped", reason: "bare_mirror_form" };
       }
       content = mirror.query;
-    } else if (prompt.startsWith("/")) {
-      // Slash commands never enter conversation history, and neither does
-      // their reply: the turn is recorded so the Stop hook knows why.
+    } else if (isCommandTurn(prompt)) {
+      // A skill invocation, in `/` or in Codex's `$` (CV21.DS4.TS3), never
+      // enters conversation history, and neither does its reply: the turn is
+      // recorded so the Stop hook knows why.
       recordSkippedTurn(db, sessionId, turnIdOf(payload), deps);
-      return { action: "skipped", reason: "slash_command" };
+      return { action: "skipped", reason: "command_turn" };
     }
 
     logUserMessage(

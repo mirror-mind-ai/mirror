@@ -108,11 +108,20 @@ mirror conversation-logger log-user <session_id> <prompt> --interface <name>
 - `prompt` — full text of the user message; truncate at ~50 KB if needed
 - `--interface` — runtime name used for attribution (e.g. `claude_code`, `pi`)
 
-Skip if the prompt begins with `/` (skill invocation, not a conversational
-message), with one exception: a prompt that opens with the Mirror skill's
-explicit form, in any runtime's spelling, is a conversation turn, and the
-question that follows the form is what is logged (CV21.DS2.US8). The forms are
-the inject hook's (see [Mirror Mode Identity Injection](#optional-mirror-mode-identity-injection)).
+Skip a command turn: a prompt that opens with a skill invocation in any
+runtime's sigil (`isCommandTurn`, CV21.DS4.TS3). A prompt opening with `/` is a
+command whatever follows, since every runtime uses `/` for its own built-ins too.
+A prompt opening with `$`, Codex's skill sigil, is a command when a skill name
+follows — lowercase segments of letters, digits, hyphens, and underscores, an
+optional plugin prefix joined by `:`, ending at whitespace or the end
+(`$mm-journeys`, `$mirror-mind:mm:build mirror`) — and conversation otherwise
+(`$5 a month`, `$HOME`). One exception in both sigils: a prompt that opens with
+the Mirror skill's explicit form, in any runtime's spelling, is a conversation
+turn, and the question that follows the form is what is logged (CV21.DS2.US8).
+The forms are the inject hook's (see
+[Mirror Mode Identity Injection](#optional-mirror-mode-identity-injection)). A
+skipped turn is recorded by its turn id so the Stop hook skips its reply too:
+what a person says to the mirror is remembered; a skill they invoke is not.
 
 The Claude-family hooks (`conversation-logger user-prompt`, from Claude Code,
 Codex, and Grok) apply both rules themselves, read the runtime's turn id from

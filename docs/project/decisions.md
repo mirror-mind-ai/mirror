@@ -2951,6 +2951,42 @@ millisecond persist window is still not one transaction: a Change Request if it 
 be priced. US4 observes the change on the real Codex with a real key; DS10 re-measures
 Grok's bound and may let it run the tail.
 
+### A skill turn is a command turn in every runtime's sigil
+
+**Date:** 2026-10-17 · **Context:** [CV21.DS4.TS3](roadmap/cv21-runtime-expansion-ii/cv21-ds4-codex-through-the-canonical-plugin/cv21-ds4-ts3-codex-s-skill-turns-follow-the-slash-command-rule/index.md),
+carried from [DS2's Debt Review](roadmap/cv21-runtime-expansion-ii/cv21-ds2-mirror-plugin-mcp-foundation/review.md).
+
+**The decision.** A prompt that opens with a skill invocation, in `/` or in Codex's
+`$`, is a command turn: the prompt hook skips it and records the turn, and the Stop
+hook skips its reply (`command_turn`). The `/` side skips anything, because every
+runtime uses `/` for its own built-ins too; the `$` side skips only a skill name —
+lowercase segments, an optional plugin prefix, ending at whitespace or the end —
+because `$` is Codex's skill sigil and nothing else, and `$5 a month` is English. The
+Mirror skill's explicit form keeps its exception in both sigils (US8). One predicate,
+`isCommandTurn`, is the rule's home for every hook that runs in our process; the Pi
+extension keeps its own `/` check in Pi's process.
+
+**Why: memory quality first.** On Codex, `$mm-journeys` reached the prompt hook as text
+that did not start with `/`, so the invocation was logged as the person's turn and the
+rendered journey table as the reply — and extraction then read a roadmap table as if the
+person had said it. The same invocation on Claude Code, `/mirror-mind:mm:journeys`,
+logged nothing. Skill renderings are noise to extraction, and the two runtimes recorded
+different conversations for the same action.
+
+**The counter-case, not taken.** A `$mm-journal …` or `$mm-consult …` turn carries
+content. It is the same case US8 decided for `/mm-journal …` on Claude Code: the skill
+records what it needs through the front door (the journal entry, a memory), and its
+reply is a rendering. A Codex-only rule was not taken either: the rule is one for every
+runtime, so a Claude Code user who types `$mm-journeys`, which Claude Code does not
+understand, is still invoking a skill, and that turn is not conversation.
+
+**Consequences.** A Codex user loses the accidental logging of skill turns they had
+until now; what they say to the mirror is remembered, a skill they invoke is not. The
+Stop side is unchanged: a command turn is recognized at Stop through its recorded turn
+id, which Codex sends on both hooks; a runtime that sent one only at Stop would reach
+`nothing_waiting`, as for `/` today. US4's live session observes the rule on the real
+Codex.
+
 ## Open Discussions
 
 ### Migration rehearsal — long-term status

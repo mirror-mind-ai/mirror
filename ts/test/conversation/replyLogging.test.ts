@@ -108,7 +108,7 @@ test("a skipped slash command still stamps the session's label, and logs nothing
   // on Grok, and `guessRuntimeSessionId` would not even find the row.
   const { db, home } = fixture();
   const outcome = prompt(db, home, { sessionId: "g1", prompt: "/mm-journeys" }, "grok_build");
-  assert.deepEqual(outcome, { action: "skipped", reason: "slash_command" });
+  assert.deepEqual(outcome, { action: "skipped", reason: "command_turn" });
   assert.equal(rows(db).length, 0);
   assert.equal(sessionInterface(db, "g1"), "grok_build");
   db.close();
@@ -431,5 +431,79 @@ test("the scripted journey: Mirror turn, ordinary turn, repeat Stop, command tur
     { role: "assistant", content: "seven mirror-mind tools", metadata: '{"turn_id": "p2"}' },
   ]);
   assert.deepEqual(conversationInterfaces(db), ["claude_code"]);
+  db.close();
+});
+
+// --- CV21.DS4.TS3: Codex's `$`-skill turns follow the slash-command rule ---------
+
+test("a Codex $-skill turn is a command turn, and its reply is an expected skip", () => {
+  // On Codex a skill is invoked as `$mirror-mind:mm:journeys` (DS12.TS2 L10). It used
+  // to be logged as conversation, and its rendered journey list as the reply.
+  const { db, home } = fixture();
+  const outcome = prompt(
+    db,
+    home,
+    { session_id: "c1", prompt: "$mirror-mind:mm:journeys", turn_id: "t1" },
+    "codex",
+  );
+  assert.deepEqual(outcome, { action: "skipped", reason: "command_turn" });
+  assert.equal(sessionInterface(db, "c1"), "codex");
+  const reply = stop(
+    db,
+    home,
+    { session_id: "c1", last_assistant_message: "| journey | status |", turn_id: "t1" },
+    "codex",
+  );
+  assert.deepEqual(reply, { action: "skipped", reason: "command_turn" });
+  assert.equal(rows(db).length, 0);
+  assert.deepEqual(conversationInterfaces(db), []);
+  db.close();
+});
+
+test("the Mirror form keeps its exception in both $ spellings", () => {
+  const { db, home } = fixture();
+  prompt(
+    db,
+    home,
+    { session_id: "c1", prompt: "$mm-mirror what matters today", turn_id: "t1" },
+    "codex",
+  );
+  prompt(
+    db,
+    home,
+    { session_id: "c1", prompt: "$mirror-mind:mm:mirror and tomorrow?", turn_id: "t2" },
+    "codex",
+  );
+  assert.deepEqual(
+    rows(db).map((row) => row.content),
+    ["what matters today", "and tomorrow?"],
+  );
+  db.close();
+});
+
+test("a $ that is not a skill name is conversation, on Claude Code as on Codex", () => {
+  const { db, home } = fixture();
+  prompt(db, home, { session_id: "s1", prompt: "$5 a month seems fine", prompt_id: "p1" });
+  prompt(db, home, { session_id: "c1", prompt: "$HOME is set", turn_id: "t1" }, "codex");
+  assert.deepEqual(
+    rows(db).map((row) => row.content),
+    ["$5 a month seems fine", "$HOME is set"],
+  );
+  db.close();
+});
+
+test("a skipped turn with no turn id records nothing, so a Stop that carries one is nothing_waiting, as for /", () => {
+  // Pinned as unchanged (TS3 review, Q3): the Stop side recognizes a command turn
+  // only through the recorded turn id. Codex sends one on both hooks.
+  const { db, home } = fixture();
+  prompt(db, home, { session_id: "c1", prompt: "$mm-journeys" }, "codex");
+  const reply = stop(
+    db,
+    home,
+    { session_id: "c1", last_assistant_message: "the list", turn_id: "t9" },
+    "codex",
+  );
+  assert.deepEqual(reply, { action: "skipped", reason: "nothing_waiting" });
+  assert.equal(rows(db).length, 0);
   db.close();
 });

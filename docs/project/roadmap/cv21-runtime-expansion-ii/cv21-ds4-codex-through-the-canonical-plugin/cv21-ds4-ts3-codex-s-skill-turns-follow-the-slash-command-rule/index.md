@@ -2,7 +2,7 @@
 
 # CV21.DS4.TS3 — Codex's `$`-skill turns follow the slash-command rule
 
-**Status:** 🟡 Planned
+**Status:** ✅ Done
 **Type:** Technical Story
 **Delivery Story:** CV21.DS4 — Codex Through The Canonical Plugin
 
