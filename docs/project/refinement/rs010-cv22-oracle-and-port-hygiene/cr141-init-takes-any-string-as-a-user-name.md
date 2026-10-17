@@ -87,5 +87,4 @@ in `ts/test/frontDoor/initCli.test.ts` drives `../escaped`, `My User`, `a/b`, an
 `Vinícius` through the real front door: exit 2, the sentence with its suggestion, and
 an empty `$HOME` afterwards. A name with a newline or `;touch PWNED` prints escaped and
 creates nothing; `ok-user` still creates its home. REFERENCE.md names `init` and
-`MIRROR_USER=<user>` beside the other keys. Not released on its own; it ships with the
-next patch.
+`MIRROR_USER=<user>` beside the other keys. Released in [v0.33.4](../../../releases/v0.33.4.md).
