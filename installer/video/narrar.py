@@ -23,6 +23,7 @@ PRONUNCIA_COMUM = [
     (r"MirrorMind-Setup", "MirrorMind Setup"),
     (r"sk-or", "s k, hífen, o r"),
     (r"\bPi\b", "Pái"),   # both voices read "Pi" as the Portuguese letter otherwise
+    (r"OpenRouter", "Ôpenrauter"),   # chosen by ear on 17/10 over seven spellings
     (r"«|»", ""), (r"·", ","), (r"…", ""), (r"—", ","),
 ]
 PRONUNCIA_EDGE = [(r"\bNode\b", "Nôud"), (r"\bGit\b", "Guitt"), (r"Anthropic", "Antrópic")]
