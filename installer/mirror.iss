@@ -89,7 +89,10 @@ Name: "{group}\{#AppName} - Status"; Filename: "{app}\bin\mirror-status.cmd"; Wo
 Name: "{userdesktop}\{#AppName}";    Filename: "{app}\bin\mirror.cmd";        WorkingDir: "{%USERPROFILE}\Mirror"; IconFilename: "{app}\bin\mirror.ico"
 
 [Run]
-Filename: "{app}\bin\mirror.cmd"; Description: "{cm:LaunchProgram,{#AppName}}"; Flags: nowait postinstall skipifsilent shellexec; Check: ConfigureDone
+; No Check: here. Inno evaluates Check functions when it builds this list, right
+; after the install step, and ConfigureDone is only known after the identity
+; page that follows. CurPageChanged hides the item instead when configure failed.
+Filename: "{app}\bin\mirror.cmd"; Description: "{cm:LaunchProgram,{#AppName}}"; Flags: nowait postinstall skipifsilent shellexec
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}\node"
@@ -114,6 +117,7 @@ var
   LangLabel, BodyText, NameLabel, KeyLabel: TNewStaticText;
   LangCombo: TNewComboBox;
   NameEdit: TNewEdit;
+  NameHint: TNewStaticText;    { the key the name becomes, live }
   KeyEdit: TPasswordEdit;
   KeysButton: TNewButton;
   LogMemo: TNewMemo;           { bootstrap transcript, on the Installing page }
@@ -122,10 +126,6 @@ var
   CurLang: String;             { 'en' or 'pt' }
   AppBinDir, AppLogsDir, DetailLogPath: String;
 
-function ConfigureDone: Boolean;
-begin
-  Result := ConfigOk;
-end;
 
 { Texts without accents on purpose: the .iss is read as ANSI by the compiler. }
 { Copy for the identity page and the progress pages. Written as a person
@@ -154,7 +154,8 @@ begin
     else if Key = 'keysbtn' then Result := 'Criar conta e gerar chave…'
     else if Key = 'lang' then Result := 'Idioma:'
     else if Key = 'needname' then Result := 'Escreva o seu nome para continuar.'
-    else if Key = 'badname' then Result := 'O nome vira o nome de uma pasta, então não pode ter \ / : * ? " < > | nem começar com hífen.'
+    else if Key = 'badname' then Result := 'O nome precisa ter ao menos uma letra ou número.'
+    else if Key = 'askey' then Result := 'No Mirror: %s'
     else if Key = 'needkey' then Result := 'Cole a chave da OpenRouter para continuar. Ela começa com sk-or-.'
     else if Key = 'configuring' then Result := 'Preparando o seu Mirror…'
     else if Key = 'installing' then Result := 'Instalando Node.js, Git e Pi. Leva alguns minutos.'
@@ -185,7 +186,8 @@ begin
     else if Key = 'keysbtn' then Result := 'Create account and get a key…'
     else if Key = 'lang' then Result := 'Language:'
     else if Key = 'needname' then Result := 'Type your name to continue.'
-    else if Key = 'badname' then Result := 'The name becomes a folder name, so it cannot contain \ / : * ? " < > | or start with a hyphen.'
+    else if Key = 'badname' then Result := 'The name needs at least one letter or digit.'
+    else if Key = 'askey' then Result := 'In Mirror: %s'
     else if Key = 'needkey' then Result := 'Paste your OpenRouter key to continue. It starts with sk-or-.'
     else if Key = 'configuring' then Result := 'Getting your Mirror ready…'
     else if Key = 'installing' then Result := 'Installing Node.js, Git and Pi. A few minutes.'
@@ -240,9 +242,51 @@ begin
   end;
 end;
 
+{ What the person types becomes a key: mirror-mind 0.33.4 (CR141) takes a user
+  name only as lowercase letters, digits and single hyphens -- it goes into a
+  path and into MIRROR_USER for shell commands. "João Silva" -> "joao-silva".
+  The page shows the key under the field, so nobody is surprised later. }
+function UserKey(const S: String): String;
+var
+  i: Integer;
+  c: Char;
+  r: String;
+begin
+  r := '';
+  for i := 1 to Length(S) do
+  begin
+    c := S[i];
+    if (c >= 'A') and (c <= 'Z') then c := Chr(Ord(c) + 32);
+    if Pos(c, 'áàâãäåÁÀÂÃÄÅ') > 0 then c := 'a'
+    else if Pos(c, 'çÇ') > 0 then c := 'c'
+    else if Pos(c, 'éèêëÉÈÊË') > 0 then c := 'e'
+    else if Pos(c, 'íìîïÍÌÎÏ') > 0 then c := 'i'
+    else if Pos(c, 'ñÑ') > 0 then c := 'n'
+    else if Pos(c, 'óòôõöÓÒÔÕÖ') > 0 then c := 'o'
+    else if Pos(c, 'úùûüÚÙÛÜ') > 0 then c := 'u'
+    else if Pos(c, 'ýÿÝ') > 0 then c := 'y'
+    else if Pos(c, ' _.-') > 0 then c := '-';
+    if ((c >= 'a') and (c <= 'z')) or ((c >= '0') and (c <= '9')) then r := r + c
+    else if (c = '-') and (Length(r) > 0) and (r[Length(r)] <> '-') then r := r + '-';
+  end;
+  while (Length(r) > 0) and (r[Length(r)] = '-') do Delete(r, Length(r), 1);
+  if Length(r) > 80 then SetLength(r, 80);
+  Result := r;
+end;
+
+procedure NameEditChange(Sender: TObject);
+var
+  k: String;
+begin
+  k := UserKey(NameEdit.Text);
+  if k = '' then NameHint.Caption := ''
+  else NameHint.Caption := Format(L('askey'), [k]);
+end;
+
 procedure InitializeWizard;
 var
   SW, SH: Integer;
+  KeyFromFile: AnsiString;
 begin
   BootstrapOk := False;
   ConfigOk := False;
@@ -289,7 +333,10 @@ begin
   KeyEdit.Left := 0;
   KeyEdit.Width := SW - ScaleX(170);
   KeyEdit.Top := SH - ScaleY(23);
-  KeyEdit.Text := ExpandConstant('{param:KEY|}');
+  { /KEYFILE=<path>: the key read from a file, never from the command line --
+    Inno writes the command line into its log. For the demo and the tests. }
+  if LoadStringFromFile(ExpandConstant('{param:KEYFILE|}'), KeyFromFile) then
+    KeyEdit.Text := Trim(KeyFromFile);
 
   KeysButton := TNewButton.Create(WizardForm);
   KeysButton.Parent := IdPage.Surface;
@@ -309,12 +356,20 @@ begin
   NameEdit.Parent := IdPage.Surface;
   NameEdit.Left := 0;
   NameEdit.Width := SW;
-  NameEdit.Top := KeyLabel.Top - ScaleY(30);
+  NameEdit.Top := KeyLabel.Top - ScaleY(46);
   { /NAME= and /KEY= prefill the page: the demo recording and the automated
     tests drive the wizard with them. A user never passes them. }
   NameEdit.Text := ExpandConstant('{param:NAME|}');
   if NameEdit.Text = '' then NameEdit.Text := GetUserNameString();
+  NameEditChange(nil);
 
+  NameHint := TNewStaticText.Create(WizardForm);
+  NameHint.Parent := IdPage.Surface;
+  NameHint.AutoSize := True;
+  NameHint.Left := 0;
+  NameHint.Top := NameEdit.Top + NameEdit.Height + ScaleY(2);
+  NameHint.Font.Color := clGrayText;
+  NameEdit.OnChange := @NameEditChange;
   NameLabel := TNewStaticText.Create(WizardForm);
   NameLabel.Parent := IdPage.Surface;
   NameLabel.AutoSize := True;
@@ -374,6 +429,11 @@ begin
   begin
     Log(Format('finished page: ConfigOk=%d', [Integer(ConfigOk)]));
     WizardForm.BackButton.Visible := False;
+    if (not ConfigOk) and (WizardForm.RunList.Items.Count > 0) then
+    begin
+      WizardForm.RunList.Checked[0] := False;
+      WizardForm.RunList.Visible := False;
+    end;
   end;
   if (CurPageID = wpFinished) and ConfigOk then
     WizardForm.FinishedLabel.Caption :=
@@ -462,19 +522,6 @@ begin
   Result := ExitCode;
 end;
 
-{ The name becomes a folder (~\.mirror-minds\<name>) and MIRROR_USER. Accents
-  are letters -- João, Çãõ, Müller -- so only what Windows forbids in a folder
-  name is refused, plus a leading '-', which init reads as a flag. }
-function ValidName(const S: String): Boolean;
-var
-  i: Integer;
-begin
-  Result := (Length(S) > 0) and (S[1] <> '-');
-  for i := 1 to Length(S) do
-    if Pos(S[i], '\/:*?"<>|' + #9) > 0 then
-      Result := False;
-end;
-
 function ShouldSkipPage(PageID: Integer): Boolean;
 begin
   Result := False;
@@ -495,7 +542,7 @@ begin
       Result := False;
       Exit;
     end;
-    if not ValidName(Trim(NameEdit.Text)) then
+    if UserKey(NameEdit.Text) = '' then
     begin
       MsgBox(L('badname'), mbError, MB_OK);
       Result := False;
@@ -512,7 +559,7 @@ begin
     ConfigMemo.Visible := True;
     WizardForm.NextButton.Enabled := False;
     WizardForm.BackButton.Enabled := False;
-    rc := RunPhase('configure', Trim(NameEdit.Text), Trim(KeyEdit.Text), ConfigMemo);
+    rc := RunPhase('configure', UserKey(NameEdit.Text), Trim(KeyEdit.Text), ConfigMemo);
     WizardForm.NextButton.Enabled := True;
     WizardForm.BackButton.Enabled := True;
     ConfigOk := (rc = 0);

@@ -79,7 +79,7 @@ $setup = Get-ChildItem "C:\Setup\MirrorMind-Setup-*.exe" | Sort-Object LastWrite
 Say "setup: $($setup.Name)"
 # A quiet desktop: the Sandbox opens the LogonCommand console; minimize it.
 $me = [W]::GetForegroundWindow(); [void][W]::ShowWindow($me, 6)
-Start-Process $setup.FullName -ArgumentList "/LANG=pt", "/LOG=C:\Out\demo\setup.log", "/NAME=$name", "/KEY=$key"
+Start-Process $setup.FullName -ArgumentList "/LANG=pt", "/LOG=C:\Out\demo\setup.log", "/NAME=$name", "/KEYFILE=C:\Out\openrouter.key"
 $wiz = FindWin "Mirror Mind*Instalador*" 60
 if (-not $wiz) { Say "wizard window not found"; exit 1 }
 $h = $wiz.MainWindowHandle
@@ -111,11 +111,21 @@ while (((Get-Date) - $t0).TotalMinutes -lt 10) {
     if (((Get-Content "$logs\install-configure.log" -ErrorAction SilentlyContinue) -join "`n") -match "MIRRORDONE:") { break }
 }
 Start-Sleep -Milliseconds 800
+$cfg = (Get-Content "$logs\install-configure.log" -ErrorAction SilentlyContinue) -join "`n"
+if ($cfg -notmatch "MIRRORDONE:0") {
+    Shot $h "07-erro"
+    Say "configure failed; stopping (see 07-erro.png and install-configure.log)"
+    Copy-Item "$logs\*" $Out -Force -ErrorAction SilentlyContinue
+    Say "done"
+    exit 1
+}
 Shot $h "07-concluido"
 Start-Sleep 2
 Shot $h "07b-concluido"
-[void](Click $h "Concluir")          # runs mirror.cmd (checkbox on)
-Start-Sleep 1
+# Concluir with "Abrir o Mirror Mind" checked runs mirror.cmd (the fixed [Run] entry).
+[void](Click $h "Concluir")
+Start-Sleep 2
+Say "clicked Concluir; Mirror should open from the Run entry"
 
 # --- 2. Mirror opens -----------------------------------------------------------
 $pi = FindWin "*Mirror*" 60
@@ -127,6 +137,8 @@ if ($pi) {
     Start-Sleep 30              # first start downloads fd/ripgrep, then the welcome card
     Shot $ph "08-mirror-abre"
     ClickInto $ph
+    if ([W]::GetForegroundWindow() -ne $ph) { Say "Pi window has no focus; not typing"; Shot $ph "09-sem-foco" }
+    else {
     foreach ($ch in 'listar minhas personas'.ToCharArray()) { [System.Windows.Forms.SendKeys]::SendWait($ch); Start-Sleep -Milliseconds 60 }
     Start-Sleep 1
     Shot $ph "09-pergunta"
@@ -135,6 +147,7 @@ if ($pi) {
     Shot $ph "10-resposta"
     Start-Sleep 25
     Shot $ph "11-resposta-final"
+    }
 } else { Say "Mirror window not found" }
 
 # desktop with the shortcut
