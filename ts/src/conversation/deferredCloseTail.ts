@@ -32,30 +32,9 @@ import { metadataDict } from "#conversation/closeTail.ts";
 import type { WritableDatabase } from "#db/database.ts";
 import { pythonJsonDumps } from "#util/pyGenerators.ts";
 
-/**
- * Whether a runtime's SessionEnd hook has the time to run the LLM tail at exit,
- * by the label US8 stamps on the session row (`claude_code`, `codex`,
- * `grok_build`). Measured bounds, with the evidence:
- *
- *   claude_code  the plugin registers the hook `async`; Claude Code runs it in
- *                the background after exit, unbounded by the user's wait.
- *   codex        synchronous ("running async SessionEnd hook synchronously",
- *                DS12.TS2 L2), 1 s for a handler with no `timeout` (DS2's live
- *                `/hooks` table, 2026-10-13, Codex 0.162.1).
- *   grok_build   1.5 s for a handler with no `timeout` (DS12.TS4, Grok 1.0.52).
- *                DS10 re-measures it and may flip this entry.
- *
- * Any other label, and no label, keeps today's behavior: the tail runs.
- */
-export function sessionEndRunsLlmTail(interfaceName: string | null | undefined): boolean {
-  switch (interfaceName) {
-    case "codex":
-    case "grok_build":
-      return false;
-    default:
-      return true;
-  }
-}
+// The policy that decides which runtimes defer the tail lives in
+// `runtimePolicy.ts` (`sessionEndRunsLlmTail`), beside its sibling for sessions
+// that outlive the TUI (US4).
 
 export const CLOSE_TAIL_PENDING_KEY = "close_tail_pending";
 

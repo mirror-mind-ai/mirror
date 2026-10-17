@@ -206,7 +206,16 @@ detection when the row has none):
   exit: the full tail runs — `ended_at`, the runtime session inactive, the
   transcript backfill, extraction, then title/summary/tags.
 - **Codex** runs the hook synchronously under 1 s (DS12.TS2 L2; DS2's live `/hooks`
-  table) and **Grok** under 1.5 s (DS12.TS4): the close runs no LLM work. It writes
+  table) and **Grok** under 1.5 s (DS12.TS4): the close runs no LLM work. On Codex
+  0.163.0 the hook fires not at `/quit` — the TUI detaches from a thread that persists
+  in the shared daemon — but when the daemon reaps the idle thread, thirty minutes
+  later (CV21.DS4.US4, measured 2026-10-17). Until then the conversation is open and
+  its runtime session `active`, meaning resumable: session maintenance treats such a
+  session as not attended (`runtimePolicy.ts`, `sessionOutlivesTui`), closes the
+  conversation as an idle orphan past `MIRROR_STALE_ORPHAN_MINUTES` (30) if the daemon
+  never does, and deactivates the session; a prompt on a session whose conversation
+  has ended binds a new conversation, so a `codex resume` does not write into a closed
+  one; and a conversation already ended is not closed twice. It writes
   `ended_at`, marks the session inactive, backfills, flags the conversation
   `close_tail_pending`, and returns; the backup follows inside the bound. The next
   session start's maintenance, on any runtime, extracts the conversation

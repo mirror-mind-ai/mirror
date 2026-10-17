@@ -13,7 +13,7 @@
 import { closeSync, existsSync, mkdirSync, openSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { isCommandTurn } from "#conversation/commandTurn.ts";
-import { markCloseTailPending, sessionEndRunsLlmTail } from "#conversation/deferredCloseTail.ts";
+import { markCloseTailPending } from "#conversation/deferredCloseTail.ts";
 import {
   lastAssistantMessageOf,
   parseHookPayloadObject,
@@ -22,6 +22,7 @@ import {
   subagentTypeOf,
   turnIdOf,
 } from "#conversation/hookPayload.ts";
+import { sessionEndRunsLlmTail } from "#conversation/runtimePolicy.ts";
 import { backfillAssistantMessages } from "#conversation/transcriptBackfill.ts";
 import { type WritableDatabase, withTransaction } from "#db/database.ts";
 import { mirrorForm } from "#mirror/mirrorForm.ts";
@@ -148,7 +149,12 @@ export function getOrCreateSessionConversation(
     const boundId =
       bound && typeof bound.conversation_id === "string" ? bound.conversation_id : null;
     if (boundId) {
-      const existing = db.prepare("SELECT id FROM conversations WHERE id = ?").get(boundId);
+      // Live: exists and not ended. A closed conversation is not reopened by a
+      // prompt (CV21.DS4.US4): a `codex resume` after the idle close starts a new
+      // one on the same thread id rather than appending to an extracted one.
+      const existing = db
+        .prepare("SELECT id FROM conversations WHERE id = ? AND ended_at IS NULL")
+        .get(boundId);
       if (existing) return boundId;
     }
 
@@ -426,6 +432,18 @@ export async function endSession(
   const runtimeSession = getRuntimeSession(db, sessionId);
   const conversationId = runtimeSession?.conversationId ?? null;
   if (!conversationId) return false;
+  // A closed conversation is not closed twice (CV21.DS4.US4): Codex 0.163.0 fires
+  // SessionEnd when its daemon reaps the detached thread, and maintenance may have
+  // closed the idle conversation first. The session is deactivated; ended_at and
+  // the tail are left as they are.
+  const alreadyEnded = db
+    .prepare("SELECT 1 FROM conversations WHERE id = ? AND ended_at IS NOT NULL")
+    .get(conversationId);
+  if (alreadyEnded) {
+    upsertRuntimeSession(db, sessionId, { active: false, closedAt: deps.nowIso() }, deps.nowIso());
+    options.beforeTail?.();
+    return true;
+  }
   const deactivate = () => {
     upsertRuntimeSession(db, sessionId, { active: false, closedAt: deps.nowIso() }, deps.nowIso());
     options.beforeTail?.();

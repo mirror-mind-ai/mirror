@@ -250,3 +250,21 @@ test("setMute and isMuted use the mute flag file under the mirror home", () => {
   setMute(false, home); // idempotent unlink, like Python missing_ok=True
   assert.equal(isMuted(home), false);
 });
+
+// CV21.DS4.US4 scope change: a closed conversation is not reopened by a prompt. A
+// `codex resume` after the idle close starts a new conversation on the same thread
+// id instead of appending to an extracted one.
+test("getOrCreateSessionConversation binds a new conversation when the bound one has ended", () => {
+  const { db } = fixture();
+  const first = getOrCreateSessionConversation(db, "sess-1", { interface: "codex" }, deps);
+  db.prepare("UPDATE conversations SET ended_at = ? WHERE id = ?").run(
+    "2026-09-02T12:30:00.000000Z",
+    first,
+  );
+  const second = getOrCreateSessionConversation(db, "sess-1", { interface: "codex" }, deps);
+  assert.notEqual(second, first);
+  assert.equal(sessionRow(db, "sess-1")?.conversation_id, second);
+  assert.equal(sessionRow(db, "sess-1")?.active, 1);
+  assert.equal(conversationRows(db).length, 2);
+  db.close();
+});

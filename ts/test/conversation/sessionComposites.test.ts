@@ -545,3 +545,108 @@ test("maintenance without the finalization dep reports the step at zero and touc
   assert.equal(metadataOf(db, "conv-deferred"), '{"close_tail_pending": true}');
   db.close();
 });
+
+// CV21.DS4.US4 scope change: on Codex 0.163.0 the TUI detaches from a thread that
+// persists in the daemon, SessionEnd does not fire, and the session stays
+// `active = 1`. "Active" there means resumable, not attended, so an idle
+// conversation on such a runtime IS an orphan, and its session is deactivated
+// with it.
+test("closeStaleOrphans closes an idle conversation bound to an active codex session, and deactivates the session", async () => {
+  const db = fixture();
+  seedConversation(db, "conv-codex", {
+    ended: false,
+    title: null,
+    metadata: null,
+    messageCount: 2,
+    lastMessageAt: "2026-09-03T09:00:00.000000Z",
+  });
+  seedConversation(db, "conv-claude", {
+    ended: false,
+    title: null,
+    metadata: null,
+    messageCount: 2,
+    lastMessageAt: "2026-09-03T09:00:00.000000Z",
+  });
+  db.prepare(
+    "INSERT INTO runtime_sessions (session_id, conversation_id, interface, active, started_at, updated_at) " +
+      "VALUES ('cx1', 'conv-codex', 'codex', 1, ?, ?), ('cc1', 'conv-claude', 'claude_code', 1, ?, ?)",
+  ).run(NOW, NOW, NOW, NOW);
+
+  const closed: string[] = [];
+  const count = await closeStaleOrphans(db, {
+    closeConversation: (_db, id) => {
+      closed.push(id);
+    },
+    now: () => NOW,
+  });
+
+  assert.equal(count, 1);
+  assert.deepEqual(closed, ["conv-codex"], "the attended Claude Code session is still skipped");
+  const cx = db
+    .prepare("SELECT active, closed_at FROM runtime_sessions WHERE session_id = 'cx1'")
+    .get();
+  assert.equal(cx?.active, 0);
+  assert.equal(cx?.closed_at, NOW);
+  const cc = db
+    .prepare("SELECT active, closed_at FROM runtime_sessions WHERE session_id = 'cc1'")
+    .get();
+  assert.equal(cc?.active, 1);
+  assert.equal(cc?.closed_at, null);
+  db.close();
+});
+
+test("closeStaleOrphans honours an injected threshold of zero: every idle open conversation closes now", async () => {
+  const db = fixture();
+  seedConversation(db, "conv-fresh", {
+    ended: false,
+    title: null,
+    metadata: null,
+    messageCount: 2,
+    lastMessageAt: new Date(Date.parse(NOW) - 60_000).toISOString().replace("Z", "000Z"),
+  });
+  db.prepare(
+    "INSERT INTO runtime_sessions (session_id, conversation_id, interface, active, started_at, updated_at) " +
+      "VALUES ('cx1', 'conv-fresh', 'codex', 1, ?, ?)",
+  ).run(NOW, NOW);
+  const closed: string[] = [];
+  await closeStaleOrphans(db, {
+    closeConversation: (_db, id) => {
+      closed.push(id);
+    },
+    now: () => NOW,
+    thresholdMinutes: 0,
+  });
+  assert.deepEqual(closed, ["conv-fresh"]);
+  db.close();
+});
+
+// CV21.DS4.US4 Debt Review, paid: a conversation that owes its finalization is not
+// retitled first. The deferred finalization, later in the same run, generates the
+// close-time title; retitling it too generated the title twice ($0.00007 each, the
+// live session's ledger).
+test("retitlePendingConversations skips a conversation owed its deferred finalization", async () => {
+  const db = fixture();
+  seedConversation(db, "conv-owed", {
+    ended: true,
+    title: "weak...",
+    metadata: '{"close_tail_pending": true}',
+    messageCount: 2,
+    lastMessageAt: "2026-09-03T09:00:00.000000Z",
+  });
+  seedConversation(db, "conv-plain", {
+    ended: true,
+    title: "weak...",
+    metadata: null,
+    messageCount: 2,
+    lastMessageAt: "2026-09-03T09:00:00.000000Z",
+  });
+  const attempted: string[] = [];
+  await retitlePendingConversations(db, {
+    retitleConversation: (_db, id) => {
+      attempted.push(id);
+      return true;
+    },
+  });
+  assert.deepEqual(attempted, ["conv-plain"]);
+  db.close();
+});

@@ -24,6 +24,7 @@ import {
   extractPending,
 } from "#conversation/extractionDriver.ts";
 import { setMute } from "#conversation/logger.ts";
+import { sessionOutlivesTui } from "#conversation/runtimePolicy.ts";
 import type { WritableDatabase } from "#db/database.ts";
 import { GLOBAL_STICKY_DEFAULTS_SESSION_ID } from "#mirror/runtimeSession.ts";
 import { deactivateOperatingMode } from "#mode/operatingMode.ts";
@@ -55,6 +56,8 @@ export interface MaintenanceDeps {
   backfillPiSessions: (db: WritableDatabase) => Promise<number> | number;
   /** Python's `MEMORY_MAINTENANCE_MAX_EXTRACTIONS` (AI-05); defaults to the released budget. */
   extractionLimit?: number;
+  /** `MIRROR_STALE_ORPHAN_MINUTES` (CV21.DS4.US4); defaults to the 30-minute threshold. */
+  staleOrphanMinutes?: number;
   /** Monotonic seconds, injected so report timings are pinnable. */
   monotonic?: () => number;
   now?: () => string;
@@ -71,14 +74,38 @@ export function resetSessionOrientation(db: WritableDatabase, now: () => string 
   );
 }
 
-/** Conversation ids bound to an active runtime session. */
-function activeConversationIds(db: WritableDatabase): Set<string> {
+/**
+ * Conversation ids bound to an ATTENDED active runtime session: one whose
+ * runtime ends the session with its TUI, so `active = 1` means a person may
+ * still be typing. A runtime whose session outlives the TUI (Codex 0.163.0,
+ * `runtimePolicy.ts`) is left out: there `active` means resumable, and an idle
+ * conversation is an orphan like any other (CV21.DS4.US4).
+ */
+function attendedConversationIds(db: WritableDatabase): Set<string> {
   const rows = db
     .prepare(
-      "SELECT conversation_id FROM runtime_sessions WHERE active = 1 AND conversation_id IS NOT NULL",
+      "SELECT conversation_id, interface FROM runtime_sessions WHERE active = 1 AND conversation_id IS NOT NULL",
     )
     .all() as Record<string, unknown>[];
-  return new Set(rows.map((row) => String(row.conversation_id)));
+  return new Set(
+    rows
+      .filter(
+        (row) => !sessionOutlivesTui(typeof row.interface === "string" ? row.interface : null),
+      )
+      .map((row) => String(row.conversation_id)),
+  );
+}
+
+/**
+ * The runtime sessions still active on a conversation just closed as an orphan:
+ * marked inactive with `closed_at`, so `guessRuntimeSessionId` stops reading
+ * them as "the session" (DS12.TS2 L9's class), and a later prompt on the same
+ * id binds a new conversation.
+ */
+function deactivateSessionsOf(db: WritableDatabase, conversationId: string, now: string): void {
+  db.prepare(
+    "UPDATE runtime_sessions SET active = 0, closed_at = ?, updated_at = ? WHERE conversation_id = ? AND active = 1",
+  ).run(now, now, conversationId);
 }
 
 /** Python's `get_open_conversations_idle_since`. */
@@ -98,7 +125,10 @@ function openConversationsIdleSince(db: WritableDatabase, threshold: string): st
 
 /**
  * Python's `close_stale_orphans`: end open conversations idle longer than the
- * threshold, skipping any still bound to an active runtime session.
+ * threshold, skipping any still bound to an attended active runtime session
+ * (`attendedConversationIds`). Since CV21.DS4.US4 a session on a runtime that
+ * outlives its TUI does not protect its conversation, and the close
+ * deactivates every session the orphan was bound to.
  *
  * The count increments even when closing raises: `ended_at` is written before
  * the tail, so the orphan IS closed and an extraction failure must not stop the
@@ -116,15 +146,16 @@ export async function closeStaleOrphans(
   const now = deps.now ?? nowIso;
   const threshold = new Date(Date.parse(now()) - thresholdMinutes * 60_000).toISOString();
 
-  const active = activeConversationIds(db);
+  const attended = attendedConversationIds(db);
   let count = 0;
   for (const conversationId of openConversationsIdleSince(db, threshold)) {
-    if (active.has(conversationId)) continue;
+    if (attended.has(conversationId)) continue;
     try {
       await deps.closeConversation(db, conversationId);
     } catch {
       // The orphan is closed regardless; a failed tail must not stop the loop.
     }
+    deactivateSessionsOf(db, conversationId, now());
     count += 1;
   }
   return count;
@@ -149,6 +180,8 @@ export async function retitlePendingConversations(
         `SELECT c.id
            FROM conversations c
           WHERE c.ended_at IS NOT NULL
+            -- Owed its deferred finalization, which titles it later this run (CV21.DS4.US4).
+            AND (c.metadata IS NULL OR json_extract(c.metadata, '$.close_tail_pending') IS NOT 1)
             AND EXISTS (SELECT 1 FROM messages m WHERE m.conversation_id = c.id AND m.role = 'user')
             AND EXISTS (SELECT 1 FROM messages m WHERE m.conversation_id = c.id AND m.role = 'assistant')
           ORDER BY c.ended_at DESC, c.started_at DESC
@@ -210,7 +243,7 @@ export async function sessionMaintenance(
       closeStaleOrphans(db, {
         closeConversation: deps.closeConversation,
         now: deps.now,
-        thresholdMinutes: STALE_ORPHAN_THRESHOLD_MINUTES,
+        thresholdMinutes: deps.staleOrphanMinutes ?? STALE_ORPHAN_THRESHOLD_MINUTES,
       }),
     ),
     await timedStep("Backfilled Pi sessions", monotonic, () => deps.backfillPiSessions(db)),

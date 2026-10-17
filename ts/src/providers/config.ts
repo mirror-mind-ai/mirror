@@ -120,6 +120,17 @@ export function resolveMaintenanceMaxExtractions(options: ModelPinOptions = {}):
   return parsePythonInt(env.MEMORY_MAINTENANCE_MAX_EXTRACTIONS, 10);
 }
 
+/**
+ * `MIRROR_STALE_ORPHAN_MINUTES` (CV21.DS4.US4): how long an open conversation
+ * may sit idle before session maintenance closes it as an orphan. On a runtime
+ * whose session outlives the TUI (Codex 0.163.0) this is the close path, so an
+ * operator may shorten it; a route sets it to 0 to prove the close now.
+ */
+export function resolveStaleOrphanMinutes(options: ModelPinOptions = {}): number {
+  const env = options.env ?? process.env;
+  return parsePythonInt(env.MIRROR_STALE_ORPHAN_MINUTES, 30);
+}
+
 /** Python `int(os.getenv("MEMORY_EXTRACTION_MAX_ATTEMPTS", "3"))` (CV9.E2.S7). */
 export function resolveExtractionMaxAttempts(options: ModelPinOptions = {}): number {
   const env = options.env ?? process.env;

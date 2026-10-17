@@ -2987,6 +2987,44 @@ id, which Codex sends on both hooks; a runtime that sent one only at Stop would 
 `nothing_waiting`, as for `/` today. US4's live session observes the rule on the real
 Codex.
 
+### Codex is at L4 through the canonical plugin, and its session ends when Codex's daemon says so
+
+**Date:** 2026-10-17 · **Context:** [CV21.DS4.US4](roadmap/cv21-runtime-expansion-ii/cv21-ds4-codex-through-the-canonical-plugin/cv21-ds4-us4-codex-at-l4-through-the-shipped-plugin-measured-live/index.md),
+measured twice on Codex 0.163.0 (`/opt/homebrew/Caskroom/codex/0.163.0/bin/codex`), the
+second time by a pre-registered, self-checked route.
+
+**The measurement.** Through the shipped plugin alone, installed by the path `mirror init`
+prints: the 25 skills; the Operating Instructions as a developer message, once per
+SessionStart; Mirror Mode on every explicit form and the owed injection on the first
+ordinary turn after activation; every prompt and reply logged as `codex` with its turn
+id, the Mirror form stripped, the skill turn absent; the MCP server initialized, its 7
+tools reached by the model directly (0.163.0 no longer keeps a plugin's tools behind
+`tool_search`, as 0.162.1 did). **Codex is at L4.**
+
+**What Codex 0.163.0 changed, and what Mirror did about it.** `/quit` and Ctrl-D detach
+the TUI from a thread that persists in the shared app-server daemon ("Disconnected from
+this task. Any running work continues."); SessionEnd fires when the daemon reaps the idle
+thread, thirty minutes later, with the usual payload. On 0.162.1, four days earlier,
+`/quit` fired it at once. Mirror's deferred close (TS2) then runs as designed, with a
+provider key present. Three rules were added so the thirty minutes, or a daemon that
+never reaps, cost nothing: a session on a runtime that outlives its TUI (`runtimePolicy`:
+`codex`) does not protect its idle conversation from the orphan close, which also
+deactivates the session; a conversation that has ended is not rebound by a later prompt,
+so `codex resume` starts a new one; and `endSession` on an ended conversation runs no
+tail and does not move `ended_at`. `MIRROR_STALE_ORPHAN_MINUTES` names the threshold.
+A conversation owed its deferred finalization is not retitled first (one title call,
+not two: $0.00007 a conversation, found in the live ledger).
+
+**What was not chosen.** Pinning the claim to 0.162.1. Killing the daemon to force a
+close. Closing by a `/quit` Mirror cannot see.
+
+**Consequences.** A Codex user's memories arrive about thirty minutes after they leave
+the session plus the next session start on any runtime, or sooner if maintenance runs
+first; a pause longer than the threshold mid-session yields two conversations. DS11 folds
+the L4 row into the parity matrix with its version, binary, and date; TS5 retires the
+wrapper, its gate met; TS6 carries the `runtime diagnose` notes. Codex's thirty minutes
+are Codex's to change, as its four-day move from 0.162.1 to 0.163.0 showed.
+
 ## Open Discussions
 
 ### Migration rehearsal — long-term status

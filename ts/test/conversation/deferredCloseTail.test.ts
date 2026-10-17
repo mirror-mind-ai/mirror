@@ -19,7 +19,6 @@ import {
   isCloseTailPending,
   markCloseTailPending,
   selectDeferredCloseTails,
-  sessionEndRunsLlmTail,
 } from "#conversation/deferredCloseTail.ts";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
 import { createRuntimeTables } from "#helpers/runtimeSchema.ts";
@@ -59,23 +58,6 @@ function metadataOf(db: WritableDatabase, id: string): Record<string, unknown> {
   const row = db.prepare("SELECT metadata FROM conversations WHERE id = ?").get(id);
   return typeof row?.metadata === "string" ? JSON.parse(row.metadata) : {};
 }
-
-// --- the policy ---
-
-test("the LLM tail runs at exit on Claude Code, and not on the runtimes that bound SessionEnd", () => {
-  // Claude Code registers the hook `async` and runs it after exit; Codex runs it
-  // synchronously under a 1 s default (DS12.TS2 L2, DS2's live /hooks table);
-  // Grok under 1.5 s (DS12.TS4).
-  assert.equal(sessionEndRunsLlmTail("claude_code"), true);
-  assert.equal(sessionEndRunsLlmTail("codex"), false);
-  assert.equal(sessionEndRunsLlmTail("grok_build"), false);
-});
-
-test("an unknown or missing label keeps today's behavior: the tail runs", () => {
-  assert.equal(sessionEndRunsLlmTail(null), true);
-  assert.equal(sessionEndRunsLlmTail(""), true);
-  assert.equal(sessionEndRunsLlmTail("pi"), true);
-});
 
 // --- the flag ---
 

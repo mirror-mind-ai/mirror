@@ -356,3 +356,35 @@ test("discardCurrentConversation resolves the newest active session for the inte
   assert.ok(conversation(db, String(session(db, "older")?.conversation_id ?? "")));
   db.close();
 });
+
+// CV21.DS4.US4: on Codex 0.163.0 the daemon's reap fires SessionEnd thirty minutes
+// after the TUI detaches, and maintenance may have closed the idle conversation
+// first. A closed conversation is not closed twice: the session is deactivated,
+// ended_at and the tail are left as they are.
+test("endSession on a session whose conversation has already ended deactivates the session and runs no tail", async () => {
+  const db = fixture();
+  logUserMessage(db, "s1", "hi", { interface: "codex" }, deps);
+  const convId = String(session(db, "s1")?.conversation_id);
+  await endSession(db, "s1", { extract: false, finalize: false }, deps);
+  const endedAt = conversation(db, convId)?.ended_at;
+  db.prepare(
+    "UPDATE runtime_sessions SET active = 1, closed_at = NULL WHERE session_id = 's1'",
+  ).run();
+  const calls: string[] = [];
+
+  const closed = await endSession(db, "s1", { extract: true }, laterDeps, {
+    runExtraction: () => {
+      calls.push("extract");
+    },
+    finalizeMetadata: () => {
+      calls.push("finalize");
+    },
+  });
+
+  assert.equal(closed, true);
+  assert.deepEqual(calls, []);
+  assert.equal(conversation(db, convId)?.ended_at, endedAt, "ended_at is not rewritten");
+  assert.equal(session(db, "s1")?.active, 0);
+  assert.equal(session(db, "s1")?.closed_at, LATER);
+  db.close();
+});

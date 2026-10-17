@@ -29,6 +29,7 @@ import {
   resolveExtractionMaxAttempts,
   resolveExtractionModel,
   resolveMaintenanceMaxExtractions,
+  resolveStaleOrphanMinutes,
   resolveSummarizeEnabled,
   resolveTwoPassEnabled,
 } from "#providers/config.ts";
@@ -254,6 +255,7 @@ export function createLoggerRuntime(options: LoggerRuntimeOptions): LoggerRuntim
             deps,
           ),
         extractionLimit: resolveMaintenanceMaxExtractions({ env }),
+        staleOrphanMinutes: resolveStaleOrphanMinutes({ env }),
         monotonic: options.monotonic,
         now: deps.nowIso,
       };

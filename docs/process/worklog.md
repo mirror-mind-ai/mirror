@@ -12,6 +12,25 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-10-17 — CV21.DS4.US4: Codex at L4 through the shipped plugin, measured live
+
+Two live sessions on Codex 0.163.0, the second under a pre-registered, self-checked,
+subject-pinned route after the Navigator asked for proof beyond doubt. Everything a
+Claude Code user has, on Codex, through the plugin alone: skills, the Operating
+Instructions as a developer message, Mirror Mode and the owed injection, logging as
+`codex` with replies, MCP tools reached directly. The measurement found that 0.163.0
+detaches the TUI on `/quit` and fires SessionEnd only when its daemon reaps the thread
+thirty minutes later; TS2's close then runs as designed with a real key. A named scope
+change gave Mirror a safety net (an idle conversation on a session that outlives its TUI
+is closed and the session deactivated), a live-binding rule (`codex resume` starts a new
+conversation), and a not-closed-twice guard, each proven live in session B. Debt paid: a
+conversation owed its deferred finalization is no longer retitled first. Every red line
+in the second run was a route reader, corrected; the Navigator waived the re-run the
+route's own rule asks for
+([decision](../project/decisions.md#codex-is-at-l4-through-the-canonical-plugin-and-its-session-ends-when-codexs-daemon-says-so)).
+Also repaired: the CV21 index, duplicated by TS3's commit through a `$\`` replacement
+pattern, restored from TS2's.
+
 ### 2026-10-17 — CV21.DS4.TS3: Codex's `$`-skill turns follow the slash-command rule
 
 DS2's second carried debt, paid. One predicate, `isCommandTurn`, now decides for every
