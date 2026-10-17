@@ -209,7 +209,7 @@ test("a missing editor is reported, not raised, and saves nothing", () => {
   }
 });
 
-test("the editor resolution order is EDITOR, then VISUAL, then nano", () => {
+test("the editor resolution order is EDITOR, then VISUAL, then the platform's editor", () => {
   const world = makeWorld();
   try {
     const invoked: string[] = [];
@@ -219,12 +219,18 @@ test("the editor resolution order is EDITOR, then VISUAL, then nano", () => {
     }) as unknown as typeof import("node:child_process").spawnSync;
 
     for (const deps of [
-      { editor: "from-editor", visual: "from-visual" },
-      { editor: undefined, visual: "from-visual" },
-      { editor: undefined, visual: undefined },
+      { editor: "from-editor", visual: "from-visual", platform: "linux" as const },
+      { editor: undefined, visual: "from-visual", platform: "linux" as const },
+      { editor: undefined, visual: undefined, platform: "linux" as const },
       // An EMPTY string is falsy in Python's `or` chain, so it falls through
       // exactly as an unset variable does.
-      { editor: "", visual: "from-visual" },
+      { editor: "", visual: "from-visual", platform: "linux" as const },
+      // Windows has no nano outside Git Bash: a PowerShell user with neither
+      // variable set saw "Editor 'nano' could not be started." The editor
+      // every Windows ships is Notepad, and it blocks until closed, which is
+      // what the edit needs. EDITOR still wins when set.
+      { editor: undefined, visual: undefined, platform: "win32" as const },
+      { editor: "from-editor", visual: undefined, platform: "win32" as const },
     ]) {
       runIdentityEdit(world.db, "ego", "behavior", {
         ...deps,
@@ -233,7 +239,14 @@ test("the editor resolution order is EDITOR, then VISUAL, then nano", () => {
         spawn: spy,
       });
     }
-    assert.deepEqual(invoked, ["from-editor", "from-visual", "nano", "from-visual"]);
+    assert.deepEqual(invoked, [
+      "from-editor",
+      "from-visual",
+      "nano",
+      "from-visual",
+      "notepad",
+      "from-editor",
+    ]);
   } finally {
     closeWorld(world);
   }

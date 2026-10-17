@@ -34,6 +34,8 @@ export interface IdentityEditDeps {
   /** The editor argv[0], resolved the way Python resolves it. */
   editor?: string | undefined;
   visual?: string | undefined;
+  /** Decides the editor when neither variable is set. Default: this process's. */
+  platform?: NodeJS.Platform;
   nowIso: () => string;
   /** Injected so a test can watch the buffer without driving a real editor. */
   spawn?: typeof spawnSync;
@@ -42,9 +44,16 @@ export interface IdentityEditDeps {
   newId: () => string;
 }
 
-/** Python's `os.environ.get("EDITOR") or os.environ.get("VISUAL") or "nano"`. */
+/**
+ * Python's `os.environ.get("EDITOR") or os.environ.get("VISUAL") or "nano"`,
+ * with one platform default: Windows has no nano outside Git Bash, so a
+ * PowerShell user with neither variable set saw `Editor 'nano' could not be
+ * started.` Notepad ships with every Windows and blocks until it is closed,
+ * which is what the edit needs. Either variable still wins when set.
+ */
 export function resolveEditor(deps: IdentityEditDeps): string {
-  return deps.editor || deps.visual || "nano";
+  const platform = deps.platform ?? process.platform;
+  return deps.editor || deps.visual || (platform === "win32" ? "notepad" : "nano");
 }
 
 /**
