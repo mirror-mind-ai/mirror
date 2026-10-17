@@ -534,10 +534,23 @@ begin
   Result := ExitCode;
 end;
 
+{ A message box -- or, in a silent install, a log line. A MsgBox from [Code]
+  ignores /SUPPRESSMSGBOXES and would wait forever on a runner with nobody
+  to click OK (the CI build job found this). }
+procedure Tell(const Msg: String);
+begin
+  if WizardSilent then Log('(silent) ' + Msg)
+  else MsgBox(Msg, mbError, MB_OK);
+end;
+
 function ShouldSkipPage(PageID: Integer): Boolean;
 begin
   Result := False;
   if (PageID = IdPage.ID) and (not BootstrapOk) then
+    Result := True;
+  { Silent and no key given (/KEYFILE): bootstrap only; configure is the
+    person's, later. With /NAME and /KEYFILE the page runs unattended. }
+  if (PageID = IdPage.ID) and WizardSilent and (Trim(KeyEdit.Text) = '') then
     Result := True;
 end;
 
@@ -550,19 +563,19 @@ begin
   begin
     if Trim(NameEdit.Text) = '' then
     begin
-      MsgBox(L('needname'), mbError, MB_OK);
+      Tell(L('needname'));
       Result := False;
       Exit;
     end;
     if UserKey(NameEdit.Text) = '' then
     begin
-      MsgBox(L('badname'), mbError, MB_OK);
+      Tell(L('badname'));
       Result := False;
       Exit;
     end;
     if Pos('sk-or-', Trim(KeyEdit.Text)) <> 1 then
     begin
-      MsgBox(L('needkey'), mbError, MB_OK);
+      Tell(L('needkey'));
       Result := False;
       Exit;
     end;
@@ -578,7 +591,7 @@ begin
     Log(Format('configure phase: rc=%d ConfigOk=%d', [rc, Integer(ConfigOk)]));
     if not ConfigOk then
     begin
-      MsgBox(L('cfgfail') + #13#10 + DetailLogPath + #13#10 + #13#10 + L('cfghint'), mbError, MB_OK);
+      Tell(L('cfgfail') + #13#10 + DetailLogPath + #13#10 + #13#10 + L('cfghint'));
       ConfigMemo.Visible := False;
       BodyText.Visible := True;
       Result := False;
@@ -600,7 +613,7 @@ begin
     else
     begin
       WizardForm.StatusLabel.Caption := L('failed');
-      MsgBox(L('instfail') + #13#10 + DetailLogPath + #13#10 + #13#10 + L('insthint'), mbError, MB_OK);
+      Tell(L('instfail') + #13#10 + DetailLogPath + #13#10 + #13#10 + L('insthint'));
     end;
   end;
 end;
