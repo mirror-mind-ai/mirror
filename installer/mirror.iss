@@ -289,6 +289,7 @@ begin
   KeyEdit.Left := 0;
   KeyEdit.Width := SW - ScaleX(170);
   KeyEdit.Top := SH - ScaleY(23);
+  KeyEdit.Text := ExpandConstant('{param:KEY|}');
 
   KeysButton := TNewButton.Create(WizardForm);
   KeysButton.Parent := IdPage.Surface;
@@ -309,7 +310,10 @@ begin
   NameEdit.Left := 0;
   NameEdit.Width := SW;
   NameEdit.Top := KeyLabel.Top - ScaleY(30);
-  NameEdit.Text := GetUserNameString();
+  { /NAME= and /KEY= prefill the page: the demo recording and the automated
+    tests drive the wizard with them. A user never passes them. }
+  NameEdit.Text := ExpandConstant('{param:NAME|}');
+  if NameEdit.Text = '' then NameEdit.Text := GetUserNameString();
 
   NameLabel := TNewStaticText.Create(WizardForm);
   NameLabel.Parent := IdPage.Surface;
@@ -365,6 +369,11 @@ begin
     WizardForm.PageNameLabel.Caption := L('title');
     WizardForm.PageDescriptionLabel.Caption := L('subtitle');
     if KeyEdit.Text = '' then WizardForm.ActiveControl := KeyEdit;
+  end;
+  if CurPageID = wpFinished then
+  begin
+    Log(Format('finished page: ConfigOk=%d', [Integer(ConfigOk)]));
+    WizardForm.BackButton.Visible := False;
   end;
   if (CurPageID = wpFinished) and ConfigOk then
     WizardForm.FinishedLabel.Caption :=
@@ -507,6 +516,7 @@ begin
     WizardForm.NextButton.Enabled := True;
     WizardForm.BackButton.Enabled := True;
     ConfigOk := (rc = 0);
+    Log(Format('configure phase: rc=%d ConfigOk=%d', [rc, Integer(ConfigOk)]));
     if not ConfigOk then
     begin
       MsgBox(L('cfgfail') + #13#10 + DetailLogPath + #13#10 + #13#10 + L('cfghint'), mbError, MB_OK);

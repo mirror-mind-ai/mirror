@@ -1,0 +1,25 @@
+<Configuration>
+  <!-- Demo recording: install, photograph, open Mirror, ask one thing.
+       C:\Setup  = the .exe (read-only)   C:\SandboxTools = scripts (read-only)
+       C:\Out    = frames + logs + the key the host writes for the run -->
+  <MappedFolders>
+    <MappedFolder>
+      <HostFolder>C:\VSCode\mirror-installer\dist</HostFolder>
+      <SandboxFolder>C:\Setup</SandboxFolder>
+      <ReadOnly>true</ReadOnly>
+    </MappedFolder>
+    <MappedFolder>
+      <HostFolder>C:\VSCode\mirror-installer\installer\video</HostFolder>
+      <SandboxFolder>C:\SandboxTools</SandboxFolder>
+      <ReadOnly>true</ReadOnly>
+    </MappedFolder>
+    <MappedFolder>
+      <HostFolder>C:\VSCode\mirror-installer\.local\sandbox-out</HostFolder>
+      <SandboxFolder>C:\Out</SandboxFolder>
+      <ReadOnly>false</ReadOnly>
+    </MappedFolder>
+  </MappedFolders>
+  <LogonCommand>
+    <Command>powershell.exe -ExecutionPolicy Bypass -WindowStyle Minimized -File C:\SandboxTools\demo-capture.ps1</Command>
+  </LogonCommand>
+</Configuration>
