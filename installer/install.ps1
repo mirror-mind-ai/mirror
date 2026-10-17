@@ -41,6 +41,11 @@ $ProgressPreference = "SilentlyContinue"   # PS 5.1 renders progress per chunk; 
 $RunId = [guid]::NewGuid().ToString("N").Substring(0, 8)
 
 $NodeDir = Join-Path $InstallDir "node"
+# Every npm call installs into the Node we ship, whatever the machine says: a
+# prefix= in ~/.npmrc or NPM_CONFIG_PREFIX in the environment (GitHub's Windows
+# runners set one) would otherwise send mirror-mind and Pi somewhere the
+# launchers never look. The launchers set the same for `runtime update`.
+$env:npm_config_prefix = $NodeDir
 $GitDir = Join-Path $InstallDir "git"
 $GitBash = Join-Path $GitDir "bin\bash.exe"
 $BinDir = Join-Path $InstallDir "bin"
