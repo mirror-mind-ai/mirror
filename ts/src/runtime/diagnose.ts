@@ -31,7 +31,13 @@ import { identityKeyBreaksGrammar, SLUG_KEYED_LAYERS } from "#identity/identityK
 import { pyRepr, sortByCodePoint } from "#util/pythonText.ts";
 import { configFilePath } from "./config.ts";
 import type { GitWorktreeEntry } from "./git.ts";
+import {
+  claudePluginLinkState,
+  codexPluginCacheState,
+  installedPluginVersion,
+} from "./pluginWiring.ts";
 import type { RuntimeStatusReport } from "./status.ts";
+import { CODEX_PLUGIN_ADD_COMMAND } from "./wiring.ts";
 
 export interface DriftFinding {
   code: string;
@@ -114,7 +120,7 @@ export function rootStateFindings(homesRoot: string): DriftFinding[] {
     detail: path,
     recommendation:
       "relocate into the owning mirror home " +
-      "(see REFERENCE.md \u2014 Relocating legacy root runtime state)",
+      "(see REFERENCE.md — Relocating legacy root runtime state)",
     repair_route: "manual relocation",
   }));
 }
@@ -494,6 +500,59 @@ export function diagnoseRuntime(
       });
     }
   }
+  return findings;
+}
+
+/**
+ * The plugin wiring findings (CV21.DS4.TS6; the debt US1 carried). Codex
+ * copies the plugin into a versioned cache, so an npm update leaves it
+ * behind; Claude Code links it in place, so its failure mode is a dangling
+ * link. Absence is not drift: no cache and no link fire nothing, so an
+ * unwired machine stays green.
+ *
+ * The defaulting happens HERE, from the env the caller hands in — CODEX_HOME
+ * else ~/.codex, and ~/.claude — never inside the readers, so every reader
+ * test is hermetic on a maintainer's machine with real wiring
+ * (CR123/128/137/142).
+ */
+export function pluginWiringFindings(
+  installRoot: string | null,
+  env: NodeJS.ProcessEnv,
+): DriftFinding[] {
+  const findings: DriftFinding[] = [];
+  const home = env.HOME?.trim() || null;
+
+  const codexHome = env.CODEX_HOME?.trim() || (home ? join(home, ".codex") : null);
+  const installedVersion = installRoot ? installedPluginVersion(installRoot) : null;
+  if (codexHome && installedVersion) {
+    const cache = codexPluginCacheState(codexHome, installedVersion);
+    if (cache.state === "behind") {
+      findings.push({
+        code: "codex_plugin_cache_behind",
+        severity: "warning",
+        subject: cache.cachePath,
+        detail: `cached ${cache.newestCached} < installed ${installedVersion}; Codex runs the copy it cached at install`,
+        recommendation: `run \`${CODEX_PLUGIN_ADD_COMMAND}\` to bring the cached plugin level (Codex has no plugin-update verb; re-adding refreshes the cache)`,
+        repair_route: CODEX_PLUGIN_ADD_COMMAND,
+      });
+    }
+  }
+
+  if (home) {
+    const link = claudePluginLinkState(join(home, ".claude"));
+    if (link.state === "dangling") {
+      findings.push({
+        code: "claude_plugin_link_dangling",
+        severity: "warning",
+        subject: link.linkPath,
+        detail: `the link points at ${link.target ?? "an unreadable target"}, which cannot be read`,
+        recommendation:
+          'relink it — `ln -s "<pkg>/plugins/mirror-mind" ~/.claude/skills/mirror-mind` — or remove it if Claude Code is no longer wired',
+        repair_route: "relink or remove",
+      });
+    }
+  }
+
   return findings;
 }
 

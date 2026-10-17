@@ -26,8 +26,10 @@
 // chosen once, below; no step asks which lane it is in.
 
 import { spawnSync } from "node:child_process";
+import { join } from "node:path";
 import { verifyBackupArchive } from "#runtime/backup.ts";
 import type { InstallKind } from "#runtime/installKind.ts";
+import { codexPluginCacheState, installedPluginVersion } from "#runtime/pluginWiring.ts";
 import { cloneStrategy, defaultGitRunner, type GitRunner } from "#runtime/strategies/clone.ts";
 import { defaultNpmRunner, type NpmRunner, packageStrategy } from "#runtime/strategies/package.ts";
 import type { statusAllowsUpdatePreflight } from "#runtime/updateGate.ts";
@@ -37,6 +39,7 @@ import {
   type UpdateResult,
   type UpdateStage,
 } from "#runtime/updatePipeline.ts";
+import { CODEX_PLUGIN_ADD_COMMAND } from "#runtime/wiring.ts";
 import { commandOnPath } from "#util/paths.ts";
 import { PROGRAM } from "#util/program.ts";
 import { shellWord } from "#util/shellWord.ts";
@@ -405,12 +408,42 @@ export function postUpdateHints(
   env: NodeJS.ProcessEnv,
   canExecute?: (path: string) => boolean,
 ): string[] {
-  if (install.kind !== "clone" || !result.success) return [];
-  if (commandOnPath(PROGRAM, env, canExecute) !== null) return [];
-  // A command the person will paste: the path is one shell word (CR104).
-  return [
-    `\`${PROGRAM}\` is not on the PATH: run \`npm link\` once in ${shellWord(install.repository)}, so the skills can call it.`,
-  ];
+  if (!result.success) return [];
+  const hints: string[] = [];
+
+  if (install.kind === "clone" && commandOnPath(PROGRAM, env, canExecute) === null) {
+    // A command the person will paste: the path is one shell word (CR104).
+    hints.push(
+      `\`${PROGRAM}\` is not on the PATH: run \`npm link\` once in ${shellWord(install.repository)}, so the skills can call it.`,
+    );
+  }
+
+  // CV21.DS4.TS6: Codex runs the plugin copy it cached at install, so the
+  // update that just landed did not reach it. The version authority is the
+  // LANDED version, read from the just-updated tree's plugin.json -- this
+  // process is the old version's code, and its own constant would read a
+  // just-staled cache as current.
+  const installRoot =
+    install.kind === "clone"
+      ? install.repository
+      : install.kind === "package"
+        ? install.root
+        : null;
+  const home = env.HOME?.trim() || null;
+  const codexHome = env.CODEX_HOME?.trim() || (home ? join(home, ".codex") : null);
+  if (installRoot && codexHome) {
+    const landed = installedPluginVersion(installRoot);
+    if (landed) {
+      const cache = codexPluginCacheState(codexHome, landed);
+      if (cache.state === "behind") {
+        hints.push(
+          `Codex's cached plugin is behind the update (${cache.newestCached} < ${landed}): run \`${CODEX_PLUGIN_ADD_COMMAND}\` to bring it level.`,
+        );
+      }
+    }
+  }
+
+  return hints;
 }
 
 function firstLine(text: string): string {

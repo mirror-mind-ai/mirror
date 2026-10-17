@@ -5,7 +5,10 @@
 // PROPERTIES, which is what the pipeline exists for.
 
 import assert from "node:assert/strict";
-import test from "node:test";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import test, { after } from "node:test";
 import { assertNamesNoInterpreter } from "#helpers/noInterpreter.ts";
 import type { InstallKind } from "#runtime/installKind.ts";
 import type { GitRunner } from "#runtime/strategies/clone.ts";
@@ -572,6 +575,95 @@ test("the line is for a clone that succeeded, and only while `mirror` is missing
     }),
   );
   assert.equal(postUpdateHints(CLONE, current, { PATH: "/x" }, () => false).length, 1);
+});
+
+// --- the Codex cache hint (CV21.DS4.TS6) -------------------------------------
+//
+// Codex copies the plugin into its cache at a version; an update changes the
+// install but not that copy. The hint's version authority is the LANDED
+// version, read from the just-updated tree's plugin.json — never the running
+// process's own constant, which is the old version's at exactly the moment
+// the hint runs.
+
+function installTreeAt(version: string): string {
+  const root = mkdtempSync(join(tmpdir(), "update-hint-install-"));
+  hintRoots.push(root);
+  const manifestDir = join(root, "plugins", "mirror-mind", ".claude-plugin");
+  mkdirSync(manifestDir, { recursive: true });
+  writeFileSync(join(manifestDir, "plugin.json"), JSON.stringify({ version }));
+  return root;
+}
+
+function codexHomeCaching(version: string): string {
+  const home = mkdtempSync(join(tmpdir(), "update-hint-codex-"));
+  hintRoots.push(home);
+  mkdirSync(join(home, "plugins", "cache", "mirror-mind", "mirror-mind", version), {
+    recursive: true,
+  });
+  return home;
+}
+
+const hintRoots: string[] = [];
+after(() => {
+  for (const root of hintRoots) rmSync(root, { recursive: true, force: true });
+});
+
+test("the landed-version trap: old process at X, update lands Y, cache at X — the hint fires", () => {
+  // The tree on disk already holds Y (the update landed it); the cache holds
+  // X. A hint comparing against the running process's version — X — would
+  // read the cache as current at exactly the moment it went stale.
+  const root = installTreeAt("0.34.0");
+  const install: InstallKind = { kind: "package", root, name: "mirror-mind", version: "0.33.4" };
+  const ok = runUpdate(deps());
+  const hints = postUpdateHints(install, ok, {
+    PATH: "/usr/local/bin",
+    CODEX_HOME: codexHomeCaching("0.33.4"),
+  });
+  assert.equal(hints.length, 1, JSON.stringify(hints));
+  assert.match(hints[0] ?? "", /0\.33\.4 < 0\.34\.0/);
+  assert.match(hints[0] ?? "", /codex plugin add mirror-mind@mirror-mind/);
+});
+
+test("no cache, a current cache, an ahead cache, or a failed update: no Codex line", () => {
+  const root = installTreeAt("0.34.0");
+  const install: InstallKind = { kind: "package", root, name: "mirror-mind", version: "0.33.4" };
+  const ok = runUpdate(deps());
+  const env = { PATH: "/usr/local/bin" };
+  // No cache (CODEX_HOME empty scratch): silence.
+  assert.deepEqual(postUpdateHints(install, ok, { ...env, CODEX_HOME: installTreeAt("x") }), []);
+  // Current: silence.
+  assert.deepEqual(
+    postUpdateHints(install, ok, { ...env, CODEX_HOME: codexHomeCaching("0.34.0") }),
+    [],
+  );
+  // Ahead: silence — the deliberate downgrade gets no advice from the older tree.
+  assert.deepEqual(
+    postUpdateHints(install, ok, { ...env, CODEX_HOME: codexHomeCaching("0.35.0") }),
+    [],
+  );
+  // A failed update's last words are its recovery block.
+  const failed = runUpdate(
+    deps({ gate: () => ({ ready: false, allowed: false, detail: "git tree is dirty" }) }),
+  );
+  assert.deepEqual(
+    postUpdateHints(install, failed, { ...env, CODEX_HOME: codexHomeCaching("0.33.4") }),
+    [],
+  );
+});
+
+test("a clone gets the Codex line too, beside its npm-link seam", () => {
+  const repository = installTreeAt("0.34.0");
+  const install: InstallKind = { kind: "clone", repository };
+  const ok = runUpdate(deps());
+  const hints = postUpdateHints(
+    install,
+    ok,
+    { PATH: "/scratch/bin", CODEX_HOME: codexHomeCaching("0.33.4") },
+    () => false,
+  );
+  assert.equal(hints.length, 2, JSON.stringify(hints));
+  assert.match(hints[0] ?? "", /npm link/);
+  assert.match(hints[1] ?? "", /codex plugin add mirror-mind@mirror-mind/);
 });
 
 // --- CV22.DS10.TS5, debt D-025 ---------------------------------------------

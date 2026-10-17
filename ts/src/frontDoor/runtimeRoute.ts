@@ -26,6 +26,7 @@ import {
   diagnoseRuntime,
   hookFailureFindings,
   hookNodeFindings,
+  pluginWiringFindings,
   probeModelPins,
   renderRuntimeDiagnosis,
   rootStateFindings,
@@ -301,12 +302,19 @@ export async function runRuntimeReadRoute(
   if (subcommand === "diagnose") {
     // The install's own tree, so its worktree findings are Mirror's and never
     // the cwd project's (CR138).
+    const install = io.install ?? detectThisInstall();
     const report = buildRuntimeStatus({
       mirrorHome: optionValue(args, "--mirror-home"),
       env,
       version,
-      install: io.install ?? detectThisInstall(),
+      install,
     });
+    const installRoot =
+      install.kind === "clone"
+        ? install.repository
+        : install.kind === "package"
+          ? install.root
+          : null;
     const findings = [
       ...diagnoseRuntime(report, inspectGitWorktree(report.git.repository)),
       ...rootStateFindings(homesRoot(env)),
@@ -324,6 +332,10 @@ export async function runRuntimeReadRoute(
           return false;
         }
       }),
+      // CV21.DS4.TS6: the plugin wiring. Codex's versioned cache goes stale
+      // after an npm update; Claude Code's link can dangle. Absence is not
+      // drift, so an unwired machine stays green.
+      ...pluginWiringFindings(installRoot, env),
       // No catalog provider until DS8: inconclusive, which is also the
       // oracle's answer when it cannot reach OpenRouter.
       ...(await probeModelPins(null, "")),

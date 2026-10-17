@@ -39,6 +39,15 @@ import { commandOnPath } from "#util/paths.ts";
 
 export type RuntimeName = "pi" | "claude" | "gemini" | "codex";
 
+/**
+ * The one Codex level-up command (CV21.DS4.TS6). Codex 0.163.0 has no
+ * plugin-update verb, so re-adding is how a cached plugin reaches the
+ * installed version. One constant so the wiring line `mirror init` prints
+ * and the recommendation `runtime diagnose` prints cannot disagree (the
+ * CR071 lesson at the string level).
+ */
+export const CODEX_PLUGIN_ADD_COMMAND = "codex plugin add mirror-mind@mirror-mind";
+
 export interface RuntimeWiring {
   /** The runtime, as a person names it. */
   readonly title: string;
@@ -101,7 +110,7 @@ export const RUNTIME_WIRING: Readonly<Record<RuntimeName, RuntimeWiring>> = {
     steps: [
       (root) => [`codex plugin marketplace add "${root}"`],
       () => [
-        "codex plugin add mirror-mind@mirror-mind",
+        CODEX_PLUGIN_ADD_COMMAND,
         "(Codex asks once, at the next session, to trust the plugin's hooks; the plugin",
         "then loads every session: its skills, the hooks, and the MCP server)",
       ],
