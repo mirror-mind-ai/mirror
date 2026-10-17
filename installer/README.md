@@ -62,8 +62,17 @@ for it to be split.
   (UTF-8, no BOM). `Set-Content` on 5.1 is ANSI; `-Encoding UTF8` adds a BOM
   that becomes part of the first key. Our own files are read back with
   `-Encoding UTF8` too.
-- **Names with accents are names.** The identity page refuses only what
-  Windows forbids in a folder name (`\ / : * ? " < > |`) and a leading `-`.
+- **The name the person types becomes a key.** Since mirror-mind 0.33.4
+  (CR141) a user name is lowercase letters, digits and single hyphens: it goes
+  into a path and into `MIRROR_USER`. The page accepts anything — "João Çãõ"
+  — and shows the key it becomes (`joao-cao`) under the field before Next.
+- **The installer tracks `mirror-mind@latest` only while developing.** The
+  0.33.4 release changed `init` between two Sandbox runs a night apart. A
+  release build pins the version it was tested against
+  (`build.ps1 -MirrorVersion 0.33.4`), and the README of that release says so.
+- **Open the .exe once on the host before it goes to `dist`.** It costs five
+  seconds and catches every InitializeWizard error ("Could not call proc"
+  reached a tester once). Nothing is installed until Install is clicked.
 - **Test under the PT profile, not only the clean Sandbox.** The Sandbox's own
   user is `WDAGUtilityAccount`: ASCII, no space. Every encoding bug above was
   invisible there and immediate under `João Çãõ Silva`.
