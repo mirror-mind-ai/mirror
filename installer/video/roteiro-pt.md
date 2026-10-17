@@ -13,13 +13,13 @@
 | 5 | Quase lá | "Terminou a parte pesada. Agora o Mirror quer saber quem é você. O nome que você escrever vira a sua pasta de memória, aqui neste computador. Nada é enviado para fora." | 05-quase-la | Realce no texto do meio; realce no campo «Como você quer ser chamado?» |
 | 6 | A chave | "Para conversar, o Mirror usa um serviço de IA chamado OpenRouter. Uma conta serve para tudo. Se você ainda não tem, o botão «Criar conta e gerar chave» abre a página certa: crie a conta, coloque cinco dólares de crédito, gere uma chave e cole aqui. Ela começa com sk-or." | 05-quase-la | Realce no botão; realce no campo da chave (mascarada) |
 | 7 | Configurando | "Clique em «Avançar». O Mirror confere a chave, cria a sua identidade, carrega as doze personas e se conecta ao Pi. Uns trinta segundos." | 06-configurando | Cursor até «Avançar»; clique; realce no transcript |
-| 8 | Concluído | "Pronto. Deixe marcado «Abrir o Mirror Mind» e clique em «Concluir». Daqui em diante, o atalho na área de trabalho abre o Mirror." | 07-concluido | Realce na caixa; cursor até «Concluir»; clique |
+| 8 | Concluído | "Pronto. Deixe marcado «Iniciar o Mirror Mind» e clique em «Concluir». Daqui em diante, o atalho na área de trabalho abre o Mirror." | 07-concluido | Realce na caixa; cursor até «Concluir»; clique |
 | 9 | O Mirror abre | "O Mirror abre numa janela de texto. O cartão mostra seu nome, a versão, e o que ele já sabe: uma jornada, doze personas, nenhuma memória ainda. Ela começa agora." | 08-mirror-abre | Realce no cartão `◇ Mirror · Helena` |
 | 10 | A primeira conversa | "Converse como conversaria com alguém. Por exemplo: «listar minhas personas». Ele entende, consulta a memória e responde." | 09-pergunta → 11-resposta-final | Texto digitado; Enter; realce na lista |
 | 11 | Em resumo | "Um arquivo, sem senha de administrador, cinco minutos. Seu nome e uma chave da OpenRouter. E o Mirror está pronto para conversar, com a memória guardada no seu computador." | Cartão de resumo: três frases | Frases acendem uma a uma |
 | 12 | Fim | "Mirror Mind. Um espelho que conversa." | Cartão final: octaedro, versão, data | — |
 
-**Rótulos a verificar nas telas:** «Instalar» · «Como você quer ser chamado?» · «Criar conta e gerar chave…» · «Avançar» · «Abrir o Mirror Mind» · «Concluir» · `◇ Mirror · Helena`.
+**Rótulos a verificar nas telas:** «Instalar» · «Como você quer ser chamado?» · «Criar conta e gerar chave…» · «Avançar» · «Iniciar o Mirror Mind» · «Concluir» · `◇ Mirror · Helena`.
 
 **Voz e estilo:** Thalita (edge-tts `pt-BR-ThalitaMultilingualNeural`, `-12%`, `-5Hz`), a mesma da Luvia. Segunda pessoa, frases curtas, tom calmo. Pronúncia só na fala (legenda mantém a grafia): "Mirror" → "Mírror", "Mirror Mind" → "Mírror Máind", "OpenRouter" → "Open Ráuter", "Pi" → "Pái", "Node" → "Nôud", "sk-or" → "ésse cá ífen ó érre", "Setup" → "Sétap".
 

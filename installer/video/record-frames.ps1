@@ -54,6 +54,14 @@ try {
 } finally {
     Remove-Item "$out\openrouter.key" -Force -ErrorAction SilentlyContinue
     Start-Sleep 3
-    Get-Process WindowsSandbox* -ErrorAction SilentlyContinue | Stop-Process -Force
+    # Never Stop-Process the Sandbox: it leaves a vmmem orphan that holds every
+    # mapped folder until vmcompute restarts. `wsb stop` shuts the VM down.
+    $raw = (wsb list --raw 2>$null | Out-String | ConvertFrom-Json -ErrorAction SilentlyContinue)
+    $envs = @($raw.WindowsSandboxEnvironments)
+    foreach ($e in $envs) { $id = if ($e -is [string]) { $e } elseif ($e.Id) { $e.Id } else { $e.id }; if ($id) { Write-Host "wsb stop $id"; wsb stop --id "$id" 2>$null | Out-Null } }
+    Start-Sleep 5
+    if (Get-Process WindowsSandboxRemoteSession -ErrorAction SilentlyContinue) {
+        Write-Host "sandbox still up after wsb stop; close its window by hand"
+    }
 }
 Get-ChildItem "$out\demo\*.png" | ForEach-Object { "{0}  {1}" -f $_.Name, $_.Length }

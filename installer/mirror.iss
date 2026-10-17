@@ -443,8 +443,13 @@ begin
     end;
   end;
   if (CurPageID = wpFinished) and ConfigOk then
+  begin
     WizardForm.FinishedLabel.Caption :=
       WizardForm.FinishedLabel.Caption + #13#10 + #13#10 + L('finished');
+    { The label has a fixed height; without this the added text is clipped. }
+    WizardForm.AdjustLabelHeight(WizardForm.FinishedLabel);
+    WizardForm.RunList.Top := WizardForm.FinishedLabel.Top + WizardForm.FinishedLabel.Height + ScaleY(12);
+  end;
 end;
 
 procedure UpdateMemoCtrl(Memo: TNewMemo; const Content: String);
