@@ -274,13 +274,20 @@ begin
   Result := r;
 end;
 
-procedure NameEditChange(Sender: TObject);
+procedure UpdateNameHint;
 var
   k: String;
 begin
   k := UserKey(NameEdit.Text);
   if k = '' then NameHint.Caption := ''
   else NameHint.Caption := Format(L('askey'), [k]);
+end;
+
+{ An event handler cannot be called directly with nil in Inno's PascalScript
+  ("Could not call proc" at runtime); the work lives in UpdateNameHint. }
+procedure NameEditChange(Sender: TObject);
+begin
+  UpdateNameHint;
 end;
 
 procedure InitializeWizard;
@@ -357,12 +364,6 @@ begin
   NameEdit.Left := 0;
   NameEdit.Width := SW;
   NameEdit.Top := KeyLabel.Top - ScaleY(46);
-  { /NAME= and /KEY= prefill the page: the demo recording and the automated
-    tests drive the wizard with them. A user never passes them. }
-  NameEdit.Text := ExpandConstant('{param:NAME|}');
-  if NameEdit.Text = '' then NameEdit.Text := GetUserNameString();
-  NameEditChange(nil);
-
   NameHint := TNewStaticText.Create(WizardForm);
   NameHint.Parent := IdPage.Surface;
   NameHint.AutoSize := True;
@@ -370,6 +371,12 @@ begin
   NameHint.Top := NameEdit.Top + NameEdit.Height + ScaleY(2);
   NameHint.Font.Color := clGrayText;
   NameEdit.OnChange := @NameEditChange;
+  { /NAME= and /KEYFILE= prefill the page: the demo recording and the automated
+    tests drive the wizard with them. A user never passes them. The hint
+    exists by now; filling the field before it did raised "Could not call proc". }
+  NameEdit.Text := ExpandConstant('{param:NAME|}');
+  if NameEdit.Text = '' then NameEdit.Text := GetUserNameString();
+  UpdateNameHint;
   NameLabel := TNewStaticText.Create(WizardForm);
   NameLabel.Parent := IdPage.Surface;
   NameLabel.AutoSize := True;
