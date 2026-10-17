@@ -12,6 +12,38 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-10-17 — v0.33.4 released: A Name Is a Key
+
+`v0.33.4` is a patch release of three first-run corrections: two from a contributor's
+PR #43 (@rodrigoimmaginario) and CR141, which its review opened. `init --help` created a
+home named `--help`; `init ../escaped` created one outside `.mirror-minds`; `init "My
+User"` put a space into `MIRROR_USER`. A user name is now a kebab-case key like a journey
+slug or a persona id (CR104), refused otherwise with a name that would work and nothing
+created. `identity edit` on Windows opens Notepad when no editor is named.
+
+Where it stands:
+- `stable` and the tag on `01a319d8`, promoted 2026-10-17;
+- npm `latest` and `stable` on `0.33.4`, with SLSA provenance, published 2026-10-17;
+- the GitHub Release, marked latest.
+
+The route, in order:
+- PR #43 reviewed, approved, merged through GitHub (`78477b01`); the review's wider finding
+  captured as CR141 and worked at once, test first, on `main` (`34fa465a`);
+- release note, version bump, and every gate run locally: the suite (3218), typecheck,
+  lint, the retired-surface tripwire, the pack guard (481 files; it refused the note's
+  first draft for naming the author, and was right), doc links, skill command parity,
+  the plugin's `--check`, both custody proofs, the five e2e smokes, the package smoke under
+  a path with a space (76), the updater smoke (103);
+- CI green on the release commit, Tests and Docs;
+- `release:promote --push`; the publish workflow staged from CI on the tag, run
+  `39021901595`; the Navigator approved the environment, the staged version (2FA), and
+  `latest`;
+- a stranger's install from the public registry: `0.33.4`; `init "My User"` refused with
+  `my-user` suggested and nothing created; `init my-user` creates its home.
+
+To observe: the Notepad round trip with a changed buffer, asked of the contributor on
+PR #43.
+
 ### 2026-10-16 — v0.33.3 released: Mirror Finds Itself Under Any Path
 
 `v0.33.3` is a patch release of one Change Request, CR140, carried by a contributor's
