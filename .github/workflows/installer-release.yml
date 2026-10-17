@@ -1,0 +1,63 @@
+# Publishes the Windows installer as a GitHub Release asset, on a tag of the
+# form installer/v<installer version>. The installer has its own version
+# (installer/VERSION) and pins the core version it was tested against
+# (installer/MIRROR_VERSION); a core release does not need an installer
+# release -- installed users update through `mirror runtime update`.
+#
+# Before the tag: installer/tests/contract.ps1 green, both Sandbox profiles
+# (installer/sandbox/*.wsb) green, installer/VERSION and MIRROR_VERSION
+# bumped, docs/releases/installer-v<version>.md written. See installer/TESTING.md.
+#
+# The .exe is not code-signed. SmartScreen shows "Windows protected your PC"
+# on first downloads; the release notes say what to click. Signing (Azure
+# Trusted Signing) is a later decision.
+name: installer-release
+
+on:
+  push:
+    tags: ["installer/v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+      - name: Versions
+        id: v
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}" -replace "^installer/v", ""
+          $file = (Get-Content installer/VERSION -Raw).Trim()
+          if ($tag -ne $file) { throw "tag says $tag, installer/VERSION says $file" }
+          "version=$file" >> $env:GITHUB_OUTPUT
+          "mirror=$((Get-Content installer/MIRROR_VERSION -Raw).Trim())" >> $env:GITHUB_OUTPUT
+      - name: Contract against the pinned core
+        shell: pwsh
+        run: installer/tests/contract.ps1 -ThenUpdateToLatest
+      - name: Inno Setup
+        shell: pwsh
+        run: choco install innosetup --no-progress -y | Out-Null
+      - name: Build
+        shell: pwsh
+        run: installer/build.ps1 -OutputDir "${{ runner.temp }}\out"
+      - name: Checksums
+        shell: pwsh
+        run: |
+          Set-Location "${{ runner.temp }}\out"
+          Get-ChildItem *.exe | ForEach-Object { "{0}  {1}" -f (Get-FileHash $_ -Algorithm SHA256).Hash.ToLower(), $_.Name } | Set-Content SHA256SUMS -Encoding ascii
+          Get-Content SHA256SUMS
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "Windows installer ${{ steps.v.outputs.version }} (mirror-mind ${{ steps.v.outputs.mirror }})"
+          body_path: docs/releases/installer-v${{ steps.v.outputs.version }}.md
+          files: |
+            ${{ runner.temp }}/out/*.exe
+            ${{ runner.temp }}/out/SHA256SUMS

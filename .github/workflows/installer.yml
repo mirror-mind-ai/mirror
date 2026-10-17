@@ -1,0 +1,77 @@
+# The Windows installer's own checks. None of this is in the core's path:
+# the core releases when it wants; these jobs tell the installer when to
+# follow. Both run on a plain windows-latest runner -- no Sandbox, no admin.
+#
+#   contract  -- installer/tests/contract.ps1 against the pinned core version
+#                (installer/MIRROR_VERSION), then `runtime update` to latest.
+#                On every change under installer/, and daily at 09:00 UTC as a
+#                canary against mirror-mind@latest: red means a core release
+#                changed something the installer reads (see installer/CONTRACT.md),
+#                and a new .exe is due. ~2 minutes.
+#   build     -- compiles the .exe with Inno Setup and opens it once (the
+#                wizard's InitializeWizard runs; nothing is installed), so a
+#                script error never reaches a tester. ~2 minutes.
+name: installer
+
+on:
+  push:
+    branches: [main]
+    paths: ["installer/**", ".github/workflows/installer.yml"]
+  pull_request:
+    paths: ["installer/**", ".github/workflows/installer.yml"]
+  schedule:
+    - cron: "0 9 * * *"
+  workflow_dispatch:
+    inputs:
+      mirror_version:
+        description: "mirror-mind version to test (default: installer/MIRROR_VERSION; 'latest' for the canary)"
+        default: ""
+
+jobs:
+  contract:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+      - name: Which version
+        id: v
+        shell: pwsh
+        run: |
+          $v = "${{ github.event.inputs.mirror_version }}"
+          if (-not $v) { $v = if ("${{ github.event_name }}" -eq "schedule") { "latest" } else { (Get-Content installer/MIRROR_VERSION -Raw).Trim() } }
+          "version=$v" >> $env:GITHUB_OUTPUT
+          Write-Host "mirror-mind@$v"
+      - name: Contract, then runtime update to latest
+        shell: pwsh
+        run: installer/tests/contract.ps1 -MirrorVersion "${{ steps.v.outputs.version }}" -ThenUpdateToLatest
+
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - name: Inno Setup
+        shell: pwsh
+        run: choco install innosetup --no-progress -y | Out-Null
+      - name: Compile
+        shell: pwsh
+        run: installer/build.ps1 -OutputDir "${{ runner.temp }}\out"
+      - name: Open the wizard once (InitializeWizard runs; nothing installs)
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem "${{ runner.temp }}\out\MirrorMind-Setup-*.exe" | Select-Object -First 1
+          $p = Start-Process $exe.FullName -ArgumentList "/LANG=pt" -PassThru
+          Start-Sleep 8
+          $w = Get-Process | Where-Object { $_.MainWindowHandle -ne 0 -and $_.ProcessName -like "MirrorMind-Setup*" } | Select-Object -First 1
+          Get-Process | Where-Object { $_.ProcessName -like "MirrorMind-Setup*" } | Stop-Process -Force -ErrorAction SilentlyContinue
+          if (-not $w) { throw "the wizard showed no window" }
+          if ($w.MainWindowTitle -notlike "*Mirror Mind*") { throw "the wizard opened with: '$($w.MainWindowTitle)' (a script error dialog?)" }
+          Write-Host "wizard opened: $($w.MainWindowTitle)"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MirrorMind-Setup
+          path: ${{ runner.temp }}\out\*.exe
+          retention-days: 14
