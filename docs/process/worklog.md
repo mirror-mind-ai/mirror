@@ -12,6 +12,48 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-10-16 — v0.33.3 released: Mirror Finds Itself Under Any Path
+
+`v0.33.3` is a patch release of one Change Request, CR140, carried by a contributor's
+PR #42 (@rodrigoimmaginario, with @lgarciasbr's macOS reproduction). Mirror read its own
+install path from `URL.pathname`, so a checkout or package under a path with a space or
+a non-ASCII character read as `Install: unknown`, the welcome card showed no update, and
+`runtime update` refused. The path is now a filesystem path, a retired-surface row keeps
+the idiom out, and an `unknown` install names the path it looked up from. On Windows,
+npm's global layout is recognized and npm runs with no shell, verified on Windows in CI
+for the two files they touch; there is still no Windows product.
+
+Where it stands:
+- `stable` and the tag on `8541d2de`, promoted 2026-10-16;
+- npm `latest` and `stable` on `0.33.3`, with SLSA provenance, published 2026-10-16;
+- the GitHub Release, marked latest.
+
+The route, in order:
+- the PR reviewed through four lenses (engineer, QA, DevOps, security), changes
+  requested, every item taken in a second round, approved, merged with its six commits
+  (`5e08734b`; GitHub's merge button refused for want of the `workflow` scope, so the
+  merge went through git);
+- the new `windows-install-kind` job failed on its first run on `main`, on the reviewer's
+  own test comparing a fixture against its POSIX spelling; fixed the way the PR had fixed
+  six others;
+- release note, version bump, and every gate run locally: the suite (3216), typecheck,
+  lint, the retired-surface tripwire, the pack guard (480 files), doc links, skill
+  command parity, the plugin's `--check`, both custody proofs, the five e2e smokes, the
+  updater smoke (103), and the package smoke under `/tmp/mirror pkg Código` (76), which
+  first needed its own Gemini section to stop splitting the work directory on the space;
+- CI green on the release commit, Tests and Docs;
+- `release:promote --push`, which tagged, moved `stable`, and pushed both;
+- the publish workflow staged from CI on the tag, run `38973924428`;
+- the Navigator approved the `release` environment, the staged version (2FA), and
+  `latest`;
+- a stranger's install from the public registry into `/tmp/mirror stranger Código`:
+  `Install: package (mirror-mind@0.33.3)`, migrations `17/17`, `ready` after `init`,
+  `update --check` `up_to_date` through `stable`, the release's own note from
+  `release-notes latest`, `pending --from 0.33.2` listing one release from the registry.
+
+To observe: this machine's own installs, and whether an affected person's one-time manual
+update goes as the note says.
+
 ### 2026-10-15 — v0.33.2 released: Git Runs Where Mirror Lives
 
 `v0.33.2` is a patch release of one Change Request, CR138. On a clone install, `runtime

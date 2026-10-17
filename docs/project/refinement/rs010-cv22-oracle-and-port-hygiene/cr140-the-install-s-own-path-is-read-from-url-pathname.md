@@ -198,8 +198,12 @@ after a second round that took every review item:
 Verified on a local merge under `/tmp/mirror merged Código`: 75 tests across the
 touched suites, `runtime status` reads `Install: clone (…)`, typecheck and lint clean.
 
-**Done** when [v0.33.3](../../../releases/v0.33.3.md) ships; its Upgrading section
-carries the manual route drafted in Plan Or Decision. Carried forward from the review, not in
+**Done 2026-10-16**, released as [v0.33.3](../../../releases/v0.33.3.md): tag on
+`8541d2de`, `stable` moved, `mirror-mind@0.33.3` public under `stable` and `latest` with
+provenance, the GitHub Release marked latest. A stranger's install from the registry into
+`/tmp/mirror stranger Código`: `Install: package (mirror-mind@0.33.3)`, `ready` after
+`init`, `update --check` `up_to_date`, the release's own note from `release-notes latest`.
+The note's Upgrading section carries the manual route drafted in Plan Or Decision. Carried forward from the review, not in
 scope here: the `frame-installer` row's `absentSuffixes` (`.cmd`, `.ps1`) will meet the
 installer series and is to be raised there; the guard's `identifier.pathname` pattern
 would flag a legitimate `request.pathname` if `ts/src` grows HTTP routing, and the
