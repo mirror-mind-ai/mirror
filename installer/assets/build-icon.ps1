@@ -100,6 +100,32 @@ foreach ($pair in @(@(55, 58, "wizard-small.bmp"), @(110, 116, "wizard-small-200
     $bmp.Save((Join-Path $here $name), [System.Drawing.Imaging.ImageFormat]::Bmp)
     $g.Dispose(); $bmp.Dispose(); $icon.Dispose()
 }
+# --- wizard-large.bmp: the Welcome page's left column, 164x314 and 328x628 (200%).
+# Deep indigo, the octahedron in the upper third, its reflection fading below:
+# the product's one image, a solid and its mirror.
+foreach ($pair in @(@(164, 314, "wizard-large.bmp"), @(328, 628, "wizard-large-200.bmp"))) {
+    $wd, $ht, $name = $pair
+    $bmp = New-Object System.Drawing.Bitmap $wd, $ht
+    $g = [System.Drawing.Graphics]::FromImage($bmp)
+    $g.SmoothingMode = "AntiAlias"; $g.InterpolationMode = "HighQualityBicubic"
+    $bg = New-Object System.Drawing.Drawing2D.LinearGradientBrush ([Drawing.Rectangle]::new(0, 0, $wd, $ht)), (C 255 22 14 48), (C 255 44 28 92), 90
+    $g.FillRectangle($bg, 0, 0, $wd, $ht)
+    $size = [int]($wd * 0.62)
+    $icon = Render $size
+    $x = [int](($wd - $size) / 2); $y = [int]($ht * 0.22)
+    $g.DrawImage($icon, $x, $y, $size, $size)
+    # reflection: flipped, drawn at 40%, then faded out with a gradient that starts transparent
+    $refl = New-Object System.Drawing.Bitmap $icon
+    $refl.RotateFlip([System.Drawing.RotateFlipType]::RotateNoneFlipY)
+    $cm = New-Object System.Drawing.Imaging.ColorMatrix; $cm.Matrix33 = 0.4
+    $ia = New-Object System.Drawing.Imaging.ImageAttributes; $ia.SetColorMatrix($cm)
+    $ry = $y + $size + [int]($ht * 0.01)
+    $g.DrawImage($refl, [Drawing.Rectangle]::new($x, $ry, $size, $size), 0, 0, $size, $size, [System.Drawing.GraphicsUnit]::Pixel, $ia)
+    $fade = New-Object System.Drawing.Drawing2D.LinearGradientBrush ([Drawing.Rectangle]::new(0, $ry, $wd, $size + 2)), (C 0 38 24 80), (C 255 38 24 80), 90
+    $g.FillRectangle($fade, 0, $ry, $wd, $size)
+    $bmp.Save((Join-Path $here $name), [System.Drawing.Imaging.ImageFormat]::Bmp)
+    $g.Dispose(); $bmp.Dispose(); $icon.Dispose(); $refl.Dispose()
+}
 # A 256 preview for the README and the repo.
 (Render 256).Save((Join-Path $here "mirror-256.png"), [System.Drawing.Imaging.ImageFormat]::Png)
 "mirror.ico ({0} sizes), wizard-small.bmp, wizard-small-200.bmp, mirror-256.png" -f $entries.Count

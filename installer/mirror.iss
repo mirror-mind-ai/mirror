@@ -48,6 +48,11 @@ DefaultDirName={localappdata}\Programs\MirrorMind
 DefaultGroupName={#AppName}
 DisableProgramGroupPage=yes
 DisableDirPage=yes
+; Welcome -> [Install] -> Installing -> identity -> Finished. No Tasks page
+; (the Desktop shortcut is always made; it is per-user and one Delete away)
+; and no Ready page (there is nothing to confirm).
+DisableWelcomePage=no
+DisableReadyPage=yes
 PrivilegesRequired=lowest
 OutputDir=..\dist
 OutputBaseFilename=MirrorMind-Setup-{#AppVersion}{#OutputSuffix}
@@ -55,7 +60,7 @@ Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
 WizardSizePercent=100,130
-WizardImageFile=assets\wizard-large.bmp
+WizardImageFile=assets\wizard-large.bmp,assets\wizard-large-200.bmp
 WizardImageStretch=yes
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
@@ -70,9 +75,6 @@ UninstallDisplayName={#AppName}
 Name: "en"; MessagesFile: "compiler:Default.isl"
 Name: "pt"; MessagesFile: "compiler:Languages\BrazilianPortuguese.isl"
 
-[Tasks]
-Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: checkedonce
-
 [Files]
 Source: "install.ps1";                DestDir: "{app}\bin"; Flags: ignoreversion
 Source: "launcher\mirror.cmd";        DestDir: "{app}\bin"; Flags: ignoreversion
@@ -84,7 +86,7 @@ Source: "assets\wizard-banner.bmp"; Flags: dontcopy
 [Icons]
 Name: "{group}\{#AppName}";          Filename: "{app}\bin\mirror.cmd";        WorkingDir: "{%USERPROFILE}\Mirror"; IconFilename: "{app}\bin\mirror.ico"
 Name: "{group}\{#AppName} - Status"; Filename: "{app}\bin\mirror-status.cmd"; WorkingDir: "{app}"; IconFilename: "{app}\bin\mirror.ico"
-Name: "{userdesktop}\{#AppName}";    Filename: "{app}\bin\mirror.cmd";        WorkingDir: "{%USERPROFILE}\Mirror"; IconFilename: "{app}\bin\mirror.ico"; Tasks: desktopicon
+Name: "{userdesktop}\{#AppName}";    Filename: "{app}\bin\mirror.cmd";        WorkingDir: "{%USERPROFILE}\Mirror"; IconFilename: "{app}\bin\mirror.ico"
 
 [Run]
 Filename: "{app}\bin\mirror.cmd"; Description: "{cm:LaunchProgram,{#AppName}}"; Flags: nowait postinstall skipifsilent shellexec; Check: ConfigureDone
@@ -135,7 +137,13 @@ begin
   Result := '';
   if CurLang = 'pt' then
   begin
-    if Key = 'title' then Result := 'Quase lá'
+    if Key = 'welcome1' then Result := 'Bem-vindo ao Mirror Mind'
+    else if Key = 'welcome2' then Result :=
+      'Este assistente instala o Mirror Mind neste computador, só para o seu usuário. Não pede senha de administrador.' + #13#10 + #13#10 +
+      'Ele baixa e prepara o que o Mirror precisa (Node.js, Git e Pi). No fim, pergunta duas coisas: como você quer ser chamado e uma chave da OpenRouter, o serviço de IA.' + #13#10 + #13#10 +
+      'Leva uns cinco minutos e precisa de internet.' + #13#10 + #13#10 +
+      'Clique em Instalar para começar.'
+    else if Key = 'title' then Result := 'Quase lá'
     else if Key = 'subtitle' then Result := 'Falta só dizer quem é você e conectar a IA'
     else if Key = 'body' then Result :=
       'O Mirror é um espelho que conversa: guarda o que importa das suas conversas e usa isso para pensar junto com você.' + #13#10 + #13#10 +
@@ -149,7 +157,7 @@ begin
     else if Key = 'badname' then Result := 'O nome vira o nome de uma pasta, então não pode ter \ / : * ? " < > | nem começar com hífen.'
     else if Key = 'needkey' then Result := 'Cole a chave da OpenRouter para continuar. Ela começa com sk-or-.'
     else if Key = 'configuring' then Result := 'Preparando o seu Mirror…'
-    else if Key = 'installing' then Result := 'Instalando o que o Mirror precisa (Node.js, Git, Pi). Leva alguns minutos; não precisa fazer nada.'
+    else if Key = 'installing' then Result := 'Instalando Node.js, Git e Pi. Leva alguns minutos.'
     else if Key = 'installed' then Result := 'Tudo pronto.'
     else if Key = 'failed' then Result := 'A instalação do Mirror Mind não terminou.'
     else if Key = 'cfgfail' then Result := 'A configuração parou no meio.' + #13#10 + 'O motivo aparece acima; o registro completo está em:'
@@ -160,7 +168,13 @@ begin
   end
   else
   begin
-    if Key = 'title' then Result := 'Almost there'
+    if Key = 'welcome1' then Result := 'Welcome to Mirror Mind'
+    else if Key = 'welcome2' then Result :=
+      'This wizard installs Mirror Mind on this computer, for your user only. No administrator password is needed.' + #13#10 + #13#10 +
+      'It downloads and prepares what Mirror needs (Node.js, Git and Pi). At the end it asks two things: what to call you, and a key for OpenRouter, the AI service.' + #13#10 + #13#10 +
+      'It takes about five minutes and needs an internet connection.' + #13#10 + #13#10 +
+      'Click Install to begin.'
+    else if Key = 'title' then Result := 'Almost there'
     else if Key = 'subtitle' then Result := 'Say who you are and connect the AI'
     else if Key = 'body' then Result :=
       'Mirror is a mirror that talks back: it keeps what matters from your conversations and uses it to think alongside you.' + #13#10 + #13#10 +
@@ -174,7 +188,7 @@ begin
     else if Key = 'badname' then Result := 'The name becomes a folder name, so it cannot contain \ / : * ? " < > | or start with a hyphen.'
     else if Key = 'needkey' then Result := 'Paste your OpenRouter key to continue. It starts with sk-or-.'
     else if Key = 'configuring' then Result := 'Getting your Mirror ready…'
-    else if Key = 'installing' then Result := 'Installing what Mirror needs (Node.js, Git, Pi). A few minutes; nothing to do on your side.'
+    else if Key = 'installing' then Result := 'Installing Node.js, Git and Pi. A few minutes.'
     else if Key = 'installed' then Result := 'All set.'
     else if Key = 'failed' then Result := 'Mirror Mind installation did not finish.'
     else if Key = 'cfgfail' then Result := 'Setup stopped halfway.' + #13#10 + 'The reason is shown above; the full log is at:'
@@ -233,6 +247,9 @@ begin
   BootstrapOk := False;
   ConfigOk := False;
   if Lowercase(ActiveLanguage()) = 'pt' then CurLang := 'pt' else CurLang := 'en';
+
+  WizardForm.WelcomeLabel1.Caption := L('welcome1');
+  WizardForm.WelcomeLabel2.Caption := L('welcome2');
 
   { Identity page created AFTER the Installing page, so it appears at the END. }
   IdPage := CreateCustomPage(wpInstalling, L('title'), L('subtitle'));
@@ -327,7 +344,7 @@ begin
   LogMemo.Left := WizardForm.ProgressGauge.Left;
   LogMemo.Top := WizardForm.ProgressGauge.Top + WizardForm.ProgressGauge.Height + ScaleY(8);
   LogMemo.Width := WizardForm.ProgressGauge.Width;
-  LogMemo.Height := ScaleY(150);
+  LogMemo.Height := WizardForm.ProgressGauge.Parent.ClientHeight - LogMemo.Top - ScaleY(4);
   LogMemo.ScrollBars := ssVertical;
   LogMemo.ReadOnly := True;
   LogMemo.WantReturns := False;
@@ -340,6 +357,9 @@ end;
 
 procedure CurPageChanged(CurPageID: Integer);
 begin
+  { With the Ready page off, Welcome's Next is the install button; say so. }
+  if CurPageID = wpWelcome then
+    WizardForm.NextButton.Caption := SetupMessage(msgButtonInstall);
   if CurPageID = IdPage.ID then
   begin
     WizardForm.PageNameLabel.Caption := L('title');
