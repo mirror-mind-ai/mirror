@@ -42,7 +42,7 @@ CENAS = [
     {"n": 10, "tipo": "tela", "tela": "09-pergunta.png", "depois": "11-resposta-final.png", "acoes": [
         {"t": 0.05, "tipo": "realce", "rect": [8, 590, 1070, 22]}, {"t": 0.4, "tipo": "troca"}, {"t": 0.5, "tipo": "realce", "rect": [8, 300, 540, 262]}]},
     {"n": 11, "tipo": "card", "k": "Em resumo", "h1": "", "ps": ["Um arquivo, sem senha de administrador, cinco minutos.", "Seu nome e uma chave da OpenRouter.", "Memória guardada no seu computador."]},
-    {"n": 12, "tipo": "card", "k": "", "h1": "Mirror Mind", "ps": ["Um espelho que conversa."]},
+    {"n": 12, "tipo": "card", "k": "", "h1": "Mirror Mind", "ps": []},
 ]
 
 PLAYER = r"""<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
