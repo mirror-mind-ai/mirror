@@ -12,6 +12,22 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-10-17 — CV21.DS4.TS2: SessionEnd's close tail survives Codex's 1 s bound
+
+DS2's carried debt, paid. The shared Claude-family `session-end` now picks its tail by
+the session's runtime: Claude Code (async hook) runs the full tail as before; Codex (1 s,
+synchronous) and Grok (1.5 s) close without any LLM work — `ended_at`, the session
+inactive, the backfill, a `close_tail_pending` flag, the backup — and the next session
+start's maintenance extracts and finishes the tail (`Finished deferred close tails: N`,
+five per start). On every runtime the session is marked inactive before any LLM call,
+closing the stale-`active` window behind DS12.TS2 L9. `runtime diagnose` reports a flag
+older than a day. No hook timeout changed
+([decision](../project/decisions.md#a-runtime-that-bounds-sessionend-closes-without-the-llm-tail-and-the-next-start-finishes-it)).
+Validated by the Navigator through the real wrappers on this tree (20/0, the hook at
+492 ms); the first run, through the published package on the PATH, measured the old
+behavior exactly and fixed the route. Deferred: extraction's persist window as one
+transaction.
+
 ### 2026-10-17 — CV21.DS4.US1: Codex installs Mirror from the marketplace the package ships
 
 CV21.DS4 was re-pulled over an authored decomposition (US1, TS2, TS3, US4, TS5, TS6)

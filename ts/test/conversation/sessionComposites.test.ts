@@ -500,3 +500,48 @@ test("retitlePendingConversations swallows a per-conversation failure", async ()
   assert.equal(changed, 1, "the batch continues past a failed conversation");
   db.close();
 });
+
+// CV21.DS4.TS2: the fifth step finishes what a bounded runtime's SessionEnd
+// deferred, after extraction, through the dep the front door wires.
+test("maintenance finishes a deferred close tail after extraction and reports it", async () => {
+  const db = fixture();
+  // Closed by a Codex SessionEnd: ended, flagged, too short to extract.
+  seedConversation(db, "conv-deferred", {
+    ended: true,
+    messageCount: 2,
+    title: "Deferred",
+    metadata: '{"close_tail_pending": true}',
+    lastMessageAt: "2026-09-03T10:20:00.000000Z",
+  });
+  const finalized: string[] = [];
+  const deps = {
+    ...maintenanceDeps(new StubProvider()),
+    finalizeCloseTail: (_db: WritableDatabase, id: string) => {
+      finalized.push(id);
+    },
+  };
+
+  const report = await sessionMaintenance(db, deps);
+
+  assert.deepEqual(finalized, ["conv-deferred"]);
+  assert.match(report, /Finished deferred close tails: 1 \(\d+\.\ds\)/);
+  assert.equal(metadataOf(db, "conv-deferred"), "{}");
+  db.close();
+});
+
+test("maintenance without the finalization dep reports the step at zero and touches nothing", async () => {
+  const db = fixture();
+  seedConversation(db, "conv-deferred", {
+    ended: true,
+    messageCount: 2,
+    title: "Deferred",
+    metadata: '{"close_tail_pending": true}',
+    lastMessageAt: "2026-09-03T10:20:00.000000Z",
+  });
+
+  const report = await sessionMaintenance(db, maintenanceDeps(new StubProvider()));
+
+  assert.match(report, /Finished deferred close tails: 0 /);
+  assert.equal(metadataOf(db, "conv-deferred"), '{"close_tail_pending": true}');
+  db.close();
+});

@@ -234,6 +234,66 @@ test("endSession closes the conversation and deactivates the session", async () 
   db.close();
 });
 
+// CV21.DS4.TS2: the session is inactive BEFORE the LLM tail, so a cut during
+// extraction (Codex's 1 s, Grok's 1.5 s, Gemini's 30 s) never leaves a session
+// `active = 1` -- the state `guessRuntimeSessionId` reads as "the session"
+// (DS12.TS2 L9).
+test("endSession deactivates the session before the tail runs", async () => {
+  const db = fixture();
+  logUserMessage(db, "s1", "hi", { interface: "claude_code" }, deps);
+  const seen: unknown[] = [];
+
+  await endSession(db, "s1", { extract: true }, laterDeps, {
+    runExtraction: () => {
+      seen.push(session(db, "s1")?.active, session(db, "s1")?.closed_at);
+    },
+  });
+
+  assert.deepEqual(seen, [0, LATER]);
+  db.close();
+});
+
+test("endSession leaves the session inactive and the conversation ended when the tail throws", async () => {
+  const db = fixture();
+  logUserMessage(db, "s1", "hi", { interface: "claude_code" }, deps);
+  const convId = String(session(db, "s1")?.conversation_id);
+
+  await assert.rejects(
+    endSession(db, "s1", { extract: true }, laterDeps, {
+      runExtraction: () => {
+        throw new Error("provider down");
+      },
+    }),
+  );
+
+  assert.equal(conversation(db, convId)?.ended_at, LATER);
+  assert.equal(session(db, "s1")?.active, 0);
+  db.close();
+});
+
+test("endSession with finalize off closes without any LLM work and flags the conversation as owed", async () => {
+  const db = fixture();
+  logUserMessage(db, "s1", "hi", { interface: "codex" }, deps);
+  const convId = String(session(db, "s1")?.conversation_id);
+  const calls: string[] = [];
+
+  await endSession(db, "s1", { extract: false, finalize: false }, laterDeps, {
+    runExtraction: () => {
+      calls.push("extract");
+    },
+    finalizeMetadata: () => {
+      calls.push("finalize");
+    },
+  });
+
+  assert.deepEqual(calls, []);
+  assert.equal(conversation(db, convId)?.ended_at, LATER);
+  assert.equal(session(db, "s1")?.active, 0);
+  const metadata = JSON.parse(String(conversation(db, convId)?.metadata ?? "{}"));
+  assert.equal(metadata.close_tail_pending, true);
+  db.close();
+});
+
 // --- discard_current_conversation ---
 
 test("discardCurrentConversation returns null with no resolvable session", () => {

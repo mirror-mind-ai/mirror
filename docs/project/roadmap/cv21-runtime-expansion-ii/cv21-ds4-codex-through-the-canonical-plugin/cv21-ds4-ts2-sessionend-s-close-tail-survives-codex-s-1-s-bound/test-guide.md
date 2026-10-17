@@ -98,4 +98,21 @@ wrappers as a runtime would.
 - Unchanged, held by their tests: `session-end-pi` (Pi, Gemini CLI), the hook
   registrations and timeouts, the wrappers.
 
-**Navigator.** Pending: `bash route.sh static`.
+**Route defect found by the Navigator's first run, 2026-10-17 13:48 UTC (15/4).** The
+route took `mirror-hook` from the PATH, which on the Navigator's machine is
+`/opt/homebrew/bin/mirror-hook`, the published 0.33.4, so it measured the behavior
+before this story exactly: the `codex` session's tail ran at exit (7 ledger calls),
+no flag, and `closed_at` 4 ms after the first call. The route now links this tree's
+two bins into a scratch directory, names it in `MIRROR_BIN` and first on the PATH,
+prints the entry it resolves to, and refuses any other. Re-run with
+`/opt/homebrew/bin` first on the Driver's PATH: 20/0, the hook at 363 ms.
+
+**Navigator, 2026-10-17 13:50 UTC.** `bash route.sh static` on tree `625fea87` plus this
+story's working set, the entry `mirror-dev/bin/mirror-hook.js` (the published
+`/opt/homebrew/bin/mirror-hook` on the PATH, not used): **20 passed, 0 failed**. The
+`codex` session's SessionEnd finished in **492 ms** with `ended_at`, `active = 0`,
+`closed_at`, the flag, no ledger call, no `hooks.log` line, and a backup;
+maintenance reported `Extracted pending conversations: 1` and `Finished deferred
+close tails: 1`, the memory and title present, the flag deleted; the `claude_code`
+session ran its 7-call tail at exit with `closed_at 13:50:17.134 <= first call
+13:50:17.135`.

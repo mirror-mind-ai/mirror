@@ -181,6 +181,135 @@ test("handleSessionEndHook ends the session and runs the injected close tail", a
   db.close();
 });
 
+// CV21.DS4.TS2: a runtime that bounds SessionEnd gets the close without the LLM
+// tail; the conversation is flagged for the next session start.
+function tailProbe(): {
+  calls: string[];
+  hooks: { runExtraction: () => void; finalizeMetadata: () => void };
+} {
+  const calls: string[] = [];
+  return {
+    calls,
+    hooks: {
+      runExtraction: () => {
+        calls.push("extract");
+      },
+      finalizeMetadata: () => {
+        calls.push("finalize");
+      },
+    },
+  };
+}
+
+function conversationMetadata(db: WritableDatabase, sessionId: string): Record<string, unknown> {
+  const row = db
+    .prepare(
+      `SELECT c.metadata FROM conversations c
+       JOIN runtime_sessions s ON s.conversation_id = c.id WHERE s.session_id = ?`,
+    )
+    .get(sessionId);
+  return typeof row?.metadata === "string" ? JSON.parse(row.metadata) : {};
+}
+
+test("handleSessionEndHook on a codex-labelled session closes without the tail and flags the conversation", async () => {
+  const { db, home } = fixture();
+  // US8 stamps the label on every prompt; the payload carries Codex's turn_id.
+  handleUserPromptHook(
+    db,
+    JSON.stringify({ session_id: "s1", prompt: "hello", turn_id: "t1" }),
+    { mirrorHome: home, interface: "codex" },
+    deps,
+  );
+  const probe = tailProbe();
+
+  const outcome = await handleSessionEndHook(
+    db,
+    JSON.stringify({ session_id: "s1", turn_id: "t1" }),
+    { mirrorHome: home, claudeProjectDir: null, homeDir: home },
+    deps,
+    probe.hooks,
+  );
+
+  assert.equal(outcome.action, "ended");
+  assert.deepEqual(probe.calls, [], "no LLM work inside Codex's 1 s");
+  const session = db.prepare("SELECT * FROM runtime_sessions WHERE session_id = 's1'").get();
+  assert.equal(session?.active, 0);
+  assert.equal(session?.closed_at, NOW);
+  assert.equal(conversationMetadata(db, "s1").close_tail_pending, true);
+  db.close();
+});
+
+test("handleSessionEndHook on a claude_code-labelled session runs the tail at exit, and does not flag", async () => {
+  const { db, home } = fixture();
+  handleUserPromptHook(
+    db,
+    JSON.stringify({ session_id: "s1", prompt: "hello" }),
+    { mirrorHome: home, interface: "claude_code" },
+    deps,
+  );
+  const probe = tailProbe();
+
+  await handleSessionEndHook(
+    db,
+    JSON.stringify({ session_id: "s1" }),
+    { mirrorHome: home, claudeProjectDir: null, homeDir: home, interface: "codex" },
+    deps,
+    probe.hooks,
+  );
+
+  // The session row's label wins over what the hook passed.
+  assert.deepEqual(probe.calls, ["extract", "finalize"]);
+  assert.ok(!("close_tail_pending" in conversationMetadata(db, "s1")));
+  db.close();
+});
+
+test("handleSessionEndHook falls back to the hook's interface when the session row has no label", async () => {
+  const { db, home } = fixture();
+  handleUserPromptHook(
+    db,
+    JSON.stringify({ session_id: "s1", prompt: "hello" }),
+    { mirrorHome: home },
+    deps,
+  );
+  db.prepare("UPDATE runtime_sessions SET interface = NULL WHERE session_id = 's1'").run();
+  const probe = tailProbe();
+
+  await handleSessionEndHook(
+    db,
+    JSON.stringify({ session_id: "s1" }),
+    { mirrorHome: home, claudeProjectDir: null, homeDir: home, interface: "grok_build" },
+    deps,
+    probe.hooks,
+  );
+
+  assert.deepEqual(probe.calls, []);
+  assert.equal(conversationMetadata(db, "s1").close_tail_pending, true);
+  db.close();
+});
+
+test("handleSessionEndHook with no label anywhere keeps today's behavior: the tail runs", async () => {
+  const { db, home } = fixture();
+  handleUserPromptHook(
+    db,
+    JSON.stringify({ session_id: "s1", prompt: "hello" }),
+    { mirrorHome: home },
+    deps,
+  );
+  db.prepare("UPDATE runtime_sessions SET interface = NULL WHERE session_id = 's1'").run();
+  const probe = tailProbe();
+
+  await handleSessionEndHook(
+    db,
+    JSON.stringify({ session_id: "s1" }),
+    { mirrorHome: home, claudeProjectDir: null, homeDir: home },
+    deps,
+    probe.hooks,
+  );
+
+  assert.deepEqual(probe.calls, ["extract", "finalize"]);
+  db.close();
+});
+
 test("handleSessionEndHook with no session and no readable transcript does nothing", async () => {
   const { db, home } = fixture();
   const outcome = await handleSessionEndHook(

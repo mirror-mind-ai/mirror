@@ -16,6 +16,7 @@
 // report still fails. Freezing real timings would have faked the evidence
 // instead of isolating it.
 
+import { finishDeferredCloseTails } from "#conversation/deferredCloseTail.ts";
 import {
   countCarriedOverConversations,
   countConversationsWithExtractionStatus,
@@ -40,6 +41,12 @@ export interface MaintenanceDeps {
   retitleConversation: (db: WritableDatabase, conversationId: string) => Promise<boolean> | boolean;
   /** The DS5 orchestration behind replay with its accounting, as the driver injects it. */
   runExtraction: (db: WritableDatabase, conversationId: string) => Promise<void> | void;
+  /**
+   * The close-time finalization (title, summary, tags) for a conversation a
+   * bounded runtime's SessionEnd closed without it (CV21.DS4.TS2). Optional
+   * only for callers written before the step existed; the front door wires it.
+   */
+  finalizeCloseTail?: (db: WritableDatabase, conversationId: string) => Promise<void> | void;
   /**
    * `backfillPiSessions` (slice E) bound to its resolved sessions directory.
    * Injected rather than resolved here so the composite never reads the
@@ -212,6 +219,12 @@ export async function sessionMaintenance(
     ),
     await timedStep("Extracted pending conversations", monotonic, () =>
       extractPending(db, { runExtraction: deps.runExtraction, limit: deps.extractionLimit }),
+    ),
+    // After extraction, so a stored summary is kept rather than generated twice.
+    await timedStep("Finished deferred close tails", monotonic, () =>
+      deps.finalizeCloseTail
+        ? finishDeferredCloseTails(db, { finalizeCloseTail: deps.finalizeCloseTail })
+        : 0,
     ),
   ];
 

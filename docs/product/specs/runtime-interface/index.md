@@ -189,6 +189,28 @@ mirror conversation-logger session-end
 Input: JSON on stdin — `{"session_id": "<id>", "transcript_path": "<path>"}`.
 Claude Code's `SessionEnd` hook provides this via stdin automatically.
 
+The hook passes `--interface <runtime>` as Stop does. Since CV21.DS4.TS2 the tail
+depends on the session's runtime (the label US8 stamps on every prompt, the hook's
+detection when the row has none):
+
+- **Claude Code** registers the hook `async`, so it runs in the background after
+  exit: the full tail runs — `ended_at`, the runtime session inactive, the
+  transcript backfill, extraction, then title/summary/tags.
+- **Codex** runs the hook synchronously under 1 s (DS12.TS2 L2; DS2's live `/hooks`
+  table) and **Grok** under 1.5 s (DS12.TS4): the close runs no LLM work. It writes
+  `ended_at`, marks the session inactive, backfills, flags the conversation
+  `close_tail_pending`, and returns; the backup follows inside the bound. The next
+  session start's maintenance, on any runtime, extracts the conversation
+  (`extractPending`) and then finishes the tail (`Finished deferred close tails: N`,
+  five per start, FIFO). A Codex conversation's memories, title, summary, and tags
+  therefore arrive at the next session start, as Pi's do. `runtime diagnose` reports
+  a flag older than a day.
+
+On every runtime the session is marked inactive before any LLM work, so a tail cut
+by the runtime's bound never leaves a session `active = 1` (the state behind
+DS12.TS2 L9). The hook registrations carry no `timeout` for SessionEnd: there is
+nothing left at exit worth holding the user's exit for.
+
 **Pi** — does not have transcript access. Defers extraction to the next
 `session-start`.
 
@@ -203,11 +225,11 @@ hook). Uses `session-end-pi` for deferred extraction, same as Pi.
 mirror conversation-logger session-end-pi <session_id>
 ```
 
-**Codex** — the shipped wiring (v0.32.1) is a wrapper script that backfills
-the session transcript from JSONL and then calls `session-end-pi` for deferred
-extraction. Through the plugin, Codex runs the Claude-family hooks as they are
-(CV21.DS12.TS2), prompts and replies included; its `SessionEnd` did not reach
-Mirror in DS12's live session (L8), which CV21.DS4 owns.
+**Codex** — through the plugin, Codex runs the Claude-family hooks as they are
+(CV21.DS12.TS2), prompts and replies included, with the deferred tail above
+(CV21.DS4.TS2). The wiring v0.32.1 shipped, a wrapper script that backfills the
+session transcript from JSONL and then calls `session-end-pi`, is the previous
+path, still shipped until CV21.DS4.TS5 removes it.
 
 ```
 mirror conversation-logger backfill-codex-session <path>

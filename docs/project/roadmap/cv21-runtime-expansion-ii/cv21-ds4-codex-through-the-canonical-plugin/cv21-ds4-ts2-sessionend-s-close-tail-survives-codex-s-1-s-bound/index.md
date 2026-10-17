@@ -2,7 +2,7 @@
 
 # CV21.DS4.TS2 — SessionEnd's close tail survives Codex's 1 s bound
 
-**Status:** 🟡 Planned
+**Status:** ✅ Done
 **Type:** Technical Story
 **Delivery Story:** CV21.DS4 — Codex Through The Canonical Plugin
 

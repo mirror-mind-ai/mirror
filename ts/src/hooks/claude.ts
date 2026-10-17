@@ -87,9 +87,21 @@ export async function claudeStop(stdin: string): Promise<number> {
   return 0;
 }
 
-/** `log-session-end.sh`: close the session, then take the silent backup. */
-export async function claudeSessionEnd(): Promise<number> {
-  await runFrontDoorQuietly("claude:session-end", ["conversation-logger", "session-end"]);
+/**
+ * `log-session-end.sh`: close the session, then take the silent backup.
+ *
+ * The runtime goes along as `--interface`, as Stop's does, for a session row
+ * with no label. On a runtime that bounds this hook (Codex 1 s, Grok 1.5 s)
+ * the close runs no LLM work and the next session start finishes the tail
+ * (CV21.DS4.TS2); both calls then fit inside the bound.
+ */
+export async function claudeSessionEnd(stdin: string): Promise<number> {
+  const runtime = detectHookRuntime(parseHookPayload(stdin).raw);
+  await runFrontDoorQuietly(
+    "claude:session-end",
+    ["conversation-logger", "session-end", "--interface", runtime],
+    { stdin },
+  );
   await runFrontDoorQuietly("claude:session-end", ["backup", "--silent"]);
   return 0;
 }
@@ -204,7 +216,7 @@ export async function claudeHook(name: string): Promise<number> {
     case "stop":
       return claudeStop(readStdin());
     case "session-end":
-      return claudeSessionEnd();
+      return claudeSessionEnd(readStdin());
     case "inject":
       return claudeInject(readStdin());
     default:

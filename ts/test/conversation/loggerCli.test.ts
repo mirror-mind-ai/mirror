@@ -459,6 +459,7 @@ test("session-start and session-maintenance render the report with the injected 
       "Backfilled Pi sessions: 0 (0.0s)",
       "Retitled pending conversations: 0 (0.0s)",
       "Extracted pending conversations: 0 (0.0s)",
+      "Finished deferred close tails: 0 (0.0s)",
     ].join("\n"),
   ]);
   const maintenance = await run(f, ["session-maintenance"], { env: REPLAY_ENV });
@@ -469,6 +470,7 @@ test("session-start and session-maintenance render the report with the injected 
       "Backfilled Pi sessions: 0 (0.0s)",
       "Retitled pending conversations: 0 (0.0s)",
       "Extracted pending conversations: 0 (0.0s)",
+      "Finished deferred close tails: 0 (0.0s)",
     ].join("\n"),
   ]);
   f.db.close();

@@ -12,6 +12,7 @@
 
 import { closeSync, existsSync, mkdirSync, openSync, rmSync } from "node:fs";
 import { join } from "node:path";
+import { markCloseTailPending, sessionEndRunsLlmTail } from "#conversation/deferredCloseTail.ts";
 import {
   lastAssistantMessageOf,
   parseHookPayloadObject,
@@ -318,17 +319,39 @@ function startConversation(
  * finalization in a `finally`. Duplicating that contract in a second async
  * close path would let the two drift on exactly the property that must not.
  */
+export interface CloseTailOptions {
+  extract: boolean;
+  /**
+   * Run the close-time metadata finalization (title, summary, tags). Off, there
+   * is no LLM work at all: the conversation is flagged as owing it, immediately
+   * before `ended_at` so the window against a still-running async Stop logger's
+   * metadata write is microseconds, and the next session start's maintenance
+   * finishes it (CV21.DS4.TS2, `deferredCloseTail.ts`). Default on.
+   */
+  finalize?: boolean;
+  /**
+   * Runs after the state writes and before any LLM work: where `endSession`
+   * deactivates the session and `handleSessionEndHook` backfills the
+   * transcript, which the close bounds and extraction should see.
+   */
+  beforeTail?: () => void;
+}
+
 export async function endConversation(
   db: WritableDatabase,
   conversationId: string,
-  options: { extract: boolean },
+  options: CloseTailOptions,
   deps: LoggerDeps,
   hooks: CloseHooks = {},
 ): Promise<void> {
+  const finalize = options.finalize ?? true;
+  if (!finalize) markCloseTailPending(db, conversationId);
   db.prepare("UPDATE conversations SET ended_at = ? WHERE id = ?").run(
     deps.nowIso(),
     conversationId,
   );
+  options.beforeTail?.();
+  if (!finalize) return;
   try {
     if (options.extract) await hooks.runExtraction?.(db, conversationId);
   } finally {
@@ -383,19 +406,31 @@ export async function switchConversation(
   return newConversationId;
 }
 
-/** Python `end_session`: close the bound conversation and deactivate. */
+/**
+ * Python `end_session`: close the bound conversation and deactivate.
+ *
+ * The session is deactivated BEFORE the tail, not after (CV21.DS4.TS2). A tail
+ * cut by the runtime's bound (Codex 1 s, Grok 1.5 s, Gemini CLI 30 s) or a
+ * background hook that dies used to leave the session `active = 1`: the row
+ * `guessRuntimeSessionId` reads as "the session", which is how another
+ * runtime's agent wrote into a Codex conversation (DS12.TS2 L9).
+ */
 export async function endSession(
   db: WritableDatabase,
   sessionId: string,
-  options: { extract: boolean },
+  options: CloseTailOptions,
   deps: LoggerDeps,
   hooks: CloseHooks = {},
-): Promise<void> {
+): Promise<boolean> {
   const runtimeSession = getRuntimeSession(db, sessionId);
   const conversationId = runtimeSession?.conversationId ?? null;
-  if (!conversationId) return;
-  await endConversation(db, conversationId, { extract: options.extract }, deps, hooks);
-  upsertRuntimeSession(db, sessionId, { active: false, closedAt: deps.nowIso() }, deps.nowIso());
+  if (!conversationId) return false;
+  const deactivate = () => {
+    upsertRuntimeSession(db, sessionId, { active: false, closedAt: deps.nowIso() }, deps.nowIso());
+    options.beforeTail?.();
+  };
+  await endConversation(db, conversationId, { ...options, beforeTail: deactivate }, deps, hooks);
+  return true;
 }
 
 /**
@@ -785,7 +820,13 @@ export function handleStopHook(
 export async function handleSessionEndHook(
   db: WritableDatabase,
   rawPayload: string,
-  options: { mirrorHome: string; claudeProjectDir: string | null; homeDir: string },
+  options: {
+    mirrorHome: string;
+    claudeProjectDir: string | null;
+    homeDir: string;
+    /** The runtime the hook detected: the fallback when the session row has no label. */
+    interface?: string;
+  },
   deps: LoggerDeps,
   hooks: CloseHooks = {},
 ): Promise<SessionEndHookOutcome> {
@@ -794,19 +835,41 @@ export async function handleSessionEndHook(
     if (!payload) return { action: "skipped", reason: "malformed_payload" };
 
     const sessionId = payloadString(payload, "session_id");
-    if (sessionId) await endSession(db, sessionId, { extract: true }, deps, hooks);
-
     const transcriptPath = resolveTranscriptPath(
       payloadString(payload, "transcript_path"),
       sessionId,
       options.claudeProjectDir,
       options.homeDir,
     );
-    const backfilled = transcriptPath !== null && existsSync(transcriptPath);
-    if (backfilled) backfillAssistantMessages(db, transcriptPath, deps);
+    let backfilled = false;
+    // After the close, which bounds the backfill window, and before the tail,
+    // which should see what the backfill adds (CV21.DS4.TS2).
+    const backfill = () => {
+      backfilled = transcriptPath !== null && existsSync(transcriptPath);
+      if (backfilled && transcriptPath !== null)
+        backfillAssistantMessages(db, transcriptPath, deps);
+    };
+
+    if (sessionId) {
+      // The label US8 stamps on every prompt; the hook's own detection only when
+      // the row carries none; today's behavior when neither names a runtime.
+      const label = getRuntimeSession(db, sessionId)?.interface || options.interface || null;
+      const finalize = sessionEndRunsLlmTail(label);
+      const closed = await endSession(
+        db,
+        sessionId,
+        { extract: finalize, finalize, beforeTail: backfill },
+        deps,
+        hooks,
+      );
+      // A session with no bound conversation closes nothing; the backfill still runs.
+      if (!closed) backfill();
+    } else {
+      backfill();
+    }
 
     if (sessionId) return { action: "ended", sessionId, transcriptPath, backfilled };
-    if (backfilled) return { action: "backfilled", transcriptPath };
+    if (backfilled && transcriptPath !== null) return { action: "backfilled", transcriptPath };
     return { action: "skipped", reason: "nothing_to_do" };
   } catch (error) {
     return { action: "failed", error: error instanceof Error ? error.message : String(error) };

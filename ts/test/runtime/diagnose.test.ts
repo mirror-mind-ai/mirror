@@ -26,6 +26,7 @@ import { KNOWN_MIGRATION_IDS } from "#db/schemaState.ts";
 import { checksum } from "#extensions/migrations.ts";
 import {
   type DriftFinding,
+  deferredCloseTailFindings,
   diagnoseRuntime,
   frontDoorErrorFindings,
   identityKeyFindings,
@@ -505,5 +506,61 @@ test("US3 D3: a group-readable config file is a loose_permissions finding, an ow
     assert.deepEqual(loosePermissionFindings(report as unknown as RuntimeStatusReport, null), []);
   } finally {
     rmSync(root, { recursive: true, force: true });
+  }
+});
+
+// --- CV21.DS4.TS2: a deferred close tail nobody started a session to finish --------
+
+function homeWithConversations(rows: readonly (readonly [string, string, string | null])[]): {
+  dbPath: string;
+  cleanup: () => void;
+} {
+  const root = mkdtempSync(join(realpathSync("/tmp"), "diagnose-deferred-tails-"));
+  const dbPath = join(root, "memory.db");
+  const db = new DatabaseSync(dbPath);
+  db.exec("CREATE TABLE conversations (id TEXT PRIMARY KEY, ended_at TEXT, metadata TEXT)");
+  const insert = db.prepare("INSERT INTO conversations (id, ended_at, metadata) VALUES (?, ?, ?)");
+  for (const [id, endedAt, metadata] of rows) insert.run(id, endedAt, metadata);
+  db.close();
+  return { dbPath, cleanup: () => rmSync(root, { recursive: true, force: true }) };
+}
+
+test("a deferred close tail older than a day is one finding naming the count and the oldest", () => {
+  const now = new Date("2026-10-18T12:00:00Z");
+  const home = homeWithConversations([
+    ["fresh", "2026-10-18T11:00:00Z", '{"close_tail_pending": true}'],
+    ["stale", "2026-10-15T09:00:00Z", '{"close_tail_pending": true}'],
+    ["staler", "2026-10-14T09:00:00Z", '{"close_tail_pending": true}'],
+    ["finished", "2026-10-10T09:00:00Z", '{"extracted": true}'],
+  ]);
+  try {
+    const findings = deferredCloseTailFindings({ db_path: home.dbPath, db_exists: true }, now);
+    assert.equal(findings.length, 1);
+    const finding = findings[0] as DriftFinding;
+    assert.equal(finding.code, "deferred_close_tails_waiting");
+    assert.equal(finding.severity, "attention");
+    assert.equal(finding.subject, "conversations");
+    assert.equal(
+      finding.detail,
+      "3 conversation(s) closed by a runtime that defers the close tail are waiting for a " +
+        "session start to finish it; the oldest ended 2026-10-14T09:00:00Z",
+    );
+    assert.match(finding.recommendation, /start a session/u);
+  } finally {
+    home.cleanup();
+  }
+});
+
+test("deferred close tails younger than a day, or none, are not a finding", () => {
+  const now = new Date("2026-10-18T12:00:00Z");
+  const home = homeWithConversations([
+    ["fresh", "2026-10-18T11:00:00Z", '{"close_tail_pending": true}'],
+    ["finished", "2026-10-10T09:00:00Z", "{}"],
+  ]);
+  try {
+    assert.deepEqual(deferredCloseTailFindings({ db_path: home.dbPath, db_exists: true }, now), []);
+    assert.deepEqual(deferredCloseTailFindings({ db_path: null, db_exists: false }, now), []);
+  } finally {
+    home.cleanup();
   }
 });

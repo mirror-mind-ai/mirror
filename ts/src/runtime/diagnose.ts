@@ -319,6 +319,60 @@ export function ftsConsistencyFindings(report: RuntimeStatusReport): DriftFindin
   return [];
 }
 
+/** A deferred close tail waits for a session start; after this long, nobody started one. */
+const DEFERRED_CLOSE_TAIL_STALE_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * CV21.DS4.TS2: a runtime that bounds its SessionEnd hook (Codex, Grok) closes
+ * without the LLM tail and flags the conversation for the next session start to
+ * finish. A user whose last session was on such a runtime, and who starts no
+ * session for a day, has memories and titles waiting and nothing saying so:
+ * this is the one place that says so. Younger flags are the normal state
+ * between two sessions, not a finding.
+ */
+export function deferredCloseTailFindings(
+  report: Pick<RuntimeStatusReport, "db_path" | "db_exists">,
+  now: Date = new Date(),
+): DriftFinding[] {
+  if (report.db_path === null || !report.db_exists) return [];
+  let row: { n: number; oldest: string } | null;
+  try {
+    const db = openDatabaseReadOnly(report.db_path);
+    try {
+      const found = db
+        .prepare(
+          `SELECT COUNT(*) AS n, MIN(ended_at) AS oldest FROM conversations
+           WHERE ended_at IS NOT NULL
+             AND json_extract(metadata, '$.close_tail_pending') IS 1`,
+        )
+        .get();
+      row =
+        found && Number(found.n) > 0 ? { n: Number(found.n), oldest: String(found.oldest) } : null;
+    } finally {
+      db.close();
+    }
+  } catch {
+    return [];
+  }
+  if (row === null) return [];
+  const oldest = Date.parse(row.oldest);
+  if (Number.isNaN(oldest) || now.getTime() - oldest < DEFERRED_CLOSE_TAIL_STALE_MS) return [];
+  return [
+    {
+      code: "deferred_close_tails_waiting",
+      severity: "attention",
+      subject: "conversations",
+      detail:
+        `${row.n} conversation(s) closed by a runtime that defers the close tail are waiting ` +
+        `for a session start to finish it; the oldest ended ${row.oldest}`,
+      recommendation:
+        "start a session on any runtime: its maintenance extracts and finalizes them, " +
+        "five per start",
+      repair_route: "session start",
+    },
+  ];
+}
+
 export interface DiagnoseOptions {
   /** Injected only so the 24h boundary is testable; production passes none. */
   now?: Date;
@@ -340,6 +394,7 @@ export function diagnoseRuntime(
   findings.push(...frontDoorErrorFindings(report, options.now));
   findings.push(...ftsConsistencyFindings(report));
   findings.push(...identityKeyFindings(report));
+  findings.push(...deferredCloseTailFindings(report, options.now));
 
   if (report.mirror_home_error) {
     findings.push({

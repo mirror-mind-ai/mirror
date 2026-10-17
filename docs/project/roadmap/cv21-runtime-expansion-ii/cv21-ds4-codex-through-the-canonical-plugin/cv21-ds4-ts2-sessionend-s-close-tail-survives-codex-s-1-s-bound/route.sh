@@ -39,6 +39,16 @@ EVIDENCE="$D/evidence"
 mkdir -p "$HOME_DIR" "$MIRROR" "$EVIDENCE"
 DB="$MIRROR/memory_test.db"
 
+# The entry under test is THIS checkout's, never whatever `mirror-hook` the PATH
+# holds: the Navigator's first run resolved /opt/homebrew/bin/mirror-hook, the
+# published 0.33.4, and measured the old behavior. A scratch bin links the
+# tree's two bins under their installed names; the wrappers find it through
+# MIRROR_BIN first, and it heads the PATH for the front door calls below.
+BIN="$D/bin"
+mkdir -p "$BIN"
+ln -s "$ROOT/bin/mirror.js" "$BIN/mirror"
+ln -s "$ROOT/bin/mirror-hook.js" "$BIN/mirror-hook"
+
 # The replay providers the suite uses: every model call answers from a file.
 cat >"$D/replay-llm.json" <<'EOF'
 { "kind": "llm", "responses": {
@@ -54,7 +64,7 @@ ENV=(env HOME="$HOME_DIR" MIRROR_HOME="$MIRROR" MIRROR_USER= MEMORY_ENV=test
   MIRROR_TS_CONVERSATION_LLM_REPLAY="$D/replay-llm.json"
   MIRROR_TS_CONVERSATION_EMBEDDING_REPLAY="$D/replay-embedding.json"
   PI_SESSIONS_DIR="$D/absent-pi-sessions" MIRROR_WELCOME_REMOTE_UPDATE_CHECK=off
-  NODE_OPTIONS=--no-warnings PATH="$PATH")
+  NODE_OPTIONS=--no-warnings MIRROR_BIN="$BIN" PATH="$BIN:$PATH")
 
 # A read of the scratch database, through node:sqlite (no sqlite3 binary needed).
 q() { node -e '
@@ -72,9 +82,13 @@ now_ms() { node -e 'console.log(Date.now())'; }
 
 say "Evidence"
 look "date: $(date -u '+%Y-%m-%d %H:%M UTC')"
-look "mirror-hook: $(command -v mirror-hook || echo 'not on the PATH')"
+look "tree: $ROOT ($(git -C "$ROOT" rev-parse --short HEAD 2>/dev/null || echo 'no git'))"
+look "entry: $BIN/mirror-hook -> $(readlink "$BIN/mirror-hook")"
 look "package: $(node -e 'console.log(require(process.argv[1]).version)' "$ROOT/package.json")"
-command -v mirror-hook >/dev/null || { bad "mirror-hook is not on the PATH (npm link at the repository root)"; exit 1; }
+look "on the PATH, not used: $(command -v mirror-hook || echo 'none')"
+[ -x "$ROOT/bin/mirror-hook.js" ] || { bad "$ROOT/bin/mirror-hook.js is not executable"; exit 1; }
+ENTRY_SEEN="$("${ENV[@]}" bash -c 'command -v mirror-hook')"
+[ "$ENTRY_SEEN" = "$BIN/mirror-hook" ] && ok "the wrappers will run this tree's entry" || { bad "the entry resolves to $ENTRY_SEEN"; exit 1; }
 
 # Bootstrap the home with one deterministic call, so the first hook is not also a migration.
 "${ENV[@]}" mirror runtime version >/dev/null 2>&1 || true

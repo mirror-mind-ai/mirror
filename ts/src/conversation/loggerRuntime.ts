@@ -242,6 +242,9 @@ export function createLoggerRuntime(options: LoggerRuntimeOptions): LoggerRuntim
             source: "startup_maintenance",
           }),
         runExtraction,
+        // CV21.DS4.TS2: the finalization a bounded runtime's SessionEnd deferred.
+        finalizeCloseTail: (database, conversationId) =>
+          hooks.finalizeMetadata(database, conversationId),
         // CR121: only the sessions newer than this home; its birth is read from
         // the ledger once per maintenance run, and an unknown birth is an error.
         backfillPiSessions: (database) =>

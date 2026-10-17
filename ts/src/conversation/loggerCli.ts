@@ -189,7 +189,10 @@ export async function runConversationLoggerCommand(
       }
     }
 
-    case "session-end":
+    case "session-end": {
+      // `--interface`, as `stop` takes it: the hook's own detection, used only
+      // when the session row carries no label (CV21.DS4.TS2).
+      const interfaceName = extractOption(args.slice(1), "--interface").value ?? undefined;
       await handleSessionEndHook(
         db,
         context.stdin ?? "",
@@ -197,11 +200,13 @@ export async function runConversationLoggerCommand(
           mirrorHome: home,
           claudeProjectDir: runtime.claudeProjectDir,
           homeDir: runtime.homeDir,
+          interface: interfaceName,
         },
         deps,
         await runtime.closeHooks(),
       );
       return ok([]);
+    }
 
     case "log-user":
     case "log-assistant": {

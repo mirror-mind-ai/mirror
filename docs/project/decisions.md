@@ -2910,6 +2910,47 @@ the plugin into its cache at a version, so an npm update does not reach Codex un
 plugin is installed again (DS4.TS6). The wrapper and its files retire in DS4.TS5, after
 US4 measures parity.
 
+### A runtime that bounds SessionEnd closes without the LLM tail, and the next start finishes it
+
+**Date:** 2026-10-17 · **Context:** [CV21.DS4.TS2](roadmap/cv21-runtime-expansion-ii/cv21-ds4-codex-through-the-canonical-plugin/cv21-ds4-ts2-sessionend-s-close-tail-survives-codex-s-1-s-bound/index.md),
+carried from [DS2's Debt Review](roadmap/cv21-runtime-expansion-ii/cv21-ds2-mirror-plugin-mcp-foundation/review.md).
+
+**The decision.** The shared Claude-family `session-end` picks its tail by the
+session's runtime, the label US8 stamps on every prompt. On Claude Code, whose hook
+runs `async` after exit, the full tail runs as before. On Codex, which runs the hook
+synchronously under a 1 s default (DS12.TS2 L2; DS2's live `/hooks` table), and Grok,
+under 1.5 s (DS12.TS4), the close runs no LLM work: `ended_at`, the session inactive,
+the transcript backfill, a `close_tail_pending` flag in the conversation's metadata,
+then the backup. The next session start's maintenance, on any runtime, extracts the
+conversation as it already does for any ended one and then finishes the tail — title,
+summary, tags — five per start, FIFO, after extraction so a stored summary is kept.
+On every runtime the session is marked inactive before any LLM call. No hook
+`timeout` changes. `runtime diagnose` reports a flag older than a day.
+
+**Why.** With a provider key set, Codex's 1 s landed inside the LLM tail: extraction
+lost until the next start, the `finally` that finalizes metadata never run, the
+session left `active = 1` — the row `guessRuntimeSessionId` reads as "the session",
+which is how another runtime's agent wrote into a Codex conversation (DS12.TS2 L9) —
+the backup skipped, and nothing recording any of it. Pi and Gemini CLI already close
+without extraction at exit (`session-end-pi`; the Pi extension: "extraction can take
+30s+, happens at the next session_start"). The bounded runtimes now do the same, and
+a little more.
+
+**What was not chosen.** A `timeout` of 30 s or more on SessionEnd, which Codex honors
+only by holding the user's exit for the whole tail: Pi and Gemini CLI already chose
+not to hold the exit for a model call. Deferring on every runtime, Claude Code
+included: its background tail works today and gives prompt memories; one rule for all
+would have been a regression in promptness for Claude Code users. A detached
+background process for the tail: a second writer with no record of its failure.
+
+**Consequences.** A Codex conversation's memories, title, summary, and tags arrive at
+the next session start, of any runtime, as Pi's do. Two runtimes started at once both
+run maintenance with no lock and can both pick the same flagged conversation; that race
+is `extractPending`'s and `retitlePending`'s today and is not new. Extraction's
+millisecond persist window is still not one transaction: a Change Request if it is to
+be priced. US4 observes the change on the real Codex with a real key; DS10 re-measures
+Grok's bound and may let it run the tail.
+
 ## Open Discussions
 
 ### Migration rehearsal — long-term status
