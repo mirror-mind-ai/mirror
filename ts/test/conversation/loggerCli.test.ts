@@ -16,7 +16,6 @@ import { runConversationLoggerCommand } from "#conversation/loggerCli.ts";
 import { createLoggerRuntime, type LoggerRuntimeEnv } from "#conversation/loggerRuntime.ts";
 import { bootstrapDatabase } from "#db/bootstrap.ts";
 import type { WritableDatabase } from "#db/database.ts";
-import { CODEX_DIR } from "#helpers/backfillFixture.ts";
 import { EMBEDDING_DIMENSIONS } from "#providers/embedding.ts";
 import type { LlmProvider, LlmRequest, LlmResponse } from "#providers/llm.ts";
 
@@ -522,38 +521,6 @@ test("--limit without a value and a non-integer --limit fail with exit 1", async
   const bad = await run(f, ["diagnose-journeys", "--limit", "five"]);
   assert.equal(bad.exitCode, 1);
   assert.match(bad.stderr[0] ?? "", /invalid literal for int\(\)/);
-  f.db.close();
-});
-
-// --- slice F: backfill-codex-session ---
-
-test("backfill-codex-session reports the released strings and honours --interface", async () => {
-  const f = fixture();
-  const valid = join(CODEX_DIR, "valid.jsonl");
-  assert.deepEqual(
-    (await run(f, ["backfill-codex-session", valid, "--interface", "codex-cli"])).stdout,
-    [`Backfilled 1 Codex session from ${valid}`],
-  );
-  assert.equal(
-    f.db
-      .prepare("SELECT interface FROM runtime_sessions WHERE session_id = 'codex-valid-0001'")
-      .get()?.interface,
-    "codex-cli",
-  );
-  // Already tracked now; and a missing file reports the same negative string.
-  assert.deepEqual((await run(f, ["backfill-codex-session", valid])).stdout, [
-    `No new Codex session backfilled from ${valid}`,
-  ]);
-  const missing = join(f.home, "missing.jsonl");
-  assert.deepEqual((await run(f, ["backfill-codex-session", missing])).stdout, [
-    `No new Codex session backfilled from ${missing}`,
-  ]);
-  // Without a path Python does nothing at all.
-  assert.deepEqual(await run(f, ["backfill-codex-session"]), {
-    stdout: [],
-    stderr: [],
-    exitCode: 0,
-  });
   f.db.close();
 });
 

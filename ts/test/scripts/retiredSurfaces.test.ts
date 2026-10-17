@@ -237,7 +237,7 @@ describe("the table itself", () => {
     }
   });
 
-  test("the enforced rows are TS1 through TS4's retirements, TS5's Python core, US3's Windows product, and PR #42's idiom", () => {
+  test("the enforced rows are TS1 through TS4's retirements, TS5's Python core, US3's Windows product, DS4.TS5's Codex wrapper, and PR #42's idiom", () => {
     assert.deepEqual(
       ENFORCED.map((surface) => surface.surfaceId),
       [
@@ -252,6 +252,7 @@ describe("the table itself", () => {
         "python-core",
         "python-core-mentions",
         "frame-installer",
+        "codex-wrapper",
         "url-pathname-as-path",
       ],
     );
@@ -376,8 +377,6 @@ describe("the live python-core-mentions row (plateau 4, decision D12)", () => {
       ".claude/hooks/",
       ".gemini/hooks/",
       "plugins/mirror-mind/hooks/",
-      "scripts/codex-mirror.sh",
-      "scripts/codex-hooks/",
       ".claude/settings.json",
     ]) {
       assert.ok(!messages.includes(hook), `${hook} still reaches for an interpreter`);
@@ -452,7 +451,10 @@ describe("the live frame-installer row (CV22.DS10.US3 plateau 5, decision D4)", 
     for (const path of ["scripts/setup.ps1", "ts/src/lib/Install.psm1", "build/mirror.iss"]) {
       assert.equal(checkAbsent(row, [path]).length, 1, path);
     }
-    assert.deepEqual(checkAbsent(row, ["ts/src/frontDoor/cli.ts", "scripts/codex-mirror.sh"]), []);
+    assert.deepEqual(
+      checkAbsent(row, ["ts/src/frontDoor/cli.ts", "scripts/generate_hook_wrappers.sh"]),
+      [],
+    );
   });
 
   test("fails on a file that still names the product's scripts, outside the record", () => {
@@ -474,6 +476,69 @@ describe("the live frame-installer row (CV22.DS10.US3 plateau 5, decision D4)", 
 
   test("is clean against this repository", () => {
     assert.deepEqual(sweep(REPO_ROOT, RETIRED, { only: "frame-installer" }), []);
+  });
+});
+
+describe("the live codex-wrapper row (CV21.DS4.TS5)", () => {
+  const row = RETIRED.find((surface) => surface.surfaceId === "codex-wrapper") as RetiredSurface;
+
+  test("is enforced", () => {
+    assert.ok(row, "the codex-wrapper row exists");
+    assert.equal(row.stagedUntil, undefined);
+    assert.ok(ENFORCED.includes(row));
+  });
+
+  // One seed per thing TS5 deleted: the wrapper, its two generated hooks,
+  // the hook entries, the backfill's smoke, and the backfill's fixtures.
+  const SEEDS = [
+    "scripts/codex-mirror.sh",
+    "scripts/codex-hooks/session-start.sh",
+    "scripts/codex-hooks/session-end.sh",
+    "ts/src/hooks/codex.ts",
+    "scripts/smoke_codex.sh",
+    "ts/test/fixtures/backfill/codex/valid.jsonl",
+  ];
+
+  test("fails on every path the deletion removed, if it comes back", () => {
+    for (const path of SEEDS) {
+      assert.equal(checkAbsent(row, [path]).length, 1, path);
+    }
+  });
+
+  test("does not flag the living Codex path", () => {
+    // The plugin serves Codex and `runtimeDetection.ts` labels its payloads;
+    // \"codex\" the word is not residue, the retired file and route names are.
+    assert.deepEqual(
+      checkAbsent(row, [
+        "ts/src/hooks/runtimeDetection.ts",
+        "plugins/mirror-mind/hooks/hooks.json",
+        ".agents/plugins/marketplace.json",
+      ]),
+      [],
+    );
+  });
+
+  test("fails on a file that still names the wrapper, its hooks, or the backfill", () => {
+    const root = gitRepo({
+      "docs/some-guide.md": "Start codex through scripts/codex-mirror.sh.\n",
+      "ts/src/x.ts": 'await run("backfill-codex-session", path);\n',
+      ".github/workflows/tests.yml": "      - run: bash scripts/smoke_codex.sh\n",
+      "docs/process/worklog.md": "The codex-mirror.sh wrapper was retired by TS5.\n",
+      "docs/living.md": "Codex installs the plugin from the marketplace.\n",
+    });
+    const problems = checkResidue(row, trackedFiles(root), root);
+    assert.deepEqual(
+      problems.map((problem) => problem.message.split(" mentions")[0]?.trim()),
+      [
+        "codex-wrapper: .github/workflows/tests.yml:1",
+        "codex-wrapper: docs/some-guide.md:1",
+        "codex-wrapper: ts/src/x.ts:1",
+      ],
+    );
+  });
+
+  test("is clean against this repository", () => {
+    assert.deepEqual(sweep(REPO_ROOT, RETIRED, { only: "codex-wrapper" }), []);
   });
 });
 

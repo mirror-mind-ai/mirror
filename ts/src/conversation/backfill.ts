@@ -1,20 +1,17 @@
 // Session backfills from runtime-written JSONL (CV22.DS7.US10 slice E).
 //
-// Ports `backfill_pi_sessions` and `backfill_codex_session` from
-// `src/memory/cli/conversation_logger.py`. Both import a closed session the
-// live hooks never saw, through the atomic seam in `sessionImport.ts`, and
-// both are graded against `ts/test/goldens/backfill.golden.json`.
+// Ports `backfill_pi_sessions` from `src/memory/cli/conversation_logger.py`:
+// it imports closed sessions the live hooks never saw, through the atomic
+// seam in `sessionImport.ts`, and is graded against
+// `ts/test/goldens/backfill.golden.json`. (The Codex importer,
+// `backfill_codex_session`, was ported beside it and retired with the
+// v0.32.1 Codex wrapper by CV21.DS4.TS5: its only caller was the wrapper's
+// session-end hook, and the plugin logs Codex turns live.)
 //
-// The two are deliberately NOT unified beyond that seam, because Python's
-// asymmetries are the contract:
-//   * Pi titles through `set_provisional_title` (whitespace collapse plus
-//     `title_source`/`title_status` provenance in metadata); Codex titles
-//     through `_generate_title` and a bare column write with no provenance.
-//   * Pi tolerates a corrupt or structurally invalid file by skipping THAT
-//     file and continuing the walk; Codex gives up on its single file.
-//   * Pi parses every timestamp form (millisecond epoch, string, absent);
-//     Codex stores the raw `timestamp` value and lets the model reject a
-//     missing one.
+// Pi titles through `set_provisional_title` (whitespace collapse plus
+// `title_source`/`title_status` provenance in metadata), tolerates a corrupt
+// or structurally invalid file by skipping THAT file and continuing the
+// walk, and parses every timestamp form (millisecond epoch, string, absent).
 //
 // Nothing here touches a provider or the clock directly: `now` is injected
 // through `LoggerDeps`, which is what makes "no timestamp -> now" pinnable.
@@ -24,12 +21,11 @@
 // home meant the person's whole Pi history, copied and spent on before the
 // first prompt. The floor is explicit (`notBefore`), never defaulted, and
 // the rule fails closed: there is no value that means "everything" except
-// the epoch, which says so. The Codex importer is untouched: it imports the
-// one session the wrapper names, not a history.
+// the epoch, which says so.
 
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, sep } from "node:path";
-import { generateTitle, type LoggerDeps, setProvisionalTitle } from "#conversation/logger.ts";
+import { type LoggerDeps, setProvisionalTitle } from "#conversation/logger.ts";
 import { type ImportedMessage, importClosedConversation } from "#conversation/sessionImport.ts";
 import type { WritableDatabase } from "#db/database.ts";
 import { expandHome } from "#util/paths.ts";
@@ -74,13 +70,6 @@ function getOr(container: unknown, key: string, fallback: unknown): unknown {
 
 function getFrom(container: unknown, key: string): unknown {
   return getOr(container, key, undefined);
-}
-
-/** Python truthiness for JSON values: empty containers are falsy too. */
-function pythonTruthy(value: unknown): boolean {
-  if (Array.isArray(value)) return value.length > 0;
-  if (isRecord(value)) return Object.keys(value).length > 0;
-  return Boolean(value);
 }
 
 /** Python `_parse_pi_content`: a string as-is, text blocks joined by `\n`, else `""`. */
@@ -279,109 +268,4 @@ export function backfillPiSessions(
     count += 1;
   }
   return count;
-}
-
-interface CodexParse {
-  sessionId: string | null;
-  messages: { role: string; content: unknown; createdAt: unknown }[];
-}
-
-/**
- * Parse a Codex session file. Throws on the first line that is not valid
- * JSON or not the expected shape; Python's single `try` turns that into
- * "return 0". Values are collected raw: Python validates them only when the
- * import constructs its models.
- */
-function parseCodexSessionFile(path: string): CodexParse {
-  const parsed: CodexParse = { sessionId: null, messages: [] };
-  for (const line of readFileSync(path, "utf8").split(/\r?\n|\r/)) {
-    if (!line.trim()) continue;
-    const entry: unknown = JSON.parse(line);
-    const entryType = getFrom(entry, "type");
-    const payload = getOr(entry, "payload", {});
-    if (entryType === "session_meta") {
-      // Codex writes a UUID string; a non-string id is treated as absent
-      // (the same simplification the hook payloads make).
-      const id = getFrom(payload, "id");
-      parsed.sessionId = typeof id === "string" ? id : null;
-    } else if (entryType === "event_msg") {
-      const payloadType = getFrom(payload, "type");
-      if (payloadType === "user_message" || payloadType === "agent_message") {
-        const content = getOr(payload, "message", "");
-        // Python: `if content:` -- any truthy value is kept and validated later.
-        if (pythonTruthy(content)) {
-          parsed.messages.push({
-            role: payloadType === "user_message" ? "user" : "assistant",
-            content,
-            createdAt: getFrom(entry, "timestamp"),
-          });
-        }
-      }
-    }
-  }
-  return parsed;
-}
-
-export interface CodexBackfillOptions {
-  jsonlPath: string;
-  interface?: string;
-}
-
-/**
- * Python `backfill_codex_session`: import one Codex session file as a closed
- * conversation titled through `_generate_title`. Returns 1 on import, else 0.
- *
- * Throws when a kept event has a non-string `message` or `timestamp`: Python's
- * `Message(...)` model rejects those inside the import transaction, so the
- * database is left untouched and the caller sees the failure.
- */
-export function backfillCodexSession(
-  db: WritableDatabase,
-  options: CodexBackfillOptions,
-  deps: LoggerDeps,
-): number {
-  const jsonlPath = expandHome(options.jsonlPath);
-  if (!existsSync(jsonlPath) || !statSync(jsonlPath).isFile()) return 0;
-
-  let parsed: CodexParse;
-  try {
-    parsed = parseCodexSessionFile(jsonlPath);
-  } catch {
-    return 0;
-  }
-  if (!parsed.sessionId || parsed.messages.length === 0) return 0;
-  if (db.prepare("SELECT 1 FROM runtime_sessions WHERE session_id = ?").get(parsed.sessionId)) {
-    return 0;
-  }
-
-  const messages: ImportedMessage[] = parsed.messages.map((message) => {
-    if (typeof message.content !== "string") {
-      throw new TypeError("Codex event message must be a string");
-    }
-    if (typeof message.createdAt !== "string") {
-      throw new TypeError("Codex event timestamp must be a string");
-    }
-    return { role: message.role, content: message.content, createdAt: message.createdAt };
-  });
-
-  const conversationId = importClosedConversation(
-    db,
-    parsed.sessionId,
-    {
-      interface: options.interface ?? "codex",
-      messages,
-      endedAt: (messages.at(-1) as ImportedMessage).createdAt,
-    },
-    deps,
-  );
-  if (conversationId === null) return 0;
-
-  const firstUser = messages.find((message) => message.role === "user");
-  if (firstUser) {
-    db.prepare("UPDATE conversations SET title = ? WHERE id = ?").run(
-      generateTitle(firstUser.content),
-      conversationId,
-    );
-  }
-  return 1;
 }

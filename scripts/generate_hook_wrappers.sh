@@ -12,7 +12,7 @@
 # The two forms (US3, D5):
 #
 #   tree  -- the wrapper lives inside the Mirror tree (`.claude/hooks`,
-#            `.gemini/hooks`, `scripts/codex-hooks`), in a checkout or under
+#            `.gemini/hooks`), in a checkout or under
 #            `npm root -g` alike, so it resolves the tree from ITS OWN FILE by
 #            a fixed depth and runs that tree's `bin/mirror-hook.js`.
 #   bin   -- the wrapper is the Claude plugin's, and its location is Claude
@@ -60,8 +60,6 @@ plugins/mirror-mind/hooks/log-user-prompt.sh|claude:user-prompt|bin|
 plugins/mirror-mind/hooks/log-session-end.sh|claude:session-end|bin|
 plugins/mirror-mind/hooks/mirror-inject.sh|claude:inject|bin|
 plugins/mirror-mind/hooks/log-assistant-reply.sh|claude:stop|bin|
-scripts/codex-hooks/session-start.sh|codex:session-start|tree|../..
-scripts/codex-hooks/session-end.sh|codex:session-end|tree|../..
 EOF
 )
 

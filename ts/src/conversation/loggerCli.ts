@@ -15,7 +15,6 @@
 // needs the dated zip backup from the runtime (CV22.DS7.TS1) and refuses, like
 // Python, when it is not available.
 
-import { backfillCodexSession } from "#conversation/backfill.ts";
 import { diagnoseJourneyAssociations, renderJourneyFindings } from "#conversation/journeyRepair.ts";
 import {
   discardCurrentConversation,
@@ -64,7 +63,6 @@ export const CONVERSATION_LOGGER_SUBCOMMANDS = [
   "session-maintenance",
   "diagnose-journeys",
   "repair-journeys",
-  "backfill-codex-session",
 ] as const;
 
 /** The subcommands whose Python path runs `end_conversation`'s LLM close tail. */
@@ -303,21 +301,6 @@ export async function runConversationLoggerCommand(
         lines.push("Dry run only. Re-run with --apply to repair after reviewing candidates.");
       }
       return ok(lines);
-    }
-
-    case "backfill-codex-session": {
-      if (args.length < 2) return ok([]);
-      const path = args[1] as string;
-      const count = backfillCodexSession(
-        db,
-        { jsonlPath: path, interface: interfaceOption(args, "codex") },
-        deps,
-      );
-      return ok([
-        count
-          ? `Backfilled 1 Codex session from ${path}`
-          : `No new Codex session backfilled from ${path}`,
-      ]);
     }
 
     default:

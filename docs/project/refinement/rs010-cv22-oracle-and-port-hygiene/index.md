@@ -83,3 +83,4 @@ evidence stays honest as both cores move.
 - [CR139 — A verdict that exits 1 is logged as a front-door `ERROR`, and `diagnose` counts it as a failure](cr139-a-verdict-that-exits-1-is-logged-as-a-front-door-error.md)
 - [CR140 — The install's own path is read from `URL.pathname`, so a Mirror under a path with a space or an accent is `unknown`, and the updater refuses it](cr140-the-install-s-own-path-is-read-from-url-pathname.md)
 - [CR141 — `init` takes any string as a user name, so `init ../escaped` creates a home outside `.mirror-minds`](cr141-init-takes-any-string-as-a-user-name.md)
+- [CR142 — The plugin smoke's negative probe fails on a machine with a global `mirror-hook`](cr142-the-plugin-smoke-s-negative-probe-fails-on-a-machine-with-a-global-mirror-hook.md)

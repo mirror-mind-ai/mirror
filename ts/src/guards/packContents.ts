@@ -28,7 +28,6 @@ export const ALLOWED_PREFIXES: readonly string[] = [
   ".claude/hooks/",
   ".gemini/hooks/",
   "plugins/mirror-mind/",
-  "scripts/codex-hooks/",
 ];
 
 export const ALLOWED_FILES: readonly string[] = [
@@ -37,7 +36,6 @@ export const ALLOWED_FILES: readonly string[] = [
   "LICENSE",
   "AGENTS.md",
   "ts/README.md",
-  "scripts/codex-mirror.sh",
   // CV21.DS4.US1: the Codex marketplace, read from the package root. The
   // `.agents/skills/` symlinks beside it are the checkout's and stay out.
   ".agents/plugins/marketplace.json",
@@ -61,8 +59,6 @@ export const REQUIRED_FILES: readonly string[] = [
   ".gemini/hooks/session-start.sh",
   "plugins/mirror-mind/hooks/hooks.json",
   ".agents/plugins/marketplace.json",
-  "scripts/codex-hooks/session-start.sh",
-  "scripts/codex-mirror.sh",
 ];
 
 /** Prefixes that must have at least one file: content the program reads at runtime. */

@@ -637,8 +637,8 @@ runtime: the Python engine was deleted in CV22.DS10.TS5. `runtime status`
 reports the Node version; the front door refuses to run on Node below 24 with
 an actionable message.
 
-**Supported today: POSIX (macOS, Linux).** The hook wrappers, the plugin's MCP
-entry (a `/bin/sh` command), and the Codex wrapper are POSIX shell, CI runs on Linux, and the
+**Supported today: POSIX (macOS, Linux).** The hook wrappers and the plugin's MCP
+entry (a `/bin/sh` command) are POSIX shell, CI runs on Linux, and the
 data-at-rest posture below is POSIX file modes. **There is no Windows product.**
 The PowerShell installer and the Windows Frame were retired by CV22.DS10.US3
 (decision D4): they installed and called the Python engine, and they still do at

@@ -373,10 +373,11 @@ const TS_CONVERSATION_LOGGER_SUBCOMMANDS = new Set([
   // CV21.DS2.US8: the Stop hook's reply, deterministic like user-prompt.
   "stop",
   "discard-current",
-  // US10 slice F, group 2 (need slice E): diagnose, dry-run repair, Codex import.
+  // US10 slice F, group 2 (need slice E): diagnose and dry-run repair. (The
+  // Codex import routed here too, until CV21.DS4.TS5 retired it with the
+  // v0.32.1 Codex wrapper.)
   "diagnose-journeys",
   "repair-journeys",
-  "backfill-codex-session",
 ]);
 
 // CV22.DS7.US10 slice F. These reach Python's `end_conversation`, which runs

@@ -262,19 +262,19 @@ $mirror-mind:mm:build <slug>
 $mirror-mind:mm:consult ...
 ```
 
-**If you wired Codex before this version** (a skills link, an `AGENTS.md` link,
-and the wrapper script), undo those three, or every prompt carries the skills and
-the Operating Instructions twice, and the wrapper's import at exit logs each turn
-a second time beside the plugin's hooks:
+**If you wired Codex before the plugin** (a skills link, an `AGENTS.md` link,
+and the wrapper script `scripts/codex-mirror.sh`, which the package no longer
+ships — removed by CV21.DS4.TS5), undo those three, or every prompt carries the
+skills and the Operating Instructions twice, and the old wrapper's import at
+exit logs each turn a second time beside the plugin's hooks:
 
 ```bash
 rm ~/.codex/skills/mirror-mind
 rm ~/.codex/AGENTS.md          # or remove the Mirror section you appended
 ```
 
-and start `codex` directly rather than through
-`<pkg>/scripts/codex-mirror.sh`, which still ships for now and retires with
-CV21.DS4.TS5. To take the plugin out again:
+and start `codex` directly rather than through the wrapper your older install
+carries. To take the plugin out again:
 `codex plugin remove mirror-mind@mirror-mind`, then
 `codex plugin marketplace remove mirror-mind`.
 

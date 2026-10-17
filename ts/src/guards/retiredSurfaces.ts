@@ -461,6 +461,42 @@ export const RETIRED: readonly RetiredSurface[] = [
     exemptions: {},
   },
   {
+    surfaceId: "codex-wrapper",
+    story: "CV21.DS4.TS5",
+    // The v0.32.1 Codex wiring: a wrapper script around the `codex` command,
+    // its two generated hooks, the `codex:*` hook family, and the JSONL
+    // backfill the wrapper drove at exit. Retired once US4 measured Codex at
+    // L4 through the shipped plugin, live: the plugin's Claude-family hooks
+    // log Codex turns as they happen, so nothing re-imports the transcript.
+    // The backfill's only caller was the wrapper's session-end hook, and the
+    // plugin's SessionEnd closes the session without reading it -- the
+    // condition DS4 set for keeping it was not met.
+    absentPaths: [
+      "scripts/codex-mirror.sh",
+      "scripts/codex-hooks/",
+      "ts/src/hooks/codex.ts",
+      "scripts/smoke_codex.sh",
+      "ts/test/fixtures/backfill/codex/",
+    ],
+    // File and route names, never vocabulary: "codex" is a living word (the
+    // plugin serves Codex; `runtimeDetection.ts` labels its payloads).
+    forbiddenPatterns: [
+      "codex-mirror\\.sh",
+      "codex-hooks",
+      "codex:session-(start|end)",
+      "backfill-codex-session",
+      "backfill_codex_session",
+      "backfillCodexSession",
+      "smoke_codex",
+    ],
+    exemptions: {
+      "docs/getting-started.md":
+        "the un-wiring guidance: a user who started codex through the retired wrapper needs its name to undo that wiring",
+      "ts/src/conversation/backfill.ts":
+        "the header names the retired importer to say where it went, beside the Pi importer that stays",
+    },
+  },
+  {
     // Not a deleted surface: a retired IDIOM. A URL's pathname is not a
     // filesystem path -- it percent-encodes `Código` and `John Doe`, and on
     // Windows spells `C:\...` as `/C:/...` -- and read as one it made every

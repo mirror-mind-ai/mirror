@@ -9,7 +9,6 @@ import type { WritableDatabase } from "#db/database.ts";
 
 export const BACKFILL_FIXTURES = join(import.meta.dirname, "..", "fixtures", "backfill");
 export const PI_SESSIONS_DIR = join(BACKFILL_FIXTURES, "pi-sessions");
-export const CODEX_DIR = join(BACKFILL_FIXTURES, "codex");
 export const TRANSCRIPT_PATH = join(BACKFILL_FIXTURES, "transcript", "session.jsonl");
 
 const GOLDEN_PATH = join(import.meta.dirname, "..", "goldens", "backfill.golden.json");
@@ -65,11 +64,8 @@ export interface BackfillGolden {
     absent_dir_count: number;
     state: BackfillState;
   };
-  codex: {
-    cases: { label: string; file: string; interface: string; count: number }[];
-    null_timestamp: { raises: boolean; error_type: string; rows_unchanged: boolean };
-    state: BackfillState;
-  };
+  // The golden's `codex` section is the retired Codex importer's frozen
+  // record (CV21.DS4.TS5); nothing reads it, so it is not typed here.
   transcript: { state: BackfillState; rerun_state: BackfillState };
   hook_session_end: { label: string; state: BackfillState }[];
 }

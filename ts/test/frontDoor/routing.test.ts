@@ -413,13 +413,12 @@ test("the subcommand is found after --mirror-home and --session-id, as Python's 
   );
 });
 
-test("diagnose-journeys, dry-run repair-journeys, and backfill-codex-session route to TS", () => {
+test("diagnose-journeys and dry-run repair-journeys route to TS", () => {
   for (const argv of [
     ["diagnose-journeys"],
     ["diagnose-journeys", "--limit", "5"],
     ["repair-journeys"],
     ["repair-journeys", "--limit", "5"],
-    ["backfill-codex-session", "/tmp/session.jsonl", "--interface", "codex-cli"],
   ]) {
     const decision = routeMemoryCommand(["conversation-logger", ...argv], {});
     assert.equal(decision.engine, "ts", argv.join(" "));

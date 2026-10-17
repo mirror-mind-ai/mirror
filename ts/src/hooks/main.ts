@@ -8,8 +8,10 @@
 //
 //     node ts/src/hooks/main.ts claude:inject
 //
-// Arguments after the name are the hook's own; only the Codex wrapper passes
-// any, since Codex has no hook payload to read (`codex.ts`).
+// Arguments after the name are the hook's own; every current hook reads its
+// payload from stdin and passes none. (The Codex wrapper's `codex:*` entries
+// were the exception, until CV21.DS4.TS5 retired them with the wrapper: the
+// plugin's Claude-family hooks are the Codex path now.)
 //
 // One entry rather than one file per hook because the generated wrappers then
 // differ only in the hook name and their depth, and `hooks.test.ts` asserts
@@ -34,7 +36,6 @@
 import { pathToFileURL } from "node:url";
 import { loadConfiguration, silenceExperimentalWarnings } from "#runtime/config.ts";
 import { claudeHook } from "./claude.ts";
-import { codexSessionEnd, codexSessionStart } from "./codex.ts";
 import {
   geminiLogAssistant,
   geminiLogUser,
@@ -44,7 +45,7 @@ import {
 import { readStdin } from "./payload.ts";
 import { noteHookFailure } from "./runtime.ts";
 
-async function dispatch(name: string, args: readonly string[]): Promise<number> {
+async function dispatch(name: string): Promise<number> {
   const [runtime, hook] = name.split(":");
 
   switch (runtime) {
@@ -60,17 +61,6 @@ async function dispatch(name: string, args: readonly string[]): Promise<number> 
           return geminiSessionEnd(readStdin());
         case "session-start":
           return geminiSessionStart();
-        default:
-          break;
-      }
-      break;
-    case "codex":
-      // Called by `scripts/codex-mirror.sh` through its generated wrappers.
-      switch (hook) {
-        case "session-start":
-          return codexSessionStart();
-        case "session-end":
-          return codexSessionEnd(args[0] ?? "", args[1] ?? "");
         default:
           break;
       }
@@ -94,7 +84,7 @@ export async function runAsEntry(rawArgv = process.argv.slice(2)): Promise<numbe
   loadConfiguration({ entryPath: import.meta.filename });
   const name = rawArgv[0] ?? "";
   try {
-    return await dispatch(name, rawArgv.slice(1));
+    return await dispatch(name);
   } catch (error) {
     // The last line of defense. A hook that throws must still not break the
     // turn, and must still leave a trace that it happened.

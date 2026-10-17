@@ -32,7 +32,6 @@ import { normalizeMaintenanceReport } from "../test/helpers/maintenanceReport.ts
 
 const TS_ROOT = resolve(dirname(new URL(import.meta.url).pathname), "..");
 const CLI = join(TS_ROOT, "src", "frontDoor", "cli.ts");
-const CODEX_FIXTURE = join(TS_ROOT, "test", "fixtures", "backfill", "codex", "valid.jsonl");
 const EMBEDDING_DIMENSIONS = 1536;
 
 // --- the disposable home and the replay transport -----------------------------
@@ -401,17 +400,9 @@ check(
   "session-end-pi deactivated the session",
 );
 
-// 7. Backfill a Codex session, then diagnose and dry-run repair.
-const codex = step(
-  "backfill-codex-session",
-  ["conversation-logger", "backfill-codex-session", CODEX_FIXTURE],
-  "ts",
-);
-check(
-  codex.stdout.trim() === `Backfilled 1 Codex session from ${CODEX_FIXTURE}`,
-  "backfill-codex-session reports the import",
-  codex.stdout,
-);
+// 7. Diagnose and dry-run repair. (This step also backfilled a Codex
+// session, until CV21.DS4.TS5 retired the importer with the v0.32.1
+// wrapper.)
 const diagnose = step("diagnose-journeys", ["conversation-logger", "diagnose-journeys"], "ts");
 check(
   diagnose.stdout.trim().split("\n")[0]?.startsWith("Repair candidates: "),

@@ -7,7 +7,7 @@
 // that cross the LLM close tail -- the replay providers and the maintenance
 // dependencies built on them.
 //
-// The providers are loaded lazily. `diagnose-journeys`, `backfill-codex-session`,
+// The providers are loaded lazily. `diagnose-journeys`
 // or `session-start --fast` must never fail because a replay fixture is not
 // configured, and `switch` or `session-end` must fail loudly (and fall back
 // to Python at the routing layer) when it is not: "unconfigured installs keep

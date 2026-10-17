@@ -245,14 +245,9 @@ mirror conversation-logger session-end-pi <session_id>
 
 **Codex** — through the plugin, Codex runs the Claude-family hooks as they are
 (CV21.DS12.TS2), prompts and replies included, with the deferred tail above
-(CV21.DS4.TS2). The wiring v0.32.1 shipped, a wrapper script that backfills the
-session transcript from JSONL and then calls `session-end-pi`, is the previous
-path, still shipped until CV21.DS4.TS5 removes it.
-
-```
-mirror conversation-logger backfill-codex-session <path>
-mirror conversation-logger session-end-pi <session_id>
-```
+(CV21.DS4.TS2). The wiring v0.32.1 shipped — a wrapper script that backfilled
+the session transcript from JSONL and then called `session-end-pi` — was
+removed by CV21.DS4.TS5, and its JSONL import command retired with it.
 
 A new runtime should use `session-end-pi` unless it can supply a transcript
 path, in which case `session-end` gives immediate extraction.
@@ -449,23 +444,26 @@ conflicting duplicate skills.
 
 | Event | Mechanism | Codex trigger |
 |-------|-----------|---------------|
-| Session start | `scripts/codex-mirror.sh` | Wrapper start |
-| User prompt | `scripts/codex-mirror.sh` | JSONL backfill at exit |
-| Assistant response | `scripts/codex-mirror.sh` | JSONL backfill at exit |
-| Session end + backup | `scripts/codex-mirror.sh` | Wrapper exit |
-| Mirror load | `AGENTS.md` + `$mm-mirror` skill | Explicit invocation |
+| Session start | plugin `SessionStart` hook | Session start |
+| User prompt | plugin `UserPromptSubmit` hooks | Each prompt |
+| Assistant response | plugin `Stop` hook | Each reply |
+| Session end + backup | plugin `SessionEnd` hook, with the deferred tail and the stale-orphan fallback close | Daemon reaps the idle thread |
+| Mirror load | `SessionStart` context + `$mm-mirror` skill | Explicit invocation |
 
-Codex hooks are not used by this integration (0.157 added them; a later story
-may adopt them). It uses a **wrapper script** (`scripts/codex-mirror.sh`)
-that handles the lifecycle around the `codex` command. For each step it calls
-one of two generated hook wrappers, `scripts/codex-hooks/session-start.sh` and
-`session-end.sh` (`codex:session-start`, `codex:session-end <transcript>
-<session id>`). So Codex gets the same Node resolution and the same `hooks.log`
-record as every other runtime. Context is supplied via a
-static `AGENTS.md` in the project root, and Mirror Mode is activated through the
-shared native skill surface at `.agents/skills/mm-*/SKILL.md` (symlinked from
-`.pi/skills/mm-*/`). Unlike Pi and Gemini CLI, Codex activates these skills with
-`$mm-*` syntax, for example `$mm-build mirror`.
+Codex installs the shipped plugin from the package's marketplace
+(`codex plugin marketplace add "<pkg>"`, then
+`codex plugin add mirror-mind@mirror-mind`; CV21.DS4.US1) and runs its
+Claude-family hooks as they are (CV21.DS12.TS2), measured live at L4
+(CV21.DS4.US4). Runtime detection reads Codex's `turn_id` from the hook
+payload and labels the session `codex`. On 0.163.0 sessions outlive the TUI
+and `SessionEnd` fires only when the daemon reaps the idle thread, so session
+maintenance's stale-orphan close (`MIRROR_STALE_ORPHAN_MINUTES`) is the
+fallback. The plugin's `SessionStart` hook delivers the Operating
+Instructions as a developer message, and Mirror Mode is activated through the
+plugin's skills, which Codex spells `$mm-*` — for example `$mm-build mirror`.
+(In a checkout, the shared surface at `.agents/skills/mm-*/SKILL.md` serves
+the same skills.) The wrapper-script wiring v0.32.1 shipped was removed by
+CV21.DS4.TS5.
 
 ### Node resolution for hook runtimes
 
@@ -495,7 +493,7 @@ a new failure.)
 The generator writes two wrapper forms (US3, D5), which differ only in how
 the entry is found and `hooks.test.ts` asserts that:
 
-- **tree** — `.claude/hooks/`, `.gemini/hooks/`, `scripts/codex-hooks/`: the
+- **tree** — `.claude/hooks/`, `.gemini/hooks/`: the
   wrapper resolves its tree from its own file (`$BASH_SOURCE`) by a fixed
   depth, never from the working directory, and runs that tree's
   `bin/mirror-hook.js`. The tree is a checkout or the installed package; the
@@ -532,7 +530,7 @@ silent, against the runtime itself from a scratch configuration directory.
 | Pi | 1 | `pi install "<pkg>"` — a local-path package, loaded in place (D6) | the extension appends `<pkg>/AGENTS.md` to the system prompt's context files when Pi did not load it from the cwd |
 | Claude Code | 1 | `ln -s "<pkg>/plugins/mirror-mind" ~/.claude/skills/mirror-mind` — a skills-directory plugin, loaded every session with its skills, hooks, and MCP server (`claude plugin list`, 2.1.283) | the plugin's `SessionStart` hook, as `additionalContext` |
 | Gemini CLI | 2 | `gemini skills link --consent "<pkg>/.pi/skills"` (links every skill into `~/.gemini/skills/`; a nested directory symlink is not discovered, 0.61.0), then the four hooks in `~/.gemini/settings.json` with absolute paths to `<pkg>/.gemini/hooks/*.sh` | the `SessionStart` hook, as `additionalContext` |
-| Codex | 2 | `codex plugin marketplace add "<pkg>"` (the package root carries `.agents/plugins/marketplace.json`, one local plugin), then `codex plugin add mirror-mind@mirror-mind`, which copies the plugin into Codex's cache at the plugin's version; Codex asks once to trust its hooks (0.162.1, CV21.DS12.TS2 static 5-7 and L1; CV21.DS4.US1). Before DS4.US1: a skills link, an `AGENTS.md` link, and `<pkg>/scripts/codex-mirror.sh` around each session, which still ship until DS4.TS5 | the plugin's `SessionStart` hook, delivered as a developer message (TS2 L4) |
+| Codex | 2 | `codex plugin marketplace add "<pkg>"` (the package root carries `.agents/plugins/marketplace.json`, one local plugin), then `codex plugin add mirror-mind@mirror-mind`, which copies the plugin into Codex's cache at the plugin's version; Codex asks once to trust its hooks (0.162.1, CV21.DS12.TS2 static 5-7 and L1; CV21.DS4.US1). The pre-plugin wiring (a skills link, an `AGENTS.md` link, and a wrapper script around each session) was removed by DS4.TS5 | the plugin's `SessionStart` hook, delivered as a developer message (TS2 L4) |
 
 Inside the checkout none of this applies: Pi discovers `.pi/` as project
 resources, `.claude/settings.json` and `.gemini/settings.json` register the
@@ -824,7 +822,7 @@ Standard smoke test structure:
 4. Inspect the isolated DB: verify `interface='<runtime>'` rows and message content
 5. Confirm production DB checksum unchanged after the test
 
-References: `scripts/smoke_gemini_cli.sh`, `scripts/smoke_codex.sh`
+References: `scripts/smoke_gemini_cli.sh`, `scripts/smoke_claude_plugin.sh`
 
 ---
 

@@ -117,13 +117,12 @@ test("providers load lazily, and once per runtime across both entry points", asy
 });
 
 test("deterministic subcommands never load a provider, configured or not", async () => {
-  const { runtime, loads, db, home } = fixture(CONFIGURED);
+  const { runtime, loads, db } = fixture(CONFIGURED);
   for (const argv of [
     ["status"],
     ["session-start", "--fast"],
     ["diagnose-journeys"],
     ["repair-journeys"],
-    ["backfill-codex-session", join(home, "absent.jsonl")],
     ["log-user", "s1", "hello"],
   ]) {
     const result = await runConversationLoggerCommand(db, argv, runtime);

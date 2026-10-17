@@ -264,27 +264,12 @@ if grep -qiE "warning|error" "$WORK/gemini.err"; then bad "the gemini wrappers w
   "$(rows "SELECT group_concat(c.interface || '|' || m.role, ',') FROM messages m JOIN conversations c ON c.id = m.conversation_id WHERE m.content IN ('Hello from the installed Gemini wrappers','Answered from the package') ORDER BY m.created_at")" \
   "gemini_cli|user,gemini_cli|assistant"
 
-say "10. the Codex wrapper, run from under npm root -g, around a stand-in codex"
-CODEX_SESSION="019d3b75-0462-7762-ac7c-4852a85ce725"
-cat > "$WORK/bin/codex" <<STUB
-#!/bin/sh
-dir="\$HOME/.codex/sessions/2026/10/06"
-mkdir -p "\$dir"
-cat > "\$dir/rollout-2026-10-06T10-00-00-$CODEX_SESSION.jsonl" <<EOF
-{"timestamp":"2026-10-06T10:00:00.000Z","type":"session_meta","payload":{"id":"$CODEX_SESSION","timestamp":"2026-10-06T10:00:00.000Z","cwd":"\$PWD"}}
-{"timestamp":"2026-10-06T10:00:01.000Z","type":"event_msg","payload":{"type":"user_message","message":"Hello from the installed Codex wrapper"}}
-{"timestamp":"2026-10-06T10:00:02.000Z","type":"event_msg","payload":{"type":"agent_message","message":"Codex answered from the package"}}
-EOF
-exit 0
-STUB
-chmod +x "$WORK/bin/codex"
-mkdir -p "$WORK/project"
-(cd "$WORK/project" && bash "$PKG/scripts/codex-mirror.sh" >/dev/null 2>"$WORK/codex.err") && ok "codex-mirror.sh exited with codex's 0" || bad "codex-mirror.sh failed: $(cat "$WORK/codex.err")"
-[ -n "$REAL_SQLITE" ] && check "both Codex turns reached the database as codex" \
-  "$(rows "SELECT group_concat(c.interface || '|' || m.role, ',') FROM messages m JOIN conversations c ON c.id = m.conversation_id WHERE m.content IN ('Hello from the installed Codex wrapper','Codex answered from the package') ORDER BY m.created_at")" \
-  "codex|user,codex|assistant"
+# Codex has no step of its own: it installs the plugin from the package as a
+# marketplace (checked above) and runs the same Claude-family hooks step 8
+# exercises. The v0.32.1 wrapper this smoke used to run around a stand-in
+# codex was retired by CV21.DS4.TS5.
 
-say "11. the MCP server, through the plugin's manifest entry and through mirror mcp"
+say "10. the MCP server, through the plugin's manifest entry and through mirror mcp"
 MCP_INIT='{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"npm-smoke","version":"0"}}}'
 LAUNCH_REPLY="$(printf '%s\n' "$MCP_INIT" | node --no-warnings "$ROOT_DIR/ts/smoke/mcp_entry.ts" "$CLAUDE_PLUGIN" 2>"$WORK/mcp-launch.err" | head -1)"
 contains "the installed plugin's manifest entry started the server" "$LAUNCH_REPLY" '"name": "mirror-mind"'
@@ -293,10 +278,10 @@ DIRECT_REPLY="$(printf '%s\n' "$MCP_INIT" | mirror mcp 2>"$WORK/mcp-direct.err" 
 contains "mirror mcp answers initialize" "$DIRECT_REPLY" '"name": "mirror-mind"'
 check "mirror mcp wrote nothing to stderr" "$(wc -c <"$WORK/mcp-direct.err" | tr -d ' ')" "0"
 
-say "12. no hook recorded a failure"
+say "11. no hook recorded a failure"
 if [ -f "$HOOKS_LOG" ]; then bad "hooks.log exists: $(cat "$HOOKS_LOG")"; else ok "no hooks.log in smokeuser's home"; fi
 
-say "13. nothing reached for an interpreter"
+say "12. nothing reached for an interpreter"
 if grep -rq "INTERPRETER SPAWNED" "$WORK"/*.err 2>/dev/null; then
   bad "an interpreter was spawned"; grep -rh "INTERPRETER SPAWNED" "$WORK"/*.err
 else
