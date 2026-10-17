@@ -76,6 +76,10 @@ in your machine, not a server.
 - [Node.js 24+](https://nodejs.org/) — runs Mirror Mind's core
   (`node --version` must be ≥ v24; POSIX/macOS/Linux supported). Nothing
   else to install: there is no Python and no build step
+  - **Windows:** a per-user installer brings Node, Git Bash, Pi and Mirror
+    in one pass, no administrator password -- download `MirrorMind-Setup`
+    from the latest [`installer/v*` release](https://github.com/mirror-mind-ai/mirror/releases?q=installer).
+    Nothing to install by hand; see [`installer/README.md`](installer/README.md)
 - [OpenRouter](https://openrouter.ai) account with at least $5 in credits —
   embeddings, memory extraction, and multi-LLM
 - An AI runtime subscription:
