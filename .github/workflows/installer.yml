@@ -61,6 +61,15 @@ jobs:
         shell: pwsh
         run: installer/build.ps1 -OutputDir "${{ runner.temp }}\out"
       # /VERYSILENT runs InitializeWizard (a PascalScript error aborts with a non-zero
+      # The bootstrap script on its own first, with its transcript printed live:
+      # if this passes and the silent .exe does not, the difference is Inno.
+      - name: install.ps1 -Phase bootstrap, directly
+        shell: pwsh
+        run: |
+          $dir = "$env:LOCALAPPDATA\Programs\MirrorMind"
+          powershell -NoProfile -ExecutionPolicy Bypass -File installer/install.ps1 -Phase bootstrap -InstallDir $dir -MirrorVersion (Get-Content installer/MIRROR_VERSION -Raw).Trim()
+          if ($LASTEXITCODE -ne 0) { throw "bootstrap exited $LASTEXITCODE" }
+          & "$dir\node\mirror.cmd" runtime version
       # exit) and then the bootstrap phase for real: Node, Git Bash, Pi and mirror-mind
       # downloaded and installed on this runner. The identity page is skipped in
       # silent mode, so configure does not run; that part is the Sandbox's.
@@ -69,7 +78,8 @@ jobs:
         run: |
           $exe = Get-ChildItem "${{ runner.temp }}\out\MirrorMind-Setup-*.exe" | Select-Object -First 1
           $log = "${{ runner.temp }}\setup.log"
-          $p = Start-Process $exe.FullName -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/LOG=$log" -PassThru -Wait
+          $p = Start-Process $exe.FullName -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/LOG=$log" -PassThru
+          if (-not $p.WaitForExit(600000)) { Get-Content $log | Select-Object -Last 30; $p.Kill(); throw "setup still running after 10 minutes" }
           Write-Host "setup exit code: $($p.ExitCode)"
           $boot = Get-ChildItem "$env:LOCALAPPDATA\Programs\MirrorMind\logs\install-detail-*.log" -ErrorAction SilentlyContinue | Select-Object -Last 1
           if ($boot) { Get-Content $boot | Select-Object -Last 25 } else { Get-Content $log | Select-Object -Last 15 }
