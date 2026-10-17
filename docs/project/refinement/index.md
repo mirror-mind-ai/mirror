@@ -9,7 +9,7 @@ If a linked document and this index disagree, this index wins.
 ## Current Focus
 
 - Refinement Story: RS001
-- Change Request: CR141
+- Change Request: none
 
 Selecting a focus is an explicit project decision. Reading this file never selects or
 executes work.
@@ -78,7 +78,7 @@ Open work is ordered intentionally. Terminal history follows open work.
 | 44 | [CR131](rs010-cv22-oracle-and-port-hygiene/cr131-runtime-diagnose-does-not-run-the-mcp-locator.md) | RS010 | `runtime diagnose` does not say what the plugin's MCP entry would find | captured | — | — |
 | 45 | [CR136](rs010-cv22-oracle-and-port-hygiene/cr136-the-release-environment-takes-a-dispatch-from-any-ref.md) | RS010 | The `release` environment takes a dispatch from any ref, so a branch's own copy of `publish.yml` can stage | captured | — | — |
 | 46 | [CR139](rs010-cv22-oracle-and-port-hygiene/cr139-a-verdict-that-exits-1-is-logged-as-a-front-door-error.md) | RS010 | A verdict that exits 1 is logged as a front-door `ERROR`, and `diagnose` counts it as a failure | captured | — | — |
-| 47 | [CR141](rs010-cv22-oracle-and-port-hygiene/cr141-init-takes-any-string-as-a-user-name.md) | RS010 | `init` takes any string as a user name, so `init ../escaped` creates a home outside `.mirror-minds` | in_progress | @viniciusteles | `main` |
+| — | [CR141](rs010-cv22-oracle-and-port-hygiene/cr141-init-takes-any-string-as-a-user-name.md) | RS010 | `init` takes any string as a user name, so `init ../escaped` creates a home outside `.mirror-minds` | done | @viniciusteles | `main` |
 | — | [CR140](rs010-cv22-oracle-and-port-hygiene/cr140-the-install-s-own-path-is-read-from-url-pathname.md) | RS010 | The install's own path is read from `URL.pathname`, so a Mirror under a path with a space or an accent is `unknown`, and the updater refuses it | done | @rodrigoimmaginario | [PR #42](https://github.com/mirror-mind-ai/mirror/pull/42) |
 | — | [CR138](rs010-cv22-oracle-and-port-hygiene/cr138-runtime-status-and-version-read-a-clone-s-repository-and-channel-from-the-cwd.md) | RS010 | `runtime status`, `version`, and `diagnose` read a clone's repository and channel from the cwd, so a healthy clone is `attention needed` outside its checkout | done | @viniciusteles | `main` |
 | — | [CR134](rs010-cv22-oracle-and-port-hygiene/cr134-release-notes-pending-reads-the-cwd-s-git-repository.md) | RS010 | `release-notes pending` reads the cwd's git repository, so it answers for whatever project the person is in | done | @viniciusteles | `main` |

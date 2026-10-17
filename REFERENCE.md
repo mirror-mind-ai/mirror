@@ -78,12 +78,13 @@ skill's own name; the `/mm:` column below is the checkout's form.
 
 ### Journey slugs and persona ids
 
-A new journey slug or persona id must be kebab-case: lowercase letters, digits,
-and single hyphens, up to 80 characters, such as `product-launch`. Agents put
-these keys into shell commands (`--journey <slug>`, `--persona <id>`), and a
-kebab-case key is one plain word that a shell cannot split, substitute, or read
-as an option. `identity set`, `identity edit`, and `seed` refuse any other new
-key, write nothing for it, and name one that would work:
+A new journey slug, persona id, or user name must be kebab-case: lowercase
+letters, digits, and single hyphens, up to 80 characters, such as
+`product-launch`. Agents put these keys into shell commands (`--journey <slug>`,
+`--persona <id>`, `MIRROR_USER=<user>`), and a kebab-case key is one plain word
+that a shell cannot split, substitute, or read as an option. `identity set`,
+`identity edit`, `seed`, and `init` refuse any other new key, write nothing for
+it, and name one that would work:
 
 ```text
 Error: no journey was created: 'My Trip' is not a journey slug. Use lowercase letters, digits, and single hyphens, up to 80 characters, for example 'my-trip'.

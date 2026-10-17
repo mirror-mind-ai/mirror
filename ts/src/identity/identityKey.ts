@@ -44,11 +44,27 @@ export function identityKeyBreaksGrammar(layer: string, key: string): boolean {
  */
 export function newIdentityKeyProblem(layer: string, key: string): string | null {
   const keyName = KEY_NAMES.get(layer);
-  if (keyName === undefined || isKebabSlug(key)) return null;
+  if (keyName === undefined) return null;
+  return keyProblem(layer, keyName, key);
+}
+
+/**
+ * Why `init` cannot take `user`, or null when it can (CR141). A user name is
+ * a key of the same kind: it becomes `~/.mirror-minds/<user>` and the value of
+ * `MIRROR_USER` in every wiring command `init` prints. `init ../escaped` once
+ * created `~/escaped`, outside the directory the product owns.
+ */
+export function newUserNameProblem(user: string): string | null {
+  return keyProblem("user home", "user name", user);
+}
+
+/** The one sentence every key refusal is, or null when `key` is a kebab-case slug. */
+function keyProblem(created: string, keyName: string, key: string): string | null {
+  if (isKebabSlug(key)) return null;
   const suggestion = kebabSlug(key);
   const example = suggestion ? `, for example ${pyRepr(suggestion)}` : "";
   return (
-    `no ${layer} was created: ${pyRepr(key)} is not a ${keyName}. ` +
+    `no ${created} was created: ${pyRepr(key)} is not a ${keyName}. ` +
     `Use lowercase letters, digits, and single hyphens, up to 80 characters${example}.`
   );
 }

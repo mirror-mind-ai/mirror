@@ -80,4 +80,12 @@ a/b          exit=0  created: .mirror-minds/a/b
 
 ## Outcome
 
-Pending.
+**Done 2026-10-17**, on `main`. `runInit` asks `newUserNameProblem` before anything is
+created; it and `newIdentityKeyProblem` are one sentence builder in
+`ts/src/identity/identityKey.ts`, so the three key kinds refuse the same way. The test
+in `ts/test/frontDoor/initCli.test.ts` drives `../escaped`, `My User`, `a/b`, and
+`Vinícius` through the real front door: exit 2, the sentence with its suggestion, and
+an empty `$HOME` afterwards. A name with a newline or `;touch PWNED` prints escaped and
+creates nothing; `ok-user` still creates its home. REFERENCE.md names `init` and
+`MIRROR_USER=<user>` beside the other keys. Not released on its own; it ships with the
+next patch.

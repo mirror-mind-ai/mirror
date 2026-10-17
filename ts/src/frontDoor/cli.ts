@@ -43,7 +43,7 @@ import { type Database, openDatabaseReadOnly, type WritableDatabase } from "#db/
 import { ensureDatabaseReady } from "#db/readyOnOpen.ts";
 import { assertSchemaState, SchemaStateError } from "#db/schemaState.ts";
 import { allDescriptors, descriptorsByLayer } from "#descriptor/descriptorRead.ts";
-import { newIdentityKeyProblem } from "#identity/identityKey.ts";
+import { newIdentityKeyProblem, newUserNameProblem } from "#identity/identityKey.ts";
 import { identityRowExists, listIdentityByLayer } from "#identity/identityRead.ts";
 import { listJourneysForListCommand } from "#identity/journeyListing.ts";
 import { listPersonas } from "#identity/personaListing.ts";
@@ -889,6 +889,14 @@ function runInit(argv: readonly string[], env: NodeJS.ProcessEnv = process.env):
   // user: `init --help` once created a home named `--help`.
   if (!user || user.startsWith("-")) {
     console.error("Usage: init <user>");
+    return 2;
+  }
+  // And any other word is a key: the home's directory name and the value of
+  // MIRROR_USER in the wiring commands printed below. CR104's rule for slugs
+  // and persona ids, asked before anything is created (CR141).
+  const problem = newUserNameProblem(user);
+  if (problem !== null) {
+    console.error(`Error: ${problem}`);
     return 2;
   }
   try {

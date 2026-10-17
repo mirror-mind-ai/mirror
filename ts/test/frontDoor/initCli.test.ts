@@ -3,6 +3,7 @@ import {
   existsSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   rmSync,
   statSync,
@@ -120,6 +121,42 @@ test("front door `init` does not take a flag for a user name", () => {
     assert.equal(existsSync(join(home, ".mirror-minds", "--help")), false);
   } finally {
     cleanup();
+  }
+});
+
+test("front door `init` takes a kebab-case key for a user name, and nothing else", () => {
+  // CR141: the name becomes `~/.mirror-minds/<user>` and the value of
+  // MIRROR_USER in every wiring command `init` prints, so it is a key of the
+  // kind CR104 constrained for slugs and persona ids. Before: `../escaped`
+  // created `~/escaped`, outside the directory the product owns; `My User`
+  // put a space into MIRROR_USER; `a/b` nested. The refusal is CR104's
+  // sentence -- consequence, rule, a key that would work -- and creates
+  // nothing.
+  const rows: Array<[user: string, suggestion: string]> = [
+    ["../escaped", "escaped"],
+    ["My User", "my-user"],
+    ["a/b", "a-b"],
+    ["Vinícius", "vinicius"],
+  ];
+  for (const [user, suggestion] of rows) {
+    const { home, cleanup } = fakeHome();
+    try {
+      const result = spawnFrontDoor(["init", user], { HOME: home, ...NO_USER });
+      assert.equal(result.status, 2, user);
+      assert.match(
+        result.stderr,
+        new RegExp(
+          `^Error: no user home was created: '.*' is not a user name\\. Use lowercase letters, digits, and single hyphens, up to 80 characters, for example '${suggestion}'\\.$`,
+          "m",
+        ),
+        user,
+      );
+      // Nothing under HOME but what the fake home came with: no `.mirror-minds`,
+      // no escaped directory beside it, no config file.
+      assert.deepEqual(readdirSync(home), [], user);
+    } finally {
+      cleanup();
+    }
   }
 });
 
