@@ -6,7 +6,8 @@ set -euo pipefail
 #
 # Proves, against a fully isolated database and a copy of the plugin placed
 # where Claude Code would place it (its own cache, nowhere near the tree):
-#   1. the plugin manifest passes `claude plugin validate` (when claude is present);
+#   1. the plugin manifest passes `claude plugin validate` and `grok plugin validate`
+#      (each when its binary is present; Grok must read the version and the MCP entry);
 #   2. the plugin lifecycle hooks find `mirror-hook` on the PATH and write to
 #      the DB -- the TS5 "hook window", closed by the bin-form wrappers (D5);
 #   3. the user-prompt hook logs interface='claude_code';
@@ -78,12 +79,23 @@ echo "Plugin copy : $PLUGIN_DIR"
 echo "Isolated DB : $DB_PATH"
 echo "node        -> $REAL_NODE"
 
-# --- 0. manifest validation (optional, when claude is installed) -----------
+# --- 0. manifest validation (optional, when claude / grok are installed) -----
 if command -v claude >/dev/null 2>&1; then
   claude plugin validate "$PLUGIN_DIR" >/dev/null || fail "claude plugin validate"
   echo "✓ claude plugin validate passed"
 else
   echo "• claude not found — skipping manifest validation"
+fi
+# CV21.DS10.US1: Grok reads the root plugin.json first and alone, so its
+# validator is the one that notices when the marker stops carrying the version
+# and the MCP entry (probe, grok 1.0.62: a name-only marker hid both).
+if command -v grok >/dev/null 2>&1; then
+  GROK_VALIDATE="$(grok plugin validate "$PLUGIN_DIR" 2>&1)" || fail "grok plugin validate: $GROK_VALIDATE"
+  printf '%s\n' "$GROK_VALIDATE" | grep -q "version:" || fail "grok plugin validate reads no version (the root plugin.json marker must carry it)"
+  printf '%s\n' "$GROK_VALIDATE" | grep -q "MCP servers" || fail "grok plugin validate lists no MCP servers (the root plugin.json marker must carry mcpServers)"
+  echo "✓ grok plugin validate passed ($(grok --version 2>/dev/null | head -1)): version and MCP servers read"
+else
+  echo "• grok not found — skipping Grok manifest validation"
 fi
 
 # --- from here on: only the scratch bin, and the shell's basics -------------

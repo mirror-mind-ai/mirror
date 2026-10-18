@@ -179,12 +179,29 @@ describe("the agy-native layer", () => {
     }
   });
 
-  test("the marker names the plugin and nothing Claude Code or Codex read", () => {
-    // Both resolve their manifest at .claude-plugin/plugin.json; the root
-    // marker exists for agy's native-plugin detection alone.
-    const marker = JSON.parse(agyPluginMarkerJson()) as Record<string, unknown>;
+  test("the marker carries the manifest's version and MCP entry, and no hooks (CV21.DS10.US1)", () => {
+    // Claude Code and Codex resolve their manifest at .claude-plugin/plugin.json.
+    // Grok reads the root marker FIRST and stops there (probe on grok 1.0.62,
+    // 2026-10-18): a marker with only a name hid the plugin's version and its
+    // MCP server from Grok in every install shape. So the marker carries both,
+    // from the one source the manifest uses; agy 1.4.2 ignores the field with a
+    // warning and stages the same tree. Hooks stay out: agy reads the root
+    // hooks.json beside it, and a `hooks` key would be a second declaration.
+    const version = readVersion(REPO_ROOT);
+    const manifest = buildManifest(version) as { version: string; mcpServers: unknown };
+    const marker = JSON.parse(agyPluginMarkerJson(version)) as Record<string, unknown>;
     assert.equal(marker.name, PLUGIN_NAME);
-    assert.ok(!("mcpServers" in marker) && !("version" in marker) && !("hooks" in marker));
+    assert.equal(marker.version, manifest.version);
+    assert.deepEqual(marker.mcpServers, manifest.mcpServers);
+    assert.ok(!("hooks" in marker));
+  });
+
+  test("the committed marker equals the generated one", () => {
+    // The guard (`--check`) holds every planned file; this pins the one file
+    // Grok reads so a hand edit cannot quietly drop what it carries.
+    const version = readVersion(REPO_ROOT);
+    const committed = readFileSync(join(REPO_ROOT, PLUGIN_DIR, "plugin.json"), "utf8");
+    assert.equal(committed, agyPluginMarkerJson(version));
   });
 
   test("the MCP map is DERIVED from the manifest's entry — one locator, every carrier", () => {
