@@ -32,12 +32,13 @@ import { pyRepr, sortByCodePoint } from "#util/pythonText.ts";
 import { configFilePath } from "./config.ts";
 import type { GitWorktreeEntry } from "./git.ts";
 import {
-  claudePluginLinkState,
   codexPluginCacheState,
+  grokPluginCopyState,
   installedPluginVersion,
+  pluginLinkState,
 } from "./pluginWiring.ts";
 import type { RuntimeStatusReport } from "./status.ts";
-import { CODEX_PLUGIN_ADD_COMMAND } from "./wiring.ts";
+import { CODEX_PLUGIN_ADD_COMMAND, grokPluginReinstallCommand } from "./wiring.ts";
 
 export interface DriftFinding {
   code: string;
@@ -504,16 +505,19 @@ export function diagnoseRuntime(
 }
 
 /**
- * The plugin wiring findings (CV21.DS4.TS6; the debt US1 carried). Codex
- * copies the plugin into a versioned cache, so an npm update leaves it
- * behind; Claude Code links it in place, so its failure mode is a dangling
- * link. Absence is not drift: no cache and no link fire nothing, so an
- * unwired machine stays green.
+ * The plugin wiring findings (CV21.DS4.TS6; the debt US1 carried; Grok in
+ * CV21.DS10.US1). Codex and Grok copy the plugin, so an npm update leaves
+ * the copy behind; Claude Code links it in place, so its failure mode is a
+ * dangling link, and Grok's rules link fails the same way. Grok adds one
+ * failure of its own: a respelt install path keys a SECOND copy, and Grok
+ * loads one of the two without saying which. Absence is not drift: no
+ * cache, no registry, and no link fire nothing, so an unwired machine stays
+ * green.
  *
  * The defaulting happens HERE, from the env the caller hands in — CODEX_HOME
- * else ~/.codex, and ~/.claude — never inside the readers, so every reader
- * test is hermetic on a maintainer's machine with real wiring
- * (CR123/128/137/142).
+ * else ~/.codex, GROK_HOME else ~/.grok, and ~/.claude — never inside the
+ * readers, so every reader test is hermetic on a maintainer's machine with
+ * real wiring (CR123/128/137/142).
  */
 export function pluginWiringFindings(
   installRoot: string | null,
@@ -539,7 +543,7 @@ export function pluginWiringFindings(
   }
 
   if (home) {
-    const link = claudePluginLinkState(join(home, ".claude"));
+    const link = pluginLinkState(join(home, ".claude", "skills", "mirror-mind"));
     if (link.state === "dangling") {
       findings.push({
         code: "claude_plugin_link_dangling",
@@ -548,6 +552,49 @@ export function pluginWiringFindings(
         detail: `the link points at ${link.target ?? "an unreadable target"}, which cannot be read`,
         recommendation:
           'relink it — `ln -s "<pkg>/plugins/mirror-mind" ~/.claude/skills/mirror-mind` — or remove it if Claude Code is no longer wired',
+        repair_route: "relink or remove",
+      });
+    }
+  }
+
+  const grokHome = env.GROK_HOME?.trim() || (home ? join(home, ".grok") : null);
+  if (grokHome && installedVersion && installRoot) {
+    const copy = grokPluginCopyState(grokHome, installedVersion);
+    const reinstall = grokPluginReinstallCommand(installRoot);
+    if (copy.copies.length > 1) {
+      findings.push({
+        code: "grok_plugin_copies_duplicated",
+        severity: "warning",
+        subject: copy.registryPath,
+        detail: `${copy.copies.length} copies of the plugin are installed (${copy.copies.map((c) => `${c.key} at ${c.version}`).join(", ")}); Grok loads one of them and does not say which`,
+        recommendation: `run \`grok plugin uninstall mirror-mind --confirm\` until \`grok plugin list\` shows none, then \`${reinstall}\` (a plugin installed from a differently spelt path is a second copy, not an update)`,
+        repair_route: reinstall,
+      });
+    }
+    if (copy.state === "behind") {
+      findings.push({
+        code: "grok_plugin_copy_behind",
+        severity: "warning",
+        subject:
+          copy.copies.length === 1
+            ? (copy.copies[0]?.path ?? copy.registryPath)
+            : copy.registryPath,
+        detail: `copied ${copy.newestCopied} < installed ${installedVersion}; Grok runs the copy it made at install`,
+        recommendation: `run \`${reinstall}\` to bring the copy level (\`grok plugin update\` leaves a local-path copy as it is, and an install over the same path is refused)`,
+        repair_route: reinstall,
+      });
+    }
+  }
+  if (grokHome) {
+    const rules = pluginLinkState(join(grokHome, "rules", "mirror-mind.md"));
+    if (rules.state === "dangling") {
+      findings.push({
+        code: "grok_rules_link_dangling",
+        severity: "warning",
+        subject: rules.linkPath,
+        detail: `the link points at ${rules.target ?? "an unreadable target"}, which cannot be read; Grok loads no Operating Instructions and says nothing`,
+        recommendation:
+          'relink it — `ln -s "<pkg>/AGENTS.md" ~/.grok/rules/mirror-mind.md` — or remove it if Grok Build is no longer wired',
         repair_route: "relink or remove",
       });
     }

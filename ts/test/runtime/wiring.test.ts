@@ -3,15 +3,20 @@
 // "One documented step per runtime" was proven for Pi and untested for the
 // rest (second panel pass, product-designer). Counted at plateau 3 against
 // each runtime's own docs and verified from a scratch config directory:
-// Pi 1, Claude Code 1, Codex 2, Antigravity 1 (Gemini CLI's 2 retired with
-// CV21.DS8.US1). Printing is not automating --
+// Pi 1, Claude Code 1, Codex 2, Antigravity 1, Grok Build 2 (Gemini CLI's 2
+// retired with CV21.DS8.US1). Printing is not automating --
 // the `runtime install <runtime>` non-goal stands -- but a person who just ran
 // `init` should not have to find a page to learn the next line.
 
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
-import { detectRuntimes, RUNTIME_WIRING, runtimeWiringLines } from "#runtime/wiring.ts";
+import {
+  detectRuntimes,
+  grokPluginReinstallCommand,
+  RUNTIME_WIRING,
+  runtimeWiringLines,
+} from "#runtime/wiring.ts";
 
 describe("detectRuntimes", () => {
   test("names the runtimes whose command is on the PATH, in a fixed order", () => {
@@ -43,15 +48,27 @@ describe("the wiring steps", () => {
     }
   });
 
-  test("the counts are the honest ones: Pi 1, Claude Code 1, Codex 2, Antigravity 1", () => {
+  test("the counts are the honest ones: Pi 1, Claude Code 1, Codex 2, Antigravity 1, Grok Build 2", () => {
     // No `gemini` key: the runtime is retired (CV21.DS8.US1), and a wiring
     // entry is what makes `init` know a runtime at all.
     assert.deepEqual(
       Object.fromEntries(
         Object.entries(RUNTIME_WIRING).map(([runtime, wiring]) => [runtime, wiring.steps.length]),
       ),
-      { pi: 1, claude: 1, codex: 2, antigravity: 1 },
+      { pi: 1, claude: 1, codex: 2, antigravity: 1, grok: 2 },
     );
+  });
+
+  test("the display order names every wired runtime once (CV21.DS10.US1)", () => {
+    // `Record<RuntimeName, …>` makes the compiler demand an entry; the order
+    // list is a second source of truth, and a runtime left out of it would be
+    // wired but never printed.
+    const present = new Set(Object.values(RUNTIME_WIRING).map((w) => `/bin/${w.command}`));
+    const detected = detectRuntimes({ PATH: "/bin" } as NodeJS.ProcessEnv, (path) =>
+      present.has(path),
+    );
+    assert.deepEqual([...detected].sort(), Object.keys(RUNTIME_WIRING).sort());
+    assert.equal(detected.at(-1), "grok");
   });
 
   test("Pi: a local-path package install (D6)", () => {
@@ -100,5 +117,47 @@ describe("the wiring steps", () => {
     assert.doesNotMatch(lines, /[Gg]emini|successor|replac/);
     // Injection and logging land with TS2/TS3; the wiring promises neither.
     assert.doesNotMatch(lines, /inject|logg/);
+  });
+
+  test("Grok Build: the trusted install, then the Operating Instructions as a home rule (CV21.DS10.US1)", () => {
+    // The probe on grok 1.0.62 (2026-10-18): `grok plugin install <plugin>
+    // --trust` copies the plugin under ~/.grok/installed-plugins/ and enables
+    // it in one step; a link in ~/.grok/plugins/ loads no skills without a
+    // hand-written config entry, and the Claude link alone gives skills with
+    // no hooks. A link under ~/.grok/rules/ is loaded as a global rule
+    // (~2,233 tokens by Grok's count), in every project; the plugin's
+    // SessionStart context, which carries the instructions on Claude Code
+    // and Codex, is ignored by Grok (DS12.TS4 L2).
+    const lines = runtimeWiringLines("grok", root).join("\n");
+    assert.match(
+      lines,
+      /1\. grok plugin install "\/prefix\/lib\/node_modules\/mirror-mind\/plugins\/mirror-mind" --trust/,
+    );
+    assert.match(
+      lines,
+      /2\. ln -s "\/prefix\/lib\/node_modules\/mirror-mind\/AGENTS\.md" ~\/\.grok\/rules\/mirror-mind\.md/,
+    );
+    // Consent lives in the printed line (security review, 2026-10-18): what
+    // --trust activates, and that Grok does not ask again.
+    assert.match(lines, /--trust activates the plugin's hooks and MCP server/);
+    assert.match(lines, /does not ask again/);
+    // And the cost of the rule, so a person can decline step 2 knowingly.
+    assert.match(lines, /every project/);
+    assert.match(lines, /tokens/);
+    // No marketplace, no config edit, no enable verb: none of them is the step.
+    assert.doesNotMatch(lines, /marketplace|config\.toml|plugin enable|~\/\.grok\/plugins/);
+  });
+
+  test("Grok's level-up is uninstall then install with the printed path (CV21.DS10.US1)", () => {
+    // The probe: `grok plugin update` is a no-op for a local source (it prints
+    // "local symlink, already live" over a real copy), a re-install over the
+    // same path is refused, and a differently spelt path installs a SECOND
+    // copy. One function, so `diagnose` and `update` print the path `init`
+    // printed (the CR071 lesson at the string level).
+    assert.equal(
+      grokPluginReinstallCommand(root),
+      'grok plugin uninstall mirror-mind --confirm && grok plugin install "/prefix/lib/node_modules/mirror-mind/plugins/mirror-mind" --trust',
+    );
+    assert.match(runtimeWiringLines("grok", root).join("\n"), /runtime diagnose/);
   });
 });

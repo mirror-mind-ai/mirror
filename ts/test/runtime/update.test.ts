@@ -705,3 +705,65 @@ test("a declined migration FAILS the update instead of passing it", () => {
   // database may not have.
   assert.match(render, /Restore the database from the backup/);
 });
+
+// CV21.DS10.US1: Grok copies the plugin too, keyed by the install path's
+// spelling, and `grok plugin update` leaves a local-path copy as it is. The
+// hint names the uninstall-then-install line with the path `init` printed.
+
+function grokHomeCopying(version: string): string {
+  const home = mkdtempSync(join(tmpdir(), "update-hint-grok-"));
+  hintRoots.push(home);
+  const copy = join(home, "installed-plugins", "mirror-mind-6453a858");
+  mkdirSync(join(copy, ".claude-plugin"), { recursive: true });
+  writeFileSync(join(copy, ".claude-plugin", "plugin.json"), JSON.stringify({ version }));
+  writeFileSync(
+    join(home, "installed-plugins", "registry.json"),
+    JSON.stringify({
+      version: 1,
+      repos: {
+        "mirror-mind-6453a858": {
+          kind: { type: "Local" },
+          path: copy,
+          plugins: { "mirror-mind": {} },
+        },
+      },
+    }),
+  );
+  return home;
+}
+
+test("a Grok copy behind the landed version earns the reinstall line with the install's own path", () => {
+  const root = installTreeAt("0.34.0");
+  const install: InstallKind = { kind: "package", root, name: "mirror-mind", version: "0.33.4" };
+  const ok = runUpdate(deps());
+  const hints = postUpdateHints(install, ok, {
+    PATH: "/usr/local/bin",
+    CODEX_HOME: installTreeAt("x"),
+    GROK_HOME: grokHomeCopying("0.33.4"),
+  });
+  assert.equal(hints.length, 1, JSON.stringify(hints));
+  assert.match(hints[0] ?? "", /Grok's copy .*\(0\.33\.4 < 0\.34\.0\)/);
+  assert.ok(
+    (hints[0] ?? "").includes(
+      `grok plugin uninstall mirror-mind --confirm && grok plugin install "${root}/plugins/mirror-mind" --trust`,
+    ),
+    hints[0],
+  );
+  // Current and absent: silence.
+  assert.deepEqual(
+    postUpdateHints(install, ok, {
+      PATH: "/x",
+      CODEX_HOME: installTreeAt("x"),
+      GROK_HOME: grokHomeCopying("0.34.0"),
+    }),
+    [],
+  );
+  assert.deepEqual(
+    postUpdateHints(install, ok, {
+      PATH: "/x",
+      CODEX_HOME: installTreeAt("x"),
+      GROK_HOME: installTreeAt("x"),
+    }),
+    [],
+  );
+});

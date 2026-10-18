@@ -3025,6 +3025,86 @@ the L4 row into the parity matrix with its version, binary, and date; TS5 retire
 wrapper, its gate met; TS6 carries the `runtime diagnose` notes. Codex's thirty minutes
 are Codex's to change, as its four-day move from 0.162.1 to 0.163.0 showed.
 
+### Grok Build installs Mirror as a trusted plugin copy, with the Operating Instructions as a home rule
+
+**Date:** 2026-10-18 · **Context:** [CV21.DS10.US1](roadmap/cv21-runtime-expansion-ii/cv21-ds10-grok-build-through-the-canonical-plugin/cv21-ds10-us1-grok-installs-mirror-in-the-steps-mirror-init-prints/index.md),
+the first story of [DS10](roadmap/cv21-runtime-expansion-ii/cv21-ds10-grok-build-through-the-canonical-plugin/index.md).
+Measured by the story's probe on grok 1.0.62 (1474f9cbdd91), binary
+`~/.grok/downloads/grok-1.0.62-macos-aarch64`, package 0.35.0, 2026-10-18, in a scratch
+`HOME`/`GROK_HOME` from an empty project, with no model call; DS12.TS4 had measured
+1.0.52 five days earlier.
+
+**The decision.** `mirror init` prints Grok Build's wiring as two steps:
+`grok plugin install "<pkg>/plugins/mirror-mind" --trust`, then
+`ln -s "<pkg>/AGENTS.md" ~/.grok/rules/mirror-mind.md`. The plugin's root `plugin.json`
+marker carries the manifest's `version` and `mcpServers`, generated from the same source
+as `.claude-plugin/plugin.json` and drift-guarded. `runtime diagnose` reads Grok's
+install registry and the rules link, and `runtime update` the registry, and both name
+the one level-up command, built from the installed package's path.
+
+**What the probe found.** Five shapes, read from `grok inspect --json`, `grok plugin
+list --json`, and `grok plugin details`:
+
+- The Claude Code link alone (`~/.claude/skills/mirror-mind`) gives Grok the 25 skills
+  from its Claude compatibility scan, with no hooks and no MCP server.
+- A link in `~/.grok/plugins/mirror-mind` is discovered (`provides.skills: 25`, hooks
+  registered) but loads no skill until `[plugins] enabled = ["mirror-mind"]` is written
+  into `~/.grok/config.toml` by hand; `grok plugin enable` serves the install registry
+  only and refuses it. With the entry, every part loads in place.
+- `grok plugin install <path> --trust` copies the plugin (39 files, no symlinks) to
+  `~/.grok/installed-plugins/mirror-mind-<hash of the source path string>/`, writes the
+  `enabled` entry itself, and leaves no prompt: skills, hooks, and — once the marker
+  carries it — the MCP server. From a path with a space, outside `$HOME`.
+- `grok plugin update mirror-mind` answers "local symlink, already live" and copies
+  nothing; an install over the same path string is refused as already installed; the
+  same path spelt differently (`/tmp` for `/private/tmp`) installs a second copy, and
+  Grok loads one of the two; `grok plugin uninstall mirror-mind --confirm` removes one
+  copy per call and leaves the `enabled` entry in `config.toml`.
+- With the Claude link and the install together, Grok lists each skill twice (50
+  entries, 25 names, sources `user` and `plugin`) and registers the hooks once.
+- `~/.grok/rules/mirror-mind.md → <pkg>/AGENTS.md` is loaded as a rule of scope
+  `global` in every project, ~2,233 tokens by Grok's count, as a link or a file; a
+  project `AGENTS.md` in an untrusted directory is not loaded.
+- **The root `plugin.json` marker DS7.US1 added on 2026-10-17 shadows
+  `.claude-plugin/plugin.json` on Grok.** With the name-only marker, `grok plugin
+  validate` listed "hooks" where 1.0.52 had listed "hooks, MCP servers", `plugin list`
+  reported `version: null`, and no shape offered the MCP server. Without the marker:
+  version and server. A `.grok-plugin/plugin.json` beside the marker is ignored; a
+  `.mcp.json` restores the server, not the version; the marker carrying `version` and
+  `mcpServers` restores both. agy 1.4.2 stages that marker byte-identical to today's
+  tree but for the marker itself, with one warning, `plugin.json: unknown field
+  "mcpServers" is ignored`.
+
+**Why the trusted copy.** The rule the plan stated: the in-place link if it loads
+skills, hooks, and MCP with no prompt; else the install. The link loads no skill without
+a config edit, and a config edit is a worse step than a link or an install. The copy's
+price — it goes stale, and Grok's own update verb does not refresh it — is paid by
+`diagnose` and `update` naming the uninstall-then-install line with the path `init`
+printed, since a respelt path is a second copy, not an update. The in-place shape stays
+recorded here for a user who prefers it.
+
+**Why the rule link.** Grok shows a SessionStart hook's `systemMessage` on screen only
+and ignores a prompt hook's `additionalContext` (DS12.TS4 L2/L3), so the plugin's
+delivery of the Operating Instructions on Claude Code and Codex does not reach Grok's
+model; a project `AGENTS.md` reaches it only inside a trusted checkout, which an
+installed package never is. A home-level rule is Grok's documented route, and the
+printed line says its scope and its cost so a person can decline it knowingly.
+
+**Why the marker carries the manifest.** Grok accepts a root `plugin.json` and the
+`.claude-plugin/` equivalent, and reads the root one first and alone. Of the three ways
+to give Grok the entry, the marker is the only file Grok reads that no other runtime's
+reading changes: Claude Code and Codex read `.claude-plugin/`, and agy ignores the
+field. A `.mcp.json` would be a third MCP declaration the Claude-shaped runtimes may
+also read, and dropping the marker breaks agy's native staging (DS7.US1).
+
+**Consequences.** A Claude Code user who wires Grok sees each skill twice in Grok's
+menu; Getting Started says so. The rule enters every Grok session on every project,
+about 2.2k tokens each. Whether Grok attaches the listed server to the model's session
+is DS10.TS2's; whether the model follows the rule, the hooks log as `grok_build`
+through this install, and the 1.5 s close holds are US3's, measured live. Grok's
+session-start plugin auto-update was not observable without a session and is US3's
+question too.
+
 ## Open Discussions
 
 ### Migration rehearsal — long-term status

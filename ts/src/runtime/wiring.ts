@@ -29,6 +29,18 @@
 //               the shipped wrapper.
 //   Antigravity `agy plugin install <plugin dir>` stages the plugin with its
 //               agy-native layer in one step (CV21.DS7.US1, agy 1.4.2).
+//   Grok Build  `grok plugin install <plugin dir> --trust` copies the plugin
+//               under `~/.grok/installed-plugins/` and enables it: its skills,
+//               the hooks, and the MCP server, with no prompt left to answer
+//               (CV21.DS10.US1, probed on grok 1.0.62). Then a link under
+//               `~/.grok/rules/` carries the Operating Instructions as a rule
+//               Grok loads in every project (~2.2k tokens by Grok's count):
+//               Grok shows a SessionStart hook's context on screen only and
+//               ignores a prompt hook's (DS12.TS4 L2/L3), so the plugin's
+//               session-start delivery of D13 does not reach its model. Two
+//               steps. The shapes not chosen -- the Claude link alone (skills,
+//               no hooks), a link in `~/.grok/plugins/` (loads nothing until
+//               a config entry is hand-written) -- are in decisions.md.
 //
 // Gemini CLI had an entry here (a skills link, then four hooks merged into
 // `~/.gemini/settings.json` by absolute path) until CV21.DS8.US1 retired the
@@ -37,7 +49,7 @@
 import { join } from "node:path";
 import { commandOnPath } from "#util/paths.ts";
 
-export type RuntimeName = "pi" | "claude" | "codex" | "antigravity";
+export type RuntimeName = "pi" | "claude" | "codex" | "antigravity" | "grok";
 
 /**
  * The one Codex level-up command (CV21.DS4.TS6). Codex 0.163.0 has no
@@ -47,6 +59,29 @@ export type RuntimeName = "pi" | "claude" | "codex" | "antigravity";
  * CR071 lesson at the string level).
  */
 export const CODEX_PLUGIN_ADD_COMMAND = "codex plugin add mirror-mind@mirror-mind";
+
+/** Where the plugin directory lives below an installed package. */
+export function pluginDirectory(root: string): string {
+  return join(root, "plugins/mirror-mind");
+}
+
+/**
+ * The one Grok level-up command (CV21.DS10.US1). Grok copies a local-path
+ * plugin and keys the copy by the path STRING: `grok plugin update` is a
+ * no-op for it (it answers "local symlink, already live" over a real copy,
+ * grok 1.0.62), an install over the same string is refused as already
+ * installed, and a differently spelt string installs a second copy beside
+ * the first. So the level-up is uninstall, then install with the path `init`
+ * printed -- a function of the root, so `diagnose` and `update` cannot spell
+ * it differently (the CR071 lesson at the string level).
+ */
+export function grokPluginReinstallCommand(root: string): string {
+  return `grok plugin uninstall mirror-mind --confirm && ${grokPluginInstallCommand(root)}`;
+}
+
+function grokPluginInstallCommand(root: string): string {
+  return `grok plugin install "${pluginDirectory(root)}" --trust`;
+}
 
 export interface RuntimeWiring {
   /** The runtime, as a person names it. */
@@ -68,7 +103,7 @@ export const RUNTIME_WIRING: Readonly<Record<RuntimeName, RuntimeWiring>> = {
     command: "claude",
     steps: [
       (root) => [
-        `ln -s "${join(root, "plugins/mirror-mind")}" ~/.claude/skills/mirror-mind`,
+        `ln -s "${pluginDirectory(root)}" ~/.claude/skills/mirror-mind`,
         "(the plugin loads every session: its skills, the hooks, and the MCP server)",
       ],
     ],
@@ -86,6 +121,29 @@ export const RUNTIME_WIRING: Readonly<Record<RuntimeName, RuntimeWiring>> = {
       (root) => [`agy plugin install "${root}/plugins/mirror-mind"`],
     ],
   },
+  grok: {
+    title: "Grok Build",
+    command: "grok",
+    steps: [
+      // CV21.DS10.US1, probed on grok 1.0.62: one command copies the plugin
+      // and enables it. Consent lives in the line: what --trust activates,
+      // and that Grok asks nothing afterwards (Codex's note says Codex asks
+      // once; Grok's must say it does not).
+      (root) => [
+        grokPluginInstallCommand(root),
+        "(--trust activates the plugin's hooks and MCP server, and Grok does not ask again;",
+        "Grok keeps a copy of the plugin, so after an update `mirror runtime diagnose`",
+        "names the command that brings it level)",
+      ],
+      // The Operating Instructions (D13) as a home-level rule. Grok loads
+      // every *.md under ~/.grok/rules/ in every project, link or file.
+      (root) => [
+        `ln -s "${join(root, "AGENTS.md")}" ~/.grok/rules/mirror-mind.md`,
+        "(the Operating Instructions, loaded as a rule in every Grok session, in",
+        "every project: about 2.2k tokens per session)",
+      ],
+    ],
+  },
   codex: {
     title: "Codex",
     command: "codex",
@@ -100,7 +158,7 @@ export const RUNTIME_WIRING: Readonly<Record<RuntimeName, RuntimeWiring>> = {
   },
 };
 
-const ORDER: readonly RuntimeName[] = ["pi", "claude", "codex", "antigravity"];
+const ORDER: readonly RuntimeName[] = ["pi", "claude", "codex", "antigravity", "grok"];
 
 /** The runtimes whose command is on the PATH, in display order. */
 export function detectRuntimes(

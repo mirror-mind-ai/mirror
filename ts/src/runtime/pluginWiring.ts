@@ -1,15 +1,20 @@
-// The plugin wiring readers (CV21.DS4.TS6).
+// The plugin wiring readers (CV21.DS4.TS6; Grok in CV21.DS10.US1).
 //
-// Two runtimes hold the plugin outside the install tree. Codex copies it into
-// a versioned cache (`$CODEX_HOME/plugins/cache/mirror-mind/mirror-mind/
+// Three runtimes hold the plugin outside the install tree. Codex copies it
+// into a versioned cache (`$CODEX_HOME/plugins/cache/mirror-mind/mirror-mind/
 // <version>`; CV21.DS4.US1), so an npm update changes the install but not
-// that copy — the one wiring that goes stale. Claude Code links the plugin in
-// place (`~/.claude/skills/mirror-mind`), so its failure mode is a dangling
-// link, not a stale copy.
+// that copy. Grok copies it too, under `$GROK_HOME/installed-plugins/<name>-
+// <hash of the source path string>/`, recorded in `installed-plugins/
+// registry.json` (grok 1.0.62); its copy carries the plugin's own
+// `.claude-plugin/plugin.json`, so the version reads the same way the install
+// tree's does. Claude Code links the plugin in place (`~/.claude/skills/
+// mirror-mind`), so its failure mode is a dangling link, not a stale copy —
+// and Grok's rules link (`~/.grok/rules/mirror-mind.md`) fails the same way.
 //
-// Both readers take their roots as ARGUMENTS, always. The defaulting —
-// `$CODEX_HOME` else `~/.codex`, and the Claude home — happens once, at the
-// diagnose entry, from the env the caller already carries, never in here.
+// Every reader takes its root as an ARGUMENT, always. The defaulting —
+// `$CODEX_HOME` else `~/.codex`, `$GROK_HOME` else `~/.grok`, and the Claude
+// home — happens once, at the diagnose entry, from the env the caller
+// already carries, never in here.
 // That is the CR123/128/137/142 lesson: a maintainer's machine has a real
 // ~/.codex and a real ~/.claude, and a reader that consults the environment
 // makes every fixture test machine-dependent exactly where maintainers work.
@@ -77,8 +82,8 @@ export function codexPluginCacheState(
   return { state, cachePath, newestCached: newest };
 }
 
-export interface ClaudeLinkState {
-  /** `healthy` means the target reads — including a plain directory copy. */
+export interface LinkState {
+  /** `healthy` means the target reads — including a plain directory or file copy. */
   state: "absent" | "healthy" | "dangling";
   linkPath: string;
   /** The link's own target when it is a symlink, else null. */
@@ -86,13 +91,13 @@ export interface ClaudeLinkState {
 }
 
 /**
- * Read the Claude Code wiring below `claudeHome`. Healthy means the target
- * reads; a link that resolves to *another* install tree is deliberately
- * healthy too (TS6's documented silence) — chasing where it points is a
- * one-line amendment here if that case ever bites.
+ * Read one wiring link: Claude Code's plugin link (`~/.claude/skills/
+ * mirror-mind`) or Grok's rules link (`~/.grok/rules/mirror-mind.md`).
+ * Healthy means the target reads; a link that resolves to *another* install
+ * tree is deliberately healthy too (TS6's documented silence) — chasing
+ * where it points is a one-line amendment here if that case ever bites.
  */
-export function claudePluginLinkState(claudeHome: string): ClaudeLinkState {
-  const linkPath = join(claudeHome, "skills", "mirror-mind");
+export function pluginLinkState(linkPath: string): LinkState {
   let isLink = false;
   try {
     isLink = lstatSync(linkPath).isSymbolicLink();
@@ -108,6 +113,79 @@ export function claudePluginLinkState(claudeHome: string): ClaudeLinkState {
   return { state: "healthy", linkPath, target };
 }
 
+/** Where Grok keeps its copies and their registry, below a Grok home. */
+export const GROK_INSTALLED_PLUGINS_SEGMENTS: readonly string[] = ["installed-plugins"];
+
+export interface GrokCopy {
+  /** The registry key: `<name>-<hash of the source path string>`. */
+  key: string;
+  path: string;
+  version: string;
+}
+
+export interface GrokCopyState {
+  /** `absent` covers no registry, no Mirror entry, and entries with no readable manifest. */
+  state: "absent" | "current" | "behind" | "ahead";
+  registryPath: string;
+  /** Every copy carrying the plugin, with its manifest version. */
+  copies: GrokCopy[];
+  /** The newest copy's version, by semver — never a string sort. */
+  newestCopied: string | null;
+}
+
+/**
+ * Read Grok's install registry below `grokHome`, read-only. The registry
+ * names each repo's `path` and the plugins it carries; a repo whose
+ * `plugins` include `mirror-mind` is a copy, and its version is the copy's
+ * own `.claude-plugin/plugin.json`, read by the same function the install
+ * tree uses. A registry that does not parse, or a copy with no manifest,
+ * claims nothing.
+ *
+ * The state is judged by the newest copy, as Codex's cache is. Two copies
+ * are a finding of their own at the diagnose entry: a respelt install path
+ * keys a second copy (probe, grok 1.0.62), and Grok loads one of them
+ * without saying which.
+ */
+export function grokPluginCopyState(grokHome: string, installedVersion: string): GrokCopyState {
+  const registryPath = join(grokHome, ...GROK_INSTALLED_PLUGINS_SEGMENTS, "registry.json");
+  const copies: GrokCopy[] = [];
+  let repos: Record<string, unknown>;
+  try {
+    const parsed: unknown = JSON.parse(readFileSync(registryPath, "utf8"));
+    const candidate =
+      typeof parsed === "object" && parsed !== null
+        ? (parsed as Record<string, unknown>).repos
+        : undefined;
+    if (typeof candidate !== "object" || candidate === null) {
+      return { state: "absent", registryPath, copies, newestCopied: null };
+    }
+    repos = candidate as Record<string, unknown>;
+  } catch {
+    return { state: "absent", registryPath, copies, newestCopied: null };
+  }
+  for (const [key, entry] of Object.entries(repos)) {
+    if (typeof entry !== "object" || entry === null) continue;
+    const repo = entry as Record<string, unknown>;
+    const plugins = repo.plugins;
+    if (typeof plugins !== "object" || plugins === null || !("mirror-mind" in plugins)) continue;
+    const path =
+      typeof repo.path === "string"
+        ? repo.path
+        : join(grokHome, ...GROK_INSTALLED_PLUGINS_SEGMENTS, key);
+    const version = pluginManifestVersion(join(path, ".claude-plugin", "plugin.json"));
+    if (version === null) continue;
+    copies.push({ key, path, version });
+  }
+  if (copies.length === 0) return { state: "absent", registryPath, copies, newestCopied: null };
+  let newest: string | null = null;
+  for (const copy of copies) {
+    if (newest === null || compareSemver(copy.version, newest) > 0) newest = copy.version;
+  }
+  const order = compareSemver(newest as string, installedVersion);
+  const state = order < 0 ? "behind" : order > 0 ? "ahead" : "current";
+  return { state, registryPath, copies, newestCopied: newest };
+}
+
 /**
  * The install tree's own plugin version, from the generated manifest.
  * `plugins/mirror-mind/.claude-plugin/plugin.json` is written by
@@ -118,11 +196,15 @@ export function claudePluginLinkState(claudeHome: string): ClaudeLinkState {
  * but the tree it reads has already landed the new one.
  */
 export function installedPluginVersion(installRoot: string): string | null {
+  return pluginManifestVersion(
+    join(installRoot, "plugins", "mirror-mind", ".claude-plugin", "plugin.json"),
+  );
+}
+
+/** The `version` of one plugin manifest on disk, or null when it does not read. */
+function pluginManifestVersion(manifestPath: string): string | null {
   try {
-    const raw = readFileSync(
-      join(installRoot, "plugins", "mirror-mind", ".claude-plugin", "plugin.json"),
-      "utf8",
-    );
+    const raw = readFileSync(manifestPath, "utf8");
     const parsed: unknown = JSON.parse(raw);
     const version =
       typeof parsed === "object" && parsed !== null

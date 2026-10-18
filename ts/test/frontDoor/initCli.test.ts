@@ -163,7 +163,7 @@ test("front door `init` takes a kebab-case key for a user name, and nothing else
 test("`init` ends with the wiring step for each runtime found on the PATH, and only those", () => {
   // US3 plateau 3: the person who just created a home is handed the next line
   // for the runtimes they actually have, not a page. A scratch bin holds
-  // stand-ins for two of the four; the other two must not be mentioned.
+  // stand-ins for two of the five; the other three must not be mentioned.
   const { home, cleanup } = fakeHome();
   try {
     const bin = join(home, "bin");
@@ -186,7 +186,32 @@ test("`init` ends with the wiring step for each runtime found on the PATH, and o
       result.stdout,
       /Codex:\n {2}1\. codex plugin marketplace add "\/.*"\n {2}2\. codex plugin add mirror-mind@mirror-mind/,
     );
-    assert.doesNotMatch(result.stdout, /Gemini CLI:|^Pi:/m);
+    assert.doesNotMatch(result.stdout, /Gemini CLI:|^Pi:|^Grok Build:|^Antigravity:/m);
+  } finally {
+    cleanup();
+  }
+});
+
+test("`init` with `grok` on the PATH prints the Grok Build block, two steps (CV21.DS10.US1)", () => {
+  // The probe on grok 1.0.62: the trusted install copies and enables the
+  // plugin in one command; a link under ~/.grok/rules/ carries the Operating
+  // Instructions, since Grok ignores the plugin's session-start context.
+  const { home, cleanup } = fakeHome();
+  try {
+    const bin = join(home, "bin");
+    mkdirSync(bin);
+    writeFileSync(join(bin, "grok"), "#!/bin/sh\nexit 0\n", { mode: 0o755 });
+    const result = spawnFrontDoor(["init", "probeuser"], {
+      HOME: home,
+      PATH: `${bin}:/usr/bin:/bin`,
+      ...NO_USER,
+    });
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(
+      result.stdout,
+      /Grok Build:\n {2}1\. grok plugin install "\/.*\/plugins\/mirror-mind" --trust\n {5}\(--trust activates[^\n]*\n[^\n]*\n[^\n]*\n {2}2\. ln -s "\/.*\/AGENTS\.md" ~\/\.grok\/rules\/mirror-mind\.md/,
+    );
+    assert.doesNotMatch(result.stdout, /Claude Code:|Codex:|Antigravity:|^Pi:/m);
   } finally {
     cleanup();
   }

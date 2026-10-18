@@ -29,7 +29,11 @@ import { spawnSync } from "node:child_process";
 import { join } from "node:path";
 import { verifyBackupArchive } from "#runtime/backup.ts";
 import type { InstallKind } from "#runtime/installKind.ts";
-import { codexPluginCacheState, installedPluginVersion } from "#runtime/pluginWiring.ts";
+import {
+  codexPluginCacheState,
+  grokPluginCopyState,
+  installedPluginVersion,
+} from "#runtime/pluginWiring.ts";
 import { cloneStrategy, defaultGitRunner, type GitRunner } from "#runtime/strategies/clone.ts";
 import { defaultNpmRunner, type NpmRunner, packageStrategy } from "#runtime/strategies/package.ts";
 import type { statusAllowsUpdatePreflight } from "#runtime/updateGate.ts";
@@ -39,7 +43,7 @@ import {
   type UpdateResult,
   type UpdateStage,
 } from "#runtime/updatePipeline.ts";
-import { CODEX_PLUGIN_ADD_COMMAND } from "#runtime/wiring.ts";
+import { CODEX_PLUGIN_ADD_COMMAND, grokPluginReinstallCommand } from "#runtime/wiring.ts";
 import { commandOnPath } from "#util/paths.ts";
 import { PROGRAM } from "#util/program.ts";
 import { shellWord } from "#util/shellWord.ts";
@@ -431,15 +435,25 @@ export function postUpdateHints(
         : null;
   const home = env.HOME?.trim() || null;
   const codexHome = env.CODEX_HOME?.trim() || (home ? join(home, ".codex") : null);
-  if (installRoot && codexHome) {
-    const landed = installedPluginVersion(installRoot);
-    if (landed) {
-      const cache = codexPluginCacheState(codexHome, landed);
-      if (cache.state === "behind") {
-        hints.push(
-          `Codex's cached plugin is behind the update (${cache.newestCached} < ${landed}): run \`${CODEX_PLUGIN_ADD_COMMAND}\` to bring it level.`,
-        );
-      }
+  const grokHome = env.GROK_HOME?.trim() || (home ? join(home, ".grok") : null);
+  const landed = installRoot ? installedPluginVersion(installRoot) : null;
+  if (installRoot && codexHome && landed) {
+    const cache = codexPluginCacheState(codexHome, landed);
+    if (cache.state === "behind") {
+      hints.push(
+        `Codex's cached plugin is behind the update (${cache.newestCached} < ${landed}): run \`${CODEX_PLUGIN_ADD_COMMAND}\` to bring it level.`,
+      );
+    }
+  }
+  // CV21.DS10.US1: Grok copies the plugin too, and its update verb leaves a
+  // local-path copy as it is; the level-up is uninstall, then install with
+  // the path init printed.
+  if (installRoot && grokHome && landed) {
+    const copy = grokPluginCopyState(grokHome, landed);
+    if (copy.state === "behind") {
+      hints.push(
+        `Grok's copy of the plugin is behind the update (${copy.newestCopied} < ${landed}): run \`${grokPluginReinstallCommand(installRoot)}\` to bring it level.`,
+      );
     }
   }
 
