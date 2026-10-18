@@ -18,7 +18,7 @@ runtimes:
   claude:
     command_name: ext:<id>
     skill_file: SKILL.md
-  # Add gemini / codex entries if the extension supports them.
+  # Add codex (and other runtime) entries if the extension supports them.
 
 # Declare capabilities that the extension exposes for Mirror Mode injection.
 # Remove the section entirely if the extension does not provide context.

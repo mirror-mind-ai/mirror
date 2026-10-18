@@ -60,8 +60,8 @@ This is not a chatbot with memory. This is a mirror — and yours.
 
 ## How It Works
 
-Local-first. SQLite. Four supported runtimes: Pi, Gemini CLI, Codex, Claude
-Code. One TypeScript core, run by Node.js. Jungian architecture: Self, Ego,
+Local-first. SQLite. Four supported runtimes: Pi, Claude Code, Codex,
+Antigravity. One TypeScript core, run by Node.js. Jungian architecture: Self, Ego,
 Personas, Shadow.
 Context-activated modes — Mirror, Builder, Explorer, and Soul. The identity lives
 in your machine, not a server.
@@ -79,9 +79,8 @@ in your machine, not a server.
 - [OpenRouter](https://openrouter.ai) account with at least $5 in credits —
   embeddings, memory extraction, and multi-LLM
 - An AI runtime subscription:
-  [Codex Plus](https://openai.com/codex/) (recommended),
-  [Claude Code Pro](https://code.claude.com/docs), or
-  [Gemini AI Pro](https://geminicli.com/)
+  [Codex Plus](https://openai.com/codex/) (recommended) or
+  [Claude Code Pro](https://code.claude.com/docs)
 - [Pi](https://github.com/earendil-works/pi/tree/main/packages/coding-agent)
   — recommended harness (multi-model, not locked to one provider)
 
@@ -111,7 +110,7 @@ this repository, turning a personal experiment into a reusable framework:
 
 - **English** — full migration from Portuguese across code, CLI, schema, identity, and docs
 - **Framework/user separation** — user identity and memory live privately under `~/.mirror/<user>/`, outside the repository
-- **Multi-runtime** — from Claude Code only to four runtimes: Pi, Gemini CLI, Codex, and Claude Code
+- **Multi-runtime** — from Claude Code only to Pi, Claude Code, Codex, and Antigravity
 - **Multi-user** — independent mirrors for multiple users on the same machine
 - **Multi-session** — concurrent sessions tracked safely in a database-backed session registry
 - **Intelligence depth** — hybrid semantic and lexical search, honest reinforcement, two-pass extraction, memory consolidation, and shadow cultivation

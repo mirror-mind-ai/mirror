@@ -13,7 +13,7 @@ surface and the question: "how is your day going today?"
 
 ## Usage
 
-Pi and Gemini CLI:
+Pi:
 
 ```text
 /mm-soul [journey-slug]

@@ -18,12 +18,13 @@ you choose. The harness determines which subscription you need.
 |---|---|---|---|
 | [Codex Plus](https://openai.com/codex/) | Codex + Pi | ✅ Full | ✅ Best path |
 | [Claude Code Pro](https://code.claude.com/docs) | Claude Code + Pi | ⚠️ API cost | If you already have it |
-| [Gemini AI Pro](https://geminicli.com/) | Gemini CLI | ❌ | Only if already subscribed |
 
-**If you don't have any of these yet, start with Codex Plus.** It fully unlocks
-Pi (the preferred harness) at no extra cost beyond the subscription. Claude Code
-Pro technically allows Pi but charges Anthropic API rates when used through Pi.
-Gemini AI Pro only unlocks the Gemini CLI harness.
+These are the subscriptions Mirror's authors have used. **If you don't have
+either yet, start with Codex Plus.** It fully unlocks Pi (the preferred
+harness) at no extra cost beyond the subscription. Claude Code Pro technically
+allows Pi but charges Anthropic API rates when used through Pi. Antigravity is
+Google's harness and comes with its own access; Mirror needs only the `agy`
+command on your PATH.
 
 ### OpenRouter — always required
 
@@ -65,7 +66,7 @@ If you are not using Pi as your primary harness:
 
 - [Codex](https://github.com/openai/codex)
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code)
-- [Gemini CLI](https://github.com/google-gemini/gemini-cli)
+- [Antigravity](https://github.com/google-antigravity/antigravity-cli)
 
 ---
 
@@ -176,14 +177,13 @@ self-knowledge, and intentional change.
 ## 6. Wire Your Runtime
 
 One documented step per runtime wires it to the installed package — two for
-Gemini CLI and Codex. `mirror init` printed these for the runtimes it found,
+Codex. `mirror init` printed these for the runtimes it found,
 with `<pkg>` already filled in; `<pkg>` is `$(npm root -g)/mirror-mind`.
 
 | Runtime | Step |
 |---|---|
 | **Pi** | `pi install "<pkg>"` — Pi loads the package in place, so `npm install -g` upgrades it too |
 | **Claude Code** | `ln -s "<pkg>/plugins/mirror-mind" ~/.claude/skills/mirror-mind` — the plugin loads every session: its skills, its hooks, and the MCP server |
-| **Gemini CLI** | 1. `gemini skills link --consent "<pkg>/.pi/skills"` 2. merge the four hooks `init` printed into `~/.gemini/settings.json` |
 | **Codex** | 1. `codex plugin marketplace add "<pkg>"` 2. `codex plugin add mirror-mind@mirror-mind` — the package is a marketplace with one plugin, the same one Claude Code loads; at the next session Codex asks once to trust its hooks, and from then on the plugin loads every session: its skills, its hooks, and the MCP server |
 | **Antigravity** | `agy plugin install "<pkg>/plugins/mirror-mind"` — one command stages the 25 skills and the plugin's agy-native layer (its rules, hooks file, and MCP entry): the skills, the Operating Instructions as rules, Mirror Mode context injected once per user turn, and each turn logged as `antigravity` from the transcript (CV21.DS7). agy has no session-end signal, so a conversation closes when your next session starts, like Codex's |
 
@@ -205,8 +205,8 @@ mirror seed
 This loads the identity YAML files from your user home into the database. The
 mirror reads from the database at runtime; the YAMLs are the seed source.
 
-If you are already inside a runtime: `/mm-seed` in Pi and Gemini CLI,
-`$mirror-mind:mm:seed` in Codex, `/mirror-mind:mm:seed` in Claude Code.
+If you are already inside a runtime: `/mm-seed` in Pi, `$mirror-mind:mm:seed`
+in Codex, `/mirror-mind:mm:seed` in Claude Code and Antigravity.
 
 ---
 
@@ -236,15 +236,6 @@ If you used Pi before installing Mirror, your earlier sessions stay where they a
 Mirror remembers what happens from the moment your home exists, and imports no Pi
 conversation that ended before it.
 
-### Gemini CLI
-
-```bash
-gemini
-```
-
-The skills you linked are discovered automatically. Mirror Mode context is
-injected per turn by the hooks you registered — no explicit invocation needed.
-Use the same `/mm-*` commands as Pi.
 
 ### Codex
 
@@ -297,6 +288,26 @@ A plugin's skills carry the plugin's name. Type `/mm` and the menu lists them:
 project resources, the same commands are `/mm:mirror`, `/mm:journeys`, and
 so on.)
 
+### Antigravity
+
+```bash
+agy
+```
+
+The plugin you installed loads with the session: its skills carry the plugin's
+name, as in Claude Code —
+
+```text
+/mirror-mind:mm:mirror
+/mirror-mind:mm:journeys
+/mirror-mind:mm:journey <slug>
+```
+
+— the Operating Instructions arrive as the plugin's rules, and Mirror Mode
+context is injected once per turn without an explicit invocation (measured on
+agy 1.4.2, CV21.DS7.US4). Each turn is logged as `antigravity`; agy has no
+session-end signal, so the conversation closes when your next session starts.
+
 ### How the mirror reaches each runtime
 
 Every session needs two things from the package: the skills, which the wiring
@@ -304,9 +315,9 @@ step above provides, and Mirror's **Operating Instructions** — the four modes,
 the persona signature, the Builder boundary — without which a session answers
 `/mm-mirror` but does not behave as a mirror. The instructions ship in the
 package as `AGENTS.md`, and each runtime receives them its own way: Pi through
-the extension, Claude Code, Codex, and Gemini CLI through their session-start
-hook (Codex takes the plugin's as a developer message). None of this needs a
-step beyond the wiring above.
+the extension, Claude Code and Codex through the plugin's session-start hook
+(Codex as a developer message), Antigravity as the plugin's rules. None of
+this needs a step beyond the wiring above.
 
 **If a runtime is launched from your desktop rather than a terminal**, it may not
 inherit the `PATH` that holds `node` and `mirror`, and its hooks will skip
@@ -345,7 +356,7 @@ What to check:
 - 12 personas appear in `mirror list personas --verbose`
 - `personal-growth` appears in `mirror list journeys`
 - persona routing responds sensibly to `mirror detect-persona "..."`
-- your chosen runtime (Pi, Gemini CLI, Codex, or Claude Code) answers `/mm-journeys`
+- your chosen runtime (Pi, Claude Code, Codex, or Antigravity) answers `/mm-journeys`
   from the installed package, and `mirror runtime status` reports
   `Install: package (mirror-mind@<version>)`
 

@@ -5,7 +5,7 @@
 Guidelines for architecture, testing, privacy, data, model-in-the-loop
 behavior, release, and process. These principles apply to all work on this
 codebase — the TypeScript core ([`ts/`](../../ts/README.md)) and every runtime
-surface (Pi, Claude Code, Gemini CLI, Codex) that calls into it.
+surface (Pi, Claude Code, Codex, Antigravity) that calls into it.
 
 Until CV22.DS10.TS5 there were two cores: the Python one
 ([`src/memory/`](https://github.com/mirror-mind-ai/mirror/tree/cv22-last-python-bearing/src/memory),
@@ -577,7 +577,7 @@ core ([`tests.yml`](../../.github/workflows/tests.yml): `tsc`, Biome,
 `node:test` twice — once with the interpreters shadowed — the repository
 guards, the custody proofs, and the end-to-end smokes). It gates **none** of
 the `mm-*`
-skill behavior across Pi, Claude Code, Gemini CLI, and Codex — that
+skill behavior across Pi, Claude Code, Codex, and Antigravity — that
 confidence is manual and review-only today, not automated parity across four
 runtimes.
 

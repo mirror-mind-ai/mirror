@@ -40,7 +40,7 @@ runtimes:
   claude:
     command_name: ext:<id>          # must start with "ext:"
     skill_file: SKILL.md
-  # gemini, codex, etc. optional
+  # codex etc. optional
 
 # Optional: capabilities for Mirror Mode integration
 mirror_context_providers:

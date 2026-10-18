@@ -580,21 +580,27 @@ describe("the live gemini-cli row (CV21.DS8.US1)", () => {
     );
   });
 
-  test("fails on a file that still names the smoke, the wiring helper, or the hook module", () => {
+  test("fails on a file that still names the smoke, the wiring helper, the hook module, the wrappers, a route, or the skills link", () => {
     const root = gitRepo({
       ".github/workflows/tests.yml": "      - run: bash scripts/smoke_gemini_cli.sh\n",
       "ts/src/x.ts": 'import { geminiLogUser } from "./hooks/gemini.ts";\n',
       "ts/src/y.ts": "const lines = geminiHooksSettings(root);\n",
       "docs/process/worklog.md": "smoke_gemini_cli.sh caught F11.\n",
-      // US2's territory, deliberately not this row's: a doc that still names
-      // the runtime, its hook routes, or its skills link passes US1's row.
-      "docs/living.md": "Gemini CLI: `gemini skills link`, then the hooks in `.gemini/hooks`.\n",
+      // Doc-facing names, forbidden since US2 cleared the runtime-facing docs.
+      "docs/wiring.md": "Gemini CLI: `gemini skills link`, then the hooks in `.gemini/hooks`.\n",
+      "docs/spec.md": "| Session start | `gemini:session-start` | `SessionStart` |\n",
+      // "gemini" the word is not residue: the runtime's label on logged history,
+      // Antigravity's home and its config, the file a cutoff tells a user to edit.
+      "docs/living.md":
+        "Conversations logged as `gemini_cli` stay readable. Antigravity stages plugins under `~/.gemini/config/plugins/`; remove the four `mirror-*` entries from `~/.gemini/settings.json`.\n",
     });
     const problems = checkResidue(row, trackedFiles(root), root);
     assert.deepEqual(
       problems.map((problem) => problem.message.split(" mentions")[0]?.trim()),
       [
         "gemini-cli: .github/workflows/tests.yml:1",
+        "gemini-cli: docs/spec.md:1",
+        "gemini-cli: docs/wiring.md:1",
         "gemini-cli: ts/src/x.ts:1",
         "gemini-cli: ts/src/y.ts:1",
       ],

@@ -1,12 +1,12 @@
 ---
 name: "mm-help"
-description: Shows available Mirror Mind commands on Pi and Gemini CLI
+description: Shows available Mirror Mind commands on Pi
 user-invocable: true
 ---
 
 # Help
 
-Show the user the available commands (same on Pi and Gemini CLI):
+Show the user the available commands:
 
 ## Operating Modes
 

@@ -10,7 +10,7 @@ Applies to Builder Mode sessions on this repository.
 
 Mirror Mind is a local-first memory and identity framework for agentic AI
 runtimes. One TypeScript core (`ts/`, run directly by Node.js 24+), multiple
-runtime harnesses (Pi, Gemini CLI, Codex, Claude Code), SQLite database, Jungian
+runtime harnesses (Pi, Claude Code, Codex, Antigravity), SQLite database, Jungian
 identity architecture.
 
 **Live state (version and roadmap status) is not duplicated here** — it

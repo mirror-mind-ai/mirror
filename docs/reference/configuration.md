@@ -234,7 +234,7 @@ See [MEMORY_RECEPTION](#memory_reception).
 
 **What it is:** `MIRROR_NODE`, the path of the `node` binary the runtime hook wrappers should run.
 
-**Used by:** every hook wrapper under `.claude/hooks/`, `.gemini/hooks/`, and `plugins/mirror-mind/hooks/`.
+**Used by:** every hook wrapper under `.claude/hooks/`, `plugins/mirror-mind/hooks/`, and `plugins/mirror-mind/agy/`.
 
 **How to change it:** set `MIRROR_NODE=/path/to/node` in the environment the runtime is launched with. Without it a wrapper tries `command -v node`, then the nvm `current` symlink, `/opt/homebrew/bin/node`, and `/usr/local/bin/node`.
 

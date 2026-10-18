@@ -2,7 +2,7 @@
 
 # CV21.DS8.US2 — Every runtime-facing doc names four runtimes, Antigravity as the successor
 
-**Status:** 🟡 Planned
+**Status:** ✅ Done — 2026-10-18
 **Type:** User Story
 
 ---
@@ -87,6 +87,19 @@ Then it is unchanged
   `gemini` family row in `mm-help`, the extraction model in the dev guide.
 - Antigravity's own docs: DS7 wrote them; US2 only removes the runtime beside
   them.
+
+## Done (2026-10-18)
+
+Twenty files swept, guard first: the widened `gemini-cli` row went red on the
+five documents the plan predicted and is clean after. The guarded copies came
+from their sources through `buildClaudePlugin.ts`; the release tripwire passes.
+Decided at Plan review: the subscription table drops the Gemini AI Pro row and
+invents no Antigravity row; the README bullet and AGENTS.md say the current
+truth plainly; the docs-index status line is deleted rather than maintained.
+Two things outside the inventory: a CV8 history link to the deleted smoke (US1's
+consequence) became inline code; the plugin's byte-copy of AGENTS.md carries a
+root-relative `REFERENCE.md` link that predates DS8, paid in the commit after
+this one. Navigator validation accepted on the five observations.
 
 ## Validation
 

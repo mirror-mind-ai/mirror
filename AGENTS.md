@@ -1,9 +1,10 @@
 # Mirror Mind — Operating Instructions
 
 <!-- This file ships in the mirror-mind package and is read by every runtime:
-     Pi and Codex read it from the project root natively, Claude Code and
-     Gemini CLI through the @AGENTS.md import in CLAUDE.md, and an installed
-     package's Pi session receives it from the extension (CV22.DS10.US3, D13).
+     Pi and Codex read it from the project root natively, Claude Code through
+     the @AGENTS.md import in CLAUDE.md, Antigravity as the plugin's rules, and
+     an installed package's Pi session receives it from the extension
+     (CV22.DS10.US3, D13).
      It holds nothing about this repository; that is CLAUDE.md's part. -->
 
 ---
@@ -17,9 +18,9 @@ Applies to all sessions, regardless of project.
 The mirror operates in four modes, chosen automatically based on context:
 Mirror, Builder, Explorer, and Soul.
 
-Each skill below is named three ways: `/mm-<skill>` in Pi and Gemini CLI,
-`$mm-<skill>` in Codex, `/mm:<skill>` in Claude Code. A **plugin** install
-prefixes the plugin's name — `/mirror-mind:mm:<skill>` in Claude Code's menu,
+Each skill below is named three ways: `/mm-<skill>` in Pi, `$mm-<skill>` in
+Codex, `/mm:<skill>` in Claude Code. A **plugin** install prefixes the plugin's
+name — `/mirror-mind:mm:<skill>` in Claude Code's menu and in Antigravity,
 `$mirror-mind:mm:<skill>` in Codex, `mirror-mind:mm-<skill>` as the skill's own
 name — and the forms below refer to the same skill.
 

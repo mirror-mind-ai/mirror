@@ -179,8 +179,8 @@ display rules are:
 |---------|--------|-------|
 | Pi | `ctx.ui.notify(welcome, "info")` once if non-empty | Status bar calls `mirror welcome --status-line` and shows `◇ <user> · <indicator>` |
 | Codex | `printf` to terminal once if non-empty | Same string |
-| Gemini CLI | `printf` to terminal once if non-empty | Same string |
 | Claude Code | `/mm:welcome` skill prints it on demand | No automatic injection |
+| Antigravity | `/mirror-mind:mm:welcome` skill prints it on demand | No automatic injection; the agy hooks carry no welcome |
 
 Pi must not also notify the session-start summary string (logging status,
 extraction counts) — that information stays in the footer status. The welcome
@@ -190,7 +190,7 @@ is the only popup.
 
 ## Skills
 
-`/mm-welcome` (Pi, Gemini), `$mm-welcome` (Codex), `/mm:welcome` (Claude Code)
+`/mm-welcome` (Pi), `$mm-welcome` (Codex), `/mm:welcome` (Claude Code), `/mirror-mind:mm:welcome` (Antigravity)
 all invoke the same command. Useful when:
 
 - `quietStartup: true` is on and the user wants to see the welcome

@@ -529,11 +529,20 @@ export const RETIRED: readonly RetiredSurface[] = [
     absentPaths: [".gemini/", "ts/src/hooks/gemini.ts", "scripts/smoke_gemini_cli.sh"],
     // File and route names, never vocabulary: "gemini" is a living word (the
     // extraction and consult models, Antigravity's own `~/.gemini/` home, the
-    // `gemini_cli` label on conversations already logged). The row is split by
-    // story: US1 carries the names only code and CI used; the doc-facing ones
-    // (`.gemini/hooks`, `gemini:session-start`, `gemini skills link`) join when
-    // CV21.DS8.US2 clears the runtime-facing docs, so no exemption is staged.
-    forbiddenPatterns: ["smoke_gemini_cli", "geminiHooksSettings", "hooks/gemini\\.ts"],
+    // `gemini_cli` label on conversations already logged). The row landed in
+    // two steps: US1 carried the names only code and CI used, and
+    // CV21.DS8.US2 added the doc-facing ones when it cleared the runtime-facing
+    // docs, so no exemption was ever staged. Not `.gemini/settings.json` and
+    // not `~/.gemini`: that directory is Antigravity's home too, and the
+    // cutoff note names the file a Gemini CLI user edits.
+    forbiddenPatterns: [
+      "smoke_gemini_cli",
+      "geminiHooksSettings",
+      "hooks/gemini\\.ts",
+      "\\.gemini/hooks",
+      "gemini:(session-start|session-end|log-user|log-assistant)",
+      "gemini skills link",
+    ],
     exemptions: {},
   },
 ];

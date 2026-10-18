@@ -85,7 +85,7 @@ src/
   index.ts          # package entry point
   frontDoor/cli.ts  # the command-line front door every runtime calls
   db/database.ts    # node:sqlite driver seam
-  hooks/            # the runtime hook entries (Claude Code, Gemini CLI, Codex, plugin)
+  hooks/            # the runtime hook entries (the Claude family: Claude Code, Codex, the plugin; agy)
   mcp/              # the MCP server
   ...               # one directory per domain: builder, conversation, soul, ...
 scripts/            # repository guards and release tooling, run by CI

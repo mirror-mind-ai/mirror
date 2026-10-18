@@ -37,13 +37,13 @@ about what anyone is told to type.
 
 ## Commands
 
-Claude Code uses the `/mm:` prefix. Pi and Gemini CLI use the `/mm-` prefix.
-Codex uses the `$mm-` prefix. All runtimes call the same core. A Claude Code
-**plugin** install (the npm package's wiring) prefixes the plugin's name:
+Claude Code uses the `/mm:` prefix. Pi uses the `/mm-` prefix. Codex uses the
+`$mm-` prefix. All runtimes call the same core. A **plugin** install (the npm
+package's wiring for Claude Code and Antigravity) prefixes the plugin's name:
 `/mirror-mind:mm:<skill>` in the slash menu, `mirror-mind:mm-<skill>` as the
 skill's own name; the `/mm:` column below is the checkout's form.
 
-| Pi / Gemini CLI | Codex | Claude Code | Purpose | Main Arguments |
+| Pi | Codex | Claude Code | Purpose | Main Arguments |
 |---------|-------|-------------|---------|----------------|
 | `/mm-mirror` | `$mm-mirror` | `/mm:mirror` | Loads identity, persona, journey, and attachments for Mirror Mode | `load [--persona P] [--journey J] [--query Q] [--org]`, `log "summary"`, `journeys` |
 | `/mm-build` | `$mm-build` | `/mm:build` | Builder Mode for a journey — loads context and project docs | `<slug>` |

@@ -684,7 +684,7 @@ stops growing. Writes lost before the fix are not replayed automatically.
 
 **Date:** 2026-09-24
 **Status:** mitigated by design; diagnosable
-**Affected component:** every hook wrapper under `.claude/hooks/`, `.gemini/hooks/`, and `plugins/mirror-mind/hooks/`
+**Affected component:** every hook wrapper under `.claude/hooks/`, `plugins/mirror-mind/hooks/`, and `plugins/mirror-mind/agy/`
 **Severity:** silent loss of logging, context injection, and the close tail, if nobody reads the log
 
 ### Symptom
@@ -755,10 +755,10 @@ environment names, honored as given.
 ### Recovery of affected sessions
 
 The turns a skipped hook never saw are not in the database, and Mirror has no
-backfill for Claude Code or Gemini CLI transcripts: fix the Node resolution and
-logging resumes from the next session. Pi and the Codex wrapper do not go
-through these wrappers: both spawn `node` from the terminal they were started
-in, which normally has it on its `PATH`.
+backfill for Claude Code or Codex transcripts: fix the Node resolution and
+logging resumes from the next session. Pi does not go through these wrappers:
+the extension spawns `node` from the terminal it was started in, which normally
+has it on its `PATH`.
 
 ---
 

@@ -14,7 +14,7 @@ attractors, experiment proposals, and Builder handoff.
 
 ## Usage
 
-Pi and Gemini CLI:
+Pi:
 
 ```text
 /mm-explore <journey-slug>
