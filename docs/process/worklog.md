@@ -12,6 +12,25 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-10-18 — CV21.DS10: Grok Build through the canonical plugin, at L3
+
+Four stories in one day on grok 1.0.62. US1 measured five install shapes and
+chose two printed steps — the trusted copy and a home rule for the Operating
+Instructions — and found that the root `plugin.json` marker DS7 added had been
+hiding the plugin's version and MCP server from Grok since 2026-10-17; the marker
+now carries both, one server on all four runtimes. TS2 closed DS12's "ready but not
+attached": the server attaches, the tools sit behind `search_tool`/`use_tool`, and
+the zero count was a snapshot taken while the server was `pending` — measured
+headless by field, with a control plugin. US3 measured L3: an ablation proved the
+rule is what reaches the model, the canaries never did, `/mm-mirror` answered `◇
+financial`, every turn logged `grok_build`, and the close fit Grok's 1.5 s bound
+with the deferred tail finished at the next start — DS4.TS2 on Grok, with a key.
+TS4 wrote it where a user reads it (the contract's Grok reference implementation,
+README, Getting Started, REFERENCE, AGENTS.md) and paid CR143: the inject hook
+returns at once on Grok instead of spending 2–3 s per load on a context Grok
+discards. Three scratch routes, re-runnable; about US$ 0.30 on Grok and under a
+cent on Mirror for the whole DS. DS10 rides DS5's or DS11's release.
+
 ### 2026-10-18 — v0.35.0 released: Four Runtimes, One Successor
 
 Minor release closing CV21.DS8. The Gemini CLI integration no longer ships;

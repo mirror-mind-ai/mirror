@@ -3216,6 +3216,39 @@ with a Grok login and a provider key, at cents; the TUI session is the part that
 a person, two turns long. DS11 folds the L3 row into the parity matrix with this
 version, binary, and date.
 
+### A hook that would inject context returns at once on a runtime that discards it
+
+**Date:** 2026-10-18 · **Context:** [CV21.DS10.TS4](roadmap/cv21-runtime-expansion-ii/cv21-ds10-grok-build-through-the-canonical-plugin/cv21-ds10-ts4-grok-s-honest-l3-is-written-where-a-user-reads-it/index.md),
+paying [CR143](refinement/rs010-cv22-oracle-and-port-hygiene/cr143-the-inject-hook-loads-context-grok-discards.md)
+from US3's Debt Review.
+
+**The decision.** The plugin's inject hook (`claude:inject`) asks
+`runtimeReadsPromptContext(label)` — a third policy beside `sessionEndRunsLlmTail`
+and `sessionOutlivesTui` in `runtimePolicy.ts` — before any load, any state read, or
+any "injected" mark, with the runtime detected from the payload and the environment
+the way the sibling hooks detect it. On `grok_build` it is false and the hook returns
+0 at once; on every other label, and on none, it is true. The wrappers and the hook
+registrations are unchanged: Grok still runs the hook, and the hook costs it a
+process start, nothing more.
+
+**Why.** Grok shows a SessionStart hook's `systemMessage` on screen and discards
+`additionalContext` on both events (DS12.TS4 L2/L3; US3's canary on 1.0.62). The
+loads the hook made there — on the `/mm-mirror` turn and once more when Mirror Mode
+became active — held the turn 2,293–2,610 ms for a context nobody read, on the
+runtime where the skill turn is already the slow one. The policy belongs with its
+siblings because it is the same kind of fact: what a runtime's lifecycle lets Mirror
+do at its edges, keyed by the label US8 stamps.
+
+**Why not fail closed.** An unlabelled payload is a Claude Code payload by
+detection's own rule; a predicate that returned false for an unknown label would
+silence injection on the one runtime that needs it. The default is to read.
+
+**Consequences.** Measured on the installed wrapper against a scratch home: a
+Grok-shaped payload answered in 166–176 ms with nothing on stdout; Claude- and
+Codex-shaped payloads loaded as before. A Codex user receives the change at their
+next plugin re-add (DS4.TS6); a Claude Code user at the next session. The contract's
+injection-models table carries the row.
+
 ## Open Discussions
 
 ### Migration rehearsal — long-term status
