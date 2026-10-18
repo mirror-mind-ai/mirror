@@ -28,10 +28,11 @@
 # Plateau 1 shipped the first half (install, init, seed, list, status, the
 # migrating open). Plateau 3 adds the four runtimes' payloads against the
 # INSTALLED wrappers and `mirror mcp`: the Claude plugin copied out of the
-# package as Claude Code copies it, the Gemini wrappers and the Codex wrapper
-# run from under `npm root -g` -- below node_modules, where only the loader
-# shim can run the TypeScript entry (D15) -- and the MCP server through the
-# plugin's launcher and through `mirror mcp` directly.
+# package as Claude Code copies it, and the MCP server through the plugin's
+# launcher and through `mirror mcp` directly. (The Gemini wrappers and the
+# Codex wrapper, once run from under `npm root -g` -- below node_modules,
+# where only the loader shim can run the TypeScript entry (D15) -- retired
+# with CV21.DS8.US1 and CV21.DS4.TS5.)
 #
 # Usage:  scripts/smoke_npm_package.sh [workdir]
 
@@ -214,7 +215,7 @@ else
   grep -q migrate_on_open "$HOME/.mirror-minds/legacy/front-door.log" 2>/dev/null && ok "front-door log records migrate_on_open" || bad "front-door log lacks migrate_on_open"
 fi
 
-# --- the four runtimes, against the installed package -------------------------
+# --- the runtimes, against the installed package ------------------------------
 # Each hook resolves the home from the config file `init` wrote (MIRROR_USER=
 # smokeuser): the environment carries no Mirror variable, and the package has
 # no .env to read. Every row below lands in smokeuser's memory.db.
@@ -242,34 +243,15 @@ contains "and they are the package's AGENTS.md" "$(cat "$WORK/claude-start.out")
   "$(rows "SELECT c.interface || '|' || m.content FROM messages m JOIN conversations c ON c.id = m.conversation_id WHERE m.content = 'Hello from the installed plugin'")" \
   "claude_code|Hello from the installed plugin"
 
-say "9. the Gemini CLI wrappers, run from under npm root -g"
-GEMINI_HOOKS="$PKG/.gemini/hooks"
-# An array, not a string: the work dir may hold a space -- v0.33.3 is the
-# release that makes such an install work -- and an unquoted string splits it
-# into words that `env` runs as a command.
-GEMINI_ENV=("GEMINI_PROJECT_DIR=$WORK/home" "GEMINI_SESSION_ID=")
-env "${GEMINI_ENV[@]}" bash "$GEMINI_HOOKS/session-start.sh" </dev/null >"$WORK/gemini-start.out" 2>"$WORK/gemini.err" && ok "gemini session-start exited 0" || bad "gemini session-start failed"
-contains "gemini session-start delivers the Operating Instructions as context (D13)" "$(cat "$WORK/gemini-start.out")" '"hookEventName":"SessionStart","additionalContext":"'
-printf '{"session_id":"npm-gemini","hook_event_name":"BeforeAgent","prompt":"Hello from the installed Gemini wrappers"}' \
-  | env "${GEMINI_ENV[@]}" bash "$GEMINI_HOOKS/log-user.sh" >"$WORK/gemini-user.out" 2>>"$WORK/gemini.err" && ok "gemini log-user exited 0" || bad "gemini log-user failed"
-printf '{"session_id":"npm-gemini","hook_event_name":"AfterAgent","prompt":"Hello from the installed Gemini wrappers","prompt_response":"Answered from the package","stop_hook_active":false}' \
-  | env "${GEMINI_ENV[@]}" bash "$GEMINI_HOOKS/log-assistant.sh" >"$WORK/gemini-assistant.out" 2>>"$WORK/gemini.err" && ok "gemini log-assistant exited 0" || bad "gemini log-assistant failed"
-check "gemini AfterAgent answers the empty hook object" "$(cat "$WORK/gemini-assistant.out")" "{}"
-printf '{"session_id":"npm-gemini","hook_event_name":"SessionEnd"}' \
-  | env "${GEMINI_ENV[@]}" bash "$GEMINI_HOOKS/session-end.sh" >/dev/null 2>>"$WORK/gemini.err" && ok "gemini session-end exited 0" || bad "gemini session-end failed"
-# Gemini's stderr is "logs only; never parsed": the Mirror Mode status line
-# from `mirror load` lands there by design. What must not is a warning or an error.
-if grep -qiE "warning|error" "$WORK/gemini.err"; then bad "the gemini wrappers wrote a warning or error to stderr: $(cat "$WORK/gemini.err")"; else ok "the gemini wrappers wrote no warning or error to stderr"; fi
-[ -n "$REAL_SQLITE" ] && check "both Gemini turns reached the database as gemini_cli" \
-  "$(rows "SELECT group_concat(c.interface || '|' || m.role, ',') FROM messages m JOIN conversations c ON c.id = m.conversation_id WHERE m.content IN ('Hello from the installed Gemini wrappers','Answered from the package') ORDER BY m.created_at")" \
-  "gemini_cli|user,gemini_cli|assistant"
-
+# Gemini CLI has no step either: its wrappers ran here from under `npm root -g`
+# until CV21.DS8.US1 retired the integration (Antigravity, step 8's plugin
+# with its agy layer, is the successor).
 # Codex has no step of its own: it installs the plugin from the package as a
 # marketplace (checked above) and runs the same Claude-family hooks step 8
 # exercises. The v0.32.1 wrapper this smoke used to run around a stand-in
 # codex was retired by CV21.DS4.TS5.
 
-say "10. the MCP server, through the plugin's manifest entry and through mirror mcp"
+say "9. the MCP server, through the plugin's manifest entry and through mirror mcp"
 MCP_INIT='{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"npm-smoke","version":"0"}}}'
 LAUNCH_REPLY="$(printf '%s\n' "$MCP_INIT" | node --no-warnings "$ROOT_DIR/ts/smoke/mcp_entry.ts" "$CLAUDE_PLUGIN" 2>"$WORK/mcp-launch.err" | head -1)"
 contains "the installed plugin's manifest entry started the server" "$LAUNCH_REPLY" '"name": "mirror-mind"'
@@ -278,10 +260,10 @@ DIRECT_REPLY="$(printf '%s\n' "$MCP_INIT" | mirror mcp 2>"$WORK/mcp-direct.err" 
 contains "mirror mcp answers initialize" "$DIRECT_REPLY" '"name": "mirror-mind"'
 check "mirror mcp wrote nothing to stderr" "$(wc -c <"$WORK/mcp-direct.err" | tr -d ' ')" "0"
 
-say "11. no hook recorded a failure"
+say "10. no hook recorded a failure"
 if [ -f "$HOOKS_LOG" ]; then bad "hooks.log exists: $(cat "$HOOKS_LOG")"; else ok "no hooks.log in smokeuser's home"; fi
 
-say "12. nothing reached for an interpreter"
+say "11. nothing reached for an interpreter"
 if grep -rq "INTERPRETER SPAWNED" "$WORK"/*.err 2>/dev/null; then
   bad "an interpreter was spawned"; grep -rh "INTERPRETER SPAWNED" "$WORK"/*.err
 else

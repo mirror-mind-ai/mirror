@@ -17,12 +17,6 @@
 //               server (`claude plugin list` / `details`, 2.1.283). One step.
 //               The Operating Instructions arrive through the plugin's
 //               SessionStart hook (D13).
-//   Gemini CLI  `gemini skills link --consent <dir>` links every skill in the
-//               directory into `~/.gemini/skills/` (0.61.0; a nested directory
-//               symlink is NOT discovered, the user tier is one level deep),
-//               and hooks live in `~/.gemini/settings.json`, absolute paths.
-//               Two steps. The Operating Instructions arrive through the
-//               SessionStart hook (D13).
 //   Codex       `codex plugin marketplace add <root>` reads the package's
 //               `.agents/plugins/marketplace.json`, and `codex plugin add
 //               mirror-mind@mirror-mind` copies the plugin into Codex's cache
@@ -33,11 +27,17 @@
 //               developer message (L4). Until DS4.US1 the two steps were a
 //               skills link and an AGENTS.md link, with sessions run through
 //               the shipped wrapper.
+//   Antigravity `agy plugin install <plugin dir>` stages the plugin with its
+//               agy-native layer in one step (CV21.DS7.US1, agy 1.4.2).
+//
+// Gemini CLI had an entry here (a skills link, then four hooks merged into
+// `~/.gemini/settings.json` by absolute path) until CV21.DS8.US1 retired the
+// integration; Antigravity is its successor.
 
 import { join } from "node:path";
 import { commandOnPath } from "#util/paths.ts";
 
-export type RuntimeName = "pi" | "claude" | "gemini" | "codex" | "antigravity";
+export type RuntimeName = "pi" | "claude" | "codex" | "antigravity";
 
 /**
  * The one Codex level-up command (CV21.DS4.TS6). Codex 0.163.0 has no
@@ -57,24 +57,6 @@ export interface RuntimeWiring {
   readonly steps: readonly ((root: string) => readonly string[])[];
 }
 
-/** Gemini CLI's four hooks, as the user-level settings.json wants them. */
-function geminiHooksSettings(root: string): string {
-  const hook = (event: string, name: string, script: string) =>
-    `    "${event}": [{ "hooks": [{ "name": "mirror-${name}", "type": "command", "command": "${join(root, ".gemini/hooks", script)}", "timeout": 30000 }] }]`;
-  return [
-    "{",
-    '  "hooks": {',
-    [
-      hook("SessionStart", "session-start", "session-start.sh"),
-      hook("BeforeAgent", "log-user", "log-user.sh"),
-      hook("AfterAgent", "log-assistant", "log-assistant.sh"),
-      hook("SessionEnd", "session-end", "session-end.sh"),
-    ].join(",\n"),
-    "  }",
-    "}",
-  ].join("\n");
-}
-
 export const RUNTIME_WIRING: Readonly<Record<RuntimeName, RuntimeWiring>> = {
   pi: {
     title: "Pi",
@@ -88,19 +70,6 @@ export const RUNTIME_WIRING: Readonly<Record<RuntimeName, RuntimeWiring>> = {
       (root) => [
         `ln -s "${join(root, "plugins/mirror-mind")}" ~/.claude/skills/mirror-mind`,
         "(the plugin loads every session: its skills, the hooks, and the MCP server)",
-      ],
-    ],
-  },
-  gemini: {
-    title: "Gemini CLI",
-    command: "gemini",
-    steps: [
-      (root) => [`gemini skills link --consent "${join(root, ".pi/skills")}"`],
-      (root) => [
-        "merge into ~/.gemini/settings.json:",
-        ...geminiHooksSettings(root)
-          .split("\n")
-          .map((line) => `  ${line}`),
       ],
     ],
   },
@@ -131,7 +100,7 @@ export const RUNTIME_WIRING: Readonly<Record<RuntimeName, RuntimeWiring>> = {
   },
 };
 
-const ORDER: readonly RuntimeName[] = ["pi", "claude", "gemini", "codex", "antigravity"];
+const ORDER: readonly RuntimeName[] = ["pi", "claude", "codex", "antigravity"];
 
 /** The runtimes whose command is on the PATH, in display order. */
 export function detectRuntimes(

@@ -1,8 +1,8 @@
 // Reading a runtime's hook payload from stdin.
 //
 // Replaces the Python hook module `extract_prompt` (25 lines) and the four
-// inline interpreter one-liners the Claude and Gemini hooks used to parse the
-// same JSON. None of them was a command, so none was in
+// inline interpreter one-liners the Claude and Gemini CLI hooks used to parse
+// the same JSON (the Gemini CLI hooks retired with CV21.DS8.US1). None of them was a command, so none was in
 // DS7's denominator of 29 -- which is why TS5's inventory had to find them by
 // reading the hooks rather than by counting commands.
 //
@@ -23,17 +23,11 @@ export interface HookPayload {
   readonly prompt: string;
   /** The runtime's session id (`session_id`, or Grok's `sessionId`), or "". */
   readonly sessionId: string;
-  /** The assistant's response text (Gemini's `prompt_response`), or "". */
-  readonly response: string;
-  /** Everything else, for hooks that need a field these three do not cover. */
+  /** Everything else, for hooks that need a field these two do not cover. */
   readonly raw: HookPayloadObject;
 }
 
-const EMPTY: HookPayload = { prompt: "", sessionId: "", response: "", raw: {} };
-
-function text(value: unknown): string {
-  return typeof value === "string" ? value : "";
-}
+const EMPTY: HookPayload = { prompt: "", sessionId: "", raw: {} };
 
 /**
  * Parse a hook payload. Never throws: an unparseable payload is empty.
@@ -47,11 +41,10 @@ export function parseHookPayload(input: string): HookPayload {
   return {
     prompt: promptOf(raw),
     sessionId: sessionIdOf(raw),
-    // Gemini's AfterAgent payload names it `prompt_response`, and that is the
-    // field the Python hook read. The first port read three guessed names
-    // instead and dropped every Gemini assistant turn in silence until
-    // `smoke_gemini_cli.sh` caught it (CV22.DS10.TS5 plateau 3).
-    response: text(raw.prompt_response),
+    // A `response` field read Gemini CLI's `prompt_response` here until
+    // CV21.DS8.US1; no living runtime hands the reply to a hook payload by
+    // name (Claude-family hooks read the transcript, agy's Stop reads its
+    // JSONL), so the field went with its only reader.
     raw,
   };
 }

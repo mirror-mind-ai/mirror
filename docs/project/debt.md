@@ -48,6 +48,7 @@ Dropped   no longer relevant or replaced by another item
 | D-028 | The Pi extension passes the user's prompt to `log-user` as an argv element, so it is `ps`-visible for the life of the process | privacy | low | Carried | CV9.E2.S32 (security-engineer review) | The next change to `conversation-logger log-user`, or the first multi-user host; `STDIN_SUBCOMMANDS` already exists for the hook subcommands, so the move is to that path |
 | D-029 | The Pi extension records only the first prompt of an agent run; prompts Pi queues into the run never reach the conversation record | data integrity | medium | Carried | CV9.E2.S32 Navigator validation (step 2) | The next change to the extension's `agent_end` handler, or the next question about the fidelity of Pi conversation records |
 | D-030 | The prompt that runs `build load` is recorded in the conversation `build load` closes; the reply opens the new one without it | data integrity | low | Carried | CV9.E2.S32 Navigator validation (observed) | The next change to `switchConversation` or to where a runtime records the prompt, or the fix for D-029 |
+| D-031 | `smoke_claude_plugin.sh` step 6 ("mirror-hook gone") cannot run on a machine with a global Mirror install | testing | low | Carried | CV21.DS8.US1 validation (observed) | The next change to the plugin wrappers' bin search, or the next time a Driver needs the smoke green locally |
 
 ## D-001 — Metadata lifecycle policy and evidence filtering live inside ConversationService
 
@@ -1348,3 +1349,42 @@ The turn that runs `build load` is recorded whole in the conversation
 closes does not keep that prompt. A test drives `log-user`, the switch, and
 `log-assistant` for one runtime session and asserts both. Where `/mm-new`'s own
 request belongs is for the fix to decide.
+
+## D-031 — `smoke_claude_plugin.sh` step 6 cannot run on a machine with a global Mirror install
+
+**Kind:** testing
+**Severity:** low
+**Status:** Carried
+**Source:** CV21.DS8.US1 validation (observed), 2026-10-18
+
+### Carrying reason
+
+Step 6 of `scripts/smoke_claude_plugin.sh` deletes the scratch `mirror-hook` and
+asserts the plugin wrapper records "mirror-hook not found on PATH" in
+`hooks.log` instead of failing the turn. The wrapper's bin search
+(`plugins/mirror-mind/hooks/*.sh`) falls through the PATH to the global bin
+directories a GUI launch leaves off it -- `~/.nvm/current/bin`,
+`/opt/homebrew/bin`, `/usr/local/bin` -- by design (CV22.DS10.US3). On a
+developer machine where Mirror is installed globally, the fallback finds the
+real `mirror-hook`, the hook succeeds, no line is written, and the smoke fails
+with "no hooks.log line after mirror-hook went missing". CI's Ubuntu runner has
+no global install, so the smoke is green there; the gap is local only.
+
+Observed by the DS8.US1 Driver on the clean tree and after the change alike,
+on macOS with `/opt/homebrew/bin/mirror-hook -> ../lib/node_modules/mirror-mind`.
+
+The cost is a smoke a Driver cannot run to green before pushing a hook change,
+and a failure that reads as a regression until its cause is found.
+
+### Revisit trigger
+
+The next change to the plugin wrappers' bin search, or the next time a Driver
+needs this smoke green locally.
+
+### Closure condition
+
+The smoke isolates the fallback -- for example by exporting a `MIRROR_BIN`
+pointing at an empty directory for step 6, if the wrapper honours an explicit
+empty bin, or by running the step under a `HOME` and PATH whose fallback
+directories are empty -- and passes on a machine with a global install. A
+comment in the smoke names why.

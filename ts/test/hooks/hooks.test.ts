@@ -26,7 +26,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { after, describe, test } from "node:test";
 import { bootstrapDatabase } from "#db/bootstrap.ts";
-import { openDatabaseForBootstrap, openDatabaseReadOnly } from "#db/database.ts";
+import { openDatabaseForBootstrap } from "#db/database.ts";
 import { needsInject } from "#hooks/mirrorState.ts";
 import { parseHookPayload } from "#hooks/payload.ts";
 import { noteHookFailure } from "#hooks/runtime.ts";
@@ -72,24 +72,6 @@ describe("payload parsing", () => {
   test("a non-string prompt is not coerced", () => {
     assert.equal(parseHookPayload('{"prompt":{"text":"x"}}').prompt, "");
   });
-
-  test("Gemini's AfterAgent names the assistant's text `prompt_response`", () => {
-    // The field the Python hook read, from Gemini's documented AfterAgent
-    // payload. The first Node port read three other names and none of this
-    // one, so every Gemini assistant turn was dropped without a sound -- the
-    // hook still printed `{}` and exited 0. Found by `smoke_gemini_cli.sh` at
-    // TS5 plateau 3, after the row-diff that should have caught it was gone.
-    const payload = parseHookPayload(
-      JSON.stringify({
-        session_id: "s1",
-        hook_event_name: "AfterAgent",
-        prompt: "Tell me about my journeys",
-        prompt_response: "You have two active journeys.",
-        stop_hook_active: false,
-      }),
-    );
-    assert.equal(payload.response, "You have two active journeys.");
-  });
 });
 
 describe("mirror state", () => {
@@ -132,7 +114,6 @@ function runHook(hook: string, home: string, payload: Record<string, unknown>): 
       MEMORY_ENV: "production",
       MIRROR_HOME: home,
       MIRROR_USER: "",
-      GEMINI_SESSION_ID: "",
       OPENROUTER_API_KEY: "",
       NODE_OPTIONS: "--no-warnings",
     },
@@ -151,29 +132,33 @@ describe("the hooks log", () => {
   // Through a REAL failure, not a hand-written reason. The first version of this
   // test called `noteHookFailure` with a reason that never held a prompt and
   // asserted the line did not say "prompt" -- it could not fail, and the Gemini
-  // hooks were writing both sides of the conversation into this file whenever
-  // the logger exited non-zero (TS5 handoff review, finding P1).
-  test("a failed Gemini turn is recorded without the prompt or the response", () => {
+  // CLI hooks were writing both sides of the conversation into this file
+  // whenever the logger exited non-zero (TS5 handoff review, finding P1). That
+  // runtime retired (CV21.DS8.US1); the invariant did not, so the same walk
+  // runs through the Claude-family hooks every living plugin runtime shares.
+  test("a failed turn is recorded without the prompt or the reply", () => {
     const home = refusingHome();
-    runHook("gemini:log-user", home, {
+    runHook("claude:user-prompt", home, {
       session_id: "s-p1",
+      hook_event_name: "UserPromptSubmit",
       prompt: "SENTINEL-PROMPT about something private",
     });
-    runHook("gemini:log-assistant", home, {
+    runHook("claude:stop", home, {
       session_id: "s-p1",
-      prompt_response: "SENTINEL-RESPONSE with private advice",
+      hook_event_name: "Stop",
+      last_assistant_message: "SENTINEL-RESPONSE with private advice",
     });
 
     const log = readFileSync(join(home, "hooks.log"), "utf8");
-    assert.match(log, /gemini:log-user: `conversation-logger log-user` exited 2/);
-    assert.match(log, /gemini:log-assistant: `conversation-logger log-assistant` exited 2/);
+    assert.match(log, /claude:user-prompt: `conversation-logger user-prompt` exited \d+/);
+    assert.match(log, /claude:stop: `conversation-logger stop` exited \d+/);
     assert.doesNotMatch(log, /SENTINEL|private|s-p1/);
     assert.doesNotMatch(readFileSync(join(home, "front-door.log"), "utf8"), /SENTINEL/);
   });
 
   test("only the first line of a multi-line failure is written", () => {
     const home = tmpHome();
-    noteHookFailure("gemini:log-user", "first line\nSECRET SECOND LINE", {
+    noteHookFailure("claude:user-prompt", "first line\nSECRET SECOND LINE", {
       MIRROR_HOME: home,
       MIRROR_USER: "",
     } as NodeJS.ProcessEnv);
@@ -354,7 +339,7 @@ describe("a hook that cannot run is recorded, never silent (N1)", () => {
       [
         "2026-09-01T00:00:00Z claude:inject: an old failure, outside the window",
         "2026-09-24T10:00:00Z claude:user-prompt: node exited 9 SECRET-REASON",
-        "2026-09-25T09:00:00.123Z gemini:log-user: `conversation-logger log-user` exited 2",
+        "2026-09-25T09:00:00.123Z claude:stop: `conversation-logger stop` exited 2",
         "not a log line",
         "",
       ].join("\n"),
@@ -366,7 +351,7 @@ describe("a hook that cannot run is recorded, never silent (N1)", () => {
     assert.equal(findings.length, 1);
     assert.equal(findings[0]?.code, "hook_failures_recorded");
     assert.match(findings[0]?.detail ?? "", /2 hook failure\(s\) in the last 7 days/);
-    assert.match(findings[0]?.detail ?? "", /latest 2026-09-25T09:00:00\.123Z, gemini:log-user/);
+    assert.match(findings[0]?.detail ?? "", /latest 2026-09-25T09:00:00\.123Z, claude:stop/);
     assert.doesNotMatch(JSON.stringify(findings), /SECRET|exited|conversation-logger/);
   });
 
@@ -381,7 +366,7 @@ describe("a hook that cannot run is recorded, never silent (N1)", () => {
 
 describe("the wrapper forms", () => {
   // Three forms, counted per group, never as a total baked into a name (the
-  // TS5 lesson): nine tree wrappers resolve the tree from their own file;
+  // TS5 lesson): five tree wrappers resolve the tree from their own file;
   // the plugin's five bin wrappers find the installed `mirror-hook`,
   // because Claude Code copies a plugin into its own cache; and the
   // plugin's two agy wrappers (CV21.DS7.TS2) are the bin search behind a
@@ -393,10 +378,6 @@ describe("the wrapper forms", () => {
     ".claude/hooks/log-session-end.sh",
     ".claude/hooks/mirror-inject.sh",
     ".claude/hooks/log-assistant-reply.sh",
-    ".gemini/hooks/session-start.sh",
-    ".gemini/hooks/log-user.sh",
-    ".gemini/hooks/log-assistant.sh",
-    ".gemini/hooks/session-end.sh",
   ];
   const BIN_WRAPPERS = [
     "plugins/mirror-mind/hooks/session-start.sh",
@@ -515,12 +496,7 @@ describe("the wrapper forms", () => {
     // A wrapper added to a hooks directory and not listed here would escape
     // every assertion above.
     const found: string[] = [];
-    for (const dir of [
-      ".claude/hooks",
-      ".gemini/hooks",
-      "plugins/mirror-mind/hooks",
-      "plugins/mirror-mind/agy",
-    ]) {
+    for (const dir of [".claude/hooks", "plugins/mirror-mind/hooks", "plugins/mirror-mind/agy"]) {
       for (const entry of readdirSync(join(REPO_ROOT, dir))) {
         if (entry.endsWith(".sh")) found.push(`${dir}/${entry}`);
       }
@@ -613,60 +589,16 @@ describe("the entry point runs", () => {
     assert.match(readFileSync(join(home, "hooks.log"), "utf8"), /unknown hook name/);
   });
 
-  test("Gemini's AfterAgent hook logs the assistant turn it is given", () => {
-    // End to end through the generated wrapper, as Gemini CLI calls it. The
-    // parser test above pins the field; this pins that the turn reaches the
-    // database, which is the property a user loses when it breaks.
-    const home = tmpHome();
-    const dbPath = join(home, "memory.db");
-    const env = {
-      ...process.env,
-      DB_PATH: dbPath,
-      MEMORY_ENV: "production",
-      MIRROR_HOME: home,
-      MIRROR_USER: "",
-      OPENROUTER_API_KEY: "",
-      GEMINI_PROJECT_DIR: REPO_ROOT,
-      GEMINI_SESSION_ID: "",
-    };
-    const output = execFileSync("bash", [join(REPO_ROOT, ".gemini/hooks/log-assistant.sh")], {
-      encoding: "utf8",
-      env,
-      input: JSON.stringify({
-        session_id: "gemini-e2e",
-        hook_event_name: "AfterAgent",
-        prompt: "Tell me about my journeys",
-        prompt_response: "You have two active journeys.",
-        stop_hook_active: false,
-      }),
-      timeout: 30_000,
-    });
-    assert.equal(output.trim(), "{}");
-    const db = openDatabaseReadOnly(dbPath);
-    try {
-      const rows = db
-        .prepare(
-          "SELECT m.role, m.content, c.interface FROM messages m " +
-            "JOIN conversations c ON c.id = m.conversation_id",
-        )
-        .all();
-      assert.deepEqual(rows, [
-        { role: "assistant", content: "You have two active journeys.", interface: "gemini_cli" },
-      ]);
-    } finally {
-      db.close();
-    }
-  });
-
   test("SessionStart hands the runtime the Operating Instructions, unless the project is this tree (D13)", () => {
-    // An installed package reaches Claude Code and Gemini CLI through hooks,
-    // skills, and an MCP server -- nothing that reads a CLAUDE.md. Without
-    // this a session wired to the package answers /mm-mirror and still routes
-    // no mode and signs no persona (US3's second panel pass). Both runtimes
-    // read SessionStart's `hookSpecificOutput.additionalContext`, so the
-    // session-start hook hands over AGENTS.md from its own tree, where it
-    // matches the core it ships with -- and stays quiet inside the checkout,
-    // whose CLAUDE.md imports that same file.
+    // An installed package reaches Claude Code (and, until CV21.DS8.US1,
+    // Gemini CLI) through hooks, skills, and an MCP server -- nothing that
+    // reads a CLAUDE.md. Without this a session wired to the package answers
+    // /mm-mirror and still routes no mode and signs no persona (US3's second
+    // panel pass). The runtime reads SessionStart's
+    // `hookSpecificOutput.additionalContext`, so the session-start hook hands
+    // over AGENTS.md from its own tree, where it matches the core it ships
+    // with -- and stays quiet inside the checkout, whose CLAUDE.md imports
+    // that same file.
     const home = tmpHome();
     const run = (hook: string, projectDir: string) =>
       execFileSync(process.execPath, [join(REPO_ROOT, "ts/src/hooks/main.ts"), hook], {
@@ -677,7 +609,6 @@ describe("the entry point runs", () => {
           MIRROR_HOME: home,
           MIRROR_USER: "",
           CLAUDE_PROJECT_DIR: projectDir,
-          GEMINI_PROJECT_DIR: projectDir,
           NODE_OPTIONS: "--no-warnings",
         },
         input: "{}",
@@ -691,15 +622,12 @@ describe("the entry point runs", () => {
         }
       ).hookSpecificOutput;
 
-    for (const hook of ["claude:session-start", "gemini:session-start"]) {
-      const elsewhere = context(run(hook, join(home, "some-project")));
-      assert.equal(elsewhere.hookEventName, "SessionStart", hook);
-      assert.equal(elsewhere.additionalContext, agents, hook);
-    }
+    const elsewhere = context(run("claude:session-start", join(home, "some-project")));
+    assert.equal(elsewhere.hookEventName, "SessionStart");
+    assert.equal(elsewhere.additionalContext, agents);
 
     // Inside the checkout the project already carries the file.
     assert.equal(run("claude:session-start", REPO_ROOT), "", "Claude printed nothing before D13");
-    assert.equal(run("gemini:session-start", REPO_ROOT), "{}\n", "Gemini printed {} before D13");
   });
 
   test("a hook with no stdin at all does not hang or throw", () => {
@@ -708,7 +636,7 @@ describe("the entry point runs", () => {
     assert.doesNotThrow(() =>
       execFileSync(
         process.execPath,
-        [join(REPO_ROOT, "ts/src/hooks/main.ts"), "gemini:session-end"],
+        [join(REPO_ROOT, "ts/src/hooks/main.ts"), "claude:session-end"],
         {
           encoding: "utf8",
           env: {

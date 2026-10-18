@@ -1,7 +1,7 @@
 // Skills with one body in every runtime (CR102).
 //
 // Most Mirror skills have two authored bodies. `.pi/skills/` serves Pi, and
-// through the `.agents/skills/` links Codex and Gemini CLI too. `.claude/skills/`
+// through the `.agents/skills/` links Codex too. `.claude/skills/`
 // serves Claude Code, and `claudePlugin.ts` copies it into the plugin. CR071
 // kept the two apart on purpose: Usage sections, example language, and in
 // `mm-soul` and `mm-mirror` whole lines that are true for one runtime only.

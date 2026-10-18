@@ -3,7 +3,8 @@
 // "One documented step per runtime" was proven for Pi and untested for the
 // rest (second panel pass, product-designer). Counted at plateau 3 against
 // each runtime's own docs and verified from a scratch config directory:
-// Pi 1, Claude Code 1, Gemini CLI 2, Codex 2. Printing is not automating --
+// Pi 1, Claude Code 1, Codex 2, Antigravity 1 (Gemini CLI's 2 retired with
+// CV21.DS8.US1). Printing is not automating --
 // the `runtime install <runtime>` non-goal stands -- but a person who just ran
 // `init` should not have to find a page to learn the next line.
 
@@ -42,12 +43,14 @@ describe("the wiring steps", () => {
     }
   });
 
-  test("the counts are the honest ones: Pi 1, Claude Code 1, Gemini CLI 2, Codex 2, Antigravity 1", () => {
+  test("the counts are the honest ones: Pi 1, Claude Code 1, Codex 2, Antigravity 1", () => {
+    // No `gemini` key: the runtime is retired (CV21.DS8.US1), and a wiring
+    // entry is what makes `init` know a runtime at all.
     assert.deepEqual(
       Object.fromEntries(
         Object.entries(RUNTIME_WIRING).map(([runtime, wiring]) => [runtime, wiring.steps.length]),
       ),
-      { pi: 1, claude: 1, gemini: 2, codex: 2, antigravity: 1 },
+      { pi: 1, claude: 1, codex: 2, antigravity: 1 },
     );
   });
 
@@ -64,19 +67,6 @@ describe("the wiring steps", () => {
       lines,
       /ln -s "\/prefix\/lib\/node_modules\/mirror-mind\/plugins\/mirror-mind" ~\/\.claude\/skills\/mirror-mind/,
     );
-  });
-
-  test("Gemini CLI: link the skills, then the four hooks in the user settings", () => {
-    const lines = runtimeWiringLines("gemini", root).join("\n");
-    assert.match(
-      lines,
-      /gemini skills link --consent "\/prefix\/lib\/node_modules\/mirror-mind\/\.pi\/skills"/,
-    );
-    assert.match(lines, /~\/\.gemini\/settings\.json/);
-    for (const event of ["SessionStart", "BeforeAgent", "AfterAgent", "SessionEnd"]) {
-      assert.match(lines, new RegExp(event));
-    }
-    assert.match(lines, /\/prefix\/lib\/node_modules\/mirror-mind\/\.gemini\/hooks\/log-user\.sh/);
   });
 
   test("Codex: the package as a marketplace, then the plugin from it (CV21.DS4.US1)", () => {
@@ -97,15 +87,16 @@ describe("the wiring steps", () => {
   test("Antigravity: one step, the plugin with its native layer (CV21.DS7.US1)", () => {
     // The probe on agy 1.4.2: `agy plugin install <plugin dir>` stages the 25
     // skills and the agy-native layer in one command. Within the bar DS12.TS3
-    // set (no more documented steps than Gemini CLI's two) with one.
+    // set (no more documented steps than Gemini CLI's two, when it had them)
+    // with one.
     const lines = runtimeWiringLines("antigravity", root).join("\n");
     // One step renders unnumbered, as Pi's and Claude Code's do.
     assert.match(
       lines,
       /agy plugin install "\/prefix\/lib\/node_modules\/mirror-mind\/plugins\/mirror-mind"/,
     );
-    // No succession language: Gemini CLI is supported until DS8, and the
-    // replacement sentence belongs to DS8's cutoff, not a wiring line.
+    // No succession language: the replacement sentence belongs to DS8's
+    // cutoff note, not a wiring line.
     assert.doesNotMatch(lines, /[Gg]emini|successor|replac/);
     // Injection and logging land with TS2/TS3; the wiring promises neither.
     assert.doesNotMatch(lines, /inject|logg/);

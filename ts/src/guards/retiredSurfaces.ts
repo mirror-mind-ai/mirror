@@ -514,6 +514,28 @@ export const RETIRED: readonly RetiredSurface[] = [
     residueScope: ["ts/src/", "ts/scripts/"],
     exemptions: {},
   },
+  {
+    surfaceId: "gemini-cli",
+    story: "CV21.DS8.US1",
+    // The Gemini CLI integration: four generated wrappers under `.gemini/hooks`,
+    // the `gemini:*` hook family behind them, the two `mirror init` steps, and
+    // the Gemini smoke. Retired once DS7.US4 measured Antigravity at L4 on agy
+    // 1.4.2 -- a Gemini CLI user loses nothing by moving. `.gemini/` is an
+    // absent path and not merely an unallowed one because `mirror init` told
+    // users to write absolute paths into that directory into their
+    // `~/.gemini/settings.json`: a standing instruction to execute whatever a
+    // later release might ship there. This row is what keeps that from
+    // happening.
+    absentPaths: [".gemini/", "ts/src/hooks/gemini.ts", "scripts/smoke_gemini_cli.sh"],
+    // File and route names, never vocabulary: "gemini" is a living word (the
+    // extraction and consult models, Antigravity's own `~/.gemini/` home, the
+    // `gemini_cli` label on conversations already logged). The row is split by
+    // story: US1 carries the names only code and CI used; the doc-facing ones
+    // (`.gemini/hooks`, `gemini:session-start`, `gemini skills link`) join when
+    // CV21.DS8.US2 clears the runtime-facing docs, so no exemption is staged.
+    forbiddenPatterns: ["smoke_gemini_cli", "geminiHooksSettings", "hooks/gemini\\.ts"],
+    exemptions: {},
+  },
 ];
 
 export interface SurfaceProblem {

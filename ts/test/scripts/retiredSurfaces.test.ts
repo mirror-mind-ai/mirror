@@ -254,6 +254,7 @@ describe("the table itself", () => {
         "frame-installer",
         "codex-wrapper",
         "url-pathname-as-path",
+        "gemini-cli",
       ],
     );
   });
@@ -373,12 +374,8 @@ describe("the live python-core-mentions row (plateau 4, decision D12)", () => {
       .map((problem) => problem.message)
       .join("\n");
 
-    for (const hook of [
-      ".claude/hooks/",
-      ".gemini/hooks/",
-      "plugins/mirror-mind/hooks/",
-      ".claude/settings.json",
-    ]) {
+    // `.gemini/hooks/` was on this list until CV21.DS8.US1 deleted it.
+    for (const hook of [".claude/hooks/", "plugins/mirror-mind/hooks/", ".claude/settings.json"]) {
       assert.ok(!messages.includes(hook), `${hook} still reaches for an interpreter`);
     }
   });
@@ -539,6 +536,73 @@ describe("the live codex-wrapper row (CV21.DS4.TS5)", () => {
 
   test("is clean against this repository", () => {
     assert.deepEqual(sweep(REPO_ROOT, RETIRED, { only: "codex-wrapper" }), []);
+  });
+});
+
+describe("the live gemini-cli row (CV21.DS8.US1)", () => {
+  const row = RETIRED.find((surface) => surface.surfaceId === "gemini-cli") as RetiredSurface;
+
+  test("is enforced", () => {
+    assert.ok(row, "the gemini-cli row exists");
+    assert.equal(row.stagedUntil, undefined);
+    assert.ok(ENFORCED.includes(row));
+  });
+
+  // One seed per thing US1 deleted: the four wrappers and the settings file
+  // under `.gemini/`, the hook family, and the smoke.
+  const SEEDS = [
+    ".gemini/hooks/session-start.sh",
+    ".gemini/hooks/log-user.sh",
+    ".gemini/hooks/log-assistant.sh",
+    ".gemini/hooks/session-end.sh",
+    ".gemini/settings.json",
+    "ts/src/hooks/gemini.ts",
+    "scripts/smoke_gemini_cli.sh",
+  ];
+
+  test("fails on every path the deletion removed, if it comes back", () => {
+    for (const path of SEEDS) {
+      assert.equal(checkAbsent(row, [path]).length, 1, path);
+    }
+  });
+
+  test("does not flag the living Gemini surfaces", () => {
+    // The models stay, Antigravity's layer stays, and `.gemini-plugin/` is
+    // agy's marker, not Gemini CLI's directory.
+    assert.deepEqual(
+      checkAbsent(row, [
+        "ts/src/consult/modelCatalog.ts",
+        "ts/src/hooks/agy.ts",
+        "plugins/mirror-mind/agy/pre-invocation.sh",
+        "plugins/mirror-mind/.gemini-plugin/plugin.json",
+      ]),
+      [],
+    );
+  });
+
+  test("fails on a file that still names the smoke, the wiring helper, or the hook module", () => {
+    const root = gitRepo({
+      ".github/workflows/tests.yml": "      - run: bash scripts/smoke_gemini_cli.sh\n",
+      "ts/src/x.ts": 'import { geminiLogUser } from "./hooks/gemini.ts";\n',
+      "ts/src/y.ts": "const lines = geminiHooksSettings(root);\n",
+      "docs/process/worklog.md": "smoke_gemini_cli.sh caught F11.\n",
+      // US2's territory, deliberately not this row's: a doc that still names
+      // the runtime, its hook routes, or its skills link passes US1's row.
+      "docs/living.md": "Gemini CLI: `gemini skills link`, then the hooks in `.gemini/hooks`.\n",
+    });
+    const problems = checkResidue(row, trackedFiles(root), root);
+    assert.deepEqual(
+      problems.map((problem) => problem.message.split(" mentions")[0]?.trim()),
+      [
+        "gemini-cli: .github/workflows/tests.yml:1",
+        "gemini-cli: ts/src/x.ts:1",
+        "gemini-cli: ts/src/y.ts:1",
+      ],
+    );
+  });
+
+  test("is clean against this repository", () => {
+    assert.deepEqual(sweep(REPO_ROOT, RETIRED, { only: "gemini-cli" }), []);
   });
 });
 

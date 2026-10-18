@@ -192,6 +192,31 @@ test("`init` ends with the wiring step for each runtime found on the PATH, and o
   }
 });
 
+test("`init` with `gemini` on the PATH prints no Gemini CLI section (CV21.DS8.US1)", () => {
+  // The Gemini CLI integration is retired: `init` no longer knows the
+  // runtime, so a `gemini` binary on the PATH earns no wiring block, and no
+  // succession sentence either -- that belongs to the cutoff note, not here.
+  const { home, cleanup } = fakeHome();
+  try {
+    const bin = join(home, "bin");
+    mkdirSync(bin);
+    for (const command of ["gemini", "claude"]) {
+      writeFileSync(join(bin, command), "#!/bin/sh\nexit 0\n", { mode: 0o755 });
+    }
+    const result = spawnFrontDoor(["init", "probeuser"], {
+      HOME: home,
+      PATH: `${bin}:/usr/bin:/bin`,
+      ...NO_USER,
+    });
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /Wire your runtime/);
+    assert.match(result.stdout, /Claude Code:/);
+    assert.doesNotMatch(result.stdout, /[Gg]emini/);
+  } finally {
+    cleanup();
+  }
+});
+
 test("`init` with no runtime on the PATH prints no wiring section", () => {
   const { home, cleanup } = fakeHome();
   try {

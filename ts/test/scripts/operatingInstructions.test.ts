@@ -7,7 +7,7 @@
 // answered /mm-mirror still did not behave as a mirror. Now AGENTS.md is the
 // instructions alone, in the tarball, read natively by Pi and Codex from a
 // project root; CLAUDE.md imports it and adds the Project Context for Claude
-// Code and Gemini CLI, which expand @imports. Pi loads ONE context file per
+// Code, which expands @imports. Pi loads ONE context file per
 // directory, AGENTS.md first, which is why the split goes this way round.
 
 import assert from "node:assert/strict";

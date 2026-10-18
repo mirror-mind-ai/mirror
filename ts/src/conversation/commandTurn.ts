@@ -29,7 +29,7 @@
 // One rule for every runtime: a Claude Code user who types `$mm-journeys`,
 // which Claude Code does not understand, is still invoking a skill, and that
 // turn is not conversation either. The rule has one home for every hook that
-// runs in our process (the Claude-family logger, the Gemini hook); the Pi
+// runs in our process (the Claude-family logger, agy's Stop); the Pi
 // extension, a separate process in Pi's file, keeps its own `/` check.
 
 const SKILL_SEGMENT = "[a-z][a-z0-9_-]*";

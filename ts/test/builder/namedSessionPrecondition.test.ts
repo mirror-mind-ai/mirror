@@ -32,7 +32,7 @@ const CR008 =
  * The Windows Frame and installer were in this list until CV22.DS10.US3
  * plateau 5 retired them.
  */
-const INTEGRATION_ROOTS = [".pi", ".claude", ".gemini", "plugins", "scripts", "templates"];
+const INTEGRATION_ROOTS = [".pi", ".claude", "plugins", "scripts", "templates"];
 const ROOT_FILES = [".env.example", ".env.example.advanced"];
 const SKIPPED_DIRECTORIES = new Set(["node_modules", ".git", "dist", "out"]);
 

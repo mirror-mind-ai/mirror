@@ -320,10 +320,10 @@ fi
 rm -rf "$bare"
 ```
 
-The runtime smokes under `scripts/` (`smoke_gemini_cli.sh`, `smoke_claude_plugin.sh`, `smoke_mirror_mcp.sh`) run in CI's `smoke` job, under the same interpreter shadow. None needs its runtime installed: each feeds its runtime's payloads to the real wrappers, against an isolated database. Run them before a push that touches hooks or the MCP launcher:
+The runtime smokes under `scripts/` (`smoke_claude_plugin.sh`, `smoke_mirror_mcp.sh`) run in CI's `smoke` job, under the same interpreter shadow. None needs its runtime installed: each feeds its runtime's payloads to the real wrappers, against an isolated database. Run them before a push that touches hooks or the MCP launcher:
 
 ```bash
-for smoke in smoke_gemini_cli smoke_claude_plugin smoke_mirror_mcp; do
+for smoke in smoke_claude_plugin smoke_mirror_mcp; do
   bash "scripts/$smoke.sh" || break
 done
 ```

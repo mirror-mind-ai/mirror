@@ -259,9 +259,9 @@ jobs:
       # installed -- each feeds the payloads its runtime sends -- and since TS5
       # none needs an interpreter, so they run under the same shadow as the
       # suite. Until the TS5 handoff review (finding N2) they ran only when
-      # someone remembered, and smoke_gemini_cli.sh is the one that caught F11:
-      # every Gemini assistant turn dropped since plateau 1, a regression the
-      # hook row-diff had passed.
+      # someone remembered, and the Gemini CLI smoke (retired with its runtime
+      # by CV21.DS8.US1) was the one that caught F11: every Gemini assistant
+      # turn dropped since plateau 1, a regression the hook row-diff had passed.
       - name: Runtime smokes (hooks, MCP launcher; nothing may spawn python)
         run: |
           SHADOW="$(mktemp -d)"
@@ -273,7 +273,7 @@ jobs:
           done
           export PATH="$SHADOW:$PATH"
           command -v sqlite3 >/dev/null || { sudo apt-get update -q && sudo apt-get install -y -q sqlite3; }
-          for smoke in smoke_gemini_cli smoke_claude_plugin smoke_mirror_mcp; do
+          for smoke in smoke_claude_plugin smoke_mirror_mcp; do
             echo "::group::$smoke"
             bash "scripts/$smoke.sh"
             echo "::endgroup::"

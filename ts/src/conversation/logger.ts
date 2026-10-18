@@ -417,7 +417,7 @@ export async function switchConversation(
  * Python `end_session`: close the bound conversation and deactivate.
  *
  * The session is deactivated BEFORE the tail, not after (CV21.DS4.TS2). A tail
- * cut by the runtime's bound (Codex 1 s, Grok 1.5 s, Gemini CLI 30 s) or a
+ * cut by the runtime's bound (Codex 1 s, Grok 1.5 s) or a
  * background hook that dies used to leave the session `active = 1`: the row
  * `guessRuntimeSessionId` reads as "the session", which is how another
  * runtime's agent wrote into a Codex conversation (DS12.TS2 L9).

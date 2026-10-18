@@ -5,8 +5,8 @@
 // (extraction, then title/summary/tags). Some runtimes give a SessionEnd hook
 // less time than one model call: Codex runs it synchronously under a 1 s
 // default (DS12.TS2 L2; DS2's live `/hooks` table), Grok under 1.5 s
-// (DS12.TS4). Pi and Gemini CLI already close without extraction at exit and
-// let the next session start extract (`session-end-pi`). On a runtime that
+// (DS12.TS4). Pi already closes without extraction at exit and
+// lets the next session start extract (`session-end-pi`). On a runtime that
 // bounds the hook, the shared Claude-family `session-end` does the same, and a
 // little more: it also skips the metadata finalization, and flags the
 // conversation so the next start's maintenance finishes it.

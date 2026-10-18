@@ -61,11 +61,11 @@ export function noteHookFailure(hook: string, reason: string, env = process.env)
  * The Operating Instructions a SessionStart hook should hand its runtime, or
  * null when the project already carries this same file.
  *
- * CV22.DS10.US3, decision D13. An installed package reaches Claude Code and
- * Gemini CLI through hooks, skills, and an MCP server; none of those reads a
- * CLAUDE.md or GEMINI.md, so a session wired to the package would answer
- * `/mm-mirror` and still route no mode, sign no persona, and hold no Builder
- * boundary. Both runtimes read SessionStart's
+ * CV22.DS10.US3, decision D13. An installed package reaches Claude Code (and
+ * reached Gemini CLI, until CV21.DS8.US1) through hooks, skills, and an MCP
+ * server; none of those reads a CLAUDE.md, so a session wired to the package
+ * would answer `/mm-mirror` and still route no mode, sign no persona, and hold
+ * no Builder boundary. The runtime reads SessionStart's
  * `hookSpecificOutput.additionalContext`, so the session-start hook returns
  * `AGENTS.md` from the tree THIS code runs from -- the instructions always
  * match the core they ship with -- unless the project the session opened in
@@ -92,8 +92,9 @@ export function operatingInstructionsFor(
 }
 
 /**
- * The SessionStart answer both runtimes read: context as JSON, or `nothing`
- * -- what each runtime's hook printed before D13 (Gemini `{}`, Claude none).
+ * The SessionStart answer the runtime reads: context as JSON, or `nothing`
+ * -- what the runtime's hook printed before D13 (Claude none; Gemini CLI's
+ * `{}`, until CV21.DS8.US1 retired it).
  */
 export function sessionStartOutput(instructions: string | null, nothing = ""): string {
   if (instructions === null) return nothing;
@@ -148,9 +149,9 @@ export async function runFrontDoor(
 /**
  * The command a failure line may name: the family and its subcommand, never
  * the arguments. Arguments are where hooks put what the user said and what the
- * model answered -- the Gemini logger passes the prompt and the response as
- * argv -- and the first version of the failure line printed all of them (TS5
- * handoff review, finding P1).
+ * model answered -- the Gemini CLI logger, retired by CV21.DS8.US1, passed the
+ * prompt and the response as argv -- and the first version of the failure
+ * line printed all of them (TS5 handoff review, finding P1).
  */
 function commandName(argv: readonly string[]): string {
   return argv.slice(0, 2).join(" ");

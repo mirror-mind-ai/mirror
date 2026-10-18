@@ -10,8 +10,8 @@
 // A one-shot handoff rather than an argument because the hooks run the front
 // door in-process (`runFrontDoor`), through the same `main(argv)` every other
 // caller uses, and a payload does not belong in argv: argv is what `ps`
-// shows, and what the Gemini hooks already put a prompt into is the exception
-// this seam avoids repeating.
+// shows, and what the Gemini CLI hooks (retired by CV21.DS8.US1) put a prompt
+// into is the exception this seam avoids repeating.
 
 import { readFileSync } from "node:fs";
 

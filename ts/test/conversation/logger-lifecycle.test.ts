@@ -235,7 +235,7 @@ test("endSession closes the conversation and deactivates the session", async () 
 });
 
 // CV21.DS4.TS2: the session is inactive BEFORE the LLM tail, so a cut during
-// extraction (Codex's 1 s, Grok's 1.5 s, Gemini's 30 s) never leaves a session
+// extraction (Codex's 1 s, Grok's 1.5 s) never leaves a session
 // `active = 1` -- the state `guessRuntimeSessionId` reads as "the session"
 // (DS12.TS2 L9).
 test("endSession deactivates the session before the tail runs", async () => {

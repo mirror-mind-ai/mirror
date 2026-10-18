@@ -4,7 +4,8 @@
 //
 // CV22.DS10.TS5 plateau 1, decision D4. Twelve shell scripts across four
 // runtimes each spawned the interpreter one to five times per event. They now
-// run one Node process and name which hook they are:
+// run one Node process and name which hook they are (the Gemini CLI family,
+// `gemini:*`, retired with CV21.DS8.US1; Antigravity is its successor):
 //
 //     node ts/src/hooks/main.ts claude:inject
 //
@@ -37,12 +38,6 @@ import { pathToFileURL } from "node:url";
 import { loadConfiguration, silenceExperimentalWarnings } from "#runtime/config.ts";
 import { agyPreInvocation, agySessionStart, agyStop } from "./agy.ts";
 import { claudeHook } from "./claude.ts";
-import {
-  geminiLogAssistant,
-  geminiLogUser,
-  geminiSessionEnd,
-  geminiSessionStart,
-} from "./gemini.ts";
 import { readStdin } from "./payload.ts";
 import { noteHookFailure } from "./runtime.ts";
 
@@ -62,20 +57,6 @@ async function dispatch(name: string): Promise<number> {
           return agyPreInvocation(readStdin());
         case "stop":
           return agyStop(readStdin());
-        default:
-          break;
-      }
-      break;
-    case "gemini":
-      switch (hook) {
-        case "log-user":
-          return geminiLogUser(readStdin());
-        case "log-assistant":
-          return geminiLogAssistant(readStdin());
-        case "session-end":
-          return geminiSessionEnd(readStdin());
-        case "session-start":
-          return geminiSessionStart();
         default:
           break;
       }

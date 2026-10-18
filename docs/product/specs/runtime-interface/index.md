@@ -823,7 +823,7 @@ Standard smoke test structure:
 4. Inspect the isolated DB: verify `interface='<runtime>'` rows and message content
 5. Confirm production DB checksum unchanged after the test
 
-References: `scripts/smoke_gemini_cli.sh`, `scripts/smoke_claude_plugin.sh`
+References: `scripts/smoke_claude_plugin.sh`, `scripts/smoke_mirror_mcp.sh`
 
 ---
 

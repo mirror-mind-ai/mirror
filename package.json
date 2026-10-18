@@ -1,7 +1,7 @@
 {
   "name": "mirror-mind",
   "version": "0.34.0",
-  "description": "Mirror Mind: a local-first memory and identity framework for agentic AI runtimes (Pi, Claude Code, Gemini CLI, Codex)",
+  "description": "Mirror Mind: a local-first memory and identity framework for agentic AI runtimes (Pi, Claude Code, Codex, Antigravity)",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -15,7 +15,6 @@
     "agent",
     "pi-package",
     "claude-code",
-    "gemini-cli",
     "codex",
     "sqlite",
     "local-first"
@@ -36,7 +35,6 @@
     ".pi/extensions",
     ".pi/skills",
     ".claude/hooks",
-    ".gemini/hooks",
     "plugins/mirror-mind",
     ".agents/plugins",
     "AGENTS.md",
