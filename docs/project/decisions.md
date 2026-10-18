@@ -3161,6 +3161,61 @@ lets the model find them with `search_tool`; the seven catalog keys are
 with the same expectation. The headless route in the story package is the re-runnable
 measure, at about two cents a session.
 
+### Grok Build is at L3 through the canonical plugin
+
+**Date:** 2026-10-18 · **Context:** [CV21.DS10.US3](roadmap/cv21-runtime-expansion-ii/cv21-ds10-grok-build-through-the-canonical-plugin/cv21-ds10-us3-grok-at-honest-l3-through-the-shipped-plugin-measured-live/index.md),
+measured on grok 1.0.62 (1474f9cbdd91), binary `~/.grok/downloads/grok-1.0.62-macos-aarch64`,
+package 0.35.0, model grok-4.7, through the two steps `mirror init` prints and nothing
+else, in a scratch `HOME`/`GROK_HOME` with a seeded scratch Mirror home, the real
+`auth.json` read in place and the Navigator's provider key in the session environment.
+Three headless sessions read by field, then one TUI session by the Navigator, checked
+from the database, the probe hook's capture, the backups, the ledger, and Grok's own
+log. Evidence in the story's test guide.
+
+**The decision.** Grok Build's honest parity is **L3**, and the parity claim CV21's Done
+condition asks for rests on this measurement: the 25 skills advertised as slash
+commands; the Operating Instructions reaching the model through the home rule and not
+through the plugin's session-start context; Mirror Mode on `/mm-mirror` (the `◇
+financial` answer from the scratch identity, 34 s); every prompt and reply logged as
+`grok_build` with the reply carrying its prompt's `promptId` and the session-end Stop
+silent; the conversation closed at exit 213–259 ms after Grok's SessionEnd, inside the
+1.5 s Grok grants a plugin's SessionEnd hook whatever its own timeout (10-hooks.md,
+1.0.62), with the backup written, `close_tail_pending` set, no LLM call at the close,
+and the tail finished at the next start (DS4.TS2 measured on Grok for the first time,
+with a key); and the two negatives re-confirmed on 1.0.62 — a SessionStart
+`systemMessage` shown on screen and its `additionalContext` ignored, a prompt hook's
+`additionalContext` ignored — by a random canary the probe proved it emitted and the
+model never saw. No product change. TS4 writes the docs from this record.
+
+**How the rule was proven, and what it was not.** An ablation: the same prompt with the
+rule link removed (R0) and in place (R1). The first R0 attempt gave the model
+`read_file`, and it read the plugin's `SKILL.md` files to learn the four modes — the
+skill descriptions name Builder, Explorer, and Soul — so the modes are not a test of
+the rule. The decisive question became the *Ariad surface transport invariant*, a
+sentence only `AGENTS.md` holds: `UNKNOWN` without the rule, "Preserve every marked
+block verbatim before commentary." with it, the model given no tools at all. The
+plugin's SessionStart hook delivers the same text as `additionalContext`, and R0 shows
+it does not arrive.
+
+**What else the measurement found.** Grok fires a Stop at session end beyond each
+turn's own (2 for 1 turn, 5 for 4), which the plugin's Stop hook ignores as DS2.US8
+designed. The pre-model hooks hold a turn 0.4–2.6 s on Grok while the context they
+produce is discarded — a cost with no benefit at L3, captured as a Change Request
+candidate. A pasted multi-line prompt is sent line by line by the TUI. The account's
+`always-approve` mode let `mirror mirror load` run without a prompt; a default-mode
+account is asked. A one-turn conversation gets a title and defers its summary and
+tags by policy (four substantive messages); the four-turn TUI conversation got all
+three.
+
+**Cost.** Grok: about US$ 0.035 per headless session on grok-4.7 (US$ 0.139 for four);
+the TUI on the account's plan. Mirror: US$ 0.00077 for four conversations — four
+titles, one summary, one tag set, three receptions.
+
+**Consequences.** The headless route is Grok's isolated smoke, re-runnable by anyone
+with a Grok login and a provider key, at cents; the TUI session is the part that needs
+a person, two turns long. DS11 folds the L3 row into the parity matrix with this
+version, binary, and date.
+
 ## Open Discussions
 
 ### Migration rehearsal — long-term status
