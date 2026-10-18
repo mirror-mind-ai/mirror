@@ -3105,6 +3105,62 @@ through this install, and the 1.5 s close holds are US3's, measured live. Grok's
 session-start plugin auto-update was not observable without a session and is US3's
 question too.
 
+### Grok attaches the plugin's MCP server; its tools are reached through `search_tool` and `use_tool`
+
+**Date:** 2026-10-18 · **Context:** [CV21.DS10.TS2](roadmap/cv21-runtime-expansion-ii/cv21-ds10-grok-build-through-the-canonical-plugin/cv21-ds10-ts2-the-mcp-server-attaches-on-grok-or-the-reason-is-recorded/index.md),
+carried from [DS2's Debt Review](roadmap/cv21-runtime-expansion-ii/cv21-ds2-mirror-plugin-mcp-foundation/review.md)
+and [DS12.TS4 L6](roadmap/cv21-runtime-expansion-ii/cv21-ds12-runtime-re-baseline/cv21-ds12-ts4-grok-build-re-probe/index.md).
+Measured on grok 1.0.62 (1474f9cbdd91), package 0.35.0, 2026-10-18, through the install
+US1 prints, in a scratch `HOME`/`GROK_HOME` with the real `auth.json` read in place
+(`GROK_AUTH_PATH`), model grok-4.7, headless (`grok -p … --output-format
+streaming-messages-json --yolo --tools read_file --max-turns 4 --reasoning-effort low`).
+
+**The decision.** No product change. The October symptom — the server `[ready] · 7
+tools` in Grok's view, `mcp_server_count: 0` at session start, the model answering NONE
+— was the measurement, not the attachment: Grok puts MCP tools behind two meta-tools,
+`search_tool` and `use_tool`, and both probes asked the model to list what it had. The
+record says how Mirror's tools are reached on Grok, in Getting Started's Grok row and
+the runtime interface contract's wiring row; TS4 folds it into the Grok reference
+implementation.
+
+**What was measured.**
+
+- Static: `grok mcp doctor --json` on US1's install reports the plugin's server with
+  `command found (/bin/sh)`, `server started`, `handshake OK (protocol 2025-11-25)`,
+  `7 tools discovered`, healthy; `~/.grok/config.toml` holds 0 servers, the plugin 1.
+  The server's stderr log stays empty.
+- S1, the shipped plugin, one fixed prompt: `init.mcp_servers` names `mirror-mind` as
+  `pending`; `search_tool "mirror"` returns 5 scored results, all `mirror-mind__*`;
+  `use_tool mirror-mind__list_journeys` answers `[]` (a seeded scratch home with no
+  journeys); the model replies `FOUND …` / `RESULT []`. Three turns,
+  `total_cost_usd` 0.0245 and 0.0237 on two runs; the `init` tool catalog listed all
+  seven `mirror-mind__*` keys in one run and none in the other, both answering
+  `use_tool`.
+- S3, a control plugin carrying a 60-line inert stdio server (`ds10-ts2-control`,
+  one `ping` tool): attaches the same way, `use_tool ds10-ts2-control__ping` answers
+  `pong`, 0.0176. S2 (the locator as a `config.toml` entry) and S4 (`.mcp.json`
+  beside the manifest) were not needed and not run.
+- The session's `unified.jsonl`: setup phases `plugin_registry`, `mcp_merge`,
+  `plugin_refresh` (0 ms); `mcp_wait_ms: 0` at tool preparation; no
+  `Skipping MCP tool` line. The installed copy's files keep their install mtime after
+  the session: **Grok's session-start plugin scan does not touch a local-path copy** —
+  US1's hand-off, closed.
+- The real `~/.grok` and `~/.claude` configuration hashed unchanged (109 entries);
+  `auth.json` was rewritten once by Grok's own token refresh, as decision 1 allowed.
+
+**Why the counts read zero.** The `init` line of the stream is a snapshot taken at the
+first output line, and the session-start telemetry counts at the same moment; a stdio
+plugin server is still handshaking then (`pending`), so both read before it attaches.
+Nothing in Mirror's locator, manifest, or server is involved: the control server reads
+the same way.
+
+**Consequences.** A Grok user asks for Mirror's tools by name through `use_tool`, or
+lets the model find them with `search_tool`; the seven catalog keys are
+`mirror-mind__mirror_context`, `list_journeys`, `journey_status`, `search_memories`,
+`list_conversations`, `recall_conversation`, `detect_persona`. US3 measures the TUI
+with the same expectation. The headless route in the story package is the re-runnable
+measure, at about two cents a session.
+
 ## Open Discussions
 
 ### Migration rehearsal — long-term status
