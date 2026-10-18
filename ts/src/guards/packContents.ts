@@ -58,6 +58,9 @@ export const REQUIRED_FILES: readonly string[] = [
   ".claude/hooks/session-start.sh",
   ".gemini/hooks/session-start.sh",
   "plugins/mirror-mind/hooks/hooks.json",
+  // CV21.DS7.US1: the agy-native layer's hooks file. A tarball cannot ship
+  // the skills without the layer Antigravity runs them beside.
+  "plugins/mirror-mind/hooks.json",
   ".agents/plugins/marketplace.json",
 ];
 

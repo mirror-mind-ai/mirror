@@ -185,6 +185,7 @@ with `<pkg>` already filled in; `<pkg>` is `$(npm root -g)/mirror-mind`.
 | **Claude Code** | `ln -s "<pkg>/plugins/mirror-mind" ~/.claude/skills/mirror-mind` — the plugin loads every session: its skills, its hooks, and the MCP server |
 | **Gemini CLI** | 1. `gemini skills link --consent "<pkg>/.pi/skills"` 2. merge the four hooks `init` printed into `~/.gemini/settings.json` |
 | **Codex** | 1. `codex plugin marketplace add "<pkg>"` 2. `codex plugin add mirror-mind@mirror-mind` — the package is a marketplace with one plugin, the same one Claude Code loads; at the next session Codex asks once to trust its hooks, and from then on the plugin loads every session: its skills, its hooks, and the MCP server |
+| **Antigravity** | `agy plugin install "<pkg>/plugins/mirror-mind"` — one command stages the 25 skills and the plugin's agy-native layer (its rules, hooks file, and MCP entry). Today that gives you the skills and the Operating Instructions as rules; per-turn Mirror Mode injection and session logging are landing next (CV21.DS7.TS2/TS3) |
 
 Each step was verified against the runtime's own documentation, or the runtime
 itself where the documentation was silent; the versions and what each runtime

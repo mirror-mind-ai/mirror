@@ -1,0 +1,85 @@
+
+== agy version (recorded: 1.4.2) ==
+1.4.2
+
+== VARIANT A — Claude surfaces + agy layer, NO root plugin.json ==
+  ✗ plugin.json: no plugin.json found at the plugin root or in .antigravity-plugin or .gemini-plugin. This looks like a Claude Code plugin: `plugin install` converts it, but it doesn't load as is
+
+Error: validation failed: 1 error, 0 warnings
+          - mcpServers  : skipped (not found)
+          [32m✔[0m hooks       : 1 processed
+
+== staged tree under /var/folders/5k/q6bjkgn95gzd_qss7_5flyzw0000gp/T/tmp.m65FUl80ue/homeA ==
+.gemini/config/import_manifest.json
+.gemini/config/plugins/mirror-mind/.claude-plugin/plugin.json
+.gemini/config/plugins/mirror-mind/hooks.json
+.gemini/config/plugins/mirror-mind/hooks/hooks.json
+.gemini/config/plugins/mirror-mind/mcp_config.json
+.gemini/config/plugins/mirror-mind/plugin.json
+.gemini/config/plugins/mirror-mind/rules/AGENTS.md
+
+== staged root entries ==
+hooks
+hooks.json
+mcp_config.json
+plugin.json
+rules
+skills
+
+== staged hooks.json (first 12 lines) ==
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/session-start.sh\"",
+            "timeout": 300
+          }
+        ]
+
+== skill count ==
+      25
+
+== VARIANT B — the same, WITH root plugin.json (native marker) ==
+  skills 25 · agents 0 · rules 1 · hooks 1 · mcpServers 1 · sidecars 0
+
+✔ Validation passed with 26 warnings
+          [32m✔[0m mcpServers  : 1 processed
+          [32m✔[0m hooks       : 1 processed
+
+== staged tree under /var/folders/5k/q6bjkgn95gzd_qss7_5flyzw0000gp/T/tmp.m65FUl80ue/homeB ==
+.gemini/config/import_manifest.json
+.gemini/config/plugins/mirror-mind/.claude-plugin/plugin.json
+.gemini/config/plugins/mirror-mind/hooks.json
+.gemini/config/plugins/mirror-mind/hooks/hooks.json
+.gemini/config/plugins/mirror-mind/mcp_config.json
+.gemini/config/plugins/mirror-mind/plugin.json
+.gemini/config/plugins/mirror-mind/rules/AGENTS.md
+
+== staged root entries ==
+hooks
+hooks.json
+mcp_config.json
+plugin.json
+rules
+skills
+
+== staged hooks.json (first 12 lines) ==
+{
+  "mirror-mind": {
+    "enabled": true
+  }
+}
+
+== skill count ==
+      25
+
+== GEMINI COEXISTENCE — what agy writes under .gemini, beside Gemini CLI's keys ==
+agy wrote:
+.
+./config
+./config/import_manifest.json
+./config/plugins

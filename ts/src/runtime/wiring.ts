@@ -37,7 +37,7 @@
 import { join } from "node:path";
 import { commandOnPath } from "#util/paths.ts";
 
-export type RuntimeName = "pi" | "claude" | "gemini" | "codex";
+export type RuntimeName = "pi" | "claude" | "gemini" | "codex" | "antigravity";
 
 /**
  * The one Codex level-up command (CV21.DS4.TS6). Codex 0.163.0 has no
@@ -104,6 +104,19 @@ export const RUNTIME_WIRING: Readonly<Record<RuntimeName, RuntimeWiring>> = {
       ],
     ],
   },
+  antigravity: {
+    title: "Antigravity",
+    command: "agy",
+    steps: [
+      // CV21.DS7.US1, probed on agy 1.4.2: one command stages the 25 skills
+      // and the agy-native layer (the root plugin.json marker makes agy
+      // treat the directory as a native plugin; without it, install converts
+      // the Claude surfaces and overwrites the layer's hooks file). Per-turn
+      // injection and logging land with DS7's TS2/TS3; this line promises
+      // the install, nothing more.
+      (root) => [`agy plugin install "${root}/plugins/mirror-mind"`],
+    ],
+  },
   codex: {
     title: "Codex",
     command: "codex",
@@ -118,7 +131,7 @@ export const RUNTIME_WIRING: Readonly<Record<RuntimeName, RuntimeWiring>> = {
   },
 };
 
-const ORDER: readonly RuntimeName[] = ["pi", "claude", "gemini", "codex"];
+const ORDER: readonly RuntimeName[] = ["pi", "claude", "gemini", "codex", "antigravity"];
 
 /** The runtimes whose command is on the PATH, in display order. */
 export function detectRuntimes(

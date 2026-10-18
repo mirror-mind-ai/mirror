@@ -1,0 +1,105 @@
+### 3. `SessionStart` Contract
+Use to inject welcome messages, initial instructions, or startup context once at
+the beginning of a new conversation session.
+*   **Input (stdin)**: Common system metadata fields (`conversationId`,
+    `workspacePaths`, `transcriptPath`, `artifactDirectoryPath`, `modelName`).
+*   **Output (stdout)**:
+    ```json
+    {
+      "injectSteps": [
+        {
+          "systemMessage": {
+            "systemMessage": "Welcome! Custom workspace environment is active."
+          }
+        }
+      ]
+    }
+    ```
+    *   **`injectSteps`** (array of objects, optional): Steps to inject at
+        session startup. Accepts the same step types as `PreInvocation` (see
+        below).
+--------------------------------------------------------------------------------
+### 4. `PreInvocation` Contract
+Use to inject context or instructions before the model runs.
+*   **Input (stdin)**:
+    ```json
+    {
+      "invocationNum": 3,
+      "initialNumSteps": 10,
+      ... (common fields)
+    }
+    ```
+*   **Output (stdout)**:
+    ```json
+    {
+      "injectSteps": [
+        {
+          "ephemeralMessage": "Remember to check for lint errors before proposing changes."
+        }
+      ]
+    }
+    ```
+    *   **`injectSteps`** (array of objects, optional): Steps to inject.
+        Supported step types:
+        *   `{"systemMessage": {"systemMessage": "...", "metadata": {...}}}`
+            (persists in the conversation trajectory across turns; note that
+            `systemMessage` requires a nested object rather than a plain string)
+        *   `{"userMessage": "..."}` (plain string)
+        *   `{"ephemeralMessage": "..."}` (plain string; transient message
+            dropped after the current turn)
+--------------------------------------------------------------------------------
+### 5. `PostInvocation` Contract
+Use to inspect model outputs and potentially force continuation.
+*   **Input (stdin)**: Same as `PreInvocation` input.
+*   **Output (stdout)**:
+    ```json
+    {
+      "injectSteps": [],
+      "terminationBehavior": "force_continue"
+    }
+    ```
+    *   **`injectSteps`** (array, optional): Steps to inject (same supported
+        step types as `PreInvocation`).
+    *   **`terminationBehavior`** (string, optional):
+        *   `"force_continue"`: Forces the execution loop to continue.
+        *   `"terminate"`: Forces the loop to stop.
+        *   `""` (or omitted): Default behavior.
+--------------------------------------------------------------------------------
+### 6. `Stop` Contract
+Use to prevent the agent from stopping if goals are not met.
+*   **Input (stdin)**:
+    ```json
+    {
+      "executionNum": 1,
+      "terminationReason": "NO_TOOL_CALL", // e.g., "NO_TOOL_CALL", "MAX_INVOCATIONS", "ERROR", "USER_CANCELED", "TERMINAL_STEP_TYPE"
+      "error": "", // Present if stopped due to error
+      "fullyIdle": true, // true if all background tasks are done
+      ... (common fields)
+    }
+    ```
+    *   **`terminationReason`** (string): The `ExecutorTerminationReason` enum
+        name with the `EXECUTOR_TERMINATION_REASON_` prefix stripped:
+        *   `"NO_TOOL_CALL"`: Normal turn completion (model finished without
+            calling a tool).
+        *   `"MAX_INVOCATIONS"`: Hit the maximum invocation limit.
+        *   `"MAX_FORCED_INVOCATIONS"`: Hit the forced-continuation limit.
+        *   `"MAX_TOKEN_BUDGET_EXCEEDED"`: Exceeded the token budget.
+        *   `"ERROR"`: Execution terminated due to an error.
+        *   `"USER_CANCELED"`: Canceled by the user.
+        *   `"TERMINAL_STEP_TYPE"`: Stopped on a terminal step type.
+        *   `"TERMINAL_CUSTOM_HOOK"`: Terminated by a custom `PostInvocation`
+            hook.
+        *   `"INJECTED_RESPONSE"`: Terminated after an injected response.
+*   **Output (stdout)**:
+    ```json
+    {
+      "decision": "continue",
+      "reason": "The tests are still running in the background. Please wait."
+    }
+    ```
+    *   **`decision`** (string, required): Set to `"continue"` to block the stop
+        and re-enter the loop. Any other value allows the agent to stop.
+    *   **`reason`** (string, optional): Injected as a system message if
+        continuing.
+--------------------------------------------------------------------------------
+## Current Limitations

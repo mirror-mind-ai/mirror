@@ -1,0 +1,58 @@
+## Hook Spec Fields
+Each named hook supports:
+*   **`enabled`** (bool, optional): Defaults to `true`. Set to `false` to
+    disable.
+*   **`SessionStart`** (array, optional): Handlers running once when a new
+    conversation session starts.
+*   **`PreToolUse`** (array, optional): Handlers running before a tool executes.
+*   **`PostToolUse`** (array, optional): Handlers running after a tool
+    completes.
+*   **`PreInvocation`** (array, optional): Handlers running before the model is
+    called.
+*   **`PostInvocation`** (array, optional): Handlers running after tool calls
+    finish.
+*   **`Stop`** (array, optional): Handlers running when the execution loop
+    terminates.
+--------------------------------------------------------------------------------
+## Supported Event Types
+| Event            | When it fires     | Matcher target   | Structure         |
+| :--------------- | :---------------- | :--------------- | :---------------- |
+| `SessionStart`   | Once when a new   | N/A (ignored).   | Flat (list of     |
+:                  : session starts.   :                  : handler objects   :
+:                  :                   :                  : directly).        :
+| `PreToolUse`     | Before a tool     | Tool name (e.g., | Grouped (uses     |
+:                  : step executes.    : `run_command`).  : `matcher` &       :
+:                  :                   :                  : `hooks` wrapper). :
+| `PostToolUse`    | After a tool step | Tool name (e.g., | Grouped (uses     |
+:                  : completes.        : `run_command`).  : `matcher` &       :
+:                  :                   :                  : `hooks` wrapper). :
+| `PreInvocation`  | Before the model  | N/A (ignored).   | Flat (list of     |
+:                  : is called.        :                  : handler objects   :
+:                  :                   :                  : directly).        :
+| `PostInvocation` | After tool calls  | N/A (ignored).   | Flat (list of     |
+:                  : finish.           :                  : handler objects   :
+:                  :                   :                  : directly).        :
+| `Stop`           | When the          | N/A (ignored).   | Flat (list of     |
+:                  : execution loop    :                  : handler objects   :
+:                  : terminates.       :                  : directly).        :
+### The Matcher
+For tool-specific events (`PreToolUse`, `PostToolUse`), you must wrap the
+handlers in a group with a `matcher` regex:
+*   `"matcher": "*"` or `""`: Matches all tools.
+*   `"matcher": "run_command"`: Matches exactly `run_command`.
+*   `"matcher": "run_command\|view_file"`: Matches either tool.
+*   `"matcher": "browser_.*"`: Matches any tool starting with `browser_`.
+Tool names are derived by lowercasing the step type and removing the
+`CORTEX_STEP_TYPE_` prefix.
+--------------------------------------------------------------------------------
+## Hook Handler Fields
+Each individual hook handler object supports:
+*   **`type`** (string, optional): Defaults to `"command"`. Only `"command"`
+    (shell execution) is currently supported.
+*   **`command`** (string, required): The shell command to execute (run via `sh
+    -c` on Unix, `cmd /c` on Windows). `~` is expanded to the home directory.
+    The working directory is set to the directory containing `hooks.json`.
+*   **`timeout`** (int, optional): Execution timeout in seconds. Defaults to
+    `30`.
+--------------------------------------------------------------------------------
+## Input/Output Contract

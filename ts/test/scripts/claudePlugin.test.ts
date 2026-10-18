@@ -13,6 +13,10 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { after, describe, test } from "node:test";
 import {
+  agyHooksJson,
+  agyPluginMarkerJson,
+  buildAgyHooks,
+  buildAgyMcpConfig,
   buildManifest,
   buildMarketplace,
   discoverSkillSources,
@@ -46,6 +50,9 @@ function fixture(files: Record<string, string | null>): string {
   for (const skill of PI_SOURCED_SKILLS) {
     staged[join(PI_SKILLS_DIR, skill, "SKILL.md")] = piCopy(skill);
   }
+  // CV21.DS7.US1: the agy layer's rules file is generated from AGENTS.md,
+  // so a Mirror tree carries one; the builder fails loudly without it.
+  staged["AGENTS.md"] = "# Mirror Mind — Operating Instructions (fixture)\n";
   for (const [relPath, content] of Object.entries({ ...staged, ...files })) {
     if (content === null) continue;
     const full = join(root, relPath);
@@ -150,6 +157,68 @@ describe("Codex marketplace", () => {
     assert.equal(readFileSync(join(root, MARKETPLACE_PATH), "utf8"), marketplaceJson());
     writeFileSync(join(root, MARKETPLACE_PATH), "{}\n", "utf8");
     assert.deepEqual(materialize(root, { write: false }), [`out of date: ${MARKETPLACE_PATH}`]);
+  });
+});
+
+// CV21.DS7.US1. agy treats a directory as a NATIVE plugin only when a root
+// `plugin.json` marks it; without the marker, `agy plugin install` converts
+// the Claude surfaces and OVERWRITES a shipped root hooks.json with Claude's
+// (probe, agy 1.4.2, evidence in the story package). So the layer is four
+// generated files: the marker, the hooks skeleton (TS2/TS3 add behavior),
+// the MCP map, and the rules copy of AGENTS.md.
+describe("the agy-native layer", () => {
+  test("the four layer files are planned at agy's paths", () => {
+    const paths = planGeneratedFiles(REPO_ROOT).map((file) => file.relativePath);
+    for (const expected of [
+      join(PLUGIN_DIR, "plugin.json"),
+      join(PLUGIN_DIR, "hooks.json"),
+      join(PLUGIN_DIR, "mcp_config.json"),
+      join(PLUGIN_DIR, "rules", "AGENTS.md"),
+    ]) {
+      assert.ok(paths.includes(expected), expected);
+    }
+  });
+
+  test("the marker names the plugin and nothing Claude Code or Codex read", () => {
+    // Both resolve their manifest at .claude-plugin/plugin.json; the root
+    // marker exists for agy's native-plugin detection alone.
+    const marker = JSON.parse(agyPluginMarkerJson()) as Record<string, unknown>;
+    assert.equal(marker.name, PLUGIN_NAME);
+    assert.ok(!("mcpServers" in marker) && !("version" in marker) && !("hooks" in marker));
+  });
+
+  test("the MCP map is DERIVED from the manifest's entry — one locator, every carrier", () => {
+    // The CR071 lesson at the locator level: the manifest, the hook
+    // wrappers (mcpEntry.test.ts), and now the agy file carry one entry.
+    const version = readVersion(REPO_ROOT);
+    const manifest = buildManifest(version) as { mcpServers: unknown };
+    assert.deepEqual(buildAgyMcpConfig().mcpServers, manifest.mcpServers);
+  });
+
+  test("the hooks skeleton is one named hook, enabled, with no handlers yet", () => {
+    // TS2 (injection) and TS3 (logging) add the event arrays; US1 ships the
+    // valid shell agy's validator accepts (probe: hooks 1 processed).
+    assert.deepEqual(buildAgyHooks(), { [PLUGIN_NAME]: { enabled: true } });
+    assert.ok(agyHooksJson().endsWith("\n"));
+  });
+
+  test("rules/AGENTS.md is AGENTS.md's bytes, naming its source — the guard is the sync", () => {
+    const planned = planGeneratedFiles(REPO_ROOT).find(
+      (file) => file.relativePath === join(PLUGIN_DIR, "rules", "AGENTS.md"),
+    );
+    assert.ok(planned);
+    assert.equal(planned.content, readFileSync(join(REPO_ROOT, "AGENTS.md"), "utf8"));
+    assert.equal(planned.source, "AGENTS.md");
+  });
+
+  test("the Claude surfaces are byte-identical with the layer present — the negative control", () => {
+    // Accidental coupling inside the builder fails here, not in review.
+    const version = readVersion(REPO_ROOT);
+    assert.equal(
+      manifestJson(version),
+      readFileSync(join(REPO_ROOT, PLUGIN_DIR, ".claude-plugin", "plugin.json"), "utf8"),
+    );
+    assert.equal(marketplaceJson(), readFileSync(join(REPO_ROOT, MARKETPLACE_PATH), "utf8"));
   });
 });
 
