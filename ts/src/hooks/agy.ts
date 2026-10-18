@@ -63,7 +63,9 @@ const HIGH_WATER_KEY = "agy_last_step_index";
 export function parseAgyPayload(stdin: string): AgyPayload {
   try {
     const raw: unknown = JSON.parse(stdin);
-    if (typeof raw !== "object" || raw === null) return { conversationId: "", invocationNum: 0 };
+    if (typeof raw !== "object" || raw === null) {
+      return { conversationId: "", invocationNum: 0, transcriptPath: "" };
+    }
     const record = raw as Record<string, unknown>;
     return {
       conversationId: typeof record.conversationId === "string" ? record.conversationId : "",
