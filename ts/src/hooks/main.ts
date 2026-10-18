@@ -35,6 +35,7 @@
 
 import { pathToFileURL } from "node:url";
 import { loadConfiguration, silenceExperimentalWarnings } from "#runtime/config.ts";
+import { agyPreInvocation, agySessionStart } from "./agy.ts";
 import { claudeHook } from "./claude.ts";
 import {
   geminiLogAssistant,
@@ -51,6 +52,18 @@ async function dispatch(name: string): Promise<number> {
   switch (runtime) {
     case "claude":
       return claudeHook(hook ?? "");
+    case "agy":
+      // The Antigravity plugin's handlers (CV21.DS7.TS2), called through the
+      // generated agy-form wrappers in `plugins/mirror-mind/agy/`.
+      switch (hook) {
+        case "session-start":
+          return agySessionStart();
+        case "pre-invocation":
+          return agyPreInvocation(readStdin());
+        default:
+          break;
+      }
+      break;
     case "gemini":
       switch (hook) {
         case "log-user":

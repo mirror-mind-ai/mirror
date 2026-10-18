@@ -195,10 +195,24 @@ describe("the agy-native layer", () => {
     assert.deepEqual(buildAgyMcpConfig().mcpServers, manifest.mcpServers);
   });
 
-  test("the hooks skeleton is one named hook, enabled, with no handlers yet", () => {
-    // TS2 (injection) and TS3 (logging) add the event arrays; US1 ships the
-    // valid shell agy's validator accepts (probe: hooks 1 processed).
-    assert.deepEqual(buildAgyHooks(), { [PLUGIN_NAME]: { enabled: true } });
+  test("the hooks file names the two handlers with small explicit timeouts (TS2)", () => {
+    // US1 shipped the enabled skeleton; TS2 filled SessionStart and the
+    // gated PreInvocation adapter. Stop is TS3's. Commands are relative:
+    // agy runs handlers with cwd at the hooks.json directory.
+    const hooks = buildAgyHooks() as Record<
+      string,
+      { enabled: boolean; SessionStart: unknown[]; PreInvocation: unknown[]; Stop?: unknown }
+    >;
+    const named = hooks[PLUGIN_NAME];
+    assert.ok(named);
+    assert.equal(named.enabled, true);
+    assert.deepEqual(named.SessionStart, [
+      { type: "command", command: "agy/session-start.sh", timeout: 60 },
+    ]);
+    assert.deepEqual(named.PreInvocation, [
+      { type: "command", command: "agy/pre-invocation.sh", timeout: 15 },
+    ]);
+    assert.ok(!("Stop" in named), "Stop is TS3's");
     assert.ok(agyHooksJson().endsWith("\n"));
   });
 

@@ -1,5 +1,19 @@
 {
   "mirror-mind": {
-    "enabled": true
+    "enabled": true,
+    "SessionStart": [
+      {
+        "type": "command",
+        "command": "agy/session-start.sh",
+        "timeout": 60
+      }
+    ],
+    "PreInvocation": [
+      {
+        "type": "command",
+        "command": "agy/pre-invocation.sh",
+        "timeout": 15
+      }
+    ]
   }
 }

@@ -203,9 +203,24 @@ export function agyPluginMarkerJson(): string {
   return `${JSON.stringify(buildAgyPluginMarker(), null, 2)}\n`;
 }
 
-/** One named hook, enabled, no handlers: the shell TS2/TS3 put behavior in. */
+/**
+ * The named hook with its handlers (CV21.DS7.TS2). Commands are relative:
+ * agy sets a handler's cwd to the directory holding `hooks.json`, and the
+ * wrappers live beside it in `agy/` (generated agy-form; the pre-invocation
+ * wrapper gates on stdin before Node is ever resolved, because
+ * `PreInvocation` fires before every model call and blocks the agent loop).
+ * Timeouts are explicit and small: the fast path is shell-instant, the slow
+ * path is one `mirror load`, and a hang here freezes the agent — which a
+ * user reads as "Antigravity broke", not "Mirror hung". `Stop` is TS3's.
+ */
 export function buildAgyHooks(): Record<string, unknown> {
-  return { [PLUGIN_NAME]: { enabled: true } };
+  return {
+    [PLUGIN_NAME]: {
+      enabled: true,
+      SessionStart: [{ type: "command", command: "agy/session-start.sh", timeout: 60 }],
+      PreInvocation: [{ type: "command", command: "agy/pre-invocation.sh", timeout: 15 }],
+    },
+  };
 }
 
 export function agyHooksJson(): string {

@@ -379,12 +379,14 @@ describe("a hook that cannot run is recorded, never silent (N1)", () => {
   });
 });
 
-describe("the twelve wrappers", () => {
-  // Two forms (US3, D5): the nine in-tree wrappers resolve the tree from
-  // their own file; the plugin's five find the installed `mirror-hook` bin,
-  // because Claude Code copies a plugin into its own cache. (The Codex
-  // wrapper's two made it fourteen, until CV21.DS4.TS5 retired them with
-  // the wrapper: the plugin is the Codex path now.)
+describe("the wrapper forms", () => {
+  // Three forms, counted per group, never as a total baked into a name (the
+  // TS5 lesson): nine tree wrappers resolve the tree from their own file;
+  // the plugin's five bin wrappers find the installed `mirror-hook`,
+  // because Claude Code copies a plugin into its own cache; and the
+  // plugin's two agy wrappers (CV21.DS7.TS2) are the bin search behind a
+  // stdin gate, because Antigravity's PreInvocation fires before every
+  // model call and blocks the agent loop on each hook.
   const TREE_WRAPPERS = [
     ".claude/hooks/session-start.sh",
     ".claude/hooks/log-user-prompt.sh",
@@ -403,11 +405,16 @@ describe("the twelve wrappers", () => {
     "plugins/mirror-mind/hooks/mirror-inject.sh",
     "plugins/mirror-mind/hooks/log-assistant-reply.sh",
   ];
-  const WRAPPERS = [...TREE_WRAPPERS, ...BIN_WRAPPERS];
+  const AGY_WRAPPERS = [
+    "plugins/mirror-mind/agy/session-start.sh",
+    "plugins/mirror-mind/agy/pre-invocation.sh",
+  ];
+  const WRAPPERS = [...TREE_WRAPPERS, ...BIN_WRAPPERS, ...AGY_WRAPPERS];
 
   const normalized = (path: string) =>
     readFileSync(join(REPO_ROOT, path), "utf8")
       .replace(/^HOOK=".*"$/m, 'HOOK="<NAME>"')
+      .replace(/^GATE='.*'$/m, "GATE='<GATE>'")
       .replace(/\$HERE\/\.\.[./]*/g, "$HERE/<DEPTH>");
 
   test("within a form, differ only in the hook name and the depth to the tree root", () => {
@@ -415,7 +422,7 @@ describe("the twelve wrappers", () => {
     // the front door on Pi while still calling Python on Claude Code and the
     // published plugin, for commands flipped as far back as DS3, and nothing
     // failed -- because Python answered correctly. Copies drift silently.
-    for (const group of [TREE_WRAPPERS, BIN_WRAPPERS]) {
+    for (const group of [TREE_WRAPPERS, BIN_WRAPPERS, AGY_WRAPPERS]) {
       const bodies = group.map(normalized);
       for (const [index, body] of bodies.entries()) {
         assert.equal(body, bodies[0], `${group[index]} differs beyond its hook name`);
@@ -507,7 +514,12 @@ describe("the twelve wrappers", () => {
     // A wrapper added to a hooks directory and not listed here would escape
     // every assertion above.
     const found: string[] = [];
-    for (const dir of [".claude/hooks", ".gemini/hooks", "plugins/mirror-mind/hooks"]) {
+    for (const dir of [
+      ".claude/hooks",
+      ".gemini/hooks",
+      "plugins/mirror-mind/hooks",
+      "plugins/mirror-mind/agy",
+    ]) {
       for (const entry of readdirSync(join(REPO_ROOT, dir))) {
         if (entry.endsWith(".sh")) found.push(`${dir}/${entry}`);
       }
