@@ -12,6 +12,24 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-10-18 — v0.35.0 released: Four Runtimes, One Successor
+
+Minor release closing CV21.DS8. The Gemini CLI integration no longer ships;
+Antigravity stands in its place, the gate met by DS7.US4's live L4 on agy
+1.4.2. Three stories in order: US1 removed the wrappers, the `gemini:*` hook
+family, the `init` steps, and the smoke, with a `gemini-cli` retired-surface
+row split by story so nothing went red between them; US2 swept twenty
+runtime-facing docs and widened the row; US3 wrote the cutoff into the note —
+opening with what the user keeps — and the un-wiring guidance into Getting
+Started and troubleshooting, with the one fact the note most needed
+measured: Gemini CLI 0.61.0 skips a missing hook command in silence. Paid on
+the way, outside the stories: the `agy.ts` typecheck error (CI's typecheck
+gate red since DS7.TS3) and the plugin copy's `REFERENCE.md` link (the docs
+link check red since DS7.US1) — the first fully green push to `main` since
+DS7. Tag and `stable` pushed; the trusted-publisher stage approved; `latest`
+and `stable` at 0.35.0; GitHub Release published. D-031 recorded and
+cross-referenced to CR142.
+
 ### 2026-10-17 — v0.34.0 released: Codex Through the Canonical Plugin
 
 Minor release closing CV21.DS4. Codex runs Mirror through the canonical
