@@ -18,8 +18,8 @@ Applies to all sessions, regardless of project.
 The mirror operates in four modes, chosen automatically based on context:
 Mirror, Builder, Explorer, and Soul.
 
-Each skill below is named three ways: `/mm-<skill>` in Pi, `$mm-<skill>` in
-Codex, `/mm:<skill>` in Claude Code. A **plugin** install prefixes the plugin's
+Each skill below is named three ways: `/mm-<skill>` in Pi and Grok Build,
+`$mm-<skill>` in Codex, `/mm:<skill>` in Claude Code. A **plugin** install prefixes the plugin's
 name — `/mirror-mind:mm:<skill>` in Claude Code's menu and in Antigravity,
 `$mirror-mind:mm:<skill>` in Codex, `mirror-mind:mm-<skill>` as the skill's own
 name — and the forms below refer to the same skill.
