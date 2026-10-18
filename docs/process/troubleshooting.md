@@ -20,6 +20,7 @@ but no fix yet are also welcome (mark them `Status: mitigated`).
 
 ## Contents
 
+- [Gemini CLI runs a Mirror hook that no longer exists](#gemini-cli-runs-a-mirror-hook-that-no-longer-exists)
 - [`runtime update` blocks on a migration from a newer version](#runtime-update-blocks-on-a-migration-from-a-newer-version)
 - [`runtime update` blocks with `unable to open database file`](#runtime-update-blocks-with-unable-to-open-database-file)
 - [Runtime update channel `stable` is not fetched or unavailable](#runtime-update-channel-stable-is-not-fetched-or-unavailable)
@@ -38,6 +39,41 @@ but no fix yet are also welcome (mark them `Status: mitigated`).
 - [`extensions install` writes migrations to the wrong database outside production](#extensions-install-writes-migrations-to-the-wrong-database-outside-production)
 - [`extensions install` copies through a symlinked extension path](#extensions-install-copies-through-a-symlinked-extension-path)
 - [`extensions install` collapses the runtime skill catalog to one extension](#extensions-install-collapses-the-runtime-skill-catalog-to-one-extension)
+
+---
+
+## Gemini CLI runs a Mirror hook that no longer exists
+
+### Symptom
+
+Gemini CLI sessions stopped being logged, or Mirror Mode context stopped
+arriving, after updating Mirror Mind to v0.35.0 or newer. Gemini CLI itself
+may say nothing: on 0.61.0, a registered hook whose command is missing is
+skipped silently (measured in `gemini -p` on 2026-10-18).
+
+### Root cause
+
+Mirror Mind retired its Gemini CLI integration in v0.35.0
+([release note](../releases/v0.35.0.md)); Antigravity is its successor. The
+wiring an earlier `mirror init` printed told you to merge four hook entries
+into `~/.gemini/settings.json` with absolute paths into the installed package.
+Those files no longer ship, so the entries point at nothing. The links
+Gemini CLI's `skills link` command created still resolve, so the skills
+appear to work while logging and injection do not.
+
+### Fix
+
+Install Antigravity (`agy plugin install "<pkg>/plugins/mirror-mind"`, the
+step `mirror init` prints), then delete what the old wiring left:
+
+- in `~/.gemini/settings.json`, the four entries named `mirror-session-start`,
+  `mirror-log-user`, `mirror-log-assistant`, and `mirror-session-end`;
+- in `~/.gemini/skills/`, the `mm-*` links.
+
+Your home, memories, journeys, and the conversations logged as `gemini_cli`
+are untouched. To stay on Gemini CLI a while longer, pin
+`npm install -g mirror-mind@0.34.0`, the last release that carries the
+integration; `runtime update` will keep offering the newer version.
 
 ---
 

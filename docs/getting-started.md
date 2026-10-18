@@ -308,6 +308,26 @@ context is injected once per turn without an explicit invocation (measured on
 agy 1.4.2, CV21.DS7.US4). Each turn is logged as `antigravity`; agy has no
 session-end signal, so the conversation closes when your next session starts.
 
+**If you used Gemini CLI before this version.** You did if, at an earlier
+version, you linked Mirror's skills with Gemini CLI's `skills link` command
+and merged four Mirror hooks into `~/.gemini/settings.json`. Mirror Mind no longer ships that integration
+(retired in v0.35.0; the [release note](releases/v0.35.0.md) has the full
+cutoff). Your home, memories, journeys, and logged conversations are
+untouched — only the runtime changes. Install Antigravity as above, then
+remove what the old wiring left behind, or Gemini CLI keeps running a hook
+command that no longer exists:
+
+- in `~/.gemini/settings.json`, delete the four entries named
+  `mirror-session-start`, `mirror-log-user`, `mirror-log-assistant`, and
+  `mirror-session-end` (under `SessionStart`, `BeforeAgent`, `AfterAgent`,
+  and `SessionEnd`);
+- in `~/.gemini/skills/`, delete the `mm-*` links the skills link created.
+
+Mirror never wrote those files and does not edit them. If you need Gemini CLI
+a while longer, `npm install -g mirror-mind@0.34.0` is the last release that
+carries it; the welcome card and `runtime update` will keep offering the
+newer version.
+
 ### How the mirror reaches each runtime
 
 Every session needs two things from the package: the skills, which the wiring

@@ -48,9 +48,9 @@ each runtime through import/install rather than reimplementation. Four drivers:
   individual backend on **2026-06-18**
   ([notice](https://developers.google.com/gemini-code-assist/docs/deprecations/code-assist-individuals)).
   Its successor is **Google Antigravity** (`agy` CLI), which can import Claude
-  plugins. Mirror retires its Gemini CLI integration
+  plugins. Mirror retired its Gemini CLI integration
   ([decision](../../decisions.md#gemini-cli-is-retired-and-antigravity-is-its-successor)),
-  which v0.32.1 still ships.
+  which v0.32.1 still shipped, in v0.35.0 (DS8).
 - **Add — Grok Build:** **xAI Grok Build** (`grok` CLI, [x.ai/cli](https://x.ai/cli))
   is a new runtime that already discovers our skills and can import plugins.
 
@@ -155,7 +155,7 @@ names the runtime version, binary, and date it was measured on (the
 - **Codex** is upgraded from the CV8 wrapper to a hook-based integration (target
   L4) with native skills, writing `interface='codex'`.
 - **Antigravity** runs Mirror with continuity (`interface='antigravity'`) by
-  importing the canonical plugin; the Gemini CLI integration is retired.
+  importing the canonical plugin; the Gemini CLI integration is retired (v0.35.0).
 - **Grok Build** runs Mirror at its highest honest parity, `interface='grok_build'`.
 - **User-owned extensions** (the `review-copy` reference and others) work on every
   runtime, riding the same plugin/MCP package — not just built-in `mm-*` skills.
@@ -179,7 +179,7 @@ package gets one when it is pulled, and expands into User and Technical Stories.
 | CV21.DS5 | User Extensions On Every Runtime | Reshaped: Codex's skills now arrive with the plugin (DS12.TS2). One exposure design for user extensions across Claude Code, Codex, Antigravity, and Grok, chosen from DS12.TS5's three shapes. `review-copy` is proven on each | 🟡 Planned |
 | [CV21.DS6](cv21-ds6-antigravity-runtime-spike/index.md) | Antigravity Runtime Spike | Confirmed (read-only, no config mutated): hooks are tool/invocation/stop-centric — **no `UserPromptSubmit`/`additionalContext`** → honest parity **L3** (not L4); skills via `.agents/skills/` (no migration); Mirror Mode via `AGENTS.md`; `agy plugin import claude` path confirmed. `PreInvocation`+`HookSystemMessage` injection flagged for DS7 | ✅ Done |
 | CV21.DS7 | Antigravity Through Skills And A Native Layer | `agy plugin install` brings the skills. A thin agy-native layer adds hooks in agy's schema: SessionStart instructions, `PreInvocation` injection once per user turn, and Stop logging from the transcript as `antigravity`. It also adds `mcp_config.json` and `rules/AGENTS.md`. Target L4, and the bar for removing Gemini CLI (DS12.TS3). Done 2026-10-18: Antigravity at **L4** on agy 1.4.2, all five bar items measured live (US1 install+layer, TS2 instructions+injection, TS3 logging+close, US4 the bar-walk); a scope change wired Mirror Mode activation at SessionStart so per-turn injection fires. DS8's gate is met — a Gemini CLI user loses nothing and gains MCP | ✅ Done |
-| CV21.DS8 | Gemini CLI Sunset | The Gemini CLI integration v0.32.1 still ships is removed behind a documented cutoff ([decision](../../decisions.md#gemini-cli-is-retired-and-antigravity-is-its-successor)): the `.gemini/hooks` wrappers, the `gemini` hook family, the `mirror init` steps, the Gemini smoke, and every runtime-facing doc; Antigravity named as the successor; released with its own note. Gemini *models* are untouched. Gated on DS7 meeting the bar in DS12.TS3. Honest note: Gemini CLI was L4, and Antigravity is L4 reachable on agy 1.3.4 (DS12.TS3), so the cutoff should lose nothing. In progress: US1 (the package and `mirror init` drop Gemini CLI) and US2 (every runtime-facing doc names four runtimes) done 2026-10-18; the tree is releasable, US3 writes the cutoff and cuts the release | 🟢 In Progress |
+| CV21.DS8 | Gemini CLI Sunset | The Gemini CLI integration v0.32.1 still ships is removed behind a documented cutoff ([decision](../../decisions.md#gemini-cli-is-retired-and-antigravity-is-its-successor)): the `.gemini/hooks` wrappers, the `gemini` hook family, the `mirror init` steps, the Gemini smoke, and every runtime-facing doc; Antigravity named as the successor; released with its own note. Gemini *models* are untouched. Gated on DS7 meeting the bar in DS12.TS3. Honest note: Gemini CLI was L4, and Antigravity is L4 reachable on agy 1.3.4 (DS12.TS3), so the cutoff should lose nothing. Done 2026-10-18, released as **v0.35.0** (Four Runtimes, One Successor): US1 dropped the integration from the package and `mirror init`, US2 made every runtime-facing doc name four runtimes, US3 recorded the cutoff in the note — what you keep, removed, why, instead, still works, if you do nothing (Gemini CLI 0.61.0 skips a missing hook in silence, measured), the v0.34.0 pin — with guidance in Getting Started and troubleshooting; a `gemini-cli` retired-surface row keeps it removed | ✅ Done |
 | [CV21.DS9](cv21-ds9-grok-build-runtime-spike/index.md) | Grok Build Runtime Spike | Confirmed (read-only, no config mutated): full Claude-style hook lifecycle read from `.claude/settings.json` (native logging, **not** export/backfill); `UserPromptSubmit` passive → no injection → honest parity **L3** (strong L1); skills via `.agents/skills/` (no migration); plugins via `.claude/plugins/` compat; MCP in `config.toml` | ✅ Done |
 | CV21.DS10 | Grok Build Through The Canonical Plugin | Grok already takes the plugin's skills, and the Claude wiring alone also gives them. It logs as `grok_build`, replies included, after DS2.US8. The MCP attachment is investigated (DS12.TS4 L6): DS2 found the server ready with its 7 tools in Grok's own view while Grok creates every session with `mcp_server_count: 0`. Carried from DS2's Debt Review: Grok bounds a SessionEnd hook with no timeout at 1.5 s, and the honest L3 is documented: Grok has no per-turn injection | 🟡 Planned |
 | CV21.DS11 | Contract & Docs Refresh | All runtimes folded into the runtime interface contract, decisions, and the parity matrix across README, Getting Started, REFERENCE, and architecture. The matrix carries version, binary, and date. Also documented: the status line as a user step (DS2.US3 dropped), and Claude Code reading a project `AGENTS.md` natively (DS12.TS1 L8) | 🟡 Planned |
@@ -284,7 +284,7 @@ Done        DS1 · DS3 · DS6 · DS9   June spikes, superseded by DS12
             DS2  the canonical plugin, ready for Claude Code, Codex, and Grok (2026-10-13)
 Done          ├── DS4  Codex through the canonical plugin        (L4, 2026-10-17)
               ├── DS7  Antigravity: skills + a native layer       (L4, 2026-10-18)   ✅
-              │     └── DS8  Gemini CLI removal                   (only once DS7 meets the bar)
+              │     └── DS8  Gemini CLI removal                   (v0.35.0, 2026-10-18)  ✅
               └── DS10 Grok through the canonical plugin          (honest L3)
                     └── DS5  user extensions on every runtime
                           └── DS11 contract & docs refresh

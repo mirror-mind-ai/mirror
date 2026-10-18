@@ -2,7 +2,7 @@
 
 # CV21.DS8 — Gemini CLI Sunset
 
-**Status:** 🟢 In Progress — US1, US2 done 2026-10-18
+**Status:** ✅ Done — released as v0.35.0, 2026-10-18
 **Type:** Delivery Story
 **User-visible outcome:** Mirror no longer ships a Gemini CLI integration. The
 package carries no `.gemini/hooks`, `mirror init` prints no Gemini steps, every
@@ -89,7 +89,7 @@ Stays (not the integration):
 |------|-------|------|---------|--------|
 | [CV21.DS8.US1](cv21-ds8-us1-gemini-cli-sunset/index.md) | The package and `mirror init` drop Gemini CLI | User Story | `npm pack` lists no `.gemini/` path; `mirror-hook gemini:*` is an unknown family; `mirror init` prints no Gemini steps with `gemini` on the PATH; the Gemini smoke and the npm smoke's Gemini section are gone; a retired-surface row keeps `.gemini/`, `hooks/gemini.ts`, and `smoke_gemini_cli` from returning (the doc-facing names join in US2). Gemini models, agy's `~/.gemini/` paths, and `gemini_cli` history untouched. Done 2026-10-18: 3306 tests, npm smoke 70/70, five observations accepted; the P1 redaction test now runs through the Claude family | ✅ Done |
 | [CV21.DS8.US2](cv21-ds8-us2-every-runtime-facing-doc-names-four-runtimes/index.md) | Every runtime-facing doc names four runtimes, Antigravity as the successor | User Story | README, Getting Started, REFERENCE, AGENTS.md and its copies, the runtime-interface spec and parity table, the welcome spec, and the skills that named Gemini CLI describe Pi, Claude Code, Codex, and Antigravity; `rg -i "gemini cli"` outside history, models, and the cutoff finds nothing; the operating-instructions and skill-copy guards agree. Done 2026-10-18: 20 files, the `gemini-cli` guard row widened with the doc-facing names, release tripwire green; the subscription table drops Gemini AI Pro and invents no Antigravity row | ✅ Done |
-| [CV21.DS8.US3](cv21-ds8-us3-the-cutoff-ships-in-its-own-release-note/index.md) | The cutoff ships in its own release note | User Story | A cutoff record in the CV22 shape — removed, why, what to do instead (`agy plugin install`, one step), what still works (Gemini models, logged conversations), and what a user who does nothing sees (four unresolved `mirror-*` hooks in `~/.gemini/settings.json`, the `~/.gemini/skills/` links) with the exact entries to delete; the release note carries it; the release is cut | 🟡 Planned |
+| [CV21.DS8.US3](cv21-ds8-us3-the-cutoff-ships-in-its-own-release-note/index.md) | The cutoff ships in its own release note | User Story | A cutoff record in the CV22 shape — removed, why, what to do instead (`agy plugin install`, one step), what still works (Gemini models, logged conversations), and what a user who does nothing sees (four unresolved `mirror-*` hooks in `~/.gemini/settings.json`, the `~/.gemini/skills/` links) with the exact entries to delete; the release note carries it; the release is cut. Done 2026-10-18: the cutoff is v0.35.0's own section, opening with what the user keeps; Gemini CLI's silence on a missing hook measured (0.61.0, headless); the agy skills-link question not measured (needs an interactive login; probe script in the package); guidance in Getting Started and troubleshooting with no guard exemption | ✅ Done |
 
 ## Non-Goals
 

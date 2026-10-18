@@ -1355,7 +1355,10 @@ request belongs is for the fix to decide.
 **Kind:** testing
 **Severity:** low
 **Status:** Carried
-**Source:** CV21.DS8.US1 validation (observed), 2026-10-18
+**Source:** CV21.DS8.US1 validation (observed), 2026-10-18 — the same finding
+CV21.DS4.TS5's validation captured as
+[CR142](refinement/rs010-cv22-oracle-and-port-hygiene/cr142-the-plugin-smoke-s-negative-probe-fails-on-a-machine-with-a-global-mirror-hook.md);
+this entry is the ledger's record of it, and closes when CR142 does.
 
 ### Carrying reason
 

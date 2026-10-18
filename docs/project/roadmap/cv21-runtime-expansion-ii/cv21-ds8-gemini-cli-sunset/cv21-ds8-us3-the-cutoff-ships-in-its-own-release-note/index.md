@@ -2,7 +2,7 @@
 
 # CV21.DS8.US3 — The cutoff ships in its own release note
 
-**Status:** 🟡 Planned
+**Status:** ✅ Done — 2026-10-18
 **Type:** User Story
 
 ---
@@ -83,6 +83,22 @@ Then the version is bumped, the note is in docs/releases/ and indexed, the
   never wrote them and does not touch them.
 - Rewriting the v0.33.0 notice, v0.32.0, or any earlier note.
 - Any Antigravity change: DS7 shipped it.
+
+## Done (2026-10-18)
+
+The cutoff is `docs/releases/v0.35.0.md`'s own section — *Four Runtimes, One
+Successor* — opening with what the user keeps, then the CV22 order. Two
+probes before prose: Gemini CLI 0.61.0 in a scratch HOME skips a registered
+hook whose command is missing, in silence, and the session proceeds (headless
+mode, with a control hook proving hooks fire there); whether Antigravity reads
+`~/.gemini/skills/` was not measured — agy's login is not a file, the probe
+needs an interactive OAuth approval, and `probe-agy-skills.sh` in this package
+is the re-runnable route. The guidance in Getting Started and troubleshooting
+names the four entries and the links without the deleted path or the literal
+skills-link command, so the guard needed no exemption — the literal tripped
+it once and was rephrased, per the plan's rule. Two commits as DS4: the story,
+then the four-file release commit. Publication followed on the Navigator's
+word, step by step.
 
 ## Validation
 
