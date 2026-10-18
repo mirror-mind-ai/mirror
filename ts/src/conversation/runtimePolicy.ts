@@ -40,11 +40,20 @@ export function sessionEndRunsLlmTail(interfaceName: string | null | undefined):
  *                (DS2). The session is still re-measured by the next story that
  *                depends on it.
  *
+ *   antigravity  1.4.2: agy exposes no SessionEnd hook at all (its contracts
+ *                are SessionStart, PreTool, PostTool, PreInvocation,
+ *                PostInvocation, Stop; CV21.DS7.TS2 probe). Stop fires at each
+ *                turn's end, never at session end, so nothing closes the
+ *                conversation at TUI exit — the same situation as Codex, reached
+ *                by a different absence. The agy Stop handler logs each turn and
+ *                leaves the conversation open (CV21.DS7.TS3); the orphan close
+ *                is what ends it, and the next SessionStart sweeps it.
+ *
  * For such a runtime, an open conversation idle past the orphan threshold is an
  * orphan even while its session is active, and the close deactivates the session
  * (`closeStaleOrphans`). Every other runtime's session ends with its TUI, and an
  * active session there means a person who may still be typing.
  */
 export function sessionOutlivesTui(interfaceName: string | null | undefined): boolean {
-  return interfaceName === "codex";
+  return interfaceName === "codex" || interfaceName === "antigravity";
 }

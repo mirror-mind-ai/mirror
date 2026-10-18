@@ -35,7 +35,7 @@
 
 import { pathToFileURL } from "node:url";
 import { loadConfiguration, silenceExperimentalWarnings } from "#runtime/config.ts";
-import { agyPreInvocation, agySessionStart } from "./agy.ts";
+import { agyPreInvocation, agySessionStart, agyStop } from "./agy.ts";
 import { claudeHook } from "./claude.ts";
 import {
   geminiLogAssistant,
@@ -60,6 +60,8 @@ async function dispatch(name: string): Promise<number> {
           return agySessionStart();
         case "pre-invocation":
           return agyPreInvocation(readStdin());
+        case "stop":
+          return agyStop(readStdin());
         default:
           break;
       }

@@ -34,9 +34,15 @@
 // argv, never a shell, and failures recorded in hooks.log are facts, never
 // payload text.
 
+import { readAgyTurns } from "#conversation/agyTranscript.ts";
+import { isCommandTurn } from "#conversation/commandTurn.ts";
+import { logAssistantMessage, logUserMessage } from "#conversation/logger.ts";
 import { resolveDbPath } from "#frontDoor/dbPath.ts";
+import { openLiveWriteDatabase } from "#frontDoor/liveBackup.ts";
+import { decodeMetadata, getRuntimeSession, upsertRuntimeSession } from "#mirror/runtimeSession.ts";
+import { newId, nowIso } from "#util/pyGenerators.ts";
 import { readMirrorState } from "./mirrorState.ts";
-import { runFrontDoor, runFrontDoorQuietly } from "./runtime.ts";
+import { noteHookFailure, runFrontDoor, runFrontDoorQuietly } from "./runtime.ts";
 
 /** agy's empty answer, which every path that injects nothing must print. */
 const EMPTY = "{}\n";
@@ -44,7 +50,11 @@ const EMPTY = "{}\n";
 interface AgyPayload {
   readonly conversationId: string;
   readonly invocationNum: number;
+  readonly transcriptPath: string;
 }
+
+/** The key under which the Stop handler stores its high-water step_index. */
+const HIGH_WATER_KEY = "agy_last_step_index";
 
 /**
  * Parse agy's camelCase protojson payload. Anything malformed reads as the
@@ -59,15 +69,86 @@ export function parseAgyPayload(stdin: string): AgyPayload {
       conversationId: typeof record.conversationId === "string" ? record.conversationId : "",
       // protojson omits zero-valued fields: absent IS 0.
       invocationNum: typeof record.invocationNum === "number" ? record.invocationNum : 0,
+      transcriptPath: typeof record.transcriptPath === "string" ? record.transcriptPath : "",
     };
   } catch {
-    return { conversationId: "", invocationNum: 0 };
+    return { conversationId: "", invocationNum: 0, transcriptPath: "" };
   }
 }
 
 /** `SessionStart`: logging on, answer the contract. */
 export async function agySessionStart(): Promise<number> {
   await runFrontDoorQuietly("agy:session-start", ["conversation-logger", "session-start"]);
+  process.stdout.write(EMPTY);
+  return 0;
+}
+
+/**
+ * `Stop`: fires at the end of each user turn (agy has no SessionEnd hook).
+ * Read the transcript, append the turns past the stored high-water
+ * `step_index` as `antigravity`, and leave the conversation open — session
+ * maintenance closes it as a stale orphan, the path Codex uses (Shape A).
+ *
+ * A re-fired Stop, or a grown transcript whose turns are all logged, adds
+ * nothing: the high-water mark is the idempotency key. A skill turn is
+ * skipped, the one-home rule. Any failure is recorded in hooks.log, never
+ * fails the turn, and the handler always answers agy's contract.
+ */
+export async function agyStop(stdin: string): Promise<number> {
+  const payload = parseAgyPayload(stdin);
+  if (!payload.conversationId || !payload.transcriptPath) {
+    process.stdout.write(EMPTY);
+    return 0;
+  }
+
+  const turns = readAgyTurns(payload.transcriptPath);
+  if (turns.length === 0) {
+    process.stdout.write(EMPTY);
+    return 0;
+  }
+
+  let dbPath: string;
+  try {
+    dbPath = resolveDbPath([], process.env);
+  } catch {
+    process.stdout.write(EMPTY);
+    return 0;
+  }
+
+  try {
+    const db = openLiveWriteDatabase(dbPath);
+    try {
+      const sessionId = payload.conversationId;
+      const existing = getRuntimeSession(db, sessionId);
+      const stored = decodeMetadata(existing?.metadata ?? null);
+      const highWater =
+        typeof stored[HIGH_WATER_KEY] === "number" ? (stored[HIGH_WATER_KEY] as number) : -1;
+      const deps = { newId, nowIso };
+      const options = { interface: "antigravity" };
+
+      let newHighWater = highWater;
+      for (const turn of turns) {
+        if (turn.lastStepIndex <= highWater) continue;
+        if (!isCommandTurn(turn.userText)) {
+          logUserMessage(db, sessionId, turn.userText, options, deps);
+          logAssistantMessage(db, sessionId, turn.replyText, options, deps);
+        }
+        if (turn.lastStepIndex > newHighWater) newHighWater = turn.lastStepIndex;
+      }
+
+      if (newHighWater !== highWater) {
+        const current = getRuntimeSession(db, sessionId);
+        const metadata = decodeMetadata(current?.metadata ?? null);
+        metadata[HIGH_WATER_KEY] = newHighWater;
+        upsertRuntimeSession(db, sessionId, { metadata: JSON.stringify(metadata) }, nowIso());
+      }
+    } finally {
+      db.close();
+    }
+  } catch (error) {
+    noteHookFailure("agy:stop", error instanceof Error ? error.message : String(error));
+  }
+
   process.stdout.write(EMPTY);
   return 0;
 }

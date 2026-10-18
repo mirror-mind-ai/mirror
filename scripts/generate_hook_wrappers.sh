@@ -62,6 +62,7 @@ plugins/mirror-mind/hooks/mirror-inject.sh|claude:inject|bin|
 plugins/mirror-mind/hooks/log-assistant-reply.sh|claude:stop|bin|
 plugins/mirror-mind/agy/session-start.sh|agy:session-start|agy|
 plugins/mirror-mind/agy/pre-invocation.sh|agy:pre-invocation|agy|"invocationNum"[[:space:]]*:[[:space:]]*-?[0-9]*[1-9]
+plugins/mirror-mind/agy/stop.sh|agy:stop|agy|
 EOF
 )
 

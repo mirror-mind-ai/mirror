@@ -12,10 +12,13 @@ test("the LLM tail runs at exit on Claude Code, and not on the runtimes that bou
   assert.equal(sessionEndRunsLlmTail("pi"), true);
 });
 
-test("a Codex session outlives the TUI; every other runtime's session ends with it", () => {
+test("Codex and Antigravity sessions outlive the TUI; every other runtime's ends with it", () => {
   // Codex 0.163.0: `/quit` and Ctrl-D detach the TUI from a thread that persists in
   // the daemon, and SessionEnd does not fire (US4's probe, 2026-10-17).
   assert.equal(sessionOutlivesTui("codex"), true);
+  // Antigravity 1.4.2: agy has no SessionEnd hook at all, so nothing closes
+  // the conversation at TUI exit — the orphan close ends it (CV21.DS7.TS3).
+  assert.equal(sessionOutlivesTui("antigravity"), true);
   for (const label of ["claude_code", "grok_build", "pi", "gemini", "", null, undefined]) {
     assert.equal(sessionOutlivesTui(label), false, String(label));
   }

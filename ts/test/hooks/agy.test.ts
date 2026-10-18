@@ -162,6 +162,132 @@ describe("agy:pre-invocation", () => {
   });
 });
 
+describe("agy:stop", () => {
+  const TWO_TURNS = resolve(
+    import.meta.dirname,
+    "..",
+    "fixtures",
+    "agy",
+    "transcript-two-turns.jsonl",
+  );
+  const SKILL_TURN = resolve(
+    import.meta.dirname,
+    "..",
+    "fixtures",
+    "agy",
+    "transcript-skill-turn.jsonl",
+  );
+
+  function messages(home: string, cid: string): { role: string; content: string; iface: string }[] {
+    const db = bootstrapDatabase(join(home, "memory.db"));
+    try {
+      return db
+        .prepare(
+          "SELECT m.role, m.content, c.interface AS iface FROM messages m " +
+            "JOIN conversations c ON c.id = m.conversation_id " +
+            "JOIN runtime_sessions r ON r.conversation_id = c.id " +
+            "WHERE r.session_id = ? ORDER BY m.created_at, m.rowid",
+        )
+        .all(cid) as { role: string; content: string; iface: string }[];
+    } finally {
+      db.close();
+    }
+  }
+
+  test("logs both turns as antigravity, each reply beside its prompt", () => {
+    const home = initializedHome();
+    bootstrapDatabase(join(home, "memory.db")).close();
+    const { stdout } = runHook(
+      "agy:stop",
+      JSON.stringify({ ...COMMON, transcriptPath: TWO_TURNS }),
+      home,
+    );
+    assert.equal(stdout.trim(), "{}");
+    assert.deepEqual(
+      messages(home, COMMON.conversationId).map((m) => `${m.iface}|${m.role}|${m.content}`),
+      [
+        "antigravity|user|Hello there",
+        "antigravity|assistant|Hi! How can I help?",
+        "antigravity|user|What is 2+2?",
+        "antigravity|assistant|It is 4.",
+      ],
+    );
+  });
+
+  test("a re-fired Stop on the same transcript logs nothing new (idempotent, step_index high-water)", () => {
+    const home = initializedHome();
+    bootstrapDatabase(join(home, "memory.db")).close();
+    const payload = JSON.stringify({ ...COMMON, transcriptPath: TWO_TURNS });
+    runHook("agy:stop", payload, home);
+    runHook("agy:stop", payload, home);
+    assert.equal(messages(home, COMMON.conversationId).length, 4);
+  });
+
+  test("a skill turn is not logged as conversation", () => {
+    const home = initializedHome();
+    bootstrapDatabase(join(home, "memory.db")).close();
+    runHook("agy:stop", JSON.stringify({ ...COMMON, transcriptPath: SKILL_TURN }), home);
+    assert.equal(messages(home, COMMON.conversationId).length, 0);
+  });
+
+  test("an absent transcript answers {} and logs nothing, never fails the turn", () => {
+    const home = initializedHome();
+    bootstrapDatabase(join(home, "memory.db")).close();
+    const { stdout } = runHook(
+      "agy:stop",
+      JSON.stringify({ ...COMMON, transcriptPath: join(home, "nope.jsonl") }),
+      home,
+    );
+    assert.equal(stdout.trim(), "{}");
+    assert.equal(messages(home, COMMON.conversationId).length, 0);
+  });
+
+  test("a returning SessionStart closes the prior conversation as a stale orphan", () => {
+    // agy has no SessionEnd, so an agy-only machine closes a conversation
+    // only when the next session's SessionStart sweeps it (amendment g).
+    const home = initializedHome();
+    bootstrapDatabase(join(home, "memory.db")).close();
+    runHook("agy:stop", JSON.stringify({ ...COMMON, transcriptPath: TWO_TURNS }), home);
+
+    const openBefore = (): number => {
+      const db = bootstrapDatabase(join(home, "memory.db"));
+      try {
+        return (
+          db
+            .prepare(
+              "SELECT COUNT(*) AS n FROM conversations c JOIN runtime_sessions r " +
+                "ON r.conversation_id = c.id WHERE r.session_id = ? AND c.ended_at IS NULL",
+            )
+            .get(COMMON.conversationId) as { n: number }
+        ).n;
+      } finally {
+        db.close();
+      }
+    };
+    assert.equal(openBefore(), 1, "the conversation is open after the turn");
+
+    // A returning session start with the orphan threshold at 0 closes it.
+    execFileSync(process.execPath, ["--no-warnings", CLI, "conversation-logger", "session-start"], {
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        MIRROR_HOME: home,
+        MIRROR_USER: "",
+        DB_PATH: join(home, "memory.db"),
+        MEMORY_ENV: "production",
+        MIRROR_STALE_ORPHAN_MINUTES: "0",
+        OPENROUTER_API_KEY: "",
+      },
+      timeout: 60_000,
+    });
+    assert.equal(
+      openBefore(),
+      0,
+      "the prior conversation is closed after the returning session start",
+    );
+  });
+});
+
 describe("agy:session-start", () => {
   test("answers the output contract and turns conversation logging on", () => {
     const home = initializedHome();

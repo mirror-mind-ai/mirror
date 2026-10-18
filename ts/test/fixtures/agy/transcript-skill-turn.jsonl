@@ -1,0 +1,2 @@
+{"step_index":0,"source":"USER_EXPLICIT","type":"USER_INPUT","status":"DONE","created_at":"2026-10-18T10:00:00Z","content":"<USER_REQUEST>\n/mirror-mind:mm:mirror what should I focus on\n</USER_REQUEST>"}
+{"step_index":1,"source":"MODEL","type":"PLANNER_RESPONSE","status":"DONE","created_at":"2026-10-18T10:00:02Z","content":"Reflecting back to you."}

@@ -408,6 +408,7 @@ describe("the wrapper forms", () => {
   const AGY_WRAPPERS = [
     "plugins/mirror-mind/agy/session-start.sh",
     "plugins/mirror-mind/agy/pre-invocation.sh",
+    "plugins/mirror-mind/agy/stop.sh",
   ];
   const WRAPPERS = [...TREE_WRAPPERS, ...BIN_WRAPPERS, ...AGY_WRAPPERS];
 

@@ -212,7 +212,8 @@ describe("the agy-native layer", () => {
     assert.deepEqual(named.PreInvocation, [
       { type: "command", command: "agy/pre-invocation.sh", timeout: 15 },
     ]);
-    assert.ok(!("Stop" in named), "Stop is TS3's");
+    // CV21.DS7.TS3: the Stop handler logs the turn from the transcript.
+    assert.deepEqual(named.Stop, [{ type: "command", command: "agy/stop.sh", timeout: 30 }]);
     assert.ok(agyHooksJson().endsWith("\n"));
   });
 

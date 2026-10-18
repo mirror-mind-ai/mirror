@@ -219,6 +219,9 @@ export function buildAgyHooks(): Record<string, unknown> {
       enabled: true,
       SessionStart: [{ type: "command", command: "agy/session-start.sh", timeout: 60 }],
       PreInvocation: [{ type: "command", command: "agy/pre-invocation.sh", timeout: 15 }],
+      // CV21.DS7.TS3: Stop fires at each turn's end (agy has no SessionEnd);
+      // the handler reads the transcript and logs the turn as antigravity.
+      Stop: [{ type: "command", command: "agy/stop.sh", timeout: 30 }],
     },
   };
 }
