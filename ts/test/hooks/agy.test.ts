@@ -289,6 +289,25 @@ describe("agy:stop", () => {
 });
 
 describe("agy:session-start", () => {
+  test("activates Mirror Mode for the session, so per-turn injection fires (US4 scope change)", () => {
+    // agy's PreInvocation carries no prompt (L7) and the skill-command cannot
+    // bind the agy session id, so SessionStart — which carries the
+    // conversationId — is the one reliable activation point. It sets
+    // mirror_active, matching Gemini CLI's always-on per-turn injection.
+    const home = initializedHome();
+    bootstrapDatabase(join(home, "memory.db")).close();
+    runHook("agy:session-start", JSON.stringify(COMMON), home);
+    // A following pre-invocation for the same conversation now injects.
+    const { stdout } = runHook(
+      "agy:pre-invocation",
+      JSON.stringify({ ...COMMON, invocationNum: 0 }),
+      home,
+    );
+    const parsed = JSON.parse(stdout) as { injectSteps?: { ephemeralMessage?: string }[] };
+    assert.ok(parsed.injectSteps && parsed.injectSteps.length === 1, "context was injected");
+    assert.ok(typeof parsed.injectSteps[0]?.ephemeralMessage === "string");
+  });
+
   test("answers the output contract and turns conversation logging on", () => {
     const home = initializedHome();
     const { stdout } = runHook("agy:session-start", JSON.stringify(COMMON), home);

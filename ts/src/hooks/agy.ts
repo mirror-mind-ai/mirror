@@ -76,9 +76,44 @@ export function parseAgyPayload(stdin: string): AgyPayload {
   }
 }
 
-/** `SessionStart`: logging on, answer the contract. */
-export async function agySessionStart(): Promise<number> {
+/**
+ * `SessionStart`: logging on, activate Mirror Mode for the session, answer
+ * the contract.
+ *
+ * Mirror Mode activation (CV21.DS7.US4 scope change). agy's `PreInvocation`
+ * carries no prompt text (DS12.TS3 L7), so the injection hook cannot detect
+ * the Mirror form to self-activate, and the `/mirror-mind:mm:*` skill runs
+ * `mirror load` as an agent command that cannot bind the agy session id. So
+ * SessionStart — the one hook that carries the `conversationId` at the start
+ * of the session — sets `mirror_active`, and the per-turn `PreInvocation`
+ * injection (built in TS2, gated on that flag) fires from then on. This
+ * matches Gemini CLI's always-on per-turn injection, the runtime Antigravity
+ * replaces; a session that never ran SessionStart stays quiet, which the
+ * negative probe pins.
+ */
+export async function agySessionStart(stdin: string): Promise<number> {
   await runFrontDoorQuietly("agy:session-start", ["conversation-logger", "session-start"]);
+
+  const conversationId = parseAgyPayload(stdin).conversationId;
+  if (conversationId) {
+    try {
+      const dbPath = resolveDbPath([], process.env);
+      const db = openLiveWriteDatabase(dbPath);
+      try {
+        upsertRuntimeSession(
+          db,
+          conversationId,
+          { interface: "antigravity", mirrorActive: true },
+          nowIso(),
+        );
+      } finally {
+        db.close();
+      }
+    } catch (error) {
+      noteHookFailure("agy:session-start", error instanceof Error ? error.message : String(error));
+    }
+  }
+
   process.stdout.write(EMPTY);
   return 0;
 }

@@ -57,7 +57,7 @@ async function dispatch(name: string): Promise<number> {
       // generated agy-form wrappers in `plugins/mirror-mind/agy/`.
       switch (hook) {
         case "session-start":
-          return agySessionStart();
+          return agySessionStart(readStdin());
         case "pre-invocation":
           return agyPreInvocation(readStdin());
         case "stop":
