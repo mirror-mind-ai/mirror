@@ -60,8 +60,8 @@ This is not a chatbot with memory. This is a mirror — and yours.
 
 ## How It Works
 
-Local-first. SQLite. Four supported runtimes: Pi, Claude Code, Codex,
-Antigravity. One TypeScript core, run by Node.js. Jungian architecture: Self, Ego,
+Local-first. SQLite. Five supported runtimes: Pi, Claude Code, Codex,
+Antigravity, Grok Build. One TypeScript core, run by Node.js. Jungian architecture: Self, Ego,
 Personas, Shadow.
 Context-activated modes — Mirror, Builder, Explorer, and Soul. The identity lives
 in your machine, not a server.
@@ -110,7 +110,7 @@ this repository, turning a personal experiment into a reusable framework:
 
 - **English** — full migration from Portuguese across code, CLI, schema, identity, and docs
 - **Framework/user separation** — user identity and memory live privately under `~/.mirror/<user>/`, outside the repository
-- **Multi-runtime** — from Claude Code only to Pi, Claude Code, Codex, and Antigravity
+- **Multi-runtime** — from Claude Code only to Pi, Claude Code, Codex, Antigravity, and Grok Build
 - **Multi-user** — independent mirrors for multiple users on the same machine
 - **Multi-session** — concurrent sessions tracked safely in a database-backed session registry
 - **Intelligence depth** — hybrid semantic and lexical search, honest reinforcement, two-pass extraction, memory consolidation, and shadow cultivation

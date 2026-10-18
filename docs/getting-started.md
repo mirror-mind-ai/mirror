@@ -67,6 +67,7 @@ If you are not using Pi as your primary harness:
 - [Codex](https://github.com/openai/codex)
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code)
 - [Antigravity](https://github.com/google-antigravity/antigravity-cli)
+- [Grok Build](https://x.ai/cli)
 
 ---
 
@@ -329,6 +330,37 @@ a while longer, `npm install -g mirror-mind@0.34.0` is the last release that
 carries it; the welcome card and `runtime update` will keep offering the
 newer version.
 
+### Grok Build
+
+```bash
+grok
+```
+
+The first thing to try is the mirror itself:
+
+```text
+/mm-mirror should I raise my price?
+```
+
+Grok may ask to run `mirror mirror load`; approve it. The answer takes a while
+on Grok — half a minute, sometimes more — and comes signed by a persona. The
+skills carry Pi's names here, `/mm-mirror`, `/mm-build <slug>`, `/mm-journeys`
+(Grok adds the plugin's name only when two skills share one). Each turn is
+logged as `grok_build`; the conversation closes when you quit, and its memory is
+extracted when your next session starts, on any runtime. Mirror's MCP tools are
+there too: the model finds them with `search_tool` and calls them through
+`use_tool`, as `mirror-mind__list_journeys`.
+
+**What Grok does not do:** nothing is added to the model's context on each turn.
+Mirror Mode lasts as long as the skill's own instructions do, and the next
+`/mm-mirror` brings it back.
+
+Why: Grok shows a hook's session-start message on screen and discards what a
+hook offers per turn. That is why the Operating Instructions arrive through the
+rule you linked in step 2 — Grok loads it in every session, in every project,
+about 2.2k tokens each — rather than through the plugin's hooks as on Claude
+Code and Codex.
+
 ### How the mirror reaches each runtime
 
 Every session needs two things from the package: the skills, which the wiring
@@ -337,8 +369,8 @@ the persona signature, the Builder boundary — without which a session answers
 `/mm-mirror` but does not behave as a mirror. The instructions ship in the
 package as `AGENTS.md`, and each runtime receives them its own way: Pi through
 the extension, Claude Code and Codex through the plugin's session-start hook
-(Codex as a developer message), Antigravity as the plugin's rules. None of
-this needs a step beyond the wiring above.
+(Codex as a developer message), Antigravity as the plugin's rules, Grok Build as
+the rule you linked in step 2. None of this needs a step beyond the wiring above.
 
 **If a runtime is launched from your desktop rather than a terminal**, it may not
 inherit the `PATH` that holds `node` and `mirror`, and its hooks will skip

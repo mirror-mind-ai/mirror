@@ -3,10 +3,11 @@
 # Runtime Interface Contract
 
 A **runtime** is any frontend that presents the mirror to the user. Currently
-four runtimes exist: Claude Code (hooks), Pi (TypeScript extension), Codex
-(the shipped plugin), and Antigravity (the same plugin with its agy-native
-layer). This document defines what every runtime must implement to integrate
-correctly with Mirror Mind's core.
+five runtimes exist: Claude Code (hooks), Pi (TypeScript extension), Codex
+(the shipped plugin), Antigravity (the same plugin with its agy-native
+layer), and Grok Build (the shipped plugin, with the Operating Instructions as
+a home-level rule). This document defines what every runtime must implement to
+integrate correctly with Mirror Mind's core.
 
 The front door is the stable interface: one process per command, entered as
 `mirror <command> …` — the `bin` the npm package installs (`bin/mirror.js`,
@@ -464,6 +465,45 @@ plugin's skills, which Codex spells `$mm-*` — for example `$mm-build mirror`.
 the same skills.) The wrapper-script wiring v0.32.1 shipped was removed by
 CV21.DS4.TS5.
 
+### Grok Build
+
+| Event | Mechanism | Grok trigger |
+|-------|-----------|--------------|
+| Session start | plugin `SessionStart` hook (its `additionalContext` is discarded; the Operating Instructions arrive as the home-level rule) | Session start |
+| User prompt | plugin `UserPromptSubmit` hooks: the logger logs the prompt; the inject hook returns at once, since Grok discards prompt context (CR143) | Each prompt |
+| Assistant response | plugin `Stop` hook; Grok also fires a Stop at session end, which adds nothing | Each reply, and session end |
+| Session end + backup | plugin `SessionEnd` hook under Grok's 1.5 s bound, with the deferred tail | TUI quit, or the headless process ending |
+| Mirror load | the `/mm-mirror` skill, explicit | Explicit invocation |
+
+Grok Build installs the shipped plugin as a trusted copy —
+`grok plugin install "<pkg>/plugins/mirror-mind" --trust`, under
+`~/.grok/installed-plugins/` — and takes the Operating Instructions from a
+home-level rule, `ln -s "<pkg>/AGENTS.md" ~/.grok/rules/mirror-mind.md`, the two
+steps `mirror init` prints (CV21.DS10.US1, grok 1.0.62). Grok reads the plugin's
+root `plugin.json` first and alone, so that marker carries the manifest's
+`version` and `mcpServers`. It runs the plugin's Claude-family hooks as they are
+(DS12.TS4 L1); runtime detection reads `GROK_HOOK_EVENT`/`GROK_SESSION_ID` from
+the hook's environment or the camelCase `hookEventName` from the payload and
+labels the session `grok_build`; the turn id is `promptId`, the reply
+`lastAssistantMessage`. Grok fires a Stop at session end beyond each turn's own
+(two for one turn, five for four), which the Stop hook ignores as a repeat.
+Grok's guide gives a `SessionEnd` hook 1.5 s by default, a plugin's hook at most
+that default whatever its own `timeout`, and exit at most 10 s for all of them;
+the shared hook closes without its LLM tail and the next session start finishes
+it (CV21.DS4.TS2) — measured on 1.0.62: `ended_at` 213–259 ms after SessionEnd,
+the backup written, the tail finished at the next start with a key
+(CV21.DS10.US3). The MCP server attaches to every session (CV21.DS10.TS2); the
+model reaches its seven tools as `mirror-mind__<tool>` through Grok's
+`search_tool` and `use_tool` meta-tools, and the session-start count and the
+headless `init` snapshot are taken while the server is still `pending`. What
+Grok does not do: a SessionStart `systemMessage` is shown on screen only and
+`additionalContext` is ignored on both events (DS12.TS4 L2/L3; US3 on 1.0.62,
+by a canary the probe hook emitted and the model never saw), so nothing is
+injected per turn and Mirror Mode lasts as long as the skill's own instructions
+do. Skills are the plugin's in Pi's spelling, `/mm-mirror`, qualified by the
+plugin's name only when a name collides. Honest parity **L3**: grok 1.0.62
+(1474f9cbdd91), 2026-10-18.
+
 ### Node resolution for hook runtimes
 
 A runtime spawns its hooks with the `PATH` it was launched with, and a runtime
@@ -753,6 +793,7 @@ the constraint.
 |---|---|
 | Claude Code | `session_id` field in JSON stdin |
 | Antigravity | `conversationId` in JSON stdin (camelCase protojson) |
+| Grok Build | `sessionId` in JSON stdin (camelCase), or `GROK_SESSION_ID` in the hook's environment |
 | Pi | TypeScript `session.id` from extension context |
 
 **Preference for shell-hook runtimes:** use the env var form when available,
@@ -773,6 +814,7 @@ script.
 |---|---|---|---|
 | Immediate | `session-end` (reads JSON stdin with `transcript_path`) | Claude Code | Best memory freshness; requires transcript access |
 | Deferred | `session-end-pi <session_id>` | Pi, Codex, Antigravity | Resilient to best-effort session end or a runtime with no session-end signal; extraction at next session start |
+| Deferred, from the shared hook | `session-end --interface grok_build` (the Claude-family hook closing without its LLM tail, CV21.DS4.TS2) | Grok Build (Codex likewise) | The close fits the runtime's 1.5 s bound; the tail at the next session start |
 
 Use **immediate** when the runtime can supply a `transcript_path` at session end.
 Use **deferred** when session end is best-effort or the runtime lacks transcript access.
@@ -790,6 +832,7 @@ at session end. If yes, `session-end` gives better extraction timing. If no,
 | Automatic per-turn | `PreInvocation` injection on `invocationNum == 0` | Antigravity | Best UX — no user action; latency cost on every turn |
 | Hook-conditional | `UserPromptSubmit` inject when mirror state active | Claude Code | Zero cost when inactive; requires mirror state check |
 | Explicit invocation | User types `/mm-mirror` or `$mm-mirror` | Pi, Codex | Zero runtime cost; requires user awareness |
+| Explicit invocation, the hook inert | The `UserPromptSubmit` inject hook is registered but returns at once: Grok discards prompt context (`runtimeReadsPromptContext`, CR143) | Grok Build | As Pi's; the Operating Instructions arrive as a home-level rule, not per turn |
 
 For new shell-hook runtimes with a `BeforeAgent`-equivalent hook: use the
 automatic per-turn model. Call `mirror load --context-only` and return the
