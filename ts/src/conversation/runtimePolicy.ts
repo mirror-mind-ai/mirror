@@ -1,6 +1,7 @@
 // What a runtime's session lifecycle lets Mirror do at its edges, by the label
 // US8 stamps on the session row (`claude_code`, `codex`, `grok_build`). One home
-// for the two policies the close path reads (CV21.DS4.TS2, US4).
+// for the policies the hooks read: the two the close path reads (CV21.DS4.TS2,
+// US4) and the one the inject hook reads (CV21.DS10.TS4, CR143).
 
 /**
  * Whether a runtime's SessionEnd hook has the time to run the LLM tail at exit
@@ -11,8 +12,10 @@
  *   codex        synchronous ("running async SessionEnd hook synchronously",
  *                DS12.TS2 L2), 1 s for a handler with no `timeout` (DS2's live
  *                `/hooks` table, 2026-10-13, Codex 0.162.1).
- *   grok_build   1.5 s for a handler with no `timeout` (DS12.TS4, Grok 1.0.52).
- *                DS10 re-measures it and may flip this entry.
+ *   grok_build   1.5 s for a handler with no `timeout` (DS12.TS4, Grok 1.0.52);
+ *                re-measured on 1.0.62 (CV21.DS10.US3): the guide says a
+ *                plugin's SessionEnd hook gets at most that default whatever
+ *                its own `timeout`, and the close landed 213–259 ms after it.
  *
  * Any other label, and no label, keeps today's behavior: the tail runs.
  */
@@ -56,4 +59,24 @@ export function sessionEndRunsLlmTail(interfaceName: string | null | undefined):
  */
 export function sessionOutlivesTui(interfaceName: string | null | undefined): boolean {
   return interfaceName === "codex" || interfaceName === "antigravity";
+}
+
+/**
+ * Whether a runtime gives the model what a `UserPromptSubmit` hook returns as
+ * `additionalContext` — the channel the inject hook uses (CV21.DS10.TS4, CR143).
+ *
+ *   grok_build   no. Grok shows a SessionStart hook's `systemMessage` on
+ *                screen and discards both events' `additionalContext`
+ *                (DS12.TS4 L2/L3 on 1.0.52; CV21.DS10.US3 on 1.0.62, with a
+ *                random canary the probe hook emitted on every turn and the
+ *                model never quoted). The loads the hook made there held a
+ *                turn 2.3–2.6 s for a context nobody read; the hook returns
+ *                before any of them when this is false.
+ *
+ * Any other label, and no label, reads it: an unlabelled payload is a Claude
+ * Code payload by detection's own rule (`detectHookRuntime`), and a predicate
+ * that failed closed would silence injection on the runtime that needs it.
+ */
+export function runtimeReadsPromptContext(interfaceName: string | null | undefined): boolean {
+  return interfaceName !== "grok_build";
 }

@@ -11,6 +11,7 @@
 // for every prompt and the logger decides), a missing session id still fails
 // loud, and every failure is still non-fatal to the user's turn.
 
+import { runtimeReadsPromptContext } from "#conversation/runtimePolicy.ts";
 import { resolveDbPath } from "#frontDoor/dbPath.ts";
 import { openLiveWriteDatabase } from "#frontDoor/liveBackup.ts";
 import { mirrorForm } from "#mirror/mirrorForm.ts";
@@ -124,6 +125,11 @@ export async function claudeSessionEnd(stdin: string): Promise<number> {
  */
 export async function claudeInject(stdin: string): Promise<number> {
   const payload = parseHookPayload(stdin);
+  // CR143: on a runtime that discards what this hook returns (Grok), neither
+  // case is worth its load — nor the state read below, nor the "injected"
+  // mark, which would say the model received what it did not. Detected the
+  // way the sibling hooks detect it, from the payload and the environment.
+  if (!runtimeReadsPromptContext(detectHookRuntime(payload.raw))) return 0;
   const sessionId = payload.sessionId;
 
   // Case 1: the explicit invocation.

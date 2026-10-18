@@ -20,7 +20,13 @@ after(() => {
   for (const root of roots) rmSync(root, { recursive: true, force: true });
 });
 
-function inject(home: string, sessionId: string, prompt: string): string {
+function inject(
+  home: string,
+  sessionId: string,
+  prompt: string,
+  shape: Record<string, string> = {},
+  extraEnv: Record<string, string> = {},
+): string {
   return execFileSync("bash", [join(REPO_ROOT, ".claude/hooks/mirror-inject.sh")], {
     encoding: "utf8",
     env: {
@@ -31,8 +37,9 @@ function inject(home: string, sessionId: string, prompt: string): string {
       MIRROR_USER: "",
       MIRROR_NODE: process.execPath,
       OPENROUTER_API_KEY: "",
+      ...extraEnv,
     },
-    input: JSON.stringify({ session_id: sessionId, prompt }),
+    input: JSON.stringify({ session_id: sessionId, prompt, ...shape }),
     timeout: 60_000,
   });
 }
@@ -69,5 +76,42 @@ describe("the inject hook, fed each runtime's explicit form", () => {
     ].entries()) {
       assert.equal(inject(home, `us7-none-${index}`, prompt), "", prompt);
     }
+  });
+});
+
+// CR143 (CV21.DS10.TS4). Grok runs the same hook and discards what it returns:
+// a UserPromptSubmit hook's additionalContext never reaches Grok's model
+// (DS12.TS4 L3; US3's canary on 1.0.62). The loads it made — on the explicit
+// form, and once when Mirror Mode is active — held a Grok turn 2.3–2.6 s for
+// nothing. On a payload shaped as Grok sends it, the hook returns before any
+// load; the same prompt shaped as Claude Code or Codex sends it still loads.
+describe("the inject hook on a runtime that discards prompt context", () => {
+  const home = mkdtempSync(join(tmpdir(), "mirror-inject-grok-"));
+  roots.push(home);
+
+  test("a Grok-shaped payload (camelCase hookEventName, promptId) loads nothing and prints nothing", () => {
+    const out = inject(home, "cr143-grok-1", "/mm-mirror should I raise my price?", {
+      hookEventName: "UserPromptSubmit",
+      promptId: "p-1",
+    });
+    assert.equal(out, "");
+  });
+
+  test("Grok's environment marks alone (GROK_HOOK_EVENT, GROK_SESSION_ID) are enough", () => {
+    const out = inject(
+      home,
+      "cr143-grok-2",
+      "/mm-mirror should I raise my price?",
+      {},
+      { GROK_HOOK_EVENT: "UserPromptSubmit", GROK_SESSION_ID: "cr143-grok-2" },
+    );
+    assert.equal(out, "");
+  });
+
+  test("the same prompt shaped as Codex (turn_id) still loads context", () => {
+    const out = inject(home, "cr143-codex", "/mm-mirror should I raise my price?", {
+      turn_id: "t-1",
+    });
+    assert.match(out, /MIRROR MODE/);
   });
 });

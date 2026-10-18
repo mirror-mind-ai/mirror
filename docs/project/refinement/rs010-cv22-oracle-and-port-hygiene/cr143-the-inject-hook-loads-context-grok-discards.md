@@ -49,13 +49,19 @@ not have to explain twice.
 
 ## Plan Or Decision
 
-Captured, unassigned, 2026-10-18, at CV21.DS10.US3's Debt Review. Current Focus
-unchanged. A likely route: `runtimePolicy.ts` gains the predicate; `claudeInject`
-reads the label from the payload the way `session-end` already does and returns
-before any load when the runtime discards context; `runtimePolicy.test.ts` and
-`claude.test.ts` cover it; the contract's injection-models table gets Grok's row.
-CV21.DS10.TS4, which writes Grok's reference implementation, is the natural place
-to decide whether to pay it there or leave it captured.
+Captured, unassigned, 2026-10-18, at CV21.DS10.US3's Debt Review. Paid the same
+day in [CV21.DS10.TS4](../../roadmap/cv21-runtime-expansion-ii/cv21-ds10-grok-build-through-the-canonical-plugin/cv21-ds10-ts4-grok-s-honest-l3-is-written-where-a-user-reads-it/index.md)
+by the Navigator's decision: `runtimePolicy.ts` gains
+`runtimeReadsPromptContext(interfaceName)` beside `sessionEndRunsLlmTail` and
+`sessionOutlivesTui` — false for `grok_build`, true for every other label and for
+none, since an unlabelled payload is a Claude Code payload by detection's own rule;
+`claudeInject` detects the runtime with `detectHookRuntime(payload.raw)` as its
+sibling hooks do and returns 0 above the explicit-form check and the session-state
+read, marking nothing injected. The wrappers are byte-identical. Tests:
+`runtimePolicy.test.ts` (the labels and `null`) and `injectForms.test.ts` (a
+Grok-shaped payload by `hookEventName`/`promptId` and by `GROK_HOOK_EVENT`/
+`GROK_SESSION_ID`: no load, no stdout; a Codex-shaped payload still loads). The
+contract's injection-models table gained Grok's row.
 
 ## Evidence
 
@@ -71,4 +77,9 @@ to decide whether to pay it there or leave it captured.
 
 ## Outcome
 
-Open.
+Done, 2026-10-18 (Driver @viniciusteles, Delivery `main`). The story route ran the
+installed wrapper directly against a scratch home: the Grok-shaped payload answered
+in **166–176 ms** with nothing on stdout and no load; the Claude- and Codex-shaped
+payloads loaded context as before in 263–317 ms. On Grok 1.0.62 the same load had
+held the turn 2,293–2,610 ms. The next Grok session after this ships pays the hook's
+own start and nothing more.
