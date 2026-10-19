@@ -85,3 +85,4 @@ evidence stays honest as both cores move.
 - [CR141 — `init` takes any string as a user name, so `init ../escaped` creates a home outside `.mirror-minds`](cr141-init-takes-any-string-as-a-user-name.md)
 - [CR142 — The plugin smoke's negative probe fails on a machine with a global `mirror-hook`](cr142-the-plugin-smoke-s-negative-probe-fails-on-a-machine-with-a-global-mirror-hook.md)
 - [CR143 — The inject hook loads Mirror context on Grok, which discards it](cr143-the-inject-hook-loads-context-grok-discards.md)
+- [CR144 — The DS7 routes remove agy's credential where 1.3.x kept it, and 1.4.2 keeps it elsewhere](cr144-the-ds7-routes-remove-agy-s-credential-where-1-3-x-kept-it.md)
