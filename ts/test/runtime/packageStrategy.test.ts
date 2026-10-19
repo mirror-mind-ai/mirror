@@ -10,14 +10,14 @@ import { join } from "node:path";
 import test from "node:test";
 import { assertNamesNoInterpreter } from "#helpers/noInterpreter.ts";
 import {
+  applyCwd,
   checkPackageUpdateAvailability,
   installGlobal,
-  applyCwd,
-  packageStrategy,
   type NpmCall,
   type NpmRunner,
   npmInvocation,
   npmRootGlobal,
+  packageStrategy,
   readDistTags,
   renderPackageUpdateAvailability,
 } from "#runtime/strategies/package.ts";
