@@ -17,8 +17,12 @@
 
 import { existsSync } from "node:fs";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import type { WritableDatabase } from "#db/database.ts";
+import {
+  extensionPluginStates,
+  renderExtensionPluginBlock,
+} from "#runtime/extensionPluginWiring.ts";
 import { PROGRAM } from "#util/program.ts";
 import {
   type BindingDeps,
@@ -59,6 +63,7 @@ import {
   renderSubcommandListing,
 } from "./dispatch.ts";
 import { ExtensionValidationError } from "./errors.ts";
+import { regenerateExtensionPlugin } from "./extensionPlugin.ts";
 
 export class UnsupportedCatalogCommandError extends Error {}
 
@@ -98,6 +103,15 @@ const EXTENSIONS_VERBS = new Set([
 export interface CatalogContext {
   /** The resolved Mirror home; `--mirror-home` has already been applied. */
   readonly mirrorHome: string;
+  /**
+   * The environment the extensions-plugin readers take their homes and PATH
+   * from (CV21.DS5.US2): HOME, CODEX_HOME, GROK_HOME, PATH. A test passes a
+   * stand-in; the route passes the process's. Absent, the readers see no
+   * runtime and the plugin block is its first line alone.
+   */
+  readonly env?: NodeJS.ProcessEnv;
+  /** Whether a PATH candidate is executable; absent, nothing is. */
+  readonly isExecutable?: (path: string) => boolean;
 }
 
 /** The writable half, for the four `ext` verbs that touch the database. */
@@ -201,6 +215,30 @@ function writeContext(context: CatalogContext, command: string): ExtWriteContext
  * the recorded divergence shape -- the same exit code, one line on stderr --
  * and, like Python, writes nothing to stdout.
  */
+/**
+ * CV21.DS5.US2: after a write that changed the home's `claude` catalog, the
+ * home's extensions plugin is regenerated and the lines a person needs are
+ * appended to the report — the runtimes on the PATH that still need a step, or
+ * one line saying the plugin is wired everywhere. New lines at the end, never
+ * changed ones, so a caller parsing the report sees what it saw before.
+ */
+function withExtensionPluginBlock(
+  context: CatalogContext,
+  rendered: RenderedCommand,
+  removed: readonly string[] = [],
+): RenderedCommand {
+  if (rendered.exitCode !== 0) return rendered;
+  const plugin = regenerateExtensionPlugin(context.mirrorHome);
+  if (plugin === null) return rendered;
+  const states = extensionPluginStates(
+    plugin,
+    context.env ?? {},
+    context.isExecutable ?? (() => false),
+  );
+  const block = renderExtensionPluginBlock(plugin, states, removed);
+  return { ...rendered, stdout: `${rendered.stdout}${block.join("\n")}\n` };
+}
+
 function failLoudly(run: () => RenderedCommand): RenderedCommand {
   try {
     return run();
@@ -229,15 +267,18 @@ export function runExtensionsCommand(
     if (options.extensionsRoot === null) return usage("install requires --extensions-root PATH");
     const write = writeContext(context, "install");
     return failLoudly(() =>
-      renderInstallReport(
-        installExtension({
-          extensionId: options.positional[1] as string,
-          sourceRoot: options.extensionsRoot as string,
-          mirrorHome: write.mirrorHome,
-          runtime: options.runtime,
-          db: write.db,
-          deps: write.deps,
-        }),
+      withExtensionPluginBlock(
+        context,
+        renderInstallReport(
+          installExtension({
+            extensionId: options.positional[1] as string,
+            sourceRoot: options.extensionsRoot as string,
+            mirrorHome: write.mirrorHome,
+            runtime: options.runtime,
+            db: write.db,
+            deps: write.deps,
+          }),
+        ),
       ),
     );
   }
@@ -252,15 +293,19 @@ export function runExtensionsCommand(
     // `install` lets the same class escape as a traceback. Same command, two
     // refusal shapes, measured rather than unified.
     try {
-      return renderUninstallReport(
-        uninstallExtension({
-          extensionId: options.positional[1] as string,
-          mirrorHome: write.mirrorHome,
-          runtime: options.runtime,
-          db: write.db,
-          deps: write.deps,
-        }),
-      );
+      const report = uninstallExtension({
+        extensionId: options.positional[1] as string,
+        mirrorHome: write.mirrorHome,
+        runtime: options.runtime,
+        db: write.db,
+        deps: write.deps,
+      });
+      // What the copying runtimes "still have" after the removal: the claude
+      // command names this uninstall took out of the catalog.
+      const removed = report.removed
+        .filter(([runtimeName]) => runtimeName === "claude")
+        .flatMap(([, paths]) => paths.map((path) => basename(path)));
+      return withExtensionPluginBlock(context, renderUninstallReport(report), removed);
     } catch (error) {
       if (!(error instanceof ExtensionValidationError)) throw error;
       return out(`${error.message}\n`, 1);
@@ -337,7 +382,9 @@ export function runExtensionsCommand(
     `${stdout}Synced ${synced.length} extension(s) to ${options.targetRoot}`,
     ...synced.map((item) => `  ${item.command_name} -> ${item.installed_skill_path}`),
   ];
-  return out(`${lines.join("\n")}\n`);
+  // A verb that regenerates the plugin without installing (plan amendment 6):
+  // from the home's own claude catalog, when the home has one.
+  return withExtensionPluginBlock(context, out(`${lines.join("\n")}\n`));
 }
 
 /**

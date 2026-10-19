@@ -62,6 +62,8 @@ export interface ExtensionRouteDeps {
     run: (db: WritableDatabase) => Promise<number> | number,
   ) => Promise<number>;
   environment?: NodeJS.ProcessEnv;
+  /** Whether a PATH candidate is executable, for the extensions-plugin block (CV21.DS5.US2). */
+  isExecutable?: (path: string) => boolean;
 }
 
 /** The `extensions` verbs that need a writable handle; the rest read. */
@@ -140,7 +142,11 @@ function firstPositional(args: readonly string[]): string | null {
 }
 
 function readContextFor(route: ExtensionRouteDeps): CatalogContext {
-  return { mirrorHome: route.mirrorHome };
+  return {
+    mirrorHome: route.mirrorHome,
+    ...(route.environment ? { env: route.environment } : {}),
+    ...(route.isExecutable ? { isExecutable: route.isExecutable } : {}),
+  };
 }
 
 function dispatchOptions(route: ExtensionRouteDeps) {
@@ -151,7 +157,7 @@ function dispatchOptions(route: ExtensionRouteDeps) {
 }
 
 function writeContextFor(route: ExtensionRouteDeps, db: WritableDatabase): ExtWriteContext {
-  return { mirrorHome: route.mirrorHome, db, deps: route.deps };
+  return { ...readContextFor(route), db, deps: route.deps };
 }
 
 export async function runExtensionCatalogRoute(

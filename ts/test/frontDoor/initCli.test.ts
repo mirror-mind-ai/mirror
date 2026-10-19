@@ -180,7 +180,7 @@ test("`init` ends with the wiring step for each runtime found on the PATH, and o
     assert.match(result.stdout, /Wire your runtime/);
     assert.match(
       result.stdout,
-      /Claude Code:\n {2}ln -s ".*\/plugins\/mirror-mind" ~\/\.claude\/skills\/mirror-mind/,
+      /Claude Code:\n {2}mkdir -p ~\/\.claude\/skills && ln -s ".*\/plugins\/mirror-mind" ~\/\.claude\/skills\/mirror-mind/,
     );
     assert.match(
       result.stdout,

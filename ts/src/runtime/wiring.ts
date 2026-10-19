@@ -102,8 +102,11 @@ export const RUNTIME_WIRING: Readonly<Record<RuntimeName, RuntimeWiring>> = {
     title: "Claude Code",
     command: "claude",
     steps: [
+      // `mkdir -p` first: a home that has never held a personal skill has no
+      // ~/.claude/skills/ yet, and the link alone fails there (CV21.DS5.US2's
+      // route, on the extensions plugin's step; the same line, paid here).
       (root) => [
-        `ln -s "${pluginDirectory(root)}" ~/.claude/skills/mirror-mind`,
+        `mkdir -p ~/.claude/skills && ln -s "${pluginDirectory(root)}" ~/.claude/skills/mirror-mind`,
         "(the plugin loads every session: its skills, the hooks, and the MCP server)",
       ],
     ],
@@ -181,4 +184,75 @@ export function runtimeWiringLines(runtime: RuntimeName, root: string): string[]
     for (const line of rest) lines.push(`  ${" ".repeat(prefix.length)}${line}`);
   });
   return lines;
+}
+
+// ---------------------------------------------------------------------------
+// The per-home extensions plugin (CV21.DS5.US2). A Mirror home's installed
+// extensions reach the four plugin runtimes as one generated plugin per home,
+// `<home>/runtime/plugin/mirror-ext-<user>/`, in the canonical plugin's format
+// but carrying skills only (DS5.TS1's decision). Each runtime takes it the way
+// it takes the canonical plugin, and the three that copy it (Codex, agy, Grok)
+// need one command per change to bring the copy level — measured in TS1.
+// `mirror init` prints none of this: at init there is no extension. The
+// `extensions` verbs print the step a runtime still needs, and `runtime
+// diagnose` names the reinstall for a stale copy. Printing is not automating.
+
+export interface ExtensionPluginPaths {
+  /** The plugin directory: linked by Claude Code, installed by agy and Grok. */
+  readonly dir: string;
+  /** The marketplace root Codex adds: the plugin's parent, carrying `.agents/plugins/marketplace.json`. */
+  readonly marketplace: string;
+  /** `mirror-ext-<user>`: the plugin's name and its marketplace's. */
+  readonly name: string;
+}
+
+/** The consent line printed under Grok's step: what `--trust` would activate here, which is nothing. */
+export const EXTENSION_PLUGIN_GROK_TRUST_NOTE =
+  "(this plugin carries skills only — no hooks and no MCP server for --trust to activate)";
+
+/** The one-time wiring per runtime; Pi takes extensions through its own catalog and needs none. */
+export function extensionPluginWiringSteps(
+  runtime: RuntimeName,
+  paths: ExtensionPluginPaths,
+): string[] {
+  switch (runtime) {
+    case "claude":
+      // `mkdir -p` first: a home that has never held a personal skill has no
+      // ~/.claude/skills/ yet, and the link alone fails there (measured, US2's route).
+      return [`mkdir -p ~/.claude/skills && ln -s "${paths.dir}" ~/.claude/skills/${paths.name}`];
+    case "codex":
+      return [
+        `codex plugin marketplace add "${paths.marketplace}"`,
+        `codex plugin add ${paths.name}@${paths.name}`,
+      ];
+    case "antigravity":
+      return [`agy plugin install "${paths.dir}"`];
+    case "grok":
+      return [`grok plugin install "${paths.dir}" --trust`];
+    case "pi":
+      return [];
+  }
+}
+
+/**
+ * What brings a runtime's copy level after the plugin changed, measured in
+ * DS5.TS1: Codex re-adds at the same version when the marketplace serves the
+ * live directory; agy installs again; Grok refuses an install over the same
+ * path and must uninstall first. Claude Code links and has no copy.
+ */
+export function extensionPluginReinstallCommand(
+  runtime: RuntimeName,
+  paths: ExtensionPluginPaths,
+): string | null {
+  switch (runtime) {
+    case "claude":
+    case "pi":
+      return null;
+    case "codex":
+      return `codex plugin add ${paths.name}@${paths.name}`;
+    case "antigravity":
+      return `agy plugin install "${paths.dir}"`;
+    case "grok":
+      return `grok plugin uninstall ${paths.name} --confirm && grok plugin install "${paths.dir}" --trust`;
+  }
 }

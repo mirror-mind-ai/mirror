@@ -16,6 +16,7 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import test from "node:test";
@@ -24,6 +25,7 @@ import { checksum } from "#extensions/migrations.ts";
 import {
   buildRuntimeStatus,
   detectNodeVersion,
+  inspectExtensionPlugin,
   renderRuntimeStatus,
   statusVerdict,
 } from "#runtime/status.ts";
@@ -578,5 +580,44 @@ test("with no start, the report inspects the install's own repository, whatever 
   } finally {
     process.chdir(previous);
     f.cleanup();
+  }
+});
+
+test("CV21.DS5.US2: status names the home's extensions plugin only when the home has one", () => {
+  const root = mkdtempSync(join(tmpdir(), "status-ext-plugin-"));
+  try {
+    const home = join(root, "ana");
+    mkdirSync(home, { recursive: true });
+    assert.equal(inspectExtensionPlugin(home), null);
+    assert.equal(inspectExtensionPlugin(null), null);
+    const pluginDir = join(home, "runtime", "plugin", "mirror-ext-ana");
+    mkdirSync(join(pluginDir, ".claude-plugin"), { recursive: true });
+    mkdirSync(join(pluginDir, "skills", "ext-a"), { recursive: true });
+    mkdirSync(join(pluginDir, "skills", "ext-b"), { recursive: true });
+    writeFileSync(
+      join(pluginDir, ".claude-plugin", "plugin.json"),
+      JSON.stringify({ name: "mirror-ext-ana", version: "0.1.3" }),
+    );
+    writeFileSync(join(pluginDir, "skills", "ext-a", "SKILL.md"), "# a\n");
+    writeFileSync(join(pluginDir, "skills", "ext-b", "SKILL.md"), "# b\n");
+    assert.deepEqual(inspectExtensionPlugin(home), {
+      name: "mirror-ext-ana",
+      version: "0.1.3",
+      skills: 2,
+    });
+    const report = buildRuntimeStatus({
+      start: root,
+      mirrorHome: home,
+      env: {} as NodeJS.ProcessEnv,
+      version: "0.0.0",
+      nodeVersion: "<node-version>",
+      install: { kind: "clone", repository: root },
+    });
+    assert.match(
+      renderRuntimeStatus(report, {} as NodeJS.ProcessEnv),
+      /\nExtensions plugin: mirror-ext-ana 0\.1\.3 \(2 skills\)\n/,
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
   }
 });

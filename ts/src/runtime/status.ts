@@ -17,10 +17,11 @@
 // the 2026-09-07 decision assigned to CV22.DS10.
 
 import { existsSync, readdirSync, realpathSync, statSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { basename, join, resolve } from "node:path";
 import { type Database, openDatabaseReadOnly } from "#db/database.ts";
 import { KNOWN_MIGRATION_IDS } from "#db/schemaState.ts";
 import { ExtensionError } from "#extensions/errors.ts";
+import { readExtensionPlugin } from "#extensions/extensionPlugin.ts";
 import { loadExtensionManifest } from "#extensions/manifest.ts";
 import { inspectMigrationFiles } from "#extensions/migrations.ts";
 import { type DbPathEnv, dbNameForEnv, resolveMirrorHome } from "#frontDoor/dbPath.ts";
@@ -61,6 +62,12 @@ export interface ExtensionHealth {
   unknown_migrations: string[];
 }
 
+export interface ExtensionPluginSummary {
+  name: string;
+  version: string;
+  skills: number;
+}
+
 export interface RuntimeStatusReport {
   version: string;
   /** How the running front door is installed (CV22.DS10.US3 plateau 4; US2 D3). */
@@ -73,6 +80,8 @@ export interface RuntimeStatusReport {
   core_migrations: CoreMigrationHealth;
   extensions: string[];
   extension_health: ExtensionHealth[];
+  /** The home's generated extensions plugin (CV21.DS5.US2), or null when none. */
+  extension_plugin: ExtensionPluginSummary | null;
   clone_role: MarkerValue;
   memory_env: string;
   update_channel: MarkerValue;
@@ -425,6 +434,7 @@ export function buildRuntimeStatus(options: BuildStatusOptions = {}): RuntimeSta
     core_migrations: inspectCoreMigrations(dbPath, dbExists),
     extensions: listInstalledExtensions(mirrorHome),
     extension_health: inspectExtensionHealth(mirrorHome, dbPath, dbExists),
+    extension_plugin: inspectExtensionPlugin(mirrorHome),
     clone_role: cloneRoleFor(install, root),
     memory_env: memoryEnv,
     update_channel: channelForReport(install, root, env, undefined, options.channel ?? null),
@@ -459,6 +469,18 @@ export function renderCoreMigrations(item: CoreMigrationHealth): string {
   if (item.unknown.length > 0) detail = `${detail}; unknown ${item.unknown.join(", ")}`;
   if (item.note) detail = `${detail}; ${item.note}`;
   return `Core migrations: attention needed (${detail})`;
+}
+
+/** The generated extensions plugin, read from its manifest; absent is null, not an error. */
+export function inspectExtensionPlugin(mirrorHome: string | null): ExtensionPluginSummary | null {
+  if (mirrorHome === null) return null;
+  const previous = readExtensionPlugin(mirrorHome);
+  if (previous === null) return null;
+  return {
+    name: `mirror-ext-${basename(mirrorHome)}`,
+    version: `0.1.${previous.generation}`,
+    skills: Object.keys(previous.files).filter((path) => path.endsWith("/SKILL.md")).length,
+  };
 }
 
 /** Port of `_render_extension_health`. */
@@ -528,6 +550,11 @@ export function renderRuntimeStatus(
     lines.push("Installed extensions: 0");
   }
   lines.push(...renderExtensionHealth(report.extension_health));
+  // Printed only when the home has one, so a report without extensions reads as before.
+  if (report.extension_plugin) {
+    const { name, version, skills } = report.extension_plugin;
+    lines.push(`Extensions plugin: ${name} ${version} (${skills} skill${skills === 1 ? "" : "s"})`);
+  }
   lines.push(...renderCloneRoleLines(report.install, report.clone_role));
   lines.push(`Update channel: ${report.update_channel.value}`);
   if (report.update_channel.note) lines.push(`Update channel note: ${report.update_channel.note}`);

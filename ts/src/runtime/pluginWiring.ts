@@ -30,13 +30,30 @@ import { lstatSync, readdirSync, readFileSync, readlinkSync, statSync } from "no
 import { join } from "node:path";
 import { compareSemver, parseSemver } from "#util/semver.ts";
 
-/** Where Codex keeps its copy, below a Codex home. */
-export const CODEX_PLUGIN_CACHE_SEGMENTS: readonly string[] = [
-  "plugins",
-  "cache",
-  "mirror-mind",
-  "mirror-mind",
-];
+/**
+ * A plugin as Codex caches it: `plugins/cache/<marketplace>/<name>/<version>`.
+ * The canonical plugin is `mirror-mind/mirror-mind`; a home's extensions
+ * plugin is `mirror-ext-<user>/mirror-ext-<user>` (CV21.DS5.US2).
+ */
+export interface CodexPluginIdentity {
+  readonly marketplace: string;
+  readonly name: string;
+}
+
+export const CANONICAL_CODEX_PLUGIN: CodexPluginIdentity = {
+  marketplace: "mirror-mind",
+  name: "mirror-mind",
+};
+
+/** Where Codex keeps a plugin's copies, below a Codex home. */
+export function codexPluginCacheSegments(
+  identity: CodexPluginIdentity = CANONICAL_CODEX_PLUGIN,
+): readonly string[] {
+  return ["plugins", "cache", identity.marketplace, identity.name];
+}
+
+/** The canonical plugin's cache path segments, as before DS5.US2. */
+export const CODEX_PLUGIN_CACHE_SEGMENTS: readonly string[] = codexPluginCacheSegments();
 
 export interface CodexCacheState {
   /** `absent` covers no cache and a cache with no version-named entry. */
@@ -51,6 +68,13 @@ export interface CodexCacheState {
  * names do not parse as versions (a partial download, an editor's leavings)
  * are ignored; a cache holding only those claims nothing and reads as absent.
  *
+ * `codex plugin add` REPLACES the cache directory (measured on 0.163.0,
+ * CV21.DS5.US2's Debt Review): after a re-add at 0.1.2 only `0.1.2` remains,
+ * and after a re-add at a lower 0.1.0 only `0.1.0`, which the prompt then
+ * lists. So the newest entry is the only entry, and a reader that compared a
+ * generation restarted below an older cache would still be reading what Codex
+ * loads.
+ *
  * `ahead` is a state, not a finding: `runtime update` refuses downgrades but
  * `npm install -g mirror-mind@old` does not ask, and the person who
  * downgraded on purpose needs no Codex advice from the older tree.
@@ -58,8 +82,9 @@ export interface CodexCacheState {
 export function codexPluginCacheState(
   codexHome: string,
   installedVersion: string,
+  identity: CodexPluginIdentity = CANONICAL_CODEX_PLUGIN,
 ): CodexCacheState {
-  const cachePath = join(codexHome, ...CODEX_PLUGIN_CACHE_SEGMENTS);
+  const cachePath = join(codexHome, ...codexPluginCacheSegments(identity));
   let entries: string[];
   try {
     entries = readdirSync(cachePath);
@@ -146,7 +171,11 @@ export interface GrokCopyState {
  * keys a second copy (probe, grok 1.0.62), and Grok loads one of them
  * without saying which.
  */
-export function grokPluginCopyState(grokHome: string, installedVersion: string): GrokCopyState {
+export function grokPluginCopyState(
+  grokHome: string,
+  installedVersion: string,
+  pluginName = "mirror-mind",
+): GrokCopyState {
   const registryPath = join(grokHome, ...GROK_INSTALLED_PLUGINS_SEGMENTS, "registry.json");
   const copies: GrokCopy[] = [];
   let repos: Record<string, unknown>;
@@ -167,7 +196,7 @@ export function grokPluginCopyState(grokHome: string, installedVersion: string):
     if (typeof entry !== "object" || entry === null) continue;
     const repo = entry as Record<string, unknown>;
     const plugins = repo.plugins;
-    if (typeof plugins !== "object" || plugins === null || !("mirror-mind" in plugins)) continue;
+    if (typeof plugins !== "object" || plugins === null || !(pluginName in plugins)) continue;
     const path =
       typeof repo.path === "string"
         ? repo.path
@@ -184,6 +213,34 @@ export function grokPluginCopyState(grokHome: string, installedVersion: string):
   const order = compareSemver(newest as string, installedVersion);
   const state = order < 0 ? "behind" : order > 0 ? "ahead" : "current";
   return { state, registryPath, copies, newestCopied: newest };
+}
+
+export interface AgyCopyState {
+  /** `absent` covers no staged tree and a staged tree with no readable manifest. */
+  state: "absent" | "current" | "behind" | "ahead";
+  copyPath: string;
+  copiedVersion: string | null;
+}
+
+/**
+ * Read agy's staged copy of a plugin below a `.gemini` home, read-only:
+ * `agy plugin install <dir>` stages the tree under `config/plugins/<name>/`
+ * (CV21.DS7.US1), and the copy's own `.claude-plugin/plugin.json` carries
+ * its version. Written for the extensions plugin (CV21.DS5.US2); the
+ * canonical plugin has no agy finding yet, and this reader serves it when
+ * one is added.
+ */
+export function agyPluginCopyState(
+  geminiHome: string,
+  installedVersion: string,
+  pluginName: string,
+): AgyCopyState {
+  const copyPath = join(geminiHome, "config", "plugins", pluginName);
+  const copiedVersion = pluginManifestVersion(join(copyPath, ".claude-plugin", "plugin.json"));
+  if (copiedVersion === null) return { state: "absent", copyPath, copiedVersion: null };
+  const order = compareSemver(copiedVersion, installedVersion);
+  const state = order < 0 ? "behind" : order > 0 ? "ahead" : "current";
+  return { state, copyPath, copiedVersion };
 }
 
 /**

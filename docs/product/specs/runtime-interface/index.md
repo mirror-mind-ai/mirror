@@ -567,7 +567,7 @@ silent, against the runtime itself from a scratch configuration directory.
 | Runtime | Steps | Wiring | Operating Instructions (D13) |
 |---------|-------|--------|------------------------------|
 | Pi | 1 | `pi install "<pkg>"` — a local-path package, loaded in place (D6) | the extension appends `<pkg>/AGENTS.md` to the system prompt's context files when Pi did not load it from the cwd |
-| Claude Code | 1 | `ln -s "<pkg>/plugins/mirror-mind" ~/.claude/skills/mirror-mind` — a skills-directory plugin, loaded every session with its skills, hooks, and MCP server (`claude plugin list`, 2.1.283) | the plugin's `SessionStart` hook, as `additionalContext` |
+| Claude Code | 1 | `mkdir -p ~/.claude/skills && ln -s "<pkg>/plugins/mirror-mind" ~/.claude/skills/mirror-mind` — a skills-directory plugin, loaded every session with its skills, hooks, and MCP server (`claude plugin list`, 2.1.283) | the plugin's `SessionStart` hook, as `additionalContext` |
 | Codex | 2 | `codex plugin marketplace add "<pkg>"` (the package root carries `.agents/plugins/marketplace.json`, one local plugin), then `codex plugin add mirror-mind@mirror-mind`, which copies the plugin into Codex's cache at the plugin's version; Codex asks once to trust its hooks (0.162.1, CV21.DS12.TS2 static 5-7 and L1; CV21.DS4.US1). The pre-plugin wiring (a skills link, an `AGENTS.md` link, and a wrapper script around each session) was removed by DS4.TS5 | the plugin's `SessionStart` hook, delivered as a developer message (TS2 L4) |
 | Antigravity | 1 | `agy plugin install "<pkg>/plugins/mirror-mind"` — agy treats the directory as a native plugin (the root `plugin.json` marker; probed on agy 1.4.2, CV21.DS7.US1) and stages the 25 skills, the agy-schema `hooks.json`, `mcp_config.json`, and `rules/AGENTS.md` under `~/.gemini/config/plugins/`. Per-turn injection and logging from the transcript landed with DS7.TS2/TS3; measured at L4 in DS7.US4 | `rules/AGENTS.md`, merged into the active rule set |
 | Grok Build | 2 | `grok plugin install "<pkg>/plugins/mirror-mind" --trust`, then `ln -s "<pkg>/AGENTS.md" ~/.grok/rules/mirror-mind.md` (grok 1.0.62, CV21.DS10.US1). The install copies the plugin to `~/.grok/installed-plugins/<name>-<hash of the path string>/` and writes `[plugins] enabled` to `~/.grok/config.toml`; `--trust` activates its hooks and MCP server with no prompt left. Grok reads the root `plugin.json` marker first and alone, so the marker carries the manifest's `version` and `mcpServers` (without them Grok listed neither). `grok plugin update` is a no-op for a local-path copy, an install over the same path is refused, and a differently spelt path installs a second copy: the level-up is uninstall, then install with the printed path, which `runtime diagnose` and `runtime update` name. Not chosen: the Claude link alone (skills, no hooks, no MCP) and a link in `~/.grok/plugins/` (loads nothing until `[plugins] enabled` is hand-written). The server attaches to the session (CV21.DS10.TS2, headless on 1.0.62): `grok mcp doctor` handshakes with 7 tools, and the model reaches them as `mirror-mind__<tool>` through Grok's `search_tool`/`use_tool` meta-tools — `use_tool mirror-mind__list_journeys` answered. The `init` snapshot and the session-start `mcp_server_count` are taken before the handshake completes (`pending`), which is what DS12.TS4 L6 read as non-attachment | the home-level rule, loaded in every project as `global`, ~2,233 tokens by Grok's count. The plugin's SessionStart hook delivers them as `additionalContext` on Claude Code and Codex; Grok shows a SessionStart `systemMessage` on screen only (DS12.TS4 L2) |
@@ -646,6 +646,49 @@ This keeps:
 - authoring/source files separate from runtime materialization
 - runtime loading deterministic
 - installation and removal explicit
+
+### The per-home extensions plugin (Claude Code, Codex, Antigravity, Grok Build)
+
+Since CV21.DS5.US2 the four plugin runtimes take a home's extensions as **one
+generated plugin per Mirror home**, in the canonical plugin's format
+([DS5.TS1's decision](../../../project/decisions.md#user-extensions-reach-every-runtime-as-a-per-home-plugin)):
+
+```text
+~/.mirror-minds/<user>/runtime/plugin/
+  .agents/plugins/marketplace.json        the Codex marketplace, named mirror-ext-<user>
+  mirror-ext-<user>/
+    .claude-plugin/plugin.json             name, version, description — no hooks, no MCP server
+    plugin.json                            the root marker Grok and agy read
+    skills/<dir>/SKILL.md                  each installed extension's `claude` skill, verbatim
+```
+
+- `mirror extensions install`, `uninstall`, and `sync` regenerate it from the home's
+  `claude` catalog (`runtime/skills/claude/extensions.json`), so it carries exactly
+  what `expose-claude` would expose; an extension declaring no `claude` block is not
+  in it. The directory is replaced atomically, and holds only regular files.
+- **Version:** `0.1.<generation>`, advanced by one when the tree changes (an
+  extension added, changed, or removed) and held when it does not. Codex keys its
+  cache by it; `runtime diagnose` compares it, and for this plugin a copy at any
+  other version is stale.
+- **Wiring, once per runtime** (printed by the `extensions` verbs for a runtime on the
+  `PATH` that has not taken the plugin; `mirror init` prints none, there is no plugin
+  at init): Claude Code `ln -s "<dir>" ~/.claude/skills/mirror-ext-<user>` (a link,
+  read in place); Codex `codex plugin marketplace add "<home>/runtime/plugin"` then
+  `codex plugin add mirror-ext-<user>@mirror-ext-<user>`; Antigravity `agy plugin
+  install "<dir>"`; Grok Build `grok plugin install "<dir>" --trust` (skills only:
+  nothing for `--trust` to activate).
+- **After a change**, the three runtimes that copy a plugin hold a stale copy until one
+  command each: Codex `codex plugin add …` again, Antigravity `agy plugin install …`
+  again, Grok `grok plugin uninstall mirror-ext-<user> --confirm && grok plugin install
+  …`. The `extensions` verbs print the one a runtime needs; `runtime diagnose` raises
+  `ext_plugin_codex_cache_stale`, `ext_plugin_agy_copy_stale`,
+  `ext_plugin_grok_copy_stale`, `ext_plugin_claude_link_dangling`, and
+  `ext_plugin_grok_copies_duplicated`, each with the command as its repair route.
+  A runtime not wired, and a runtime off the `PATH`, are not drift.
+- `runtime status` prints `Extensions plugin: mirror-ext-<user> <version> (<n> skills)`
+  when the home has one.
+
+Pi keeps its catalog path below; the plugin does not change it.
 
 ### Pi runtime consumption prep
 

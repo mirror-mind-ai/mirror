@@ -19,7 +19,7 @@
 // so neither a `bin` shim nor a skill line needs `--env-file` or
 // `NODE_OPTIONS=--no-warnings`. Importing this module does neither.
 
-import { existsSync, readFileSync } from "node:fs";
+import { accessSync, constants, existsSync, readFileSync } from "node:fs";
 import { basename, dirname } from "node:path";
 import { pathToFileURL } from "node:url";
 import {
@@ -769,6 +769,17 @@ async function runExtensionCatalog(argv: readonly string[]): Promise<DispatchOut
     deps: { nowIso: () => pythonUtcIsoformat() },
     withReadOnlyDatabase: (run) => withMirrorReadDb(argv, run),
     withWritableDatabase: (run) => withMirrorWriteDb(argv, run),
+    // CV21.DS5.US2: the extensions-plugin readers take their homes and the
+    // PATH from the process environment here, and from nowhere else.
+    environment: process.env,
+    isExecutable: (path) => {
+      try {
+        accessSync(path, constants.X_OK);
+        return true;
+      } catch {
+        return false;
+      }
+    },
   });
 }
 

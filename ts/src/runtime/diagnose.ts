@@ -25,11 +25,18 @@
 // inconclusive without a key; the live fetch belongs to DS8.
 
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { openDatabaseReadOnly } from "#db/database.ts";
+import {
+  type ExtensionPluginReport,
+  extensionPluginDirectory,
+  extensionPluginRoot,
+  readExtensionPlugin,
+} from "#extensions/extensionPlugin.ts";
 import { identityKeyBreaksGrammar, SLUG_KEYED_LAYERS } from "#identity/identityKey.ts";
 import { pyRepr, sortByCodePoint } from "#util/pythonText.ts";
 import { configFilePath } from "./config.ts";
+import { extensionPluginStates } from "./extensionPluginWiring.ts";
 import type { GitWorktreeEntry } from "./git.ts";
 import {
   codexPluginCacheState,
@@ -37,6 +44,7 @@ import {
   installedPluginVersion,
   pluginLinkState,
 } from "./pluginWiring.ts";
+
 import type { RuntimeStatusReport } from "./status.ts";
 import { CODEX_PLUGIN_ADD_COMMAND, grokPluginReinstallCommand } from "./wiring.ts";
 
@@ -551,7 +559,7 @@ export function pluginWiringFindings(
         subject: link.linkPath,
         detail: `the link points at ${link.target ?? "an unreadable target"}, which cannot be read`,
         recommendation:
-          'relink it — `ln -s "<pkg>/plugins/mirror-mind" ~/.claude/skills/mirror-mind` — or remove it if Claude Code is no longer wired',
+          'relink it — `rm ~/.claude/skills/mirror-mind && ln -s "<pkg>/plugins/mirror-mind" ~/.claude/skills/mirror-mind` — or remove it if Claude Code is no longer wired',
         repair_route: "relink or remove",
       });
     }
@@ -844,4 +852,58 @@ export function hookNodeFindings(
       repair_route: "export MIRROR_NODE=/path/to/node",
     },
   ];
+}
+
+/**
+ * The extensions plugin findings (CV21.DS5.US2): the same reading the `extensions`
+ * verbs print, as drift. A home with no plugin, a runtime not wired, and a runtime
+ * off the PATH are silence; a dangling link, a stale copy (any version other than
+ * the home's), and two Grok copies are warnings, each naming its repair.
+ */
+export function extensionPluginFindings(
+  mirrorHome: string | null,
+  env: NodeJS.ProcessEnv,
+  isExecutable: (path: string) => boolean,
+): DriftFinding[] {
+  if (mirrorHome === null) return [];
+  const previous = readExtensionPlugin(mirrorHome);
+  if (previous === null) return [];
+  const name = `mirror-ext-${basename(mirrorHome)}`;
+  const skills = Object.keys(previous.files).filter((path) => path.endsWith("/SKILL.md")).length;
+  const plugin: ExtensionPluginReport = {
+    name,
+    directory: extensionPluginDirectory(mirrorHome),
+    marketplaceRoot: extensionPluginRoot(mirrorHome),
+    version: `0.1.${previous.generation}`,
+    skills,
+    changed: false,
+    notCarried: [],
+  };
+  const findings: DriftFinding[] = [];
+  for (const state of extensionPluginStates(plugin, env, isExecutable)) {
+    if (state.state === "wired" || state.state === "not_wired") continue;
+    const code =
+      state.state === "dangling"
+        ? "ext_plugin_claude_link_dangling"
+        : state.state === "duplicated"
+          ? "ext_plugin_grok_copies_duplicated"
+          : state.runtime === "codex"
+            ? "ext_plugin_codex_cache_stale"
+            : state.runtime === "antigravity"
+              ? "ext_plugin_agy_copy_stale"
+              : "ext_plugin_grok_copy_stale";
+    const repair = state.steps.join("; then ");
+    findings.push({
+      code,
+      severity: "warning",
+      subject: state.subject,
+      detail:
+        state.state === "stale"
+          ? `${state.detail}, the home generates ${plugin.version}; ${state.title} runs the copy it made at install`
+          : state.detail,
+      recommendation: `run \`${repair}\` to bring ${state.title}'s copy of ${plugin.name} level`,
+      repair_route: repair,
+    });
+  }
+  return findings;
 }

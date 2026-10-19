@@ -324,7 +324,7 @@
         "--extensions-root",
         "<SRC>"
       ],
-      "stdout": "Installed extension/notes\n  source: <SRC>/notes\n  installed: <HOME>/extensions/notes\n  runtime claude:\n    ext:notes -> <HOME>/runtime/skills/claude/ext-notes/SKILL.md\n  runtime pi:\n    ext-notes -> <HOME>/runtime/skills/pi/ext-notes/SKILL.md\n",
+      "stdout": "Installed extension/notes\n  source: <SRC>/notes\n  installed: <HOME>/extensions/notes\n  runtime claude:\n    ext:notes -> <HOME>/runtime/skills/claude/ext-notes/SKILL.md\n  runtime pi:\n    ext-notes -> <HOME>/runtime/skills/pi/ext-notes/SKILL.md\n  plugin: mirror-ext-mirror 0.1.1, 1 skill\n",
       "stderr": "",
       "exit_code": 0,
       "home": {
@@ -391,7 +391,7 @@
         "--extensions-root",
         "<SRC>"
       ],
-      "stdout": "Installed extension/notes\n  source: <SRC>/notes\n  installed: <HOME>/extensions/notes\n  runtime claude:\n    ext:notes -> <HOME>/runtime/skills/claude/ext-notes/SKILL.md\n  runtime pi:\n    ext-notes -> <HOME>/runtime/skills/pi/ext-notes/SKILL.md\n",
+      "stdout": "Installed extension/notes\n  source: <SRC>/notes\n  installed: <HOME>/extensions/notes\n  runtime claude:\n    ext:notes -> <HOME>/runtime/skills/claude/ext-notes/SKILL.md\n  runtime pi:\n    ext-notes -> <HOME>/runtime/skills/pi/ext-notes/SKILL.md\n  plugin: mirror-ext-mirror 0.1.1, 1 skill\n",
       "stderr": "",
       "exit_code": 0,
       "home": {
@@ -458,7 +458,7 @@
         "--extensions-root",
         "<SRC>"
       ],
-      "stdout": "Installed extension/guide\n  source: <SRC>/guide\n  installed: <HOME>/extensions/guide\n  runtime pi:\n    ext-guide -> <HOME>/runtime/skills/pi/ext-guide/SKILL.md\n",
+      "stdout": "Installed extension/guide\n  source: <SRC>/guide\n  installed: <HOME>/extensions/guide\n  runtime pi:\n    ext-guide -> <HOME>/runtime/skills/pi/ext-guide/SKILL.md\n  plugin: mirror-ext-mirror 0.1.1, 1 skill\n    not carried (no claude block in skill.yaml): guide\n",
       "stderr": "",
       "exit_code": 0,
       "home": {
@@ -528,7 +528,7 @@
         "--extensions-root",
         "<SRC>"
       ],
-      "stdout": "Installed extension/noisy\n  source: <SRC>/noisy\n  installed: <HOME>/extensions/noisy\n  runtime pi:\n    ext-noisy -> <HOME>/runtime/skills/pi/ext-noisy/SKILL.md\n",
+      "stdout": "Installed extension/noisy\n  source: <SRC>/noisy\n  installed: <HOME>/extensions/noisy\n  runtime pi:\n    ext-noisy -> <HOME>/runtime/skills/pi/ext-noisy/SKILL.md\n  plugin: mirror-ext-mirror 0.1.1, 1 skill\n    not carried (no claude block in skill.yaml): guide, noisy\n",
       "stderr": "",
       "exit_code": 0,
       "home": {
@@ -606,7 +606,7 @@
         "--runtime",
         "pi"
       ],
-      "stdout": "Installed extension/notes\n  source: <SRC>/notes\n  installed: <HOME>/extensions/notes\n  runtime pi:\n    ext-notes -> <HOME>/runtime/skills/pi/ext-notes/SKILL.md\n",
+      "stdout": "Installed extension/notes\n  source: <SRC>/notes\n  installed: <HOME>/extensions/notes\n  runtime pi:\n    ext-notes -> <HOME>/runtime/skills/pi/ext-notes/SKILL.md\n  plugin: mirror-ext-mirror 0.1.1, 1 skill\n    not carried (no claude block in skill.yaml): guide, noisy\n",
       "stderr": "",
       "exit_code": 0,
       "home": {
@@ -1584,7 +1584,7 @@
         "--runtime",
         "pi"
       ],
-      "stdout": "Uninstalled extension/notes\n  installed: <HOME>/extensions/notes\n  runtime pi:\n    removed <HOME>/runtime/skills/pi/ext-notes\n",
+      "stdout": "Uninstalled extension/notes\n  installed: <HOME>/extensions/notes\n  runtime pi:\n    removed <HOME>/runtime/skills/pi/ext-notes\n  plugin: mirror-ext-mirror 0.1.1, 1 skill\n    not carried (no claude block in skill.yaml): guide, mismatch, noisy\n",
       "stderr": "",
       "exit_code": 0,
       "home": {
@@ -1662,7 +1662,7 @@
         "uninstall",
         "notes"
       ],
-      "stdout": "Uninstalled extension/notes\n  installed: <HOME>/extensions/notes\n  source tree: removed\n  bindings: 1 row(s) removed\n  runtime claude:\n    removed <HOME>/runtime/skills/claude/ext-notes\n  runtime pi:\n",
+      "stdout": "Uninstalled extension/notes\n  installed: <HOME>/extensions/notes\n  source tree: removed\n  bindings: 1 row(s) removed\n  runtime claude:\n    removed <HOME>/runtime/skills/claude/ext-notes\n  runtime pi:\n  plugin: mirror-ext-mirror 0.1.2, 0 skills\n    not carried (no claude block in skill.yaml): guide, mismatch, noisy\n",
       "stderr": "",
       "exit_code": 0,
       "home": {

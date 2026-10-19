@@ -25,6 +25,7 @@ import { join } from "node:path";
 import { after, test } from "node:test";
 import { pluginWiringFindings } from "#runtime/diagnose.ts";
 import {
+  agyPluginCopyState,
   codexPluginCacheState,
   grokPluginCopyState,
   installedPluginVersion,
@@ -486,4 +487,62 @@ test("the reinstall command is built from the install root diagnose was handed â
       'grok plugin install "/any/root/plugins/mirror-mind" --trust',
     ),
   );
+});
+
+// --- the readers by identity (CV21.DS5.US2) ----------------------------------
+//
+// The per-home extensions plugin is `mirror-ext-<user>` in a marketplace of the
+// same name. The readers take the plugin's identity; the canonical call sites
+// pass nothing and keep their behavior, as the tests above hold.
+
+test("Codex's cache reader reads another marketplace and name when told to", () => {
+  const home = join(scratch(), "codex-home");
+  const cache = join(home, "plugins", "cache", "mirror-ext-ana", "mirror-ext-ana");
+  mkdirSync(join(cache, "0.1.2"), { recursive: true });
+  const ext = { marketplace: "mirror-ext-ana", name: "mirror-ext-ana" };
+  assert.equal(codexPluginCacheState(home, "0.1.2", ext).state, "current");
+  assert.equal(codexPluginCacheState(home, "0.1.3", ext).state, "behind");
+  assert.equal(codexPluginCacheState(home, "0.1.1", ext).state, "ahead");
+  assert.equal(codexPluginCacheState(home, "0.1.2", ext).cachePath, cache);
+  // The canonical identity does not see the extension plugin's cache.
+  assert.equal(codexPluginCacheState(home, "0.35.0").state, "absent");
+});
+
+test("Grok's copy reader reads another plugin name when told to", () => {
+  const home = grokHomeWith([
+    { key: "plugin-ana-f007e313", version: "0.1.2", plugin: "mirror-ext-ana" },
+    { key: "mirror-mind-aaaa1111", version: "0.35.0" },
+  ]);
+  const ext = grokPluginCopyState(home, "0.1.2", "mirror-ext-ana");
+  assert.equal(ext.state, "current");
+  assert.deepEqual(
+    ext.copies.map((c) => c.key),
+    ["plugin-ana-f007e313"],
+  );
+  assert.equal(grokPluginCopyState(home, "0.1.3", "mirror-ext-ana").state, "behind");
+  // The canonical read is unchanged: one copy at 0.35.0.
+  assert.deepEqual(
+    grokPluginCopyState(home, "0.35.0").copies.map((c) => c.key),
+    ["mirror-mind-aaaa1111"],
+  );
+});
+
+test("agy stages a plugin under .gemini/config/plugins/<name>/, and the reader reads its manifest", () => {
+  const gemini = join(scratch(), ".gemini");
+  assert.equal(agyPluginCopyState(gemini, "0.1.2", "mirror-ext-ana").state, "absent");
+  const staged = join(gemini, "config", "plugins", "mirror-ext-ana");
+  mkdirSync(join(staged, ".claude-plugin"), { recursive: true });
+  writeFileSync(
+    join(staged, ".claude-plugin", "plugin.json"),
+    JSON.stringify({ name: "mirror-ext-ana", version: "0.1.2" }),
+  );
+  const state = agyPluginCopyState(gemini, "0.1.2", "mirror-ext-ana");
+  assert.equal(state.state, "current");
+  assert.equal(state.copyPath, staged);
+  assert.equal(state.copiedVersion, "0.1.2");
+  assert.equal(agyPluginCopyState(gemini, "0.1.3", "mirror-ext-ana").state, "behind");
+  assert.equal(agyPluginCopyState(gemini, "0.1.1", "mirror-ext-ana").state, "ahead");
+  // A staged tree with no readable manifest claims nothing.
+  rmSync(join(staged, ".claude-plugin", "plugin.json"));
+  assert.equal(agyPluginCopyState(gemini, "0.1.2", "mirror-ext-ana").state, "absent");
 });

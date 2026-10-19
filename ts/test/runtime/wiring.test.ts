@@ -13,6 +13,9 @@ import { describe, test } from "node:test";
 
 import {
   detectRuntimes,
+  EXTENSION_PLUGIN_GROK_TRUST_NOTE,
+  extensionPluginReinstallCommand,
+  extensionPluginWiringSteps,
   grokPluginReinstallCommand,
   RUNTIME_WIRING,
   runtimeWiringLines,
@@ -82,7 +85,7 @@ describe("the wiring steps", () => {
     const lines = runtimeWiringLines("claude", root).join("\n");
     assert.match(
       lines,
-      /ln -s "\/prefix\/lib\/node_modules\/mirror-mind\/plugins\/mirror-mind" ~\/\.claude\/skills\/mirror-mind/,
+      /mkdir -p ~\/\.claude\/skills && ln -s "\/prefix\/lib\/node_modules\/mirror-mind\/plugins\/mirror-mind" ~\/\.claude\/skills\/mirror-mind/,
     );
   });
 
@@ -159,5 +162,65 @@ describe("the wiring steps", () => {
       'grok plugin uninstall mirror-mind --confirm && grok plugin install "/prefix/lib/node_modules/mirror-mind/plugins/mirror-mind" --trust',
     );
     assert.match(runtimeWiringLines("grok", root).join("\n"), /runtime diagnose/);
+  });
+});
+
+describe("the extensions plugin's wiring (CV21.DS5.US2)", () => {
+  // DS5.TS1 measured how each runtime takes a per-home plugin and what brings a
+  // copy level: Claude Code links and reads in place; Codex re-adds from its
+  // marketplace; agy installs again; Grok uninstalls, then installs. One function
+  // per string, so `extensions install`, `diagnose`, and `update` cannot spell a
+  // path two ways (the CR071 lesson).
+  const dir = "/Users/ana/.mirror-minds/ana/runtime/plugin/mirror-ext-ana";
+  const marketplace = "/Users/ana/.mirror-minds/ana/runtime/plugin";
+  const name = "mirror-ext-ana";
+
+  test("the one-time wiring per runtime, as functions of the plugin's paths and name", () => {
+    assert.deepEqual(extensionPluginWiringSteps("claude", { dir, marketplace, name }), [
+      `mkdir -p ~/.claude/skills && ln -s "${dir}" ~/.claude/skills/${name}`,
+    ]);
+    assert.deepEqual(extensionPluginWiringSteps("codex", { dir, marketplace, name }), [
+      `codex plugin marketplace add "${marketplace}"`,
+      `codex plugin add ${name}@${name}`,
+    ]);
+    assert.deepEqual(extensionPluginWiringSteps("antigravity", { dir, marketplace, name }), [
+      `agy plugin install "${dir}"`,
+    ]);
+    assert.deepEqual(extensionPluginWiringSteps("grok", { dir, marketplace, name }), [
+      `grok plugin install "${dir}" --trust`,
+    ]);
+    assert.deepEqual(extensionPluginWiringSteps("pi", { dir, marketplace, name }), []);
+  });
+
+  test("the reinstall per copying runtime; none for Claude Code's link", () => {
+    assert.equal(extensionPluginReinstallCommand("claude", { dir, marketplace, name }), null);
+    assert.equal(
+      extensionPluginReinstallCommand("codex", { dir, marketplace, name }),
+      `codex plugin add ${name}@${name}`,
+    );
+    assert.equal(
+      extensionPluginReinstallCommand("antigravity", { dir, marketplace, name }),
+      `agy plugin install "${dir}"`,
+    );
+    assert.equal(
+      extensionPluginReinstallCommand("grok", { dir, marketplace, name }),
+      `grok plugin uninstall ${name} --confirm && grok plugin install "${dir}" --trust`,
+    );
+  });
+
+  test("Grok's consent line says what there is to trust: skills only", () => {
+    // The generated plugin carries no hooks and no server (security amendment 14).
+    assert.match(EXTENSION_PLUGIN_GROK_TRUST_NOTE, /skills only/);
+    assert.match(EXTENSION_PLUGIN_GROK_TRUST_NOTE, /no hooks/);
+    assert.match(EXTENSION_PLUGIN_GROK_TRUST_NOTE, /no (MCP )?server/);
+  });
+
+  test("the canonical wiring is unchanged by the extension plugin's", () => {
+    assert.deepEqual(
+      Object.fromEntries(
+        Object.entries(RUNTIME_WIRING).map(([runtime, wiring]) => [runtime, wiring.steps.length]),
+      ),
+      { pi: 1, claude: 1, codex: 2, antigravity: 1, grok: 2 },
+    );
   });
 });

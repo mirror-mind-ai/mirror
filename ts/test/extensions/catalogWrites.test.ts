@@ -165,6 +165,11 @@ function tree(root: string, world: World): Record<string, unknown> {
     // positively below -- it is the cleanest proof the bridge is gone.
     if (parts.includes("__pycache__")) continue;
     if (relativePath.endsWith(".bootstrap.lock")) continue;
+    // CV21.DS5.US2 divergence, deliberate and one-directional: the generated
+    // extensions plugin under `runtime/plugin/` is a TypeScript-era addition the
+    // Python oracle never wrote. Its bytes are graded by `extensionPlugin.test.ts`
+    // and asserted present below, not against an oracle that predates it.
+    if (parts[0] === "runtime" && parts[1] === "plugin") continue;
     const key = parts.join("/");
     if (path.endsWith("extensions.json") || path.endsWith("extensions.external.json")) {
       files[key] = { text: redact(readFileSync(path, "utf8"), world) };
@@ -327,6 +332,22 @@ test("install runs no Python, and leaves nothing behind that would prove otherwi
     // ...and the install still did its real work.
     assert.ok(paths.includes("extensions/notes/skill.yaml"));
     assert.ok(paths.some((path) => path.startsWith("runtime/skills/pi/")));
+    // CV21.DS5.US2: the install also generated the home's extensions plugin,
+    // outside the oracle tree above and asserted here.
+    const pluginDir = join(world.home, "runtime", "plugin", "mirror-ext-mirror");
+    assert.ok(existsSyncSafe(pluginDir), "the extensions plugin directory");
+    assert.deepEqual(
+      walk(join(world.home, "runtime", "plugin"))
+        .map((p) => relative(join(world.home, "runtime", "plugin"), p))
+        .sort(),
+      [
+        ".agents/plugins/marketplace.json",
+        "mirror-ext-mirror/.claude-plugin/plugin.json",
+        "mirror-ext-mirror/plugin.json",
+        "mirror-ext-mirror/skills/ext-notes/SKILL.md",
+      ],
+    );
+    assert.match(outcome.stdout, /\n {2}plugin: mirror-ext-mirror 0\.1\.1, 1 skill\n$/);
   } finally {
     closeWorld(world);
   }
@@ -420,6 +441,110 @@ test("a write verb without a write context fails loudly", () => {
           world.source,
         ]),
       UnsupportedCatalogCommandError,
+    );
+  } finally {
+    closeWorld(world);
+  }
+});
+
+// --- CV21.DS5.US2: the plugin block, with the homes and the PATH handed in ------
+
+test("the report's plugin block names the runtimes on the PATH that still need a step, and nothing else", () => {
+  const world = makeWorld();
+  try {
+    const scratchHome = join(world.root, "person");
+    mkdirSync(scratchHome, { recursive: true });
+    const env = { HOME: scratchHome, PATH: "/stand-in" } as NodeJS.ProcessEnv;
+    const onPath = (path: string) => path === "/stand-in/codex" || path === "/stand-in/grok";
+    const context = { ...contextFor(world), env, isExecutable: onPath };
+    const first = runExtensionsCommand(context, [
+      "install",
+      "notes",
+      "--extensions-root",
+      world.source,
+    ]);
+    const lines = redact(first.stdout, world).trimEnd().split("\n");
+    assert.equal(lines.at(-5), "  plugin: mirror-ext-mirror 0.1.1, 1 skill");
+    assert.equal(
+      lines.at(-4),
+      `    Codex: not wired — codex plugin marketplace add "<HOME>/runtime/plugin"`,
+    );
+    assert.match(
+      lines.at(-3) ?? "",
+      /^\s+then codex plugin add mirror-ext-mirror@mirror-ext-mirror$/,
+    );
+    assert.equal(
+      lines.at(-2),
+      `    Grok Build: not wired — grok plugin install "<HOME>/runtime/plugin/mirror-ext-mirror" --trust`,
+    );
+    assert.match(lines.at(-1) ?? "", /skills only — no hooks and no MCP server/);
+    // Claude Code and agy are not on this PATH: not a line about them.
+    assert.doesNotMatch(first.stdout, /Claude Code|Antigravity/);
+    // A Codex cache at the plugin's version reads wired; Grok still needs its step.
+    mkdirSync(
+      join(
+        scratchHome,
+        ".codex",
+        "plugins",
+        "cache",
+        "mirror-ext-mirror",
+        "mirror-ext-mirror",
+        "0.1.1",
+      ),
+      { recursive: true },
+    );
+    const second = runExtensionsCommand(context, [
+      "install",
+      "notes",
+      "--extensions-root",
+      world.source,
+    ]);
+    assert.doesNotMatch(second.stdout, /Codex:/);
+    assert.match(second.stdout, /Grok Build: not wired/);
+    // After an uninstall that changed the catalog, Codex's copy is stale and "still has" the skill.
+    const third = runExtensionsCommand(context, ["uninstall", "notes"]);
+    assert.match(
+      redact(third.stdout, world),
+      /\n {2}plugin: mirror-ext-mirror 0\.1\.2, 0 skills\n {4}Codex: still has ext-notes — codex plugin add mirror-ext-mirror@mirror-ext-mirror\n/,
+    );
+  } finally {
+    closeWorld(world);
+  }
+});
+
+test("sync regenerates the home's plugin from its claude catalog, and says so", () => {
+  const world = makeWorld();
+  try {
+    const context = contextFor(world);
+    runExtensionsCommand(context, ["install", "notes", "--extensions-root", world.source]);
+    // Change the installed claude skill in place: the catalog's file is what the plugin reads.
+    const skill = join(world.home, "runtime", "skills", "claude", "ext-notes", "SKILL.md");
+    writeFileSync(skill, `${readFileSync(skill, "utf8")}\nEdited in place.\n`, "utf8");
+    const synced = runExtensionsCommand(context, [
+      "sync",
+      "--extensions-root",
+      world.source,
+      "--runtime",
+      "pi",
+      "--target-root",
+      world.target,
+    ]);
+    assert.equal(synced.exitCode, 0);
+    assert.match(synced.stdout, /\n {2}plugin: mirror-ext-mirror 0\.1\.2, 1 skill\n$/);
+    assert.match(
+      readFileSync(
+        join(
+          world.home,
+          "runtime",
+          "plugin",
+          "mirror-ext-mirror",
+          "skills",
+          "ext-notes",
+          "SKILL.md",
+        ),
+        "utf8",
+      ),
+      /Edited in place/,
     );
   } finally {
     closeWorld(world);

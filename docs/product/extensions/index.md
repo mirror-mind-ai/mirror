@@ -92,7 +92,11 @@ in the active `.env` (or shell environment). Pass `--mirror-home <path>`
 explicitly when working against a non-default home, otherwise omit it.
 
 Installation copies the source tree, validates the runtimes the manifest declares, and
-runs the extension's SQL migrations. **Since CV22.DS10.TS2 it does not import
+runs the extension's SQL migrations. It also regenerates the home's extensions plugin,
+`~/.mirror-minds/<user>/runtime/plugin/mirror-ext-<user>/`, which is how the
+extension's `claude` skill reaches Claude Code, Codex, Antigravity, and Grok Build
+(one wiring step per runtime, printed by the install when a runtime still needs it;
+see the [runtime interface contract](../specs/runtime-interface/index.md#the-per-home-extensions-plugin-claude-code-codex-antigravity-grok-build)). **Since CV22.DS10.TS2 it does not import
 `extension.py` or call `register(api)`** — the Mirror core no longer loads extension code
 at any point. Install warns about capabilities that declare no runtime and still succeeds,
 so an extension can migrate one capability at a time. Mirror dispatches declared

@@ -24,6 +24,7 @@ import {
 import { channelFor, channelForReport, renderChannel, setChannel } from "#runtime/channel.ts";
 import {
   diagnoseRuntime,
+  extensionPluginFindings,
   hookFailureFindings,
   hookNodeFindings,
   pluginWiringFindings,
@@ -336,6 +337,16 @@ export async function runRuntimeReadRoute(
       // after an npm update; Claude Code's link can dangle. Absence is not
       // drift, so an unwired machine stays green.
       ...pluginWiringFindings(installRoot, env),
+      // CV21.DS5.US2: the home's extensions plugin, as each runtime on the
+      // PATH holds it. A stale copy is any version other than the home's.
+      ...extensionPluginFindings(report.mirror_home, env, (path) => {
+        try {
+          accessSync(path, constants.X_OK);
+          return true;
+        } catch {
+          return false;
+        }
+      }),
       // No catalog provider until DS8: inconclusive, which is also the
       // oracle's answer when it cannot reach OpenRouter.
       ...(await probeModelPins(null, "")),
