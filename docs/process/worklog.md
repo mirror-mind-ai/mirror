@@ -28,7 +28,8 @@ with the deferred tail finished at the next start — DS4.TS2 on Grok, with a ke
 TS4 wrote it where a user reads it (the contract's Grok reference implementation,
 README, Getting Started, REFERENCE, AGENTS.md) and paid CR143: the inject hook
 returns at once on Grok instead of spending 2–3 s per load on a context Grok
-discards. Three scratch routes, re-runnable; about US$ 0.30 on Grok and under a
+discards. Three scratch routes, re-runnable; US$ 0.20 on Grok over seven
+headless sessions (the TUI session on the account's plan) and under a
 cent on Mirror for the whole DS. DS10 rides DS5's or DS11's release.
 
 ### 2026-10-18 — v0.35.0 released: Four Runtimes, One Successor
