@@ -1,0 +1,11 @@
+probe	grok	without --trust	grok: not listed
+probe	grok	with --trust	grok: listed 1 (plugin:ds5-us2-probe)
+probe	codex	cache after 0.1.1	0.1.1 
+probe	codex	cache after 0.1.2 re-add	0.1.2 
+probe	codex	prompt lists	codex: listed (2 mentions)
+generate	plugin	version	0.1.1
+wire	claude	listed	claude: plugins [mirror-ext-us2user]
+wire	codex	listed	codex: listed (2 mentions)
+wire	agy	listed	agy: listed (staged: ~/.gemini/config/plugins/mirror-ext-us2user/skills/ext-review-copy/SKILL.md )
+wire	grok	listed	grok: listed 1 (plugin:mirror-ext-us2user)
+cost	codex	prompt bytes	none 12395, one skill 12604, thirteen 14237; per extension ≈ 136 bytes
