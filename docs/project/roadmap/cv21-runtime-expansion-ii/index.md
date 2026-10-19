@@ -158,7 +158,9 @@ names the runtime version, binary, and date it was measured on (the
   importing the canonical plugin; the Gemini CLI integration is retired (v0.35.0).
 - **Grok Build** runs Mirror at its highest honest parity, `interface='grok_build'`.
 - **User-owned extensions** (the `review-copy` reference and others) work on every
-  runtime, riding the same plugin/MCP package — not just built-in `mm-*` skills.
+  runtime as one generated plugin per Mirror home, installed the way each runtime
+  takes the canonical plugin ([DS5.TS1's decision](../../decisions.md#user-extensions-reach-every-runtime-as-a-per-home-plugin),
+  2026-10-19) — not just built-in `mm-*` skills.
 
 ---
 
@@ -319,8 +321,8 @@ CV21 is done when:
   `interface='grok_build'`, has an isolated smoke test, and runs `review-copy`;
 - the Gemini CLI integration is removed from the package behind a documented cutoff
   and retired across all runtime-facing docs;
-- external extensions are discoverable and invocable on every runtime via the
-  shared package;
+- external extensions are discoverable and invocable on every runtime through the
+  per-home generated plugin DS5.TS1 chose;
 - the runtime interface contract, decisions log, and parity matrix across README,
   Getting Started, REFERENCE, and architecture clearly distinguish Claude Code, Pi,
   Codex, Antigravity, Grok Build, and the retired Gemini CLI.

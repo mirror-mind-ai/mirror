@@ -1,0 +1,59 @@
+a	claude	grok	listed 1 (user); mcp []; plugins []
+a	claude	codex	not listed
+a	claude	agy	reader model (skills root)
+a	claude	claude	reader model
+a	agents	grok	listed 1 (user); mcp []; plugins []
+a	agents	codex	listed (2 mentions: ext-review-copy: | r0/ext-review-copy/SKILL.md)\n</skills_instructions>)
+a	agents	agy	reader model (skills root)
+a	agents	claude	reader model
+a	gemini	grok	not listed; mcp []; plugins []
+a	gemini	codex	not listed
+a	gemini	agy	reader model (skills root; the file is placed)
+a	gemini	claude	reader model
+a	two-roots	grok	listed 1 (user); mcp []; plugins []
+b	claude	listed	plugins [mirror-ext-ts1user]
+b	claude	refresh	in place (a link): a change is read on the next session
+b	claude	two-homes	plugins [mirror-ext-ts1other, mirror-ext-ts1user]
+b	codex	listed	listed (2 mentions: mirror-ext-ts1user:ext-review-copy: | r1/mirror-ext-ts1user/0.0.1/skills/ext-review-copy/SKILL.md)\n</skills_instructions>)
+b	codex	refresh	stale: a copy (~/.codex/plugins/cache/mp-mirror-ext-ts1user/mirror-ext-ts1user/0.0.1/skills/ext-review-copy/SKILL.md)
+b	codex	reinstall	codex plugin add mirror-ext-ts1user@mp-mirror-ext-ts1user (exit 0)
+b	codex	after-reinstall	level: the copy carries the change
+b	codex	two-homes	listed (4 mentions: mirror-ext-ts1other:ext-review-copy: | r1/mirror-ext-ts1other/0.0.1/skills/ext-review-copy/SKILL.md)\n- | mirror-ext-ts1user:ext-review-copy:)
+b	agy	listed	listed (staged: ~/.gemini/config/plugins/mirror-ext-ts1user/skills/ext-review-copy/SKILL.md )
+b	agy	refresh	stale: a copy (~/.gemini/config/plugins/mirror-ext-ts1user/skills/ext-review-copy/SKILL.md)
+b	agy	reinstall	agy plugin install <dir> (exit 0)
+b	agy	after-reinstall	level: the copy carries the change
+b	agy	two-homes	listed (staged: ~/.gemini/config/plugins/mirror-ext-ts1other/skills/ext-review-copy/SKILL.md ~/.gemini/config/plugins/mirror-ext-ts1user/skills/ext-review-copy/SKILL.md )
+b	grok	listed	listed 1 (plugin:mirror-ext-ts1user); mcp []; plugins [mirror-ext-ts1user@user enabled=true]
+b	grok	refresh	stale: a copy (~/.grok/installed-plugins/plugin-ts1user-f007e313/skills/ext-review-copy/SKILL.md)
+b	grok	reinstall	grok plugin uninstall mirror-ext-ts1user --confirm && grok plugin install <dir> --trust (exit 0)
+b	grok	after-reinstall	level: the copy carries the change
+b	grok	two-homes	listed 2 (plugin:mirror-ext-ts1other | plugin:mirror-ext-ts1user); mcp []; plugins [mirror-ext-ts1other@user enabled=true, mirror-ext-ts1user@user enabled=true]
+live	grok	a-claude	found; "model":"grok-4.7"
+live	grok	b	found; "model":"grok-4.7"
+c	claude	attached	1 'MCP server' lines in plugin details
+c	claude	prompt-user	documented as /mcp__mirror-ext-ts1user__ext-review-copy; reader model
+c	codex	attached	1 server lines in codex mcp list
+c	codex	prompt-user	reader model
+c	agy	attached	staged mcp_config.json names the server; agy mcp list shows 0 (user-configured servers only); attachment is a session finding
+c	agy	prompt-user	reader model
+c	grok	attached	mirror-ext-ts1user/stdio
+c	grok	prompt-user	0 'prompt' lines in grok mcp doctor; reader model
+live	grok	c	not found; "model":"grok-4.7"
+live	grok	c	not found (file tools used: name:grep x1 name:run_terminal_command x2); "model":"grok-4.7"
+live	agy	a-gemini	found; model not reported
+live	agy	a-agents	not found; model not reported
+live	agy	b	not found; model not reported
+live	agy	c	not found; model not reported
+live	agy	b-form	found; model not reported
+live	agy	a-agents	not found; model not reported
+live	agy	c	not found; model not reported
+live	codex	a-agents	found (read the path the runtime listed); model not reported
+live	codex	b	found (read the path the runtime listed); model not reported
+live	codex	c	not found by the shape; found (searched the disk); model not reported
+live	codex	b-form	found (no tool used: answered from context); model not reported
+live	claude	a-claude	found (no tool used: answered from context); "modelUsage":{"claude-opus-5-5"
+live	claude	a-agents	not measurable by this route: Claude Code's login needs the real HOME, and the real ~/.agents/skills/ is not written (amendment 6)
+live	claude	b	found (no tool used: answered from context); "modelUsage":{"claude-opus-5-5"
+live	claude	c	not found (no tool used: answered from context); "modelUsage":{"claude-opus-5-5"
+live	claude	c-form	not found (no tool used: answered from context); "modelUsage":{"claude-opus-5-5"

@@ -3249,6 +3249,81 @@ Codex-shaped payloads loaded as before. A Codex user receives the change at thei
 next plugin re-add (DS4.TS6); a Claude Code user at the next session. The contract's
 injection-models table carries the row.
 
+### User extensions reach every runtime as a per-home plugin
+
+**Date:** 2026-10-19 · **Context:** [CV21.DS5.TS1](roadmap/cv21-runtime-expansion-ii/cv21-ds5-user-extensions-on-every-runtime/cv21-ds5-ts1-one-exposure-for-user-extensions-chosen-from-three-shapes-measured-on-today-s-ru/index.md),
+the choice [DS12.TS5](roadmap/cv21-runtime-expansion-ii/cv21-ds12-runtime-re-baseline/cv21-ds12-ts5-extension-surface-re-grounding/index.md)
+left open on 2026-10-13. Measured on claude 2.1.296 (`claude-opus-5-5`), codex
+0.163.0, agy 1.4.2, and grok 1.0.62 (`grok-4.7`), package 0.35.0, each in a scratch
+home with `review-copy` installed from the shipped package into a scratch Mirror home,
+the skill's body replaced by an inert one carrying a per-run canary. Each cell was
+read by the runtime's own listing, then by one headless turn asking for the canary,
+retried once on a miss, with every turn's tool calls classified so a find reached by
+searching the disk does not count. The rule was written before the table
+([plan.md](roadmap/cv21-runtime-expansion-ii/cv21-ds5-user-extensions-on-every-runtime/cv21-ds5-ts1-one-exposure-for-user-extensions-chosen-from-three-shapes-measured-on-today-s-ru/plan.md)).
+Evidence in the story's test guide; `route.sh` re-runs it.
+
+**The decision.** A Mirror home's installed extensions reach Claude Code, Codex,
+Antigravity, and Grok Build as **one generated plugin per home**, in the canonical
+plugin's format, carrying each extension's `claude` skill as the manifest declares it,
+installed the way each runtime takes the canonical plugin. US2 builds it.
+
+**The table.** Listed is the runtime's reader; found is the model's turn.
+
+| | Claude Code | Codex | Antigravity | Grok Build |
+|---|---|---|---|---|
+| (a) a skill in `~/.claude/skills/` | found | not listed | — | listed, found |
+| (a) in `~/.agents/skills/` | not measurable (below) | listed, found | not found ×2 | listed, found; in both roots, listed once |
+| (a) in `~/.gemini/config/skills/` | — | not listed | found | not listed |
+| (b) a per-home plugin | listed, found | listed, found; also by `$mirror-ext-<user>:ext-review-copy` | staged; found by `/mirror-ext-<user>:ext-review-copy`, not by name | listed, found |
+| (b) a changed skill | in place (a link) | a stale copy; `codex plugin add` again re-copies at the same version when the marketplace serves the live directory | a stale copy; `agy plugin install` again | a stale copy; `uninstall --confirm`, then `install --trust` |
+| (b) a second home's plugin beside it | yes | yes, one marketplace name per home | yes | yes |
+| (c) the server attached | yes | yes | staged `mcp_config.json` | yes |
+| (c) a prompt reaching the model | no ×2 | no: searched the disk | no ×2: a command, denied | no ×2: searched the disk |
+
+**Why (b).** It is the one shape that qualifies on all four. (c) attaches everywhere
+and reaches no model: Claude Code reports the `/mcp__…` command not installed in the
+session, and three of the four models went looking on the disk for the file instead.
+(a) is not one shape but three roots: no root reaches all four runtimes, and each root
+is shared by every Mirror home on the machine with no record of which home wrote a
+file. (b) carries the `claude` skill the manifests already declare, so none of the
+installed extensions needs a rewrite; a plugin named per home installs beside
+another's on every runtime; and the one price, that Codex, agy, and Grok copy a plugin
+and a changed extension is live only after a reinstall, is one command per runtime, of
+the kind `runtime diagnose` already names for the canonical plugin (DS4.TS6, DS10.US1).
+
+**What it costs the person.** One-time wiring per runtime: Codex two commands, the
+others one. Per extension installed or changed: a regeneration, and on the three
+copying runtimes the reinstall, which US2 either performs from `mirror extensions
+install` or has `diagnose` name. Invocation: `ext-review-copy` on Claude Code and
+Grok, `$mirror-ext-<user>:ext-review-copy` on Codex, `/mirror-ext-<user>:ext-review-copy`
+on agy. Uninstall: regenerate without the extension, then the same reinstall.
+
+**What the route could not buy.** Claude Code's login is keyed to the config
+directory and to `HOME` (a logged-in scratch config dir answers under the real `HOME`
+and "Not logged in" under a scratch one; `/tmp/…` and `/private/tmp/…` are two
+logins), so its `~/.agents/skills/` cell would have needed a write into the real
+`~/.agents/`, which the route does not make. Nothing in the decision rests on it.
+
+**Not chosen.** (a), ruled out by the table above. (c), ruled out by the table above;
+the shipped `mirror mcp` keeps declaring tools only. Bundling extensions into the
+canonical plugin, ruled out by DS12.TS5: the plugin is built once into the npm
+package, and an extension belongs to one home.
+
+**Consequences.** CV21's Product Outcome and Done Condition no longer say the shared
+package carries extensions. US2's scope is the generator, the install and reinstall
+steps, and `diagnose`'s findings for a plugin behind its home; US3 runs `review-copy`
+through it on each runtime; TS4 writes the invocation names above where a user reads
+them. Grok's five turns cost US$ 0.22, under the plan's US$ 0.25 line; the other three
+runtimes ran on their plans.
+
+One fact for US2 beyond the choice: an extension a runtime does not expose is not
+invisible to its model. Asked for a skill by name that was not offered, Codex ran `rg
+--files` over `/Users` and read the route's own copy of the skill, and Grok ran `find`
+over the scratch directory; only agy stopped, because headless mode denied the
+command. An agent will go looking for an extension it was told exists, and Codex in
+its default sandbox found it.
+
 ## Open Discussions
 
 ### Migration rehearsal — long-term status
