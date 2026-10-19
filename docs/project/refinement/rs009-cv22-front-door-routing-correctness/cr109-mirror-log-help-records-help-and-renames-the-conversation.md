@@ -63,6 +63,14 @@ Before `mirror log --help` ran, the only conversation was titled
 messages were the user turn and an assistant message reading `--help`. No
 session was named, so the resolver picked the one row there was.
 
+Recurred on 2026-10-19, the third recorded occurrence, at the wrap-up of the
+CV21.DS10 session: an agent probed `mirror mirror log --help`, and `--help` was
+written as an assistant message in that session's conversation and became its
+title. The session's own closing `mirror log` restored the title; the stray
+message was deleted by hand at the Navigator's direction. The handoff that
+followed had to carry "never probe a write command with `--help`" as a rule,
+the workaround this CR exists to retire.
+
 ## Outcome
 
 Open.
