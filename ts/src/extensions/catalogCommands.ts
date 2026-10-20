@@ -452,7 +452,7 @@ export function runExtCommand(
   if ("stdout" in parsed) return parsed;
   const target = { kind: parsed.kind, id: parsed.id };
   return verb === "bind"
-    ? runBind(context.db, extensionId, parsed.capabilityId, target, context.deps)
+    ? runBind(context.db, home, extensionId, parsed.capabilityId, target, context.deps)
     : runUnbind(context.db, extensionId, parsed.capabilityId, target);
 }
 

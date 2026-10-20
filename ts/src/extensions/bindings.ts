@@ -22,8 +22,10 @@ import { join } from "node:path";
 import type { Database, WritableDatabase } from "#db/database.ts";
 import { PROGRAM } from "#util/program.ts";
 import type { RenderedCommand } from "./catalog.ts";
+import { readDeclaredCapabilityIds } from "./contextRuntime.ts";
 import { extensionNotInstalled, installedExtensionDir } from "./dispatch.ts";
-import { ExtensionError } from "./errors.ts";
+import { ExtensionError, ExtensionValidationError } from "./errors.ts";
+import { loadExtensionManifest, SKILL_ID_RE } from "./manifest.ts";
 import { runMigrations } from "./migrations.ts";
 
 /** Python `datetime.now(timezone.utc).isoformat()`: `+00:00`, microseconds. */
@@ -49,20 +51,69 @@ function label(target: BindingTarget): string {
   return target.id ? `${target.kind}/${target.id}` : target.kind;
 }
 
-/** Port of `_cmd_bind`. */
+/**
+ * `_cmd_bind` checked nothing it bound: a missing extension, an undeclared
+ * capability, and a persona that does not exist all answered `bound`, and the
+ * person learned of the typo when the context they expected never appeared.
+ * CR149 diverges on purpose: four checks, outside in, before the one insert,
+ * each refusing with one line on stdout at exit 1 -- the shape of the
+ * family's other refusals -- and writing no row.
+ *
+ * The id check comes first and is not cosmetic. `installedExtensionDir` does
+ * not normalize (Python's bytes), so `../x` would pass the existence check
+ * when `<home>/x/skill.yaml` exists, and the context runtime later builds a
+ * path from whatever this row holds.
+ */
 export function runBind(
   db: WritableDatabase,
+  mirrorHome: string,
   extensionId: string,
   capabilityId: string,
   target: BindingTarget,
   deps: BindingDeps,
 ): RenderedCommand {
+  if (!SKILL_ID_RE.test(extensionId)) {
+    return out(`'${extensionId}' is not a valid extension id\n`, 1);
+  }
+  const extensionDir = installedExtensionDir(mirrorHome, extensionId);
+  if (!existsSync(extensionDir)) return extensionNotInstalled(mirrorHome, extensionId);
+  // The validator first, as `install` runs it: its message is already the
+  // user-facing one. Then the context runtime's reader for the ids.
+  try {
+    loadExtensionManifest(extensionDir);
+  } catch (error) {
+    if (!(error instanceof ExtensionValidationError)) throw error;
+    return out(`${error.message}\n`, 1);
+  }
+  const declared = readDeclaredCapabilityIds(extensionDir);
+  if (!declared.includes(capabilityId)) {
+    const list = declared.length === 0 ? "declares none" : `declared: ${declared.join(", ")}`;
+    return out(`extension/${extensionId} declares no capability '${capabilityId}' (${list})\n`, 1);
+  }
+  if (target.kind !== "global" && !targetExists(db, target.kind, target.id ?? "")) {
+    // The fix in the line, as `missing target: pass --persona <id>, ...` does.
+    const shows = target.kind === "persona" ? `${PROGRAM} list personas` : `${PROGRAM} journeys`;
+    return out(`no ${target.kind} '${target.id ?? ""}' (${shows} shows this home's)\n`, 1);
+  }
   db.prepare(
     "INSERT OR IGNORE INTO _ext_bindings " +
       "(extension_id, capability_id, target_kind, target_id, created_at) " +
       "VALUES (?, ?, ?, ?, ?)",
   ).run(extensionId, capabilityId, target.kind, target.id, deps.nowIso());
   return out(`bound ${extensionId}/${capabilityId} -> ${label(target)}\n`);
+}
+
+/**
+ * The rows a load is later matched against (`selectExtensionBindings`), and
+ * nothing else: `layer = 'journey'`, not `journey_path`; exact key, so
+ * `Engineer` is not `engineer`. What `bind` accepts is what a load can find.
+ */
+function targetExists(db: Database, layer: "persona" | "journey", key: string): boolean {
+  return (
+    db
+      .prepare("SELECT 1 AS found FROM identity WHERE layer = ? AND key = ? LIMIT 1")
+      .get(layer, key) !== undefined
+  );
 }
 
 /** Port of `_cmd_unbind`. `target_id IS ?` is what makes a global unbind work. */

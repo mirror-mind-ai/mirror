@@ -74,6 +74,19 @@ mirror ext <id> bindings
 Multiple bindings per capability are allowed: a capability may be bound to
 several personas at once.
 
+`bind` checks what it binds before writing the row, and refuses with one line on
+stdout, exit 1, and no row when: the id is not an extension id; the extension is
+not installed (`extension not installed: <path>`); the manifest does not declare
+the capability (`extension/<id> declares no capability '<cap>' (declared: 
+)`);
+or the target does not exist 
+ `no persona '<id>' (mirror list personas shows
+this home's)`, `no journey '<slug>' (mirror journeys shows this home's)`. Keys are
+exact: `Engineer` is not `engineer`, and a journey is a `journey` identity row, not
+a `journey_path`. `--global` has nothing to check. `unbind` checks nothing: removing
+a row whose target has since disappeared is the repair, and `bindings` still lists
+such a row.
+
 ### Dispatch (executed by the mirror)
 
 When the mirror assembles a Mirror Mode prompt and the active persona is `P`,

@@ -88,4 +88,5 @@ evidence stays honest as both cores move.
 - [CR144 — The DS7 routes remove agy's credential where 1.3.x kept it, and 1.4.2 keeps it elsewhere](cr144-the-ds7-routes-remove-agy-s-credential-where-1-3-x-kept-it.md)
 - [CR147 — Three copies of the extension-id grammar, and two of them disagree](cr147-three-copies-of-the-extension-id-grammar-and-two-of-them-disagree.md)
 - [CR148 — The front door dies with a stack trace when its stdout closes early](cr148-the-front-door-dies-with-a-stack-trace-when-its-stdout-closes-early.md)
-- [CR149 — `bind` accepts a persona or journey that does not exist, and reports `bound`](cr149-bind-accepts-a-persona-or-journey-that-does-not-exist.md)
+- [CR149 — `bind` checks nothing it binds: a missing extension, an undeclared capability, or a persona that does not exist all report `bound`](cr149-bind-accepts-a-persona-or-journey-that-does-not-exist.md)
+- [CR150 — `install` prints `suggested_personas` this home does not have, as if it did](cr150-install-prints-suggested-personas-this-home-does-not-have.md)

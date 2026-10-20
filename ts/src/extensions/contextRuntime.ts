@@ -239,6 +239,20 @@ export function readProvidersWithoutRuntime(extensionRoot: string): string[] {
   }
 }
 
+/**
+ * The capability ids the manifest declares, for `bind` to check against
+ * (CR149). Tolerant like its siblings: an unreadable manifest declares
+ * nothing, and `bind` has already run the validator, whose message is the
+ * one a person should read for that case.
+ */
+export function readDeclaredCapabilityIds(extensionRoot: string): string[] {
+  try {
+    return readContextManifest(extensionRoot).capabilities.map((capability) => capability.id);
+  } catch {
+    return [];
+  }
+}
+
 function readContextManifest(extensionRoot: string): ExtensionManifest {
   const manifestPath = resolve(extensionRoot, "skill.yaml");
   const raw = parse(readFileSync(manifestPath, "utf8")) as unknown;

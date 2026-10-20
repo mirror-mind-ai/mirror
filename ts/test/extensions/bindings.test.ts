@@ -54,7 +54,29 @@ function makeWorld(scenario: string): World {
     recursive: true,
   });
   const db = bootstrapDatabase(join(home, "memory_test.db"));
+  // CR149: `bind` checks what it binds. The golden was recorded against a
+  // world with no manifest and no identity; its bytes are unchanged, the
+  // world now holds what the checks need -- the manifest declaring `context`
+  // and `briefing`, and the persona and journey the cases bind to.
+  writeFileSync(
+    join(home, "extensions", golden.extension_id, "skill.yaml"),
+    `id: ${golden.extension_id}\nname: Beta\ncategory: extension\nkind: command-skill\n` +
+      "summary: bindings golden fixture\nruntimes:\n  pi:\n    command_name: ext-beta\n" +
+      "    skill_file: SKILL.md\nmirror_context_providers:\n" +
+      "  - id: context\n    description: fixture\n" +
+      "  - id: briefing\n    description: fixture\n",
+  );
+  writeFileSync(join(home, "extensions", golden.extension_id, "SKILL.md"), "# Beta\n");
+  seedIdentity(db, "persona", "engineer");
+  seedIdentity(db, "journey", "mirror-ts-core");
   return { root, home, db };
+}
+
+function seedIdentity(db: WritableDatabase, layer: string, key: string): void {
+  db.prepare(
+    "INSERT INTO identity (id, layer, key, content, version, created_at, updated_at) " +
+      "VALUES (?, ?, ?, ?, '1.0.0', 't', 't')",
+  ).run(`${layer}-${key}`, layer, key, `# ${key}\n`);
 }
 
 function closeWorld(world: World): void {
@@ -245,4 +267,169 @@ test("the corpus grades what reading the runner would not give", () => {
 
   // Timestamps are Python's `isoformat()`, not the `Z` spelling used elsewhere.
   assert.match(pythonUtcIsoformat(new Date("2026-01-01T00:00:00.123Z")), /\.123000\+00:00$/);
+});
+
+// ---------------------------------------------------------------------------
+// CR149 — `bind` checks what it binds. Every refusal: one line on stdout, exit
+// 1, nothing on stderr, and `_ext_bindings` exactly as it was.
+
+function refusal(world: World, argv: readonly string[], line: string): void {
+  const before = stateOf(world).bindings;
+  const answer = invoke(world, argv);
+  assert.equal(answer.stdout, `${line}\n`, argv.join(" "));
+  assert.equal(answer.stderr, "", argv.join(" "));
+  assert.equal(answer.exitCode, 1, argv.join(" "));
+  assert.deepEqual(stateOf(world).bindings, before, `${argv.join(" ")}: a row was written`);
+}
+
+test("bind refuses an id that is not an extension id, before any path is built", () => {
+  const world = makeWorld("happy");
+  try {
+    // `<home>/x/skill.yaml` with `id: x` is exactly what would let `../x`
+    // through an existence check on an unnormalized path.
+    mkdirSync(join(world.home, "x"));
+    writeFileSync(join(world.home, "x", "skill.yaml"), "id: x\n");
+    for (const id of ["../x", "/etc", "Beta", "a--b", ""]) {
+      refusal(
+        world,
+        [id, "bind", "context", "--persona", "engineer"],
+        `'${id}' is not a valid extension id`,
+      );
+    }
+  } finally {
+    closeWorld(world);
+  }
+});
+
+test("bind refuses an extension that is not installed, in the family's own words", () => {
+  const world = makeWorld("happy");
+  try {
+    refusal(
+      world,
+      ["ghost", "bind", "context", "--persona", "engineer"],
+      // `invoke` masks the home as `<HOME>`, as the golden does.
+      "extension not installed: <HOME>/extensions/ghost",
+    );
+  } finally {
+    closeWorld(world);
+  }
+});
+
+test("bind refuses a capability the manifest does not declare, and names the ones it does", () => {
+  const world = makeWorld("happy");
+  try {
+    refusal(
+      world,
+      ["beta", "bind", "nonsense", "--persona", "engineer"],
+      "extension/beta declares no capability 'nonsense' (declared: context, briefing)",
+    );
+    // The capability is judged before the target: `--global` has no target
+    // to check, and still does not bind what is not declared.
+    refusal(
+      world,
+      ["beta", "bind", "nonsense", "--global"],
+      "extension/beta declares no capability 'nonsense' (declared: context, briefing)",
+    );
+    // A manifest with no providers at all -- a prompt-skill, for one.
+    writeFileSync(
+      join(world.home, "extensions", "beta", "skill.yaml"),
+      "id: beta\nname: Beta\ncategory: extension\nkind: command-skill\nsummary: s\n" +
+        "runtimes:\n  pi:\n    command_name: ext-beta\n    skill_file: SKILL.md\n",
+    );
+    refusal(
+      world,
+      ["beta", "bind", "context", "--persona", "engineer"],
+      "extension/beta declares no capability 'context' (declares none)",
+    );
+  } finally {
+    closeWorld(world);
+  }
+});
+
+test("bind prints the validator's own message for a manifest install would refuse", () => {
+  const world = makeWorld("happy");
+  try {
+    const manifestPath = join(world.home, "extensions", "beta", "skill.yaml");
+    writeFileSync(
+      manifestPath,
+      "id: beta\nname: Beta\ncategory: extension\nkind: command-skill\nsummary: s\n" +
+        "runtimes:\n  pi:\n    command_name: ext-beta\n    skill_file: SKILL.md\n" +
+        "mirror_context_providers:\n  - id: Not Valid\n    description: d\n",
+    );
+    refusal(
+      world,
+      ["beta", "bind", "context", "--persona", "engineer"],
+      "invalid mirror context capability id 'Not Valid' in <HOME>/extensions/beta/skill.yaml",
+    );
+  } finally {
+    closeWorld(world);
+  }
+});
+
+test("bind refuses a persona or journey that does not exist, and names where to look", () => {
+  const world = makeWorld("happy");
+  try {
+    const personas = "(mirror list personas shows this home's)";
+    const journeys = "(mirror journeys shows this home's)";
+    refusal(
+      world,
+      ["beta", "bind", "context", "--persona", "engine"],
+      `no persona 'engine' ${personas}`,
+    );
+    // Exact keys: identity's are lowercase, and `bind` does not fold case.
+    refusal(
+      world,
+      ["beta", "bind", "context", "--persona", "Engineer"],
+      `no persona 'Engineer' ${personas}`,
+    );
+    refusal(world, ["beta", "bind", "context", "--persona", ""], `no persona '' ${personas}`);
+    refusal(
+      world,
+      ["beta", "bind", "context", "--journey", "nope"],
+      `no journey 'nope' ${journeys}`,
+    );
+    // A slug that exists only as a `journey_path` row is not a journey a load
+    // can find: the check reads `layer = 'journey'` and nothing else.
+    seedIdentity(world.db, "journey_path", "path-only");
+    refusal(
+      world,
+      ["beta", "bind", "context", "--journey", "path-only"],
+      `no journey 'path-only' ${journeys}`,
+    );
+  } finally {
+    closeWorld(world);
+  }
+});
+
+test("what passes the checks still binds, and a dead row is still listed and still removable", () => {
+  const world = makeWorld("happy");
+  try {
+    assert.equal(
+      invoke(world, ["beta", "bind", "briefing", "--global"]).stdout,
+      "bound beta/briefing -> global\n",
+    );
+    assert.equal(
+      invoke(world, ["beta", "bind", "context", "--journey", "mirror-ts-core"]).stdout,
+      "bound beta/context -> journey/mirror-ts-core\n",
+    );
+    // A row whose persona is gone -- bound before CR149, or whose persona was
+    // deleted since. `bindings` lists it; `unbind` removes it: the repair.
+    world.db
+      .prepare(
+        "INSERT INTO _ext_bindings (extension_id, capability_id, target_kind, target_id, created_at) " +
+          "VALUES ('beta', 'context', 'persona', 'vanished', 't')",
+      )
+      .run();
+    assert.match(
+      invoke(world, ["beta", "bindings"]).stdout,
+      /\n {2}context -> persona\/vanished\n/,
+    );
+    assert.equal(
+      invoke(world, ["beta", "unbind", "context", "--persona", "vanished"]).stdout,
+      "unbound beta/context -> persona/vanished\n",
+    );
+    assert.equal(stateOf(world).bindings.length, 2);
+  } finally {
+    closeWorld(world);
+  }
 });
