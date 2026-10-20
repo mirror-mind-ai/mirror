@@ -91,3 +91,4 @@ evidence stays honest as both cores move.
 - [CR149 — `bind` checks nothing it binds: a missing extension, an undeclared capability, or a persona that does not exist all report `bound`](cr149-bind-accepts-a-persona-or-journey-that-does-not-exist.md)
 - [CR150 — `install` prints `suggested_personas` this home does not have, as if it did](cr150-install-prints-suggested-personas-this-home-does-not-have.md)
 - [CR151 — The transcript backfill writes a session's replies into other sessions' conversations](cr151-the-transcript-backfill-writes-a-session-s-replies-into-other-sessions-conversations.md)
+- [CR152 — Under `codex exec`, the plugin's Stop and SessionEnd hooks never reach Mirror](cr152-under-codex-exec-the-plugin-s-stop-and-session-end-hooks-never-reach-mirror.md)

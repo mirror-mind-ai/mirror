@@ -53,6 +53,9 @@ Captured, unassigned, 2026-10-20, from CV21.DS5.US3's live route, at the plan's 
 condition ("a product defect the route finds: stop, capture a CR, and ask whether to
 fix it here or there"). Not one line: the fix scopes a query and re-times an insert,
 with tests for the orphan and the concurrent cases. Current Focus unchanged.
+The Navigator decided the same day: fixed here, in its own Change Request, not inside
+US3, whose measurements read the ledger and the ping table rather than conversation
+history.
 
 ## Evidence
 

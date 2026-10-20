@@ -502,6 +502,8 @@ live() {
             keep "$tag" in_cell claude claude -p "$prompt" --output-format stream-json --verbose --allowedTools "Skill" "Read" "Write" "Bash(mirror:*)"
             model="$(grep -o '"model[^"]*":"[^"]*"\|"modelUsage":{"[^"]*"' "$EVIDENCE/$tag.out" | head -1)" ;;
   esac
+  # After-counts, so the session's delta never depends on when verify runs (A1).
+  printf 'calls\t%s\npings\t%s\nconv\t%s\n' "$(count_calls)" "$(count_pings)" "$(count_conv "$(interface_of "$rt")")" >"$EVIDENCE/$tag.after"
   look "exit $(exit_of "$tag"); model: ${model:-not reported}"
   tail -c 500 "$EVIDENCE/$tag.out" | tr '\n' ' ' | cut -c1-500 | show; echo
   if [ "$ext" = probe ]; then
@@ -516,6 +518,20 @@ live() {
   result
 }
 
+# A session's after-count (A1): its own .after when live wrote one; else the next
+# session's .before — any runtime's for the global counts (calls, pings), the same
+# runtime's for conversations, which are counted per interface; else now.
+tag_time() { basename "$1" | sed -E 's/.*-([0-9]{6})\.(before|after)$/\1/'; }
+after_count() { # $1 before-file, $2 key, [$3 runtime for conv]
+  local b="$1" key="$2" rt="${3:-}" a="${1%.before}.after"
+  if [ -f "$a" ]; then sed -n "s/^$key\t//p" "$a"; return; fi
+  local t; t="$(tag_time "$b")"
+  local pattern='live-*-*.before'; [ -n "$rt" ] && pattern="live-$rt-*.before"
+  local next; next="$(for f in "$EVIDENCE"/$pattern; do [ -f "$f" ] || continue; ft="$(tag_time "$f")"; [ "$ft" \> "$t" ] && echo "$ft $f"; done | sort | head -1 | cut -d' ' -f2-)"
+  if [ -n "$next" ]; then sed -n "s/^$key\t//p" "$next"
+  else case "$key" in calls) count_calls ;; pings) count_pings ;; conv) count_conv "$(interface_of "$rt")" ;; esac; fi
+}
+
 # ---------------------------------------------------------------------------
 # Verify: reads, not claims, each a delta against the session's before-counts (A1, A3).
 verify() {
@@ -528,9 +544,9 @@ verify() {
     b="$(ls -t "$EVIDENCE"/live-"$rt"-"$ext"*.before 2>/dev/null | head -1)"
     [ -n "$b" ] || { note "no live $rt $ext session yet"; continue; }
     canary="$(sed -n 's/^canary\t//p' "$b")"; report="$(sed -n 's/^report\t//p' "$b")"
-    after_calls=$(( $(count_calls) - $(sed -n 's/^calls\t//p' "$b") ))
-    after_pings=$(( $(count_pings) - $(sed -n 's/^pings\t//p' "$b") ))
-    after_conv=$(( $(count_conv "$iface") - $(sed -n 's/^conv\t//p' "$b") ))
+    after_calls=$(( $(after_count "$b" calls) - $(sed -n 's/^calls\t//p' "$b") ))
+    after_pings=$(( $(after_count "$b" pings) - $(sed -n 's/^pings\t//p' "$b") ))
+    after_conv=$(( $(after_count "$b" conv "$rt") - $(sed -n 's/^conv\t//p' "$b") ))
     look "$ext (session $(basename "$b" .before)): +$after_calls consult calls, +$after_pings pings, +$after_conv $iface conversations"
     case "$ext" in
       review-copy)
