@@ -31,7 +31,7 @@
 
 import assert from "node:assert/strict";
 import { type SpawnSyncReturns, spawnSync } from "node:child_process";
-import { cpSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { chmodSync, cpSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -49,6 +49,7 @@ import {
   runExtensionSubcommand,
 } from "#extensions/dispatch.ts";
 import { runMigrations } from "#extensions/migrations.ts";
+import { extensionSettingsPath, readExtensionSettings } from "#extensions/settings.ts";
 
 const FIXTURES = new URL("../fixtures/ext-dispatch", import.meta.url).pathname;
 const EXTENSIONS = ["tools", "declared", "silent", "malformed"];
@@ -251,6 +252,8 @@ test("the listing renders from the manifest and flags what has not migrated", ()
         "  shell — Any executable runtime, not only Node",
         "  streams — Write to stdout and to stderr",
         "  write — Insert a row in its own table",
+        // The settings file (CR145): absolute path, state, and what to do.
+        `settings: ${join(world.home, "extensions", "tools.env")} (not present — create it to pass settings to this extension)`,
         "",
       ].join("\n"),
     );
@@ -261,7 +264,8 @@ test("the listing renders from the manifest and flags what has not migrated", ()
     // A manifest with no `cli:` block at all.
     assert.equal(
       run(world, ["silent"]).stdout,
-      "=== subcommands of extension/silent ===\n  (none declared)\n",
+      "=== subcommands of extension/silent ===\n  (none declared)\n" +
+        `settings: ${join(world.home, "extensions", "silent.env")} (not present — create it to pass settings to this extension)\n`,
     );
   } finally {
     closeWorld(world);
@@ -278,6 +282,8 @@ test("an undocumented subcommand is a different failure from an unmigrated one",
     // stderr. Collapsing the two would send a user editing the wrong file.
     assert.match(unknown.stdout, /^unknown subcommand 'nope' for extension\/tools\n/);
     assert.match(unknown.stdout, /=== subcommands of extension\/tools ===/);
+    // The same listing wherever it appears: the settings line is on this path too.
+    assert.match(unknown.stdout, /\nsettings: .*tools\.env \(not present/);
     assert.equal(unknown.stderr, "");
   } finally {
     closeWorld(world);
@@ -421,11 +427,154 @@ test("the manifest reader tolerates what the validator would reject", () => {
     const entries = readSubcommandListing(join(world.home, "extensions", "malformed"));
     assert.deepEqual(entries, []);
     assert.equal(
-      renderSubcommandListing("malformed", entries),
-      "=== subcommands of extension/malformed ===\n  (none declared)\n",
+      renderSubcommandListing("malformed", entries, readExtensionSettings(world.home, "malformed")),
+      "=== subcommands of extension/malformed ===\n  (none declared)\n" +
+        `settings: ${join(world.home, "extensions", "malformed.env")} (not present — create it to pass settings to this extension)\n`,
     );
     // A root that does not exist at all is the same answer, not a throw.
     assert.deepEqual(readSubcommandListing(join(world.home, "extensions", "ghost")), []);
+  } finally {
+    closeWorld(world);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// CR145 — the settings file at the dispatch seam.
+
+/** Spawn nothing; hand back the environment production would have used. */
+function capturedEnvironment(
+  world: World,
+  argv: readonly string[],
+  environment?: NodeJS.ProcessEnv,
+): { env: NodeJS.ProcessEnv | null; exitCode: number; reported: string[] } {
+  const decision = runExtCommand(contextFor(world), argv);
+  assert.ok(isExtensionDispatch(decision), "the fixture subcommand must dispatch");
+  let env: NodeJS.ProcessEnv | null = null;
+  const reported: string[] = [];
+  const exitCode = runExtensionSubcommand(decision as ExtensionDispatch, {
+    databasePath: world.dbPath,
+    ...(environment ? { environment } : {}),
+    onError: (message) => reported.push(message),
+    spawn: ((_command: string, _args: string[], options: Record<string, unknown>) => {
+      env = options.env as NodeJS.ProcessEnv;
+      return { status: 0, stdout: "", stderr: "", signal: null, output: [], pid: 1 };
+    }) as unknown as typeof spawnSync,
+  });
+  return { env, exitCode, reported };
+}
+
+test("the settings file reaches the command under the environment, and the five names are immune", () => {
+  const world = makeWorld();
+  try {
+    const path = extensionSettingsPath(world.home, "tools");
+    writeFileSync(
+      path,
+      "PGSSLMODE=verify-full\nPGHOST=db.internal\nMIRROR_HOME=/elsewhere\nMIRROR_TABLE_PREFIX=ext_other_\n",
+      { mode: 0o600 },
+    );
+
+    // Nothing in the environment: the file fills the gaps.
+    const filled = capturedEnvironment(world, ["tools", "echo"], { PATH: "/bin" });
+    assert.equal(filled.exitCode, 0);
+    assert.equal(filled.env?.PGSSLMODE, "verify-full");
+    assert.equal(filled.env?.PGHOST, "db.internal");
+    // The names Mirror owns come from Mirror, whatever the file says.
+    assert.equal(filled.env?.MIRROR_HOME, world.home);
+    assert.equal(filled.env?.MIRROR_TABLE_PREFIX, "ext_tools_");
+    assert.equal(filled.env?.MIRROR_EXTENSION_ID, "tools");
+
+    // An explicit export wins over the file.
+    const exported = capturedEnvironment(world, ["tools", "echo"], {
+      PATH: "/bin",
+      PGSSLMODE: "disable",
+    });
+    assert.equal(exported.env?.PGSSLMODE, "disable");
+    assert.equal(exported.env?.PGHOST, "db.internal");
+
+    // The process that ran `mirror` is not touched.
+    assert.equal("PGHOST" in process.env, false);
+    assert.equal("PGSSLMODE" in process.env && process.env.PGSSLMODE === "verify-full", false);
+  } finally {
+    closeWorld(world);
+  }
+});
+
+test("without a settings file the command's environment is exactly what it was", () => {
+  const world = makeWorld();
+  try {
+    const base: NodeJS.ProcessEnv = { PATH: "/bin", HOME: "/nowhere", LANG: "C" };
+    const { env } = capturedEnvironment(world, ["tools", "echo"], base);
+    assert.deepEqual(
+      Object.keys(env ?? {}).sort(),
+      [
+        ...Object.keys(base),
+        "MIRROR_HOME",
+        "MIRROR_DATABASE_PATH",
+        "MIRROR_EXTENSION_ID",
+        "MIRROR_EXTENSION_ROOT",
+        "MIRROR_TABLE_PREFIX",
+      ].sort(),
+      "no key the file would add, no key the base had is missing",
+    );
+    for (const [key, value] of Object.entries(base)) assert.equal(env?.[key], value);
+  } finally {
+    closeWorld(world);
+  }
+});
+
+test("a settings file that cannot be read refuses the command before any process starts", () => {
+  const world = makeWorld();
+  try {
+    if (typeof process.getuid === "function" && process.getuid() === 0) return; // root reads anything
+    const path = extensionSettingsPath(world.home, "tools");
+    writeFileSync(path, "PGHOST=db.internal\n");
+    chmodSync(path, 0o000);
+    try {
+      const { env, exitCode, reported } = capturedEnvironment(world, ["tools", "echo"]);
+      assert.equal(exitCode, 1);
+      assert.equal(env, null, "nothing was spawned");
+      assert.equal(reported.length, 1, "exactly one line");
+      assert.match(
+        reported[0] ?? "",
+        /^Mirror: extension\/tools has a settings file that cannot be read: .*tools\.env \(EACCES\)\.$/,
+      );
+      assert.equal((reported[0] ?? "").includes("db.internal"), false, "never a value");
+
+      // The listing says the same thing, in its own place.
+      assert.match(
+        run(world, ["tools"]).stdout,
+        /\nsettings: .*tools\.env \(unreadable: EACCES\)\n$/,
+      );
+    } finally {
+      chmodSync(path, 0o600);
+    }
+  } finally {
+    closeWorld(world);
+  }
+});
+
+test("the listing names the file's keys, never its values, and says who else can read it", () => {
+  const world = makeWorld();
+  try {
+    const path = extensionSettingsPath(world.home, "tools");
+    writeFileSync(path, "PGHOST=db.internal\nPGPASSWORD=hunter2\n");
+    chmodSync(path, 0o644);
+    const exposed = run(world, ["tools"]).stdout;
+    assert.match(
+      exposed,
+      /\nsettings: .*tools\.env \(PGHOST, PGPASSWORD; mode 0644, readable by other users\)\n$/,
+    );
+    assert.equal(exposed.includes("hunter2"), false);
+    assert.equal(exposed.includes("db.internal"), false);
+
+    chmodSync(path, 0o600);
+    assert.match(
+      run(world, ["tools"]).stdout,
+      /\nsettings: .*tools\.env \(PGHOST, PGPASSWORD\)\n$/,
+    );
+
+    writeFileSync(path, "# nothing yet\n", { mode: 0o600 });
+    assert.match(run(world, ["tools"]).stdout, /\nsettings: .*tools\.env \(no variables\)\n$/);
   } finally {
     closeWorld(world);
   }

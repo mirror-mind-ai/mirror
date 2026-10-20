@@ -56,6 +56,7 @@ import { readSubcommandListing } from "./dispatch.ts";
 import { ExtensionError, ExtensionValidationError } from "./errors.ts";
 import { type ExtensionManifest, loadExtensionManifest } from "./manifest.ts";
 import { runMigrations } from "./migrations.ts";
+import { extensionSettingsPath } from "./settings.ts";
 
 /** Port of `_COPY_IGNORE_PATTERNS`: never shipped inside an installed tree. */
 const COPY_IGNORE_EXACT = new Set([
@@ -400,6 +401,13 @@ export interface UninstallReport {
   bindingsRemoved: number;
   removed: Array<readonly [string, string[]]>;
   sourceRemoved: boolean;
+  /**
+   * The settings file (CR145) a full uninstall found and left in place, or
+   * null. Kept on purpose -- deleting configuration a person wrote is the
+   * worse surprise -- and named on purpose: a credential that outlives the
+   * extension it served must not be silent.
+   */
+  settingsKept: string | null;
 }
 
 /** Port of `uninstall_extension`. */
@@ -461,6 +469,8 @@ export function uninstallExtension(options: {
     }
     rmSync(installedDir, { recursive: true, force: true });
   }
+  const settingsPath = extensionSettingsPath(mirrorHome, extensionId);
+  const settingsKept = options.runtime === null && existsSync(settingsPath) ? settingsPath : null;
 
   return {
     extensionId,
@@ -468,6 +478,7 @@ export function uninstallExtension(options: {
     bindingsRemoved,
     removed,
     sourceRemoved: options.runtime === null,
+    settingsKept,
   };
 }
 
@@ -641,6 +652,7 @@ export function renderUninstallReport(report: UninstallReport): RenderedCommand 
     `  installed: ${report.installedDir}`,
   ];
   if (report.sourceRemoved) lines.push("  source tree: removed");
+  if (report.settingsKept !== null) lines.push(`  settings left in place: ${report.settingsKept}`);
   if (report.bindingsRemoved) {
     lines.push(`  bindings: ${report.bindingsRemoved} row(s) removed`);
   }

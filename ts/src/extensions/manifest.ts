@@ -31,7 +31,13 @@ import { tablePrefixFor } from "./migrations.ts";
 
 const ALLOWED_KINDS = new Set(["prompt-skill", "command-skill"]);
 const RUNTIME_NAME_RE = /^[a-z][a-z0-9_-]*$/;
-const SKILL_ID_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+/**
+ * What an extension id may look like. `install` is the authority on ids, so
+ * this is THE grammar; the settings reader (CR145) builds a path from an id
+ * only after it passes here. Two older copies of the rule still live in
+ * `contextRuntime.ts` and `dispatch.ts` -- CR147 reconciles them.
+ */
+export const SKILL_ID_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const REQUIRED_FIELDS = ["id", "name", "category", "kind", "summary", "runtimes"] as const;
 const PATH_LIKE_SUFFIXES = new Set([".js", ".mjs", ".cjs", ".py"]);
 

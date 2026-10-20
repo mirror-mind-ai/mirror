@@ -3,6 +3,11 @@ import { existsSync, readFileSync } from "node:fs";
 import { isAbsolute, relative, resolve } from "node:path";
 import { parse } from "yaml";
 import type { Database } from "#db/database.ts";
+import {
+  type ExtensionSettings,
+  readExtensionSettings,
+  settingsUnderEnvironment,
+} from "./settings.ts";
 
 export const MIRROR_CONTEXT_PROTOCOL = "mirror-context-v1";
 const DEFAULT_TIMEOUT_MS = 60_000;
@@ -47,6 +52,13 @@ export type ExtensionContextDiagnosticKind =
    * going dark is visible as a migration state, not as an empty context.
    */
   | "no_provider_runtime"
+  /**
+   * The extension's settings file (CR145) exists and could not be read. Its
+   * own kind, not `provider_failed`: months later the Mirror Mode warning
+   * must name the cause, and "the provider crashed" and "a file you chmod'ed
+   * cannot be read" are different repairs.
+   */
+  | "settings_unreadable"
   | "provider_failed"
   | "provider_timeout"
   | "invalid_output";
@@ -181,11 +193,17 @@ export function collectExtensionContext(
       diagnostics.push({ kind: "no_provider_runtime" });
       continue;
     }
+    const settings = readExtensionSettings(options.mirrorHome, binding.extensionId);
+    if (settings.kind === "unreadable") {
+      diagnostics.push({ kind: "settings_unreadable" });
+      continue;
+    }
     const outcome = invokeProvider(
       capability.providerRuntime.command,
       extensionRoot,
       request,
       options,
+      settings,
     );
     if (outcome.diagnostic) {
       diagnostics.push({ kind: outcome.diagnostic });
@@ -286,12 +304,15 @@ function invokeProvider(
   cwd: string,
   request: ExtensionContextRequest,
   options: CollectExtensionContextOptions,
+  settings: ExtensionSettings,
 ): { text?: string | null; diagnostic?: ExtensionContextDiagnosticKind } {
   const result = spawnSync(command[0] as string, command.slice(1), {
     cwd,
     encoding: "utf8",
     input: `${JSON.stringify(request)}\n`,
-    env: options.environment ?? process.env,
+    // The settings file under the environment (CR145): the same rule the
+    // dispatcher applies, minus the `MIRROR_*` layer a provider gets on stdin.
+    env: settingsUnderEnvironment(options.environment ?? process.env, settings),
     timeout: options.timeoutMs ?? DEFAULT_TIMEOUT_MS,
     maxBuffer: options.maxOutputBytes ?? DEFAULT_MAX_OUTPUT_BYTES,
     windowsHide: true,

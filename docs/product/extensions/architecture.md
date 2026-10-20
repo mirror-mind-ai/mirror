@@ -102,8 +102,12 @@ Concretely, a dispatch runs these steps in order:
    `ext_<id>_*` prefix matches `id`.
 3. **Dispatch.** Validate the declared runtime and invoke it — `mirror-cli-v1`
    for a subcommand, `mirror-context-v1` for a context provider, in stable
-   binding order. A capability with no declared runtime refuses (subcommand)
-   or is skipped with a diagnostic (provider). There is no fallback.
+   binding order, with the extension's settings file,
+   `~/.mirror-minds/<user>/extensions/<id>.env`, merged under the process
+   environment for that one spawn
+   ([api-reference.md](api-reference.md#installation-settings--extensionsidenv)).
+   A capability with no declared runtime refuses (subcommand) or is skipped
+   with a diagnostic (provider). There is no fallback.
 
 Migrations run at install and on `mirror ext <id> migrate`, never on dispatch
 ([migrations.md](migrations.md)).

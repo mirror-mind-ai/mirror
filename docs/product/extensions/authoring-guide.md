@@ -286,6 +286,44 @@ declares, and materializes the skill for each runtime. It does not run your
 code: a declared runtime that cannot start is reported when the command runs,
 not at install.
 
+### 7a. Installation settings (when the extension needs any)
+
+If your commands or provider need something that belongs to the *machine* they
+run on 
+ a database host, a TLS mode, a certificate path 
+ do not ask the
+person to export it in their shell: that reaches every other program they run.
+Mirror reads one file for the extension and passes it to your process, and to
+nothing else:
+
+```text
+<mirror-home>/extensions/hello.env
+```
+
+```dotenv
+PGHOST=db.internal
+PGSSLMODE=verify-full
+NODE_EXTRA_CA_CERTS=/Users/me/certs/internal-ca.pem
+```
+
+The rules, in full, are in the
+[API reference](api-reference.md#installation-settings--extensionsidenv); the
+ones an author needs:
+
+- **Your README names the keys.** Mirror cannot know which settings your
+  extension expects, so the person creates the file from your documentation.
+  `mirror ext hello` then shows them the path and which keys the file carries.
+- **Settings, not secrets.** Put what is not sensitive here. A credential
+  belongs in a store the command reads at run time (a keychain, a secrets
+  manager); if a person puts one in the file anyway, tell them `chmod 600`,
+  and Mirror's listing will say when the file is readable by other users.
+- **Absolute paths.** The command runs from the installed directory, which
+  `install` rewrites, and `~` is not expanded.
+- **The environment wins.** A variable the person exports beats the file, so
+  your `check`-style subcommand should say which values it actually saw.
+- **The file follows the home.** It is created once per Mirror home, survives
+  `install` and `uninstall`, and is not copied from your source tree.
+
 ### 8. Use
 
 ```bash

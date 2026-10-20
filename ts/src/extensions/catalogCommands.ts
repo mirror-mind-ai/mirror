@@ -64,6 +64,7 @@ import {
 } from "./dispatch.ts";
 import { ExtensionValidationError } from "./errors.ts";
 import { regenerateExtensionPlugin } from "./extensionPlugin.ts";
+import { readExtensionSettings } from "./settings.ts";
 
 export class UnsupportedCatalogCommandError extends Error {}
 
@@ -491,13 +492,24 @@ function dispatchOrNotInstalled(
   if (!existsSync(extensionRoot)) return extensionNotInstalled(mirrorHome, extensionId);
 
   const entries = readSubcommandListing(extensionRoot);
-  if (HELP_FLAGS.has(subcommand)) return out(renderSubcommandListing(extensionId, entries));
+  // The listing says what the settings file holds (CR145) on both paths that
+  // render it -- a help spelling and an unknown subcommand -- by decision, not
+  // by accident: it is the same listing wherever it appears.
+  if (HELP_FLAGS.has(subcommand)) {
+    return out(
+      renderSubcommandListing(extensionId, entries, readExtensionSettings(mirrorHome, extensionId)),
+    );
+  }
 
   const documented = entries.find((entry) => entry.name === subcommand);
   if (documented === undefined) {
     return out(
       `unknown subcommand '${subcommand}' for extension/${extensionId}\n` +
-        renderSubcommandListing(extensionId, entries),
+        renderSubcommandListing(
+          extensionId,
+          entries,
+          readExtensionSettings(mirrorHome, extensionId),
+        ),
       1,
     );
   }

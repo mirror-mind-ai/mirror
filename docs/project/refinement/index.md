@@ -8,8 +8,8 @@ If a linked document and this index disagree, this index wins.
 
 ## Current Focus
 
-- Refinement Story: RS001
-- Change Request: none
+- Refinement Story: RS011
+- Change Request: CR145
 
 Selecting a focus is an explicit project decision. Reading this file never selects or
 executes work.
@@ -25,6 +25,7 @@ executes work.
 | 5 | [RS008](rs008-v0319-recursive-journey-parity/index.md) | v0.31.9 Recursive Journey Parity | closed |
 | 6 | [RS009](rs009-cv22-front-door-routing-correctness/index.md) | CV22 Front-Door Routing Correctness | proposed |
 | 7 | [RS010](rs010-cv22-oracle-and-port-hygiene/index.md) | CV22 Oracle And Port Hygiene | proposed |
+| 8 | [RS011](rs011-extension-contract-completeness/index.md) | Extension Contract Completeness | active |
 
 ## Change Requests
 
@@ -80,6 +81,9 @@ Open work is ordered intentionally. Terminal history follows open work.
 | 46 | [CR139](rs010-cv22-oracle-and-port-hygiene/cr139-a-verdict-that-exits-1-is-logged-as-a-front-door-error.md) | RS010 | A verdict that exits 1 is logged as a front-door `ERROR`, and `diagnose` counts it as a failure | captured | — | — |
 | 47 | [CR142](rs010-cv22-oracle-and-port-hygiene/cr142-the-plugin-smoke-s-negative-probe-fails-on-a-machine-with-a-global-mirror-hook.md) | RS010 | The plugin smoke's negative probe fails on a machine with a global `mirror-hook` | captured | — | — |
 | 48 | [CR144](rs010-cv22-oracle-and-port-hygiene/cr144-the-ds7-routes-remove-agy-s-credential-where-1-3-x-kept-it.md) | RS010 | The DS7 routes remove agy's credential where 1.3.x kept it, and 1.4.2 keeps it elsewhere | captured | — | — |
+| 49 | [CR145](rs011-extension-contract-completeness/cr145-an-extension-s-installation-settings-have-nowhere-to-live-but-the-login-shell.md) | RS011 | An extension's installation settings have nowhere to live but the login shell | in_progress | @viniciusteles | `main` |
+| 50 | [CR146](rs011-extension-contract-completeness/cr146-an-extension-cannot-declare-the-settings-it-expects.md) | RS011 | An extension cannot declare the settings it expects, so nothing can say which are missing | captured | — | — |
+| 51 | [CR147](rs010-cv22-oracle-and-port-hygiene/cr147-three-copies-of-the-extension-id-grammar-and-two-of-them-disagree.md) | RS010 | Three copies of the extension-id grammar, and two of them disagree | captured | — | — |
 | — | [CR141](rs010-cv22-oracle-and-port-hygiene/cr141-init-takes-any-string-as-a-user-name.md) | RS010 | `init` takes any string as a user name, so `init ../escaped` creates a home outside `.mirror-minds` | done | @viniciusteles | `main` |
 | — | [CR143](rs010-cv22-oracle-and-port-hygiene/cr143-the-inject-hook-loads-context-grok-discards.md) | RS010 | The inject hook loads Mirror context on Grok, which discards it | done | @viniciusteles | `main` |
 | — | [CR140](rs010-cv22-oracle-and-port-hygiene/cr140-the-install-s-own-path-is-read-from-url-pathname.md) | RS010 | The install's own path is read from `URL.pathname`, so a Mirror under a path with a space or an accent is `unknown`, and the updater refuses it | done | @rodrigoimmaginario | [PR #42](https://github.com/mirror-mind-ai/mirror/pull/42) |

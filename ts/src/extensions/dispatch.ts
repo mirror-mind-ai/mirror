@@ -44,6 +44,12 @@ import { isAbsolute, join, relative, resolve } from "node:path";
 import { parse } from "yaml";
 import type { RenderedCommand } from "./catalog.ts";
 import { tablePrefixFor } from "./migrations.ts";
+import {
+  describeExtensionSettings,
+  type ExtensionSettings,
+  readExtensionSettings,
+  settingsUnderEnvironment,
+} from "./settings.ts";
 
 export const MIRROR_CLI_PROTOCOL = "mirror-cli-v1";
 
@@ -189,13 +195,18 @@ function commandStaysInside(extensionRoot: string, command: readonly string[]): 
  * one thing the legacy bridge cannot offer. Argv is appended to the declared
  * command verbatim, so a declared command sees exactly what a legacy handler
  * sees.
+ *
+ * Three layers, lowest first: the extension's settings file (CR145), the
+ * environment the `mirror` process had, and the five names Mirror owns. The
+ * spread order IS the precedence rule.
  */
 function declaredEnvironment(
   dispatch: ExtensionDispatch,
   options: DispatchOptions,
+  settings: ExtensionSettings,
 ): NodeJS.ProcessEnv {
   return {
-    ...(options.environment ?? process.env),
+    ...settingsUnderEnvironment(options.environment ?? process.env, settings),
     MIRROR_HOME: dispatch.mirrorHome,
     MIRROR_DATABASE_PATH: options.databasePath,
     MIRROR_EXTENSION_ID: dispatch.extensionId,
@@ -292,19 +303,29 @@ export function readSubcommandListing(extensionRoot: string): SubcommandEntry[] 
  * this TypeScript's surface from here on -- a recorded divergence, not a
  * parity failure. Sorted by name, as Python sorted its registry, so the bytes
  * stay stable across manifest reordering.
+ *
+ * The last line is the extension's settings file (CR145): its absolute path,
+ * in the spelling `extension not installed:` uses, and its state. It is
+ * unindented so it reads as a footer, not as a subcommand named `settings:`.
+ * Pure: the caller read the file; this function only says what it found.
  */
-export function renderSubcommandListing(extensionId: string, entries: SubcommandEntry[]): string {
+export function renderSubcommandListing(
+  extensionId: string,
+  entries: SubcommandEntry[],
+  settings: ExtensionSettings,
+): string {
   const lines = [`=== subcommands of extension/${extensionId} ===`];
   if (entries.length === 0) {
     lines.push("  (none declared)");
-    return `${lines.join("\n")}\n`;
+  } else {
+    const sorted = [...entries].sort((left, right) => (left.name < right.name ? -1 : 1));
+    for (const entry of sorted) {
+      const summary = entry.summary ? ` — ${entry.summary}` : "";
+      const flag = entry.hasRuntime ? "" : "  (no runtime declared)";
+      lines.push(`  ${entry.name}${summary}${flag}`);
+    }
   }
-  const sorted = [...entries].sort((left, right) => (left.name < right.name ? -1 : 1));
-  for (const entry of sorted) {
-    const summary = entry.summary ? ` — ${entry.summary}` : "";
-    const flag = entry.hasRuntime ? "" : "  (no runtime declared)";
-    lines.push(`  ${entry.name}${summary}${flag}`);
-  }
+  lines.push(describeExtensionSettings(settings));
   return `${lines.join("\n")}\n`;
 }
 
@@ -343,11 +364,23 @@ export function runExtensionSubcommand(
   }
   if (!existsSync(dispatch.extensionRoot)) return 1;
 
+  // Read after the id and installed checks, before the spawn: running without
+  // the settings the user wrote is the failure the file exists to prevent, so
+  // an unreadable file is a refusal, and a refusal starts nothing.
+  const settings = readExtensionSettings(dispatch.mirrorHome, dispatch.extensionId);
+  if (settings.kind === "unreadable") {
+    report(
+      `Mirror: extension/${dispatch.extensionId} has a settings file that cannot be read: ` +
+        `${settings.path} (${settings.reason}).`,
+    );
+    return 1;
+  }
+
   const [executable, ...head] = dispatch.command;
   const spawn = options.spawn ?? spawnSync;
   const result = spawn(executable as string, [...head, ...dispatch.argv], {
     cwd: dispatch.extensionRoot,
-    env: declaredEnvironment(dispatch, options),
+    env: declaredEnvironment(dispatch, options, settings),
     // All three streams are the user's: a declared command may read stdin,
     // which is precisely what the retired bridge could never allow.
     stdio: "inherit",

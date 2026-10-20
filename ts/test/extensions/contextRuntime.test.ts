@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -312,6 +312,82 @@ test("missing, malformed, failed, and timed-out providers are isolated without p
       ],
     );
     assert.doesNotMatch(JSON.stringify(result.diagnostics), /engineer|private|escape|ghost|slow/);
+  } finally {
+    ws.db.close();
+    ws.cleanup();
+  }
+});
+
+// ---------------------------------------------------------------------------
+// CR145 — the settings file at the provider seam.
+
+test("a bound provider receives the settings file under the environment", () => {
+  const ws = workspace();
+  try {
+    installNative(ws.root, "backend");
+    writeFileSync(
+      join(ws.root, "extensions", "backend", "provider.mjs"),
+      `let input = ""; for await (const chunk of process.stdin) input += chunk;
+const request = JSON.parse(input);
+const text = ["PGSSLMODE", "PGHOST", "MIRROR_HOME", "ONLY_IN_ENV"]
+  .map((name) => name + "=" + (process.env[name] ?? "<unset>")).join("|");
+process.stdout.write(JSON.stringify({protocol: request.protocol, text}));`,
+    );
+    writeFileSync(
+      join(ws.root, "extensions", "backend.env"),
+      "PGSSLMODE=verify-full\nPGHOST=db.internal\nMIRROR_HOME=/elsewhere\n",
+      { mode: 0o600 },
+    );
+    bind(ws.db, "backend", "context", "persona", "engineer");
+    const collect = (environment: NodeJS.ProcessEnv) =>
+      collectExtensionContext(ws.db, {
+        mirrorHome: ws.root,
+        databasePath: ws.dbPath,
+        personaId: "engineer",
+        environment,
+      });
+
+    // The file fills the gaps; the environment wins; a reserved name never
+    // comes from the file -- a provider gets its paths on stdin, not here.
+    const filled = collect({ PATH: process.env.PATH ?? "", ONLY_IN_ENV: "yes" });
+    assert.deepEqual(filled.diagnostics, []);
+    assert.equal(
+      filled.rendered,
+      "=== extension/backend/context ===\n" +
+        "PGSSLMODE=verify-full|PGHOST=db.internal|MIRROR_HOME=<unset>|ONLY_IN_ENV=yes",
+    );
+    const exported = collect({ PATH: process.env.PATH ?? "", PGSSLMODE: "disable" });
+    assert.match(exported.rendered, /PGSSLMODE=disable\|PGHOST=db\.internal\|/);
+    assert.equal("PGHOST" in process.env, false, "the Mirror process is untouched");
+  } finally {
+    ws.db.close();
+    ws.cleanup();
+  }
+});
+
+test("an unreadable settings file is its own diagnostic, and the other sections survive", () => {
+  const ws = workspace();
+  try {
+    if (typeof process.getuid === "function" && process.getuid() === 0) return; // root reads anything
+    installNative(ws.root, "broken");
+    installNative(ws.root, "fine");
+    const path = join(ws.root, "extensions", "broken.env");
+    writeFileSync(path, "PGHOST=x\n");
+    chmodSync(path, 0o000);
+    bind(ws.db, "broken", "context", "persona", "engineer");
+    bind(ws.db, "fine", "context", "persona", "engineer");
+    try {
+      const result = collectExtensionContext(ws.db, {
+        mirrorHome: ws.root,
+        databasePath: ws.dbPath,
+        personaId: "engineer",
+      });
+      assert.deepEqual(result.diagnostics, [{ kind: "settings_unreadable" }]);
+      assert.match(result.rendered, /^=== extension\/fine\/context ===\n/);
+      assert.equal(result.rendered.includes("broken"), false, "the broken one spawned nothing");
+    } finally {
+      chmodSync(path, 0o600);
+    }
   } finally {
     ws.db.close();
     ws.cleanup();

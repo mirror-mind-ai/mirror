@@ -143,6 +143,12 @@ reported: `mirror load` completes with every other section intact, and a
 `no_provider_runtime` diagnostic names what went dark. One unmigrated capability never
 costs the whole load, and it is never silently omitted either.
 
+A provider's environment is the `mirror` process's, with the extension's
+[installation settings](#installation-settings--extensionsidenv) merged under it —
+the same rule a subcommand gets, minus the `MIRROR_*` layer, since a provider receives
+its paths on stdin. A settings file that exists but cannot be read skips the provider
+with a `settings_unreadable` diagnostic.
+
 ## 3. Subcommands — `mirror-cli-v1`
 
 `mirror ext <id> <subcommand> [args...]` runs a subcommand that declares
@@ -158,6 +164,7 @@ the environment, never on stdin:
 | `MIRROR_EXTENSION_ID` | the extension's id |
 | `MIRROR_EXTENSION_ROOT` | the installed extension directory |
 | `MIRROR_TABLE_PREFIX` | the extension's required table prefix |
+| *(the settings file)* | `<mirror-home>/extensions/<id>.env`, merged **under** the environment — see [Installation settings](#installation-settings--extensionsidenv) |
 
 A subcommand that declares no runtime — or whose declaration is malformed, which amounts to
 the same thing — **refuses**. One line on stderr names the extension, the subcommand, and
@@ -170,7 +177,61 @@ stdin.
 The subcommand listing (`ext <id>`, `ext <id> --help`) is rendered from the manifest's
 `cli.subcommands[]`, with unmigrated entries flagged `(no runtime declared)`. It therefore
 describes what the manifest documents: a command that is not declared there does not
-exist for the core.
+exist for the core. Its last line is the extension's settings file: the absolute path
+and one of four states — the variable *names* it carries (sorted), `no variables`, `not present`, or
+`unreadable` with the reason. Values are never printed. When the file is readable by
+other users, the line says so (`mode 0644, readable by other users`).
+
+### Installation settings — `extensions/<id>.env`
+
+An extension's installation settings — which host, which TLS mode, which certificate on
+*this* machine — live in one file Mirror reads for it:
+
+```text
+<mirror-home>/extensions/<id>.env
+```
+
+**Where.** Beside the installed directory `extensions/<id>/`, never inside it:
+`extensions install` rewrites that directory, and in a development home it is often a
+symlink into the extension's own repository, where a `.env` would be one `git add` away
+from a push. `install`, `sync`, and `uninstall` leave the file alone; a full `uninstall`
+reports `settings left in place: <path>` so a credential never outlives its extension in
+silence. The file follows the **home**, not the extension: `~/.mirror-minds/<user>/` and
+a second home each have their own. It is not part of `mirror backup`'s archive.
+
+**Syntax.** dotenv, as Node's `util.parseEnv` reads it — the parser behind Mirror's own
+`.env`. `KEY=value`, `KEY="two words"`, `# comments`; a duplicate key's last value wins;
+`KEY=` is the empty string; CRLF is accepted; a leading BOM is stripped. Paths must be
+**absolute**: the command runs from `extensions/<id>/`, which `install` rewrites, and `~`
+is not expanded.
+
+**Precedence.** The environment wins, the file fills the gaps, Mirror's names come last:
+
+```text
+{ ...file, ...environment, MIRROR_HOME, MIRROR_DATABASE_PATH, MIRROR_EXTENSION_ID,
+  MIRROR_EXTENSION_ROOT, MIRROR_TABLE_PREFIX }
+```
+
+A variable already in the environment — even as an empty string — is already set and
+wins, so an explicit `PGSSLMODE=disable mirror ext <id> …` still means `disable`, and
+fixtures and CI that export `PG*` keep their meaning. The five `MIRROR_*` names are
+dropped from the file at the merge, at both spawn points.
+
+**Reach.** The merged environment is built per spawn and reaches that one process — a
+subcommand or a [context provider](#2-context-providers--mirror-context-v1) — and nothing
+else. Mirror's own `process.env` is never changed, and no other command in the session
+sees the file. This is the point: `NODE_EXTRA_CA_CERTS` is read by Node before any
+extension code runs, so only the spawner can set it, and this file is how.
+
+**Failure.** No file: nothing changes. A file that exists but cannot be read (a permission
+bit, a directory in its place): the subcommand refuses with one line on stderr naming the
+file and the reason, exit 1, nothing spawned — running without the settings you wrote is
+the failure the file exists to prevent. A provider in the same state is skipped with a
+`settings_unreadable` diagnostic.
+
+**Secrets.** The file may hold one; the contract neither encourages nor prevents it. If it
+does, make the file yours alone — `chmod 600` — and `mirror ext <id>` will stop saying
+it is readable by other users. Nothing enforces this.
 
 ### What the core still provides
 
