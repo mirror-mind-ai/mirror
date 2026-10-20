@@ -12,6 +12,51 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-10-20 — v0.36.0 released: Five Runtimes, and a Home's Extensions on Every One
+
+Minor release closing CV21.DS10 (Grok Build at L3 through the canonical plugin)
+and carrying CV21.DS5.US2 (a home's extensions as one generated plugin per home,
+on all four plugin runtimes) and three Change Requests found by use: CR145, the
+extension settings file; CR148, a quiet exit on a closed pipe; CR149, `bind`
+checking what it binds. No migration; an existing user with extensions
+regenerates the plugin by re-installing any one of them, and the report prints
+the wiring. DS5.US3 and TS4, DS11, and CR146/CR147/CR150 named as what is not in
+it. Three versions bumped (package, the plugin's `.claude-plugin/plugin.json`,
+and the root `plugin.json` marker Grok and agy read — a third since DS10.US1).
+
+### 2026-10-20 — CR145, CR148, CR149: three Change Requests from using the product
+
+One day, three CRs, each reviewed through the personas before a line was written
+and each validated by the Navigator on a scratch home against the checkout's
+binary by path. CR145 (RS011, a new story for the gaps the extension contract
+has): `<mirror-home>/extensions/<id>.env`, merged under the environment at both
+spawn points, reaching the one spawned process; the listing line with four
+states and an exposure note; `uninstall` naming the file it leaves; a
+`settings_unreadable` diagnostic. CR148: `exitQuietlyOnBrokenPipe` at both
+entries, exit 0 on `EPIPE`, the hook leaving one `hooks.log` line; the package
+smoke proves it through the loader shim. CR149: four checks in `runBind` before
+the insert, the bindings golden kept byte for byte with its world enriched.
+Captured on the way: CR146, CR147, CR150. Two lessons about validation routes,
+in the release note. The roadmap idea CR145 came from was removed from the
+ideas section on capture; the private names it carried never reached the
+public record.
+
+### 2026-10-19 — CV21.DS5.TS1 and US2: a home's extensions reach every runtime
+
+TS1 measured DS12.TS5's three shapes — user-level skill roots, a per-home
+generated plugin, MCP prompts — in scratch homes on claude 2.1.296, codex
+0.163.0, agy 1.4.2, and grok 1.0.62, each cell read by the runtime's listing and
+then by a headless turn asking for a canary, tool calls classified so a disk
+search does not count. The per-home plugin was the one shape that qualified on
+all four; the decision and the table are in decisions.md. US2 built it:
+`extensions install|uninstall|sync` regenerate `runtime/plugin/mirror-ext-<user>/`
+at `0.1.<generation>` and print the step a runtime still needs; `diagnose` raises
+five `ext_plugin_*` findings with their repairs; `status` shows the plugin line.
+Measured on all four runtimes, two homes side by side. Paid on the way: the
+canonical plugin's Claude Code step gained `mkdir -p`. Captured: CR144 (the DS7
+routes and agy's credential). Carried to DS11: the canonical plugin's missing
+agy finding. US3 and TS4 remain.
+
 ### 2026-10-18 — CV21.DS10: Grok Build through the canonical plugin, at L3
 
 Four stories in one day on grok 1.0.62. US1 measured five install shapes and
