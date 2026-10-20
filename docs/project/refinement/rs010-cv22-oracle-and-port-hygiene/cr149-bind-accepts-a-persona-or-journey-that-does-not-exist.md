@@ -280,3 +280,12 @@ a recorded byte changing at either step — did not occur.
 Done 2026-10-20. Shipped on `main` in `c5a414c4` (the checks, the tests, the doc,
 CR150's capture) and `2d4f369f` (the validation record). A deliberate divergence
 from the Python oracle, recorded; nothing owed beyond CR150.
+
+**Found after Done, 2026-10-20:** CI's extension catalog smoke
+(`ts/smoke/extension_catalog_smoke.ts`), which is not part of `npm test`, ran
+`bind greeting --persona engineer` against a fixture that declares no `greeting`
+and a home with no `engineer` — the fiction this CR refuses — and went red on the
+`CR149 done` push. The debt review should have listed the CI smokes; it listed only
+the goldens. Fixed in the v0.36.0 re-cut: the smoke seeds the persona and declares
+the capability in its own copy of the fixture, and the sequence it grades is now
+one a user could run.

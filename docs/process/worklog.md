@@ -23,6 +23,15 @@ regenerates the plugin by re-installing any one of them, and the report prints
 the wiring. DS5.US3 and TS4, DS11, and CR146/CR147/CR150 named as what is not in
 it. Three versions bumped (package, the plugin's `.claude-plugin/plugin.json`,
 and the root `plugin.json` marker Grok and agy read — a third since DS10.US1).
+**Re-cut once, minutes after the first promotion.** The first tag was created
+before CI on the preceding push had been read: that run was red at the
+extension catalog smoke, which bound a capability no fixture declares to a
+persona no home has — the fiction CR149 now refuses. The product was right and
+the smoke stale; the smoke now seeds the persona and declares the capability in
+its own copy of the fixture, as a user's sequence would. The unpublished tag was
+deleted and recreated on the green commit at the Navigator's direction; `stable`
+fast-forwarded. Nothing public had consumed the first tag. Lesson, now in the
+release note's record: the doctor does not read CI, so the promoter must.
 
 ### 2026-10-20 — CR145, CR148, CR149: three Change Requests from using the product
 

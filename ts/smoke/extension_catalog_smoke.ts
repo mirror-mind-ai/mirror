@@ -22,7 +22,15 @@
 // the plan-stage panel's explicit constraint for this family.
 
 import { execFileSync } from "node:child_process";
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import {
+  appendFileSync,
+  cpSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
@@ -52,6 +60,13 @@ function makeWorld(): World {
   const source = join(root, "source");
   mkdirSync(home, { recursive: true });
   cpSync(FIXTURES, source, { recursive: true });
+  // CR149: `bind` checks what it binds. The fixture declares no capability,
+  // and this copy -- the smoke's own, never the goldens' -- gains the one the
+  // sequence binds. The persona it binds to is seeded as a step below.
+  appendFileSync(
+    join(source, EXTENSION_ID, "skill.yaml"),
+    "\nmirror_context_providers:\n  - id: greeting\n    description: smoke capability\n",
+  );
   return { root, home, source };
 }
 
@@ -68,7 +83,7 @@ function environmentFor(world: World): NodeJS.ProcessEnv {
   return environment;
 }
 
-function run(world: World, argv: readonly string[]): StepResult {
+function run(world: World, argv: readonly string[], input?: string): StepResult {
   const resolved = argv.map((token) => token.replace("<SRC>", world.source));
   let stdout = "";
   let stderr = "";
@@ -87,7 +102,7 @@ function run(world: World, argv: readonly string[]): StepResult {
         cwd: REPO_ROOT,
         env: environmentFor(world),
         encoding: "utf8",
-        stdio: ["ignore", "pipe", "pipe"],
+        ...(input === undefined ? { stdio: ["ignore", "pipe", "pipe"] } : { input }),
       },
     );
   } catch (error) {
@@ -108,30 +123,38 @@ function redact(text: string, world: World): string {
   return text.split(world.home).join("<HOME>").split(world.source).join("<SRC>");
 }
 
-const STEPS: string[][] = [
-  ["extensions", "install", EXTENSION_ID, "--extensions-root", "<SRC>"],
-  ["extensions", "list"],
-  ["ext", "list"],
-  ["ext", EXTENSION_ID],
-  ["ext", EXTENSION_ID, "bind", "greeting", "--persona", "engineer"],
-  ["ext", EXTENSION_ID, "bindings"],
+/** A step, and what it reads on stdin when it reads anything. */
+type Step = readonly [argv: string[], input?: string];
+
+const STEPS: Step[] = [
+  [["extensions", "install", EXTENSION_ID, "--extensions-root", "<SRC>"]],
+  [["extensions", "list"]],
+  [["ext", "list"]],
+  [["ext", EXTENSION_ID]],
+  // The persona the next step binds to: since CR149 a bind to a persona the
+  // home does not have is refused, which is what a user would meet here.
+  [["identity", "set", "persona", "engineer", "-stdin"], "I am the engineer.\n"],
+  [["ext", EXTENSION_ID, "bind", "greeting", "--persona", "engineer"]],
+  [["ext", EXTENSION_ID, "bindings"]],
   // The dispatch, carrying every sentinel the log must not learn. Graded by
   // `tsOnlySubcommandFailures`, not cross-engine -- see that function for why.
   // It still runs on BOTH engines, because the log half of this smoke depends
   // on the TS front door actually dispatching with these arguments.
   [
-    "ext",
-    EXTENSION_ID,
-    "add",
-    SENTINELS[0] as string,
-    SENTINELS[1] as string,
-    SENTINELS[2] as string,
+    [
+      "ext",
+      EXTENSION_ID,
+      "add",
+      SENTINELS[0] as string,
+      SENTINELS[1] as string,
+      SENTINELS[2] as string,
+    ],
   ],
-  ["ext", EXTENSION_ID, "unbind", "greeting", "--persona", "engineer"],
-  ["ext", EXTENSION_ID, "migrate"],
-  ["inspect", "extension", EXTENSION_ID],
-  ["list", "all"],
-  ["extensions", "uninstall", EXTENSION_ID],
+  [["ext", EXTENSION_ID, "unbind", "greeting", "--persona", "engineer"]],
+  [["ext", EXTENSION_ID, "migrate"]],
+  [["inspect", "extension", EXTENSION_ID]],
+  [["list", "all"]],
+  [["extensions", "uninstall", EXTENSION_ID]],
 ];
 
 /**
@@ -175,8 +198,8 @@ function main(): number {
   const world = makeWorld();
   let failed = 0;
   try {
-    for (const step of STEPS) {
-      const ts = run(world, step);
+    for (const [step, input] of STEPS) {
+      const ts = run(world, step, input);
       // `ext <id>` (the listing) and `ext <id> add` (the dispatch) both read
       // the subcommand set. `ext list` is the extension INVENTORY, not a
       // subcommand listing -- hence the explicit id check.
