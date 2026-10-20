@@ -73,6 +73,8 @@ gains a negative control on the published package; exit 0 kept, with the
 Driver @viniciusteles, Delivery `main` → `in_progress`. Implemented and committed
 the same day (`314b2cb8`). Navigator validation route run by @viniciusteles on
 2026-10-20, every step observed as stated → `validated`.
+Debt reviewed; its one open item fixed in the CR at the Navigator's direction → `done`
+the same day.
 
 ### Plan (approved 2026-10-20)
 
@@ -255,4 +257,6 @@ exit 0, silent, one `hooks.log` line). Nothing else found.
 
 ## Outcome
 
-Open.
+Done 2026-10-20. Shipped on `main` in `314b2cb8` (the handler and its tests),
+`1d505728` (the validation record), and `8ee0ebc6` (the package smoke). Nothing
+owed.
