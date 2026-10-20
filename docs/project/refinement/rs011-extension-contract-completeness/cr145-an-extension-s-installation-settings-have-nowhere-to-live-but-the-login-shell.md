@@ -81,6 +81,8 @@ CR146 and CR147). Plan approved 2026-10-20 → `planned`. Started the same day:
 Driver @viniciusteles, Delivery `main` → `in_progress`. Implemented and committed
 the same day (`bb33ed54`). Navigator validation route run by @viniciusteles on
 2026-10-20, all twelve steps observed as stated → `validated`.
+Debt reviewed and its disposition decided by the Navigator the same day: CR148 and
+CR149 captured → `done`.
 
 ### Plan (approved 2026-10-20)
 
@@ -337,7 +339,9 @@ golden is byte-identical. Proportionate to the problem.
   two.
 - The release note: a contract addition on `main`, unreleased — see Outcome.
 
-**Debt found during validation, not captured (Navigator's call):**
+**Debt found during validation, captured at the Navigator's direction as
+[CR148](../rs010-cv22-oracle-and-port-hygiene/cr148-the-front-door-dies-with-a-stack-trace-when-its-stdout-closes-early.md)
+and [CR149](../rs010-cv22-oracle-and-port-hygiene/cr149-bind-accepts-a-persona-or-journey-that-does-not-exist.md):**
 
 - The front door dies with an unhandled `EPIPE` stack trace when its stdout closes
   early (`mirror ext <id> | head -1`); seen on 0.35.0, and the code path is the same
@@ -361,6 +365,8 @@ extension's own secrets route.
 
 ## Outcome
 
-In progress. Debt recorded up front: this is a contract addition that ships on
+Done 2026-10-20. Shipped on `main` in `bb33ed54` (the change) and `dc3be1f5` (the
+validation record); the roadmap idea it came from was removed from
+`docs/project/roadmap/index.md` on capture. Debt recorded up front and still owed: this is a contract addition that ships on
 `main` unreleased beside DS10 and DS5; the next release note must carry it (the
 file, the precedence rule, the listing line, the uninstall line, the diagnostic).
