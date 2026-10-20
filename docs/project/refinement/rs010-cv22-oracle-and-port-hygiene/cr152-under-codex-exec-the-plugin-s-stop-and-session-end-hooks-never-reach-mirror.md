@@ -45,6 +45,7 @@ compound.
 
 Captured, unassigned, 2026-10-20, from CV21.DS5.US3's live route, at the plan's stop
 condition ("a hook that does not log"). Current Focus unchanged.
+The Navigator decided the same day: fixed in its own Change Request, not inside US3.
 
 ## Evidence
 

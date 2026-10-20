@@ -1,0 +1,130 @@
+wire	grok	ext-review-copy	listed (plugin:mirror-ext-us3user)
+wire	grok	ext-hello	listed (plugin:mirror-ext-us3user)
+wire	codex	ext-review-copy	listed (2 mentions: mirror-ext-us3user:ext-review-copy | ext-review-copy)
+wire	codex	ext-hello	listed (2 mentions: mirror-ext-us3user:ext-hello | ext-hello)
+wire	agy	ext-review-copy	listed (staged: ~/.gemini/config/plugins/mirror-ext-us3user/skills/ext-review-copy/SKILL.md )
+wire	agy	ext-hello	listed (staged: ~/.gemini/config/plugins/mirror-ext-us3user/skills/ext-hello/SKILL.md )
+live	grok	hello	exit 0; "model":"grok-4.7"; read the path the runtime listed; ran mirror ext hello ping
+verify	grok	ping	this cell's canary in ext_hello_pings (US3-grok-w05mwy)
+verify	grok	interface-hello	+0 grok_build conversation(s)
+live	grok	review-copy	exit 1; "model":"grok-4.7"; ran mirror consult (max-turns 6 cut the closing message after the report was written; classifier corrected after this run)
+verify	grok	consult	1 call(s): google/gemini-2.5-flash-lite US$0.0005;
+verify	grok	report	at the named path, carries the ledger's model id (google/gemini-2.5-flash-lite)
+verify	grok	interface-review-copy	+0 in headless: expected, Grok runs no hooks in -p mode (DS10.US3); the TUI session (live grok review-copy tui) is the measurement
+verify	grok	ping	this cell's canary in ext_hello_pings (US3-grok-w05mwy)
+verify	grok	interface-hello	+0 in headless: expected, Grok runs no hooks in -p mode (DS10.US3); the TUI session (live grok hello tui) is the measurement
+live	grok	review-copy	exit 0; "model":"grok-4.7"; ran mirror consult (grep consult: the model looked up mm-consult, not the skill; classifier corrected after this run)
+verify	grok	consult	1 call(s): google/gemini-2.5-flash-lite US$0.0004;
+verify	grok	report	at the named path, carries the ledger's model id (google/gemini-2.5-flash-lite)
+verify	grok	interface-review-copy	+0 in headless: expected, Grok runs no hooks in -p mode (DS10.US3); the TUI session (live grok review-copy tui) is the measurement
+verify	grok	ping	this cell's canary in ext_hello_pings (US3-grok-w05mwy)
+verify	grok	interface-hello	+0 in headless: expected, Grok runs no hooks in -p mode (DS10.US3); the TUI session (live grok hello tui) is the measurement
+wire	claude	ext-review-copy	not listed (reader model)
+wire	claude	ext-hello	not listed (reader model)
+live	claude	probe	answered ready: the login holds
+live	codex	probe	answered ready: the login holds
+live	agy	probe	answered ready: the login holds
+wire	claude	ext-review-copy	listed (under $CLAUDE_CONFIG_DIR/skills/mirror-ext-us3user/skills/ext-review-copy/SKILL.md, a link read in place; reader model) — re-read after the reader learned to follow the link
+wire	claude	ext-hello	listed (under $CLAUDE_CONFIG_DIR/skills/mirror-ext-us3user/skills/ext-hello/SKILL.md; reader model) — same
+live	claude	hello	exit 0; "modelUsage":{"claude-opus-5-5"; no tool used: answered from context
+verify	claude	ping	this cell's canary in ext_hello_pings (US3-claude-g2vxdx)
+verify	claude	interface-hello	+0 claude_code conversation(s)
+verify	claude	ping	this cell's canary in ext_hello_pings (US3-claude-g2vxdx)
+verify	claude	interface-hello	+0 claude_code conversation(s): expected 0, a skill invocation is a command turn the logger skips by design (CV21.DS4.TS3)
+verify	claude	interface	2 claude_code conversation(s) since setup, from the probe turn
+live	claude	review-copy	exit 0; "model":"claude-opus-5-5"; ran mirror consult
+verify	claude	consult	1 call(s): google/gemini-2.5-flash-lite US$0.0004;
+verify	claude	report	at the named path, carries the ledger's model id (google/gemini-2.5-flash-lite)
+verify	claude	interface-review-copy	+0 claude_code conversation(s): expected 0, a skill invocation is a command turn the logger skips by design (CV21.DS4.TS3)
+verify	claude	ping	this cell's canary in ext_hello_pings (US3-claude-g2vxdx)
+verify	claude	interface-hello	+0 claude_code conversation(s): expected 0, a skill invocation is a command turn the logger skips by design (CV21.DS4.TS3)
+verify	claude	interface	2 claude_code conversation(s) since setup, from the probe turn
+live	codex	hello	exit 0; model not reported; ran mirror ext hello ping
+live	codex	review-copy	exit 0; model not reported; read the path the runtime listed; ran mirror consult
+verify	codex	consult	1 call(s): google/gemini-2.5-flash-lite US$0.0004;
+verify	codex	report	at the named path, carries the ledger's model id (google/gemini-2.5-flash-lite)
+verify	codex	interface-review-copy	+0 codex conversation(s): expected 0, a skill invocation is a command turn the logger skips by design (CV21.DS4.TS3)
+verify	codex	ping	this cell's canary in ext_hello_pings (US3-codex-p3m8ke)
+verify	codex	interface-hello	+0 codex conversation(s): expected 0, a skill invocation is a command turn the logger skips by design (CV21.DS4.TS3)
+verify	codex	interface	0 codex conversation(s) since setup, from the probe turn
+live	agy	hello	exit 0; model not reported; no tool used: answered from context
+verify	agy	ping	this cell's canary in ext_hello_pings (US3-agy-0q0pil)
+verify	agy	interface-hello	+0 antigravity conversation(s): expected 0, a skill invocation is a command turn the logger skips by design (CV21.DS4.TS3)
+verify	agy	interface	1 antigravity conversation(s) since setup, from the probe turn (open until the next session start, DS7.US4)
+live	agy	hello	exit 0; model not reported by --print json; ran mirror ext hello ping — re-read from the brain transcript after the classifier learned agy's shape (the first reading, "answered from context", read a file with no tool calls)
+live	agy	review-copy	exit 0; model not reported; read the path the runtime listed; ran mirror consult
+verify	agy	consult	1 call(s): google/gemini-2.5-flash-lite US$0.0004;
+verify	agy	report	at the named path, carries the ledger's model id (google/gemini-2.5-flash-lite)
+verify	agy	interface-review-copy	+0 antigravity conversation(s): expected 0, a skill invocation is a command turn the logger skips by design (CV21.DS4.TS3)
+verify	agy	ping	this cell's canary in ext_hello_pings (US3-agy-0q0pil)
+verify	agy	interface-hello	+0 antigravity conversation(s): expected 0, a skill invocation is a command turn the logger skips by design (CV21.DS4.TS3)
+verify	agy	interface	1 antigravity conversation(s) since setup, from the probe turn (open until the next session start, DS7.US4)
+verify	claude	consult	3 call(s): google/gemini-2.5-flash-lite US$0.0004;google/gemini-2.5-flash-lite US$0.0004;google/gemini-2.5-flash-lite US$0.0004;
+verify	claude	report	at the named path, carries the ledger's model id (google/gemini-2.5-flash-lite)
+verify	claude	interface-review-copy	+0 claude_code conversation(s): expected 0, a skill invocation is a command turn the logger skips by design (CV21.DS4.TS3)
+verify	claude	ping	this cell's canary in ext_hello_pings (US3-claude-g2vxdx)
+verify	claude	interface-hello	+0 claude_code conversation(s): expected 0, a skill invocation is a command turn the logger skips by design (CV21.DS4.TS3)
+verify	claude	interface	+1 claude_code conversation(s) since the probe (live-claude-probe-204056); latest: 1 user, 1 assistant, 2026-10-20T20:41:17.305000Z
+verify	agy	consult	1 call(s): google/gemini-2.5-flash-lite US$0.0004;
+verify	agy	report	at the named path, carries the ledger's model id (google/gemini-2.5-flash-lite)
+verify	agy	interface-review-copy	+0 antigravity conversation(s): expected 0, a skill invocation is a command turn the logger skips by design (CV21.DS4.TS3)
+verify	agy	ping	this cell's canary in ext_hello_pings (US3-agy-0q0pil)
+verify	agy	interface-hello	+0 antigravity conversation(s): expected 0, a skill invocation is a command turn the logger skips by design (CV21.DS4.TS3)
+verify	agy	interface	+1 antigravity conversation(s) since the probe (live-agy-probe-204132); latest: 1 user, 1 assistant, open (a stale orphan after 30 minutes idle, closed at a later start)
+verify	codex	consult	2 call(s): google/gemini-2.5-flash-lite US$0.0004;google/gemini-2.5-flash-lite US$0.0004;
+verify	codex	report	at the named path, carries the ledger's model id (google/gemini-2.5-flash-lite)
+verify	codex	interface-review-copy	+0 codex conversation(s): expected 0, a skill invocation is a command turn the logger skips by design (CV21.DS4.TS3)
+verify	codex	ping	this cell's canary in ext_hello_pings (US3-codex-p3m8ke)
+verify	codex	interface-hello	+0 codex conversation(s): expected 0, a skill invocation is a command turn the logger skips by design (CV21.DS4.TS3)
+verify	codex	interface	+0 codex since the probe: expected before the plugin's hooks are trusted (trust codex), then a probe
+live	grok	probe-tui	TUI session run; see verify grok
+live	codex	probe	answered ready: the login holds
+verify	codex	consult	2 call(s): google/gemini-2.5-flash-lite US$0.0004;google/gemini-2.5-flash-lite US$0.0004;
+verify	codex	report	at the named path, carries the ledger's model id (google/gemini-2.5-flash-lite)
+verify	codex	interface-review-copy	+1 codex conversation(s): expected 0, a skill invocation is a command turn the logger skips by design (CV21.DS4.TS3)
+verify	codex	ping	this cell's canary in ext_hello_pings (US3-codex-p3m8ke)
+verify	codex	interface-hello	+1 codex conversation(s): expected 0, a skill invocation is a command turn the logger skips by design (CV21.DS4.TS3)
+verify	codex	interface	+1 codex conversation(s) since the probe (live-codex-probe-211004); latest: 1 user, 0 assistant, open
+verify	grok	consult	4 call(s): google/gemini-2.5-flash-lite US$0.0004;google/gemini-2.5-flash-lite US$0.0004;google/gemini-2.5-flash-lite US$0.0004;google/gemini-2.5-flash-lite US$0.0004;
+verify	grok	report	at the named path, carries the ledger's model id (google/gemini-2.5-flash-lite)
+verify	grok	interface-review-copy	+1 grok_build conversation(s): expected 0, a skill invocation is a command turn the logger skips by design (CV21.DS4.TS3)
+verify	grok	ping	this cell's canary in ext_hello_pings (US3-grok-w05mwy)
+verify	grok	interface-hello	+1 grok_build conversation(s): expected 0, a skill invocation is a command turn the logger skips by design (CV21.DS4.TS3)
+verify	grok	interface	+1 grok_build conversation(s) since the probe (live-grok-probe-210842); latest: 1 user, 1 assistant, 2026-10-20T21:09:10.464000Z
+verify	grok	consult	1 call(s): google/gemini-2.5-flash-lite US$0.0004;
+verify	grok	report	at the named path, carries the ledger's model id (google/gemini-2.5-flash-lite)
+verify	grok	interface-review-copy	+0 grok_build conversation(s): expected 0, a skill invocation is a command turn the logger skips by design (CV21.DS4.TS3)
+verify	grok	ping	this cell's canary in ext_hello_pings (US3-grok-w05mwy)
+verify	grok	interface-hello	+0 grok_build conversation(s): expected 0, a skill invocation is a command turn the logger skips by design (CV21.DS4.TS3)
+verify	grok	interface	+1 grok_build conversation(s) since the probe (live-grok-probe-210842); latest: 1 user, 1 assistant, 2026-10-20T21:09:10.464000Z
+verify	claude	consult	1 call(s): google/gemini-2.5-flash-lite US$0.0004;
+verify	claude	report	at the named path, carries the ledger's model id (google/gemini-2.5-flash-lite)
+verify	claude	interface-review-copy	+0 claude_code conversation(s): expected 0, a skill invocation is a command turn the logger skips by design (CV21.DS4.TS3)
+verify	claude	ping	this cell's canary in ext_hello_pings (US3-claude-g2vxdx)
+verify	claude	interface-hello	+0 claude_code conversation(s): expected 0, a skill invocation is a command turn the logger skips by design (CV21.DS4.TS3)
+verify	claude	interface	+1 claude_code conversation(s) since the probe (live-claude-probe-204056); latest: 1 user, 1 assistant, 2026-10-20T20:41:17.305000Z
+verify	codex	consult	1 call(s): google/gemini-2.5-flash-lite US$0.0004;
+verify	codex	report	at the named path, carries the ledger's model id (google/gemini-2.5-flash-lite)
+verify	codex	interface-review-copy	+0 codex conversation(s): expected 0, a skill invocation is a command turn the logger skips by design (CV21.DS4.TS3)
+verify	codex	ping	this cell's canary in ext_hello_pings (US3-codex-p3m8ke)
+verify	codex	interface-hello	+0 codex conversation(s): expected 0, a skill invocation is a command turn the logger skips by design (CV21.DS4.TS3)
+verify	codex	interface	+1 codex conversation(s) since the probe (live-codex-probe-211004); latest: 1 user, 0 assistant, open
+verify	agy	consult	1 call(s): google/gemini-2.5-flash-lite US$0.0004;
+verify	agy	report	at the named path, carries the ledger's model id (google/gemini-2.5-flash-lite)
+verify	agy	interface-review-copy	+0 antigravity conversation(s): expected 0, a skill invocation is a command turn the logger skips by design (CV21.DS4.TS3)
+verify	agy	ping	this cell's canary in ext_hello_pings (US3-agy-0q0pil)
+verify	agy	interface-hello	+0 antigravity conversation(s): expected 0, a skill invocation is a command turn the logger skips by design (CV21.DS4.TS3)
+verify	agy	interface	+1 antigravity conversation(s) since the probe (live-agy-probe-204132); latest: 1 user, 1 assistant, open (a stale orphan after 30 minutes idle, closed at a later start)
+live	claude	hello	exit 0; "model":"claude-opus-5-5"; ran mirror ext hello ping
+verify	claude	consult	1 call(s): google/gemini-2.5-flash-lite US$0.0004;
+verify	claude	report	at the named path, carries the ledger's model id (google/gemini-2.5-flash-lite)
+verify	claude	interface-review-copy	+0 claude_code conversation(s): expected 0, a skill invocation is a command turn the logger skips by design (CV21.DS4.TS3)
+verify	claude	ping	this cell's canary in ext_hello_pings (US3-claude-2bee9a)
+verify	claude	interface-hello	+0 claude_code conversation(s): expected 0, a skill invocation is a command turn the logger skips by design (CV21.DS4.TS3)
+verify	claude	interface	+1 claude_code conversation(s) since the probe (live-claude-probe-204056); latest: 1 user, 1 assistant, 2026-10-20T20:41:17.305000Z
+verify	claude	consult	1 call(s): google/gemini-2.5-flash-lite US$0.0004;
+verify	claude	report	at the named path, carries the ledger's model id (google/gemini-2.5-flash-lite)
+verify	claude	interface-review-copy	+0 claude_code conversation(s): expected 0, a skill invocation is a command turn the logger skips by design (CV21.DS4.TS3)
+verify	claude	ping	this cell's canary in ext_hello_pings (US3-claude-2bee9a)
+verify	claude	interface-hello	+0 claude_code conversation(s): expected 0, a skill invocation is a command turn the logger skips by design (CV21.DS4.TS3)
+verify	claude	interface	+1 claude_code conversation(s) since the probe (live-claude-probe-204056); latest: 1 user, 1 assistant, 2026-10-20T20:41:17.305000Z

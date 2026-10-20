@@ -1,0 +1,6 @@
+runtime	version	binary	date	model	cost
+claude	2.1.304 (Claude Code)	~/.local/share/claude/versions/2.1.304	2026-10-20	claude-opus-5-5	plan
+codex	codex-cli 0.163.0	/opt/homebrew/Caskroom/codex/0.163.0/bin/codex	2026-10-20	not reported by codex exec --json	plan
+agy	1.4.3	~/.local/bin/agy	2026-10-20	not reported by agy --print json	plan
+grok	grok 1.0.62 (1474f9cbdd91) [stable]	~/.grok/downloads/grok-1.0.62-macos-aarch64	2026-10-20	grok-4.7	US$ 0.2999
+package	mirror-mind 0.36.0 (registry, dist.integrity checked)	"pre fix"/lib/node_modules/mirror-mind	2026-10-20	consult: google/gemini-2.5-flash-lite	OpenRouter US$ 0.0022 (5 consult calls) + US$ 0.0092 (7 conversation_title calls, CR153)

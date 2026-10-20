@@ -147,17 +147,26 @@ AGY_LOGIN_HOME="$D/agy-login"
 # here the hooks and `mirror consult` must reach the scratch home and nothing else).
 # (The prefix path holds a space, so the variables are set inline, never through an
 # unquoted substitution that would split it.)
+#
+# PI_SESSIONS_DIR points every cell's Pi backfill at an empty directory. The first run
+# of this route did not, and the Claude cell — the one on the real HOME — let session
+# maintenance import the person's real Pi sessions written after the scratch home's
+# birth into the scratch home, and title them through the provider (CR153). A cell
+# must never read the person's history; `verify` now asserts the scratch home holds no
+# `pi` conversation.
 in_home() { # a scratch HOME and every runtime home under it
   local home="$1"; shift
   (cd "$PROJECT" && env -u XDG_CONFIG_HOME -u MIRROR_BIN -u MIRROR_NODE -u NODE_OPTIONS \
     HOME="$home" CLAUDE_CONFIG_DIR="$home/.claude" CODEX_HOME="$home/.codex" GROK_HOME="$home/.grok" \
     MIRROR_HOME="$MHOME" MIRROR_USER="$USER1" OPENROUTER_API_KEY="$KEY" DISABLE_AUTOUPDATER=1 \
+    PI_SESSIONS_DIR="$D/no-pi-sessions" \
     PATH="$PREFIX/bin:$NODE_DIR:$REAL_PATH" "$@")
 }
 in_home_claude_login() { # the real HOME, the route's logged-in config dir (TS1's finding)
   (cd "$PROJECT" && env -u XDG_CONFIG_HOME -u MIRROR_BIN -u MIRROR_NODE -u NODE_OPTIONS -u CODEX_HOME -u GROK_HOME \
     CLAUDE_CONFIG_DIR="$CLAUDE_LOGIN_DIR" \
     MIRROR_HOME="$MHOME" MIRROR_USER="$USER1" OPENROUTER_API_KEY="$KEY" DISABLE_AUTOUPDATER=1 \
+    PI_SESSIONS_DIR="$D/no-pi-sessions" \
     PATH="$PREFIX/bin:$NODE_DIR:$REAL_PATH" "$@")
 }
 in_cell() { # $1 rt, then the command
@@ -278,7 +287,7 @@ setup() {
     echo "$D_RAW exists and is not this route's directory; refusing to replace it."; exit 2
   fi
   rm -rf "$D_RAW" && mkdir -p "$D_RAW" && touch "$D_RAW/.ds5-us3" && resolve
-  mkdir -p "$PREFIX" "$EVIDENCE" "$PROJECT" "$PERSON" "$REPORTS"
+  mkdir -p "$PREFIX" "$EVIDENCE" "$PROJECT" "$PERSON" "$REPORTS" "$D/no-pi-sessions"
   config_manifest >"$D_RAW.baseline"
   ok "real configuration recorded: $(wc -l <"$D_RAW.baseline" | tr -d ' ') entries (auth.json, logs, memory.db outside the set by design; the two homes' conversation counts in)"
   local TARBALL
@@ -607,6 +616,9 @@ verify() {
   fi
   for ext in review-copy hello; do :
   done
+  local pi; pi="$(dbq "$(MDB)" "SELECT COUNT(*) FROM conversations WHERE interface='pi'")"
+  [ "${pi:-0}" = 0 ] && ok "the scratch home holds no pi conversation (no cell read the person's history)" \
+    || bad "the scratch home holds $pi pi conversation(s): a cell read the person's Pi history (CR153's shape)"
   look "spend: grok US\$ $(spend_grok) (cap $GROK_CAP_USD), openrouter US\$ $(spend_openrouter) (cap $OPENROUTER_CAP_USD)"
   grep -rl -- "$KEY" "$EVIDENCE" 2>/dev/null | head -1 | grep -q . && bad "the key's value reached an evidence file (A8)" || ok "no evidence file carries the key's value"
   result
@@ -637,11 +649,23 @@ untouched() {
   say "Untouched — the real configuration vs the baseline"
   [ -f "$D_RAW.baseline" ] || { echo "No baseline at $D_RAW.baseline. Run setup first."; exit 2; }
   config_manifest >"$D_RAW.now"
-  if diff -u "$D_RAW.baseline" "$D_RAW.now" >"$D_RAW.diff"; then
+  # `~/.claude.json` is written by every Claude process on the machine — the desktop app
+  # among them — so its hash moving is not evidence by itself. The route's claim is
+  # narrower and checkable: none of its paths is in the file. Any OTHER changed entry
+  # fails as before.
+  diff -u "$D_RAW.baseline" "$D_RAW.now" >"$D_RAW.diff"
+  local changed; changed="$(grep -E '^[-+][^-+]' "$D_RAW.diff" | sed -E 's/^[-+][FL-] ([^ ]+).*/\1/' | sort -u)"
+  local others; others="$(echo "$changed" | grep -v -x '.claude.json' | grep -v '^$')"
+  if [ -z "$changed" ]; then
     ok "every entry hashes as it did before setup, and both real homes' conversation counts are unmoved ($(wc -l <"$D_RAW.now" | tr -d ' ') entries)"
-    rm -f "$D_RAW.now" "$D_RAW.diff"
+  elif [ -z "$others" ]; then
+    if grep -q "$(basename "$D_RAW")" "$REAL_HOME/.claude.json" 2>/dev/null; then
+      bad "~/.claude.json changed and names this route's directory: a route Claude session wrote it"
+    else
+      ok "every other entry hashes as before and both real homes' conversation counts are unmoved; ~/.claude.json changed ($(stat -f '%Sm' -t '%H:%M:%S' "$REAL_HOME/.claude.json") local) but names no path of this route — another Claude process's write"
+    fi
   else
-    bad "the real configuration changed (see $D_RAW.diff)"; head -20 "$D_RAW.diff" | show
+    bad "the real configuration changed (see $D_RAW.diff):"; echo "$others" | show
   fi
   # The skill's default report path is ~/Downloads; the prompt overrides it, a model may
   # not follow. Named, never deleted (A7).
