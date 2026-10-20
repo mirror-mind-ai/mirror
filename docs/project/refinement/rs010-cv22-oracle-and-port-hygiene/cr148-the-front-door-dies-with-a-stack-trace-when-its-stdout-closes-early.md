@@ -70,7 +70,9 @@ the integration test asserts its own precondition and the CR keeps the control r
 unit tests for both-streams-once and non-`EPIPE`-rethrown; the validation route
 gains a negative control on the published package; exit 0 kept, with the
 `pipefail` rationale. Plan approved 2026-10-20 → `planned`. Started the same day:
-Driver @viniciusteles, Delivery `main` → `in_progress`.
+Driver @viniciusteles, Delivery `main` → `in_progress`. Implemented and committed
+the same day (`314b2cb8`). Navigator validation route run by @viniciusteles on
+2026-10-20, every step observed as stated → `validated`.
 
 ### Plan (approved 2026-10-20)
 
@@ -207,6 +209,42 @@ exit 1, the precondition `child.exitCode === null` having held. Wired: 4 of 4.
   stdout destroyed before it wrote and `{}` on stdin → exit 0, empty stderr, and
   `<mirror-home>/hooks.log` gained one line:
   `2026-10-20T13:51:05.305Z claude:session-start: stdout closed early`.
+
+### Navigator validation (2026-10-20, @viniciusteles)
+
+The corrected route, run once, against the checkout's binary by path
+(`Install: clone`) in a scratch home with the `notes` fixture:
+
+- Negative control, `/opt/homebrew/bin/mirror --help | true` (0.35.0): the full
+  `Unhandled 'error' event` / `Error: write EPIPE` trace, `exit=1`.
+- `"$M" ext notes | true` → `exit=0`, nothing on stderr.
+- `"$M" ext notes 2>&1 | true` → `exit=0`, nothing.
+- `"$M" --help | true` → `exit=0`, nothing.
+- `"$M" ext notes | head -1` → `=== subcommands of extension/notes ===`.
+
+Accepted: five of five, control included.
+
+### Debt review (2026-10-20)
+
+**Proportionality.** Six files: one module of ~50 lines, one call per entry, one
+test file. No route touched. Proportionate.
+
+**What the work taught, recorded rather than owed:** `| head -1` is not a
+reproduction for an output smaller than the pipe buffer; the route and the
+acceptance say `| true` and why. The plan's original control would have validated
+nothing — the same lesson CR145's first run taught about the binary on PATH, now
+twice in one day: a validation route has to be shown failing before it is trusted
+passing.
+
+**Accepted and written, not tested** (from the plan's exclusions): work after the
+reader closes is abandoned; `EBADF` cannot occur; libuv's Windows mapping of
+`ERROR_BROKEN_PIPE` to `EPIPE`.
+
+**Not captured, the Navigator's call:** the package smoke
+(`scripts/smoke_npm_package.sh`) exercises the published layout's bins and could
+carry one `| true` line so the handler is proven on the `npm install -g` path too —
+the loader shim is the only difference, and it is upstream of `runAsEntry`, so the
+risk is small. Nothing else found.
 
 ## Outcome
 
