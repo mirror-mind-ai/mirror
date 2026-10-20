@@ -51,7 +51,9 @@ the validator before the tolerant reader; the checks inside `runBind` as
 check lands; the edge tests and the dead-row tests; refusals that name the fix; the
 route's journey and `--global` cases; one follow-up captured. Plan approved
 2026-10-20 → `planned`. Started the same day: Driver @viniciusteles, Delivery `main`
-→ `in_progress`.
+→ `in_progress`. Implemented and committed the same day (`c5a414c4`). Navigator
+validation route run by @viniciusteles on 2026-10-20, every step observed as stated
+→ `validated`.
 
 ### Plan (approved 2026-10-20)
 
@@ -223,6 +225,54 @@ clean.
    `backend -> persona/engineer`.
 
 CR150 captured from the review's product lens.
+
+### Navigator validation (2026-10-20, @viniciusteles)
+
+The route, run once, against the checkout's binary by path (`Install: clone`) in a
+scratch home with the `hello` extension declaring `backend`:
+
+1. `--persona engine` → `no persona 'engine' (mirror list personas shows this
+   home's)`, `exit=1`.
+2. `--journey nope` → `no journey 'nope' (mirror journeys shows this home's)`,
+   `exit=1`.
+3. `bindings` → `no bindings for extension/hello`.
+4. `identity set persona engineer`, then `--persona engineer` → `bound
+   hello/backend -> persona/engineer`, `exit=0`.
+5. `--global` → `bound hello/backend -> global`, `exit=0`.
+6. `bind nonsense` → `extension/hello declares no capability 'nonsense'
+   (declared: backend)`, `exit=1`.
+7. `ext ghost bind` → `extension not installed: /tmp/cr149.jSH1/cr149/extensions/ghost`,
+   `exit=1`; `ext ../x bind` → `'../x' is not a valid extension id`, `exit=1`.
+8. `bindings` → `backend -> global/(global)`, `backend -> persona/engineer`, and
+   nothing else.
+
+Accepted: ten of ten, no stderr text anywhere.
+
+### Debt review (2026-10-20)
+
+**Proportionality.** Five source and test files, one doc, one capture. The
+`runBind` port grew four checks and a helper; nothing else moved. The golden's JSON
+is byte-identical; its world gained a manifest and two identity rows. Proportionate.
+
+**Debt left on purpose, captured:**
+
+- [CR150](cr150-install-prints-suggested-personas-this-home-does-not-have.md) —
+  `install` shows `suggested_personas` the home does not have.
+- CR099's `--global` non-idempotence, untouched by design and already captured.
+
+**Recorded, not owed:** `bindings` still lists a row whose target has since
+disappeared, and `unbind` still removes it — the repair path, kept on purpose. A
+listing that *flags* such rows would be a small CR if the Navigator wants one; it
+was offered in the plan and not asked for.
+
+**Small debt in the change itself:** `bind` now reads `skill.yaml` twice — the
+validator, then the context reader — the pair `install` already makes. One reader
+that both validates and yields the ids would be better; it would mean giving
+`ExtensionManifest` a `capabilities` field the validator currently checks but does
+not expose, which is a manifest-shape change beyond this CR.
+
+**Nothing found during validation.** Both oracle-divergence risks the plan named —
+a recorded byte changing at either step — did not occur.
 
 ## Outcome
 
