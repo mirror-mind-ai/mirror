@@ -2,7 +2,7 @@
 
 # CV21.DS5.US3 — `review-copy` runs on every runtime, measured live
 
-**Status:** 🟡 Planned
+**Status:** ✅ Done — 2026-10-20
 **Type:** User Story
 **Delivery Story:** CV21.DS5 — User Extensions On Every Runtime
 
@@ -23,7 +23,19 @@ on Codex, Antigravity, and Grok exists and re-runs.
 
 ## Outcome
 
-A committed route in this story package installs `mirror-mind@0.36.0` from the
+**Done 2026-10-20** on claude 2.1.304, codex 0.163.0, agy 1.4.3, grok 1.0.62, from the
+registry's `mirror-mind@0.36.0`: on all four, `ext-review-copy` and `ext-hello` were
+listed after the printed steps and not before; every `review-copy` session ran
+`mirror consult` — one ledger row each — and wrote its report carrying the ledger's
+model id; every `hello` session left a ping with its own cell's canary; no session
+searched the disk. The interface was logged from each runtime's probe: `claude_code`
+and `grok_build` (a TUI probe) logged and closed, `antigravity` logged and open until
+the stale-orphan close, `codex` the prompt only under `codex exec`. Three product defects
+found and captured, each decided by the Navigator to be fixed in its own Change
+Request: CR151, CR152, CR153. The real configuration unchanged; the route re-runs. TS4
+writes it where a user reads it.
+
+As planned: a committed route in this story package installs `mirror-mind@0.36.0` from the
 registry into a scratch prefix, wires each installed runtime through the steps
 `mirror init` and `mirror extensions install` print, installs `review-copy` (its real
 body) and `hello` (the authoring guide's command-skill) into one scratch Mirror home,

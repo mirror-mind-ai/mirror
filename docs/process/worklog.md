@@ -12,6 +12,24 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-10-20 — CV21.DS5.US3: `review-copy` on every runtime, measured live
+
+The per-home plugin proven on the thing it was chosen for, from the registry's
+0.36.0 in a prefix with a space, every runtime wired by the printed steps alone:
+`review-copy` with its real body and `hello` — the authoring guide's listings,
+extracted verbatim — listed on Claude Code 2.1.304, Codex 0.163.0, Antigravity 1.4.3,
+and Grok 1.0.62, and each session's work read back from the scratch home rather than
+claimed: one `consult` row and a report carrying the ledger's model id per
+`review-copy`, one ping with the cell's own canary per `hello`, no disk search. The
+interface logged on Claude Code, Grok (a TUI probe), and Antigravity; the prompt only
+under `codex exec`. The route found three product defects — CR151 (the transcript
+backfill fills conversations by time window), CR152 (`codex exec` never runs the
+plugin's async Stop and SessionEnd to Mirror), CR153 (a home's Pi backfill imports
+another home's sessions, which the route's Claude cell on the real `HOME` exposed on
+the person's own data before the route closed the hole) — each decided to be fixed in
+its own Change Request, and twelve defects of its own, each a reader wrong while the
+session was right. US$ 0.30 on Grok, US$ 0.011 on OpenRouter. TS4 remains.
+
 ### 2026-10-20 — v0.36.0 released: Five Runtimes, and a Home's Extensions on Every One
 
 Minor release closing CV21.DS10 (Grok Build at L3 through the canonical plugin)
