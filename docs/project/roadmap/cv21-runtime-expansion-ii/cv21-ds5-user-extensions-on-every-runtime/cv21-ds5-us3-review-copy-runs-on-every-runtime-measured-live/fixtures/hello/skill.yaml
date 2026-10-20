@@ -1,0 +1,35 @@
+id: hello
+name: Hello
+category: extension
+kind: command-skill
+summary: Minimal extension example
+table_prefix: ext_hello_
+
+runtimes:
+  pi:
+    command_name: ext-hello
+    skill_file: SKILL.md
+  claude:
+    command_name: ext:hello
+    skill_file: SKILL.md
+
+mirror_context_providers:
+  - id: greeting
+    description: "A short greeting injected when the bound persona is active."
+    suggested_personas: []
+    provider_runtime:
+      protocol: mirror-context-v1
+      command: [node, context-provider.mjs]
+
+cli:
+  subcommands:
+    - name: ping
+      summary: Record a ping
+      runtime:
+        protocol: mirror-cli-v1
+        command: [node, commands/ping.mjs]
+    - name: list
+      summary: List recent pings
+      runtime:
+        protocol: mirror-cli-v1
+        command: [node, commands/list.mjs]
