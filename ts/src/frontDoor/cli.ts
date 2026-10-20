@@ -68,6 +68,7 @@ import {
   JOURNAL_TRANSPORT,
   WEEK_PLAN_TRANSPORT,
 } from "#providers/transport.ts";
+import { exitQuietlyOnBrokenPipe } from "#runtime/brokenPipe.ts";
 import {
   configFilePath,
   loadConfiguration,
@@ -1882,6 +1883,9 @@ export async function main(rawArgv = process.argv.slice(2)): Promise<number> {
  */
 export async function runAsEntry(rawArgv = process.argv.slice(2)): Promise<number> {
   silenceExperimentalWarnings();
+  // Before anything that could write (CR148): `mirror … | head -1` ends
+  // quietly, exit 0, instead of an unhandled EPIPE and a stack trace.
+  exitQuietlyOnBrokenPipe(process.exit);
   loadConfiguration({ entryPath: import.meta.filename });
   return main(rawArgv);
 }

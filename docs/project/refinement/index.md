@@ -8,8 +8,8 @@ If a linked document and this index disagree, this index wins.
 
 ## Current Focus
 
-- Refinement Story: RS011
-- Change Request: none
+- Refinement Story: RS010
+- Change Request: CR148
 
 Selecting a focus is an explicit project decision. Reading this file never selects or
 executes work.
@@ -83,7 +83,7 @@ Open work is ordered intentionally. Terminal history follows open work.
 | 48 | [CR144](rs010-cv22-oracle-and-port-hygiene/cr144-the-ds7-routes-remove-agy-s-credential-where-1-3-x-kept-it.md) | RS010 | The DS7 routes remove agy's credential where 1.3.x kept it, and 1.4.2 keeps it elsewhere | captured | — | — |
 | 49 | [CR146](rs011-extension-contract-completeness/cr146-an-extension-cannot-declare-the-settings-it-expects.md) | RS011 | An extension cannot declare the settings it expects, so nothing can say which are missing | captured | — | — |
 | 50 | [CR147](rs010-cv22-oracle-and-port-hygiene/cr147-three-copies-of-the-extension-id-grammar-and-two-of-them-disagree.md) | RS010 | Three copies of the extension-id grammar, and two of them disagree | captured | — | — |
-| 51 | [CR148](rs010-cv22-oracle-and-port-hygiene/cr148-the-front-door-dies-with-a-stack-trace-when-its-stdout-closes-early.md) | RS010 | The front door dies with a stack trace when its stdout closes early | captured | — | — |
+| 51 | [CR148](rs010-cv22-oracle-and-port-hygiene/cr148-the-front-door-dies-with-a-stack-trace-when-its-stdout-closes-early.md) | RS010 | The front door dies with a stack trace when its stdout closes early | in_progress | @viniciusteles | `main` |
 | 52 | [CR149](rs010-cv22-oracle-and-port-hygiene/cr149-bind-accepts-a-persona-or-journey-that-does-not-exist.md) | RS010 | `bind` accepts a persona or journey that does not exist, and reports `bound` | captured | — | — |
 | — | [CR145](rs011-extension-contract-completeness/cr145-an-extension-s-installation-settings-have-nowhere-to-live-but-the-login-shell.md) | RS011 | An extension's installation settings have nowhere to live but the login shell | done | @viniciusteles | `main` |
 | — | [CR141](rs010-cv22-oracle-and-port-hygiene/cr141-init-takes-any-string-as-a-user-name.md) | RS010 | `init` takes any string as a user name, so `init ../escaped` creates a home outside `.mirror-minds` | done | @viniciusteles | `main` |

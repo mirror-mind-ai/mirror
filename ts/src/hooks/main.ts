@@ -35,6 +35,7 @@
 // why this file must exit 0: the wrappers read any other exit as Node failing.
 
 import { pathToFileURL } from "node:url";
+import { exitQuietlyOnBrokenPipe } from "#runtime/brokenPipe.ts";
 import { loadConfiguration, silenceExperimentalWarnings } from "#runtime/config.ts";
 import { agyPreInvocation, agySessionStart, agyStop } from "./agy.ts";
 import { claudeHook } from "./claude.ts";
@@ -77,8 +78,18 @@ async function dispatch(name: string): Promise<number> {
  */
 export async function runAsEntry(rawArgv = process.argv.slice(2)): Promise<number> {
   silenceExperimentalWarnings();
-  loadConfiguration({ entryPath: import.meta.filename });
   const name = rawArgv[0] ?? "";
+  // The try/catch below is the last line of defense, and it has one hole: a
+  // stream's `error` event is not a throw in that `await` chain. A runtime
+  // that gives up on a hook closes its pipe, and until CR148 the hook answered
+  // the next write with an unhandled EPIPE, a stack trace into the host's log,
+  // and exit 1 -- the one exit code this entry promises never to return. One
+  // line in `hooks.log`, then the quiet exit the contract requires.
+  exitQuietlyOnBrokenPipe((code) => {
+    noteHookFailure(name || "hooks", "stdout closed early");
+    process.exit(code);
+  });
+  loadConfiguration({ entryPath: import.meta.filename });
   try {
     return await dispatch(name);
   } catch (error) {
