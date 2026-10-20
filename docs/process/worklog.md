@@ -32,6 +32,8 @@ its own copy of the fixture, as a user's sequence would. The unpublished tag was
 deleted and recreated on the green commit at the Navigator's direction; `stable`
 fast-forwarded. Nothing public had consumed the first tag. Lesson, now in the
 release note's record: the doctor does not read CI, so the promoter must.
+Tag and `stable` pushed; CI green on the promoted commit; the trusted-publisher
+stage approved; `latest` and `stable` at 0.36.0; GitHub Release published.
 
 ### 2026-10-20 — CR145, CR148, CR149: three Change Requests from using the product
 
