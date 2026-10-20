@@ -54,6 +54,7 @@ route's journey and `--global` cases; one follow-up captured. Plan approved
 → `in_progress`. Implemented and committed the same day (`c5a414c4`). Navigator
 validation route run by @viniciusteles on 2026-10-20, every step observed as stated
 → `validated`.
+Debt reviewed and accepted by the Navigator the same day → `done`.
 
 ### Plan (approved 2026-10-20)
 
@@ -276,4 +277,6 @@ a recorded byte changing at either step — did not occur.
 
 ## Outcome
 
-Open.
+Done 2026-10-20. Shipped on `main` in `c5a414c4` (the checks, the tests, the doc,
+CR150's capture) and `2d4f369f` (the validation record). A deliberate divergence
+from the Python oracle, recorded; nothing owed beyond CR150.
