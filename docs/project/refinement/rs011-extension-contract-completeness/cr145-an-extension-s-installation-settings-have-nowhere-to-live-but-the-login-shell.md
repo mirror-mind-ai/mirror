@@ -78,7 +78,9 @@ manifest's own grammar and stripping a BOM; the exposure note on the listing;
 `uninstall` naming the file it leaves; the edge-case tests; the path rules in the
 docs; the release-note debt recorded in Outcome; and two follow-ups captured as
 CR146 and CR147). Plan approved 2026-10-20 → `planned`. Started the same day:
-Driver @viniciusteles, Delivery `main` → `in_progress`.
+Driver @viniciusteles, Delivery `main` → `in_progress`. Implemented and committed
+the same day (`bb33ed54`). Navigator validation route run by @viniciusteles on
+2026-10-20, all twelve steps observed as stated → `validated`.
 
 ### Plan (approved 2026-10-20)
 
@@ -201,8 +203,11 @@ process.
 10. A file with a BOM, CRLF endings, a duplicate key, and `KEY=` yields the keys
     without the BOM, the last duplicate, and the empty string.
 
-**Validation route (Navigator).** In a scratch home (`MIRROR_HOME` set, no personal
-data): install the `hello` template extension with a subcommand that prints
+**Validation route (Navigator).** Against the checkout's binary called by path
+(`~/.local/mirror-dev/bin/mirror`; confirm `runtime status` says `Install: clone`),
+never the `mirror` on PATH, which may be the published package or a shell
+function. In a scratch home (`MIRROR_HOME` and `MIRROR_USER` set to the same
+basename, no personal data): write a `hello` extension with a subcommand that prints
 `env | grep -E '^(PG|MIRROR_|NODE_EXTRA)' | sort`. Run `mirror ext hello` first:
 the `settings:` line reads `(not present — …)` with the absolute path. Run the
 subcommand: no `PG*` line. Write `extensions/hello.env` with
@@ -290,6 +295,69 @@ the `ext-dispatch/tools` fixture copied in with an added `env` subcommand printi
 
 **Limitation.** The exposure note and the `EACCES` cases are POSIX facts; on Windows
 the note is suppressed by design and untested here.
+
+### Navigator validation (2026-10-20, @viniciusteles)
+
+The route above, run by the Navigator in a scratch home against the checkout's
+binary called by path. Three runs, and what each taught:
+
+1. *First run* — no step matched. The `mirror` on the Navigator's PATH was the
+   published `mirror-mind@0.35.0` (`/opt/homebrew/lib/node_modules/mirror-mind`),
+   which has no `settings.ts`; and the Navigator's shell wraps `mirror` in a
+   function that exports `PGSSLMODE` and `NODE_EXTRA_CA_CERTS` for Mirror's process
+   tree — the exact workaround this CR retires, measured where it lives. Step 2
+   showed both variables with no file; step 5's inline `PGSSLMODE=disable` was
+   overridden by the function. Not a defect in the change; a route that named the
+   wrong binary. A typo (`tail -`) also made 0.35.0's front door die with an
+   unhandled `EPIPE` stack trace — pre-existing, noted below.
+2. *Second run* — the checkout's binary by path (`~/.local/mirror-dev/bin/mirror`,
+   `Install: clone`). Steps 1–10 and 12 observed as stated. Step 11 bound
+   `persona/engine` (a typo for `engineer`) and so measured nothing; `bind`
+   accepted the nonexistent target without a word, noted below.
+3. *Third run* — step 11 alone: the provider rendered
+   `PGSSLMODE=verify-full PGHOST=db.internal MIRROR_HOME=<scratch home>`; with the
+   file at `000`, `warning: extension context settings_unreadable; continuing.`
+
+Accepted: twelve of twelve. The validation route in the plan now names the binary
+by path; the first run is why.
+
+### Debt review (2026-10-20)
+
+**Proportionality.** 13 files, +442/−24. One new module of ~150 lines, one
+exported constant, three call sites, one report field. The only observable change
+for an extension with no settings file is the listing's last line. The uninstall
+golden is byte-identical. Proportionate to the problem.
+
+**Debt left on purpose, captured:**
+
+- [CR146](cr146-an-extension-cannot-declare-the-settings-it-expects.md) — the
+  manifest cannot declare the settings it expects, so onboarding is not yet guided.
+- [CR147](../rs010-cv22-oracle-and-port-hygiene/cr147-three-copies-of-the-extension-id-grammar-and-two-of-them-disagree.md)
+  — three copies of the id grammar; this CR used the manifest's and left the other
+  two.
+- The release note: a contract addition on `main`, unreleased — see Outcome.
+
+**Debt found during validation, not captured (Navigator's call):**
+
+- The front door dies with an unhandled `EPIPE` stack trace when its stdout closes
+  early (`mirror ext <id> | head -1`); seen on 0.35.0, and the code path is the same
+  on `main`. RS010 shape.
+- `ext <id> bind <capability> --persona <id>` accepts a persona that does not exist
+  and reports `bound`. Inherited from the Python oracle; a binding to a typo is
+  silent until a load finds nothing. RS010 or RS004 shape.
+
+**Small debt in the change itself, recorded:**
+
+- The five reserved names are listed in `settings.ts` and set, by name, in
+  `dispatch.ts`; the tests pin that the two agree, but the dispatcher does not
+  derive its layer from the list. One list would be better; left as is to keep the
+  dispatcher's environment readable as the three-layer spread it is.
+- Windows: the exposure note is suppressed by design and has no test.
+
+**After release:** the Navigator's `.zshrc` `mirror()` function can go once a
+release carrying CR145 is installed; `PGSSLMODE` and `NODE_EXTRA_CA_CERTS` move into
+the extension's `.env`, and the two credential-shaped values stay with the
+extension's own secrets route.
 
 ## Outcome
 
