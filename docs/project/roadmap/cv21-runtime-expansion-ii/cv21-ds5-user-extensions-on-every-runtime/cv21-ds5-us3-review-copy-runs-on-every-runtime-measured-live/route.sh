@@ -212,7 +212,7 @@ read_agy() { # $1 tag, $2 skill: the staged plugin trees (agy's static reader fo
 }
 read_claude() { # $1 tag, $2 skill: the skills dir Claude reads (a link, read in place) and plugin list
   local dir; dir="$(claude_skills_dir)"
-  local found; found="$(find "$dir" -maxdepth 3 -path "*/$2/SKILL.md" 2>/dev/null | head -1)"
+  local found; found="$(find -L "$dir" -maxdepth 4 -path "*/$2/SKILL.md" 2>/dev/null | head -1)"
   [ -f "$EVIDENCE/$1-claude-plugin-list.out" ] || keep "$1-claude-plugin-list" in_cell claude claude plugin list
   if [ -n "$found" ]; then echo "claude: $2 listed (under $(echo "$found" | sed "s|^$D/|\$D/|; s|^$REAL_HOME/|~/|"); reader model)"; else echo "claude: $2 not listed (reader model)"; fi
 }
@@ -426,6 +426,8 @@ wire() {
 
 # ---------------------------------------------------------------------------
 # Live: one headless session, the literal invocation in the runtime's spelling (A5).
+# The file the classifier reads for a session: agy's brain transcript when kept.
+transcript_of() { local t="${1%.out}.transcript.jsonl"; [ -f "$t" ] && echo "$t" || echo "$1"; }
 invocation() { # $1 rt, $2 skill
   case "$1" in
     claude|grok) echo "/$2" ;;                       # TS1's decision: the bare name on Claude Code and Grok
@@ -451,7 +453,7 @@ live() {
   canary="US3-$rt-$(LC_ALL=C tr -dc 'a-z0-9' </dev/urandom | head -c 6)"
   tag="live-$rt-$ext$([ "$form" = alt ] && echo -alt)-$(date -u +%H%M%S)"
   case "$ext" in
-    probe) prompt='Reply with the single word: ready.' ;;
+    probe) prompt='Reply with the single word: ready.' ;;   # a plain prompt: the one turn the hooks log
     review-copy|hello) prompt="$(prompt_for "$rt" "$ext" "$canary" "$form")" ;;
     *) echo "ext: review-copy|hello|probe"; exit 2 ;;
   esac
@@ -489,11 +491,15 @@ live() {
          cp "$AGY_LOGIN_HOME/.gemini/antigravity-cli/antigravity-oauth-token" "$H/.gemini/antigravity-cli/" 2>/dev/null
          cp "$AGY_LOGIN_HOME/.gemini/antigravity-cli/installation_id" "$H/.gemini/antigravity-cli/" 2>/dev/null
          keep "$tag" in_home "$H" agy --print "$prompt" --output-format json --dangerously-skip-permissions --print-timeout 10m
+         # The JSON carries no tool calls; the conversation's brain transcript does.
+         local conv; conv="$(grep -o '"conversation_id":"[^"]*"' "$EVIDENCE/$tag.out" | head -1 | cut -d'"' -f4)"
+         [ -n "$conv" ] && cp "$H/.gemini/antigravity-cli/brain/$conv/.system_generated/logs/transcript.jsonl" "$EVIDENCE/$tag.transcript.jsonl" 2>/dev/null \
+           && note "agy: the conversation's transcript kept beside the JSON (the tool calls live there)"
          rm -f "$H/.gemini/antigravity-cli/antigravity-oauth-token"
          [ -f "$H/.gemini/antigravity-cli/antigravity-oauth-token" ] && bad "scratch credential still present" || ok "scratch credential verified absent"
          model="$(grep -o '"model":"[^"]*"' "$EVIDENCE/$tag.out" | head -1)" ;;
     claude) [ -d "$CLAUDE_LOGIN_DIR" ] && note "claude: the route's logged-in config dir, the real HOME; tools scoped (A7)" || note "claude: no scratch login (bash route.sh login claude)"
-            keep "$tag" in_cell claude claude -p "$prompt" --output-format json --allowedTools "Skill" "Read" "Write" "Bash(mirror:*)"
+            keep "$tag" in_cell claude claude -p "$prompt" --output-format stream-json --verbose --allowedTools "Skill" "Read" "Write" "Bash(mirror:*)"
             model="$(grep -o '"model[^"]*":"[^"]*"\|"modelUsage":{"[^"]*"' "$EVIDENCE/$tag.out" | head -1)" ;;
   esac
   look "exit $(exit_of "$tag"); model: ${model:-not reported}"
@@ -503,7 +509,7 @@ live() {
     elif grep -q -i 'ready' "$EVIDENCE/$tag.out"; then row live "$rt" probe "answered ready: the login holds"
     else row live "$rt" probe "no clear answer (see $tag.out)"; fi
   else
-    local how; how="$(node "$D/turn.cjs" "$rt" "$EVIDENCE/$tag.out" "ext-$ext")"
+    local how; how="$(node "$D/turn.cjs" "$rt" "$(transcript_of "$EVIDENCE/$tag.out")" "ext-$ext")"
     row live "$rt" "$ext$([ "$form" = alt ] && echo -alt)" "exit $(exit_of "$tag"); ${model:-model not reported}; $how"
     note "a miss gets one retry with the same prompt (or 'alt' for the plugin-prefixed form on Claude Code and Grok); both readings are kept"
   fi
@@ -539,7 +545,7 @@ verify() {
             row verify "$rt" report "not at the named path${any:+; found instead: $(echo "$any" | sed "s|^$D/|\$D/|")}"
           fi
         else
-          kind="$(node "$D/turn.cjs" "$rt" "$(ls -t "$EVIDENCE"/live-"$rt"-"$ext"*.out | head -1)" ext-review-copy)"
+          kind="$(node "$D/turn.cjs" "$rt" "$(transcript_of "$(ls -t "$EVIDENCE"/live-"$rt"-"$ext"*.out | head -1)")" ext-review-copy)"
           case "$kind" in
             *"ran mirror consult"*) row verify "$rt" consult "0 calls in the ledger although the turn ran mirror consult: the command ran and failed (sandbox, key, or network) — see the transcript" ;;
             *"answered from context"*|"") row verify "$rt" consult "0 calls: the skill never loaded, or the model did the work itself ($kind)" ;;
@@ -549,23 +555,41 @@ verify() {
       hello)
         if dbq "$(MDB)" "SELECT message FROM ext_hello_pings" | grep -q -- "$canary"; then row verify "$rt" ping "this cell's canary in ext_hello_pings ($canary)"
         else
-          kind="$(node "$D/turn.cjs" "$rt" "$(ls -t "$EVIDENCE"/live-"$rt"-"$ext"*.out | head -1)" ext-hello)"
+          kind="$(node "$D/turn.cjs" "$rt" "$(transcript_of "$(ls -t "$EVIDENCE"/live-"$rt"-"$ext"*.out | head -1)")" ext-hello)"
           case "$kind" in
             *"ran mirror ext hello ping"*) row verify "$rt" ping "no row with this cell's canary although the turn ran the command: it ran and failed — see the transcript" ;;
             *) row verify "$rt" ping "no row: the skill never loaded, or the model answered without the command ($kind)" ;;
           esac
         fi ;;
     esac
-    # The expectation per runtime, from what DS4, DS7, and DS10 measured (A2): Grok runs
-    # no user hooks in headless -p mode (DS10.US3), so its interface is a TUI measurement;
-    # Antigravity's conversation closes at the next session start (DS7.US4).
-    local tui; tui="$(ls "$EVIDENCE"/live-"$rt"-"$ext"*.out 2>/dev/null | xargs grep -l '(tui session)' 2>/dev/null | head -1)"
+    # A skill invocation (`/…`, `$…`) is a command turn that never enters conversation
+    # history, by design (logger.ts, CV21.DS4.TS3): +0 is the expected reading for every
+    # extension session. The hooks' logging is read from the probe turn below.
+    row verify "$rt" "interface-$ext" "+$after_conv $iface conversation(s): expected 0, a skill invocation is a command turn the logger skips by design (CV21.DS4.TS3)"
+  done
+  # The interface, read as the probe session's own delta (A1): the probe turn is a plain
+  # prompt the hooks log, and the extension sessions add 0 by design. Per runtime, what
+  # DS4, DS7, and DS10 measured (A2): Grok runs no user hooks in headless -p mode
+  # (DS10.US3), so its row comes from a TUI probe; Codex runs its plugin's hooks only
+  # once trusted in an interactive session (`trust codex`); Antigravity's Stop leaves the
+  # conversation open and session maintenance closes it as a stale orphan 30 minutes
+  # after its last turn (STALE_ORPHAN_THRESHOLD_MINUTES), at a later session start.
+  local pb; pb="$(ls -t "$EVIDENCE"/live-"$rt"-probe-*.before 2>/dev/null | head -1)"
+  if [ -z "$pb" ]; then row verify "$rt" interface "no probe session yet (live $rt probe)"
+  else
+    local n=$(( $(count_conv "$iface") - $(sed -n 's/^conv\t//p' "$pb") ))
+    local closed; closed="$(dbq "$(MDB)" "SELECT COALESCE(ended_at,'open') FROM conversations WHERE interface='$iface' ORDER BY started_at DESC LIMIT 1")"
+    local pair; pair="$(dbq "$(MDB)" "SELECT (SELECT COUNT(*) FROM messages m WHERE m.conversation_id=c.id AND m.role='user') || ' user, ' || (SELECT COUNT(*) FROM messages m WHERE m.conversation_id=c.id AND m.role='assistant') || ' assistant' FROM conversations c WHERE interface='$iface' ORDER BY started_at DESC LIMIT 1")"
     case "$rt" in
-      grok) if [ -n "$tui" ]; then row verify "$rt" "interface-$ext" "+$after_conv grok_build conversation(s) from the TUI session"
-            else row verify "$rt" "interface-$ext" "+$after_conv in headless: expected, Grok runs no hooks in -p mode (DS10.US3); the TUI session (live grok $ext tui) is the measurement"; fi ;;
-      agy) row verify "$rt" "interface-$ext" "+$after_conv antigravity conversation(s) (open until the next session start, DS7.US4)" ;;
-      *) row verify "$rt" "interface-$ext" "+$after_conv $iface conversation(s)" ;;
+      grok) [ "$n" -gt 0 ] && row verify "$rt" interface "+$n grok_build conversation(s) since the probe ($(basename "$pb" .before)); latest: $pair, $closed" \
+              || row verify "$rt" interface "+0 grok_build since the probe: expected in headless, Grok runs no hooks in -p mode (DS10.US3); the TUI probe (live grok probe tui) is the measurement" ;;
+      codex) [ "$n" -gt 0 ] && row verify "$rt" interface "+$n codex conversation(s) since the probe ($(basename "$pb" .before)); latest: $pair, $closed" \
+               || row verify "$rt" interface "+0 codex since the probe: expected before the plugin's hooks are trusted (trust codex), then a probe" ;;
+      agy) row verify "$rt" interface "+$n antigravity conversation(s) since the probe ($(basename "$pb" .before)); latest: $pair, $closed (a stale orphan after 30 minutes idle, closed at a later start)" ;;
+      *) row verify "$rt" interface "+$n $iface conversation(s) since the probe ($(basename "$pb" .before)); latest: $pair, $closed" ;;
     esac
+  fi
+  for ext in review-copy hello; do :
   done
   look "spend: grok US\$ $(spend_grok) (cap $GROK_CAP_USD), openrouter US\$ $(spend_openrouter) (cap $OPENROUTER_CAP_USD)"
   grep -rl -- "$KEY" "$EVIDENCE" 2>/dev/null | head -1 | grep -q . && bad "the key's value reached an evidence file (A8)" || ok "no evidence file carries the key's value"

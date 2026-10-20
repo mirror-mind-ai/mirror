@@ -8,6 +8,10 @@
 //   ran mirror consult                    the review-copy skill's work
 //   ran mirror ext hello ping             the hello skill's work
 //   denied <action>                       agy's denied_actions
+//
+// agy's `--print --output-format json` carries no tool calls; its conversation's
+// `brain/<id>/.system_generated/logs/transcript.jsonl` does (PLANNER_RESPONSE
+// `tool_calls`), and that is the file the route hands this script for agy.
 const fs = require("fs");
 const [rt, file, skill = "ext-(review-copy|hello)"] = process.argv.slice(2);
 const text = fs.readFileSync(file, "utf8");
@@ -18,6 +22,8 @@ const describe = (name, input) => {
   const i = input || {};
   if (/write|edit/i.test(name)) return `${name} ${i.file_path || i.path || i.target_file || ""}`;
   if (typeof i.command === "string") return `${name} ${i.command}`;
+  // agy's run_command carries `CommandLine`, quoted (its brain transcript, 1.4.3).
+  if (typeof i.CommandLine === "string") return `${name} ${i.CommandLine.replace(/^"|"$/g, "")}`;
   if (typeof i.pattern === "string") return `${name} "pattern":${i.pattern}`;
   const path = i.file_path || i.path || i.target_file;
   if (typeof path === "string") return `${name} ${path}`;
