@@ -133,6 +133,12 @@ of both entries, with one listener and one test that reproduces the trace.
   `Unhandled 'error' event`; that control run is recorded in Evidence, because if
   this test ever flakes it flakes toward a false pass, and the control is what
   proves it can fail.
+- `scripts/smoke_npm_package.sh` — two cases on the `npm install -g` lane, added
+  after validation at the Navigator's direction instead of being captured: step 5
+  gains `mirror --help | true` (exit 0, empty stderr) through the installed bin and
+  its loader shim; a step 10b, placed after "no hook recorded a failure" on
+  purpose, runs `mirror-hook claude:session-start | true` and asserts exit 0, empty
+  stderr, and exactly one `hooks.log` line naming `stdout closed early`.
 - `REFERENCE.md` — no section documents exit codes or pipes; untouched.
 
 **Acceptance.**
@@ -240,11 +246,12 @@ passing.
 reader closes is abandoned; `EBADF` cannot occur; libuv's Windows mapping of
 `ERROR_BROKEN_PIPE` to `EPIPE`.
 
-**Not captured, the Navigator's call:** the package smoke
-(`scripts/smoke_npm_package.sh`) exercises the published layout's bins and could
-carry one `| true` line so the handler is proven on the `npm install -g` path too —
-the loader shim is the only difference, and it is upstream of `runAsEntry`, so the
-risk is small. Nothing else found.
+**Found and fixed in this CR, at the Navigator's direction (2026-10-20):** the
+package smoke (`scripts/smoke_npm_package.sh`) now proves the handler on the
+`npm install -g` lane too — the loader shim is the one thing that lane has that
+the checkout's tests do not. Run after the change: 76 passed, 0 failed, both new
+cases included (`mirror --help | true` exit 0 and silent; `mirror-hook … | true`
+exit 0, silent, one `hooks.log` line). Nothing else found.
 
 ## Outcome
 

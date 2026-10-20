@@ -196,6 +196,13 @@ contains "release-notes pending names the package's channel as its source" "$PEN
 contains "release-notes pending says it could not check, not none" "$PENDING_OUT" "Pending releases: unknown"
 contains "and its reason is the registry read, through the npm stub" "$PENDING_OUT" "Reason: npm stub: the smoke does not reach the registry"
 check "release-notes pending exits 1 when it could not check" "$PENDING_CODE" "1"
+# CR148: a reader that closes without reading -- `| true`, not `| head -1`,
+# whose first line arrives before the 2 KB usage leaves the pipe buffer. The
+# installed bin runs through the loader shim, which is the one thing this
+# lane has that the checkout's tests do not; the handler sits below it.
+mirror --help 2>"$WORK/pipe.err" | true
+check "mirror --help | true exits 0 (the reader asked us to stop)" "${PIPESTATUS[0]}" "0"
+check "and writes nothing to stderr (no EPIPE, no stack trace)" "$(wc -c <"$WORK/pipe.err" | tr -d ' ')" "0"
 
 say "6. a database that needs migration 017, opened through the installed package"
 if [ -z "$REAL_SQLITE" ]; then
@@ -262,6 +269,18 @@ check "mirror mcp wrote nothing to stderr" "$(wc -c <"$WORK/mcp-direct.err" | tr
 
 say "10. no hook recorded a failure"
 if [ -f "$HOOKS_LOG" ]; then bad "hooks.log exists: $(cat "$HOOKS_LOG")"; else ok "no hooks.log in smokeuser's home"; fi
+
+# CR148: a runtime that gives up on a hook closes its pipe. The hook must not
+# answer with a stack trace and exit 1 -- the one exit code it promises never
+# to return -- but with exit 0 and one line in hooks.log. After step 10 on
+# purpose: this is the only failure the smoke records, and it records it
+# because the hook did.
+say "10b. a hook whose reader closed early exits 0 and leaves one line"
+mirror-hook claude:session-start </dev/null 2>"$WORK/hook-pipe.err" | true
+check "mirror-hook \| true exits 0" "${PIPESTATUS[0]}" "0"
+check "and writes nothing to stderr" "$(wc -c <"$WORK/hook-pipe.err" | tr -d ' ')" "0"
+contains "and hooks.log names it" "$(cat "$HOOKS_LOG" 2>/dev/null)" "claude:session-start: stdout closed early"
+check "exactly one line" "$(wc -l <"$HOOKS_LOG" 2>/dev/null | tr -d ' ')" "1"
 
 say "11. nothing reached for an interpreter"
 if grep -rq "INTERPRETER SPAWNED" "$WORK"/*.err 2>/dev/null; then
