@@ -164,7 +164,8 @@ US$ 0.0022 for the five `consult` calls. No evidence file carries the key's valu
 
 **Step 6 — clean, then untouched.** `clean` removed the scratch directory and every
 borrowed login and named the keychain entry Claude Code's scratch login left
-(`Claude Code-credentials-c0973ed6`, the Navigator's to remove). `untouched` 2 passed:
+(`Claude Code-credentials-c0973ed6`; deleted at the Navigator's direction the same
+evening, verified absent). `untouched` 2 passed:
 every entry of the baseline set but one hashes as before, and both real homes'
 conversation counts are unmoved (1611, 1309); `~/.claude.json` changed at 23:13:28
 local, a time no route Claude session ran at, and names no path of this route — the
