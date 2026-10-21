@@ -526,6 +526,6 @@ sqlite3 ~/.mirror-minds/<user>/memory.db \
 The home's dated backups and its pre-write backup hold the same rows. Removing them
 is CR154.
 
-**Owed to the release that carries it** ([Rollout](#rollout)): the note's behavior
-change, the selector above, and the instruction to update every install that has a
-home.
+**Carried by [v0.36.1](../../../releases/v0.36.1.md)**, a patch release, as the review
+recommended ([Rollout](#rollout)): its note states the behavior change, the selector
+above, and the instruction to update every install that has a home.

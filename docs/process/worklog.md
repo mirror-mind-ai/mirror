@@ -12,6 +12,18 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-10-21 — v0.36.1 released: A Home Keeps Only Its Own Pi Sessions
+
+Patch release of one Change Request, CR153, cut the day it closed, as its review
+recommended: the defect shipped in 0.36.0, any machine with two homes had it, and the
+only protection was an advanced setting. Session maintenance imports no Pi session; a
+home's Pi conversations are the ones the Pi extension logged into it, and
+`PI_SESSIONS_DIR` is inert. The note shows how to list what an earlier version
+imported, says the backups hold the same rows, and asks everyone with more than one
+home to update every install. No migration. On the maintainer's machine the
+production home runs the published package, so it is protected from the day this
+release is installed there.
+
 ### 2026-10-21 — CR153: session maintenance imports no Pi session
 
 The Pi backfill walked Pi's session directory and imported every file a home did not
