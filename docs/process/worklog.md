@@ -21,6 +21,10 @@ home logged live there, and `remove` deletes the ones named, a dry run until
 `--apply`, which verifies a backup first. `discard-current` no longer fails on a
 conversation a Soul Mode integration names. No migration. The two real homes on the
 maintainer's machine are cleaned with it once the production install carries it.
+Tag and `stable` pushed; CI green on the promoted commit; the trusted-publisher
+stage approved; `latest` and `stable` at 0.36.2; GitHub Release published; the
+production install updated through `runtime update` (backup verified, nothing to
+migrate, status ready).
 
 ### 2026-10-21 — CR154: a home lists and removes the Pi conversations it imported
 
