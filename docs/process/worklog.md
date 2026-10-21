@@ -12,6 +12,22 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-10-21 — CR154: a home lists and removes the Pi conversations it imported
+
+`mirror conversations imported` shows what an earlier version imported rather than
+logged, one line per folder the session came from, beside how many Pi sessions the
+home logged live there — the number that tells another home's work from this home's
+own gaps. `remove` takes ids or one exact folder; it is a dry run until `--apply`,
+which takes and verifies a dated backup, then removes in one transaction that decides
+the set again. Reviewed through five personas before approval; the blocker they found
+is fixed with it: the deletion `discard-current` used missed `identity_integrations`,
+so it failed on any conversation a Soul Mode integration named, and one module now
+decides all six referencing tables, with a schema test for a seventh. Strict parsing,
+shared with `backup` and `repair-encoding`, keeps a typo from widening a removal.
+Validated by the Navigator on a scratch copy of the development home: 418
+conversations from the production workspace's folder removed, and nothing else moved.
+Not yet released; the clean-up of the real homes is the Navigator's to run.
+
 ### 2026-10-21 — v0.36.1 released: A Home Keeps Only Its Own Pi Sessions
 
 Patch release of one Change Request, CR153, cut the day it closed, as its review

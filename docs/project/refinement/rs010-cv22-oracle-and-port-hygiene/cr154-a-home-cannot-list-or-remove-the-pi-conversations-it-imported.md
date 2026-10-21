@@ -86,8 +86,12 @@ Reviewed 2026-10-21 through five lenses at the Navigator's request ([record
 below](#review-2026-10-21)); one blocker and every other finding folded into the plan
 at the Navigator's direction. Plan approved 2026-10-21 → `planned`. Started the same
 day: Driver `@viniciusteles`, Delivery `main` → `in_progress`. Implemented the same
-day, test first ([evidence below](#implementation-evidence-2026-10-21-driver));
-awaiting the Navigator's validation route.
+day, test first ([evidence below](#implementation-evidence-2026-10-21-driver)).
+Navigator validation route run by @viniciusteles the same day, every step observed as
+stated ([record](#navigator-validation-2026-10-21-viniciusteles)) → `validated`.
+Debt reviewed the same day — no debt in the change; what it leaves is CR096's, or
+the Navigator's to decide ([record](#debt-review-2026-10-21)) — and closed at the
+Navigator's direction → `done`.
 
 ### Review, 2026-10-21
 
@@ -338,6 +342,67 @@ folder exactly as the listing prints it", which after a removal read as if the p
 had mistyped; it now says the home has no imports from that folder and that the
 listing names the folders that do.
 
+### Navigator validation (2026-10-21, @viniciusteles)
+
+The route, through the checkout's binary by path at `e93b1f3d`, on a scratch home
+unzipped from a fresh archive of the development home (`memory_20261021_185142.zip`):
+
+1. Before: `conversations 1327 · messages 36573 · live Pi 689 · memories 1123
+   · provider calls 1349`. The listing: 515 imports (26,148 messages), folders only,
+   the production workspace's first with 418 imported and 272 logged live, and
+   `(unknown)` last with 5.
+2. `--project desktop-app`: one folder, its 9 conversations with date, id, message
+   count, and title — test prompts a validation route had run that morning, imported
+   into the development home before v0.36.1.
+3. `--projet`, a typo: the usage and `unrecognized arguments: --projet`, `exit=2`; the
+   counts unchanged.
+4. The dry run of the production workspace's folder: 418 conversations, 21,901
+   messages, "Nothing was removed.", and the apply command for the same database.
+5. `--apply`: the archive verified, 418 removed. After: `conversations 909 · messages
+   14672 · live Pi 689 · memories 1123 · provider calls 1349` — down by exactly
+   418 and 21,901, the rest unchanged.
+6. The listing again: 97 imports, the production workspace's folder gone.
+7. The scratch home removed.
+
+Accepted by the Navigator: "It's validated."
+
+### Debt review (2026-10-21)
+
+**Proportionality.** `e93b1f3d` touches 17 files, 1,825 insertions against 54
+deletions, most of it tests (931 lines in four new test files). The product side is
+four small modules — the deletion (45 lines), the module (288), the route (337), the
+shared parser (59) — and a dozen lines each in `routing.ts`, `cli.ts`, and
+`logger.ts`. Nothing new is stored: no table, no migration, no setting. The removal
+reuses the deletion `discard-current` already ran, and the backup the repair commands
+already gate on. Proportionate.
+
+**No debt in the change.** What it leaves is recorded, not owed:
+
+- `conversations <options> imported` renders the plain listing and removes nothing,
+  because the listing's parser ignores what it does not know. That is
+  [CR096](../rs009-cv22-front-door-routing-correctness/cr096-conversations-lists-instead-of-appending-when-options-come-first.md)'s
+  class, open in RS009, and the failure is the safe one.
+- Two test fixtures hand-build the tables the deletion touches, so a seventh
+  referencing table will make them fail with `no such table` until they gain it. The
+  failure is loud, and the schema test names the table first.
+- Nothing reaches a person until a release carries it. The note for that release
+  replaces v0.36.1's SQL selector with this command.
+- The clean-up of the two real homes is the Navigator's decision, made with this
+  command, its dry run first.
+
+**The CI smokes**, which `npm test` does not run, were run before closing and are
+listed in the implementation evidence; `smoke_claude_plugin.sh`'s negative probe
+failed as CR142 records, and nothing else did.
+
 ## Outcome
 
-Open.
+**Done 2026-10-21.** `mirror conversations imported` lists the Pi conversations an
+earlier version imported rather than logged, one line per folder their session came
+from, beside how many Pi sessions the home logged live there; `--project` lists a
+folder's conversations. `remove` takes ids or a whole folder, is a dry run until
+`--apply`, and `--apply` takes and verifies a dated backup before it removes, in one
+transaction that decides the set again. The review's blocker is fixed with it: one
+deletion for a conversation, deciding all six tables that reference one, so
+`discard-current` no longer fails on a conversation a Soul Mode integration names.
+Validated by the Navigator on a scratch copy of the development home. On `main` in
+`40a4fc89` (the review, the approval) and `e93b1f3d` (the change); not yet released.
