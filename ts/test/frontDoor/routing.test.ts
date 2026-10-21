@@ -493,6 +493,21 @@ test("conversations listing still routes to TS", () => {
   assert.equal(routeMemoryCommand(["conversations", "--limit", "5"], {}).engine, "ts");
 });
 
+test("conversations imported routes on its own entry, its apply named apart (CR154)", () => {
+  // The `append` lesson, applied before the fact: a subcommand of a claimed
+  // family resolves through its own entry, or the listing answers it.
+  const listing = routeMemoryCommand(["conversations"], {});
+  const imported = routeMemoryCommand(["conversations", "imported"], {});
+  assert.equal(imported.engine, "ts");
+  assert.equal(imported.reason, "CR154 conversations imported");
+  assert.notEqual(imported.reason, listing.reason);
+  const dryRun = routeMemoryCommand(["conversations", "imported", "remove", "--all"], {});
+  assert.equal(dryRun.reason, "CR154 conversations imported");
+  const apply = routeMemoryCommand(["conversations", "imported", "remove", "--all", "--apply"], {});
+  assert.equal(apply.engine, "ts");
+  assert.equal(apply.reason, "CR154 conversations imported remove --apply");
+});
+
 // --- CV22.DS7.TS3: the daily-visible tail ---------------------------------
 
 test("welcome routes to TS", () => {

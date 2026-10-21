@@ -13,6 +13,7 @@
 import { closeSync, existsSync, mkdirSync, openSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { isCommandTurn } from "#conversation/commandTurn.ts";
+import { deleteConversation } from "#conversation/conversationDeletion.ts";
 import { markCloseTailPending } from "#conversation/deferredCloseTail.ts";
 import {
   lastAssistantMessageOf,
@@ -453,25 +454,10 @@ export async function endSession(
 }
 
 /**
- * Python `ConversationService.delete_conversations` for one resolved id:
- * extracted memories survive with a nulled FK rather than cascading away.
+ * Python `discard_current_conversation`: delete and mark the session discarded.
+ * The deletion is `conversationDeletion.ts`'s, shared with CR154's removal of
+ * imported Pi conversations.
  */
-function deleteConversation(db: WritableDatabase, conversationId: string): void {
-  db.prepare("DELETE FROM messages WHERE conversation_id = ?").run(conversationId);
-  db.prepare("DELETE FROM conversation_embeddings WHERE conversation_id = ?").run(conversationId);
-  db.prepare("UPDATE memories SET conversation_id = NULL WHERE conversation_id = ?").run(
-    conversationId,
-  );
-  db.prepare("UPDATE llm_calls SET conversation_id = NULL WHERE conversation_id = ?").run(
-    conversationId,
-  );
-  db.prepare("UPDATE runtime_sessions SET conversation_id = NULL WHERE conversation_id = ?").run(
-    conversationId,
-  );
-  db.prepare("DELETE FROM conversations WHERE id = ?").run(conversationId);
-}
-
-/** Python `discard_current_conversation`: delete and mark the session discarded. */
 export function discardCurrentConversation(
   db: WritableDatabase,
   sessionId: string | null,

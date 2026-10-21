@@ -27,47 +27,13 @@ import {
   scanDatabase,
 } from "#repair/encodingRepair.ts";
 import { expandHome } from "#util/paths.ts";
+import { parseArgs } from "#util/strictArgs.ts";
 import { MirrorHomeNotConfiguredError } from "./dbPath.ts";
 
 const BACKUP_USAGE =
   "usage: backup [-h] [--silent] [--mirror-home MIRROR_HOME] [--backup-dir BACKUP_DIR]";
 const REPAIR_USAGE =
   "usage: repair-encoding [-h] [--mirror-home MIRROR_HOME] [--apply] [--no-backup] [--limit LIMIT]";
-
-interface ParsedArgs {
-  flags: Set<string>;
-  values: Map<string, string>;
-  error: string | null;
-}
-
-/** argparse-shaped parsing: known flags, known valued options, nothing else. */
-function parseArgs(
-  args: readonly string[],
-  spec: { flags: readonly string[]; valued: readonly string[] },
-): ParsedArgs {
-  const flags = new Set<string>();
-  const values = new Map<string, string>();
-  const unrecognized: string[] = [];
-  for (let index = 0; index < args.length; index += 1) {
-    const arg = args[index] as string;
-    if (spec.flags.includes(arg)) {
-      flags.add(arg);
-    } else if (spec.valued.includes(arg)) {
-      const value = args[index + 1];
-      if (value === undefined)
-        return { flags, values, error: `argument ${arg}: expected one argument` };
-      values.set(arg, value);
-      index += 1;
-    } else {
-      unrecognized.push(arg);
-    }
-  }
-  return {
-    flags,
-    values,
-    error: unrecognized.length > 0 ? `unrecognized arguments: ${unrecognized.join(" ")}` : null,
-  };
-}
 
 function usageError(usage: string, program: string, message: string): number {
   process.stderr.write(`${usage}\n${program}: error: ${message}\n`);

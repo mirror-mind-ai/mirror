@@ -63,6 +63,7 @@ the bare `/mm-<skill>` and qualifies a skill only when two share a name; the
 | `/mm-recall` | `$mm-recall` | `/mm:recall` | Loads a previous conversation into context | `<conversation_id> [--limit N]` |
 | `/mm-conversations` | `$mm-conversations` | `/mm:conversations` | Lists recent conversations | `--limit N`, `--journey J`, `--persona P` |
 | `mirror conversations append` | — | — | Atomically appends an explicit bounded user/assistant batch to one exact conversation | `--mirror-home PATH --format json`, JSON stdin |
+| `mirror conversations imported` | — | — | Lists the Pi conversations an earlier version imported rather than logged, by folder, and removes the ones you name after a verified backup | `[--project TEXT]`, `remove (ID... \| --all [--project FOLDER]) [--apply]`, `--mirror-home PATH`, `--db-path PATH` |
 | `/mm-backup` | `$mm-backup` | `/mm:backup` | Backs up the memory database | no arguments |
 | `/mm-seed` | `$mm-seed` | `/mm:seed` | Seeds identity files from the active user home into the database | no arguments |
 | `/mm-mute` | `$mm-mute` | `/mm:mute` | Toggles conversation logging | no arguments |
@@ -165,6 +166,52 @@ only conversation/Journey identity, counts, and validated message IDs with
 `duplicate_request_message_id`, `idempotency_conflict`, and
 `persistence_failure`. Receipts never echo message content, caller metadata,
 private paths, environment values, or raw exceptions.
+
+## Imported Pi Conversations
+
+```bash
+mirror conversations imported [--project TEXT]
+mirror conversations imported remove (ID ... | --all [--project FOLDER]) [--apply]
+```
+
+Until v0.36.1, session maintenance copied Pi session files into the home and
+imported each as a closed conversation; on a machine with more than one home,
+each home took the others' sessions. Since v0.36.1 nothing is imported (CR153).
+This command shows what an earlier version imported, and removes what you name
+(CR154).
+
+An import is a Pi conversation that started at or after its own last message: the
+import stamped `started_at` when it copied the session and `ended_at` from the
+session's last message. Both timestamps must carry a zone; a conversation with a
+zone-less timestamp is never treated as an import.
+
+The listing is read-only. It gives the totals and one line per folder, the
+directory the session file lived in (from the path the home stored, with Pi's
+wrapping dashes removed; no Pi file is read), with how many conversations were
+imported from it and how many Pi sessions this home logged live from it. Imports
+from a folder where the home logged nothing live are most likely another home's;
+in a home made by copying another, the copied rows count as its own and blur that
+number. Imports with no session row are listed as `(unknown)`. `--project TEXT`
+narrows the listing to the folders whose name contains TEXT and lists their
+conversations, newest import first.
+
+`remove` names conversations by id (the full id, or a prefix of at least eight
+characters that matches exactly one conversation), or `--all`, optionally narrowed
+to one folder by `--project FOLDER`, written exactly as the listing prints it. A
+live conversation, an unknown id, an ambiguous or too-short prefix, or a folder
+with no imports refuses the whole command (exit 1), and nothing is removed. Every
+option is declared: an unrecognized one is refused with the usage (exit 2) before
+the database opens.
+
+Without `--apply`, `remove` is a dry run: it prints what it would remove and the
+exact command that applies it, to the same home. With `--apply` it takes the
+dated archive in `<mirror home>/backups/`, verifies it, and refuses if either
+fails; then, in one transaction, it decides the set again (refusing if it changed)
+and removes each import with its messages and its session row. Memories and
+provider-call records that named a removed conversation are kept, unlinked. The
+report names the backups that still hold copies: the dated archives made since the
+earliest removed import (removed after 30 days) and the front door's pre-write
+backup (replaced by the next write). Nothing deletes them but you.
 
 ## Operating Mode Lifecycle
 

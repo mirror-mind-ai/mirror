@@ -63,6 +63,8 @@ function fixture(): WritableDatabase {
     );
     CREATE TABLE conversation_embeddings (conversation_id TEXT, embedding BLOB);
     CREATE TABLE llm_calls (id TEXT PRIMARY KEY, conversation_id TEXT, role TEXT, called_at TEXT);
+    -- Every table the shared deletion unlinks must exist (CR154).
+    CREATE TABLE identity_integrations (id TEXT PRIMARY KEY, conversation_id TEXT);
   `);
   return db;
 }

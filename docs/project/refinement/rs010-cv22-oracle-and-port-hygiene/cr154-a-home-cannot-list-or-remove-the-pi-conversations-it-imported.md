@@ -85,7 +85,9 @@ before planning, read-only, counts only, on the maintainer's two homes:
 Reviewed 2026-10-21 through five lenses at the Navigator's request ([record
 below](#review-2026-10-21)); one blocker and every other finding folded into the plan
 at the Navigator's direction. Plan approved 2026-10-21 → `planned`. Started the same
-day: Driver `@viniciusteles`, Delivery `main` → `in_progress`.
+day: Driver `@viniciusteles`, Delivery `main` → `in_progress`. Implemented the same
+day, test first ([evidence below](#implementation-evidence-2026-10-21-driver));
+awaiting the Navigator's validation route.
 
 ### Review, 2026-10-21
 
@@ -263,6 +265,78 @@ CR153's measurement, 2026-10-21. `deleteConversation` in
 conversation `delete` among the front door's routes (`ts/src/frontDoor/routing.ts`).
 Until this lands, the read-only selector in CR153's plan (Behavior 6) lists a home's
 imports.
+
+### Implementation evidence (2026-10-21, Driver)
+
+**Test first.** Seen red before the code: `discard-current` on a conversation a Soul
+Mode integration names threw `FOREIGN KEY constraint failed`; the front door rendered
+`conversations imported` as the plain listing, exit 0, accepted a typo'd option the
+same way, and removed nothing on `--apply`; routing gave it the listing's entry. The
+new modules' tests were written before the modules. All green after: 3 deletion
+cases, 13 module cases, 12 route cases, 4 front-door cases, and the routing case.
+
+**What changed.**
+
+- `conversationDeletion.ts` holds the one deletion: the six referencing tables in two
+  lists, deleted (`conversation_embeddings`, `messages`) or unlinked
+  (`identity_integrations`, `llm_calls`, `memories`, `runtime_sessions`), the
+  statements built from the lists, and a test that reads the schema's foreign keys
+  against them. `discard-current` uses it and no longer fails on a Soul-integrated
+  conversation. Two test fixtures that hand-build the tables the deletion touches
+  gained `identity_integrations`.
+- `importedConversations.ts`: the predicate (`isImportShaped`, zones required), the
+  folder (`sessionFolder`), the listing, the logged-live counts, the summary, the plan
+  (`planImportRemoval`: ids by full id or an exact prefix of at least eight, matched
+  with `substr`, never as a pattern; or `--all`, of one exact folder), and the removal
+  (`removeImportedConversations`: one transaction, the set decided again and compared
+  with the one shown, each session row deleted, the conversation through the shared
+  deletion).
+- `importedConversationsRoute.ts`: strict parsing, the usage, the listing, the dry run
+  with its apply command (every value through `shellWord`, the same home's
+  `--mirror-home` or `--db-path` carried over), and the apply (decide read-only;
+  then the dated archive, verified; then the removal; then the report).
+- `strictArgs.ts`: `parseArgs`, moved from `dbSafetyToolsRoute.ts` with positionals
+  added; `backup` and `repair-encoding` parse as before.
+- `routing.ts`, `cli.ts`: the allowlisted entry, its apply named apart in the
+  front-door log; the read and live-write dispatch.
+- `REFERENCE.md`: the command's row and section.
+
+**Checks.** `npm run typecheck` clean; `biome check .` clean (676 files); `npm test`
+3417 tests, 3414 pass, 0 fail, 3 skipped (pre-existing); the suite on a PATH with no
+`mirror`: green. Repository checks clean: retired surfaces, pack contents (496
+files), doc links, skill command parity, the plugin build check. Smokes: migration
+structural parity PASS, bootstrap custody parity PASS, migrate-on-open PASS,
+conversation lifecycle all checks passed, builder lifecycle PASS, extension catalog
+PASS, `smoke_mirror_mcp.sh` PASS, `smoke_npm_package.sh` PASS.
+`smoke_claude_plugin.sh` passed every step through the plugin and failed its negative
+probe with CR142's message, as on this machine it always does.
+
+**Driver smoke through the checkout's binary**, on a scratch home unzipped from a
+fresh archive of the development home (`mirror backup`, owner-only, under `/tmp`,
+removed afterwards):
+
+1. Before: 1,327 conversations, 36,572 messages, 515 Pi imports, 689 live Pi
+   conversations, 1,123 memories, 1,348 `llm_calls` rows, 1,020 session rows.
+2. The listing: 515 imports (26,148 messages) in 22 folders and `(unknown)` (5), the
+   production workspace's folder first with 418 imported and 272 logged live, as
+   measured before planning. Four of the folders are the backfill golden's fixture
+   directories, CR153's five frozen-clock imports.
+3. A typo'd `--projet` refused, exit 2; `--project mirror`, a substring, refused,
+   exit 1; nothing changed.
+4. The dry run of the production workspace's folder: 418 conversations, 21,901
+   messages, and the apply command for the same database.
+5. `--apply`: the archive written and verified, 418 removed. After: 909
+   conversations, 14,671 messages, 602 session rows (each down by exactly what was
+   removed); 689 live Pi conversations, 1,123 memories, and 1,348 `llm_calls` rows
+   unchanged. The report named the archive and the pre-write backup.
+6. The same folder again: refused, nothing to name. `--all`: the other 88 (4,229
+   messages, 21 folders). `--all` again: `Nothing to remove.` The listing: `No
+   imported Pi conversations in this home.` The plain listing still answers.
+
+One message changed on the way: a folder with no imports first answered "give the
+folder exactly as the listing prints it", which after a removal read as if the person
+had mistyped; it now says the home has no imports from that folder and that the
+listing names the folders that do.
 
 ## Outcome
 

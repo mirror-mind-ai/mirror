@@ -22,6 +22,7 @@
 import { accessSync, constants, existsSync, readFileSync } from "node:fs";
 import { basename, dirname } from "node:path";
 import { pathToFileURL } from "node:url";
+import { createZipBackup } from "#backup/zipBackup.ts";
 import {
   AppendRejectedError,
   type AppendRejectionReason,
@@ -68,6 +69,7 @@ import {
   JOURNAL_TRANSPORT,
   WEEK_PLAN_TRANSPORT,
 } from "#providers/transport.ts";
+import { verifyBackupArchive } from "#runtime/backup.ts";
 import { exitQuietlyOnBrokenPipe } from "#runtime/brokenPipe.ts";
 import {
   configFilePath,
@@ -107,6 +109,10 @@ import { runBackupRoute, runRepairEncodingRoute } from "./dbSafetyToolsRoute.ts"
 import { defaultExploreRouteDeps, runExploreRoute } from "./exploreRoute.ts";
 import { frontDoorLogPath, logFrontDoor } from "./frontDoorLog.ts";
 import { applyIdentitySet } from "./identityWrite.ts";
+import {
+  isImportedConversationsCommand,
+  runImportedConversationsRoute,
+} from "./importedConversationsRoute.ts";
 import { applyJourneySetPath } from "./journeyWriteRoute.ts";
 import { openLiveWriteDatabase } from "./liveBackup.ts";
 import {
@@ -1759,6 +1765,22 @@ async function dispatchTs(argv: readonly string[]): Promise<number | DispatchOut
   if (argv[0] === "soul") return runSoulWrite(argv);
   if (argv[0] === "explore") return runExploreWrite(argv);
   if (isConversationsAppend(argv)) return runConversationsAppend(argv);
+  // CR154: allowlisted by name, like `append`, so the listing never answers it.
+  // The listing and the dry run read; `--apply` writes behind the pre-write
+  // backup, after its own dated, verified archive.
+  if (isImportedConversationsCommand(argv)) {
+    return runImportedConversationsRoute(argv, {
+      withReadOnlyDatabase: (read) => withMirrorReadDb(argv, read),
+      withLiveWriteDatabase: (write) => {
+        const dbPath = resolveDbPathForCli(argv.slice(1));
+        if (dbPath === null) return 2;
+        return withLiveWriteDbAt(dbPath, "conversations", (db) => write(db, dbPath));
+      },
+      backup: (dbPath) =>
+        createZipBackup({ dbPath, mirrorHome: dirname(dbPath), backupDir: null, silent: true }),
+      verifyBackup: (archive) => verifyBackupArchive(archive),
+    });
+  }
   // CV22.DS7.TS1: the DB safety tools. `backup` never opens or bootstraps the
   // database; `repair-encoding --apply` rides the live-write seam.
   if (argv[0] === "backup") {

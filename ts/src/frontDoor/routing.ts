@@ -579,6 +579,18 @@ export function routeByFamily(
         reason: "DS7.US10 conversations append boundary ported to TS",
       };
     }
+    // CR154: allowlisted by name for the same reason, before it shipped. Its
+    // apply is named apart, so the front-door log tells a removal from a look.
+    if (argv[1] === "imported") {
+      const applying = argv[2] === "remove" && argv.includes("--apply");
+      return {
+        command,
+        engine: "ts",
+        reason: applying
+          ? "CR154 conversations imported remove --apply"
+          : "CR154 conversations imported",
+      };
+    }
     const writeFlag = TS4_LIFECYCLE_WRITE_FLAGS.find((flag) => argv.includes(flag));
     if (writeFlag) {
       return { command, engine: "ts", reason: `DS7.TS4 ${writeFlag} ported to TS` };
