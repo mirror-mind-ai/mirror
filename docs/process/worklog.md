@@ -12,6 +12,23 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-10-21 — CR153: session maintenance imports no Pi session
+
+The Pi backfill walked Pi's session directory and imported every file a home did not
+track. Measured read-only on the maintainer's two homes before planning: 543
+conversations each had taken from the other since July, each titled again through the
+provider, while the gap the walk existed to fill came up once in three months. The
+Navigator chose to retire it over a claim table or a mark in Pi's files, after a
+review through six personas, every finding folded in. A home's Pi conversations are
+now the ones the Pi extension logged into it; the backfill, its import seam, and
+CR121's birth floor are deleted, `PI_SESSIONS_DIR` is inert, and a retired-surfaces
+row keeps them gone. Test first: three cases red on the old code, green after. The
+Navigator's route put the published 0.36.0 beside the checkout on the same synthetic
+session and on the real Pi history, and ran a live Pi session against a scratch home.
+Captured from the review: CR154, CR155, CR156. The production home on this machine
+runs the published package, so it is protected only once a release carries the
+change.
+
 ### 2026-10-20 — CV21.DS5.US3: `review-copy` on every runtime, measured live
 
 The per-home plugin proven on the thing it was chosen for, from the registry's

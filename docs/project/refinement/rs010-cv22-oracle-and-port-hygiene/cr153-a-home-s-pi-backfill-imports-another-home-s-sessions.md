@@ -123,8 +123,12 @@ below](#review-2026-10-21)); every finding folded into the plan at the Navigator
 direction, and three follow-ups captured: CR154, CR155, CR156. Plan approved
 2026-10-21 → `planned`. Started the same day: Driver `@viniciusteles`, Delivery
 `main` → `in_progress`. Implemented the same day, test first
-([evidence below](#implementation-evidence-2026-10-21-driver)); awaiting the
-Navigator's validation route.
+([evidence below](#implementation-evidence-2026-10-21-driver)). Navigator validation
+route run by @viniciusteles the same day, every step observed as stated after one
+re-run of step 3 ([record](#navigator-validation-2026-10-21-viniciusteles)) →
+`validated`. Debt reviewed the same day — no debt in the change, three follow-ups
+already captured ([record](#debt-review-2026-10-21)) — and closed at the
+Navigator's direction → `done`.
 
 ### Review, 2026-10-21
 
@@ -437,6 +441,90 @@ root:
 Step 4, a live Pi session against a scratch home, is the Navigator's. The scratch root
 was removed.
 
+### Navigator validation (2026-10-21, @viniciusteles)
+
+The route, against the checkout's binary by path (`Install: clone`, at `5f7e5cc7`) and
+the published `mirror-mind@0.36.0` (`Install: package`), in scratch homes under one
+temporary root:
+
+1. The control: `Backfilled Pi sessions: 1`, then `Retitled pending conversations: 1
+   (1.7s)`; `conversations` listed "Line from another home", 2 messages.
+2. The change, same setup: the four step lines, no `Backfilled`; `No conversations
+   found.`
+3. First run inconclusive: the birth marker's `touch` was skipped, so `find` reported
+   no such file and counted 0 — by the route's own rule, proof of nothing, though
+   maintenance imported nothing. Re-run, self-contained: 1 Pi session file written
+   after the scratch home's birth (this CR's own conversation, a message sent for the
+   purpose), the four step lines, `No conversations found.`
+4. Live Pi in the checkout against the scratch home, its session under the scratch
+   root (`pi --session-dir`), one exchange: `Conversation maintenance complete` 1,
+   `Backfilled` 0; `conversations` listed one conversation of 2 messages, "Greeting
+   exchange".
+5. The scratch root removed.
+
+Accepted by the Navigator: "Validated."
+
+### Debt review (2026-10-21)
+
+**Proportionality.** The change deletes more than it adds: `5f7e5cc7` touches 36
+files, 326 insertions against 1,006 deletions. Two source modules (361 lines) go with
+their tests and fixtures; one guard row and its tests, three test cases, and the docs
+come in. Nothing new is modeled — no table, no migration, no setting.
+Proportionate.
+
+**Debt left on purpose, captured:**
+
+- [CR154](cr154-a-home-cannot-list-or-remove-the-pi-conversations-it-imported.md) —
+  the copies an earlier version imported stay until a person can list and remove
+  them; until then the selector in the Outcome lists them.
+- [CR155](cr155-runtime-diagnose-does-not-read-the-pi-extension-s-error-lines.md) —
+  a session whose logging never reached the core is now missing without a word, where
+  the import used to bring it in; `runtime diagnose` should say so.
+- [CR156](cr156-a-home-made-by-copying-another-s-database-is-the-same-home-twice.md) —
+  a copied home is the same home twice; the docs should say so.
+
+**Recorded, not owed:**
+
+- The backfill golden keeps its `pi_sessions` section, frozen and untyped beside
+  `codex`, by CV21.DS4.TS5's precedent.
+- The protection reaches a home only through an install that carries it. On the
+  maintainer's machine the production home runs the published package, so it keeps
+  importing the development home's sessions until a release is installed there
+  ([Rollout](#rollout)). The release is the Navigator's decision; its note owes the
+  behavior change, the selector below, and the instruction to update every install
+  that has a home.
+- `smoke_claude_plugin.sh`'s negative probe failed on this machine as CR142 records;
+  CI's runner has no global `mirror-hook`.
+
+**The CI smokes**, which `npm test` does not run, were run before the push and are
+listed in the implementation evidence — the lesson of CR149's red push after Done.
+
+**Found on the way, not this CR's:** `REFERENCE.md`'s Paths table still lists
+`EXPORT_DIR` and `TRANSCRIPT_EXPORT_DIR`, which the configuration reference records as
+inert since CV22.DS10.TS5. Not captured; offered to the Navigator.
+
 ## Outcome
 
-Open.
+**Done 2026-10-21.** Session maintenance imports no Pi session: a home's Pi
+conversations are the ones the Pi extension logged into it, as they happened. The
+backfill, the import seam only it still used, and CR121's birth floor are deleted;
+`PI_SESSIONS_DIR` is inert; the `pi-session-backfill` row keeps them gone. Validated
+by the Navigator, the real Pi history included: the published 0.36.0 took another
+home's session in the setup the change left alone. Shipped on `main` in `9e1ed81b`
+(the review, the approval, the captures) and `5f7e5cc7` (the change).
+
+**To see what an earlier version imported into a home,** read-only:
+
+```bash
+sqlite3 ~/.mirror-minds/<user>/memory.db \
+  "SELECT id, title, started_at FROM conversations
+    WHERE interface = 'pi' AND julianday(started_at) >= julianday(ended_at)
+    ORDER BY started_at"
+```
+
+The home's dated backups and its pre-write backup hold the same rows. Removing them
+is CR154.
+
+**Owed to the release that carries it** ([Rollout](#rollout)): the note's behavior
+change, the selector above, and the instruction to update every install that has a
+home.
