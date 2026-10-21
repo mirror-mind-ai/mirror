@@ -122,7 +122,9 @@ Reviewed 2026-10-21 through six lenses at the Navigator's request ([record
 below](#review-2026-10-21)); every finding folded into the plan at the Navigator's
 direction, and three follow-ups captured: CR154, CR155, CR156. Plan approved
 2026-10-21 → `planned`. Started the same day: Driver `@viniciusteles`, Delivery
-`main` → `in_progress`.
+`main` → `in_progress`. Implemented the same day, test first
+([evidence below](#implementation-evidence-2026-10-21-driver)); awaiting the
+Navigator's validation route.
 
 ### Review, 2026-10-21
 
@@ -381,6 +383,59 @@ memories were extracted before the scratch home was removed. The database was `0
 the copy was deleted by the route's `clean` the same evening. The real homes, both
 old and each tracking its own sessions live, show no cross-home conversations for the
 journeys concerned.
+
+### Implementation evidence (2026-10-21, Driver)
+
+**Test first, as the plan ordered.** The three cases went into `loggerCli.test.ts`
+before anything else changed, and against the code before the change all three
+failed — 3 of 3 — each the same way: the foreign session imported
+(`Backfilled Pi sessions: 1`) and titled in the same run
+(`Retitled pending conversations: 1`), from the default directory, from a
+`PI_SESSIONS_DIR`, and through the full `session-start`. After the removal: 3 of 3
+pass.
+
+**What changed.** `backfill.ts` and `sessionImport.ts` deleted, with
+`backfill.test.ts`, `homeBornAt.test.ts`, and the `pi-sessions` fixtures. The
+maintenance step and `MaintenanceDeps.backfillPiSessions` gone; the logger runtime
+holds no Pi sessions directory. `backfillFixture.ts` lost its Pi-only parts, and the
+backfill golden's `pi_sessions` section stays frozen and untyped beside `codex`. The
+session-composite golden lost the line from all eight maintenance reports and their
+steps — the recorded Python report, diverged from on purpose. The ledger comment, the
+transcript backfill's `getOr` comment, and the `conversation-metadata-backfill` comment
+say what is true now. The `pi-session-backfill` row and its tests; the `codex-wrapper`
+row's exemption for the deleted file gone. `REFERENCE.md`, the configuration
+reference's inert values, `.env.example.advanced`, Getting Started, and decisions.md
+(the new decision, and the CR121 one marked superseded).
+
+**Checks.** `npm run typecheck` clean; `biome check .` clean (668 files); `npm test`
+3384 tests, 3381 pass, 0 fail, 3 skipped (pre-existing); the suite on a PATH with no
+`mirror`: green. Repository checks clean: retired surfaces (with
+`pi-session-backfill`), pack contents (491 files), doc links, skill command parity,
+the plugin build check. Smokes: migration structural parity PASS, bootstrap custody
+parity PASS, migrate-on-open PASS, conversation lifecycle all checks passed, builder
+lifecycle 60/60, extension catalog PASS, `smoke_mirror_mcp.sh` PASS,
+`smoke_npm_package.sh` 76 passed, 0 failed. `smoke_claude_plugin.sh` passed every step
+through the plugin's hooks and its MCP entry, then failed its negative probe with
+[CR142](cr142-the-plugin-smoke-s-negative-probe-fails-on-a-machine-with-a-global-mirror-hook.md)'s
+own message — this machine has a global `mirror-hook` in `/opt/homebrew/bin`.
+Pre-existing and open; CI's runner has none.
+
+**Driver smoke through the real binaries,** the route's steps 1 to 3, under one scratch
+root:
+
+1. The control, `mirror-mind@0.36.0` (`Install: package`): `Backfilled Pi sessions:
+   1`, then `Retitled pending conversations: 1` — one `conversation_title` call,
+   US$ 0.00003 — and `conversations` lists "Line from another home".
+2. The checkout (`Install: clone`), same setup: the four step lines, no `Backfilled`,
+   no `pi` conversation.
+3. The real Pi history, no pin: one session file written after the scratch home's
+   birth — this very session — and nothing imported: no `pi` conversation, no `pi`
+   runtime session, `No conversations found.` A first attempt inside a single command
+   counted 0 files: Pi writes a session at message boundaries, which is why the route
+   asks for a message in an open session before it counts.
+
+Step 4, a live Pi session against a scratch home, is the Navigator's. The scratch root
+was removed.
 
 ## Outcome
 

@@ -469,3 +469,8 @@ for one that is armed. The `*_REPLAY` variables above are **not** among them.
 **The web preferences file.** `<mirror-home>/web/preferences.json` was read
 only by the retired web console. Mirror leaves it where it is and reads nothing
 from it.
+
+**The Pi sessions directory.** `PI_SESSIONS_DIR` named where session maintenance
+looked for Pi session files to import. Since CR153 maintenance imports none: a
+home's Pi conversations are the ones the Pi extension logged into it, as they
+happened, and nothing reads Pi's session files.

@@ -548,13 +548,10 @@ export const MIGRATIONS: readonly (readonly [string, MigrationApply])[] = [
  * contract.
  */
 export function runMigrations(db: WritableDatabase): void {
-  // The ledger has a second reader: `homeBornAt` (conversation/backfill.ts,
-  // CR121) takes MIN(applied_at) as the instant this home was born, and
-  // session maintenance imports only the Pi sessions newer than it. Never
-  // rewrite history here -- no re-stamping, no squash that deletes rows and
-  // re-inserts them with a later date. Retiring a migration id moves the
-  // minimum forward at worst, which imports less; re-stamping could move it
-  // and would be a lie about the home's age.
+  // The ledger records which migrations ran, and when -- nothing more. Do not
+  // infer a home's birth from its first `applied_at`: a database copied to
+  // make a second home carries its source's ledger, so two homes would share
+  // one birth (CR153 retired the reader that did, CR156 records the copy).
   db.exec(`
     CREATE TABLE IF NOT EXISTS _migrations (
         id TEXT PRIMARY KEY,

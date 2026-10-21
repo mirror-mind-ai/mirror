@@ -234,9 +234,9 @@ Then use mirror commands:
 
 Pi is the preferred harness because it makes Mirror Mind effectively multi-model.
 
-If you used Pi before installing Mirror, your earlier sessions stay where they are:
-Mirror remembers what happens from the moment your home exists, and imports no Pi
-conversation that ended before it.
+Mirror records a Pi session as it happens, in the home that session runs against. It
+never imports Pi sessions afterwards: not your history from before Mirror, not
+sessions you run without it, and not another home's.
 
 
 ### Codex

@@ -48,12 +48,6 @@ export interface MaintenanceDeps {
    * only for callers written before the step existed; the front door wires it.
    */
   finalizeCloseTail?: (db: WritableDatabase, conversationId: string) => Promise<void> | void;
-  /**
-   * `backfillPiSessions` (slice E) bound to its resolved sessions directory.
-   * Injected rather than resolved here so the composite never reads the
-   * environment itself; the front door owns that resolution.
-   */
-  backfillPiSessions: (db: WritableDatabase) => Promise<number> | number;
   /** Python's `MEMORY_MAINTENANCE_MAX_EXTRACTIONS` (AI-05); defaults to the released budget. */
   extractionLimit?: number;
   /** `MIRROR_STALE_ORPHAN_MINUTES` (CV21.DS4.US4); defaults to the 30-minute threshold. */
@@ -231,6 +225,11 @@ function formatElapsed(elapsed: number): string {
  * warning tails. The step order is behavior, not presentation — closing stale
  * orphans first is what makes their conversations eligible for the extraction
  * step in the same run.
+ *
+ * CR153: there is no Pi backfill step. Python's walked Pi's session directory
+ * and imported every file this home did not track, which on a machine with two
+ * homes meant each other's sessions; a home's Pi conversations are the ones the
+ * Pi extension logged into it, and maintenance reads no Pi session file.
  */
 export async function sessionMaintenance(
   db: WritableDatabase,
@@ -246,7 +245,6 @@ export async function sessionMaintenance(
         thresholdMinutes: deps.staleOrphanMinutes ?? STALE_ORPHAN_THRESHOLD_MINUTES,
       }),
     ),
-    await timedStep("Backfilled Pi sessions", monotonic, () => deps.backfillPiSessions(db)),
     await timedStep("Retitled pending conversations", monotonic, () =>
       retitlePendingConversations(db, { retitleConversation: deps.retitleConversation }),
     ),

@@ -170,7 +170,6 @@ function maintenanceDeps(llm: LlmProvider) {
     retitleConversation: (database: WritableDatabase, conversationId: string) =>
       maybeGenerateTitle(database, conversationId, { llm, source: "startup_maintenance" }),
     runExtraction,
-    backfillPiSessions: () => 0,
     monotonic: stubClock(),
     now: () => NOW,
   };

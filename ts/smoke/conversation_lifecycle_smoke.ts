@@ -96,7 +96,6 @@ const baseEnv: Record<string, string> = {
     "builder-load",
     "replay-embedding.json",
   ),
-  PI_SESSIONS_DIR: join(home, "absent-pi-sessions"),
 };
 // Empty, not deleted: the smoke must stay offline, and an empty key is what
 // every provider treats as "none configured".
@@ -336,7 +335,8 @@ const maintenance = step(
 );
 check(
   normalizeMaintenanceReport(maintenance.stdout.trim()).startsWith(
-    "Conversation maintenance complete.\nClosed stale conversations: 0 (<elapsed>s)\nBackfilled Pi sessions: 0 (<elapsed>s)",
+    // CR153: no Pi backfill step between the stale closes and the retitling.
+    "Conversation maintenance complete.\nClosed stale conversations: 0 (<elapsed>s)\nRetitled pending conversations: ",
   ),
   "session-maintenance renders the report in the released grammar",
   maintenance.stdout,

@@ -7,12 +7,10 @@ import { join } from "node:path";
 import type { LoggerDeps } from "#conversation/logger.ts";
 import type { WritableDatabase } from "#db/database.ts";
 
-export const BACKFILL_FIXTURES = join(import.meta.dirname, "..", "fixtures", "backfill");
-export const PI_SESSIONS_DIR = join(BACKFILL_FIXTURES, "pi-sessions");
+const BACKFILL_FIXTURES = join(import.meta.dirname, "..", "fixtures", "backfill");
 export const TRANSCRIPT_PATH = join(BACKFILL_FIXTURES, "transcript", "session.jsonl");
 
 const GOLDEN_PATH = join(import.meta.dirname, "..", "goldens", "backfill.golden.json");
-const SESSIONS_DIR_PLACEHOLDER = "<sessions_dir>";
 
 export interface MessageState {
   role: string;
@@ -58,14 +56,9 @@ export interface BackfillState {
 
 export interface BackfillGolden {
   meta: { now: string };
-  pi_sessions: {
-    first_count: number;
-    rerun_count: number;
-    absent_dir_count: number;
-    state: BackfillState;
-  };
-  // The golden's `codex` section is the retired Codex importer's frozen
-  // record (CV21.DS4.TS5); nothing reads it, so it is not typed here.
+  // The golden's `codex` and `pi_sessions` sections are the frozen records of
+  // two retired importers: the Codex one (CV21.DS4.TS5) and the Pi session
+  // backfill (CR153). Nothing reads them, so they are not typed here.
   transcript: { state: BackfillState; rerun_state: BackfillState };
   hook_session_end: { label: string; state: BackfillState }[];
 }
@@ -90,10 +83,10 @@ function nullableString(value: unknown): string | null {
 
 /**
  * The generator's `_snapshot`: conversations and sessions in rowid (insertion)
- * order with ids aliased by that order, messages in rowid order within their
- * conversation, and Pi session ids made relative to the sessions directory.
+ * order with ids aliased by that order, and messages in rowid order within
+ * their conversation.
  */
-export function snapshotState(db: WritableDatabase, pathRoot?: string): BackfillState {
+export function snapshotState(db: WritableDatabase): BackfillState {
   const conversationRows = db
     .prepare(
       "SELECT id, title, started_at, ended_at, interface, persona, journey, summary, tags, " +
@@ -106,10 +99,6 @@ export function snapshotState(db: WritableDatabase, pathRoot?: string): Backfill
   });
   const alias = (value: unknown): string | null =>
     typeof value === "string" ? (aliases.get(value) ?? value) : null;
-  const relative = (value: string): string =>
-    pathRoot && value.startsWith(`${pathRoot}/`)
-      ? `${SESSIONS_DIR_PLACEHOLDER}/${value.slice(pathRoot.length + 1)}`
-      : value;
 
   const conversations = conversationRows.map((row) => {
     const messages = db
@@ -144,7 +133,7 @@ export function snapshotState(db: WritableDatabase, pathRoot?: string): Backfill
     unknown
   >[];
   const runtimeSessions = sessionRows.map((row) => ({
-    session_id: relative(String(row.session_id)),
+    session_id: String(row.session_id),
     conversation_id: alias(row.conversation_id),
     interface: nullableString(row.interface),
     mirror_active: Number(row.mirror_active),
@@ -159,20 +148,6 @@ export function snapshotState(db: WritableDatabase, pathRoot?: string): Backfill
   }));
 
   return { conversations, runtime_sessions: runtimeSessions };
-}
-
-/**
- * The generator's `upsert_runtime_session(session_id, interface=...)` on a
- * fresh key under the frozen clock: an active, unbound session row.
- */
-export function seedTrackedSession(db: WritableDatabase, sessionId: string, iface: string): void {
-  const now = backfillGolden.meta.now;
-  db.prepare(
-    `INSERT INTO runtime_sessions
-       (session_id, conversation_id, interface, mirror_active, persona, journey,
-        hook_injected, active, started_at, updated_at, closed_at, metadata)
-     VALUES (?, NULL, ?, 0, NULL, NULL, 0, 1, ?, ?, NULL, NULL)`,
-  ).run(sessionId, iface, now, now);
 }
 
 /** The generator's `_seed_transcript_conversations`. */

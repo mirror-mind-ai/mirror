@@ -237,7 +237,7 @@ describe("the table itself", () => {
     }
   });
 
-  test("the enforced rows are TS1 through TS4's retirements, TS5's Python core, US3's Windows product, DS4.TS5's Codex wrapper, and PR #42's idiom", () => {
+  test("the enforced rows are TS1 through TS4's retirements, TS5's Python core, US3's Windows product, DS4.TS5's Codex wrapper, PR #42's idiom, DS8.US1's Gemini CLI, and CR153's Pi session backfill", () => {
     assert.deepEqual(
       ENFORCED.map((surface) => surface.surfaceId),
       [
@@ -255,6 +255,7 @@ describe("the table itself", () => {
         "codex-wrapper",
         "url-pathname-as-path",
         "gemini-cli",
+        "pi-session-backfill",
       ],
     );
   });
@@ -609,6 +610,74 @@ describe("the live gemini-cli row (CV21.DS8.US1)", () => {
 
   test("is clean against this repository", () => {
     assert.deepEqual(sweep(REPO_ROOT, RETIRED, { only: "gemini-cli" }), []);
+  });
+});
+
+describe("the live pi-session-backfill row (CR153)", () => {
+  const row = RETIRED.find(
+    (surface) => surface.surfaceId === "pi-session-backfill",
+  ) as RetiredSurface;
+
+  test("is enforced", () => {
+    assert.ok(row, "the pi-session-backfill row exists");
+    assert.equal(row.stagedUntil, undefined);
+    assert.ok(ENFORCED.includes(row));
+  });
+
+  // One seed per thing CR153 deleted: the backfill, the import seam it wrote
+  // through, their two tests, and the Pi session fixtures.
+  const SEEDS = [
+    "ts/src/conversation/backfill.ts",
+    "ts/src/conversation/sessionImport.ts",
+    "ts/test/conversation/backfill.test.ts",
+    "ts/test/db/homeBornAt.test.ts",
+    "ts/test/fixtures/backfill/pi-sessions/tracked.jsonl",
+  ];
+
+  test("fails on every path the deletion removed, if it comes back", () => {
+    for (const path of SEEDS) {
+      assert.equal(checkAbsent(row, [path]).length, 1, path);
+    }
+  });
+
+  test("does not flag the transcript backfill, which stays", () => {
+    assert.deepEqual(
+      checkAbsent(row, [
+        "ts/src/conversation/transcriptBackfill.ts",
+        "ts/test/fixtures/backfill/transcript/session.jsonl",
+      ]),
+      [],
+    );
+  });
+
+  test("fails on a file that still names the backfill, its floor, its seam, its variable, or its report line", () => {
+    const root = gitRepo({
+      "ts/src/a.ts": "await backfillPiSessions(db, options, deps);\n",
+      "ts/src/b.ts": "const born = homeBornAt(db);\n",
+      "ts/src/c.ts": "importClosedConversation(db, id, session, deps);\n",
+      "docs/guide.md": "Set PI_SESSIONS_DIR to keep a second home apart.\n",
+      "ts/smoke/s.ts": 'check(report.includes("Backfilled Pi sessions: 0"));\n',
+      "docs/process/worklog.md": "CR153 retired backfillPiSessions.\n",
+      // The words alone are not residue: the transcript backfill stays, and
+      // Pi's own session directory is still Pi's.
+      "docs/living.md":
+        "The transcript backfill stays; Pi keeps its sessions in ~/.pi/agent/sessions.\n",
+    });
+    const problems = checkResidue(row, trackedFiles(root), root);
+    assert.deepEqual(
+      problems.map((problem) => problem.message.split(" mentions")[0]?.trim()),
+      [
+        "pi-session-backfill: docs/guide.md:1",
+        "pi-session-backfill: ts/smoke/s.ts:1",
+        "pi-session-backfill: ts/src/a.ts:1",
+        "pi-session-backfill: ts/src/b.ts:1",
+        "pi-session-backfill: ts/src/c.ts:1",
+      ],
+    );
+  });
+
+  test("is clean against this repository", () => {
+    assert.deepEqual(sweep(REPO_ROOT, RETIRED, { only: "pi-session-backfill" }), []);
   });
 });
 

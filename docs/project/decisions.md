@@ -2580,6 +2580,11 @@ decided together at the CV22 release gate as a release precondition. The options
 to keep the whole-history import and document it, to ask once before importing, or to
 import only what is newer than the home.
 
+**Superseded 2026-10-21** by [Session maintenance imports no Pi session; a home holds
+the Pi conversations it logged live](#session-maintenance-imports-no-pi-session-a-home-holds-the-pi-conversations-it-logged-live):
+maintenance no longer imports Pi sessions at all, so the floor below has nothing left
+to limit.
+
 **The decision: session maintenance backfills a Pi session into a home only when the
 session is newer than the home.** A home's age is the first `applied_at` in its
 `_migrations` ledger, which a fresh database writes at its first open and every
@@ -3323,6 +3328,46 @@ invisible to its model. Asked for a skill by name that was not offered, Codex ra
 over the scratch directory; only agy stopped, because headless mode denied the
 command. An agent will go looking for an extension it was told exists, and Codex in
 its default sandbox found it.
+
+### Session maintenance imports no Pi session; a home holds the Pi conversations it logged live
+
+**Date:** 2026-10-21 · **Context:** [CR153](refinement/rs010-cv22-oracle-and-port-hygiene/cr153-a-home-s-pi-backfill-imports-another-home-s-sessions.md),
+captured from CV21.DS5.US3's live route, measured on the maintainer's two homes before
+planning, and reviewed through six lenses before approval. It supersedes the mechanism
+of [A new Mirror home imports only the Pi sessions that are newer than itself](#a-new-mirror-home-imports-only-the-pi-sessions-that-are-newer-than-itself).
+
+**The decision: session maintenance no longer imports Pi sessions. A home's Pi
+conversations are the ones the Pi extension logged into it, as they happened.** Nothing
+in Mirror reads Pi's session files, and `PI_SESSIONS_DIR` is inert.
+
+**Why.** The backfill decided ownership from an absence: any Pi session file on the
+machine that this home's `runtime_sessions` did not track was this home's to import.
+That held while a machine had one home. With two, each imported the other's sessions —
+on the maintainer's machine, 543 conversations since July, both ways, each titled again
+through the provider — and both imported the sessions of validation routes' scratch
+homes and of Pi run without Mirror. The gap the backfill existed to fill, a session the
+home's own extension saw but never logged a turn of, came up once in three months there.
+
+**Not chosen.** A claim recorded at session start, importing only claimed sessions with
+no logged turn, would have kept that one recovery for a table, a migration, and a claim
+lifecycle. A mark written into each Pi session file, importing only the files marked
+with the home's own, would have left every home reading every other home's files at
+every start. Against importing nothing, neither earned its cost.
+
+**What it keeps.** Live logging, unchanged. A person who wants a Pi session Mirror did
+not log could have it imported on request: a feature with its own story, not something
+maintenance does in the background.
+
+**What it does not do.** It removes no conversation already imported
+([CR154](refinement/rs010-cv22-oracle-and-port-hygiene/cr154-a-home-cannot-list-or-remove-the-pi-conversations-it-imported.md)
+is the follow-up), and it protects a home only from installs that carry it: a home on
+an older version keeps importing its neighbours' sessions until it is updated.
+
+**What it replaces.** The 2026-10-10 floor — a home imports only the Pi sessions newer
+than its birth, read from the `_migrations` ledger — goes with the import it limited.
+Nothing reads the ledger's first `applied_at` now, and a copied database carries its
+source's ledger anyway
+([CR156](refinement/rs010-cv22-oracle-and-port-hygiene/cr156-a-home-made-by-copying-another-s-database-is-the-same-home-twice.md)).
 
 ## Open Discussions
 

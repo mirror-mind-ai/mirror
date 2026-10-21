@@ -23,7 +23,11 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-/** Python `dict.get` on something that must be a dict; see `backfill.ts`. */
+/**
+ * Python `dict.get(key, default)` on a value that MUST be a dict: anything else
+ * raises, as Python's AttributeError does. The default applies only when the
+ * key is ABSENT -- a present `null` comes back as null, as Python returns None.
+ */
 function getOr(container: unknown, key: string, fallback: unknown): unknown {
   if (!isRecord(container)) throw new TypeError(`expected an object with '${key}'`);
   return key in container ? container[key] : fallback;
