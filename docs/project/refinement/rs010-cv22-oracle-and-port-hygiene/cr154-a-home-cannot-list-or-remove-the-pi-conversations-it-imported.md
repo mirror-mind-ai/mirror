@@ -419,6 +419,16 @@ whose folders are the development home's; from the development home, 434
 conversations (21,932 messages) — the 427 the production home logged live, the five
 imported test fixtures, and 2 duplicates whose folder is the production home's. One
 verified backup per home. Live conversations, memories, and provider-call records kept
-their counts in both. Left in place, for a later decision: the 44 imports identical in
-both homes since the copy, the duplicates from projects run without Mirror, and the
-five April imports with no session row.
+their counts in both.
+
+Then the rest, at the Navigator's direction, by one rule: every session kept once, in
+the home whose folder it is — the development checkout and its worktree for the
+development home, everything else for the production home — and removed from the other
+home only where the copy kept is at least as long. 32 more from the production home
+(579 messages, the development home's folders) and 24 more from the development home
+(958 messages: the production home's folders, other projects, the five April imports),
+one verified backup each. One session from another project stays in both: the
+development home's copy has 139 messages, the production home's 14. Left: 27 imports in
+the production home and 57 in the development home, each the only copy of its session
+in either home. Live conversations, memories, and provider-call records did not move,
+but for what the production home logged live while the removal ran.

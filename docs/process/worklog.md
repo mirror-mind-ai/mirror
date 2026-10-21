@@ -27,7 +27,9 @@ production install updated through `runtime update` (backup verified, nothing to
 migrate, status ready). Both real homes cleaned with it the same hour: 140
 conversations from the production home and 434 from the development home, each a copy
 of the other home's live conversation, a test fixture, or a duplicate kept in the home
-its folder belongs to; nothing else moved.
+its folder belongs to; nothing else moved. Then the leftovers by the same rule — one
+copy of each session, in the home whose folder it is — 32 more and 24 more, leaving 27
+and 57 imports that are each the only copy of their session.
 
 ### 2026-10-21 — CR154: a home lists and removes the Pi conversations it imported
 
