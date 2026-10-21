@@ -93,3 +93,6 @@ evidence stays honest as both cores move.
 - [CR151 — The transcript backfill writes a session's replies into other sessions' conversations](cr151-the-transcript-backfill-writes-a-session-s-replies-into-other-sessions-conversations.md)
 - [CR152 — Under `codex exec`, the plugin's Stop and SessionEnd hooks never reach Mirror](cr152-under-codex-exec-the-plugin-s-stop-and-session-end-hooks-never-reach-mirror.md)
 - [CR153 — A home's Pi backfill imports another home's sessions](cr153-a-home-s-pi-backfill-imports-another-home-s-sessions.md)
+- [CR154 — A home cannot list or remove the Pi conversations it imported rather than logged](cr154-a-home-cannot-list-or-remove-the-pi-conversations-it-imported.md)
+- [CR155 — `runtime diagnose` does not read the Pi extension's error lines, so a session that never reached the core goes unreported](cr155-runtime-diagnose-does-not-read-the-pi-extension-s-error-lines.md)
+- [CR156 — A home made by copying another's database is the same home twice, and the docs do not say so](cr156-a-home-made-by-copying-another-s-database-is-the-same-home-twice.md)

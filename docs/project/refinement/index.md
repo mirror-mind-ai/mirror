@@ -9,7 +9,7 @@ If a linked document and this index disagree, this index wins.
 ## Current Focus
 
 - Refinement Story: RS010
-- Change Request: none
+- Change Request: CR153
 
 Selecting a focus is an explicit project decision. Reading this file never selects or
 executes work.
@@ -86,7 +86,10 @@ Open work is ordered intentionally. Terminal history follows open work.
 | 51 | [CR150](rs010-cv22-oracle-and-port-hygiene/cr150-install-prints-suggested-personas-this-home-does-not-have.md) | RS010 | `install` prints `suggested_personas` this home does not have, as if it did | captured | — | — |
 | 52 | [CR151](rs010-cv22-oracle-and-port-hygiene/cr151-the-transcript-backfill-writes-a-session-s-replies-into-other-sessions-conversations.md) | RS010 | The transcript backfill writes a session's replies into other sessions' conversations | captured | — | — |
 | 53 | [CR152](rs010-cv22-oracle-and-port-hygiene/cr152-under-codex-exec-the-plugin-s-stop-and-session-end-hooks-never-reach-mirror.md) | RS010 | Under `codex exec`, the plugin's Stop and SessionEnd hooks never reach Mirror | captured | — | — |
-| 54 | [CR153](rs010-cv22-oracle-and-port-hygiene/cr153-a-home-s-pi-backfill-imports-another-home-s-sessions.md) | RS010 | A home's Pi backfill imports another home's sessions | captured | — | — |
+| 54 | [CR153](rs010-cv22-oracle-and-port-hygiene/cr153-a-home-s-pi-backfill-imports-another-home-s-sessions.md) | RS010 | A home's Pi backfill imports another home's sessions | in_progress | @viniciusteles | `main` |
+| 55 | [CR154](rs010-cv22-oracle-and-port-hygiene/cr154-a-home-cannot-list-or-remove-the-pi-conversations-it-imported.md) | RS010 | A home cannot list or remove the Pi conversations it imported rather than logged | captured | — | — |
+| 56 | [CR155](rs010-cv22-oracle-and-port-hygiene/cr155-runtime-diagnose-does-not-read-the-pi-extension-s-error-lines.md) | RS010 | `runtime diagnose` does not read the Pi extension's error lines, so a session that never reached the core goes unreported | captured | — | — |
+| 57 | [CR156](rs010-cv22-oracle-and-port-hygiene/cr156-a-home-made-by-copying-another-s-database-is-the-same-home-twice.md) | RS010 | A home made by copying another's database is the same home twice, and the docs do not say so | captured | — | — |
 | — | [CR149](rs010-cv22-oracle-and-port-hygiene/cr149-bind-accepts-a-persona-or-journey-that-does-not-exist.md) | RS010 | `bind` checks nothing it binds: a missing extension, an undeclared capability, or a persona that does not exist all report `bound` | done | @viniciusteles | `main` |
 | — | [CR148](rs010-cv22-oracle-and-port-hygiene/cr148-the-front-door-dies-with-a-stack-trace-when-its-stdout-closes-early.md) | RS010 | The front door dies with a stack trace when its stdout closes early | done | @viniciusteles | `main` |
 | — | [CR145](rs011-extension-contract-completeness/cr145-an-extension-s-installation-settings-have-nowhere-to-live-but-the-login-shell.md) | RS011 | An extension's installation settings have nowhere to live but the login shell | done | @viniciusteles | `main` |
