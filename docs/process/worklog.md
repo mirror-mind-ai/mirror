@@ -24,7 +24,10 @@ maintainer's machine are cleaned with it once the production install carries it.
 Tag and `stable` pushed; CI green on the promoted commit; the trusted-publisher
 stage approved; `latest` and `stable` at 0.36.2; GitHub Release published; the
 production install updated through `runtime update` (backup verified, nothing to
-migrate, status ready).
+migrate, status ready). Both real homes cleaned with it the same hour: 140
+conversations from the production home and 434 from the development home, each a copy
+of the other home's live conversation, a test fixture, or a duplicate kept in the home
+its folder belongs to; nothing else moved.
 
 ### 2026-10-21 — CR154: a home lists and removes the Pi conversations it imported
 

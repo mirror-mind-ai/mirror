@@ -408,3 +408,17 @@ Validated by the Navigator on a scratch copy of the development home. On `main` 
 `40a4fc89` (the review, the approval) and `e93b1f3d` (the change); carried by
 [v0.36.2](../../../releases/v0.36.2.md), a patch release, whose note replaces v0.36.1's SQL
 selector with the command.
+
+**Used the same day on the maintainer's two real homes**, after v0.36.2 was installed,
+at the Navigator's direction. Because both homes are on one machine, the Driver read
+them side by side once, read-only, to sort every import by where its session was
+logged live — the cross-home reading the command itself never does. Removed, by id,
+after a dry run each: from the production home, 140 conversations (6,163 messages) —
+the 116 the development home logged live, and 24 duplicates no home logged live
+whose folders are the development home's; from the development home, 434
+conversations (21,932 messages) — the 427 the production home logged live, the five
+imported test fixtures, and 2 duplicates whose folder is the production home's. One
+verified backup per home. Live conversations, memories, and provider-call records kept
+their counts in both. Left in place, for a later decision: the 44 imports identical in
+both homes since the copy, the duplicates from projects run without Mirror, and the
+five April imports with no session row.
