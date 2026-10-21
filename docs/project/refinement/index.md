@@ -9,7 +9,7 @@ If a linked document and this index disagree, this index wins.
 ## Current Focus
 
 - Refinement Story: RS010
-- Change Request: none
+- Change Request: CR154
 
 Selecting a focus is an explicit project decision. Reading this file never selects or
 executes work.
@@ -86,7 +86,7 @@ Open work is ordered intentionally. Terminal history follows open work.
 | 51 | [CR150](rs010-cv22-oracle-and-port-hygiene/cr150-install-prints-suggested-personas-this-home-does-not-have.md) | RS010 | `install` prints `suggested_personas` this home does not have, as if it did | captured | — | — |
 | 52 | [CR151](rs010-cv22-oracle-and-port-hygiene/cr151-the-transcript-backfill-writes-a-session-s-replies-into-other-sessions-conversations.md) | RS010 | The transcript backfill writes a session's replies into other sessions' conversations | captured | — | — |
 | 53 | [CR152](rs010-cv22-oracle-and-port-hygiene/cr152-under-codex-exec-the-plugin-s-stop-and-session-end-hooks-never-reach-mirror.md) | RS010 | Under `codex exec`, the plugin's Stop and SessionEnd hooks never reach Mirror | captured | — | — |
-| 54 | [CR154](rs010-cv22-oracle-and-port-hygiene/cr154-a-home-cannot-list-or-remove-the-pi-conversations-it-imported.md) | RS010 | A home cannot list or remove the Pi conversations it imported rather than logged | captured | — | — |
+| 54 | [CR154](rs010-cv22-oracle-and-port-hygiene/cr154-a-home-cannot-list-or-remove-the-pi-conversations-it-imported.md) | RS010 | A home cannot list or remove the Pi conversations it imported rather than logged | in_progress | @viniciusteles | `main` |
 | 55 | [CR155](rs010-cv22-oracle-and-port-hygiene/cr155-runtime-diagnose-does-not-read-the-pi-extension-s-error-lines.md) | RS010 | `runtime diagnose` does not read the Pi extension's error lines, so a session that never reached the core goes unreported | captured | — | — |
 | 56 | [CR156](rs010-cv22-oracle-and-port-hygiene/cr156-a-home-made-by-copying-another-s-database-is-the-same-home-twice.md) | RS010 | A home made by copying another's database is the same home twice, and the docs do not say so | captured | — | — |
 | 57 | [CR157](rs010-cv22-oracle-and-port-hygiene/cr157-reference-lists-path-settings-nothing-reads.md) | RS010 | `REFERENCE.md` lists `DB_BACKUP_PATH`, `EXPORT_DIR`, and `TRANSCRIPT_EXPORT_DIR` as settings, though nothing has read them since the Python core was deleted | captured | — | — |
