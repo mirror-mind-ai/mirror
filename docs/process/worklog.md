@@ -23,6 +23,11 @@ imported, says the backups hold the same rows, and asks everyone with more than 
 home to update every install. No migration. On the maintainer's machine the
 production home runs the published package, so it is protected from the day this
 release is installed there.
+Tag and `stable` pushed; CI green on the promoted commit; the trusted-publisher
+stage approved; `latest` and `stable` at 0.36.1; GitHub Release published. The
+production install updated the same hour through `runtime update` (backup verified,
+nothing to migrate, status ready), and the installed package, run against a scratch
+home beside another home's session, imported nothing.
 
 ### 2026-10-21 — CR153: session maintenance imports no Pi session
 
