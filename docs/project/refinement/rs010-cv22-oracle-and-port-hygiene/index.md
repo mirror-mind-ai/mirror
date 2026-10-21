@@ -97,3 +97,4 @@ evidence stays honest as both cores move.
 - [CR155 — `runtime diagnose` does not read the Pi extension's error lines, so a session that never reached the core goes unreported](cr155-runtime-diagnose-does-not-read-the-pi-extension-s-error-lines.md)
 - [CR156 — A home made by copying another's database is the same home twice, and the docs do not say so](cr156-a-home-made-by-copying-another-s-database-is-the-same-home-twice.md)
 - [CR157 — `REFERENCE.md` lists `DB_BACKUP_PATH`, `EXPORT_DIR`, and `TRANSCRIPT_EXPORT_DIR` as settings, though nothing has read them since the Python core was deleted](cr157-reference-lists-path-settings-nothing-reads.md)
+- [CR158 — A Pi catalog whose skill files are gone loads no extension, while the status line still counts them and nothing reports it](cr158-a-pi-catalog-whose-skill-files-are-gone-loads-no-extension-and-nothing-reports-it.md)
