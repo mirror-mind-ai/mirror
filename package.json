@@ -1,6 +1,6 @@
 {
   "name": "mirror-mind",
-  "version": "0.36.1",
+  "version": "0.36.2",
   "description": "Mirror Mind: a local-first memory and identity framework for agentic AI runtimes (Pi, Claude Code, Codex, Antigravity)",
   "license": "MIT",
   "repository": {

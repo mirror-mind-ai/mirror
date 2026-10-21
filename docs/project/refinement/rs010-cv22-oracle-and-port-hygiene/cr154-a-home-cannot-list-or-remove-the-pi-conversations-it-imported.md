@@ -405,4 +405,6 @@ transaction that decides the set again. The review's blocker is fixed with it: o
 deletion for a conversation, deciding all six tables that reference one, so
 `discard-current` no longer fails on a conversation a Soul Mode integration names.
 Validated by the Navigator on a scratch copy of the development home. On `main` in
-`40a4fc89` (the review, the approval) and `e93b1f3d` (the change); not yet released.
+`40a4fc89` (the review, the approval) and `e93b1f3d` (the change); carried by
+[v0.36.2](../../../releases/v0.36.2.md), a patch release, whose note replaces v0.36.1's SQL
+selector with the command.

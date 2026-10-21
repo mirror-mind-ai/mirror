@@ -12,6 +12,16 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-10-21 — v0.36.2 released: Clearing Out What Another Home Copied
+
+Patch release of one Change Request, CR154, cut the day it closed so the clean-up
+v0.36.1 left to a SQL query is a command: `mirror conversations imported` lists the Pi
+conversations an earlier version imported, by folder and beside how many sessions the
+home logged live there, and `remove` deletes the ones named, a dry run until
+`--apply`, which verifies a backup first. `discard-current` no longer fails on a
+conversation a Soul Mode integration names. No migration. The two real homes on the
+maintainer's machine are cleaned with it once the production install carries it.
+
 ### 2026-10-21 — CR154: a home lists and removes the Pi conversations it imported
 
 `mirror conversations imported` shows what an earlier version imported rather than
