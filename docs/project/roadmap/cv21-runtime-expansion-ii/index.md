@@ -212,7 +212,10 @@ The migration of 2026-10-13 kept every number, and folders moved with their code
 > Superseded by [DS12.TS5](cv21-ds12-runtime-re-baseline/cv21-ds12-ts5-extension-surface-re-grounding/index.md)
 > (2026-10-13). The plan below assumed extensions would ride the shared plugin, which
 > ships inside the npm package and so cannot carry each home's extensions. DS5 starts
-> from TS5.
+> from TS5. [DS5](cv21-ds5-user-extensions-on-every-runtime/index.md) chose one generated
+> plugin per home ([TS1's decision](../../decisions.md#user-extensions-reach-every-runtime-as-a-per-home-plugin),
+> 2026-10-19); how an installed extension reaches each runtime is in the
+> [runtime interface contract](../../../product/specs/runtime-interface/index.md#how-an-installed-extension-reaches-each-runtime).
 
 Extensions must work on every runtime, not just built-in `mm-*` skills. The
 convergence changes how: external extensions ride the **same canonical plugin /

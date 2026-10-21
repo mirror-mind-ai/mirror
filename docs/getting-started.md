@@ -371,6 +371,8 @@ package as `AGENTS.md`, and each runtime receives them its own way: Pi through
 the extension, Claude Code and Codex through the plugin's session-start hook
 (Codex as a developer message), Antigravity as the plugin's rules, Grok Build as
 the rule you linked in step 2. None of this needs a step beyond the wiring above.
+Extensions you install later reach each runtime through a plugin of their own; see
+[Your extensions reach each runtime](#your-extensions-reach-each-runtime).
 
 **If a runtime is launched from your desktop rather than a terminal**, it may not
 inherit the `PATH` that holds `node` and `mirror`, and its hooks will skip
@@ -435,6 +437,20 @@ What to check:
 - **Architecture:** [docs/product/architecture.md](product/architecture.md) — how the system works internally
 - **Extensions:** [docs/product/extensions/](product/extensions/index.md) — Mirror Mind can be
   extended with user-specific capabilities
+
+### Your extensions reach each runtime
+
+An extension you install with `mirror extensions install` reaches Pi through your
+home's catalog, and Claude Code, Codex, Antigravity, and Grok Build through one plugin
+of your own, `mirror-ext-your-name`, which the install regenerates. For each runtime
+that has not taken that plugin yet, the install prints the one step that wires it: run
+it once. Then the reference extension `review-copy` is `/ext-review-copy` on Pi, Claude
+Code, and Grok Build, `$mirror-ext-your-name:ext-review-copy` on Codex, and
+`/mirror-ext-your-name:ext-review-copy` on Antigravity. Not listed? Run the step the
+install printed; running the install again prints it again. Codex, Antigravity, and
+Grok Build keep a copy of the plugin, so after you change an extension, `mirror runtime
+diagnose` names the reinstall each still needs. The
+[extension docs](product/extensions/index.md#reaching-each-runtime) have the rest.
 
 ## Upgrading from a clone
 

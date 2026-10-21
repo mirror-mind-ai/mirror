@@ -8,55 +8,29 @@ user-invocable: true
 
 > Reference external skill example.
 >
-> Install source tree:
->
-> `~/.mirror-minds/<user>/extensions/review-copy/`
->
-> Runtime-visible commands:
-> - Claude Code: `ext:review-copy`
-> - Pi: `ext-review-copy`
->
-> Concrete migration flow:
+> Installed into `~/.mirror-minds/<user>/extensions/review-copy/` with:
 >
 > ```bash
-> mirror extensions install \
->   review-copy \
->   --extensions-root examples/extensions \
->   --mirror-home ~/.mirror-minds/<user>
+> mirror extensions install review-copy --extensions-root examples/extensions
 > ```
 >
-> Equivalent explicit flow:
+> Typed as `/ext-review-copy` on Pi, Claude Code, and Grok Build;
+> `$mirror-ext-<user>:ext-review-copy` on Codex; `/mirror-ext-<user>:ext-review-copy`
+> on Antigravity, once each runtime is wired with the step the install prints.
 >
-> ```bash
-> mkdir -p ~/.mirror-minds/<user>/extensions
-> cp -R examples/extensions/review-copy ~/.mirror-minds/<user>/extensions/
->
-> mirror extensions validate --mirror-home ~/.mirror-minds/<user>
-> mirror inspect extension review-copy --mirror-home ~/.mirror-minds/<user>
->
-> mirror extensions sync \
->   --mirror-home ~/.mirror-minds/<user> \
->   --runtime pi \
->   --target-root ~/.mirror-minds/<user>/runtime/skills/pi
->
-> mirror extensions sync \
->   --mirror-home ~/.mirror-minds/<user> \
->   --runtime claude \
->   --target-root ~/.mirror-minds/<user>/runtime/skills/claude
-> ```
->
-> Resulting runtime skill files:
-> - `~/.mirror-minds/<user>/runtime/skills/pi/ext-review-copy/SKILL.md`
-> - `~/.mirror-minds/<user>/runtime/skills/claude/ext:review-copy/SKILL.md`
+> Its files land under `~/.mirror-minds/<user>/runtime/`: `skills/pi/ext-review-copy/`
+> for Pi, and `skills/claude/ext-review-copy/`, carried by the home's plugin
+> `plugin/mirror-ext-<user>/`, for the other four.
 
 Sends a copy file to multiple models through OpenRouter and generates an HTML
 report with side-by-side reviews, synthesis, and a recommended next step.
 
 ## Syntax
 
+Arguments, whatever name the runtime invoked the skill by:
+
 ```text
-ext:review-copy <file> <model1> [model2] [model3] ...
-ext-review-copy <file> <model1> [model2] [model3] ...
+<file> <model1> [model2] [model3] ...
 ```
 
 - **file** — path to the copy text file (`.txt`, `.md`, etc.)
@@ -65,8 +39,8 @@ ext-review-copy <file> <model1> [model2] [model3] ...
 Examples:
 
 ```text
-ext:review-copy ~/Downloads/lp_v9.txt grok flagship, llama flagship, deepseek flagship
-ext-review-copy ~/copy.txt gemini, openai flagship, deepseek
+/ext-review-copy ~/Downloads/lp_v9.txt grok flagship, llama flagship, deepseek flagship
+/ext-review-copy ~/copy.txt gemini, openai flagship, deepseek
 ```
 
 When tier is omitted, default to `flagship`.

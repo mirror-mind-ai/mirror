@@ -286,6 +286,26 @@ declares, and materializes the skill for each runtime. It does not run your
 code: a declared runtime that cannot start is reported when the command runs,
 not at install.
 
+The report ends with your home's extensions plugin, `mirror-ext-<user>`, which install
+regenerates: it carries the `claude` skill of every installed extension to Claude Code,
+Codex, Antigravity, and Grok Build. For each of those runtimes on your `PATH` that has
+not taken the plugin yet, it prints the one step that wires it. In a home where `hello`
+is the first extension, the report ends:
+
+```text
+  plugin: mirror-ext-<user> 0.1.1, 1 skill
+    Claude Code: not wired — mkdir -p ~/.claude/skills && ln -s "<home>/runtime/plugin/mirror-ext-<user>" ~/.claude/skills/mirror-ext-<user>
+    Codex: not wired — codex plugin marketplace add "<home>/runtime/plugin"
+           then codex plugin add mirror-ext-<user>@mirror-ext-<user>
+    Antigravity: not wired — agy plugin install "<home>/runtime/plugin/mirror-ext-<user>"
+    Grok Build: not wired — grok plugin install "<home>/runtime/plugin/mirror-ext-<user>" --trust
+                (this plugin carries skills only — no hooks and no MCP server for --trust to activate)
+```
+
+Run each step once. Pi needs none: its extension reads the home's `pi` catalog at
+session start. An installed extension whose manifest has no `claude` block is not in
+the plugin, and the report says so: `not carried (no claude block in skill.yaml)`.
+
 ### 7a. Installation settings (when the extension needs any)
 
 If your commands or provider need something that belongs to the *machine* they
@@ -330,6 +350,23 @@ ones an author needs:
 mirror ext hello ping "from the field"
 mirror ext hello list
 ```
+
+The skill reaches each runtime under that runtime's spelling, measured with this `hello`
+on each (CV21.DS5.US3, 2026-10-20):
+
+- Pi, Claude Code, and Grok Build: `/ext-hello`
+- Codex: `$mirror-ext-<user>:ext-hello`
+- Antigravity: `/mirror-ext-<user>:ext-hello`
+
+The manifest's `command_name: ext:hello` is the name the validator checks. Install
+writes the skill to a directory named `ext-hello`, replacing `:` with `-`, and the
+skill's own frontmatter `name` is `ext-hello` too: that is the name the runtimes list.
+
+After you edit `SKILL.md`, install again. Pi reads the new skill at its next session
+and Claude Code in place; Codex, Antigravity, and Grok Build keep a copy of the plugin
+until their reinstall, which the install prints and `mirror runtime diagnose` names. A
+skill a runtime does not list? Run the step the install printed for that runtime;
+running the install again prints it again.
 
 ### 9. Bind to a persona (optional)
 

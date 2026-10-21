@@ -383,9 +383,11 @@ the tree the hook runs from) as `hookSpecificOutput.additionalContext`, unless
 the project the session opened in is that same tree — the checkout, whose
 `CLAUDE.md` imports the file (US3, D13).
 
-Current external-skill surfacing path:
-- keep the installed source/runtime artifacts under `~/.mirror-minds/<user>/...`
-- explicitly project installed Claude external skills into a project-local
+External skills reach Claude Code at home level through the per-home extensions
+plugin, linked once into `~/.claude/skills/mirror-ext-<user>` and read in place
+([each runtime's path](#how-an-installed-extension-reaches-each-runtime)). A project
+can also carry a copy of its own:
+- project the home's installed Claude external skills into a project-local
   `.claude/skills/` surface with:
 
 ```bash
@@ -411,8 +413,16 @@ This creates project-visible skill directories such as:
 /path/to/project/.claude/skills/extensions.external.json
 ```
 
-Claude no longer relies on a repo-local `mm:review-copy` compatibility skill;
-`review-copy` should now be surfaced as an installed external Claude skill.
+#### Claude Code's login in isolated routes
+
+Claude Code keys its login to the config directory and to `HOME`. A logged-in scratch
+`CLAUDE_CONFIG_DIR` answers under the real `HOME` and "Not logged in" under a scratch
+one, and `/tmp/…` and `/private/tmp/…` are two logins. Measured on claude 2.1.296
+([CV21.DS5.TS1](../../../project/decisions.md#user-extensions-reach-every-runtime-as-a-per-home-plugin));
+CV21.DS5.US3's Claude cell relied on it on 2.1.304. A route that isolates Claude Code
+therefore keeps the real `HOME` with a logged-in scratch config directory, and that
+scratch login leaves a `Claude Code-credentials-<hash>` entry in the login keychain,
+to remove when the route is done.
 
 ### Pi
 
@@ -594,6 +604,12 @@ Runtime-facing materialization happens separately under:
 ~/.mirror-minds/<user>/runtime/skills/<runtime>/
 ```
 
+`mirror extensions install` writes one such root for every key of the manifest's
+`runtimes:` map. Two are read: `pi`, by Pi's extension at session start, and `claude`,
+by the per-home plugin generator, which carries it to Claude Code, Codex, Antigravity,
+and Grok Build ([below](#the-per-home-extensions-plugin-claude-code-codex-antigravity-grok-build)).
+A root for any other key is validated and written, and no runtime reads it.
+
 For prompt-skills, the materialized shape is:
 
 ```text
@@ -672,8 +688,9 @@ generated plugin per Mirror home**, in the canonical plugin's format
   other version is stale.
 - **Wiring, once per runtime** (printed by the `extensions` verbs for a runtime on the
   `PATH` that has not taken the plugin; `mirror init` prints none, there is no plugin
-  at init): Claude Code `ln -s "<dir>" ~/.claude/skills/mirror-ext-<user>` (a link,
-  read in place); Codex `codex plugin marketplace add "<home>/runtime/plugin"` then
+  at init): Claude Code `mkdir -p ~/.claude/skills && ln -s "<dir>"
+  ~/.claude/skills/mirror-ext-<user>` (a link, read in place); Codex `codex plugin
+  marketplace add "<home>/runtime/plugin"` then
   `codex plugin add mirror-ext-<user>@mirror-ext-<user>`; Antigravity `agy plugin
   install "<dir>"`; Grok Build `grok plugin install "<dir>" --trust` (skills only:
   nothing for `--trust` to activate).
@@ -689,6 +706,40 @@ generated plugin per Mirror home**, in the canonical plugin's format
   when the home has one.
 
 Pi keeps its catalog path below; the plugin does not change it.
+
+### How an installed extension reaches each runtime
+
+How each of the five runtimes takes a home's installed extension (CV21.DS5). The
+wiring step is the one `mirror extensions install` prints for a runtime on the `PATH`
+that has not taken the plugin; `<home>` is the Mirror home and `<user>` its user.
+The invocations were measured live by
+[CV21.DS5.US3](../../../project/roadmap/cv21-runtime-expansion-ii/cv21-ds5-user-extensions-on-every-runtime/cv21-ds5-us3-review-copy-runs-on-every-runtime-measured-live/test-guide.md)
+with `review-copy` and a `command-skill`, from the registry's `mirror-mind@0.36.0`.
+
+| Runtime | What reads the extension | Wire once | After a change | You type |
+|---|---|---|---|---|
+| Pi | `runtime/skills/pi/extensions.json`, at session start ([below](#pi-runtime-consumption-prep)) | nothing beyond the package's own `pi install` | nothing: the next session reads the catalog | `/ext-review-copy`, as this project spells Pi's skills; Pi 1.3.0 registers it as the command `/skill:ext-review-copy`, and its menu matches the bare name. Not re-measured by DS5 |
+| Claude Code | the plugin, through a link read in place | `mkdir -p ~/.claude/skills && ln -s "<home>/runtime/plugin/mirror-ext-<user>" ~/.claude/skills/mirror-ext-<user>` | nothing: read in place | `/ext-review-copy` |
+| Codex | a copy of the plugin, cached by its version | `codex plugin marketplace add "<home>/runtime/plugin"`, then `codex plugin add mirror-ext-<user>@mirror-ext-<user>` | `codex plugin add mirror-ext-<user>@mirror-ext-<user>` again | `$mirror-ext-<user>:ext-review-copy` |
+| Antigravity | a copy, staged under `~/.gemini/config/plugins/mirror-ext-<user>/` | `agy plugin install "<home>/runtime/plugin/mirror-ext-<user>"` | the same command again | `/mirror-ext-<user>:ext-review-copy` |
+| Grok Build | a copy of the plugin | `grok plugin install "<home>/runtime/plugin/mirror-ext-<user>" --trust` | `grok plugin uninstall mirror-ext-<user> --confirm && grok plugin install "<home>/runtime/plugin/mirror-ext-<user>" --trust` | `/ext-review-copy` |
+
+Measured on claude 2.1.304 (`~/.local/share/claude/versions/2.1.304`), codex 0.163.0
+(`/opt/homebrew/Caskroom/codex/0.163.0/bin/codex`), agy 1.4.3 (`~/.local/bin/agy`), and
+grok 1.0.62 (`~/.grok/downloads/grok-1.0.62-macos-aarch64`), on 2026-10-20. A
+`command-skill`'s subcommands are the same `mirror ext <id> <subcommand>` on every
+runtime: the authoring guide's `hello` pinged from each, as `/ext-hello`,
+`$mirror-ext-<user>:ext-hello`, and `/mirror-ext-<user>:ext-hello`. On the four plugin
+runtimes a skill invocation is a command turn, which the logger does not record as a
+conversation (by design, CV21.DS4.TS3). Under `codex exec`, the plugin's hooks log the
+prompt only
+([CR152](../../../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr152-under-codex-exec-the-plugin-s-stop-and-session-end-hooks-never-reach-mirror.md),
+open).
+
+**When a skill is not listed.** A runtime that was never wired is not drift, and
+`runtime diagnose` does not report it: run the step the install printed for that
+runtime, and run the install again to see it again. After a change, `runtime diagnose`
+names the reinstall a copying runtime still needs, and a link whose target is gone.
 
 ### Pi runtime consumption prep
 
@@ -906,6 +957,9 @@ Standard smoke test structure:
 3. Simulate each lifecycle hook with a representative payload
 4. Inspect the isolated DB: verify `interface='<runtime>'` rows and message content
 5. Confirm production DB checksum unchanged after the test
+
+Claude Code's login does not follow a scratch `HOME`; see
+[Claude Code's login in isolated routes](#claude-codes-login-in-isolated-routes).
 
 References: `scripts/smoke_claude_plugin.sh`, `scripts/smoke_mirror_mcp.sh`
 

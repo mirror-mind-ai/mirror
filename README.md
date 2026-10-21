@@ -114,7 +114,7 @@ this repository, turning a personal experiment into a reusable framework:
 - **Multi-user** — independent mirrors for multiple users on the same machine
 - **Multi-session** — concurrent sessions tracked safely in a database-backed session registry
 - **Intelligence depth** — hybrid semantic and lexical search, honest reinforcement, two-pass extraction, memory consolidation, and shadow cultivation
-- **Extension system** — a stable contract for adding user-specific capabilities outside the core; extensions own their own SQLite tables, CLI subcommands, and Mirror Mode context providers without touching the framework
+- **Extension system** — a stable contract for adding user-specific capabilities outside the core; extensions own their own SQLite tables, CLI subcommands, and Mirror Mode context providers without touching the framework, and reach every runtime: Pi through the home's catalog, Claude Code, Codex, Antigravity, and Grok Build through a plugin each home generates
 
 The move toward Pi as the preferred runtime was inspired by
 [Henrique Bastos](https://github.com/henriquebastos) and his early work in

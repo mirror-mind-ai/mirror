@@ -79,4 +79,73 @@ a different value, or a value none of the sources recorded.
 
 ## Validation Evidence
 
-Pending implementation and validation.
+Implemented 2026-10-21 on `main` after `ed1527ca`. The Driver's checks, before the
+Navigator's validation.
+
+**The printed report (A2).** `mirror extensions install review-copy` from this checkout
+into a scratch home, 2026-10-21T22:37Z, with claude, codex, agy, and grok on the `PATH`
+and a scratch `HOME`, so every runtime reads "not wired"; the home path replaced by
+`<home>`, the user named `your-name`:
+
+```text
+Installed extension/review-copy
+  source: examples/extensions/review-copy
+  installed: <home>/extensions/review-copy
+  runtime claude:
+    ext:review-copy -> <home>/runtime/skills/claude/ext-review-copy/SKILL.md
+  runtime pi:
+    ext-review-copy -> <home>/runtime/skills/pi/ext-review-copy/SKILL.md
+  plugin: mirror-ext-your-name 0.1.1, 1 skill
+    Claude Code: not wired — mkdir -p ~/.claude/skills && ln -s "<home>/runtime/plugin/mirror-ext-your-name" ~/.claude/skills/mirror-ext-your-name
+    Codex: not wired — codex plugin marketplace add "<home>/runtime/plugin"
+           then codex plugin add mirror-ext-your-name@mirror-ext-your-name
+    Antigravity: not wired — agy plugin install "<home>/runtime/plugin/mirror-ext-your-name"
+    Grok Build: not wired — grok plugin install "<home>/runtime/plugin/mirror-ext-your-name" --trust
+                (this plugin carries skills only — no hooks and no MCP server for --trust to activate)
+```
+
+Each of its wiring commands appears verbatim in the contract's table and in the
+authoring guide's step 7, whose block is the binary's own output for `hello`,
+regenerated rather than retyped. The three reinstall commands are
+`extensionPluginReinstallCommand`'s and appear verbatim in the contract. The contract's
+per-home plugin section had the Claude Code step without its `mkdir -p`; it now has it.
+`ext:review-copy` appears on no user-facing surface but `review-copy`'s `skill.yaml`,
+where it is the manifest's `command_name`.
+
+**`route.sh static`:** 7 passed before the guard; 14 passed, 0 failed with it (the
+seven, six listings, coverage). The guard's proof, on scratch copies of the guide passed
+as `DS5_US3_GUIDE`: `summary: Record a ping` changed to `pong` in the manifest listing
+gave "the guide's skill.yaml listing and fixtures/hello/skill.yaml differ: 27c27 …" (13
+passed, 1 failed, exit 1); the `// commands/list.mjs` comment removed gave
+"fixtures/hello/ files no listing claims (a listing must open with its path comment):
+commands/list.mjs" (12 passed, 1 failed, exit 1).
+
+**Checks:** `npm test` 3417 tests, 3414 pass, 0 fail, 3 skipped; `checkDocLinks` clean; `checkRetiredSurfaces` clean, the
+story's files staged; `checkSkillCommandParity` clean; `buildClaudePlugin --check` in
+sync; `checkPackContents` clean, 497 files; `git diff --check` clean.
+
+**The grid, Driver-checked.** Every cell above found with the value it lists, at:
+
+| Surface | Where |
+|---|---|
+| Contract | *External Skill Runtime Surface Contract*: the two read keys under the materialization root; the per-home plugin section's Claude Code line; *How an installed extension reaches each runtime*: the table, the versions and binaries, the three facts, *When a skill is not listed*. *Reference Implementations › Claude Code*: the plugin link and `expose-claude` as project-local; *Claude Code's login in isolated routes*; the cross-reference under *Smoke test isolation* |
+| `extensions/index.md` | the layout block's two `runtime/` lines; *Reaching each runtime* |
+| Authoring guide | step 7: the printed block, Pi and `not carried`; step 8: the spellings, the `ext:hello` sentence, after an edit, the recovery line. `git diff` touches no fenced listing |
+| `api-reference.md` | the `runtimes:` comment; the directory-name rule; *What each `runtimes:` key reaches* |
+| `review-copy` `SKILL.md` | the header (location, command, five names, files); *Syntax*; *Examples* |
+| Getting Started | step 8's cross-reference; step 10, *Your extensions reach each runtime* |
+| REFERENCE | the `mirror extensions`, `mirror ext`, and `/ext-review-copy` rows |
+| README, CV21 index | the extension-system bullet; the superseded assessment's pointer |
+
+**Found while implementing, not changed:**
+
+- Pi's skill command. Pi 1.3.0 registers each skill as `skill:<name>` (its interactive
+  mode builds the command name as `` `skill:${skill.name}` ``, and its menu matches the
+  bare name), while this project spells Pi's skills `/mm-<skill>` throughout. The
+  contract's Pi row names both; the other surfaces keep the project's form. Whether the
+  project-wide spelling changes is the Navigator's question, outside this story.
+- `authoring-guide.md` step 7a has lost two dashes: "they run on ⏎ a database host, a
+  TLS mode, a certificate path ⏎ do not ask the person", already so before this story.
+  Outside steps 7 and 8, so left as it is.
+
+Navigator validation: pending.

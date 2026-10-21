@@ -30,7 +30,11 @@
 #                                  invocation in the runtime's spelling; before-counts
 #   bash route.sh verify <rt>      the reads: ledger, report, pings, interface, spend
 #   bash route.sh static           the fixture through the checkout's mirror; the
-#                                  classifier on two committed transcripts; the records
+#                                  classifier on two committed transcripts; the records;
+#                                  the authoring guide's listings diffed against
+#                                  fixtures/hello/ (a listing is read only when its first
+#                                  line is a path comment, like # skill.yaml or
+#                                  // commands/ping.mjs; DS5_US3_GUIDE overrides the guide)
 #   bash route.sh clean            stop what the route spawned, remove the scratch
 #                                  directory and any login copied into it
 #   bash route.sh untouched        the real configuration vs the baseline; the real
@@ -45,6 +49,7 @@ export LC_NUMERIC=C LC_ALL=C
 SELF="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)/$(basename "${BASH_SOURCE[0]}")"
 HERE="$(dirname "$SELF")"
 ROOT="$(cd "$HERE/../../../../../.." && pwd -P)"
+GUIDE="${DS5_US3_GUIDE:-$ROOT/docs/product/extensions/authoring-guide.md}"
 D_RAW="${DS5_US3_DIR:-/tmp/cv21-ds5-us3}"
 REAL_PATH="$PATH"
 REAL_HOME="$HOME"
@@ -634,6 +639,7 @@ static() {
     ok "fixtures/hello installs through the checkout's mirror and ext hello ping records a row"
   else bad "fixtures/hello: $(tail -2 "$S/install.out" "$S/ping.out" 2>/dev/null | tr '\n' ' ')"; fi
   rm -rf "$S"
+  listings
   [ "$(node "$HERE/turn.cjs" grok "$HERE/evidence/classifier/find.jsonl")" = "read the path the runtime listed; ran mirror consult" ] && ok "turn.cjs reads the committed find transcript as a find" || bad "turn.cjs misreads find.jsonl: $(node "$HERE/turn.cjs" grok "$HERE/evidence/classifier/find.jsonl")"
   [ "$(node "$HERE/turn.cjs" grok "$HERE/evidence/classifier/search.jsonl")" = "searched the disk" ] && ok "turn.cjs reads the committed search transcript as a search" || bad "turn.cjs misreads search.jsonl: $(node "$HERE/turn.cjs" grok "$HERE/evidence/classifier/search.jsonl")"
   local f; for f in versions.tsv table.tsv; do
@@ -643,6 +649,37 @@ static() {
   grep -q 'CV21.DS5.US3' "$HERE/../index.md" && ok "the DS5 index names this story" || bad "the DS5 index does not name US3"
   (cd "$ROOT" && node ts/scripts/checkDocLinks.ts >/dev/null 2>&1) && ok "checkDocLinks clean" || bad "checkDocLinks"
   result
+}
+
+# The authoring guide's listings ARE the fixture (US3's deferred debt, paid by TS4): each
+# fenced block whose first line is a path comment (# skill.yaml, -- migrations/001_init.sql,
+# // commands/ping.mjs, <!-- SKILL.md -->) is that file under fixtures/hello/, byte for byte.
+# A listing without the comment is not read, so the coverage check names any fixture file
+# that no listing claims.
+listings() {
+  local L; L="$(mktemp -d /tmp/us3-listings.XXXX)"
+  awk -v out="$L" '
+    /^```/ { if (inblock) { inblock = 0; if (file != "") close(file); file = ""; next } inblock = 1; first = 1; next }
+    inblock && first {
+      first = 0; name = ""
+      if ($0 ~ /^(#|--|\/\/) [A-Za-z0-9_.\/-]+\.[A-Za-z0-9]+$/) { name = $0; sub(/^(#|--|\/\/) /, "", name) }
+      else if ($0 ~ /^<!-- [A-Za-z0-9_.\/-]+\.[A-Za-z0-9]+ -->$/) { name = $0; sub(/^<!-- /, "", name); sub(/ -->$/, "", name) }
+      if (name != "") { flat = name; gsub(/\//, "__", flat); file = out "/" flat; print name >> (out "/index"); next }
+    }
+    inblock && file != "" { print > file }
+  ' "$GUIDE"
+  [ -f "$L/index" ] || : >"$L/index"
+  local name flat n=0
+  while IFS= read -r name; do
+    n=$((n + 1)); flat="${name//\//__}"
+    if [ ! -f "$HERE/fixtures/hello/$name" ]; then bad "the guide lists $name, which fixtures/hello/ does not have"
+    elif cmp -s "$L/$flat" "$HERE/fixtures/hello/$name"; then ok "the guide's $name listing is fixtures/hello/$name, byte for byte"
+    else bad "the guide's $name listing and fixtures/hello/$name differ: $(diff "$L/$flat" "$HERE/fixtures/hello/$name" | head -4 | tr '\n' ' ')"; fi
+  done <"$L/index"
+  local missing; missing="$(cd "$HERE/fixtures/hello" && find . -type f ! -name '.*' | sed 's#^\./##' | sort | while IFS= read -r f; do grep -qxF -- "$f" "$L/index" || echo "$f"; done)"
+  [ -z "$missing" ] && ok "every file of fixtures/hello/ has a listing in the guide ($n listings)" \
+    || bad "fixtures/hello/ files no listing claims (a listing must open with its path comment): $(echo $missing)"
+  rm -rf "$L"
 }
 
 untouched() {
@@ -711,5 +748,5 @@ case "${1:-}" in
   static) static ;;
   untouched) untouched ;;
   clean) clean ;;
-  *) sed -n '2,38p' "$SELF" | sed 's/^# \{0,1\}//'; exit 2 ;;
+  *) sed -n '2,42p' "$SELF" | sed 's/^# \{0,1\}//'; exit 2 ;;
 esac
