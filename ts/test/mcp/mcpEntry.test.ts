@@ -118,6 +118,7 @@ describe("the MCP entry's text", () => {
       "MIRROR_NODE",
       "mmbin",
       "mmdir",
+      "mmjs",
       "mmnode",
     ]);
   });

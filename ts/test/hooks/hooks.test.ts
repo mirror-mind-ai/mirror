@@ -269,6 +269,50 @@ describe("a hook that cannot run is recorded, never silent (N1)", () => {
     assert.match(log, /Node 24 or later/);
   });
 
+  test("an npm shell shim beside node_modules resolves to the package's own bin", () => {
+    // On Windows npm writes no symlink: its global `mirror-hook` is a POSIX
+    // shell shim with `node_modules/` beside it, and Node ran the shim as
+    // JavaScript: `node exited 1` in hooks.log on every hook, no conversation
+    // ever logged from Claude Code there. The wrapper runs the bin the shim
+    // wraps. Modeled here as a prefix in that shape; the fake Node records
+    // the entry it was handed.
+    const home = tmpHome();
+    const prefix = join(home, "npm");
+    const bin = join(prefix, "node_modules", "mirror-mind", "bin");
+    mkdirSync(bin, { recursive: true });
+    writeFileSync(
+      join(prefix, "mirror-hook"),
+      '#!/bin/sh\nexec node "$0/../node_modules/mirror-mind/bin/mirror-hook.js" "$@"\n',
+      {
+        mode: 0o755,
+      },
+    );
+    writeFileSync(join(bin, "mirror-hook.js"), "");
+    const fakeNode = join(home, "node");
+    writeFileSync(fakeNode, `#!/bin/sh\nprintf '%s\\n' "$1" > "${join(home, "entry")}"\nexit 0\n`, {
+      mode: 0o755,
+    });
+
+    const result = spawnSync(
+      "bash",
+      [join(REPO_ROOT, "plugins/mirror-mind/hooks/log-user-prompt.sh")],
+      {
+        env: {
+          HOME: home,
+          MIRROR_HOME: home,
+          MIRROR_BIN: prefix,
+          MIRROR_NODE: fakeNode,
+          PATH: "/usr/bin:/bin",
+        },
+        input: "{}",
+        encoding: "utf8",
+      },
+    );
+
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(readFileSync(join(home, "entry"), "utf8").trim(), join(bin, "mirror-hook.js"));
+  });
+
   test("the line lands in the home the core uses, even when MIRROR_USER is only in .env", () => {
     // The first wrappers fell back to ~/.mirror-minds/default -- a home the core
     // never resolves and nobody reads -- whenever the environment lacked
