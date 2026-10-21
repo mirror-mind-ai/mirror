@@ -500,8 +500,9 @@ Proportionate.
 listed in the implementation evidence — the lesson of CR149's red push after Done.
 
 **Found on the way, not this CR's:** `REFERENCE.md`'s Paths table still lists
-`EXPORT_DIR` and `TRANSCRIPT_EXPORT_DIR`, which the configuration reference records as
-inert since CV22.DS10.TS5. Not captured; offered to the Navigator.
+`EXPORT_DIR` and `TRANSCRIPT_EXPORT_DIR` — and, it turned out, `DB_BACKUP_PATH` — which the
+configuration reference records as inert since CV22.DS10.TS5. Captured as
+[CR157](cr157-reference-lists-path-settings-nothing-reads.md) at the Navigator's direction.
 
 ## Outcome
 
