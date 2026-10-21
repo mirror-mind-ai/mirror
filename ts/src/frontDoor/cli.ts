@@ -1706,6 +1706,8 @@ interface DispatchOutcome {
   exitCode: number;
   /** Content-free route metadata for the durable front-door log. */
   detail?: string;
+  /** The non-zero exit is the command's answer, not a failure (`frontDoorLog.ts`). */
+  verdict?: boolean;
 }
 
 async function dispatch(argv: readonly string[]): Promise<DispatchOutcome> {
@@ -1778,7 +1780,16 @@ async function dispatchTs(argv: readonly string[]): Promise<number | DispatchOut
   // database, when at all, through a read-only handle -- no bootstrap, no
   // migrate-on-open, and for `welcome --status-line` no subprocess whatsoever.
   if (argv[0] === "welcome") return runWelcomeRoute(argv);
-  if (argv[0] === "runtime") return runRuntimeReadRoute(argv);
+  if (argv[0] === "runtime") {
+    const exitCode = await runRuntimeReadRoute(argv);
+    // `runtime diagnose` exits 1 to say "attention needed" -- its contract
+    // with scripts. Logged as a failure, that line was itself a front-door
+    // error, and `front_door_errors` counted it: every diagnose with findings
+    // fed the finding it reported, one line per run.
+    if (argv[1] === "diagnose" && exitCode === 1)
+      return { exitCode, detail: "verdict=attention", verdict: true };
+    return exitCode;
+  }
   if (argv[0] === "mcp") return runMcpServer();
   if (isMemorySearch(argv)) return runMemorySearch(argv);
   if (isConsult(argv)) {
@@ -1846,6 +1857,7 @@ export async function main(rawArgv = process.argv.slice(2)): Promise<number> {
       route: decision.engine,
       exitCode: outcome.exitCode,
       ...(outcome.detail ? { detail: outcome.detail } : {}),
+      ...(outcome.verdict ? { verdict: true } : {}),
     });
     return outcome.exitCode;
   } catch (error) {

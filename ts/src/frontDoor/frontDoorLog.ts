@@ -29,6 +29,13 @@ export interface FrontDoorLogEntry {
   exitCode: number;
   /** A short, content-free note or error category. Never argument values. */
   detail?: string;
+  /**
+   * The non-zero exit is the command's answer, not a failure: `runtime
+   * diagnose` exits 1 to say "attention needed". Logged at INFO, so the line
+   * does not count as a front-door error -- which `front_door_errors` reads,
+   * and which each diagnose with findings then fed, one line per run.
+   */
+  verdict?: boolean;
 }
 
 /** The log path for a resolved database path (sibling of the DB). */
@@ -40,7 +47,7 @@ export function frontDoorLogPath(dbPath: string): string {
 export function logFrontDoor(logPath: string | null, entry: FrontDoorLogEntry): void {
   if (!logPath) return;
   try {
-    const level = entry.exitCode === 0 ? "INFO" : "ERROR";
+    const level = entry.exitCode === 0 || entry.verdict ? "INFO" : "ERROR";
     const detail = entry.detail ? entry.detail.replace(/[\r\n\t]+/g, " ") : "";
     const line = [
       new Date().toISOString(),
