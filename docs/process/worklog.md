@@ -12,6 +12,25 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-10-22 — CV21.DS5.TS4: how extensions reach each runtime, where a user reads it; DS5 done
+
+The runtime interface contract holds one table for a home's installed extension on the
+five runtimes: what reads it, the wiring step exactly as `mirror extensions install`
+prints it, the reinstall a copying runtime needs after a change, and the spelling US3
+measured, with version, binary, and date. The extension docs, `review-copy`'s
+`SKILL.md`, Getting Started, REFERENCE, and README each carry their part and link it,
+and wherever invocations are listed one line says what to run when a skill is not
+listed. Corrected on the way: `ext:review-copy` shown as a typed Claude Code command,
+`expose-claude` called the Claude Code path, the contract's Claude Code step without
+the `mkdir -p` the install prints, and a manifest comment that read as if a `codex:`
+block reached Codex. Reviewed through five lenses before approval and validated by the
+Navigator cell by cell; the contract's repeated commands paid in a Refactor, a test
+tying the docs' commands to the code deferred. US3's `route.sh static` now holds the
+authoring guide's listings to its fixture. Found on the way and captured as CR159: the
+docs spell Pi's skills by their bare name where Pi 1.3.0 registers `/skill:<name>`, and
+the authoring guide's step 7a lost two dashes. DS5 is done; DS11 is CV21's last
+Delivery Story, then its release boundary. Not yet released.
+
 ### 2026-10-21 — v0.36.2 released: Clearing Out What Another Home Copied
 
 Patch release of one Change Request, CR154, cut the day it closed so the clean-up

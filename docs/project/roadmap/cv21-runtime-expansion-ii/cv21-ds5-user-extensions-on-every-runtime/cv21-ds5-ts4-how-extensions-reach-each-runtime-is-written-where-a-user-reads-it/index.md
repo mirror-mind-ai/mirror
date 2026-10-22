@@ -2,7 +2,7 @@
 
 # CV21.DS5.TS4 — How extensions reach each runtime is written where a user reads it
 
-**Status:** 🟢 In Progress — planned, reviewed through five lenses, approved 2026-10-21
+**Status:** ✅ Done — 2026-10-22
 **Type:** Technical Story
 **Delivery Story:** CV21.DS5 — User Extensions On Every Runtime
 
@@ -24,7 +24,21 @@ not measure.
 
 ## Outcome
 
-The contract holds the one table: per runtime, what reads the extension (Pi's catalog;
+**Done 2026-10-22** on `main`, validated by the Navigator cell by cell through the
+six-step route. The runtime interface contract holds the one table: for Pi, Claude
+Code, Codex, Antigravity, and Grok Build, what reads an installed extension, the
+wiring step exactly as `mirror extensions install` prints it, the reinstall a copying
+runtime needs after a change, and the spelling US3 measured, with version, binary, and
+date. The extension docs, `review-copy`'s `SKILL.md`, Getting Started, REFERENCE, and
+README carry their part and link it; wherever invocations are listed, one line says
+what to run when a skill is not listed. US3's `route.sh static` holds the authoring
+guide's six listings to `fixtures/hello/`, and TS1's Claude Code login facts stand in
+the contract. Debt: the contract's repeated commands paid in a Refactor; a test tying
+the docs' commands to the code deferred, with its trigger. Found on the way and
+captured as CR159: the docs spell Pi's skills by their bare name where Pi 1.3.0
+registers `/skill:<name>`, and the authoring guide's step 7a lost two dashes.
+
+As planned: the contract holds the one table: per runtime, what reads the extension (Pi's catalog;
 the per-home plugin `mirror-ext-<user>` on the other four), the wiring step `mirror
 extensions install` prints, the reinstall a copying runtime needs after a change, and
 the invocation as US3 measured it on 2026-10-20: `/ext-review-copy` on Claude Code
