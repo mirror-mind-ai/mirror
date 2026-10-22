@@ -148,4 +148,8 @@ sync; `checkPackContents` clean, 497 files; `git diff --check` clean.
   TLS mode, a certificate path ⏎ do not ask the person", already so before this story.
   Outside steps 7 and 8, so left as it is.
 
-Navigator validation: pending.
+**Navigator validation: accepted 2026-10-22.** The Navigator ran the six-step route
+and every step showed what it lists: the contract's table cell for cell against the
+printed report, US3's Steps 3 and 4, and TS1's costs; the authoring guide's diff adding
+lines in steps 7 and 8 only; `route.sh static` 14 passed, 0 failed; the one
+`ext:review-copy` match the manifest's `command_name`.
