@@ -686,18 +686,15 @@ generated plugin per Mirror home**, in the canonical plugin's format
   extension added, changed, or removed) and held when it does not. Codex keys its
   cache by it; `runtime diagnose` compares it, and for this plugin a copy at any
   other version is stale.
-- **Wiring, once per runtime** (printed by the `extensions` verbs for a runtime on the
-  `PATH` that has not taken the plugin; `mirror init` prints none, there is no plugin
-  at init): Claude Code `mkdir -p ~/.claude/skills && ln -s "<dir>"
-  ~/.claude/skills/mirror-ext-<user>` (a link, read in place); Codex `codex plugin
-  marketplace add "<home>/runtime/plugin"` then
-  `codex plugin add mirror-ext-<user>@mirror-ext-<user>`; Antigravity `agy plugin
-  install "<dir>"`; Grok Build `grok plugin install "<dir>" --trust` (skills only:
-  nothing for `--trust` to activate).
-- **After a change**, the three runtimes that copy a plugin hold a stale copy until one
-  command each: Codex `codex plugin add …` again, Antigravity `agy plugin install …`
-  again, Grok `grok plugin uninstall mirror-ext-<user> --confirm && grok plugin install
-  …`. The `extensions` verbs print the one a runtime needs; `runtime diagnose` raises
+- **Wiring, once per runtime**: one step for each runtime on the `PATH` that has not
+  taken the plugin, printed by the `extensions` verbs (`mirror init` prints none: there
+  is no plugin at init). Claude Code reads the plugin in place through a link; Grok
+  Build's `--trust` has nothing to activate, since the plugin carries skills only. The
+  steps are in [the table below](#how-an-installed-extension-reaches-each-runtime).
+- **After a change**, the three runtimes that copy a plugin, Codex, Antigravity, and
+  Grok Build, hold a stale copy until their reinstall, one command each
+  ([the table below](#how-an-installed-extension-reaches-each-runtime)). The
+  `extensions` verbs print the one a runtime needs; `runtime diagnose` raises
   `ext_plugin_codex_cache_stale`, `ext_plugin_agy_copy_stale`,
   `ext_plugin_grok_copy_stale`, `ext_plugin_claude_link_dangling`, and
   `ext_plugin_grok_copies_duplicated`, each with the command as its repair route.

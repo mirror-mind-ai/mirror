@@ -49,7 +49,7 @@ writes it, with `<home>` for the Mirror home.
 | **Contract table** · after a change | nothing: next session | nothing: in place | `codex plugin add …` again | `agy plugin install …` again | `grok plugin uninstall … --confirm && grok plugin install … --trust` |
 | **Contract table** · you type | `/ext-review-copy`; Pi's own `/skill:ext-review-copy` named | `/ext-review-copy` | `$mirror-ext-<user>:ext-review-copy` | `/mirror-ext-<user>:ext-review-copy` | `/ext-review-copy` |
 | **Contract table** · version, binary, date | not re-measured, said so | 2.1.304, `~/.local/share/claude/versions/2.1.304`, 2026-10-20 | 0.163.0, `/opt/homebrew/Caskroom/codex/0.163.0/bin/codex`, 2026-10-20 | 1.4.3, `~/.local/bin/agy`, 2026-10-20 | 1.0.62, `~/.grok/downloads/grok-1.0.62-macos-aarch64`, 2026-10-20 |
-| **Contract** · per-home plugin section's wiring line | — | printed, `mkdir -p` included | unchanged | unchanged | unchanged |
+| **Contract** · per-home plugin section's wiring line | — | validated as printed, `mkdir -p` included; since the debt review, a pointer to the table | same | same | same |
 | **Contract** · Claude Code section | — | the plugin link as the home-level path; `expose-claude` project-local; login facts at 2.1.296 and 2.1.304 | — | — | — |
 | **`extensions/index.md`** · you type | `/ext-review-copy` | `/ext-review-copy` | `$mirror-ext-<user>:ext-review-copy` | `/mirror-ext-<user>:ext-review-copy` | `/ext-review-copy` |
 | **`extensions/index.md`** · recovery line | the install prints the step, again when run again; `diagnose` names the reinstall | same line | same line | same line | same line |
@@ -108,7 +108,8 @@ Each of its wiring commands appears verbatim in the contract's table and in the
 authoring guide's step 7, whose block is the binary's own output for `hello`,
 regenerated rather than retyped. The three reinstall commands are
 `extensionPluginReinstallCommand`'s and appear verbatim in the contract. The contract's
-per-home plugin section had the Claude Code step without its `mkdir -p`; it now has it.
+per-home plugin section had the Claude Code step without its `mkdir -p`; since the debt
+review it points to the table for every step instead.
 `ext:review-copy` appears on no user-facing surface but `review-copy`'s `skill.yaml`,
 where it is the manifest's `command_name`.
 
@@ -137,7 +138,9 @@ sync; `checkPackContents` clean, 497 files; `git diff --check` clean.
 | REFERENCE | the `mirror extensions`, `mirror ext`, and `/ext-review-copy` rows |
 | README, CV21 index | the extension-system bullet; the superseded assessment's pointer |
 
-**Found while implementing, not changed:**
+**Found while implementing, not changed:** both captured as
+[CR159](../../../../refinement/rs010-cv22-oracle-and-port-hygiene/cr159-pi-skills-are-spelled-by-their-bare-name-and-step-7a-lost-two-dashes.md)
+(RS010) on 2026-10-22, one Change Request by the Navigator's decision.
 
 - Pi's skill command. Pi 1.3.0 registers each skill as `skill:<name>` (its interactive
   mode builds the command name as `` `skill:${skill.name}` ``, and its menu matches the
@@ -153,3 +156,13 @@ and every step showed what it lists: the contract's table cell for cell against 
 printed report, US3's Steps 3 and 4, and TS1's costs; the authoring guide's diff adding
 lines in steps 7 and 8 only; `route.sh static` 14 passed, 0 failed; the one
 `ext:review-copy` match the manifest's `command_name`.
+
+**Debt paid after validation (Refactor, 2026-10-22).** The Navigator decided to pay
+the first debt finding now: the contract listed the wiring and reinstall commands both
+in US2's per-home plugin section and in TS4's table. The section's two bullets now keep
+their own facts (printed by the `extensions` verbs, none at `init`, the `diagnose`
+finding names, not-wired is not drift) and point to the table for the commands; the
+table's four plugin-runtime rows are the contract's only extension-command lines.
+`checkDocLinks` clean, `git diff --check` clean, `route.sh static` 14 passed. The
+second finding, that no test ties the docs' commands to the code, is deferred: see
+`review.md`.
