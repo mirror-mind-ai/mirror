@@ -44,38 +44,58 @@ Captured, unassigned, 2026-10-22, at the Navigator's direction, from CV21.DS5.TS
 implementation. Both findings in one Change Request, and in RS010, by the Navigator's
 decision. Selected 2026-10-22 (Current Focus).
 
-**Proposed plan, awaiting the Navigator's approval.** What planning found (under
-*Evidence*) makes the spelling more than a docs question: the form the docs give Pi
-decides what Mirror logs and parses for that turn. So the behaviour is measured before a
-line of the docs changes.
+**Plan, approved by the Navigator 2026-10-22,** after a review through five lenses
+(quartermaster, quality assurance, AI engineer, database architect, prompt engineer)
+whose eight amendments were all folded. What planning found (under *Evidence*) makes the
+spelling more than a docs question: the form the docs give Pi decides what Mirror logs
+and parses for that turn. The logging defect is its own Change Request,
+[CR160](cr160-a-pi-skill-invoked-as-skill-is-logged-as-its-body.md), captured from this
+review (A5) with the extension's fix, the two parsers, and the repair of what earlier
+versions stored. This CR measures, and writes the docs.
 
-1. **Measure** on the installed Pi (1.4.0), isolated: a scratch Mirror home, `pi
-   --session-dir` in a scratch directory, the checkout's extension, the cheapest model.
-   For `/mm-journeys` sent as typed and for `/skill:mm-journeys`: whether Pi expands
-   it, whether the skill runs, and what the Mirror logger records for the turn. The menu
-   pick is a one-minute check in the Navigator's own Pi. The same route explains why no
-   expanded turn has been logged since mid-October, or says that it cannot. Recorded
-   here with Pi's version, binary, and date.
-2. **Decide**, the Navigator, from the measurement: the spelling the docs give Pi
-   (`/skill:<name>`, or the bare name picked from the menu); and whether a logging
-   defect it confirms is fixed here or in its own Change Request. The Driver recommends
-   its own: it is a product fix, with tests, in the Pi extension and the two parsers,
-   and this CR's docs follow it.
-3. **Write** the docs to the decision: `AGENTS.md`, REFERENCE's preface and Pi column,
-   Getting Started, the Pi skills' Usage lines (and the Claude copies
-   `buildClaudePlugin` regenerates from them), the contract's Pi row, and the
-   extension docs TS4 wrote; and step 7a's two dashes, which depend on nothing above.
+1. **Step 7a first** (A1): its two dashes back, so it reads as one sentence. It depends
+   on nothing below.
+2. **Measure, bounded** (A2, A3, A4), on the installed Pi 1.4.0:
+   - *Isolation.* A scratch Mirror home made by `mirror init` under a scratch `HOME`,
+     named for the run by `MIRROR_HOME` and `MIRROR_USER`, which win over every env
+     file; `pi --session-dir` in a scratch directory, so nothing lands in
+     `~/.pi/agent/sessions`; run from the checkout, so its `.pi/` extension and skills
+     load; Pi's own login, since a login is not under test.
+   - *Two forms of one skill, one turn each, no retries,* on the cheapest model
+     (`claude-haiku-4-5`): `/mm-journeys` as typed, and `/skill:mm-journeys`.
+   - *Three observations per form,* each read after the turn, since Pi writes its
+     session file at message boundaries: (a) Pi's record, the user entry in the session
+     file, the text as typed or the expanded `<skill …>` block; (b) the skill's effect,
+     a `mirror journeys` call in the turn, which happens only if the skill ran; (c) the
+     logger's row in the scratch home's `messages`, present or skipped, and what it
+     holds. Pass: each observation read and recorded. Fail: one that cannot be read.
+     The model running the skill from the bare form is one labelled observation, not an
+     eval.
+   - *The menu pick*, the Navigator's, in the same isolation, read through (a) alone.
+   - *Mid-October*: answered only by what the route shows on 1.4.0.
+3. **Decide**, the Navigator: the spelling the docs give Pi. Not `/skill:` as the
+   recommended form while the logger stores the body: CR160 ships first, or the docs
+   name it beside the form (A6).
+4. **Write the docs** for two audiences (A7): the skill's *name* where the text
+   addresses the model (`AGENTS.md`'s mode instructions), the *typed form* where it
+   addresses the person: REFERENCE's preface, with Pi's form apart from Grok's;
+   Getting Started; the Pi skills' Usage lines; `mm-help`'s listing; the contract's Pi
+   row and the extension docs TS4 wrote.
 
-- **Acceptance:** the measurement recorded with version, binary, and date; every place
-  the project spells a Pi skill command says the measured form; step 7a reads as one
-  sentence; `npm test`, `checkDocLinks`, `checkSkillCommandParity`, `buildClaudePlugin
-  --check`, and the retired-surface sweep green.
-- **Validation:** the Navigator types the documented form in Pi and sees the skill
-  run, then reads the changed surfaces and step 7a.
-- **Exclusions:** the other runtimes' spellings; any product change, unless the
-  Navigator folds the logging defect in at step 2; rewording beyond the spelling.
-- **Authority:** the measurement writes only scratch homes and directories; nothing
-  is released.
+- **Acceptance:** the measurement recorded with version, binary, and date; every
+  person-facing Pi skill command in the decided form, and every model-facing line
+  naming the skill; step 7a one sentence; `npm test`, `checkDocLinks`,
+  `checkSkillCommandParity` and `buildClaudePlugin --check` after the Usage edits (A8),
+  and the retired-surface sweep, green.
+- **Validation:** the Navigator reads the scratch home's `messages` after the
+  measurement (A4), types the documented form in Pi and sees the skill run, and reads
+  the changed surfaces and step 7a.
+- **Exclusions:** the other runtimes' spellings; the logging fix and the repair
+  (CR160); rewording beyond the spelling.
+- **Authority:** the measurement writes only scratch homes and directories; nothing is
+  released.
+
+**Started 2026-10-22:** Driver @viniciusteles, Delivery `main`.
 
 ## Evidence
 
