@@ -9,7 +9,7 @@ If a linked document and this index disagree, this index wins.
 ## Current Focus
 
 - Refinement Story: RS010
-- Change Request: CR159
+- Change Request: none
 
 Selecting a focus is an explicit project decision. Reading this file never selects or
 executes work.
@@ -89,8 +89,8 @@ Open work is ordered intentionally. Terminal history follows open work.
 | 54 | [CR156](rs010-cv22-oracle-and-port-hygiene/cr156-a-home-made-by-copying-another-s-database-is-the-same-home-twice.md) | RS010 | A home made by copying another's database is the same home twice, and the docs do not say so | captured | — | — |
 | 55 | [CR157](rs010-cv22-oracle-and-port-hygiene/cr157-reference-lists-path-settings-nothing-reads.md) | RS010 | `REFERENCE.md` lists `DB_BACKUP_PATH`, `EXPORT_DIR`, and `TRANSCRIPT_EXPORT_DIR` as settings, though nothing has read them since the Python core was deleted | captured | — | — |
 | 56 | [CR158](rs010-cv22-oracle-and-port-hygiene/cr158-a-pi-catalog-whose-skill-files-are-gone-loads-no-extension-and-nothing-reports-it.md) | RS010 | A Pi catalog whose skill files are gone loads no extension, while the status line still counts them and nothing reports it | captured | — | — |
-| 57 | [CR159](rs010-cv22-oracle-and-port-hygiene/cr159-pi-skills-are-spelled-by-their-bare-name-and-step-7a-lost-two-dashes.md) | RS010 | The docs spell Pi's skills `/mm-<skill>`, which Pi registers as `/skill:<name>`, and the authoring guide's step 7a has lost two dashes | in_progress | @viniciusteles | `main` |
-| 58 | [CR160](rs010-cv22-oracle-and-port-hygiene/cr160-a-pi-skill-invoked-as-skill-is-logged-as-its-body.md) | RS010 | A Pi skill invoked as `/skill:<name>` is logged as the skill's body, as if the person had said it | captured | — | — |
+| 57 | [CR160](rs010-cv22-oracle-and-port-hygiene/cr160-a-pi-skill-invoked-as-skill-is-logged-as-its-body.md) | RS010 | A Pi skill invoked as `/skill:<name>` is logged as the skill's body, as if the person had said it | captured | — | — |
+| — | [CR159](rs010-cv22-oracle-and-port-hygiene/cr159-pi-skills-are-spelled-by-their-bare-name-and-step-7a-lost-two-dashes.md) | RS010 | The docs spell Pi's skills `/mm-<skill>`, which Pi registers as `/skill:<name>`, and the authoring guide's step 7a has lost two dashes | done | @viniciusteles | `main` |
 | — | [CR127](rs010-cv22-oracle-and-port-hygiene/cr127-runtime-diagnose-counts-its-own-exit-as-a-front-door-error.md) | RS010 | `runtime diagnose` counts its own exit as a front-door error, so any finding keeps the warning alive | rejected | — | — |
 | — | [CR154](rs010-cv22-oracle-and-port-hygiene/cr154-a-home-cannot-list-or-remove-the-pi-conversations-it-imported.md) | RS010 | A home cannot list or remove the Pi conversations it imported rather than logged | done | @viniciusteles | `main` |
 | — | [CR153](rs010-cv22-oracle-and-port-hygiene/cr153-a-home-s-pi-backfill-imports-another-home-s-sessions.md) | RS010 | A home's Pi backfill imports another home's sessions | done | @viniciusteles | `main` |

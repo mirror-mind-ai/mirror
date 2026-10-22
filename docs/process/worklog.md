@@ -12,6 +12,20 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-10-22 — CR159: how Pi invokes a skill, measured and written down; CR160 captured
+
+The docs called Pi's skill commands `/mm-<skill>`, as if Pi registered them. Measured on Pi
+1.4.0 in a scratch home: Pi registers each skill as `/skill:<name>`, and typing `/mm-`
+opens its menu, which lists the skill under that name; a bare `/mm-<skill>` reaches the
+model as text, which loaded the skill in the one turn measured. REFERENCE, Getting
+Started, and `mm-help` now say to pick the skill from the menu; the contract records the
+measurement; the model keeps the skill's name. The authoring guide's step 7a has its two
+dashes back. Planning found the bigger defect, captured as CR160: a skill picked from
+Pi's menu reaches the Mirror logger expanded, and is stored as the skill's body, as if
+the person had said it: 225 such turns in the production home and 185 in the development
+home. Reviewed through five lenses before approval; validated by the Navigator through
+the menu pick. Not yet released.
+
 ### 2026-10-22 — CV21.DS5.TS4: how extensions reach each runtime, where a user reads it; DS5 done
 
 The runtime interface contract holds one table for a home's installed extension on the

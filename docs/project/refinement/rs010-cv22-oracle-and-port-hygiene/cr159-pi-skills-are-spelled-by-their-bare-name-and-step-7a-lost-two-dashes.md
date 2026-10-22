@@ -104,6 +104,18 @@ recommends `/skill:` (A6). Order: CR159, then CR160, then DS11, because the `/mm
 form stays right after CR160 ships, CR160 is a product change with a repair and a
 release that deserves its own plan, and DS11 copies these docs into the parity matrix.
 
+**Validated 2026-10-22** by the Navigator: the menu pick in a scratch home (the documented
+form: type `/mm-`, pick the skill, see it run), the rows recorded here as read before the
+scratch home was removed, and a read of the changed surfaces and step 7a.
+
+**Reviewed 2026-10-22.** Proportionate: four docs and one skill line changed, and the rest
+is measurement recorded here; no machinery added. Nothing left to act on in this CR. The
+measurement's route is recorded step by step under *Evidence* rather than committed as a
+script; CR160 needs the same route to prove its fix and is its natural place to become
+one. Enter on a fully typed `/mm-journeys` with the menu open stays unmeasured and changes
+nothing the docs say, since they tell the person to pick from the menu. The caveat written
+into the contract's *Invoking a skill on Pi* leaves with CR160's fix, noted there.
+
 ## Evidence
 
 - Pi 1.3.0, installed at `~/.pi/agent/install/releases/1.3.0`: `docs/skills.md` ("use
@@ -186,4 +198,14 @@ release that deserves its own plan, and DS11 copies these docs into the parity m
 
 ## Outcome
 
-Open.
+**Done 2026-10-22.** The docs say how Pi invokes a skill, as measured on Pi 1.4.0: typing
+`/mm-` opens Pi's command menu, which lists each skill as `skill:mm-<skill>`, and the
+person picks it there (REFERENCE's preface, apart from Grok's form; Getting Started;
+`mm-help`). The contract's *Invoking a skill on Pi* holds the measured facts and CR160's
+caveat, and no doc a person reads recommends `/skill:`; the model is still given the
+skill's name. Step 7a reads as one sentence. Planning found, and the measurement
+confirmed, that a skill picked from Pi's menu is logged as its body: the 410 such rows in
+the two homes, and the fix, are [CR160](cr160-a-pi-skill-invoked-as-skill-is-logged-as-its-body.md)'s.
+On `main`: `0cb0b15e` (selected), `0ac19259` (approved, started), `15c08dcc` (step 7a),
+`21a22bcc` and `47ef2129` (measured), `7f1851fb` (the docs), and this closure. Not yet
+released.

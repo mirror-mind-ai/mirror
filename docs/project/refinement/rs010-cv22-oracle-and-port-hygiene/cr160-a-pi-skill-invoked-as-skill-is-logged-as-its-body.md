@@ -55,6 +55,10 @@ review (amendment A5), in RS010 beside
 whose planning found it. Not planned. CR159's measurement adds what Pi 1.4.0 does today.
 Current Focus unchanged.
 
+For planning: CR159 wrote a caveat into the contract's *Invoking a skill on Pi* that
+this CR removes when its fix ships, and CR159's measurement route, recorded step by step
+in its *Evidence*, is the one to make re-runnable for this CR's validation.
+
 ## Evidence
 
 - Pi 1.3.0 and 1.4.0 (`~/.pi/agent/install/releases/<version>`), in
