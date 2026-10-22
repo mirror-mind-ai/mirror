@@ -309,9 +309,7 @@ the plugin, and the report says so: `not carried (no claude block in skill.yaml)
 ### 7a. Installation settings (when the extension needs any)
 
 If your commands or provider need something that belongs to the *machine* they
-run on 
- a database host, a TLS mode, a certificate path 
- do not ask the
+run on — a database host, a TLS mode, a certificate path — do not ask the
 person to export it in their shell: that reaches every other program they run.
 Mirror reads one file for the extension and passes it to your process, and to
 nothing else:
