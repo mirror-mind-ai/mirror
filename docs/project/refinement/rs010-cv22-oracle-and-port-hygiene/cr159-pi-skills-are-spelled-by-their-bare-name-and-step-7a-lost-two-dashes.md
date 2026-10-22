@@ -134,6 +134,27 @@ versions stored. This CR measures, and writes the docs.
 - Two parsers read these spellings out of a prompt, and neither knows a `/skill:` form:
   `inferJourneyForConversation` (`/mm-build <slug>`, `$mm-build`, `/mm:build`) and
   `mirrorForm` (`/mm-mirror …` and the plugin forms).
+- **Step 7a, 2026-10-22:** both dashes back (`15c08dcc`); the guide's listings untouched,
+  `route.sh static` 14 passed.
+- **Measured 2026-10-22, 17:50 to 17:51 UTC** (step 2): Pi 1.4.0 (`~/.local/bin/pi`, the
+  managed install's 1.4.0 release), `anthropic/claude-haiku-4-5` with thinking off, run
+  from the checkout at `15c08dcc`, whose Pi logger is unchanged since 2026-10-12; a
+  scratch Mirror home made by `mirror init` and seeded; each form in its own
+  `--session-dir`; one turn each, no retry.
+
+  | | `/mm-journeys` as typed | `/skill:mm-journeys` |
+  |---|---|---|
+  | (a) Pi's record of the turn | the text as typed, 12 characters | the expanded block, 473 characters, opening `<skill name="mm-journeys" location=…>` |
+  | (b) the skill's effect | the model read `.pi/skills/mm-journeys/SKILL.md`, then ran `mirror journeys`: one observation, the model's choice | the model ran `mirror journeys`; Pi had put the body in the prompt |
+  | (c) the logger's rows | no user row (it opens with `/`); the reply logged, 497 characters, with no turn before it | the user row is the 473-character block; the reply logged, 499 characters |
+
+  Both answered with the scratch home's one journey. Mid-October, by the route alone
+  (A3): on 1.4.0, with the logger as it is, a `/skill:` turn is still stored as the
+  skill's body, so nothing in this code path stopped it; the production home's record
+  since 2026-10-16 simply holds no `/skill:` invocation. The real homes' conversation
+  counts (1637, 884) were unmoved, neither holds a row naming the scratch home, and no
+  new session file reached `~/.pi/agent/sessions`. The menu pick is pending: the
+  Navigator's.
 - [CV21.DS5.TS4's test guide](../../roadmap/cv21-runtime-expansion-ii/cv21-ds5-user-extensions-on-every-runtime/cv21-ds5-ts4-how-extensions-reach-each-runtime-is-written-where-a-user-reads-it/test-guide.md)
   records both under *Found while implementing, not changed*.
 

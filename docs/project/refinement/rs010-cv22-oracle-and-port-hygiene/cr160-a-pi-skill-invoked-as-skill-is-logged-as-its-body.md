@@ -77,6 +77,12 @@ Current Focus unchanged.
   `<skill…`, 8 embedded, 12 with a journey; 34 memories from those conversations. None
   among its 587 Pi user turns since 2026-10-16. The development home: 185 such turns,
   2026-04-18 to 2026-10-12.
+- Confirmed on Pi 1.4.0 by CR159's measurement (2026-10-22, a scratch home): a
+  `/skill:mm-journeys` turn stored as a 473-character user row holding the skill's body.
+  The same route found a second shape for this CR's planning: a bare `/mm-journeys`,
+  which the logger skips as a command turn, still has its reply logged (497
+  characters, with no user turn before it), where the other runtimes skip a command
+  turn's reply too (`command_turn`, CV21.DS2.US8).
 
 ## Outcome
 
