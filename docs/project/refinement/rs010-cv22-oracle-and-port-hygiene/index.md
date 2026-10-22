@@ -99,3 +99,4 @@ evidence stays honest as both cores move.
 - [CR157 — `REFERENCE.md` lists `DB_BACKUP_PATH`, `EXPORT_DIR`, and `TRANSCRIPT_EXPORT_DIR` as settings, though nothing has read them since the Python core was deleted](cr157-reference-lists-path-settings-nothing-reads.md)
 - [CR158 — A Pi catalog whose skill files are gone loads no extension, while the status line still counts them and nothing reports it](cr158-a-pi-catalog-whose-skill-files-are-gone-loads-no-extension-and-nothing-reports-it.md)
 - [CR159 — The docs spell Pi's skills `/mm-<skill>`, which Pi registers as `/skill:<name>`, and the authoring guide's step 7a has lost two dashes](cr159-pi-skills-are-spelled-by-their-bare-name-and-step-7a-lost-two-dashes.md)
+- [CR160 — A Pi skill invoked as `/skill:<name>` is logged as the skill's body, as if the person had said it](cr160-a-pi-skill-invoked-as-skill-is-logged-as-its-body.md)
