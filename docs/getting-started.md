@@ -222,7 +222,8 @@ Open your runtime **in any directory** — there is no project to be inside of.
 pi
 ```
 
-Then use mirror commands:
+Then use mirror commands. Typing `/mm-` opens Pi's command menu, which lists each one
+as `skill:mm-<name>`: pick it there.
 
 ```text
 /mm-mirror

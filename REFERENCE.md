@@ -37,8 +37,9 @@ about what anyone is told to type.
 
 ## Commands
 
-Claude Code uses the `/mm:` prefix. Pi and Grok Build use the `/mm-` prefix.
-Codex uses the `$mm-` prefix. All runtimes call the same core. A **plugin**
+Claude Code uses the `/mm:` prefix, Grok Build and Pi the `/mm-` prefix, and
+Codex the `$mm-` prefix. In Pi, typing `/mm-` opens its command menu, which lists
+each skill as `skill:mm-<skill>`: pick it there. All runtimes call the same core. A **plugin**
 install (the npm package's wiring for Claude Code and Antigravity) prefixes the
 plugin's name: `/mirror-mind:mm:<skill>` in the slash menu,
 `mirror-mind:mm-<skill>` as the skill's own name; Grok's plugin install keeps

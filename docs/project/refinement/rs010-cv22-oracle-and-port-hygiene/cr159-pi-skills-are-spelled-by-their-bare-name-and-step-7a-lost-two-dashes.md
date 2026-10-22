@@ -97,6 +97,13 @@ versions stored. This CR measures, and writes the docs.
 
 **Started 2026-10-22:** Driver @viniciusteles, Delivery `main`.
 
+**Decided 2026-10-22 (step 3), by the Navigator:** option (i). A person is given the
+`/mm-` form, which finds the skill in Pi's menu; the model is given the skill's name;
+`/skill:` and CR160's caveat live in the contract alone, so no person-facing doc
+recommends `/skill:` (A6). Order: CR159, then CR160, then DS11, because the `/mm-`
+form stays right after CR160 ships, CR160 is a product change with a repair and a
+release that deserves its own plan, and DS11 copies these docs into the parity matrix.
+
 ## Evidence
 
 - Pi 1.3.0, installed at `~/.pi/agent/install/releases/1.3.0`: `docs/skills.md` ("use
@@ -165,6 +172,15 @@ versions stored. This CR measures, and writes the docs.
   the menu open, takes the menu's completion. The scratch directory was removed after
   the reads; the one row in the development home that names it is this conversation's
   own, the command given to the Navigator.
+- **Step 4, written 2026-10-22:** REFERENCE's preface (Pi apart from Grok, and the
+  menu); Getting Started's Pi section (the menu); `mm-help`'s opening line; the
+  contract's new *Invoking a skill on Pi*, with the measured facts and CR160's caveat,
+  and its extension table's Pi cell pointing there. Unchanged by design: `AGENTS.md`'s
+  skill names, the `/mm-` rows of REFERENCE's Pi column and `mm-help`'s table, the Pi
+  skills' Usage lines, and TS4's `/ext-review-copy` lines, all the form a person types.
+  Checks: `npm test` 3417 tests, 3414 pass, 0 fail, 3 skipped; `checkDocLinks`,
+  `checkSkillCommandParity`, `buildClaudePlugin --check`, `checkRetiredSurfaces`,
+  `checkPackContents`, and `git diff --check` clean.
 - [CV21.DS5.TS4's test guide](../../roadmap/cv21-runtime-expansion-ii/cv21-ds5-user-extensions-on-every-runtime/cv21-ds5-ts4-how-extensions-reach-each-runtime-is-written-where-a-user-reads-it/test-guide.md)
   records both under *Found while implementing, not changed*.
 

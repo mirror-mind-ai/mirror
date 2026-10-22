@@ -434,6 +434,22 @@ to remove when the route is done.
 | Session end + backup | `.pi/extensions/mirror-logger.ts` | `session_shutdown` |
 | Mirror load | `.pi/skills/mm-mirror/SKILL.md` | `/mm-mirror` skill invocation |
 
+#### Invoking a skill on Pi
+
+Measured on Pi 1.4.0, 2026-10-22, in a scratch home
+([CR159](../../../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr159-pi-skills-are-spelled-by-their-bare-name-and-step-7a-lost-two-dashes.md)).
+Pi registers each skill as the command `/skill:<name>` and lists it in its command
+menu under that name, matched as the person types `/mm-`. Picking it sends
+`/skill:mm-<skill>`, which Pi expands into the skill's body before the model or the
+extension sees the prompt; the skill runs. A prompt that only names the skill,
+`/mm-<skill>` sent as typed, is not a Pi command: it reaches the model as text, and in
+the one turn measured the model read the skill by its name and ran it. So the docs give
+a person the `/mm-` form, which finds the skill in the menu, and give the model the
+skill's name. Until
+[CR160](../../../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr160-a-pi-skill-invoked-as-skill-is-logged-as-its-body.md)
+ships, the extension logs a turn run from the menu as the skill's body, as if the
+person had said it, and logs the reply to a `/`-prefixed turn it skips.
+
 ### Antigravity
 
 | Event | Hook wrapper | Node entry | agy trigger |
@@ -715,7 +731,7 @@ with `review-copy` and a `command-skill`, from the registry's `mirror-mind@0.36.
 
 | Runtime | What reads the extension | Wire once | After a change | You type |
 |---|---|---|---|---|
-| Pi | `runtime/skills/pi/extensions.json`, at session start ([below](#pi-runtime-consumption-prep)) | nothing beyond the package's own `pi install` | nothing: the next session reads the catalog | `/ext-review-copy`, as this project spells Pi's skills; Pi 1.3.0 registers it as the command `/skill:ext-review-copy`, and its menu matches the bare name. Not re-measured by DS5 |
+| Pi | `runtime/skills/pi/extensions.json`, at session start ([below](#pi-runtime-consumption-prep)) | nothing beyond the package's own `pi install` | nothing: the next session reads the catalog | `/ext-review-copy`, which Pi's menu lists as `skill:ext-review-copy`, as it lists every skill ([on Pi](#invoking-a-skill-on-pi)) |
 | Claude Code | the plugin, through a link read in place | `mkdir -p ~/.claude/skills && ln -s "<home>/runtime/plugin/mirror-ext-<user>" ~/.claude/skills/mirror-ext-<user>` | nothing: read in place | `/ext-review-copy` |
 | Codex | a copy of the plugin, cached by its version | `codex plugin marketplace add "<home>/runtime/plugin"`, then `codex plugin add mirror-ext-<user>@mirror-ext-<user>` | `codex plugin add mirror-ext-<user>@mirror-ext-<user>` again | `$mirror-ext-<user>:ext-review-copy` |
 | Antigravity | a copy, staged under `~/.gemini/config/plugins/mirror-ext-<user>/` | `agy plugin install "<home>/runtime/plugin/mirror-ext-<user>"` | the same command again | `/mirror-ext-<user>:ext-review-copy` |
