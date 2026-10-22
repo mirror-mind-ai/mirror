@@ -10,10 +10,21 @@ launchers; `tests/contract.ps1` asserts every line of it.
 
 **Tested with:** `mirror-mind@0.33.4`, Pi 1.3.0, Node 24.22.0, Git 2.56.0.2.
 **Contract still held by:** `mirror-mind@0.35.0` (2026-10-19), `mirror-mind@0.36.0`
-(2026-10-21) — 21/21, run on the host. The release build stays pinned at
+(2026-10-21), `mirror-mind@0.36.2` (2026-10-22) — 21/21, run on the host. The release build stays pinned at
 0.33.4 until a core release carries the Windows `runtime update` fix
 (mirror-mind-ai/mirror#46); without it the installed Mirror cannot update
 itself.
+
+**Pi install model:** the installer puts Pi in through `npm install -g
+@earendil-works/pi-coding-agent`. Since Pi 1.4.0, `pi update` on such an
+install prints a hint to migrate to Pi's own managed installer
+(`irm https://pi.dev/install.ps1 | iex`), which pins Pi's dependencies. Not
+adopted here yet: it would move Pi out of the npm prefix the launchers and this
+contract assume. To evaluate before an installer release. Also observed on
+2026-10-22: `pi update` with a Pi session open ends with `npm warn cleanup
+EPERM` on a `.node` file the open session holds -- the update itself succeeds,
+only a `.pi-coding-agent-<id>` leftover stays under `node_modules/@earendil-works`;
+close Pi, delete it.
 
 ## Commands the installer runs
 
