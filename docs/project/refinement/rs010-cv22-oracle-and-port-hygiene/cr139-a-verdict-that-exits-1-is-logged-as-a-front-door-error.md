@@ -58,6 +58,36 @@ $ mirror runtime diagnose       # from /tmp, then from the checkout, a minute ap
 
 The count rose by one between the two runs: the first `diagnose`'s own exit 1.
 
+**2026-10-22, the production home (v0.36.2), as the last check of a new user's install
+guide.** The guide wires the package and an extension into Claude Code Desktop and ends
+with `runtime diagnose`. The install was healthy (the extension answered from Claude Code
+Desktop, the session was logged, `hooks.log` did not exist). `diagnose` answered:
+
+```text
+[attention] front_door_errors: 5 front-door error(s) in the last 24h (.../front-door.log)
+Status: attention needed
+```
+
+The five lines it counted, from `front-door.log`, with what each one was:
+
+```text
+2026-10-21T09:32:05.922Z  ERROR  extensions  ts     exit=1  leaf=install     a real failure; the same install succeeded at 13:36:54Z
+2026-10-21T13:37:03.120Z  ERROR  runtime     ts     exit=1                   9 s after that install; the line does not say which subcommand
+2026-10-21T22:15:45.007Z  ERROR  (none)      usage  exit=1  usage=top-level  a mistyped command
+2026-10-22T09:23:24.384Z  ERROR  runtime     ts     exit=1                   by their timing, earlier diagnose runs of the same check
+2026-10-22T09:25:48.105Z  ERROR  runtime     ts     exit=1
+```
+
+That run then appended `2026-10-22T09:27:56.988Z ERROR runtime ts exit=1`, which the
+next run counts. One line in five was a failure, and it had already been repaired. Three
+of the other four were `runtime` exits that the line cannot name, and one was a typo. The
+guide now has to tell the new user that this finding is a known bug and which lines to
+read anyway. That is the opposite of what CR026 built the check for.
+
+Overlap: CR127 (captured 2026-10-12) reports the same loop for `diagnose` and for usage
+errors, with plan options. This CR extends it to every verdict that exits 1. Neither
+document links the other, and which one carries the work is still undecided.
+
 ## Outcome
 
 Pending.
