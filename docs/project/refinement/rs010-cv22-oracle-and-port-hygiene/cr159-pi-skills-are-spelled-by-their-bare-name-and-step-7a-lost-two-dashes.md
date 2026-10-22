@@ -153,8 +153,18 @@ versions stored. This CR measures, and writes the docs.
   skill's body, so nothing in this code path stopped it; the production home's record
   since 2026-10-16 simply holds no `/skill:` invocation. The real homes' conversation
   counts (1637, 884) were unmoved, neither holds a row naming the scratch home, and no
-  new session file reached `~/.pi/agent/sessions`. The menu pick is pending: the
-  Navigator's.
+  new session file reached `~/.pi/agent/sessions`.
+- **The menu pick**, the Navigator's, 2026-10-22 at 17:55 UTC, in the same isolation
+  (Pi 1.4.0's TUI, `cr159user` on its status line, three screenshots): typing `/mm-jour`
+  offers only `skill:mm-journal`, `skill:mm-journey`, and `skill:mm-journeys`, matched by
+  the bare name. Choosing `skill:mm-journeys` sent `/skill:mm-journeys`, which Pi showed
+  as a collapsed `[skill] mm-journeys` block and recorded as the expanded 473-character
+  block; the model ran `mirror journeys`; the logger stored the block as the user's turn
+  (473 characters) and the reply (572). The menu is how the 410 expanded turns in the two
+  homes were written. Not measured: whether Enter on a fully typed `/mm-journeys`, with
+  the menu open, takes the menu's completion. The scratch directory was removed after
+  the reads; the one row in the development home that names it is this conversation's
+  own, the command given to the Navigator.
 - [CV21.DS5.TS4's test guide](../../roadmap/cv21-runtime-expansion-ii/cv21-ds5-user-extensions-on-every-runtime/cv21-ds5-ts4-how-extensions-reach-each-runtime-is-written-where-a-user-reads-it/test-guide.md)
   records both under *Found while implementing, not changed*.
 

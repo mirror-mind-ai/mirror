@@ -83,6 +83,10 @@ Current Focus unchanged.
   which the logger skips as a command turn, still has its reply logged (497
   characters, with no user turn before it), where the other runtimes skip a command
   turn's reply too (`command_turn`, CV21.DS2.US8).
+- The Navigator's menu pick in the same route (2026-10-22): Pi's menu offers only
+  `skill:<name>` commands and sends `/skill:<name>`, and the turn was stored as the
+  skill's body. Picking a skill from Pi's menu is how the 410 expanded turns in the two
+  homes were written.
 
 ## Outcome
 
