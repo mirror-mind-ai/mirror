@@ -357,22 +357,59 @@ test("session_start without `mirror` on the PATH warns before the card, naming t
   }
 });
 
-// --- before_agent_start ------------------------------------------------------
+// --- before_agent_start: the turn, as typed, to the core's prompt rule (CR160) ------
 
-test("before_agent_start returns while log-user is still running", async () => {
+/** The JSON a `user-prompt` or `stop` command carries after `--payload`. */
+function payloadOf(command: string[] | undefined): Record<string, unknown> {
+  const index = command?.indexOf("--payload") ?? -1;
+  assert.ok(command && index !== -1, "the command carries --payload");
+  return JSON.parse(command[index + 1] as string) as Record<string, unknown>;
+}
+
+/** The front-door commands the logger ran, without the status refreshes. */
+const loggerCommands = (h: Harness): string[][] =>
+  h.commands().filter((command) => command[0] === "conversation-logger");
+
+const inputEvent = (text: string, streamingBehavior?: "steer" | "followUp") => ({
+  type: "input",
+  text,
+  source: "interactive",
+  ...(streamingBehavior ? { streamingBehavior } : {}),
+});
+
+/** What Pi hands `before_agent_start` for `/skill:<name> args`: the skill, expanded. */
+const expandedSkill = (name: string, args = ""): string =>
+  `<skill name="${name}" location="/tree/.pi/skills/${name}/SKILL.md">\n` +
+  `References are relative to /tree/.pi/skills/${name}.\n\n# Body\n\nRun the thing.\n</skill>` +
+  (args ? `\n\n${args}` : "");
+
+const settledEvent = { type: "agent_settled", aborted: false };
+
+test("before_agent_start returns while user-prompt is still running", async () => {
   const h = await harness();
   try {
     const ctx = fakeCtx("/sessions/a.jsonl");
     await h.fire("before_agent_start", promptEvent("hello"), ctx);
     assert.equal(h.pi.execs.length, 1);
-    assert.deepEqual(h.commands()[0]?.slice(0, 2), ["conversation-logger", "log-user"]);
+    const command = h.commands()[0];
+    assert.deepEqual(command?.slice(0, 4), [
+      "conversation-logger",
+      "user-prompt",
+      "--interface",
+      "pi",
+    ]);
+    const payload = payloadOf(command);
+    assert.equal(payload.session_id, "/sessions/a.jsonl");
+    assert.equal(payload.prompt, "hello");
+    assert.equal(typeof payload.turn_id, "string");
+    assert.ok((payload.turn_id as string).length > 0, "a turn id is minted");
     assert.equal(h.pi.execs[0]?.settled, false, "the handler settled before the process did");
   } finally {
     h.cleanup();
   }
 });
 
-test("two prompts in a row serialize: the second log-user starts only after the first exits", async () => {
+test("two prompts in a row serialize: the second user-prompt starts only after the first exits", async () => {
   const h = await harness();
   try {
     const ctx = fakeCtx("/sessions/a.jsonl");
@@ -383,87 +420,188 @@ test("two prompts in a row serialize: the second log-user starts only after the 
     h.pi.execs[0]?.resolve("");
     await tick();
     assert.equal(h.pi.execs.length, 2, "the second spawned after the first exited");
+    assert.notEqual(
+      payloadOf(h.commands()[0]).turn_id,
+      payloadOf(h.commands()[1]).turn_id,
+      "each prompt has its own turn",
+    );
   } finally {
     h.cleanup();
   }
 });
 
-test("slash-command prompts are not logged", async () => {
+test("what reaches the core is what the person typed, not Pi's expansion of it", async () => {
+  // Picking a skill from Pi's menu sends `/skill:<name>`, and Pi hands
+  // `before_agent_start` the skill's whole body (CR159 measured it). The `input`
+  // event carried the text as typed; that is what the rule reads.
   const h = await harness();
   try {
-    await h.fire("before_agent_start", promptEvent("/mm-help"), fakeCtx("/sessions/a.jsonl"));
+    const ctx = fakeCtx("/sessions/a.jsonl");
+    await h.fire("input", inputEvent("/skill:mm-journeys"), ctx);
+    await h.fire("before_agent_start", promptEvent(expandedSkill("mm-journeys")), ctx);
+    assert.equal(payloadOf(h.commands()[0]).prompt, "/skill:mm-journeys");
+  } finally {
+    h.cleanup();
+  }
+});
+
+test("a slash command goes to the core's rule as typed, which decides it is one", async () => {
+  // Before CR160 the extension skipped it here and still logged its reply.
+  const h = await harness();
+  try {
+    const ctx = fakeCtx("/sessions/a.jsonl");
+    await h.fire("input", inputEvent("/mm-help"), ctx);
+    await h.fire("before_agent_start", promptEvent("/mm-help"), ctx);
+    assert.equal(loggerCommands(h).length, 1);
+    assert.equal(loggerCommands(h)[0]?.[1], "user-prompt");
+    assert.equal(payloadOf(loggerCommands(h)[0]).prompt, "/mm-help");
+  } finally {
+    h.cleanup();
+  }
+});
+
+test("input queued while Pi streams is not taken for the next run", async () => {
+  const h = await harness();
+  try {
+    const ctx = fakeCtx("/sessions/a.jsonl");
+    await h.fire("input", inputEvent("/skill:mm-journeys", "followUp"), ctx);
+    await h.fire("before_agent_start", promptEvent("what changed today?"), ctx);
+    assert.equal(payloadOf(h.commands()[0]).prompt, "what changed today?");
+  } finally {
+    h.cleanup();
+  }
+});
+
+test("with nothing typed kept for a run, Pi's skill wrapper is read back to its command", async () => {
+  const h = await harness();
+  try {
+    const ctx = fakeCtx("/sessions/a.jsonl");
+    await h.fire(
+      "before_agent_start",
+      promptEvent(expandedSkill("mm-mirror", "should I raise my price?")),
+      ctx,
+    );
+    h.pi.execs[0]?.resolve("");
+    await tick();
+    await h.fire("before_agent_start", promptEvent(expandedSkill("mm-journeys")), ctx);
+    await tick();
+    const prompts = loggerCommands(h).map((command) => payloadOf(command).prompt);
+    assert.deepEqual(prompts, ["/skill:mm-mirror should I raise my price?", "/skill:mm-journeys"]);
+  } finally {
+    h.cleanup();
+  }
+});
+
+test("a run a custom message started sends nothing", async () => {
+  const h = await harness();
+  try {
+    await h.fire(
+      "before_agent_start",
+      { ...promptEvent(""), messageType: "custom", prompt: undefined },
+      fakeCtx("/sessions/a.jsonl"),
+    );
     assert.equal(h.pi.execs.length, 0);
   } finally {
     h.cleanup();
   }
 });
 
-// --- agent_end ---------------------------------------------------------------
+// --- agent_end and agent_settled: one reply per prompt (CR160) -----------------------
 
-test("agent_end spawns log-assistant only after the pending log-user has exited", async () => {
+test("agent_settled sends one stop for the prompt, with every run's text, under its turn", async () => {
+  const h = await harness();
+  try {
+    const ctx = fakeCtx("/sessions/a.jsonl");
+    await h.fire("before_agent_start", promptEvent("hello"), ctx);
+    const turnId = payloadOf(h.commands()[0]).turn_id as string;
+    h.pi.execs[0]?.resolve("");
+    await h.drain(h.fireNoWait("agent_end", agentEndEvent("first run"), ctx));
+    await h.drain(h.fireNoWait("agent_end", agentEndEvent("second run"), ctx));
+    assert.ok(!h.logLines().some((l) => l.includes("stop started")), "nothing sent per run");
+    await h.fire("agent_settled", settledEvent, ctx);
+    const started = h.logLines().filter((l) => l.includes("stop started in detached background"));
+    assert.equal(started.length, 1, "one stop for the prompt");
+    assert.ok(
+      h.logLines().some((l) => l.includes(`stop (turn ${turnId}): 2 block(s)`)),
+      "the reply carries both runs, under the prompt's turn",
+    );
+  } finally {
+    h.cleanup();
+  }
+});
+
+test("agent_settled spawns stop only after the pending user-prompt has exited", async () => {
   const h = await harness();
   try {
     const ctx = fakeCtx("/sessions/a.jsonl");
     await h.fire("before_agent_start", promptEvent("hello"), ctx);
     const end = h.fireNoWait("agent_end", agentEndEvent("answer"), ctx);
+    const settled = h.fireNoWait("agent_settled", settledEvent, ctx);
     await tick();
     assert.ok(
-      !h.logLines().some((l) => l.includes("log-assistant started")),
-      "not yet: log-user still running",
+      !h.logLines().some((l) => l.includes("stop started")),
+      "not yet: user-prompt still running",
     );
     h.pi.execs[0]?.resolve("");
-    await h.drain(end);
-    assert.ok(h.logLines().some((l) => l.includes("log-assistant started in detached background")));
+    await h.drain(Promise.all([end, settled]).then(() => undefined));
+    assert.ok(h.logLines().some((l) => l.includes("stop started in detached background")));
   } finally {
     h.cleanup();
   }
 });
 
-test("agent_end still spawns log-assistant when log-user failed", async () => {
-  const h = await harness();
-  try {
-    const ctx = fakeCtx("/sessions/a.jsonl");
-    await h.fire("before_agent_start", promptEvent("hello"), ctx);
-    const end = h.fireNoWait("agent_end", agentEndEvent("answer"), ctx);
-    h.pi.execs[0]?.reject(new Error("exit 1"));
-    await h.drain(end);
-    assert.ok(h.logLines().some((l) => l.includes("log-assistant started in detached background")));
-  } finally {
-    h.cleanup();
+test("agent_settled still sends stop when user-prompt failed or timed out", async () => {
+  for (const failure of ["exit 1", "timeout after 30000ms"]) {
+    const h = await harness();
+    try {
+      const ctx = fakeCtx("/sessions/a.jsonl");
+      await h.fire("before_agent_start", promptEvent("hello"), ctx);
+      const end = h.fireNoWait("agent_end", agentEndEvent("answer"), ctx);
+      const settled = h.fireNoWait("agent_settled", settledEvent, ctx);
+      h.pi.execs[0]?.reject(new Error(failure));
+      await h.drain(Promise.all([end, settled]).then(() => undefined));
+      assert.ok(h.logLines().some((l) => l.includes("stop started in detached background")));
+    } finally {
+      h.cleanup();
+    }
   }
 });
 
-test("agent_end after a timed-out log-user spawns log-assistant after it, never before", async () => {
-  const h = await harness();
-  try {
-    const ctx = fakeCtx("/sessions/a.jsonl");
-    await h.fire("before_agent_start", promptEvent("hello"), ctx);
-    const end = h.fireNoWait("agent_end", agentEndEvent("answer"), ctx);
-    await tick();
-    assert.ok(!h.logLines().some((l) => l.includes("log-assistant started")));
-    // `pi.exec` rejects on timeout; the chain settles and the assistant follows.
-    h.pi.execs[0]?.reject(new Error("timeout after 30000ms"));
-    await h.drain(end);
-    assert.ok(h.logLines().some((l) => l.includes("log-assistant started")));
-  } finally {
-    h.cleanup();
-  }
-});
-
-test("agent_end with no assistant text returns early and leaves the chain intact", async () => {
+test("a prompt with no assistant text sends no stop, and the chain stays intact", async () => {
   const h = await harness();
   try {
     const ctx = fakeCtx("/sessions/a.jsonl");
     await h.fire("before_agent_start", promptEvent("hello"), ctx);
     await h.fire("agent_end", { type: "agent_end", messages: [] }, ctx);
-    assert.equal(h.pi.execs[0]?.settled, false, "the aborted turn did not wait on the chain");
-    // The next event still honors the chain.
-    const end = h.fireNoWait("agent_end", agentEndEvent("later"), ctx);
-    await tick();
-    assert.ok(!h.logLines().some((l) => l.includes("log-assistant started")));
+    await h.fire("agent_settled", { type: "agent_settled", aborted: true }, ctx);
+    assert.ok(!h.logLines().some((l) => l.includes("stop started")));
+    assert.equal(h.pi.execs[0]?.settled, false, "the aborted prompt did not wait on the chain");
+  } finally {
+    h.cleanup();
+  }
+});
+
+test("a Pi without agent_settled: the reply goes out before the next prompt, on the chain", async () => {
+  // `agent_settled` arrived in Pi 0.80.4; before it, nothing marks a prompt's end
+  // but the next prompt, or the session's.
+  const h = await harness();
+  try {
+    const ctx = fakeCtx("/sessions/a.jsonl");
+    await h.fire("before_agent_start", promptEvent("one"), ctx);
+    const firstTurn = payloadOf(h.commands()[0]).turn_id;
     h.pi.execs[0]?.resolve("");
-    await h.drain(end);
-    assert.ok(h.logLines().some((l) => l.includes("log-assistant started")));
+    await h.drain(h.fireNoWait("agent_end", agentEndEvent("answer one"), ctx));
+    await h.fire("before_agent_start", promptEvent("two"), ctx);
+    await h.drain(tick());
+    const commands = loggerCommands(h);
+    assert.deepEqual(
+      commands.map((command) => command[1]),
+      ["user-prompt", "stop", "user-prompt"],
+      "the reply between its prompt and the next",
+    );
+    assert.equal(payloadOf(commands[1]).turn_id, firstTurn);
+    assert.equal(payloadOf(commands[1]).last_assistant_message, "answer one");
+    assert.equal(payloadOf(commands[2]).prompt, "two");
   } finally {
     h.cleanup();
   }
@@ -471,14 +609,14 @@ test("agent_end with no assistant text returns early and leaves the chain intact
 
 // --- session_shutdown --------------------------------------------------------
 
-test("session_shutdown runs session-end-pi only after the pending log-user has exited", async () => {
+test("session_shutdown runs session-end-pi only after the pending user-prompt has exited", async () => {
   const h = await harness();
   try {
     const ctx = fakeCtx("/sessions/a.jsonl");
     await h.fire("before_agent_start", promptEvent("hello"), ctx);
     const shutdown = h.fireNoWait("session_shutdown", { type: "session_shutdown" }, ctx);
     await tick();
-    assert.equal(h.pi.execs.length, 1, "session-end-pi not spawned while log-user runs");
+    assert.equal(h.pi.execs.length, 1, "session-end-pi not spawned while user-prompt runs");
     h.pi.execs[0]?.resolve("");
     await tick();
     assert.equal(h.pi.execs.length, 2);
@@ -497,6 +635,23 @@ test("session_shutdown runs session-end-pi only after the pending log-user has e
   }
 });
 
+test("session_shutdown sends a reply still unsent before it closes the conversation", async () => {
+  const h = await harness();
+  try {
+    const ctx = fakeCtx("/sessions/a.jsonl");
+    await h.fire("before_agent_start", promptEvent("hello"), ctx);
+    h.pi.execs[0]?.resolve("");
+    await h.drain(h.fireNoWait("agent_end", agentEndEvent("answer"), ctx));
+    await h.drain(h.fireNoWait("session_shutdown", { type: "session_shutdown" }, ctx));
+    assert.deepEqual(
+      loggerCommands(h).map((command) => command[1]),
+      ["user-prompt", "stop", "session-end-pi"],
+    );
+  } finally {
+    h.cleanup();
+  }
+});
+
 test("a session switch does not gate the new session on the old one's chain", async () => {
   const h = await harness();
   try {
@@ -508,14 +663,18 @@ test("a session switch does not gate the new session on the old one's chain", as
       { type: "session_start", reason: "new", previousSessionFile: "/sessions/a.jsonl" },
       ctxB,
     );
-    assert.equal(h.pi.execs.length, 2, "B's session open spawned while A's log-user still runs");
+    assert.equal(h.pi.execs.length, 2, "B's session open spawned while A's user-prompt still runs");
     h.pi.execs[1]?.resolve(ENVELOPE);
     await start;
-    const end = h.fireNoWait("agent_end", agentEndEvent("on B"), ctxB);
+    await h.fire("before_agent_start", promptEvent("on B"), ctxB);
+    assert.equal(h.pi.execs.length, 3, "B's user-prompt did not wait for A's");
+    h.pi.execs[2]?.resolve("");
+    const end = h.fireNoWait("agent_end", agentEndEvent("answer on B"), ctxB);
     await tick();
+    await h.fire("agent_settled", settledEvent, ctxB);
     assert.ok(
-      h.logLines().some((l) => l.includes("log-assistant started")),
-      "B's assistant did not wait for A",
+      h.logLines().some((l) => l.includes("stop started")),
+      "B's reply did not wait for A",
     );
     assert.equal(h.pi.execs[0]?.settled, false, "A's write is still in flight, untouched");
     await h.drain(end);

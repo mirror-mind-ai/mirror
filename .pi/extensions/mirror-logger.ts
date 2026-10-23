@@ -6,9 +6,12 @@
  * Events handled:
  * - session_start      → unmute + welcome card + status line, in ONE front-door
  *                        process (CV9.E2.S32); maintenance detached
- * - before_agent_start → log user prompt, NOT awaited: queued on a per-session
+ * - input              → what the person typed, kept for the run it starts (CR160)
+ * - before_agent_start → the turn to the core's prompt rule (`user-prompt`), with a
+ *                        turn id minted for it, NOT awaited: queued on a per-session
  *                        chain so the turn starts at once (CV9.E2.S32)
- * - agent_end          → log assistant response, after the chain settles
+ * - agent_end          → the run's assistant text, kept for the prompt's reply
+ * - agent_settled      → the prompt's whole reply to `stop`, after the chain settles
  * - session_shutdown   → close conversation (after the chain settles) + backup
  *
  * All heavy logic lives in the TypeScript core, reached through the `mirror`
@@ -35,6 +38,7 @@ import { homedir } from "node:os";
 import { delimiter, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
+import { randomUUID } from "node:crypto";
 
 /** The tree this extension ships in: `.pi/extensions/` sits two below the root. */
 const TREE_ROOT = fileURLToPath(new URL("../../", import.meta.url)).replace(/\/$/, "");
@@ -360,6 +364,60 @@ export default function (pi: ExtensionAPI) {
 		await (pendingUserLog.get(sessionId) ?? Promise.resolve());
 	}
 
+	/**
+	 * CR160: Pi's turns reach the core's prompt rule, the one the hooks use
+	 * (`user-prompt`, `stop`): a skill invocation and its reply are not
+	 * conversation, a Mirror question is (`commandTurn.ts`, `mirrorForm.ts`).
+	 *
+	 * The rule needs what the person typed, and Pi hands `before_agent_start` the
+	 * prompt after it expanded a skill into its body. Its documented `input` event
+	 * carries the text as sent, so that text is kept here for the run it starts --
+	 * only when it starts one: a message queued while Pi streams joins a run
+	 * already going. The payload travels as `--payload`: `pi.exec` cannot write
+	 * stdin (`conversationLoggerRoute.ts`).
+	 */
+	const typedInput = new Map<string, string>();
+
+	/** The prompt in flight and the assistant text its runs have produced so far. */
+	interface PendingReply {
+		turnId: string;
+		texts: string[];
+	}
+	const pendingReply = new Map<string, PendingReply>();
+
+	/**
+	 * Pi's expansion of `/skill:<name> args`: `<skill name="<name>" location="…">`,
+	 * `References are relative to ….`, the body, `</skill>`, then the arguments.
+	 * With no typed text kept for a run, the wrapper is read back to the command
+	 * it came from, so the rule still sees a command (CR160, A3).
+	 */
+	const PI_SKILL_WRAPPER =
+		/^<skill name="([^"]+)" location="[^"]*">\nReferences are relative to [^\n]*\n\n[\s\S]*?\n<\/skill>(?:\n\n([\s\S]*))?$/;
+
+	function typedFormOf(prompt: string): string {
+		const match = PI_SKILL_WRAPPER.exec(prompt);
+		if (!match) return prompt;
+		const args = (match[2] ?? "").trim();
+		return args ? `/skill:${match[1]} ${args}` : `/skill:${match[1]}`;
+	}
+
+	/** The `stop` argv for a prompt's reply, or null when it produced no text. */
+	function takeStopArgs(sessionId: string): string[] | null {
+		const reply = pendingReply.get(sessionId);
+		pendingReply.delete(sessionId);
+		if (!reply || reply.texts.length === 0) return null;
+		const content = truncate(reply.texts.join("\n\n---\n\n"));
+		log("INFO", `stop (turn ${reply.turnId}): ${reply.texts.length} block(s), ${content.length} chars`);
+		return [
+			"conversation-logger",
+			"stop",
+			"--interface",
+			"pi",
+			"--payload",
+			JSON.stringify({ session_id: sessionId, turn_id: reply.turnId, last_assistant_message: content }),
+		];
+	}
+
 	/** Extract readable text from a content blocks array or plain string. */
 	function extractText(content: unknown): string {
 		if (typeof content === "string") return content;
@@ -558,33 +616,60 @@ export default function (pi: ExtensionAPI) {
 		runMirrorBackground(["conversation-logger", "session-maintenance"], "session-maintenance");
 	});
 
-	// --- 2. before_agent_start → log user prompt with explicit session id ---
+	// --- 2. input → what the person typed, for the run it starts (CR160) ---
+
+	pi.on("input", async (event, ctx) => {
+		const sessionId = ctx.sessionManager.getSessionFile() ?? null;
+		if (!sessionId) return;
+		// The fields are Pi's (`InputEvent`); the types this directory pins predate one.
+		const { text, streamingBehavior } = event as { text: string; streamingBehavior?: string };
+		// Queued while Pi streams: it joins a run already going and starts none.
+		if (streamingBehavior) return;
+		typedInput.set(sessionId, text);
+	});
+
+	// --- 3. before_agent_start → the turn to the core's prompt rule ---
 
 	pi.on("before_agent_start", async (event, ctx) => {
 		const sessionId = ctx.sessionManager.getSessionFile() ?? null;
 		if (!sessionId) return;
+		// A run a custom message started answers no prompt of the person's. Pi's
+		// field (`messageType`); the types this directory pins predate it.
+		const { messageType } = event as { messageType?: string };
+		if (messageType !== undefined && messageType !== "user") return;
 
-		const prompt = event.prompt ?? "";
-		if (!prompt || prompt.startsWith("/")) return;
+		const typed = typedInput.get(sessionId);
+		typedInput.delete(sessionId);
+		const prompt = typed ?? typedFormOf(event.prompt ?? "");
 
-		log("INFO", `log-user: ${prompt.slice(0, 80)}...`);
-		// Not awaited (CV9.E2.S32): the turn starts now; `agent_end` and
+		// A reply still unsent belongs to the prompt before this one: a Pi without
+		// `agent_settled` (before 0.80.4) never sent it. It goes first, on the chain.
+		const earlier = takeStopArgs(sessionId);
+		if (earlier) enqueueUserLog(sessionId, earlier);
+
+		const turnId = randomUUID();
+		pendingReply.set(sessionId, { turnId, texts: [] });
+		if (!prompt) return;
+
+		log("INFO", `user-prompt (turn ${turnId}): ${prompt.slice(0, 80)}...`);
+		// Not awaited (CV9.E2.S32): the turn starts now; `agent_settled` and
 		// `session_shutdown` settle the chain before anything that must follow.
 		enqueueUserLog(sessionId, [
 			"conversation-logger",
-			"log-user",
-			sessionId,
-			truncate(prompt),
+			"user-prompt",
 			"--interface",
 			"pi",
+			"--payload",
+			JSON.stringify({ session_id: sessionId, prompt: truncate(prompt), turn_id: turnId }),
 		]);
 	});
 
-	// --- 3. agent_end → log assistant response ---
+	// --- 4. agent_end → the run's assistant text, kept for the prompt's reply ---
 	//
-	// agent_end fires once per user prompt, with ALL messages in the cycle
-	// (assistant + tool calls + tool results). Extract only assistant text
-	// and log as a single consolidated message.
+	// agent_end fires once per run, with ALL messages in it (assistant + tool
+	// calls + tool results), and a prompt can take more than one run. The
+	// assistant text is kept until the prompt settles: the hooks' `stop` takes
+	// one answer per turn (CR160, A2).
 
 	pi.on("agent_end", async (event, ctx) => {
 		const sessionId = ctx.sessionManager.getSessionFile() ?? null;
@@ -610,21 +695,34 @@ export default function (pi: ExtensionAPI) {
 
 		if (assistantTexts.length === 0) return;
 
-		log("INFO", `log-assistant: ${assistantTexts.length} block(s), ${assistantTexts.join("").length} chars`);
-
-		const combined = assistantTexts.join("\n\n---\n\n");
-		const content = truncate(combined);
-
-		// The user message's process has exited before this one is spawned.
-		await settleUserLog(sessionId);
-		runMirrorBackground(
-			["conversation-logger", "log-assistant", sessionId, content, "--interface", "pi"],
-			"log-assistant",
-		);
+		// No prompt in flight: a run a custom message started, after the last
+		// prompt settled. It answers nothing the person asked, and `stop` would
+		// find nothing waiting, as on the other runtimes.
+		pendingReply.get(sessionId)?.texts.push(...assistantTexts);
 		await refreshMirrorStatus(ctx);
 	});
 
-	// --- 4. session_shutdown → close conversation + backup ---
+	// --- 5. agent_settled → the prompt's whole reply to `stop` ---
+
+	// `agent_settled` arrived in Pi 0.80.4, after the Pi types this directory pins
+	// (`.pi/package.json`), so it is registered by its name alone.
+	const onEvent = pi.on.bind(pi) as unknown as (
+		event: string,
+		handler: (event: unknown, ctx: { sessionManager: { getSessionFile(): string | undefined } }) => Promise<void>,
+	) => void;
+
+	onEvent("agent_settled", async (_event, ctx) => {
+		const sessionId = ctx.sessionManager.getSessionFile() ?? null;
+		if (!sessionId) return;
+		const args = takeStopArgs(sessionId);
+		if (!args) return;
+		// The prompt's process has exited before this one is spawned; detached, so
+		// the write survives Pi exiting right after the answer.
+		await settleUserLog(sessionId);
+		runMirrorBackground(args, "stop");
+	});
+
+	// --- 6. session_shutdown → close conversation + backup ---
 	//
 	// Uses extract=False because extraction calls the LLM and can take 30s+.
 	// Extraction happens at the next session_start via extract_pending.
@@ -633,7 +731,11 @@ export default function (pi: ExtensionAPI) {
 		const sessionId = ctx.sessionManager.getSessionFile() ?? null;
 
 		if (sessionId) {
-			// A prompt still in flight must land before the conversation closes.
+			// A reply still unsent (a Pi without `agent_settled`) lands before the
+			// conversation closes, after its prompt; so does a prompt in flight.
+			const reply = takeStopArgs(sessionId);
+			if (reply) enqueueUserLog(sessionId, reply);
+			typedInput.delete(sessionId);
 			await settleUserLog(sessionId);
 			pendingUserLog.delete(sessionId);
 			await runMirror(["conversation-logger", "session-end-pi", sessionId]);

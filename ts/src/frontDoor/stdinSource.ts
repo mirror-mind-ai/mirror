@@ -12,6 +12,11 @@
 // caller uses, and a payload does not belong in argv: argv is what `ps`
 // shows, and what the Gemini CLI hooks (retired by CV21.DS8.US1) put a prompt
 // into is the exception this seam avoids repeating.
+//
+// One exception stands, and is no wider than before: Pi's extension reaches the
+// core through `pi.exec`, which cannot write a child's stdin, so it passes the
+// payload as `--payload` (CR160, `conversationLoggerRoute.ts`). Pi's prompt has
+// travelled in argv since CV9, as `log-user`'s argument.
 
 import { readFileSync } from "node:fs";
 

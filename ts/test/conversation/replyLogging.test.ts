@@ -507,3 +507,111 @@ test("a skipped turn with no turn id records nothing, so a Stop that carries one
   assert.equal(rows(db).length, 0);
   db.close();
 });
+
+// --- CR160: Pi on the hooks' path ------------------------------------------------
+//
+// Pi's extension hands these handlers what the person typed (Pi's `input` event,
+// before Pi expands a skill into its body) with a turn id it mints for each run, and
+// the whole of a prompt's reply once, at `agent_settled`. So Pi gets the rule every
+// other runtime has: a skill invocation and its reply are not conversation; a Mirror
+// question is. Before CR160 Pi's logger stored a skill picked from the menu as the
+// skill's body, as if the person had said it.
+
+test("Pi: a skill picked from the menu or typed is a command turn, and so is its reply", () => {
+  for (const typed of ["/skill:mm-journeys", "/mm-journeys", "/skill:mm-build mirror"]) {
+    const { db, home } = fixture();
+    const skipped = prompt(db, home, { session_id: "pi1", prompt: typed, turn_id: "t1" }, "pi");
+    assert.deepEqual(skipped, { action: "skipped", reason: "command_turn" });
+    const reply = stop(
+      db,
+      home,
+      { session_id: "pi1", turn_id: "t1", last_assistant_message: "personal-growth (active)" },
+      "pi",
+    );
+    assert.deepEqual(reply, { action: "skipped", reason: "command_turn" });
+    assert.equal(rows(db).length, 0);
+    assert.equal(sessionInterface(db, "pi1"), "pi");
+    db.close();
+  }
+});
+
+test("Pi: a Mirror question is the turn, in Pi's form and in the typed one, with its reply beside it", () => {
+  for (const typed of [
+    "/skill:mm-mirror should I raise my price?",
+    "/mm-mirror should I raise my price?",
+  ]) {
+    const { db, home } = fixture();
+    const logged = prompt(db, home, { session_id: "pi1", prompt: typed, turn_id: "t1" }, "pi");
+    assert.deepEqual(logged, { action: "logged", sessionId: "pi1" });
+    const reply = stop(
+      db,
+      home,
+      { session_id: "pi1", turn_id: "t1", last_assistant_message: "Raise it." },
+      "pi",
+    );
+    assert.deepEqual(reply, { action: "logged", sessionId: "pi1", pairedBy: "turn_id" });
+    assert.deepEqual(rows(db), [
+      { role: "user", content: "should I raise my price?", metadata: '{"turn_id": "t1"}' },
+      { role: "assistant", content: "Raise it.", metadata: '{"turn_id": "t1"}' },
+    ]);
+    assert.deepEqual(conversationInterfaces(db), ["pi"]);
+    db.close();
+  }
+});
+
+test("Pi: a bare Mirror form has no question, so neither it nor its reply is recorded", () => {
+  for (const typed of ["/skill:mm-mirror", "/mm-mirror"]) {
+    const { db, home } = fixture();
+    const skipped = prompt(db, home, { session_id: "pi1", prompt: typed, turn_id: "t1" }, "pi");
+    assert.deepEqual(skipped, { action: "skipped", reason: "bare_mirror_form" });
+    const reply = stop(
+      db,
+      home,
+      { session_id: "pi1", turn_id: "t1", last_assistant_message: "Mirror Mode is on." },
+      "pi",
+    );
+    assert.deepEqual(reply, { action: "skipped", reason: "command_turn" });
+    assert.equal(rows(db).length, 0);
+    db.close();
+  }
+});
+
+test("Pi: an ordinary prompt and its reply are logged, and a prompt has one reply row", () => {
+  const { db, home } = fixture();
+  prompt(db, home, { session_id: "pi1", prompt: "what changed today?", turn_id: "t1" }, "pi");
+  const first = stop(
+    db,
+    home,
+    { session_id: "pi1", turn_id: "t1", last_assistant_message: "Two commits." },
+    "pi",
+  );
+  assert.deepEqual(first, { action: "logged", sessionId: "pi1", pairedBy: "turn_id" });
+  const again = stop(
+    db,
+    home,
+    { session_id: "pi1", turn_id: "t1", last_assistant_message: "Two commits, again." },
+    "pi",
+  );
+  assert.deepEqual(again, { action: "skipped", reason: "already_answered" });
+  assert.deepEqual(
+    rows(db).map((row) => row.role),
+    ["user", "assistant"],
+  );
+  db.close();
+});
+
+test("Pi: a prompt that opens with a path is skipped as a command, the `/` rule's known limit", () => {
+  // Every runtime uses `/` for its own commands, so a prompt that opens with it is
+  // one whatever follows (`commandTurn.ts`). A path pasted first is the cost; Pi's
+  // extension skipped it before CR160 too.
+  const { db, home } = fixture();
+  const skipped = prompt(
+    db,
+    home,
+    { session_id: "pi1", prompt: "/Users/me/notes.txt what is this?", turn_id: "t1" },
+    "pi",
+  );
+  assert.deepEqual(skipped, { action: "skipped", reason: "command_turn" });
+  assert.equal(rows(db).length, 0);
+  db.close();
+});

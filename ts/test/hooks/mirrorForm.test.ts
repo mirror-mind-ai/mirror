@@ -31,6 +31,9 @@ describe("the explicit Mirror Mode form", () => {
     // whitespace and newlines after the form are not part of the query
     ["/mm-mirror\n\nwhat about this?", "what about this?"],
     ["/mm:mirror\ttabbed", "tabbed"],
+    // Pi's own command for the skill, which its menu sends (CR160; CR159 measured it)
+    ["/skill:mm-mirror should I raise my price?", "should I raise my price?"],
+    ["/skill:mm-mirror", ""],
   ];
 
   for (const [prompt, query] of recognized) {
@@ -52,6 +55,10 @@ describe("the explicit Mirror Mode form", () => {
     "mm:mirror no sigil", // no sigil
     "//mm:mirror doubled sigil",
     "/mm:journeys", // another skill
+    "/skill:mm-mirrors a question", // Pi's command does not loosen the name either
+    "/skill:mm-journeys", // Pi's command for another skill
+    "/skill:mm:mirror a question", // Pi names the skill by its directory, never with a colon
+    "/skill:mirror-mind:mm-mirror a question", // Pi has no plugin namespace
     "/mirror-mind:mm-journeys", // another plugin skill
     "$497 is too much", // Codex's sigil on an ordinary prompt
     "/MM:MIRROR shouting", // skill names are lowercase
