@@ -5,12 +5,12 @@
 // equal timestamps resolve by rowid. Extracted here so the deterministic and
 // provider-crossing suites seed identically rather than keeping two copies.
 
-import { mkdirSync, mkdtempSync, readFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
 import { createSchema } from "#db/schema.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -183,11 +183,9 @@ export function seedDatabase(db: WritableDatabase): void {
 }
 
 export function withSeededDatabase<T>(fn: (db: WritableDatabase) => T): T {
-  // The DS4 copy guard refuses a write target outside a tmp/ directory, so the
-  // fixture lives under one — the same shape the other parity tests use.
-  const dir = mkdtempSync(join(tmpdir(), "mirror-core-mcp-tools-"));
-  const tmp = join(dir, "tmp");
-  mkdirSync(tmp);
+  // The DS4 copy guard refuses a write target outside a tmp/ directory, which is
+  // what tempDir hands back (CR163).
+  const tmp = tempDir("mirror-core-mcp-tools-");
   const db = openDatabaseCopyForWrite(join(tmp, "copy.db"));
   try {
     createSchema(db);
@@ -231,9 +229,7 @@ const SEEDED_PATHS = new WeakMap<object, string>();
 
 /** Open a seeded database the caller is responsible for closing. */
 export function seededDatabase(): WritableDatabase {
-  const dir = mkdtempSync(join(tmpdir(), "mirror-core-mcp-tools-"));
-  const tmp = join(dir, "tmp");
-  mkdirSync(tmp);
+  const tmp = tempDir("mirror-core-mcp-tools-");
   const path = join(tmp, "copy.db");
   const db = openDatabaseCopyForWrite(path);
   createSchema(db);

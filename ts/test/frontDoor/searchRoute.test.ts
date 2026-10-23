@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync } from "node:fs";
 import { rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -13,6 +12,7 @@ import {
   runMemorySearchRoute,
   type SearchMemoryRow,
 } from "#frontDoor/searchRoute.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 import { LiveEmbeddingProvider, ReplayEmbeddingProvider } from "#providers/embedding.ts";
 
 const DEGRADED_NOTE =
@@ -113,9 +113,7 @@ test("memories --search does not reinforce retrieval (AI-12 parity)", async () =
   // CV22.DS9.US2 measured it against the oracle. access_count feeds
   // reinforcement_score and the hybrid ranker, so the ranker was learning from
   // its own exhaust — the exact defect AI-12 fixed in Python.
-  const dir = mkdtempSync(join(tmpdir(), "mirror-core-search-reinforce-"));
-  const tmp = join(dir, "tmp");
-  mkdirSync(tmp);
+  const tmp = tempDir("mirror-core-search-reinforce-");
   const db = openDatabaseCopyForWrite(join(tmp, "copy.db"));
   try {
     createSchema(db);

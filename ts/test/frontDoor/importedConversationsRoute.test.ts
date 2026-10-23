@@ -7,12 +7,13 @@
 // backups still holding copies.
 
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import { bootstrapDatabase } from "#db/bootstrap.ts";
 import type { WritableDatabase } from "#db/database.ts";
 import { runImportedConversationsRoute } from "#frontDoor/importedConversationsRoute.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 
 const SESSIONS = "/home/p/.pi/agent/sessions";
 
@@ -54,7 +55,7 @@ function seedLive(db: WritableDatabase, id: string, folder: string): void {
 }
 
 function harness(seed: (db: WritableDatabase) => void = defaultSeed): Harness {
-  const dir = mkdtempSync("/tmp/imported-route-");
+  const dir = tempDir("imported-route-");
   const dbPath = join(dir, "memory.db");
   const backupsDir = join(dir, "backups");
   const db = bootstrapDatabase(dbPath);
