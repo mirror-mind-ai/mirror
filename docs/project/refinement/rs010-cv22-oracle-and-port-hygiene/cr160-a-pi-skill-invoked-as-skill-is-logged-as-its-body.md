@@ -176,6 +176,41 @@ Pi joins the hooks' path instead of the core learning a second copy of the rule.
 - In the production home's Pi conversations, 11,771 assistant rows have no user row right
   before them (537 open a conversation): a prompt can log more than one reply, so a past
   reply to a skipped turn cannot be told apart.
+- **The forward fix, implemented** (`7ff4a83c`): the extension keeps the text Pi's
+  `input` event carries, mints a turn id per run a prompt starts, and sends the turn to
+  `user-prompt` and the prompt's whole reply to `stop` at `agent_settled`, both
+  `--interface pi`; Pi's skill wrapper is read back to its command when no typed text was
+  kept; a reply still unsent goes before the next prompt and at shutdown (a Pi before
+  0.80.4). The payload travels as `--payload`, since `pi.exec` cannot write stdin, the
+  exposure Pi's prompt already had as `log-user`'s argument; a route given it never reads
+  fd 0. `mirrorForm` accepts `/skill:mm-mirror`; `log-user` and `log-assistant` stay for
+  a release. Tests: 19 new; against the old extension, 12 of the harness's 22 fail.
+  `npm test` 3436 tests, 3433 pass, 0 fail; `tsc`, Biome, and the repository checks
+  clean; `.pi/`'s own `tsc`, against the Pi 0.70.0 types it pins, the same three old
+  errors and no new one.
+- **The route, 2026-10-23** ([`cr160-route.sh`](cr160-route.sh), A11): Pi 1.4.0
+  (`~/.pi/agent/bin/pi`), `claude-haiku-4-5` with thinking off, `pi -p --approve`,
+  each tree in its own scratch home, one turn per prompt, no retry; before = `66c8593e`,
+  the commit before the fix, after = `7ff4a83c`:
+
+  | Prompt | Before | After |
+  |---|---|---|
+  | `/mm-journeys` | a reply, no turn (368 characters) | nothing |
+  | `/skill:mm-journeys` | the skill's body as the turn (465), a reply | nothing |
+  | `/mm-mirror <question>` | a reply; the question lost | the question (45), a reply |
+  | `/skill:mm-mirror <question>` | the skill's body as the turn (3,819), a reply | the question (45), a reply |
+
+  After the fix each prompt and its reply share one turn id, labelled `pi`, and the two
+  command turns are recorded as skipped on their runtime sessions. Before it, the old
+  logger put run 2's prompt and reply in two conversations. No session file reached
+  `~/.pi/agent/sessions`.
+- The route's own defects, found by running it and fixed in it: its environment helper
+  dropped the command it was given, so the first run wrote the shell environment,
+  credentials included, into the scratch directory instead of running Pi (the files
+  deleted at once; the helper now refuses to run without a command); Pi loads a new
+  project's `.pi/` only once trusted, so the scratch tree runs with `--approve`, which
+  trusts it for that run alone; and a run's rows are read by time, since the old logger
+  could split a prompt and its reply across two conversations.
 
 ## Outcome
 
