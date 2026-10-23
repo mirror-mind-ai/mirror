@@ -102,3 +102,4 @@ evidence stays honest as both cores move.
 - [CR160 — A Pi skill invoked as `/skill:<name>` is logged as the skill's body, as if the person had said it](cr160-a-pi-skill-invoked-as-skill-is-logged-as-its-body.md)
 - [CR161 — `.pi/` pins Pi's types at 0.70.0, and nothing type-checks the Pi extension](cr161-pi-types-are-pinned-at-0-70-and-nothing-type-checks-the-pi-extension.md)
 - [CR162 — Startup maintenance retitles only the 50 most recently ended conversations, so an older weak title is never improved](cr162-maintenance-retitles-only-the-latest-conversations.md)
+- [CR163 — The test suite leaves its temp homes behind, about 450 directories a run, and nothing notices](cr163-the-test-suite-leaves-its-temp-homes-behind.md)
