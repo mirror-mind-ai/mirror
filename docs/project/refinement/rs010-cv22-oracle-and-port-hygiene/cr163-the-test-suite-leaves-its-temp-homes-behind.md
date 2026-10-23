@@ -118,6 +118,53 @@ and CI fails a run that leaves anything behind.
   Driver and a Delivery are named before `in_progress` (CR160's were @viniciusteles and
   `main`); commits and pushes at the usual checkpoints; no release.
 
+**Reviewed 2026-10-24 through five lenses** (engineer, quality assurance, devops
+engineer, security engineer, quartermaster; the database architect sat out, no schema,
+query, or migration being involved). Thirteen amendments proposed, not yet folded,
+awaiting the Navigator's approval:
+
+- A1 (engineer): the exit handler never changes a test's verdict: each removal
+  wrapped, one stderr line on failure, the CI check reports what is left.
+- A2 (engineer): the helper returns the directory's real path, so the two files that
+  canonicalize need no special form and macOS's `/var` → `/private/var` cannot bite.
+- A3 (engineer): commits in order, suite green at each: helper and test; the 40
+  sources, folder by folder; the 22 cleaning files; the guard and its CI step; the
+  run-level check; docs.
+- A4 (engineer): `storyWorld` and `builderWorld` make their roots through the helper and
+  drop their own registries and `remove*` exports (nine call sites).
+- A5 (engineer): the golden's `echo_back` editor removes its own `.seen` scratch file
+  (`rm -f "$1".seen`); no test clean-up for it.
+- A6 (QA): acceptance restated: no test removed or skipped, the count grows by exactly
+  the tests added, none failing.
+- A7 (QA): the validation route's primary pass condition is the empty `TMPDIR`; `/tmp`
+  is compared by name, before and after, not by count.
+- A8 (QA): the guard's test covers the tree's forms (string, template,
+  `join("/tmp", …)`,
+  `realpathSync("/tmp")`, async `mkdtemp`) and the negatives (a `/tmp` in an
+  assertion, a golden-style literal, a comment); reports file and line; scope every
+  `.ts` under `ts/test`.
+- A9 (QA): before any code moves, one run of the current tree with `TMPDIR` at an
+  empty directory, its leftovers recorded in Evidence: the red the flip is dated
+  against.
+- A10 (devops): one script, `scripts/test_leaves_nothing.sh`, run by the workflow step
+  and by the Navigator's validation route alike: empty directory under
+  `${RUNNER_TEMP:-$(mktemp -d)}`, `TMPDIR` exported, `npm test`, leftovers listed by
+  prefix with counts, exit 1 if any.
+- A11 (devops): the leftover step runs only after a passing suite; the shadow run keeps
+  the runner's default temp folder, a comment saying which run proves what.
+- A12 (security): the helper removes only what it created, from its registry, never a
+  path from an argument or the environment; its header says so; the probe proves a
+  directory made beside the registry's survives the exit.
+- A13 (quartermaster): if a file resists the mechanical move because a test depends on
+  the `/tmp` path itself, stop and capture it rather than reshape that test here.
+
+The quartermaster's sort: steps 1 to 3 and the run-level check are the gates; steps 4
+and 5 are required by the check, which is otherwise blind to a home under a literal
+`/tmp`; A2, A4, A5 are improvements at zero marginal cost; per-test removal, a
+`tempFile` helper, `ts/smoke` and `ts/evals`, a pre-commit hook, and the shadow run
+stay excluded. Known risk, not an amendment: a child a test spawns writing after its
+parent exits would trip the check; that is an orphan to fix, not a retry.
+
 ## Evidence
 
 - **One full run on `main` at `f5636940`**, 2026-10-24: 3,448 tests, none failing, 53
