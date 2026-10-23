@@ -508,6 +508,17 @@ test("conversations imported routes on its own entry, its apply named apart (CR1
   assert.equal(apply.reason, "CR154 conversations imported remove --apply");
 });
 
+test("conversations skill-turns routes on its own entry, its apply named apart (CR160)", () => {
+  const listing = routeMemoryCommand(["conversations"], {});
+  const look = routeMemoryCommand(["conversations", "skill-turns"], {});
+  assert.equal(look.engine, "ts");
+  assert.equal(look.reason, "CR160 conversations skill-turns");
+  assert.notEqual(look.reason, listing.reason);
+  const apply = routeMemoryCommand(["conversations", "skill-turns", "--apply"], {});
+  assert.equal(apply.engine, "ts");
+  assert.equal(apply.reason, "CR160 conversations skill-turns --apply");
+});
+
 // --- CV22.DS7.TS3: the daily-visible tail ---------------------------------
 
 test("welcome routes to TS", () => {

@@ -591,6 +591,16 @@ export function routeByFamily(
           : "CR154 conversations imported",
       };
     }
+    // CR160: allowlisted by name like CR154's, its apply named apart.
+    if (argv[1] === "skill-turns") {
+      return {
+        command,
+        engine: "ts",
+        reason: argv.includes("--apply")
+          ? "CR160 conversations skill-turns --apply"
+          : "CR160 conversations skill-turns",
+      };
+    }
     const writeFlag = TS4_LIFECYCLE_WRITE_FLAGS.find((flag) => argv.includes(flag));
     if (writeFlag) {
       return { command, engine: "ts", reason: `DS7.TS4 ${writeFlag} ported to TS` };

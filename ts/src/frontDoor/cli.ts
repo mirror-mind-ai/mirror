@@ -172,6 +172,7 @@ import { runRuntimeReadRoute, runWelcomeRoute } from "./runtimeRoute.ts";
 import { runMemorySearchRoute } from "./searchRoute.ts";
 import { resolveSeedPaths } from "./seedPaths.ts";
 import { isSessionStartWelcome, runSessionStartWelcomeRoute } from "./sessionStartWelcomeRoute.ts";
+import { isSkillTurnsCommand, runSkillTurnsRoute } from "./skillTurnsRoute.ts";
 import { runSoulRoute } from "./soulRoute.ts";
 import {
   applyTasksImport,
@@ -1770,6 +1771,21 @@ async function dispatchTs(argv: readonly string[]): Promise<number | DispatchOut
   // backup, after its own dated, verified archive.
   if (isImportedConversationsCommand(argv)) {
     return runImportedConversationsRoute(argv, {
+      withReadOnlyDatabase: (read) => withMirrorReadDb(argv, read),
+      withLiveWriteDatabase: (write) => {
+        const dbPath = resolveDbPathForCli(argv.slice(1));
+        if (dbPath === null) return 2;
+        return withLiveWriteDbAt(dbPath, "conversations", (db) => write(db, dbPath));
+      },
+      backup: (dbPath) =>
+        createZipBackup({ dbPath, mirrorHome: dirname(dbPath), backupDir: null, silent: true }),
+      verifyBackup: (archive) => verifyBackupArchive(archive),
+    });
+  }
+  // CR160: the same shape -- the dry run reads; `--apply` writes behind the
+  // pre-write backup, after its own dated, verified archive.
+  if (isSkillTurnsCommand(argv)) {
+    return runSkillTurnsRoute(argv, {
       withReadOnlyDatabase: (read) => withMirrorReadDb(argv, read),
       withLiveWriteDatabase: (write) => {
         const dbPath = resolveDbPathForCli(argv.slice(1));
