@@ -237,7 +237,10 @@ Pi is the preferred harness because it makes Mirror Mind effectively multi-model
 
 Mirror records a Pi session as it happens, in the home that session runs against. It
 never imports Pi sessions afterwards: not your history from before Mirror, not
-sessions you run without it, and not another home's.
+sessions you run without it, and not another home's. A skill you invoke, from the
+menu or typed, is not recorded as something you said, and neither is its answer; a
+question you ask with `/mm-mirror` is. An earlier version stored skills picked from
+the menu as your words: `mirror conversations skill-turns` shows them and repairs them.
 
 
 ### Codex

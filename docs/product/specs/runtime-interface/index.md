@@ -41,8 +41,8 @@ required command, and any arguments the runtime must supply.
 | Event | Required command | Arguments supplied by runtime |
 |-------|------------------|-------------------------------|
 | Session start | `mirror conversation-logger session-start` | none |
-| User prompt | `mirror conversation-logger log-user <session_id> <prompt> --interface <name>` | `session_id`, `prompt text`, `interface name` |
-| Assistant response | see note below | — |
+| User prompt | `mirror conversation-logger user-prompt --interface <name>`, its JSON payload on stdin or as `--payload` | `session_id`, `prompt`, `turn_id` |
+| Assistant response | `mirror conversation-logger stop --interface <name>`, likewise; see the note below | `session_id`, `turn_id`, `last_assistant_message` |
 | Session end | `mirror conversation-logger session-end` or `session-end-pi <id>` | see note below |
 | Backup | `mirror backup --silent` | none |
 
@@ -102,13 +102,21 @@ No arguments. Prints a summary string (may be empty).
 Runs before each model turn. Persists the user message to the database.
 
 ```
-mirror conversation-logger log-user <session_id> <prompt> --interface <name>
+mirror conversation-logger user-prompt --interface <name>   # the payload on stdin, or as --payload <json>
 ```
+
+The payload is a JSON object:
 
 - `session_id` — opaque identifier for the current agent session, supplied by
   the runtime environment
-- `prompt` — full text of the user message; truncate at ~50 KB if needed
-- `--interface` — runtime name used for attribution (e.g. `claude_code`, `pi`)
+- `prompt` — the text the person sent, before the runtime expands anything;
+  truncate at ~50 KB if needed
+- `turn_id` — the runtime's id for the turn (`prompt_id` and `promptId` are read
+  too); a runtime that has none mints one per turn
+
+`--interface` is the runtime name used for attribution (e.g. `claude_code`, `pi`).
+`--payload` carries the payload in argv for a caller that cannot write stdin, Pi's
+`pi.exec` (CR160); a route given it never reads stdin.
 
 Skip a command turn: a prompt that opens with a skill invocation in any
 runtime's sigil (`isCommandTurn`, CV21.DS4.TS3). A prompt opening with `/` is a
@@ -125,29 +133,37 @@ The forms are the inject hook's (see
 skipped turn is recorded by its turn id so the Stop hook skips its reply too:
 what a person says to the mirror is remembered; a skill they invoke is not.
 
-The Claude-family hooks (`conversation-logger user-prompt`, from Claude Code,
-Codex, and Grok) apply both rules themselves, read the runtime's turn id from
-the payload (`prompt_id`, `turn_id`, or `promptId`) into the message's
-metadata, and stamp `runtime_sessions.interface` with the detected runtime on
-every prompt, skipped or not, so a conversation the Mirror Mode path creates
-inherits the right label.
+The `user-prompt` handler applies both rules itself, for the Claude-family
+hooks (Claude Code, Codex, Grok) and, since
+[CR160](../../../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr160-a-pi-skill-invoked-as-skill-is-logged-as-its-body.md), Pi's extension.
+It reads the turn id from the payload into the message's metadata, and stamps
+`runtime_sessions.interface` with the runtime on every prompt, skipped or not, so
+a conversation the Mirror Mode path creates inherits the right label. Pi hands its
+extensions the prompt after expanding a skill into its body, so the extension sends
+the text Pi's `input` event carried, as typed, with a turn id it mints for each run;
+with no typed text kept for a run, it reads Pi's skill wrapper back to the command.
+`log-user` and `log-assistant`, which Pi's extension called before CR160, write what
+they are given and stay for one release, for extensions already loaded in running
+sessions.
 
 ---
 
 ### Assistant Response
 
-Runtimes differ here by design. The difference is structural, not accidental:
-the Claude-schema runtimes hand their Stop hook the turn's final answer; Pi
-logs messages explicitly as they arrive.
+Every runtime reaches the same `stop` handler. They differ in how the answer
+arrives: the Claude-schema runtimes hand their Stop hook the turn's final answer;
+Pi's extension collects it.
 
-**Pi** — logs each assistant turn explicitly at `agent_end`:
+**Pi** — collects the assistant text of every run a prompt takes (`agent_end`) and
+sends it once, when the prompt settles (`agent_settled`), with the prompt's turn id
+(CR160):
 
 ```
-mirror conversation-logger log-assistant <session_id> <content> --interface pi
+mirror conversation-logger stop --interface pi --payload <json>
 ```
 
-Collect all assistant messages from the turn, concatenate, and log once.
-Truncate at ~50 KB.
+One reply row per prompt; truncate at ~50 KB. A reply still unsent is sent before
+the next prompt and at session end, since a Pi before 0.80.4 has no `agent_settled`.
 
 **Claude Code, Codex, Grok** — the Stop hook (`claude:stop`, through
 `log-assistant-reply.sh`) logs the payload's `last_assistant_message`
@@ -429,8 +445,8 @@ to remove when the route is done.
 | Event | Extension file | Pi trigger |
 |-------|---------------|------------|
 | Session start | `.pi/extensions/mirror-logger.ts` | `session_start` |
-| User prompt | `.pi/extensions/mirror-logger.ts` | `before_agent_start` |
-| Assistant response | `.pi/extensions/mirror-logger.ts` | `agent_end` |
+| User prompt | `.pi/extensions/mirror-logger.ts` | `input`, then `before_agent_start` |
+| Assistant response | `.pi/extensions/mirror-logger.ts` | `agent_end`, then `agent_settled` |
 | Session end + backup | `.pi/extensions/mirror-logger.ts` | `session_shutdown` |
 | Mirror load | `.pi/skills/mm-mirror/SKILL.md` | `/mm-mirror` skill invocation |
 
@@ -445,10 +461,13 @@ extension sees the prompt; the skill runs. A prompt that only names the skill,
 `/mm-<skill>` sent as typed, is not a Pi command: it reaches the model as text, and in
 the one turn measured the model read the skill by its name and ran it. So the docs give
 a person the `/mm-` form, which finds the skill in the menu, and give the model the
-skill's name. Until
+skill's name. Since
 [CR160](../../../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr160-a-pi-skill-invoked-as-skill-is-logged-as-its-body.md)
-ships, the extension logs a turn run from the menu as the skill's body, as if the
-person had said it, and logs the reply to a `/`-prefixed turn it skips.
+the extension logs what was typed, not what Pi expanded: a skill invocation, from the
+menu or typed, is not recorded, and neither is its reply; a Mirror question in either
+form (`/mm-mirror …`, `/skill:mm-mirror …`) is recorded as the question, with one
+reply. CR160's route measured both sides on Pi 1.4.0. `mirror conversations
+skill-turns` repairs what earlier versions stored.
 
 ### Antigravity
 
@@ -846,8 +865,10 @@ Every command runs through the front door. From the repository root, with the
 
 ```
 mirror conversation-logger session-start
-mirror conversation-logger log-user <session_id> <prompt> --interface <name>
-mirror conversation-logger log-assistant <session_id> <content> --interface <name>
+mirror conversation-logger user-prompt --interface <name>   # payload on stdin, or --payload <json>
+mirror conversation-logger stop --interface <name>          # likewise
+mirror conversation-logger log-user <session_id> <prompt> --interface <name>        # one more release (CR160)
+mirror conversation-logger log-assistant <session_id> <content> --interface <name>  # one more release (CR160)
 mirror conversation-logger session-end          # reads JSON from stdin
 mirror conversation-logger session-end-pi <id>  # explicit session id, deferred extraction
 mirror mirror load --context-only --query <q> [--persona <p>] [--journey <j>] [--org] [--session-id <id>]

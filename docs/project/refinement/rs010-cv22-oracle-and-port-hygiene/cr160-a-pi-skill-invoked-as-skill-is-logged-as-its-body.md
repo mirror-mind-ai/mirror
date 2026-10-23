@@ -211,6 +211,37 @@ Pi joins the hooks' path instead of the core learning a second copy of the rule.
   project's `.pi/` only once trusted, so the scratch tree runs with `--approve`, which
   trusts it for that run alone; and a run's rows are read by time, since the old logger
   could split a prompt and its reply across two conversations.
+- **The repair, implemented** (`cada0e08`, `f3673d56`): `mirror conversations
+  skill-turns [--apply]`, shaped as CR154's `remove`, routed on its own entry. Two
+  refinements found by running it on copies of the real homes, each with its test: a
+  `mm-build` body of 50,014 characters in the development home, which the old logger
+  had cut at its 50,000-character limit so the closing tag never arrived, is read as a
+  skill turn too (Pi's two opening lines, then the logger's own truncation marker, which
+  no person types); and a rebuilt title comes from the first remaining user turn that is
+  not a command, from a command only when nothing else remains. A test holds the
+  extension's copy of Pi's wrapper pattern to the repair's.
+- **The Driver's check, 2026-10-23**, on fresh copies of both homes (SQLite's backup of
+  each, read with `?immutable=1`), the real command, dry run then `--apply` then a
+  second dry run:
+
+  | | Production copy | Development copy |
+  |---|---|---|
+  | stored skill turns | 225, in 171 conversations | 185, in 145 |
+  | questions kept | 20 | 20 |
+  | turns removed | 205 | 165 |
+  | conversations deleted (A7) | 31, with 51 more messages | 24, with 48 more |
+  | titles rebuilt | 13 (of 25 `<skill…`; 12 went with deleted conversations) | 0 (all 5 went) |
+  | messages, conversations | 33,149 → 32,893; 1,640 → 1,609 | 13,787 → 13,574; 884 → 860 |
+  | second dry run | nothing to repair | nothing to repair |
+
+  Backup taken and verified before each change; no `<skill…` title left.
+- **Docs** (step 4): the contract's Lifecycle Events, User Prompt, and Assistant
+  Response give every runtime `user-prompt` and `stop`, Pi's way of reaching them, and
+  `--payload`; Pi's event table names `input` and `agent_settled`; *Invoking a skill on
+  Pi* says what is recorded now and loses CR159's caveat; the CLI reference marks
+  `log-user` and `log-assistant` as kept one more release. REFERENCE gains the command's
+  row and a *Pi Skill Turns* section, rollout order included (A10); Getting Started says
+  a skill invocation is not recorded and names the repair.
 
 ## Outcome
 

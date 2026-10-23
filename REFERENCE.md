@@ -65,6 +65,7 @@ the bare `/mm-<skill>` and qualifies a skill only when two share a name; the
 | `/mm-conversations` | `$mm-conversations` | `/mm:conversations` | Lists recent conversations | `--limit N`, `--journey J`, `--persona P` |
 | `mirror conversations append` | — | — | Atomically appends an explicit bounded user/assistant batch to one exact conversation | `--mirror-home PATH --format json`, JSON stdin |
 | `mirror conversations imported` | — | — | Lists the Pi conversations an earlier version imported rather than logged, by folder, and removes the ones you name after a verified backup | `[--project TEXT]`, `remove (ID... \| --all [--project FOLDER]) [--apply]`, `--mirror-home PATH`, `--db-path PATH` |
+| `mirror conversations skill-turns` | — | — | Shows the Pi user turns an earlier version stored as a skill's body, and repairs them after a verified backup | `[--apply]`, `--mirror-home PATH`, `--db-path PATH` |
 | `/mm-backup` | `$mm-backup` | `/mm:backup` | Backs up the memory database | no arguments |
 | `/mm-seed` | `$mm-seed` | `/mm:seed` | Seeds identity files from the active user home into the database | no arguments |
 | `/mm-mute` | `$mm-mute` | `/mm:mute` | Toggles conversation logging | no arguments |
@@ -216,6 +217,37 @@ report names the backups that still hold copies: the dated archives made since t
 earliest removed import (removed after 30 days) and the front door's pre-write
 backup (replaced by the next write). Nothing deletes them but you.
 
+
+## Pi Skill Turns
+
+```bash
+mirror conversations skill-turns [--apply]
+```
+
+Pi expands a skill into its body before Mirror's extension sees the prompt, and until
+CR160 the extension logged that: a skill picked from Pi's menu, or typed as
+`/skill:<name>`, was stored as `<skill name="…" location="…">` and the skill's body,
+as if you had said it. Since CR160 a skill invocation is not recorded, and a Mirror
+question is recorded as the question. This command repairs what an earlier version
+stored.
+
+It finds Pi's whole skill wrapper in the user turns of Pi conversations only, and the
+same wrapper where the old logger cut it at 50,000 characters. It applies the rule
+Mirror logs by: a Mirror question keeps its question; any other skill turn is
+removed, its arguments with it; a conversation left with no user turn is deleted, its
+memories and provider-call records kept, unlinked; a title that came from a block is
+rebuilt from the first remaining user turn that is not a command, provisional.
+Replies, summaries, and embeddings stay.
+
+Without `--apply` it is a dry run: by skill, how many rows keep their question and
+how many go; each conversation it would delete, with its message count; how many
+titles it would rebuild; and the command that applies it. With `--apply` it takes the
+dated archive in `<mirror home>/backups/`, verifies it, and refuses if either fails;
+then, in one transaction, it decides again (refusing if anything changed) and
+repairs. Run it once every Pi session on the home has restarted on a version that
+carries CR160: a session that has not keeps writing skill bodies, and running the
+command again repairs those too. Every option is declared: an unrecognized one is
+refused with the usage (exit 2) before the database opens.
 ## Operating Mode Lifecycle
 
 ```bash
