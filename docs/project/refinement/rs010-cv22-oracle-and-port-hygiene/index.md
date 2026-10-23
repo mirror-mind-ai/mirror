@@ -100,3 +100,5 @@ evidence stays honest as both cores move.
 - [CR158 — A Pi catalog whose skill files are gone loads no extension, while the status line still counts them and nothing reports it](cr158-a-pi-catalog-whose-skill-files-are-gone-loads-no-extension-and-nothing-reports-it.md)
 - [CR159 — The docs spell Pi's skills `/mm-<skill>`, which Pi registers as `/skill:<name>`, and the authoring guide's step 7a has lost two dashes](cr159-pi-skills-are-spelled-by-their-bare-name-and-step-7a-lost-two-dashes.md)
 - [CR160 — A Pi skill invoked as `/skill:<name>` is logged as the skill's body, as if the person had said it](cr160-a-pi-skill-invoked-as-skill-is-logged-as-its-body.md)
+- [CR161 — `.pi/` pins Pi's types at 0.70.0, and nothing type-checks the Pi extension](cr161-pi-types-are-pinned-at-0-70-and-nothing-type-checks-the-pi-extension.md)
+- [CR162 — Startup maintenance retitles only the 50 most recently ended conversations, so an older weak title is never improved](cr162-maintenance-retitles-only-the-latest-conversations.md)
