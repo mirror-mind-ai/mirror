@@ -21,7 +21,10 @@ question; Pi's turns go through the rule the other runtimes have. `mirror
 conversations skill-turns` repairs what earlier versions stored, a dry run until
 `--apply`, which verifies a backup first. No migration. The two real homes on the
 maintainer's machine are repaired once the production install carries it and every Pi
-session on each has restarted.
+session on each has restarted. Tag and `stable` pushed; CI green on the promoted
+commit; the trusted-publisher stage approved; `latest` and `stable` at 0.36.3; GitHub
+Release published; the production install updated through `runtime update` (backup
+verified, nothing to migrate, status ready).
 
 ### 2026-10-23 — CR160: a Pi skill invocation is not recorded as the person's words; the repair for what was
 
