@@ -24,7 +24,11 @@ maintainer's machine are repaired once the production install carries it and eve
 session on each has restarted. Tag and `stable` pushed; CI green on the promoted
 commit; the trusted-publisher stage approved; `latest` and `stable` at 0.36.3; GitHub
 Release published; the production install updated through `runtime update` (backup
-verified, nothing to migrate, status ready).
+verified, nothing to migrate, status ready). Both real homes repaired with it the same
+night, once the two Pi sessions still running the old extension were closed: 205 skill
+turns removed from the production home and 165 from the development home, 20 Mirror
+questions kept in each, 31 and 24 conversations left with no user turn deleted, 13
+titles rebuilt; each second dry run found nothing; nothing else moved.
 
 ### 2026-10-23 — CR160: a Pi skill invocation is not recorded as the person's words; the repair for what was
 

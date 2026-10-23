@@ -289,3 +289,24 @@ repair), `6d23d15a` (the docs), and this closure; carried by
 [v0.36.3](../../../releases/v0.36.3.md), a patch release. Then `runtime update`, a
 restart of every Pi session on each home, and the repair on the real homes, dry run
 first, in that order (A10).
+
+**Used the night of the release on the maintainer's two real homes**, at the
+Navigator's direction, in A10's order. v0.36.3 was installed through `runtime update`.
+Two Pi sessions still ran the extension they had loaded before the fix, one on each
+home, and the Navigator closed them; only sessions started after the fix were left.
+Then, on each home named by `--mirror-home`: the dry run, which matched the copies'
+numbers exactly, `--apply` after a verified backup, and a second dry run:
+
+| | Production home | Development home |
+|---|---|---|
+| stored skill turns | 225, in 171 conversations | 185, in 145 |
+| questions kept | 20 | 20 |
+| turns removed | 205 | 165 |
+| conversations deleted (A7) | 31, with 51 more messages | 24, with 48 more |
+| titles rebuilt | 13 | 0 |
+| messages, conversations | 33,175 → 32,919; 1,640 → 1,609 | 13,805 → 13,592; 886 → 862 |
+| second dry run | nothing to repair | nothing to repair |
+
+User turns fell by exactly the turns removed and replies by exactly the messages that
+went with deleted conversations; memories and provider-call records kept their counts
+in both homes; no `<skill…` title is left.
