@@ -19,7 +19,7 @@
 //      absent rather than raising.
 
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync } from "node:fs";
+import { rmSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 
@@ -39,6 +39,7 @@ import {
 import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
 import golden from "#goldens/builder-cursor.golden.json" with { type: "json" };
 import { createRuntimeTables } from "#helpers/runtimeSchema.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 import { upsertRuntimeSession } from "#mirror/runtimeSession.ts";
 
 interface RowDump {
@@ -130,7 +131,7 @@ interface Harness {
 }
 
 function harness(): Harness {
-  const directory = mkdtempSync("/tmp/builder-cursor-");
+  const directory = tempDir("builder-cursor-");
   directories.push(directory);
   const db = openDatabaseCopyForWrite(join(directory, "copy.db"));
   createRuntimeTables(db);

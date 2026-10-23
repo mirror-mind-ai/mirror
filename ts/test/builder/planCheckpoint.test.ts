@@ -14,15 +14,7 @@ import { fill, PLAN_SECTIONS } from "#builder/artifacts/scaffoldSections.ts";
 import { judgeStoryFiles, storyFileLines } from "#builder/artifacts/storyFiles.ts";
 import { getDeliveryCursor } from "#builder/deliveryCursor.ts";
 import { renderPlanCheckpoint } from "#builder/plan.ts";
-import {
-  planStory,
-  removeStoryWorlds,
-  STORY_PACKAGE,
-  type StoryWorld,
-  storyWorld,
-} from "#helpers/storyWorld.ts";
-
-test.after(removeStoryWorlds);
+import { planStory, STORY_PACKAGE, type StoryWorld, storyWorld } from "#helpers/storyWorld.ts";
 
 const TITLE = "Enter an address";
 

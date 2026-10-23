@@ -20,9 +20,7 @@ import {
   chmodSync,
   existsSync,
   mkdirSync,
-  mkdtempSync,
   readFileSync,
-  realpathSync,
   rmSync,
   unlinkSync,
   writeFileSync,
@@ -30,6 +28,7 @@ import {
 import { join } from "node:path";
 import test from "node:test";
 import { bootstrapDatabase } from "#db/bootstrap.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 import { activateOperatingMode } from "#mode/operatingMode.ts";
 import { inspectGit } from "#runtime/git.ts";
 import { composeWelcome, localReleaseTitle, remoteTagForCommit } from "#welcome/card.ts";
@@ -107,7 +106,7 @@ function awareness(fields: Partial<UpdateAwareness>): UpdateAwareness {
 
 function tempRoot(prefix: string): { root: string; cleanup: () => void } {
   // realpath: on macOS /tmp is a symlink to /private/tmp.
-  const root = realpathSync(mkdtempSync(`/tmp/${prefix}-`));
+  const root = tempDir(`${prefix}-`);
   return { root, cleanup: () => rmSync(root, { recursive: true, force: true }) };
 }
 

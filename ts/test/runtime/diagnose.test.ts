@@ -10,10 +10,8 @@ import {
   chmodSync,
   closeSync,
   mkdirSync,
-  mkdtempSync,
   openSync,
   readFileSync,
-  realpathSync,
   rmSync,
   statSync,
   writeFileSync,
@@ -24,6 +22,7 @@ import { DatabaseSync } from "node:sqlite";
 import test from "node:test";
 import { KNOWN_MIGRATION_IDS } from "#db/schemaState.ts";
 import { checksum } from "#extensions/migrations.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 import {
   type DriftFinding,
   deferredCloseTailFindings,
@@ -161,7 +160,7 @@ interface Fixture {
 }
 
 function fixture(now: Date): Fixture {
-  const root = realpathSync(mkdtempSync("/tmp/runtime-diagnose-"));
+  const root = tempDir("runtime-diagnose-");
   const homes = new Map<string, string>();
 
   const repo = join(root, "repo");
@@ -420,7 +419,7 @@ function homeWithIdentity(rows: readonly (readonly [string, string])[]): {
   dbPath: string;
   cleanup: () => void;
 } {
-  const root = mkdtempSync(join(realpathSync("/tmp"), "diagnose-identity-keys-"));
+  const root = tempDir("diagnose-identity-keys-");
   const dbPath = join(root, "memory.db");
   const db = new DatabaseSync(dbPath);
   db.exec("CREATE TABLE identity (layer TEXT NOT NULL, key TEXT NOT NULL, UNIQUE(layer, key))");
@@ -486,7 +485,7 @@ test("CR104: a database without such a key, or without an identity table, report
 });
 
 test("US3 D3: a group-readable config file is a loose_permissions finding, an owner-only one is not", () => {
-  const root = mkdtempSync("/tmp/runtime-diagnose-config-");
+  const root = tempDir("runtime-diagnose-config-");
   try {
     const config = join(root, "env");
     writeFileSync(config, "OPENROUTER_API_KEY=x\n");
@@ -515,7 +514,7 @@ function homeWithConversations(rows: readonly (readonly [string, string, string 
   dbPath: string;
   cleanup: () => void;
 } {
-  const root = mkdtempSync(join(realpathSync("/tmp"), "diagnose-deferred-tails-"));
+  const root = tempDir("diagnose-deferred-tails-");
   const dbPath = join(root, "memory.db");
   const db = new DatabaseSync(dbPath);
   db.exec("CREATE TABLE conversations (id TEXT PRIMARY KEY, ended_at TEXT, metadata TEXT)");

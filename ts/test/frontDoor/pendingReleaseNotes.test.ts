@@ -11,19 +11,12 @@
 
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import {
-  copyFileSync,
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  realpathSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import { gzipSync } from "node:zlib";
 import { runRuntimeReadRoute } from "#frontDoor/runtimeRoute.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 import type { InstallKind } from "#runtime/installKind.ts";
 import type { NpmRunner } from "#runtime/strategies/package.ts";
 
@@ -74,7 +67,7 @@ interface World {
  * fetch ran in the install's clone. Its `main` carries `v0.12.0`.
  */
 function world(): World {
-  const root = realpathSync(mkdtempSync("/tmp/pending-release-notes-"));
+  const root = tempDir("pending-release-notes-");
   const seed = join(root, "seed");
   mkdirSync(seed);
   git(seed, "init", "--quiet", "--initial-branch=stable");

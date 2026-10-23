@@ -2,10 +2,11 @@
 
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import { bootstrapDatabase } from "#db/bootstrap.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 import { createJourney } from "#journey/journeyWrite.ts";
 
 const CLI = new URL("../../src/frontDoor/cli.ts", import.meta.url).pathname;
@@ -16,7 +17,7 @@ interface Fixture {
 }
 
 function fixture(): Fixture {
-  const root = mkdtempSync("/tmp/builder-cli-");
+  const root = tempDir("builder-cli-");
   const home = join(root, "home");
   mkdirSync(home, { recursive: true });
   // A NEUTRAL project directory: the clone-role guard `load` runs first judges

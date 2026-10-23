@@ -6,7 +6,7 @@
 // written here and the guards written in `plan.ts` and `closure.ts` cannot drift apart.
 
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync } from "node:fs";
+import { rmSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 
@@ -31,6 +31,7 @@ import { prepareLifecycleItem } from "#builder/prepare.ts";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
 import { createIdentityTable } from "#helpers/identitySchema.ts";
 import { createRuntimeTables } from "#helpers/runtimeSchema.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 
 const NOW = "2026-09-26T12:00:00+00:00";
 const deps = { nowIso: () => NOW };
@@ -42,7 +43,7 @@ test.after(() => {
 
 function database(): WritableDatabase {
   // `openDatabaseCopyForWrite` accepts only a target under a literal `tmp/` path.
-  const directory = mkdtempSync("/tmp/lifecycle-refusal-");
+  const directory = tempDir("lifecycle-refusal-");
   directories.push(directory);
   const db = openDatabaseCopyForWrite(join(directory, "copy.db"));
   createIdentityTable(db);

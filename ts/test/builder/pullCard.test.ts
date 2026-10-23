@@ -11,9 +11,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import { pullLifecycleItem, pullPlacement, renderPullReport } from "#builder/pull.ts";
-import { removeStoryWorlds, type StoryWorld, storyDeps, storyWorld } from "#helpers/storyWorld.ts";
-
-test.after(removeStoryWorlds);
+import { type StoryWorld, storyDeps, storyWorld } from "#helpers/storyWorld.ts";
 
 const ROADMAP = "docs/project/roadmap";
 

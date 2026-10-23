@@ -11,11 +11,12 @@
 
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import { setAdoptedMethod } from "#builder/methodAdoption.ts";
 import { bootstrapDatabase } from "#db/bootstrap.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 import { createJourney } from "#journey/journeyWrite.ts";
 
 const CLI = new URL("../../src/frontDoor/cli.ts", import.meta.url).pathname;
@@ -74,7 +75,7 @@ interface Fixture {
 }
 
 function fixture(journeys: readonly string[]): Fixture {
-  const root = mkdtempSync("/tmp/builder-scope-cli-");
+  const root = tempDir("builder-scope-cli-");
   const home = join(root, "home");
   mkdirSync(home, { recursive: true });
   // A neutral project directory, not this repository: `build load`'s clone-role

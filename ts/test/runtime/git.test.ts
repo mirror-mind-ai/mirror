@@ -9,10 +9,11 @@
 
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import { assertNamesNoInterpreter } from "#helpers/noInterpreter.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 import {
   checkUpdateAvailability,
   inspectCloneRole,
@@ -73,7 +74,7 @@ function git(cwd: string, ...args: string[]): string {
 function fixture(): { root: string; clone: string; seed: string; cleanup: () => void } {
   // realpath: on macOS /tmp is a symlink to /private/tmp, and both cores
   // resolve the repository path, so the placeholder must match the resolved form.
-  const root = realpathSync(mkdtempSync("/tmp/runtime-git-"));
+  const root = tempDir("runtime-git-");
   const seed = join(root, "seed");
   const remote = join(root, "remote.git");
   const clone = join(root, "clone");

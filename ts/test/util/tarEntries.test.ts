@@ -17,10 +17,11 @@
 
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import { gunzipSync, gzipSync } from "node:zlib";
+import { tempDir } from "#helpers/tempDir.ts";
 import { readTarGzEntries } from "#util/tarEntries.ts";
 
 const NOTE = /^package\/docs\/releases\/v\d+\.\d+\.\d+\.md$/;
@@ -33,7 +34,7 @@ const LAYOUTS = [
 ];
 
 function archive(flags: string[]): { gz: Buffer; cleanup: () => void } {
-  const root = realpathSync(mkdtempSync("/tmp/tar-entries-"));
+  const root = tempDir("tar-entries-");
   mkdirSync(join(root, LONG_DIR), { recursive: true });
   mkdirSync(join(root, "package", "docs", "releases"), { recursive: true });
   writeFileSync(join(root, LONG_PATH), "far down\n");

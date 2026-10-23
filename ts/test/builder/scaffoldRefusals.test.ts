@@ -25,12 +25,9 @@ import {
   storyDeps as deps,
   STORY_PACKAGE as PACKAGE,
   planStory,
-  removeStoryWorlds,
   type StoryWorld as World,
   storyWorld as world,
 } from "#helpers/storyWorld.ts";
-
-test.after(removeStoryWorlds);
 
 function plan(w: World, preauthorize = false): void {
   planStory(w, { preauthorize });

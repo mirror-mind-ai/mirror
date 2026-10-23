@@ -6,7 +6,7 @@
 // directory, and a delivery cursor at the event the test starts from. One helper, so
 // the two suites cannot drift into two ideas of "a story ready to plan".
 
-import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { getAriadMethod } from "#builder/ariadMethod.ts";
 import { setDeliveryCursor } from "#builder/deliveryCursor.ts";
@@ -14,6 +14,7 @@ import { type BuilderPlanReport, planLifecycleItem } from "#builder/plan.ts";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
 import { createIdentityTable } from "#helpers/identitySchema.ts";
 import { createRuntimeTables } from "#helpers/runtimeSchema.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 
 /** The story package every world holds, project-relative. */
 export const STORY_PACKAGE = "docs/project/roadmap/cv1/cv1-ds1/cv1-ds1-us1-enter-an-address";
@@ -30,12 +31,9 @@ export interface StoryWorld {
   readonly index: string;
 }
 
-const roots: string[] = [];
-
 /** A journey `demo` whose story `CV1.DS1.US1` stands at `event`, its package directory made. */
 export function storyWorld(event = "prepare", pending: string | null = null): StoryWorld {
-  const root = mkdtempSync("/tmp/story-world-");
-  roots.push(root);
+  const root = tempDir("story-world-");
   const db = openDatabaseCopyForWrite(join(root, "copy.db"));
   createIdentityTable(db);
   createRuntimeTables(db);
@@ -85,9 +83,4 @@ export function planStory(world: StoryWorld, options: PlanStoryOptions = {}): Bu
     },
     storyDeps,
   );
-}
-
-/** Remove every world made so far; call from `test.after`. */
-export function removeStoryWorlds(): void {
-  for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
 }

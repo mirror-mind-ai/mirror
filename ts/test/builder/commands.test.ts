@@ -14,15 +14,7 @@
 // lands in plateau 2 rather than being half-ported here.
 
 import assert from "node:assert/strict";
-import {
-  cpSync,
-  mkdirSync,
-  mkdtempSync,
-  readdirSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs";
+import { cpSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, sep } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
@@ -41,6 +33,7 @@ import { authorPlan, authorStoryIndex } from "#helpers/authorScaffold.ts";
 import { invokeBuilderArgv } from "#helpers/builderInvoke.ts";
 import { createIdentityTable } from "#helpers/identitySchema.ts";
 import { createRuntimeTables } from "#helpers/runtimeSchema.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 import { upsertRuntimeSession } from "#mirror/runtimeSession.ts";
 import { activateOperatingMode } from "#mode/operatingMode.ts";
 
@@ -136,7 +129,7 @@ function memoryDatabase(): WritableDatabase {
   // guard that keeps a write probe off a real database — and on macOS
   // `os.tmpdir()` is `/var/folders/...`, which does not satisfy it. The literal
   // prefix is what the existing append test uses.
-  const directory = mkdtempSync("/tmp/builder-command-");
+  const directory = tempDir("builder-command-");
   temporaryDirectories.push(directory);
   const db = openDatabaseCopyForWrite(join(directory, "copy.db"));
   createIdentityTable(db);
@@ -561,7 +554,7 @@ function scratchProject(seedAuthored: boolean): string {
   // A fixed folder name inside the temporary directory: every report of a write names
   // the project by its folder (CR009), so a random one would make the row differ
   // between runs. The fixture's own folder is named `project`, and so is this one.
-  const scratch = mkdtempSync("/tmp/builder-command-project-");
+  const scratch = tempDir("builder-command-project-");
   temporaryDirectories.push(scratch);
   const directory = join(scratch, "project");
   cpSync(PROJECT, directory, { recursive: true });
@@ -1511,7 +1504,7 @@ function cardRows(card: string, from: string, to: string): string {
 }
 
 test("CR019: a story's Plan names only its own parent's other children as non-goals", () => {
-  const project = mkdtempSync("/tmp/builder-command-cr019-");
+  const project = tempDir("builder-command-cr019-");
   temporaryDirectories.push(project);
   writeSiblingTree(project, { guide: false });
 
@@ -1548,7 +1541,7 @@ test("CR019: a story's Plan names only its own parent's other children as non-go
 // CR111 D5: the front door filled the scaffold's title with the roadmap's, else the
 // item's code, although the cursor holds the title Pull recorded.
 test("CR111 D5: an item the roadmap does not list is scaffolded with its recorded title", () => {
-  const project = mkdtempSync("/tmp/builder-command-cr111-d5-");
+  const project = tempDir("builder-command-cr111-d5-");
   temporaryDirectories.push(project);
   writeSiblingTree(project, { guide: false });
   const db = seed("adopted", project);
@@ -1603,7 +1596,7 @@ test("CR019: the contract carries Ariad's method rules, and a project's own only
   const pointer = "Follow the project's development guide: docs/process/development-guide.md.";
 
   for (const guide of [false, true]) {
-    const project = mkdtempSync("/tmp/builder-command-cr019-");
+    const project = tempDir("builder-command-cr019-");
     temporaryDirectories.push(project);
     writeSiblingTree(project, { guide });
     const plan = planStoryIn(project, first);
@@ -1624,7 +1617,7 @@ test("CR019: the contract carries Ariad's method rules, and a project's own only
 });
 
 test("CR019: an active story the candidates no longer list gets the fallback non-goal", () => {
-  const project = mkdtempSync("/tmp/builder-command-cr019-");
+  const project = tempDir("builder-command-cr019-");
   temporaryDirectories.push(project);
   writeSiblingTree(project, { guide: false });
   const folder = "cv1-first/cv1-ds1-alpha/cv1-ds1-ts1-first";
@@ -1667,7 +1660,7 @@ const CR067_VALIDATE = [
 ] as const;
 
 test("CR067: every refusal renders where the cursor stands, says why, and changes nothing", () => {
-  const project = mkdtempSync("/tmp/builder-command-cr067-");
+  const project = tempDir("builder-command-cr067-");
   temporaryDirectories.push(project);
   writeSiblingTree(project, { guide: false });
   const db = seed("adopted", project);
@@ -1815,7 +1808,7 @@ function cardLines(card: string, from: string, to: string): string[] {
 }
 
 test("CR020: build show renders the stage, position, and records, and changes nothing", () => {
-  const project = mkdtempSync("/tmp/builder-command-cr020-");
+  const project = tempDir("builder-command-cr020-");
   temporaryDirectories.push(project);
   writeSiblingTree(project, { guide: false });
   const db = seed("adopted", project);
@@ -1959,7 +1952,7 @@ test("CR020: build show renders the stage, position, and records, and changes no
 // or will. One walk through every Delivery surface a story reaches, through the front
 // door, pins them all; the compiler already makes every caller pass a level.
 test("CR113: every Delivery ribbon a story's lifecycle prints draws Expand as not applicable", () => {
-  const project = mkdtempSync("/tmp/builder-command-cr113-");
+  const project = tempDir("builder-command-cr113-");
   temporaryDirectories.push(project);
   writeSiblingTree(project, { guide: false });
   const db = seed("adopted", project);
@@ -2058,7 +2051,7 @@ test("CR113: every Delivery ribbon a story's lifecycle prints draws Expand as no
 });
 
 test("CR113: a Delivery Story's refusal still draws the Expand it reached", () => {
-  const project = mkdtempSync("/tmp/builder-command-cr113-ds-");
+  const project = tempDir("builder-command-cr113-ds-");
   temporaryDirectories.push(project);
   writeSiblingTree(project, { guide: false });
   const db = seed("adopted", project);
@@ -2156,7 +2149,7 @@ test("CR020: build show refuses without a journey, and for a journey that adopte
 });
 
 test("CR067: a failure after the cursor moved is an error, never a refusal that changed nothing", () => {
-  const project = mkdtempSync("/tmp/builder-command-cr067-");
+  const project = tempDir("builder-command-cr067-");
   temporaryDirectories.push(project);
   writeSiblingTree(project, { guide: false });
   const db = seed("adopted", project);
@@ -2211,7 +2204,7 @@ test("CR067: a failure after the cursor moved is an error, never a refusal that 
  * TS1's package, so two packages claim its code.
  */
 function claimsProject(options: { duplicate: boolean }): string {
-  const project = mkdtempSync("/tmp/builder-command-cr018-");
+  const project = tempDir("builder-command-cr018-");
   temporaryDirectories.push(project);
   const roadmap = join(project, "docs/project/roadmap");
   const write = (path: string, content: string) => {
@@ -2408,7 +2401,7 @@ const SLASHED = {
 
 /** The validation route's roadmap, without its links: slashes are this plateau's reason. */
 function slashedProject(): string {
-  const project = mkdtempSync("/tmp/builder-command-cr018-");
+  const project = tempDir("builder-command-cr018-");
   temporaryDirectories.push(project);
   const roadmap = join(project, "docs/project/roadmap");
   const write = (path: string, content: string) => {
@@ -2881,7 +2874,7 @@ test("CR018: EXPAND_BLOCKED's action names the Delivery Story whose index.md nee
 });
 
 test("CR112: build show and the artifacts card name what each Plan-stage artifact is", () => {
-  const project = mkdtempSync("/tmp/builder-command-cr112-");
+  const project = tempDir("builder-command-cr112-");
   temporaryDirectories.push(project);
   writeSiblingTree(project, { guide: false });
   const packageDir = join(
@@ -2971,7 +2964,7 @@ test("CR112: build show and the artifacts card name what each Plan-stage artifac
 });
 
 test("CR112: continue-lifecycle closes a story only when its index is authored, as done-item does", () => {
-  const project = mkdtempSync("/tmp/builder-command-cr112-continue-");
+  const project = tempDir("builder-command-cr112-continue-");
   temporaryDirectories.push(project);
   writeSiblingTree(project, { guide: false });
   const index = join(

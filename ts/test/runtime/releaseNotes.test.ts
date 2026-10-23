@@ -5,17 +5,10 @@
 
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import {
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  realpathSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
+import { tempDir } from "#helpers/tempDir.ts";
 import {
   buildPendingReleaseNotes,
   fetchReleaseNotesRef,
@@ -81,7 +74,7 @@ function git(cwd: string, ...args: string[]): string {
 }
 
 function fixture(): { root: string; clone: string; cleanup: () => void } {
-  const root = realpathSync(mkdtempSync("/tmp/release-notes-"));
+  const root = tempDir("release-notes-");
   const seed = join(root, "seed");
   const remote = join(root, "remote.git");
   const clone = join(root, "clone");
@@ -164,7 +157,7 @@ test("a package inside an unrelated git work tree reads its own notes (CR133)", 
   // climbed to it would find nothing -- which also makes this the proof that
   // the working-tree reader asks git nothing. No commit is needed: git names
   // the top level of an empty repository all the same.
-  const prefix = realpathSync(mkdtempSync("/tmp/release-notes-prefix-"));
+  const prefix = tempDir("release-notes-prefix-");
   try {
     git(prefix, "init", "--quiet", "--initial-branch=main");
     const pkg = join(prefix, "lib", "node_modules", "mirror-mind");

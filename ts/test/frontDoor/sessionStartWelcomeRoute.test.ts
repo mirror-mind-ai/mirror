@@ -10,7 +10,7 @@
 
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import { bootstrapDatabase } from "#db/bootstrap.ts";
@@ -21,6 +21,7 @@ import {
   SESSION_START_WELCOME_SCHEMA_VERSION,
   type SessionStartWelcomeEnvelope,
 } from "#frontDoor/sessionStartWelcomeRoute.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 
 const CLI = new URL("../../src/frontDoor/cli.ts", import.meta.url).pathname;
 
@@ -36,7 +37,7 @@ interface Fixture {
 }
 
 function fixture(): Fixture {
-  const root = realpathSync(mkdtempSync("/tmp/session-start-welcome-"));
+  const root = tempDir("session-start-welcome-");
   const home = join(root, "mirror-home");
   mkdirSync(home, { recursive: true });
   bootstrapDatabase(join(home, "memory.db")).close();

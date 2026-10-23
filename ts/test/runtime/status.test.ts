@@ -22,6 +22,7 @@ import { DatabaseSync } from "node:sqlite";
 import test from "node:test";
 import { KNOWN_MIGRATION_IDS } from "#db/schemaState.ts";
 import { checksum } from "#extensions/migrations.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 import {
   buildRuntimeStatus,
   detectNodeVersion,
@@ -180,7 +181,7 @@ interface Fixture {
 function fixture(): Fixture {
   // realpath: on macOS /tmp is a symlink to /private/tmp, and both cores
   // resolve the mirror home, so the placeholder must match the resolved form.
-  const root = realpathSync(mkdtempSync("/tmp/runtime-status-"));
+  const root = tempDir("runtime-status-");
   const homes = new Map<string, string>();
 
   const repo = join(root, "repo");

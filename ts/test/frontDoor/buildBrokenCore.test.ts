@@ -7,10 +7,11 @@
 
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import { bootstrapDatabase } from "#db/bootstrap.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 
 const CLI = new URL("../../src/frontDoor/cli.ts", import.meta.url).pathname;
 const REPO_ROOT = new URL("../../..", import.meta.url).pathname;
@@ -21,7 +22,7 @@ function run(cliArgs: string[], env: NodeJS.ProcessEnv, cwd = REPO_ROOT) {
 }
 
 test("a throwing Builder core fails `build` loudly and leaves other commands alone", () => {
-  const root = mkdtempSync("/tmp/builder-broken-core-");
+  const root = tempDir("builder-broken-core-");
   const home = join(root, "home");
   mkdirSync(home, { recursive: true });
   bootstrapDatabase(join(home, "memory.db")).close();
