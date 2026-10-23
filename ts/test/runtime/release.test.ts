@@ -11,6 +11,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { assertNamesNoInterpreter } from "#helpers/noInterpreter.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 import type { NpmRunner } from "#runtime/strategies/package.ts";
 import {
   buildReleaseDoctorReport,
@@ -360,7 +361,7 @@ test("under --push, publication is still not performed", () => {
   // the registry is reached by nothing in this story.
   const f = fixture();
   try {
-    const remote = mkdtempSync(join(tmpdir(), "us2-release-remote-"));
+    const remote = tempDir("us2-release-remote-");
     git(f.repo, "init", "-q", "--bare", remote);
     git(f.repo, "remote", "add", "origin", remote);
     const npm = scriptNpm({ "publish --dry-run": { stderr: PUBLISH_DRY_RUN_NOTICE } });

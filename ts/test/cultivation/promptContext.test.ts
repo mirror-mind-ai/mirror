@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { mkdtempSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 
@@ -11,6 +10,7 @@ import {
 import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
 import { createIdentityTable } from "#helpers/identitySchema.ts";
 import { promptAssemblyGolden } from "#helpers/promptAssemblyGolden.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 
 /**
  * CV22.DS8.TS2 — the two inputs `cmd_scan` resolves before calling the LLM,
@@ -26,7 +26,7 @@ import { promptAssemblyGolden } from "#helpers/promptAssemblyGolden.ts";
 const golden = promptAssemblyGolden();
 
 function freshDb(): WritableDatabase {
-  const dir = mkdtempSync("/tmp/mirror-prompt-context-");
+  const dir = tempDir("mirror-prompt-context-");
   const db = openDatabaseCopyForWrite(join(dir, "copy.db"));
   createIdentityTable(db);
   return db;

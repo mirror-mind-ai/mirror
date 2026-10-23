@@ -14,10 +14,11 @@
 // discipline): a failing test must not print a prompt.
 
 import assert from "node:assert/strict";
-import { mkdtempSync, readFileSync, rmSync, symlinkSync } from "node:fs";
+import { readFileSync, rmSync, symlinkSync } from "node:fs";
 import { delimiter, join } from "node:path";
 import test from "node:test";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { tempDir } from "#helpers/tempDir.ts";
 
 const EXTENSION_PATH = new URL("../../../.pi/extensions/mirror-logger.ts", import.meta.url)
   .pathname;
@@ -28,10 +29,41 @@ const LOADED_KEY = "__mirrorLoggerRegistered";
 // first import; every harness below reads only the tail written since it
 // started. `node --test` runs each file in its own process, so this env write
 // reaches nothing else.
-const LOG_DIR = mkdtempSync("/tmp/mirror-logger-ext-");
+const LOG_DIR = tempDir("mirror-logger-ext-");
 process.env.MEMORY_DIR = LOG_DIR;
 const LOG_PATH = join(LOG_DIR, "mirror-logger.log");
-test.after(() => rmSync(LOG_DIR, { recursive: true, force: true }));
+
+// The extension runs its maintenance and close work in detached front-door
+// processes, on purpose: they must survive Pi exiting. Here they would survive
+// this file, and write into LOG_DIR after it was removed (CR163). So the file
+// waits for every one its log says it started, then removes the directory.
+const DETACHED = /started in detached background process (\d+)/g;
+const DETACHED_WAIT_MS = 60_000;
+
+function isRunning(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+test.after(async () => {
+  let log = "";
+  try {
+    log = readFileSync(LOG_PATH, "utf8");
+  } catch {
+    // No log, so nothing was started.
+  }
+  const deadline = Date.now() + DETACHED_WAIT_MS;
+  for (const [, pid] of log.matchAll(DETACHED)) {
+    while (isRunning(Number(pid)) && Date.now() < deadline) {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+  }
+  rmSync(LOG_DIR, { recursive: true, force: true });
+});
 
 // The extension warns at session_start when `mirror` does not resolve on the
 // PATH (CV22.DS10.US3). Whether it does is a fact about the host, not about
@@ -39,7 +71,7 @@ test.after(() => rmSync(LOG_DIR, { recursive: true, force: true }));
 // the harness supplies its own, the way `npm link` does -- `mirror` pointing
 // at this tree's bin -- first on the PATH for every test; the one test about
 // the warning takes it away.
-const LINKED_BIN_DIR = mkdtempSync("/tmp/mirror-logger-ext-bin-");
+const LINKED_BIN_DIR = tempDir("mirror-logger-ext-bin-");
 symlinkSync(
   fileURLToPath(new URL("../../../bin/mirror.js", import.meta.url)),
   join(LINKED_BIN_DIR, "mirror"),
@@ -330,7 +362,7 @@ test("session_start without `mirror` on the PATH warns before the card, naming t
   // A PATH that still finds `node`, which the detached maintenance spawn
   // needs, and finds no `mirror`. `node`'s own directory will not do: on a
   // Homebrew host it holds the global package's `mirror` too.
-  const bareBinDir = mkdtempSync("/tmp/mirror-logger-ext-bare-");
+  const bareBinDir = tempDir("mirror-logger-ext-bare-");
   symlinkSync(process.execPath, join(bareBinDir, "node"));
   const savedPath = process.env.PATH;
   process.env.PATH = bareBinDir;
