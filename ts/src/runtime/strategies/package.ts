@@ -314,7 +314,25 @@ export function renderPackageUpdateAvailability(report: PackageUpdateAvailabilit
   return `${lines.join("\n")}\n`;
 }
 
-/** Install one exact version globally, from the install's own root. Never a bare tag. */
+/**
+ * Where `npm install -g` runs when it replaces this very package.
+ *
+ * npm renames the installed package directory aside (`.mirror-mind-xxxx`)
+ * before it lays down the new version. On Windows a process holds its
+ * current directory against rename, so an npm started inside the package --
+ * the install's root, where every other call of the product runs (CR135) --
+ * fails with EBUSY on every update, and a Windows npm install could never
+ * update itself (4 of 4 runs, 0.33.4 -> 0.35.0; the same npm from the parent
+ * directory succeeds, with a Mirror process holding the package open).
+ *
+ * The parent of `node_modules` is still the install's own tree, never the
+ * person's project, so CR135 holds: no project `.npmrc` can answer this call.
+ */
+export function applyCwd(root: string): string {
+  return dirname(dirname(root));
+}
+
+/** Install one exact version globally, from the directory `applyCwd` names. Never a bare tag. */
 export function installGlobal(
   name: string,
   version: string,
@@ -433,7 +451,7 @@ export function packageStrategy(
     },
 
     apply: (_previousRef, target) => {
-      const applied = installGlobal(install.name, target, install.root, npm);
+      const applied = installGlobal(install.name, target, applyCwd(install.root), npm);
       return applied.ok
         ? { ok: true, newRef: target, detail: applied.detail, changes: [] }
         : {

@@ -545,13 +545,24 @@ TAGS
   if [ -f "$WORK/npm-unexpected.log" ]; then bad "npm was asked something unscripted: $(cat "$WORK/npm-unexpected.log")"; else ok "npm was asked nothing unscripted"; fi
   if grep -q "^publish" "$WORK/npm-calls.log"; then bad "npm publish was called"; else ok "npm publish was never called"; fi
   check "the one install npm made is the exact version" "$(grep -c "^install -g mirror-mind@$VERSION_B\$" "$WORK/npm-calls.log")" "1"
-  # CR135: root -g, view, and install -g alike, from whatever directory the
-  # command was run in.
+  # CR135: root -g and view run in the install's root; install -g runs in the
+  # parent of node_modules -- still the install's own tree, never the person's
+  # project. (npm renames the package directory aside before installing, and a
+  # Windows process holds its cwd against that rename: from inside the package
+  # the apply failed with EBUSY on every update.) Whatever directory the
+  # command itself was run in, neither is it.
   INSTALL_ROOT="$PREFIX_REAL/lib/node_modules/mirror-mind"
-  if [ -s "$WORK/npm-cwds.log" ] && ! grep -qvxF "$INSTALL_ROOT" "$WORK/npm-cwds.log"; then
-    ok "every npm call ran in the install's root ($(wc -l < "$WORK/npm-cwds.log" | tr -d ' ') calls)"
+  APPLY_CWD="$PREFIX_REAL/lib"
+  if [ -s "$WORK/npm-cwds.log" ] && ! grep -vxF "$INSTALL_ROOT" "$WORK/npm-cwds.log" | grep -qvxF "$APPLY_CWD"; then
+    ok "every npm call ran in the install's own tree ($(wc -l < "$WORK/npm-cwds.log" | tr -d ' ') calls)"
   else
-    bad "an npm call ran elsewhere: $(sort -u "$WORK/npm-cwds.log" | grep -vxF "$INSTALL_ROOT" | head -3)"
+    bad "an npm call ran elsewhere: $(sort -u "$WORK/npm-cwds.log" | grep -vxF "$INSTALL_ROOT" | grep -vxF "$APPLY_CWD" | head -3)"
+  fi
+  # and the apply did leave the package directory, which is the point
+  if paste -d' ' "$WORK/npm-calls.log" "$WORK/npm-cwds.log" | grep -q "^install -g mirror-mind@$VERSION_B $APPLY_CWD$"; then
+    ok "the apply ran from the parent of node_modules"
+  else
+    bad "the apply did not run from the parent of node_modules: $(paste -d' ' "$WORK/npm-calls.log" "$WORK/npm-cwds.log" | grep '^install' | head -2)"
   fi
 fi
 
