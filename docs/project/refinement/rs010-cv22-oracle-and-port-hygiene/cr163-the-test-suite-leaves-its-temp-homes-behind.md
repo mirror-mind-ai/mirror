@@ -45,83 +45,104 @@ Not planned. Current Focus unchanged.
 
 Selected 2026-10-24 (Current Focus).
 
-**Plan, proposed 2026-10-24, not yet reviewed or approved.** One helper makes every
-temp home the suite needs under `os.tmpdir()` and removes it when the test file's
-process exits; the 40 sources move to it; the files that already clean up move their
-homes under `os.tmpdir()`; a repository guard keeps a literal `/tmp` out of `ts/test`;
-and CI fails a run that leaves anything behind.
+**Plan, approved by the Navigator 2026-10-24,** after a review through five lenses
+(engineer, quality assurance, devops engineer, security engineer, quartermaster; the
+database architect sat out, no schema, query, or migration being involved) whose
+thirteen amendments were all folded. One helper makes every temp home the suite needs
+under `os.tmpdir()` and removes it when the test file's process exits; the 40 sources
+move to it; the files that already clean up make their homes through it too; a
+repository guard keeps a literal `/tmp` out of `ts/test`; and one script, run by CI and
+by the Navigator alike, fails a run that leaves anything behind.
 
 1. **Tests first.** The helper's test runs `node --test` on a probe file the suite's
    glob does not pick up, with `TMPDIR` at an empty directory, and finds it empty after
    a passing probe and after a failing one, the probe's own `after` hook still finding
-   its home. The guard's test gives it each forbidden form and a clean file.
+   its home; a directory the probe makes beside the registry's survives (A12); a home
+   that cannot be removed costs one stderr line and leaves the probe's verdict as it
+   was (A1). The guard's test gives it every form the tree uses (a `/tmp` string, a
+   template, `join("/tmp", …)`, `realpathSync("/tmp")`, the async `mkdtemp`) and the
+   negatives (a `/tmp` in an assertion, a golden-style literal, a comment), each
+   reported by file and line (A8).
 2. **The helper**, `ts/test/helpers/tempDir.ts`: `tempDir(prefix)` makes
-   `mkdtempSync(join(tmpdir(), prefix))`, records it, and returns it; the module removes
-   every directory it recorded on the process's `exit` event (`rmSync`, recursive,
-   force). Not in a `node:test` `after`: hooks run in the order they are registered, so
-   one registered when the helper is imported runs before the file's own, and
-   `zipBackup.test.ts` closes its zip writers in its own. Both measured; see Evidence.
+   `mkdtempSync(join(tmpdir(), prefix))`, records it, and returns its real path, so no
+   test meets macOS's `/var` → `/private/var` when it compares the product's resolved
+   paths with its own (A2). On the process's `exit` event the module removes only the
+   directories it recorded, never a path from an argument or the environment, as its
+   header says (A12); each removal is wrapped, and one that fails prints one line to
+   stderr and changes nothing else (A1). Not in a `node:test` `after`: hooks run in the
+   order they are registered, so one registered when the helper is imported would run
+   before the file's own, and `zipBackup.test.ts` closes its zip writers in its own.
+   Both measured; see Evidence.
 3. **The 40 sources move to it**, each prefix kept so a leftover would still name its
    test: the MCP tools fixture (`withSeededDatabase`, `seededDatabase`, behind six test
    files) and the 39 test files listed in Evidence. A site that already removes what it
    makes keeps doing so; in the six files that remove some homes and not others, only
    the ones left move. `skillTurnsRoute.test.ts` gives up the registry `f5636940` gave
-   it. `identity/identityEdit.test.ts` removes the `.seen` file its fake editor writes
-   beside each temp file it collects; the golden's editor is unchanged.
-4. **The 22 files that already clean up** keep their clean-up and make their homes
-   under `os.tmpdir()`: `mkdtempSync(join(tmpdir(), …))`, and `realpathSync(tmpdir())`
-   where they canonicalize (`runtime/diagnose`, `welcome/welcome`); `storyWorld` and
-   `builderWorld` among them, their registries kept. Literal `/tmp/…` strings that name
-   a path no test creates (goldens, asserted replay and sync paths) stay.
+   it. The identity-edit golden's `echo_back` editor removes its own `.seen` scratch
+   file, `rm -f "$1".seen` (A5). A file that resists the mechanical move, because a test
+   depends on the `/tmp` path itself, is captured rather than reshaped here (A13).
+4. **The 22 files that already clean up** make their homes through the helper too, and
+   keep the clean-up they have; since it returns real paths, `runtime/diagnose` and
+   `welcome/welcome` need no special form (A2). `storyWorld` and `builderWorld` make
+   their roots through it and drop their own registries and `remove*` exports, nine
+   call sites (A4). Literal `/tmp/…` strings that name a path no test creates (goldens,
+   asserted replay and sync paths) stay.
 5. **A repository guard**, `ts/scripts/checkTestTempHomes.ts`, beside
-   `checkRetiredSurfaces.ts`: it fails, naming file and line, when a file under
-   `ts/test` makes a temp directory under a literal `/tmp`: `mkdtemp` or `mkdtempSync`
-   given a `/tmp` string, template, or `join("/tmp", …)`, or `realpathSync("/tmp")`. A
-   step in the Tests workflow runs it. It is what lets step 6 see every home; a `/tmp`
-   held in a variable would escape it, and none is today. The rule is broken at 90 call
-   sites in 55 files, past the bar the engineering principles set for a guard (§4).
-6. **The run-level check in CI** (`.github/workflows/tests.yml`): the first `npm test`
-   step runs with `TMPDIR` at an empty directory under the runner's temp folder, and the
-   step after it fails if anything is left there, listing what is left by prefix, on
-   both runners, ubuntu and macOS. The interpreter-shadow run, the suite's second, is
-   unchanged.
+   `checkRetiredSurfaces.ts`: it fails, naming file and line, when a `.ts` under
+   `ts/test`, helpers and support included, makes a temp directory under a literal
+   `/tmp` in any of the forms step 1 lists (A8). A step in the Tests workflow runs it.
+   It is what lets step 6 see every home; a `/tmp` held in a variable would escape it,
+   and none is today. The rule is broken at 90 call sites in 55 files, past the bar the
+   engineering principles set for a guard (§4).
+6. **The run-level check**, one script, `scripts/test_leaves_nothing.sh`, beside
+   `smoke_runtime_update.sh`: an empty directory under `${RUNNER_TEMP:-$(mktemp -d)}`,
+   `TMPDIR` exported, `npm test`; then, only if the suite passed, whatever is left
+   listed by prefix with counts, and exit 1 if anything is (A10, A11). The Tests workflow's
+   first `npm test` step runs that script, on both runners, ubuntu and macOS, so the log
+   alone names a leftover's test. The interpreter-shadow run keeps the runner's default
+   temp folder, and a comment says which run proves what (A11).
 7. **Docs.** §4 of the engineering principles: temp homes are made with `tempDir` and
    removed when the file's process exits; the new guard joins the list; CI fails a run
    that leaves one behind. The worklog records the change.
 
-- **Acceptance:** a full `npm test` on macOS with `TMPDIR` at an empty directory leaves
-  it empty, and `/tmp` gains nothing a test made; the suite's counts are unchanged
-  (3,448 tests: 3,445 pass, 3 skipped, none failing); typecheck and lint clean; the
-  guard passes on the tree and fails on each forbidden form, naming file and line; the
-  CI check fails on a directory holding one leftover, shown locally, and passes on the
-  real run on both runners, with Node 24.
-- **Validation route (the Navigator):** in the repository, the suite run the usual way
-  with its own empty temp folder, `/tmp` counted before and after:
+Order (A3, A9). Before any code moves, step 6's script, and one run of the unchanged
+tree through it, its leftovers recorded in Evidence: the red the flip is dated against.
+Then commits in order, the suite green at each: the helper and its test; the 40
+sources, folder by folder; the 22 files; the guard and its CI step; the run-level check
+in CI; docs.
+
+- **Acceptance:** a full run through `scripts/test_leaves_nothing.sh` on macOS leaves
+  its `TMPDIR` empty, and `/tmp` gains no test-named entry, compared by name before and
+  after (A7); no test removed or skipped, the count grows by exactly the tests added,
+  none failing (A6); typecheck and lint clean; the guard passes on the tree and fails
+  on each forbidden form, naming file and line; the script fails on the unchanged tree
+  (A9) and passes on the real run on both runners, with Node 24.
+- **Validation route (the Navigator):** in the repository, the script run as CI runs
+  it, `/tmp` compared by name before and after (A7, A10):
 
   ```bash
-  before=$(ls /tmp | wc -l); T=$(mktemp -d)
-  TMPDIR="$T" npm test
-  ls -A "$T"; echo "/tmp: $before -> $(ls /tmp | wc -l)"; rmdir "$T"
+  before=$(ls /tmp)
+  bash scripts/test_leaves_nothing.sh
+  comm -13 <(echo "$before") <(ls /tmp)
   ```
 
-  Pass: `ls -A` prints nothing, `rmdir` succeeds, and `/tmp` holds as many entries as
-  before. Fail: anything listed, or a new `/tmp` entry named after a test
-  (`logger-cli-…`, `soul-state-…`).
-- **Conscious exclusions:** product code, which makes none of these homes; the files
-  already under `os.tmpdir()` that remove what they make; the repository's ignored
-  `tmp/`, where `artifactWriter.test.ts` makes a relative root it removes; literal
-  `/tmp` strings naming paths no test creates; `ts/smoke` and `ts/evals`, not measured
-  here, captured separately if they leak; the Windows job, whose two files do not use
-  the helper; per-test removal (`t.after`), which nothing here needs; a run-level check
-  outside CI. No release: tests, CI, and docs only (versioning's process-only changes).
-- **Authority:** the status stays `captured` until the Navigator approves this plan; a
-  Driver and a Delivery are named before `in_progress` (CR160's were @viniciusteles and
-  `main`); commits and pushes at the usual checkpoints; no release.
+  Pass: the script reports nothing left and exits 0, and the last command prints no
+  entry named after a test. Fail: the script lists a leftover, or `/tmp` gains an entry
+  named after a test (`logger-cli-…`, `soul-state-…`).
+- **Conscious exclusions:** product code, which makes none of these homes and removes
+  its own; the repository's ignored `tmp/`, where `artifactWriter.test.ts` makes a
+  relative root it removes; literal `/tmp` strings naming paths no test creates;
+  `ts/smoke` and `ts/evals`, not measured here, captured separately if they leak; the
+  Windows job, whose two files do not use the helper; per-test removal (`t.after`), a
+  `tempFile` helper, and a pre-commit hook, which nothing here needs; the shadow run.
+  No release: tests, CI, and docs only (versioning's process-only changes).
+- **Authority:** approved 2026-10-24; Driver @viniciusteles, Delivery `main`; commits
+  and pushes at the usual checkpoints; no release.
 
 **Reviewed 2026-10-24 through five lenses** (engineer, quality assurance, devops
 engineer, security engineer, quartermaster; the database architect sat out, no schema,
-query, or migration being involved). Thirteen amendments proposed, not yet folded,
-awaiting the Navigator's approval:
+query, or migration being involved). Thirteen amendments, all folded
+into the plan above at the Navigator's approval:
 
 - A1 (engineer): the exit handler never changes a test's verdict: each removal
   wrapped, one stderr line on failure, the CI check reports what is left.
