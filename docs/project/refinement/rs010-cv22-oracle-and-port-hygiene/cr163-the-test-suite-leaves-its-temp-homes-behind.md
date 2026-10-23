@@ -97,10 +97,10 @@ by the Navigator alike, fails a run that leaves anything behind.
 6. **The run-level check**, one script, `scripts/test_leaves_nothing.sh`, beside
    `smoke_runtime_update.sh`: an empty directory under `${RUNNER_TEMP:-$(mktemp -d)}`,
    `TMPDIR` exported, `npm test`; then, only if the suite passed, whatever is left
-   listed by prefix with counts, and exit 1 if anything is (A10, A11). The Tests workflow's
-   first `npm test` step runs that script, on both runners, ubuntu and macOS, so the log
-   alone names a leftover's test. The interpreter-shadow run keeps the runner's default
-   temp folder, and a comment says which run proves what (A11).
+   listed by prefix with counts, and exit 1 if anything is (A10, A11). The Tests
+   workflow's first `npm test` step runs that script, on both runners, ubuntu and
+   macOS, so the log alone names a leftover's test. The interpreter-shadow run keeps
+   the runner's default temp folder, and a comment says which run proves what (A11).
 7. **Docs.** §4 of the engineering principles: temp homes are made with `tempDir` and
    removed when the file's process exits; the new guard joins the list; CI fails a run
    that leaves one behind. The worklog records the change.
@@ -241,6 +241,21 @@ parent exits would trip the check; that is an orphan to fix, not a retry.
   error. The suite's leaking files reach `/tmp` only through the forms step 5 names: a
   `/tmp` string or template given to `mkdtempSync`, and `realpathSync("/tmp")` (in
   `runtime/diagnose`); no `/tmp` is held in a variable.
+- **The red (A9)**, 2026-10-24: the unchanged tree at `f75c12c9` run through
+  `scripts/test_leaves_nothing.sh`. The suite passed (3,448 tests: 3,445 passing, 3
+  skipped) and the script failed, exit 1, listing 78 entries left in its `TMPDIR`:
+  `mirror-core-mcp-tools-…` 58, `mirror-core-mcp-serve-…` 6, `backup-temp-…` 5,
+  `mirror-provider-replay-…` 2, and one each of `us2-release-remote-…`,
+  `one-language-…`, `mirror-core-week-…`, `mirror-core-search-reinforce-…`,
+  `backup-publish-…`, the identity-edit golden's `.seen` file, and
+  `node-compile-cache`. `/tmp` gained 372 test-named directories the script cannot see
+  until step 4 moves them (largest: `soul-state-<case>-…` 40, `reply-logging-…` 34,
+  `logger-cli-…` 28). Everything the run left was removed after.
+- **`node-compile-cache` is npm's.** npm 11 turns on Node's module compile cache for
+  its own start-up (`npm/lib/cli.js`), in `os.tmpdir()`: `npm --version` alone makes
+  one, and a plain `node --test` makes none. No test uses it, so the script runs the
+  suite with `NODE_DISABLE_COMPILE_CACHE=1`, which leaves none, rather than keeping an
+  exception.
 
 ## Outcome
 
