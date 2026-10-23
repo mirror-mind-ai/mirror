@@ -232,3 +232,40 @@ test("Pi's extension reads back the same wrapper the repair finds", async () => 
   const literal = /const PI_SKILL_WRAPPER =\s*\/(.+)\/;/.exec(extension)?.[1];
   assert.equal(literal, PI_SKILL_WRAPPER.source);
 });
+
+test("a body the old logger cut at its 50,000-character limit is still a skill turn, and goes", async () => {
+  // The extension's `truncate` kept the first 50,000 characters and added its own
+  // marker, so the closing tag never arrived: Pi's opening lines, then the logger's
+  // ending, which no person types. Its arguments, if any, were cut with it.
+  const { readSkillTurn } = await import("#conversation/piSkillTurns.ts");
+  // Cut where the logger cuts: inside the body, far past Pi's two opening lines.
+  const full = wrapper("mm-build");
+  const cut = `${full.slice(0, full.indexOf("Do the thing") + 6)}\n[… truncated]`;
+  assert.deepEqual(readSkillTurn(cut), { skill: "mm-build", tail: "" });
+  const db = fixture();
+  message(db, "plain-3", "plain", "user", cut);
+  const plan = planSkillTurnRepair(db);
+  assert.ok(plan.removed.some((turn) => turn.messageId === "plain-3"));
+  // A person's text that merely ends in the marker is not one.
+  assert.equal(readSkillTurn("I saw [… truncated] once\n[… truncated]"), null);
+  db.close();
+});
+
+test("a rebuilt title comes from the first remaining turn that is not a command", () => {
+  // A command is not conversation (`commandTurn.ts`), so it does not name one either;
+  // only when nothing else remains is it the title's source.
+  const db = fixture();
+  conversation(db, "commands-first", '<skill name="mm-build" location="/x">');
+  message(db, "cf-1", "commands-first", "user", wrapper("mm-build", "mirror"));
+  message(db, "cf-2", "commands-first", "user", "/mm-build mirror-ts-core");
+  message(db, "cf-3", "commands-first", "user", "What changed since Friday?");
+  conversation(db, "commands-only", '<skill name="mm-journeys" location="/x">');
+  message(db, "co-1", "commands-only", "user", wrapper("mm-journeys"));
+  message(db, "co-2", "commands-only", "user", "/mm-journeys");
+  const titles = new Map(
+    planSkillTurnRepair(db).conversationsToRetitle.map((item) => [item.id, item.newTitle]),
+  );
+  assert.equal(titles.get("commands-first"), "What changed since Friday?");
+  assert.equal(titles.get("commands-only"), "/mm-journeys");
+  db.close();
+});

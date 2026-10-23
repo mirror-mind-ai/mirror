@@ -20,8 +20,10 @@
 // (A6).
 //
 // Only Pi's whole wrapper, only in Pi conversations (A8): a person may type or
-// paste `<skill name=` at the start of a message anywhere.
+// paste `<skill name=` at the start of a message anywhere. One more shape counts:
+// the wrapper the old logger cut at its size limit, whose ending only it writes.
 
+import { isCommandTurn } from "#conversation/commandTurn.ts";
 import { deleteConversation } from "#conversation/conversationDeletion.ts";
 import { generateTitle, setProvisionalTitle } from "#conversation/logger.ts";
 import { type Database, type WritableDatabase, withTransaction } from "#db/database.ts";
@@ -35,6 +37,15 @@ import { type Database, type WritableDatabase, withTransaction } from "#db/datab
  */
 export const PI_SKILL_WRAPPER =
   /^<skill name="([^"]+)" location="[^"]*">\nReferences are relative to [^\n]*\n\n[\s\S]*?\n<\/skill>(?:\n\n([\s\S]*))?$/;
+
+/**
+ * The same block when the old logger cut it: the extension kept the first 50,000
+ * characters and added its own marker (`truncate`, `.pi/extensions/mirror-logger.ts`),
+ * so the closing tag never arrived. Pi's opening lines, then an ending only the
+ * logger writes: no person types that. Whatever followed the block was cut with it.
+ */
+const PI_SKILL_WRAPPER_CUT =
+  /^<skill name="([^"]+)" location="[^"]*">\nReferences are relative to [^\n]*\n\n[\s\S]*\n\[… truncated\]$/;
 
 /** The one skill whose turn is conversation: its question is the turn. */
 const MIRROR_SKILL = "mm-mirror";
@@ -93,8 +104,10 @@ export class SkillTurnRepairSetMovedError extends Error {
 /** The skill turn a stored row holds, or null when the row is not Pi's whole wrapper. */
 export function readSkillTurn(content: string): { skill: string; tail: string } | null {
   const match = PI_SKILL_WRAPPER.exec(content);
-  if (!match) return null;
-  return { skill: match[1] as string, tail: (match[2] ?? "").trim() };
+  if (match) return { skill: match[1] as string, tail: (match[2] ?? "").trim() };
+  const cut = PI_SKILL_WRAPPER_CUT.exec(content);
+  if (cut) return { skill: cut[1] as string, tail: "" };
+  return null;
 }
 
 function isManualTitle(rawMetadata: unknown): boolean {
@@ -139,22 +152,28 @@ export function planSkillTurnRepair(db: Database): SkillTurnRepairPlan {
   const removedIds = new Set(removed.map((turn) => turn.messageId));
   const keptQuestion = new Map(kept.map((turn) => [turn.messageId, turn.question as string]));
 
-  // A conversation the repair leaves with no user turn goes; its first remaining
-  // user turn otherwise is what a block-born title is rebuilt from.
+  // A conversation the repair leaves with no user turn goes. Otherwise a block-born
+  // title is rebuilt from its first remaining user turn that is not a command: a
+  // command is not conversation (`commandTurn.ts`), so it names one only when
+  // nothing else remains.
   const touched = [...new Set(turns.map((turn) => turn.conversationId))];
   const userRows = db.prepare(
     `SELECT id, content FROM messages WHERE conversation_id = ? AND role = 'user'
       ORDER BY created_at, rowid`,
   );
+  const remainingUserTurns = (conversationId: string, removing: ReadonlySet<string>): string[] =>
+    userRows
+      .all(conversationId)
+      .filter((row) => !removing.has(String(row.id)))
+      .map((row) => keptQuestion.get(String(row.id)) ?? String(row.content))
+      .filter((content) => content.trim() !== "");
+  const titleSource = (remaining: readonly string[]): string | null =>
+    remaining.find((content) => !isCommandTurn(content)) ?? remaining[0] ?? null;
   const remainingFirstUser = new Map<string, string | null>();
   for (const conversationId of touched) {
-    const remaining = userRows
-      .all(conversationId)
-      .filter((row) => !removedIds.has(String(row.id)))
-      .map((row) => keptQuestion.get(String(row.id)) ?? String(row.content));
     remainingFirstUser.set(
       conversationId,
-      remaining.find((content) => content.trim() !== "") ?? null,
+      titleSource(remainingUserTurns(conversationId, removedIds)),
     );
   }
 
@@ -185,17 +204,13 @@ export function planSkillTurnRepair(db: Database): SkillTurnRepairPlan {
         ORDER BY started_at, id`,
     )
     .all();
-  const firstUserNow = db.prepare(
-    `SELECT content FROM messages WHERE conversation_id = ? AND role = 'user' AND trim(content) != ''
-      ORDER BY created_at, rowid LIMIT 1`,
-  );
   const conversationsToRetitle: ConversationToRetitle[] = [];
   for (const row of titled) {
     const id = String(row.id);
     if (deleting.has(id) || isManualTitle(row.metadata)) continue;
     const source = remainingFirstUser.has(id)
       ? remainingFirstUser.get(id)
-      : ((firstUserNow.get(id)?.content as string | undefined) ?? null);
+      : titleSource(remainingUserTurns(id, new Set()));
     if (!source || readSkillTurn(source) !== null) continue;
     const newTitle = generateTitle(source).trim();
     if (newTitle === "") continue;
