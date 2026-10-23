@@ -207,5 +207,5 @@ skill's name. Step 7a reads as one sentence. Planning found, and the measurement
 confirmed, that a skill picked from Pi's menu is logged as its body: the 410 such rows in
 the two homes, and the fix, are [CR160](cr160-a-pi-skill-invoked-as-skill-is-logged-as-its-body.md)'s.
 On `main`: `0cb0b15e` (selected), `0ac19259` (approved, started), `15c08dcc` (step 7a),
-`21a22bcc` and `47ef2129` (measured), `7f1851fb` (the docs), and this closure. Not yet
-released.
+`21a22bcc` and `47ef2129` (measured), `7f1851fb` (the docs), and this closure; carried
+by [v0.36.3](../../../releases/v0.36.3.md), with CR160.

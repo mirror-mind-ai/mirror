@@ -285,6 +285,7 @@ conversations left with no user turn deleted, a second dry run finding nothing.
 Measured before and after on Pi 1.4.0 by the route committed with this CR; validated
 by the Navigator. On `main`: `3725639e` (selected), `66c8593e` (approved, started),
 `7ff4a83c` (the forward fix), `baa6382f` (the route), `cada0e08` and `f3673d56` (the
-repair), `6d23d15a` (the docs), and this closure. Not yet released: the release, then
-`runtime update`, a restart of every Pi session on each home, and the repair on the
-real homes, dry run first, in that order (A10).
+repair), `6d23d15a` (the docs), and this closure; carried by
+[v0.36.3](../../../releases/v0.36.3.md), a patch release. Then `runtime update`, a
+restart of every Pi session on each home, and the repair on the real homes, dry run
+first, in that order (A10).

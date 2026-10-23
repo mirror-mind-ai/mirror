@@ -12,6 +12,17 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-10-23 — v0.36.3 released: A Skill You Invoke Is Not Something You Said
+
+Patch release of one Change Request, CR160, cut the day it closed, with CR159's docs:
+on Pi, a skill picked from the menu or typed is no longer stored as the person's
+words, and neither is its reply; a question asked with `/mm-mirror` is stored as the
+question; Pi's turns go through the rule the other runtimes have. `mirror
+conversations skill-turns` repairs what earlier versions stored, a dry run until
+`--apply`, which verifies a backup first. No migration. The two real homes on the
+maintainer's machine are repaired once the production install carries it and every Pi
+session on each has restarted.
+
 ### 2026-10-23 — CR160: a Pi skill invocation is not recorded as the person's words; the repair for what was
 
 Pi expands a skill picked from its menu, or typed as `/skill:<name>`, into the skill's
