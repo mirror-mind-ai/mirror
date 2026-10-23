@@ -1,0 +1,288 @@
+<#
+.SYNOPSIS
+    Mirror Mind for Windows -- installer spike (v2, over the npm package).
+
+.DESCRIPTION
+    The smallest verifiable result before any wizard: from a clean Windows,
+    put Node 24, Pi and mirror-mind on the machine per-user (no elevation),
+    initialize an identity, wire Pi, configure OpenRouter for BOTH the chat
+    model (Pi) and Mirror's memory, and end with `mirror welcome` rendered.
+
+    Everything is logged to -OutDir so the run can be read back afterwards.
+    Windows PowerShell 5.1 compatible (what Windows Sandbox ships).
+
+.PARAMETER User
+    MIRROR_USER. The identity's name on this machine.
+.PARAMETER OpenRouterKey
+    Optional. When absent, read from <OutDir>\openrouter.key, else prompted.
+.PARAMETER MirrorVersion
+    npm dist-tag or version for mirror-mind. Default: latest.
+.PARAMETER Launch
+    Open Pi at the end.
+#>
+[CmdletBinding()]
+param(
+    [string]$User = "Mirror",
+    [string]$OpenRouterKey = "",
+    [string]$MirrorVersion = "latest",
+    [string]$NodeMajor = "24",
+    # Decided 2026-10-16: one OpenRouter key powers Pi's chat and Mirror's memory, and
+    # the chat default is Sonnet via the alias that follows upgrades. The first clean run
+    # had let Pi pick the first OpenRouter model it found (kimi-k2.6), which guessed at
+    # the filesystem for 46k tokens; Sonnet answered the same question in one call.
+    [string]$ChatModel = "~anthropic/claude-sonnet-latest",
+    [string]$OutDir = "C:\Out",
+    [switch]$Launch
+)
+
+$ErrorActionPreference = "Stop"
+$ProgressPreference = "SilentlyContinue"   # PS 5.1 renders progress per chunk; it makes downloads crawl
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+$RunId = [guid]::NewGuid().ToString("N").Substring(0, 8)
+
+$Base   = Join-Path $env:LOCALAPPDATA "Programs\MirrorMind"
+$NodeDir = Join-Path $Base "node"
+$GitDir = Join-Path $Base "git"
+$GitBash = Join-Path $GitDir "bin\bash.exe"
+# Git for Windows, portable: Pi's bash tool needs a bash.exe on Windows and looks
+# for Git Bash or for 'shellPath' in its settings; without one every mm-* skill
+# fails (found by the first clean Sandbox run). Pinned; the hash is the one the
+# release page publishes.
+$GitVersion = "2.56.0.2"
+$GitTag = "v2.56.0.windows.2"
+$GitSha256 = "075e158ef8e1f0ab80b347e245405d3eca735c2dc88fd8e032e137d0ca61f61b"
+$NpmPrefix = Join-Path $env:APPDATA "npm"
+$Workspace = Join-Path $env:USERPROFILE "Mirror"
+$ConfigDir = Join-Path $env:USERPROFILE ".config\mirror"
+$PiDir = Join-Path $env:USERPROFILE ".pi\agent"
+New-Item -ItemType Directory -Force -Path $OutDir, $Base, $Workspace | Out-Null
+$Log = Join-Path $OutDir ("install-{0}.log" -f (Get-Date -Format "yyyyMMdd-HHmmss"))
+$Report = [ordered]@{ started = (Get-Date).ToString("o"); steps = [ordered]@{} }
+
+function Say([string]$msg) {
+    $line = "[{0}] {1}" -f (Get-Date -Format "HH:mm:ss"), $msg
+    Write-Host $line
+    Add-Content -Path $Log -Value $line
+}
+function Step([string]$name, [scriptblock]$action) {
+    Say "== $name"
+    $sw = [Diagnostics.Stopwatch]::StartNew()
+    try {
+        $value = & $action
+        $Report.steps[$name] = @{ ok = $true; ms = $sw.ElapsedMilliseconds; value = "$value" }
+        Say "   ok ($($sw.ElapsedMilliseconds) ms) $value"
+    } catch {
+        $Report.steps[$name] = @{ ok = $false; ms = $sw.ElapsedMilliseconds; error = "$_" }
+        Say "   FAILED: $_"
+        throw
+    }
+}
+function Run([string]$file, [string[]]$arguments) {
+    # Capture both streams into the log; judge by the exit code only. Under
+    # $ErrorActionPreference = Stop, PowerShell 5.1 turns a native command's
+    # first stderr line into an exception -- `npm warn` would abort a healthy
+    # install -- so stderr is plain text here.
+    $saved = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        $out = & $file @arguments 2>&1 | ForEach-Object { "$_" }
+    } finally {
+        $ErrorActionPreference = $saved
+    }
+    $out | ForEach-Object { Add-Content -Path $Log -Value ("     | " + $_) }
+    if ($LASTEXITCODE -ne 0) { throw "$file $($arguments -join ' ') exited $LASTEXITCODE`n$($out -join "`n")" }
+    return ($out | Out-String).Trim()
+}
+function RunSoft([string]$file, [string[]]$arguments) {
+    # Like Run, but the exit code is reported in the text instead of thrown.
+    try { return Run $file $arguments } catch { return "$_" }
+}
+function WriteMirrorEnv([string]$user, [string]$key) {
+    # ~/.config/mirror/env, rebuilt deterministically: MIRROR_USER first, the key when
+    # known, any other line kept. init writes this file without a final newline and
+    # Get-Content hands ONE line back as a string, which + concatenates instead of
+    # appending -- the first Sandbox run produced MIRROR_USER=RodrigoOPENROUTER_API_KEY=...
+    New-Item -ItemType Directory -Force -Path $ConfigDir | Out-Null
+    $envFile = Join-Path $ConfigDir "env"
+    $others = @()
+    if (Test-Path $envFile) {
+        foreach ($line in @(Get-Content $envFile)) {
+            if (-not $key -and $line -match "^OPENROUTER_API_KEY=(sk-or-S+)$") { $key = $Matches[1]; continue }
+            if ($line -and $line -notmatch "MIRROR_USER=" -and $line -notmatch "OPENROUTER_API_KEY=") { $others += $line }
+        }
+    }
+    $lines = @("MIRROR_USER=$user")
+    if ($key) { $lines += "OPENROUTER_API_KEY=$key" }
+    ($lines + $others) | Set-Content $envFile -Encoding ASCII
+    return $envFile
+}
+function AddUserPath([string]$dir) {
+    $current = [Environment]::GetEnvironmentVariable("Path", "User")
+    if (-not (($current -split ";") -contains $dir)) {
+        [Environment]::SetEnvironmentVariable("Path", ($dir + ";" + $current).TrimEnd(";"), "User")
+    }
+    if (-not (($env:Path -split ";") -contains $dir)) { $env:Path = $dir + ";" + $env:Path }
+}
+
+try {
+    Step "preflight" {
+        $os = Get-CimInstance Win32_OperatingSystem
+        $arch = $env:PROCESSOR_ARCHITECTURE
+        if ($arch -ne "AMD64") { throw "only x64 is covered by this spike (got $arch)" }
+        $null = Invoke-WebRequest -UseBasicParsing -Uri "https://nodejs.org/dist/index.json" -Method Head -TimeoutSec 20
+        $have = @{}
+        foreach ($c in "node", "npm", "pi", "mirror", "git", "winget") {
+            $cmd = Get-Command $c -ErrorAction SilentlyContinue
+            $have[$c] = if ($cmd) { $cmd.Source } else { $null }
+        }
+        $Report.preflight = @{ os = $os.Caption; build = $os.BuildNumber; arch = $arch; have = $have; psVersion = "$($PSVersionTable.PSVersion)" }
+        "$($os.Caption) build $($os.BuildNumber) | pre-existing: " + (($have.GetEnumerator() | Where-Object Value | ForEach-Object Key) -join ", ")
+    }
+
+    Step "node $NodeMajor (per-user zip, pinned by SHASUMS256)" {
+        $existing = Get-Command node -ErrorAction SilentlyContinue
+        if ($existing) {
+            $v = (& node -v) -replace "^v", ""
+            if ([int]($v.Split(".")[0]) -ge [int]$NodeMajor) { return "already present: node $v at $($existing.Source)" }
+        }
+        $dist = "https://nodejs.org/dist/latest-v$NodeMajor.x/"
+        $shas = (Invoke-WebRequest -UseBasicParsing -Uri ($dist + "SHASUMS256.txt") -TimeoutSec 60).Content
+        $line = ($shas -split "`n" | Where-Object { $_ -match "node-v[\d.]+-win-x64\.zip" } | Select-Object -First 1)
+        if (-not $line) { throw "no win-x64 zip in $dist" }
+        $sha, $zipName = ($line.Trim() -split "\s+")
+        $zipPath = Join-Path $env:TEMP "mirror-$RunId-$zipName"
+        Say "   downloading $zipName"
+        (New-Object Net.WebClient).DownloadFile($dist + $zipName, $zipPath)
+        $actual = (Get-FileHash $zipPath -Algorithm SHA256).Hash.ToLower()
+        if ($actual -ne $sha.ToLower()) { throw "SHA-256 mismatch for $zipName" }
+        if (Test-Path $NodeDir) { Remove-Item $NodeDir -Recurse -Force }
+        $extract = Join-Path $env:TEMP "mirror-$RunId-node"
+        if (Test-Path $extract) { Remove-Item $extract -Recurse -Force }
+        Expand-Archive -Path $zipPath -DestinationPath $extract
+        Move-Item (Get-ChildItem $extract | Select-Object -First 1).FullName $NodeDir
+        Remove-Item $zipPath, $extract -Recurse -Force -ErrorAction SilentlyContinue
+        AddUserPath $NodeDir
+        "installed " + (& node -v) + " at $NodeDir (sha256 verified)"
+    }
+
+    Step "npm global prefix on PATH" {
+        $prefix = (& npm prefix -g).Trim()
+        AddUserPath $prefix
+        "npm " + (& npm -v) + " | prefix $prefix"
+    }
+
+    Step "git bash (PortableGit $GitVersion, per-user, pinned)" {
+        if (Test-Path $GitBash) { return "already present: $GitBash" }
+        $name = "PortableGit-$GitVersion-64-bit.7z.exe"
+        $sfx = Join-Path $env:TEMP "mirror-$RunId-$name"
+        Say "   downloading $name (60 MB)"
+        (New-Object Net.WebClient).DownloadFile("https://github.com/git-for-windows/git/releases/download/$GitTag/$name", $sfx)
+        $actual = (Get-FileHash $sfx -Algorithm SHA256).Hash.ToLower()
+        if ($actual -ne $GitSha256) { throw "SHA-256 mismatch for $name" }
+        # A 7-Zip self-extractor: -o target, -y no prompts. Runs silently.
+        $proc = Start-Process -FilePath $sfx -ArgumentList @(('-o"{0}"' -f $GitDir), "-y") -Wait -PassThru -WindowStyle Hidden
+        if ($proc.ExitCode -ne 0) { throw "PortableGit extraction exited $($proc.ExitCode)" }
+        Remove-Item $sfx -Force -ErrorAction SilentlyContinue
+        if (-not (Test-Path $GitBash)) { throw "bash.exe not found after extraction" }
+        "installed $(& $GitBash --version) at $GitDir (sha256 verified)"
+    }
+
+    Step "pi" {
+        if (-not (Get-Command pi -ErrorAction SilentlyContinue)) {
+            Run "npm" @("install", "-g", "@earendil-works/pi-coding-agent", "--no-fund", "--no-audit") | Out-Null
+        }
+        "pi " + ((Run "pi" @("--version")) -split "`n" | Select-Object -First 1)
+    }
+
+    Step "mirror-mind@$MirrorVersion" {
+        Run "npm" @("install", "-g", "mirror-mind@$MirrorVersion", "--no-fund", "--no-audit") | Out-Null
+        "mirror " + ((Run "mirror" @("runtime", "version")) -split "`n" | Where-Object { $_ -match "^Version:" } | Select-Object -First 1)
+    }
+
+    Step "mirror config (~/.config/mirror/env)" {
+        WriteMirrorEnv $User ""
+    }
+
+    Step "mirror init $User + seed" {
+        # init refuses an identity that already exists (it never overwrites a profile);
+        # a re-run or a repair skips it. seed is idempotent: it only adds what is missing.
+        $identity = Join-Path $env:USERPROFILE ".mirror-minds\$User\identity"
+        if (Test-Path $identity) {
+            $initLine = "identity already present at $identity"
+        } else {
+            $initLine = (Run "mirror" @("init", $User)) -split "`n" | Select-Object -First 1
+        }
+        $seedOut = Run "mirror" @("seed")
+        "init: $initLine | seed: " + ($seedOut -split "`n" | Select-Object -Last 1)
+    }
+
+    Step "pi install <mirror-mind package>" {
+        $pkg = Join-Path (& npm prefix -g).Trim() "node_modules\mirror-mind"
+        Run "pi" @("install", $pkg)
+    }
+
+    Step "openrouter key -> Mirror memory + Pi chat" {
+        $key = $OpenRouterKey
+        $keyFile = Join-Path $OutDir "openrouter.key"
+        if (-not $key -and (Test-Path $keyFile)) { $key = (Get-Content $keyFile -Raw).Trim() }
+        if (-not $key) { $key = (Read-Host "OpenRouter API key (sk-or-v1-...)").Trim() }
+        if (-not $key.StartsWith("sk-or-")) { throw "that does not look like an OpenRouter key" }
+        # Validate once against the API, as the v1 installer did.
+        $me = Invoke-RestMethod -Uri "https://openrouter.ai/api/v1/auth/key" -Headers @{ Authorization = "Bearer $key" } -TimeoutSec 30
+        $envFile = WriteMirrorEnv $User $key
+        # Pi: the same key as a user environment variable, OpenRouter as the startup provider
+        [Environment]::SetEnvironmentVariable("OPENROUTER_API_KEY", $key, "User"); $env:OPENROUTER_API_KEY = $key
+        New-Item -ItemType Directory -Force -Path $PiDir | Out-Null
+        $settingsPath = Join-Path $PiDir "settings.json"
+        $settings = if (Test-Path $settingsPath) { Get-Content $settingsPath -Raw | ConvertFrom-Json } else { [pscustomobject]@{} }
+        $settings | Add-Member -NotePropertyName defaultProvider -NotePropertyValue "openrouter" -Force
+        $settings | Add-Member -NotePropertyName defaultModel -NotePropertyValue $ChatModel -Force
+        $settings | Add-Member -NotePropertyName shellPath -NotePropertyValue $GitBash -Force
+        $settings | ConvertTo-Json -Depth 5 | Set-Content $settingsPath
+        "key valid (label: $($me.data.label); usage $($me.data.usage)); written to $envFile; Pi: provider openrouter, model $ChatModel, shellPath git bash"
+    }
+
+    Step "launcher + shortcut" {
+        $launcher = Join-Path $Base "mirror.cmd"
+        @(
+            "@echo off",
+            "chcp 65001 >nul 2>&1",
+            "set ""EDITOR=notepad""",
+            "set ""Path=$NodeDir;$NpmPrefix;$GitDir\cmd;%Path%""",
+            "cd /d ""$Workspace""",
+            "title Mirror Mind",
+            "pi %*"
+        ) | Set-Content $launcher -Encoding ASCII
+        $sh = New-Object -ComObject WScript.Shell
+        $lnk = $sh.CreateShortcut((Join-Path ([Environment]::GetFolderPath("Desktop")) "Mirror Mind.lnk"))
+        $lnk.TargetPath = "$env:windir\System32\cmd.exe"
+        $lnk.Arguments = "/k """ + $launcher + """"
+        $lnk.WorkingDirectory = $Workspace
+        $lnk.Save()
+        "$launcher + Desktop shortcut"
+    }
+
+    Step "verify" {
+        # `runtime status` exits 1 whenever its verdict is "attention needed" (upstream
+        # CR139); the verdict is what we record, not a failure of the install.
+        $status = RunSoft "mirror" @("runtime", "status")
+        $welcome = Run "mirror" @("welcome")
+        $Report.verify = @{ status = $status; welcome = $welcome }
+        ($status -split "`n" | Where-Object { $_ -match "^(Version|Install|Mirror home|Database exists|Core migrations|Status):" }) -join " | "
+    }
+
+    $Report.ok = $true
+} catch {
+    $Report.ok = $false
+    $Report.error = "$_"
+} finally {
+    $Report.finished = (Get-Date).ToString("o")
+    $Report | ConvertTo-Json -Depth 6 | Set-Content (Join-Path $OutDir "report.json")
+    Say ("== result: " + $(if ($Report.ok) { "OK" } else { "FAILED -- " + $Report.error }))
+    Say "   log: $Log | report: $(Join-Path $OutDir 'report.json')"
+}
+
+if ($Report.ok -and $Launch) {
+    Set-Location $Workspace
+    & pi
+}

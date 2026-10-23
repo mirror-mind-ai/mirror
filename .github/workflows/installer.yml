@@ -1,0 +1,93 @@
+# The Windows installer's own checks. None of this is in the core's path:
+# the core releases when it wants; these jobs tell the installer when to
+# follow. Both run on a plain windows-latest runner -- no Sandbox, no admin.
+#
+#   contract  -- installer/tests/contract.ps1 against the pinned core version
+#                (installer/MIRROR_VERSION), then `runtime update` to latest.
+#                On every change under installer/, and daily at 09:00 UTC as a
+#                canary against mirror-mind@latest: red means a core release
+#                changed something the installer reads (see installer/CONTRACT.md),
+#                and a new .exe is due. ~2 minutes.
+#   build     -- compiles the .exe with Inno Setup and runs it /VERYSILENT: the
+#                wizard's InitializeWizard runs (a script error aborts) and the
+#                bootstrap phase installs Node, Git Bash, Pi and mirror-mind on
+#                the runner for real. ~4 minutes.
+name: installer
+
+on:
+  push:
+    branches: [main]
+    paths: ["installer/**", ".github/workflows/installer.yml"]
+  pull_request:
+    paths: ["installer/**", ".github/workflows/installer.yml"]
+  schedule:
+    - cron: "0 9 * * *"
+  workflow_dispatch:
+    inputs:
+      mirror_version:
+        description: "mirror-mind version to test (default: installer/MIRROR_VERSION; 'latest' for the canary)"
+        default: ""
+
+jobs:
+  contract:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+      - name: Which version
+        id: v
+        shell: pwsh
+        run: |
+          $v = "${{ github.event.inputs.mirror_version }}"
+          if (-not $v) { $v = if ("${{ github.event_name }}" -eq "schedule") { "latest" } else { (Get-Content installer/MIRROR_VERSION -Raw).Trim() } }
+          "version=$v" >> $env:GITHUB_OUTPUT
+          Write-Host "mirror-mind@$v"
+      - name: Contract, then runtime update to latest
+        shell: pwsh
+        run: installer/tests/contract.ps1 -MirrorVersion "${{ steps.v.outputs.version }}" -ThenUpdateToLatest
+
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v6
+      - name: Inno Setup
+        shell: pwsh
+        run: choco install innosetup --no-progress -y | Out-Null
+      - name: Compile
+        shell: pwsh
+        run: installer/build.ps1 -OutputDir "${{ runner.temp }}\out"
+      # /VERYSILENT runs InitializeWizard (a PascalScript error aborts with a non-zero
+      # The bootstrap script on its own first, with its transcript printed live:
+      # if this passes and the silent .exe does not, the difference is Inno.
+      - name: install.ps1 -Phase bootstrap, directly
+        shell: pwsh
+        run: |
+          $dir = "$env:LOCALAPPDATA\Programs\MirrorMind"
+          powershell -NoProfile -ExecutionPolicy Bypass -File installer/install.ps1 -Phase bootstrap -InstallDir $dir -MirrorVersion (Get-Content installer/MIRROR_VERSION -Raw).Trim()
+          if ($LASTEXITCODE -ne 0) { throw "bootstrap exited $LASTEXITCODE" }
+          & "$dir\node\mirror.cmd" runtime version
+      # exit) and then the bootstrap phase for real: Node, Git Bash, Pi and mirror-mind
+      # downloaded and installed on this runner. The identity page is skipped in
+      # silent mode, so configure does not run; that part is the Sandbox's.
+      - name: Silent install (InitializeWizard + the bootstrap phase, for real)
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem "${{ runner.temp }}\out\MirrorMind-Setup-*.exe" | Select-Object -First 1
+          $log = "${{ runner.temp }}\setup.log"
+          $p = Start-Process $exe.FullName -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/LOG=$log" -PassThru
+          if (-not $p.WaitForExit(600000)) { Get-Content $log | Select-Object -Last 30; $p.Kill(); throw "setup still running after 10 minutes" }
+          Write-Host "setup exit code: $($p.ExitCode)"
+          $boot = Get-ChildItem "$env:LOCALAPPDATA\Programs\MirrorMind\logs\install-detail-*.log" -ErrorAction SilentlyContinue | Select-Object -Last 1
+          if ($boot) { Get-Content $boot | Select-Object -Last 25 } else { Get-Content $log | Select-Object -Last 15 }
+          if ($p.ExitCode -ne 0) { throw "setup exited $($p.ExitCode)" }
+          if (-not $boot -or ((Get-Content $boot) -join "`n") -notmatch "== bootstrap: OK") { throw "bootstrap did not report OK" }
+          & "$env:LOCALAPPDATA\Programs\MirrorMind\node\mirror.cmd" runtime version
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MirrorMind-Setup
+          path: ${{ runner.temp }}\out\*.exe
+          retention-days: 14
