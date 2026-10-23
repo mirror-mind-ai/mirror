@@ -8,7 +8,8 @@
 // `conversations imported remove`.
 
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { bootstrapDatabase } from "#db/bootstrap.ts";
@@ -66,10 +67,20 @@ interface Harness {
   messages: () => string[];
 }
 
+// Every harness's home, closed and removed once this file's tests have run.
+const homes: { dir: string; db: WritableDatabase }[] = [];
+test.after(() => {
+  for (const { dir, db } of homes.splice(0)) {
+    db.close();
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 function harness(seedWith: (db: WritableDatabase) => void = seed): Harness {
-  const dir = mkdtempSync("/tmp/skill-turns-route-");
+  const dir = mkdtempSync(join(tmpdir(), "skill-turns-route-"));
   const dbPath = join(dir, "memory.db");
   const db = bootstrapDatabase(dbPath);
+  homes.push({ dir, db });
   seedWith(db);
   const events: string[] = [];
   return {
