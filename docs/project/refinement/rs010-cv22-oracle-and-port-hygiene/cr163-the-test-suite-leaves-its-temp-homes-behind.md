@@ -72,7 +72,9 @@ by the Navigator alike, fails a run that leaves anything behind.
    stderr and changes nothing else (A1). Not in a `node:test` `after`: hooks run in the
    order they are registered, so one registered when the helper is imported would run
    before the file's own, and `zipBackup.test.ts` closes its zip writers in its own.
-   Both measured; see Evidence.
+   Both measured; see Evidence. Found in implementation: what it returns is a `tmp`
+   directory inside the prefixed one, since the product's copy-only guard refuses a
+   database write whose resolved path has no `tmp` segment; see Evidence.
 3. **The 40 sources move to it**, each prefix kept so a leftover would still name its
    test: the MCP tools fixture (`withSeededDatabase`, `seededDatabase`, behind six test
    files) and the 39 test files listed in Evidence. A site that already removes what it
@@ -256,6 +258,16 @@ parent exits would trip the check; that is an orphan to fix, not a retry.
   one, and a plain `node --test` makes none. No test uses it, so the script runs the
   suite with `NODE_DISABLE_COMPILE_CACHE=1`, which leaves none, rather than keeping an
   exception.
+- **Found in implementation: the copy-only guard.** Moving `conversation/`'s homes
+  under `os.tmpdir()` failed 134 tests with one error, `write target must be a copy
+  under a tmp/ directory`: `openDatabaseCopyForWrite` runs CR030's `assertCopyTarget`,
+  which refuses a write whose resolved path has no `tmp` segment, and the system temp
+  folder has none on macOS (`/private/var/folders/…/T`), nor has a `TMPDIR` such as the
+  run-level check's. 114 test files open their databases through it: the reason the
+  suite hardcoded `/tmp`. The guard is product safety and stays as it is; the helper
+  meets its contract instead, returning a `tmp` directory inside the one named for the
+  prefix, which it records and removes. A database copy in a `tempDir` home passing the
+  real guard is one of the helper's tests.
 
 ## Outcome
 

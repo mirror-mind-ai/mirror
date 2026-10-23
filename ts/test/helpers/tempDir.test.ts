@@ -11,8 +11,9 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, realpathSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { basename, join, sep } from "node:path";
+import { basename, dirname, join, sep } from "node:path";
 import test from "node:test";
+import { assertCopyTarget } from "#db/copyGuard.ts";
 import { tempDir } from "#helpers/tempDir.ts";
 
 const PROBE = join(import.meta.dirname, "tempDirProbe.ts");
@@ -41,13 +42,20 @@ function runProbe(mode: "pass" | "fail" | "stuck") {
   return { run, report, left: readdirSync(probeTmp), probeTmp: realpathSync(probeTmp) };
 }
 
-test("tempDir returns a fresh directory's real path under the system temp folder", () => {
+test("tempDir returns a fresh tmp directory, by its real path, in one named for its prefix", () => {
   const a = tempDir("temp-dir-real-");
   const b = tempDir("temp-dir-real-");
   assert.notEqual(a, b);
   assert.equal(a, realpathSync(a), "the real path, so /var and /private/var never differ");
   assert.ok(a.startsWith(realpathSync(tmpdir()) + sep), `${a} is not under the temp folder`);
-  assert.match(basename(a), /^temp-dir-real-/);
+  assert.equal(basename(a), "tmp");
+  assert.match(basename(dirname(a)), /^temp-dir-real-/, "a leftover still names its test");
+});
+
+test("a database copy in a tempDir home passes the product's copy-only guard", () => {
+  // CR030's guard refuses a write whose resolved path has no tmp segment, and the
+  // system temp folder has none on macOS: the reason the suite hardcoded /tmp.
+  assert.doesNotThrow(() => assertCopyTarget(join(tempDir("temp-dir-guard-"), "copy.db")));
 });
 
 test("a passing file's homes are gone once its process exits, its own after hook having found them", () => {
@@ -60,7 +68,7 @@ test("a passing file's homes are gone once its process exits, its own after hook
       home.startsWith(probeTmp + sep),
       `${home} is not the real path under the probe's TMPDIR`,
     );
-    assert.equal(existsSync(home), false, `${home} survived`);
+    assert.equal(existsSync(dirname(home)), false, `${dirname(home)} survived`);
   }
   // A directory the file made itself is not the helper's to remove (A12).
   assert.deepEqual(left, [basename(report.beside)]);
@@ -69,7 +77,8 @@ test("a passing file's homes are gone once its process exits, its own after hook
 test("a failing file still fails, and its homes are gone too", () => {
   const { run, report, left } = runProbe("fail");
   assert.equal(run.status, 1, run.stdout + run.stderr);
-  for (const home of report.homes) assert.equal(existsSync(home), false, `${home} survived`);
+  for (const home of report.homes)
+    assert.equal(existsSync(dirname(home)), false, `${home} survived`);
   assert.deepEqual(left, [basename(report.beside)]);
 });
 
@@ -84,9 +93,9 @@ test("a home that cannot be removed costs one stderr line, and the verdict stand
       .split("\n")
       .filter((line) => line.includes("tempDir: could not remove"));
     assert.equal(lines.length, 1, lines.join("\n"));
-    assert.ok(lines[0].includes(`tempDir: could not remove ${report.stuck}: E`), lines[0]);
+    assert.ok(lines[0].includes(`tempDir: could not remove ${dirname(report.stuck)}: E`), lines[0]);
     assert.ok(
-      left.includes(basename(report.stuck)),
+      left.includes(basename(dirname(report.stuck))),
       "the stuck home is left for the check to report",
     );
   } finally {

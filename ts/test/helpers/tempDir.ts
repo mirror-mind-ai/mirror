@@ -1,9 +1,14 @@
 // CR163 — every temp home the suite makes, made in one place and removed when
 // the test file's process exits.
 //
-// `tempDir(prefix)` makes a fresh directory under `os.tmpdir()` and returns its
+// `tempDir(prefix)` makes a fresh directory named for the prefix under
+// `os.tmpdir()` and returns, by its real path, a `tmp` directory inside it. The
 // real path, so a test that compares the product's resolved paths with its own
-// never meets macOS's `/var` → `/private/var`.
+// never meets macOS's `/var` → `/private/var`. A `tmp` directory, because the
+// product's copy-only guard (`assertCopyTarget`, CR030) refuses a database write
+// whose resolved path has no `tmp` segment, and the system temp folder has none
+// on macOS (`/var/folders/…/T`): the reason the suite once hardcoded `/tmp`. The
+// prefix stays on the directory removed at exit, so a leftover names its test.
 //
 // Removal happens on the process's `exit` event, not in a `node:test` `after`
 // hook: hooks run in the order they are registered, so one registered when this
@@ -16,7 +21,7 @@
 // changes nothing else: what is left is the run-level check's to report
 // (`scripts/test_leaves_nothing.sh`), not the test's verdict to change.
 
-import { mkdtempSync, realpathSync, rmSync, writeSync } from "node:fs";
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -34,9 +39,14 @@ process.on("exit", () => {
   }
 });
 
-/** A fresh directory under the system temp folder, by its real path; removed when the process exits. */
+/**
+ * A fresh `tmp` directory, by its real path, inside one named for `prefix` under
+ * the system temp folder; both removed when the process exits.
+ */
 export function tempDir(prefix: string): string {
   const dir = realpathSync(mkdtempSync(join(tmpdir(), prefix)));
   made.push(dir);
-  return dir;
+  const home = join(dir, "tmp");
+  mkdirSync(home);
+  return home;
 }
