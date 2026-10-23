@@ -8,7 +8,6 @@
 // maintenance step's count and carry-over.
 
 import assert from "node:assert/strict";
-import { mkdtempSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import {
@@ -22,9 +21,10 @@ import {
 } from "#conversation/deferredCloseTail.ts";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
 import { createRuntimeTables } from "#helpers/runtimeSchema.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 
 function fixture(): WritableDatabase {
-  const dir = mkdtempSync("/tmp/deferred-close-tail-");
+  const dir = tempDir("deferred-close-tail-");
   const db = openDatabaseCopyForWrite(join(dir, "copy.db"));
   createRuntimeTables(db);
   return db;

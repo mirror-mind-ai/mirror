@@ -9,18 +9,18 @@
 // Mode integration names, with `FOREIGN KEY constraint failed`.
 
 import assert from "node:assert/strict";
-import { mkdtempSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import { CONVERSATION_REFERENCES, deleteConversation } from "#conversation/conversationDeletion.ts";
 import { discardCurrentConversation, logUserMessage } from "#conversation/logger.ts";
 import { bootstrapDatabase } from "#db/bootstrap.ts";
 import type { SqlValue, WritableDatabase } from "#db/database.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 
 const NOW = "2026-10-21T12:00:00.000Z";
 
 function freshDb(): WritableDatabase {
-  return bootstrapDatabase(join(mkdtempSync("/tmp/conversation-deletion-"), "memory.db"));
+  return bootstrapDatabase(join(tempDir("conversation-deletion-"), "memory.db"));
 }
 
 function count(db: WritableDatabase, sql: string, ...params: SqlValue[]): number {

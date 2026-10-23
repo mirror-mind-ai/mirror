@@ -8,7 +8,7 @@
 // door could hand it to Python -- left with the fallback at CV22.DS10.TS5.)
 
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import { logAssistantMessage, logUserMessage } from "#conversation/logger.ts";
@@ -16,6 +16,7 @@ import { runConversationLoggerCommand } from "#conversation/loggerCli.ts";
 import { createLoggerRuntime, type LoggerRuntimeEnv } from "#conversation/loggerRuntime.ts";
 import { bootstrapDatabase } from "#db/bootstrap.ts";
 import type { WritableDatabase } from "#db/database.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 import { EMBEDDING_DIMENSIONS } from "#providers/embedding.ts";
 import type { LlmProvider, LlmRequest, LlmResponse } from "#providers/llm.ts";
 
@@ -55,7 +56,7 @@ interface Fixture {
 
 /** The real schema: `session-start` runs the extraction pipeline for real. */
 function fixture(): Fixture {
-  const home = mkdtempSync("/tmp/logger-cli-");
+  const home = tempDir("logger-cli-");
   const db = bootstrapDatabase(join(home, "memory.db"));
   const llm = new StubProvider();
   const runtime = (env: LoggerRuntimeEnv = {}) =>
@@ -301,7 +302,7 @@ test("discard-current reports the empty case with the released string", async ()
 
 test("--mirror-home overrides the ambient home for the hook's mute gate", async () => {
   const f = fixture();
-  const explicitHome = mkdtempSync("/tmp/logger-cli-explicit-");
+  const explicitHome = tempDir("logger-cli-explicit-");
   // Mute only the explicit home; the ambient one stays active.
   await run(f, ["mute", "--mirror-home", explicitHome]);
 
@@ -316,7 +317,7 @@ test("--mirror-home overrides the ambient home for the hook's mute gate", async 
 
 test("status reads mute state from --mirror-home, not the ambient home", async () => {
   const f = fixture();
-  const explicitHome = mkdtempSync("/tmp/logger-cli-explicit-");
+  const explicitHome = tempDir("logger-cli-explicit-");
   await run(f, ["mute", "--mirror-home", explicitHome]);
 
   assert.deepEqual((await run(f, ["status"])).stdout, ["ACTIVE"]);
@@ -574,7 +575,7 @@ test("session-maintenance imports no Pi session from a PI_SESSIONS_DIR either", 
   const f = fixture();
   // A variable, not a fresh literal: the environment a person's shell carries,
   // with a name the runtime no longer declares.
-  const env = { ...REPLAY_ENV, PI_SESSIONS_DIR: mkdtempSync("/tmp/logger-cli-pi-") };
+  const env = { ...REPLAY_ENV, PI_SESSIONS_DIR: tempDir("logger-cli-pi-") };
   writeForeignPiSession(env.PI_SESSIONS_DIR);
   const result = await run(f, ["session-maintenance"], { env });
   assert.deepEqual(result.stdout, [MAINTENANCE_REPORT]);
@@ -600,7 +601,7 @@ test("a failing live close tail leaks nothing to stderr (hook -> transcript path
   // just be printed once -- it would be persisted and retrievable. The close
   // tail is fail-soft by design; this pins that it stays that way, with a
   // provider whose error message is deliberately the worst case.
-  const home = mkdtempSync("/tmp/logger-cli-leak-");
+  const home = tempDir("logger-cli-leak-");
   const db = bootstrapDatabase(join(home, "memory.db"));
   const secret = "sk-or-v1-PLANTED-KEY";
   const transcript = "PLANTED-TRANSCRIPT-CONTENT";

@@ -9,7 +9,6 @@
 // a person is never offered a live conversation for removal on a guess.
 
 import assert from "node:assert/strict";
-import { mkdtempSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import {
@@ -25,11 +24,12 @@ import {
 } from "#conversation/importedConversations.ts";
 import { bootstrapDatabase } from "#db/bootstrap.ts";
 import type { SqlValue, WritableDatabase } from "#db/database.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 
 const SESSIONS = "/home/p/.pi/agent/sessions";
 
 function freshDb(): WritableDatabase {
-  return bootstrapDatabase(join(mkdtempSync("/tmp/imported-conversations-"), "memory.db"));
+  return bootstrapDatabase(join(tempDir("imported-conversations-"), "memory.db"));
 }
 
 function count(db: WritableDatabase, sql: string, ...params: SqlValue[]): number {

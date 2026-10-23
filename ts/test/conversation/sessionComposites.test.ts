@@ -10,7 +10,7 @@
 // fails; only the wall-clock number is ignored.
 
 import assert from "node:assert/strict";
-import { mkdtempSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import { createCloseHooks, maybeGenerateTitle } from "#conversation/closeTail.ts";
@@ -25,6 +25,7 @@ import {
 import { bootstrapDatabase } from "#db/bootstrap.ts";
 import type { WritableDatabase } from "#db/database.ts";
 import { normalizeMaintenanceReport } from "#helpers/maintenanceReport.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 import { EMBEDDING_DIMENSIONS, type EmbeddingProvider } from "#providers/embedding.ts";
 import type { LlmProvider, LlmRequest, LlmResponse } from "#providers/llm.ts";
 
@@ -88,7 +89,7 @@ const stubEmbeddings: EmbeddingProvider = {
  * runs it for real against the Python bootstrap.
  */
 function fixture(): WritableDatabase {
-  const dir = mkdtempSync("/tmp/session-composite-");
+  const dir = tempDir("session-composite-");
   return bootstrapDatabase(join(dir, "copy.db"));
 }
 

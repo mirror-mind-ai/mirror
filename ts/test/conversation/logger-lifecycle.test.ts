@@ -12,7 +12,6 @@
 // persona argument therefore PRESERVES the session persona.
 
 import assert from "node:assert/strict";
-import { mkdtempSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import {
@@ -24,6 +23,7 @@ import {
 } from "#conversation/logger.ts";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
 import { createRuntimeTables } from "#helpers/runtimeSchema.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 
 const NOW = "2026-09-02T12:00:00.000000Z";
 const LATER = "2026-09-02T13:00:00.000000Z";
@@ -39,7 +39,7 @@ const deps = {
 const laterDeps = { newId: deps.newId, nowIso: () => LATER };
 
 function fixture(): WritableDatabase {
-  const dir = mkdtempSync("/tmp/logger-lifecycle-");
+  const dir = tempDir("logger-lifecycle-");
   const db = openDatabaseCopyForWrite(join(dir, "copy.db"));
   createRuntimeTables(db);
   db.exec(`

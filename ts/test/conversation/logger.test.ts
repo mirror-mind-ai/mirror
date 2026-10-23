@@ -9,7 +9,7 @@
 // truncation) follow Python exactly.
 
 import assert from "node:assert/strict";
-import { existsSync, mkdtempSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import {
@@ -23,11 +23,12 @@ import {
 } from "#conversation/logger.ts";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
 import { createRuntimeTables } from "#helpers/runtimeSchema.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 
 const NOW = "2026-09-02T12:00:00.000000Z";
 
 function fixture(): { db: WritableDatabase; dir: string } {
-  const dir = mkdtempSync("/tmp/conversation-logger-");
+  const dir = tempDir("conversation-logger-");
   const db = openDatabaseCopyForWrite(join(dir, "copy.db"));
   createRuntimeTables(db);
   return { db, dir };
@@ -240,7 +241,7 @@ test("logAssistantMessage is a complete no-op while the discard marker is active
 // --- mute flag parity ---
 
 test("setMute and isMuted use the mute flag file under the mirror home", () => {
-  const home = mkdtempSync("/tmp/logger-mute-");
+  const home = tempDir("logger-mute-");
   assert.equal(isMuted(home), false);
   setMute(true, home);
   assert.equal(isMuted(home), true);

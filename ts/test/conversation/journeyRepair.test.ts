@@ -7,7 +7,7 @@
 // state on a copy — never against a real database.
 
 import assert from "node:assert/strict";
-import { mkdtempSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import {
@@ -22,6 +22,7 @@ import {
 } from "#conversation/journeyRepair.ts";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
 import { createRuntimeTables } from "#helpers/runtimeSchema.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 
 const GOLDEN_PATH = new URL("../goldens/journey-repair.golden.json", import.meta.url);
 
@@ -57,7 +58,7 @@ interface Golden {
 const golden: Golden = JSON.parse(readFileSync(GOLDEN_PATH, "utf8"));
 
 function fixture(): WritableDatabase {
-  const dir = mkdtempSync("/tmp/journey-repair-");
+  const dir = tempDir("journey-repair-");
   const db = openDatabaseCopyForWrite(join(dir, "copy.db"));
   createRuntimeTables(db);
   db.exec(

@@ -12,7 +12,6 @@
 // in Pi conversations, is matched (A8).
 
 import assert from "node:assert/strict";
-import { mkdtempSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import {
@@ -23,6 +22,7 @@ import {
 } from "#conversation/piSkillTurns.ts";
 import { bootstrapDatabase } from "#db/bootstrap.ts";
 import type { WritableDatabase } from "#db/database.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 
 /** What Pi 1.4.0 hands the logger for `/skill:<name> args` (CR159 measured it). */
 function wrapper(name: string, args = ""): string {
@@ -74,7 +74,7 @@ function rows(db: WritableDatabase, conversationId: string): [string, string][] 
 }
 
 function fixture(): WritableDatabase {
-  const db = bootstrapDatabase(join(mkdtempSync("/tmp/pi-skill-turns-"), "memory.db"));
+  const db = bootstrapDatabase(join(tempDir("pi-skill-turns-"), "memory.db"));
   // A Mirror question and another skill, in a conversation that goes on.
   conversation(
     db,

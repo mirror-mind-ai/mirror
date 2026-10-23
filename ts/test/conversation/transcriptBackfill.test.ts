@@ -9,7 +9,7 @@
 // separately because the golden cannot record a raise.
 
 import assert from "node:assert/strict";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import {
@@ -26,9 +26,10 @@ import {
   TRANSCRIPT_PATH,
 } from "#helpers/backfillFixture.ts";
 import { createRuntimeTables } from "#helpers/runtimeSchema.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 
 function fixture(): { db: WritableDatabase; dir: string } {
-  const dir = mkdtempSync("/tmp/transcript-backfill-");
+  const dir = tempDir("transcript-backfill-");
   const db = openDatabaseCopyForWrite(join(dir, "copy.db"));
   createRuntimeTables(db);
   return { db, dir };
@@ -96,7 +97,7 @@ test("the window and the per-conversation bounds select entries, not the whole t
 });
 
 test("parseJsonl skips blank and unparseable lines and keeps everything else", () => {
-  const dir = mkdtempSync("/tmp/transcript-parse-");
+  const dir = tempDir("transcript-parse-");
   const path = join(dir, "t.jsonl");
   writeFileSync(path, '{"a":1}\n\n   \nnot json\n[1,2]\n"str"\nnull\n{"b":2}\n');
   assert.deepEqual(parseJsonl(path), [{ a: 1 }, [1, 2], "str", null, { b: 2 }]);

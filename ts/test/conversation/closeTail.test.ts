@@ -11,7 +11,7 @@
 // row state, plus the apply report (changed/skipped/actions).
 
 import assert from "node:assert/strict";
-import { mkdtempSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import {
@@ -28,6 +28,7 @@ import {
 import { endConversation } from "#conversation/logger.ts";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
 import { createRuntimeTables } from "#helpers/runtimeSchema.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 import type { LlmProvider, LlmRequest, LlmResponse } from "#providers/llm.ts";
 
 const GOLDEN_PATH = new URL("../goldens/close-tail.golden.json", import.meta.url);
@@ -82,7 +83,7 @@ class RecordingProvider implements LlmProvider {
 }
 
 function fixture(scenario: Scenario): { db: WritableDatabase; conversationId: string } {
-  const dir = mkdtempSync("/tmp/close-tail-");
+  const dir = tempDir("close-tail-");
   const db = openDatabaseCopyForWrite(join(dir, "copy.db"));
   createRuntimeTables(db);
   const conversationId = `conv-${scenario.label}`;

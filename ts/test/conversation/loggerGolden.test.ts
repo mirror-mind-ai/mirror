@@ -7,7 +7,7 @@
 // this proves the deterministic skeleton only — the tails belong to slices C/D.
 
 import assert from "node:assert/strict";
-import { mkdtempSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import {
@@ -21,6 +21,7 @@ import { runConversationLoggerCommand } from "#conversation/loggerCli.ts";
 import { createLoggerRuntime } from "#conversation/loggerRuntime.ts";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
 import { createRuntimeTables } from "#helpers/runtimeSchema.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 import { upsertRuntimeSession } from "#mirror/runtimeSession.ts";
 
 const GOLDEN_PATH = new URL("../goldens/conversation-logger.golden.json", import.meta.url);
@@ -53,7 +54,7 @@ const deps = {
 };
 
 function fixture(): WritableDatabase {
-  const dir = mkdtempSync("/tmp/logger-golden-");
+  const dir = tempDir("logger-golden-");
   const db = openDatabaseCopyForWrite(join(dir, "copy.db"));
   createRuntimeTables(db);
   db.exec(`
@@ -190,7 +191,7 @@ test("TS conversation logger reproduces the Python golden across every scenario"
 test("TS CLI reproduces the Python stdout/stderr contract for handled subcommands", async () => {
   const golden = JSON.parse(readFileSync(GOLDEN_PATH, "utf-8")) as Golden;
   const db = fixture();
-  const home = mkdtempSync("/tmp/logger-golden-cli-");
+  const home = tempDir("logger-golden-cli-");
   const runtime = createLoggerRuntime({ db, mirrorHome: home, homeDir: home, env: {}, deps });
 
   for (const expected of golden.cli) {

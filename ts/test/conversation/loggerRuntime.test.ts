@@ -6,13 +6,13 @@
 // that never cross the tail never cause a load at all.
 
 import assert from "node:assert/strict";
-import { mkdtempSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import { endConversation, logUserMessage } from "#conversation/logger.ts";
 import { runConversationLoggerCommand } from "#conversation/loggerCli.ts";
 import { createLoggerRuntime, type LoggerRuntimeEnv } from "#conversation/loggerRuntime.ts";
 import { bootstrapDatabase } from "#db/bootstrap.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 import {
   resolveExtractionMaxAttempts,
   resolveMaintenanceMaxExtractions,
@@ -26,7 +26,7 @@ import { ReplayFixtureIncompleteError } from "#providers/transport.ts";
 const deps = { newId: () => "id", nowIso: () => "2026-09-02T12:00:00.000000Z" };
 
 function fixture(env: LoggerRuntimeEnv = {}, runtimeDeps = deps) {
-  const home = mkdtempSync("/tmp/logger-runtime-");
+  const home = tempDir("logger-runtime-");
   const db = bootstrapDatabase(join(home, "memory.db"));
   const loads = { llm: 0, embeddings: 0 };
   const llm: LlmProvider = { complete: async () => ({ content: "[]" }) };
@@ -176,7 +176,7 @@ test("close-tail metadata rows are priced, not just the extraction roles", async
   // through its own, and only the latter had been priced. Under REPLAY no
   // usage comes back, so both shapes look identical and nothing failed -- the
   // fake provider here reports usage precisely so the gap is visible.
-  const home = mkdtempSync("/tmp/logger-runtime-priced-");
+  const home = tempDir("logger-runtime-priced-");
   const db = bootstrapDatabase(join(home, "memory.db"));
   const runtime = createLoggerRuntime({
     db,
@@ -247,7 +247,7 @@ test("the full close tail runs in LIVE mode and logs Python's role sequence", as
   // in what order, priced, with bodies withheld -- is hermetically testable.
   // That is the part a regression would break silently; the model's words are
   // the part no test should assert.
-  const home = mkdtempSync("/tmp/logger-runtime-live-tail-");
+  const home = tempDir("logger-runtime-live-tail-");
   const db = bootstrapDatabase(join(home, "memory.db"));
   let sequence = 0;
   const uniqueDeps = {

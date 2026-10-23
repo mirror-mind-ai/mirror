@@ -16,7 +16,6 @@
 //     prompt -- and never otherwise.
 
 import assert from "node:assert/strict";
-import { mkdtempSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import {
@@ -28,6 +27,7 @@ import {
 } from "#conversation/logger.ts";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
 import { createRuntimeTables } from "#helpers/runtimeSchema.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 import { upsertRuntimeSession } from "#mirror/runtimeSession.ts";
 import { pythonJsonDumps } from "#util/pyGenerators.ts";
 
@@ -46,7 +46,7 @@ const deps = {
 };
 
 function fixture(): { db: WritableDatabase; home: string } {
-  const home = mkdtempSync("/tmp/reply-logging-");
+  const home = tempDir("reply-logging-");
   const db = openDatabaseCopyForWrite(join(home, "copy.db"));
   createRuntimeTables(db);
   return { db, home };
