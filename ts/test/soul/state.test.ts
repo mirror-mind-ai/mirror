@@ -6,12 +6,12 @@
 // absence of a row are all part of the contract.
 
 import assert from "node:assert/strict";
-import { mkdtempSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
 import golden from "#goldens/soul-state.golden.json" with { type: "json" };
 import { createRuntimeTables } from "#helpers/runtimeSchema.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 import { upsertRuntimeSession } from "#mirror/runtimeSession.ts";
 import {
   clearFruitInMaturation,
@@ -53,7 +53,7 @@ const SESSION = "soul-session";
 const NOW = "2026-09-08T12:00:00.000000Z";
 
 function freshDb(name: string): WritableDatabase {
-  const dir = mkdtempSync(`/tmp/soul-state-${name}-`);
+  const dir = tempDir(`soul-state-${name}-`);
   const db = openDatabaseCopyForWrite(join(dir, "copy.db"));
   createRuntimeTables(db);
   return db;

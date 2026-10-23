@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import { openDatabaseCopyForWrite } from "#db/database.ts";
 import { createIdentityTable } from "#helpers/identitySchema.ts";
 import { createRuntimeTables } from "#helpers/runtimeSchema.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 import { deactivateMirrorState, logMirrorResponse, runMirrorLoad } from "#mirror/orchestration.ts";
 
 const golden = JSON.parse(
@@ -12,7 +13,7 @@ const golden = JSON.parse(
 ) as { sessions: unknown[]; conversations: unknown[]; messages: unknown[] };
 
 test("TS Mirror load/log/deactivate state reproduces the normalized Python oracle", async () => {
-  const dir = mkdtempSync("/tmp/mirror-state-golden-");
+  const dir = tempDir("mirror-state-golden-");
   const db = openDatabaseCopyForWrite(join(dir, "copy.db"));
   createIdentityTable(db);
   createRuntimeTables(db);

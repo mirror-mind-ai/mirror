@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
-import { mkdtempSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import { openDatabaseCopyForWrite } from "#db/database.ts";
 import { createIdentityTable } from "#helpers/identitySchema.ts";
 import { createRuntimeTables } from "#helpers/runtimeSchema.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 import {
   deactivateMirrorState,
   listActiveMirrorJourneys,
@@ -15,7 +15,7 @@ import {
 import { ReplayLlmProvider } from "#providers/llm.ts";
 
 function fixture() {
-  const dir = mkdtempSync("/tmp/mirror-orchestration-");
+  const dir = tempDir("mirror-orchestration-");
   const db = openDatabaseCopyForWrite(join(dir, "copy.db"));
   createIdentityTable(db);
   createRuntimeTables(db);

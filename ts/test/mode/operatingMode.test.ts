@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
-import { mkdtempSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import { openDatabaseCopyForWrite } from "#db/database.ts";
 import { createRuntimeTables } from "#helpers/runtimeSchema.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 import {
   activateOperatingMode,
   deactivateOperatingMode,
@@ -13,7 +13,7 @@ import {
 } from "#mode/operatingMode.ts";
 
 function fixture() {
-  const dir = mkdtempSync("/tmp/mirror-mode-state-");
+  const dir = tempDir("mirror-mode-state-");
   const db = openDatabaseCopyForWrite(join(dir, "copy.db"));
   createRuntimeTables(db);
   return db;

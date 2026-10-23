@@ -1,13 +1,13 @@
 import assert from "node:assert/strict";
-import { mkdtempSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import { openDatabaseCopyForWrite } from "#db/database.ts";
 import { createIdentityTable } from "#helpers/identitySchema.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 import { loadMirrorContext } from "#mirror/context.ts";
 
 function fixture() {
-  const dir = mkdtempSync("/tmp/mirror-context-");
+  const dir = tempDir("mirror-context-");
   const db = openDatabaseCopyForWrite(join(dir, "copy.db"));
   createIdentityTable(db);
   db.exec(`CREATE TABLE attachments (

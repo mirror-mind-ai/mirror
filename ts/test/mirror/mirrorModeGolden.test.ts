@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import { openDatabaseCopyForWrite } from "#db/database.ts";
 import { createIdentityTable } from "#helpers/identitySchema.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 import { loadMirrorContext } from "#mirror/context.ts";
 import { listActiveMirrorJourneys, titleFromSummary } from "#mirror/orchestration.ts";
 import { renderMirrorModeTransition } from "#mirror/render.ts";
@@ -21,7 +22,7 @@ const golden = JSON.parse(
 ) as Golden;
 
 function fixture() {
-  const dir = mkdtempSync("/tmp/mirror-golden-");
+  const dir = tempDir("mirror-golden-");
   const db = openDatabaseCopyForWrite(join(dir, "copy.db"));
   createIdentityTable(db);
   const insert = db.prepare(

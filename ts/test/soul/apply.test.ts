@@ -7,12 +7,12 @@
 // Python's `lstrip("\n")`, which removes newlines and not whitespace.
 
 import assert from "node:assert/strict";
-import { mkdtempSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
 import golden from "#goldens/soul-apply.golden.json" with { type: "json" };
 import { createIdentityTable } from "#helpers/identitySchema.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 import { applyIdentityIntegration, IDENTITY_INTEGRATION_SECTION_TITLES } from "#soul/apply.ts";
 
 interface IntegrationRow {
@@ -58,7 +58,7 @@ function reverseKeyOrder(value: Record<string, unknown>): Record<string, unknown
 }
 
 function freshDb(scenario: Scenario): WritableDatabase {
-  const dir = mkdtempSync(`/tmp/soul-apply-${scenario.name}-`);
+  const dir = tempDir(`soul-apply-${scenario.name}-`);
   const db = openDatabaseCopyForWrite(join(dir, "copy.db"));
   createIdentityTable(db);
   db.exec(`
