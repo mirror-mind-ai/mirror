@@ -88,14 +88,17 @@ by the Navigator alike, fails a run that leaves anything behind.
    `welcome/welcome` need no special form (A2). `storyWorld` and `builderWorld` make
    their roots through it and drop their own registries and `remove*` exports, nine
    call sites (A4). Literal `/tmp/…` strings that name a path no test creates (goldens,
-   asserted replay and sync paths) stay.
+   asserted replay and sync paths) stay. Found in implementation: `builderWorld` keeps
+   its literal `/tmp` root and its registry under A13, captured as
+   [CR164](cr164-paths-walk-sees-a-leaked-path-only-under-a-short-root.md).
 5. **A repository guard**, `ts/scripts/checkTestTempHomes.ts`, beside
    `checkRetiredSurfaces.ts`: it fails, naming file and line, when a `.ts` under
    `ts/test`, helpers and support included, makes a temp directory under a literal
    `/tmp` in any of the forms step 1 lists (A8). A step in the Tests workflow runs it.
    It is what lets step 6 see every home; a `/tmp` held in a variable would escape it,
    and none is today. The rule is broken at 90 call sites in 55 files, past the bar the
-   engineering principles set for a guard (§4).
+   engineering principles set for a guard (§4). Its one exception,
+   `helpers/builderWorld.ts`, names CR164.
 6. **The run-level check**, one script, `scripts/test_leaves_nothing.sh`, beside
    `smoke_runtime_update.sh`: an empty directory under `${RUNNER_TEMP:-$(mktemp -d)}`,
    `TMPDIR` exported, `npm test`; then, only if the suite passed, whatever is left
@@ -268,6 +271,22 @@ parent exits would trip the check; that is an orphan to fix, not a retry.
   meets its contract instead, returning a `tmp` directory inside the one named for the
   prefix, which it records and removes. A database copy in a `tempDir` home passing the
   real guard is one of the helper's tests.
+- **An orphan, not a missing removal (step 3).** `pi/mirrorLoggerExtension`'s leftover
+  came back three seconds after the file had removed it: the extension runs maintenance
+  and close work in detached front-door processes, on purpose, so they survive Pi, and
+  here they outlived the test file and recreated its log directory, with a
+  `front-door.log`, a `memory.db`, and a pre-write backup in it. The file now waits, in
+  the hook that owns that directory, for every process its log says it started, then
+  removes it; product code unchanged. Three runs: nothing left five seconds after exit.
+- **The flip, after step 3** (`4f849d23`): `scripts/test_leaves_nothing.sh` on the full
+  suite, 3,453 tests, none failing, then "The suite left nothing behind.", exit 0;
+  `/tmp`, compared by name, gained nothing.
+- **`builderWorld`, captured as CR164 (step 4).** With its worlds on `tempDir`, one
+  test failed at its own precondition, `the world sits under the short root`:
+  `pathsWalk.test.ts` finds a leaked absolute path by the world's root sitting whole on
+  one 54-column card row, which an 81-character root under macOS's temp folder never
+  does, so the file's other checks would have passed vacuously. Under A13 it keeps its
+  literal `/tmp` root and its registry; the other 21 files moved (`95d72723`).
 
 ## Outcome
 

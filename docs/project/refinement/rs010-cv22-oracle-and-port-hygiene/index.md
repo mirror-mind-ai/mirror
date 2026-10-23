@@ -103,3 +103,4 @@ evidence stays honest as both cores move.
 - [CR161 — `.pi/` pins Pi's types at 0.70.0, and nothing type-checks the Pi extension](cr161-pi-types-are-pinned-at-0-70-and-nothing-type-checks-the-pi-extension.md)
 - [CR162 — Startup maintenance retitles only the 50 most recently ended conversations, so an older weak title is never improved](cr162-maintenance-retitles-only-the-latest-conversations.md)
 - [CR163 — The test suite leaves its temp homes behind, about 450 directories a run, and nothing notices](cr163-the-test-suite-leaves-its-temp-homes-behind.md)
+- [CR164 — `pathsWalk.test.ts` can see a leaked absolute path only under a short root, so `builderWorld` must stay in `/tmp`](cr164-paths-walk-sees-a-leaked-path-only-under-a-short-root.md)
