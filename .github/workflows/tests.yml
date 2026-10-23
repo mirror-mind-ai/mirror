@@ -55,8 +55,13 @@ jobs:
           fi
           echo "no provider key present — live routes cannot be reached"
 
-      - name: Run tests (node:test)
-        run: npm test
+      # CR163: this run is also the proof that the suite leaves nothing behind.
+      # The script gives npm test an empty TMPDIR of its own and, once the suite
+      # has passed, fails if anything is left there, listed by prefix so the log
+      # names the test. The interpreter-shadow run below is the suite's second;
+      # it keeps the runner's default temp folder and proves only what it says.
+      - name: Run tests (node:test), leaving nothing behind
+        run: bash scripts/test_leaves_nothing.sh
         env:
           MEMORY_ENV: test
 
@@ -75,6 +80,8 @@ jobs:
       # exactly what the second catches. The log, not a `ps` sample: a
       # short-lived spawn between two samples is invisible, a stub that
       # appends a line is not.
+      # Its suite run keeps the default temp folder: the leaving-nothing proof
+      # is the first run's (CR163).
       - name: Interpreter shadow (nothing may spawn python, python3, or uv)
         run: |
           SHADOW="$(mktemp -d)"
