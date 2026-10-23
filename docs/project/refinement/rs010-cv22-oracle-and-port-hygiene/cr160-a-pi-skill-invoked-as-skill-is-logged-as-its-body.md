@@ -130,6 +130,23 @@ Pi joins the hooks' path instead of the core learning a second copy of the rule.
 
 **Started 2026-10-22:** Driver @viniciusteles, Delivery `main`.
 
+**Validated 2026-10-23** by the Navigator: a menu pick and one Mirror question in the
+route's scratch "after" home, then the repair's dry run, `--apply`, and second dry run
+on the Navigator's own copies of both homes (under *Evidence*).
+
+**Reviewed 2026-10-23.** Made on purpose: `log-user` and `log-assistant` kept one
+release, for extensions already loaded in running Pi sessions (A5), *deferred*, to be
+retired with a retired-surfaces row at the first release after the one that carries
+this CR; Pi's wrapper pattern in two copies, the extension's and the repair's, held
+equal by a test, *no action*; the payload in argv as `--payload`, the exposure Pi's
+prompt already had, the reason written beside the rule, *no action*. Found, not made,
+and captured at the Navigator's direction:
+[CR161](cr161-pi-types-are-pinned-at-0-70-and-nothing-type-checks-the-pi-extension.md)
+(`.pi/` pins Pi's types at 0.70.0, and nothing type-checks the extension) and
+[CR162](cr162-maintenance-retitles-only-the-latest-conversations.md) (maintenance
+retitles only the 50 most recently ended conversations). Nothing disproportionate:
+the fix joins the hooks' tested handlers, and the repair takes CR154's shape.
+
 ## Evidence
 
 - Pi 1.3.0 and 1.4.0 (`~/.pi/agent/install/releases/<version>`), in
@@ -242,7 +259,32 @@ Pi joins the hooks' path instead of the core learning a second copy of the rule.
   `log-user` and `log-assistant` as kept one more release. REFERENCE gains the command's
   row and a *Pi Skill Turns* section, rollout order included (A10); Getting Started says
   a skill invocation is not recorded and names the repair.
+- **The Navigator's validation, 2026-10-23.** Step 1, in Pi 1.4.0's TUI in the route's
+  scratch "after" home: picking `skill:mm-journeys` from the menu recorded nothing;
+  `/mm-mirror Should I stay or should I go now?` recorded the question (33 characters)
+  and one reply. Pi's session file holds that turn as the 44 characters typed, not
+  expanded: typed in full and sent, a bare `/mm-mirror …` reaches the model as text, and
+  the model loaded the skill by its name, the case CR159 left unmeasured, seen once;
+  the logger recorded the question through the Mirror form. Step 2, the Navigator's own
+  copies of both homes: dry run, `--apply`, and second dry run gave exactly the Driver's
+  numbers (production 225 turns in 171 conversations, 20 kept, 205 removed, 31
+  deleted, 13 retitled; development 185 in 145, 20, 165, 24, 0), each `--apply` after a
+  verified backup, each second dry run "No Pi user turns stored as a skill's body in
+  this home."
 
 ## Outcome
 
-Open.
+**Done 2026-10-23.** On Pi, a skill invocation, picked from the menu or typed, is no
+longer stored as something the person said, and neither is its reply; a Mirror
+question is stored as the question, with one reply; a prompt has one reply row. Pi's
+extension sends what was typed, read from Pi's `input` event, to the same
+`user-prompt` and `stop` handlers every other runtime uses. `mirror conversations
+skill-turns` repairs what earlier versions stored: on copies of the two real homes,
+225 and 185 stored skill turns, 20 Mirror questions kept in each, 31 and 24
+conversations left with no user turn deleted, a second dry run finding nothing.
+Measured before and after on Pi 1.4.0 by the route committed with this CR; validated
+by the Navigator. On `main`: `3725639e` (selected), `66c8593e` (approved, started),
+`7ff4a83c` (the forward fix), `baa6382f` (the route), `cada0e08` and `f3673d56` (the
+repair), `6d23d15a` (the docs), and this closure. Not yet released: the release, then
+`runtime update`, a restart of every Pi session on each home, and the repair on the
+real homes, dry run first, in that order (A10).

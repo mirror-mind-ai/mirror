@@ -12,6 +12,24 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-10-23 — CR160: a Pi skill invocation is not recorded as the person's words; the repair for what was
+
+Pi expands a skill picked from its menu, or typed as `/skill:<name>`, into the skill's
+whole body before its extensions see the prompt, and Mirror's Pi extension logged that:
+225 user turns in the production home and 185 in the development home were skill
+bodies stored as things the person said, titling conversations and feeding
+extraction. Now the extension sends what was typed, read from Pi's `input` event, with
+a turn id it mints, to the same `user-prompt` and `stop` handlers every other runtime
+uses: a skill invocation and its reply are not recorded, a Mirror question is recorded
+as the question, and a prompt has one reply row. `mirror conversations skill-turns`
+repairs what earlier versions stored, a dry run until `--apply`, after a verified
+backup and in one transaction: Mirror questions kept, other skill turns removed,
+conversations left with no user turn deleted (31 and 24 on copies of the two homes),
+block-born titles rebuilt. A route committed with the CR measured both sides on Pi
+1.4.0. Reviewed through five lenses before approval; validated by the Navigator on a
+scratch home and on copies of both real homes. Captured from its review: CR161 and
+CR162. Not yet released; the real homes are repaired after the release.
+
 ### 2026-10-22 — CR159: how Pi invokes a skill, measured and written down; CR160 captured
 
 The docs called Pi's skill commands `/mm-<skill>`, as if Pi registered them. Measured on Pi
