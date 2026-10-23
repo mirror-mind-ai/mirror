@@ -48,6 +48,28 @@ test("front door `identity set` writes to the live DB via TS (create, then updat
   }
 });
 
+test("a byte-order mark at the head of stdin is not stored as content", () => {
+  // PowerShell writes one at the head of what it pipes or redirects; stored, it
+  // became the first character of an identity entry.
+  const { dbPath, cleanup } = identityDbCopy();
+  try {
+    const result = spawnFrontDoor(
+      ["identity", "set", "ego", "probe", "--db-path", dbPath],
+      {},
+      "\uFEFF# From PowerShell\n",
+    );
+    assert.equal(result.status, 0, result.stderr);
+    const db = openDatabaseReadOnly(dbPath);
+    const row = db
+      .prepare("SELECT content FROM identity WHERE layer = ? AND key = ?")
+      .get("ego", "probe") as { content: string } | undefined;
+    db.close();
+    assert.equal(row?.content, "# From PowerShell\n");
+  } finally {
+    cleanup();
+  }
+});
+
 test("front door rejects an empty `identity set` content without writing", () => {
   const { dbPath, cleanup } = identityDbCopy();
   try {

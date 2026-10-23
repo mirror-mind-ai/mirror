@@ -518,7 +518,12 @@ function runShadowRead(db: Database, args: readonly string[]): number {
 
 function readStdinContent(): string {
   try {
-    return readFileSync(0, "utf8");
+    const content = readFileSync(0, "utf8");
+    // A byte-order mark is an encoding's signature, not content. PowerShell
+    // writes one at the head of what it pipes or redirects (`Get-Content f |
+    // mirror identity set …`, `mirror journey update s - < f`); stored, it
+    // became the first character of an identity entry and of a journey path.
+    return content.charCodeAt(0) === 0xfeff ? content.slice(1) : content;
   } catch {
     return "";
   }
