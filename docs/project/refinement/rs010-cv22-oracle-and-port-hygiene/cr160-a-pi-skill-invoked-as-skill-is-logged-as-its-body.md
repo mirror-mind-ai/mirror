@@ -61,62 +61,74 @@ in its *Evidence*, is the one to make re-runnable for this CR's validation.
 
 Selected 2026-10-22 (Current Focus).
 
-**Proposed plan, awaiting the Navigator's approval.** The design choice is where the rule
-lives:
+**Plan, approved by the Navigator 2026-10-22,** after a review through five lenses
+(engineer, database architect, quality assurance, devops engineer, quartermaster) whose
+eleven amendments were all folded. The rule moves to the core's existing, tested home:
+Pi joins the hooks' path instead of the core learning a second copy of the rule.
 
-- **(B, recommended) One rule, in the core.** The Pi extension hands the core what the
-  person typed, read from Pi's documented `input` event before expansion, instead of
-  the expanded prompt. The core's Pi path (`log-user`, `log-assistant`), which today
-  writes whatever it is given, applies the rule the hooks apply: `mirrorForm`, which
-  learns `/skill:mm-mirror`, logs the question; `isCommandTurn` skips any other skill
-  turn and records it; and the reply to a recorded skipped turn is skipped, as the hooks'
-  `command_turn` does. The extension's own `/` check goes, and so does
-  `commandTurn.ts`'s note that Pi keeps one.
-- (A) The extension keeps its own rule and learns Pi's `<skill name="…">` wrapper: a
-  format Pi documents nowhere but in an example session line, and a second copy of the
-  rule in another process.
+1. **Tests first** (A9), through the extension harness
+   (`ts/test/pi/mirrorLoggerExtension.test.ts`) and the core's handler tests, one case
+   each: a menu pick; typed `/skill:x`; typed `/mm-x`; `/mm-mirror q`;
+   `/skill:mm-mirror q`; a bare `/mm-mirror`; plain text; text that opens with a path
+   (`/Users/…`, still skipped, as today: a known limit of the `/` rule); a muted session;
+   a discarded conversation; a session switch mid-turn; a follow-up queued while
+   streaming; a prompt another extension sent (`source: "extension"`); a prompt whose
+   answer spans two runs.
+2. **The forward fix** (A1 to A5):
+   - The extension mints a turn id for each run a person's prompt starts and sends what
+     was typed, read from Pi's `input` event, to the hooks' `user-prompt` handler
+     (`--interface pi`): the mute gate, the Mirror form, the command turn, the skipped
+     turn recorded. `log-user` does not learn the rule (A1).
+   - One `stop` per prompt, at `agent_settled`, carrying all of the prompt's assistant
+     text, to the hooks' `stop` handler, which pairs it with its prompt by turn id and
+     skips the reply of a skipped turn. A change the CR states: one reply row per
+     prompt, where Pi wrote one per `agent_end` (A2).
+   - Correlation: the `input` text is recorded only when it starts a run
+     (`streamingBehavior` undefined) and consumed at the next `before_agent_start` with
+     `messageType: "user"`; with nothing recorded, the prompt as given, where Pi's whole
+     skill wrapper counts as a command turn (A3).
+   - `mirrorForm` accepts `/skill:mm-mirror`; `inferJourneyForConversation` is left as
+     it is, since no skill turn reaches it any more (A4).
+   - `log-user` and `log-assistant` keep working for one release, for the extensions
+     already loaded in running Pi sessions, then retire with a retired-surfaces row (A5).
+3. **The repair**, a command beside CR154's, a dry run until `--apply`, which takes and
+   verifies a dated backup and changes everything in one transaction that decides the
+   set again. It matches Pi's whole skill wrapper (`<skill name="…" location="…">`,
+   `References are relative to`, `</skill>`), only in conversations whose interface is
+   `pi` (A8). It keeps the question of an `mm-mirror` row that has one and removes every
+   other such row; deletes, with CR154's `deleteConversation`, every conversation it
+   leaves with no user turn, listed on their own line in the dry run with their message
+   counts (A7, the Navigator's decision); and retitles the conversations whose title came
+   from a block (25 and 5). Summaries and their embeddings stay: they describe a session
+   in which a skill was invoked (A6). After `--apply`, a second dry run finds nothing.
+4. **Docs:** the contract's *Invoking a skill on Pi* and its Pi table say what is
+   recorded now, and lose CR159's caveat; REFERENCE gains the repair command; Getting
+   Started's note on what Mirror records says a skill invocation is not recorded;
+   `commandTurn.ts` no longer says Pi keeps its own check.
+5. **The route** (A11): CR159's measurement as a small script committed with the CR
+   (setup, reading, clean-up), run before and after the fix on the same Pi version, with
+   version, binary, and date.
+6. **A patch release**, carrying CR159's docs too. Rollout, in the CR and the release
+   note (A10): release, `runtime update`, restart every Pi session on the home, then the
+   repair's dry run, then `--apply`; a session that has not restarted keeps writing
+   skill bodies, and the repair run again catches them.
 
-Under (B):
-
-1. **Tests first.** The extension harness (`ts/test/pi/mirrorLoggerExtension.test.ts`)
-   holds that the extension sends the typed text for a run a person's input starts,
-   never the expanded prompt. The core's tests hold the rule on the Pi path:
-   `/skill:mm-journeys` and `/mm-journeys` skipped and their replies skipped;
-   `/mm-mirror <question>` and `/skill:mm-mirror <question>` logging the question and
-   the reply; a bare `/mm-mirror` skipped with its reply; plain text logged as today.
-   `mirrorForm` accepts `/skill:mm-mirror`, and `inferJourneyForConversation`
-   `/skill:mm-build <slug>`, so the two parsers read one grammar.
-2. **The forward fix** in the extension and the core, to those tests.
-3. **The repair,** a command beside CR154's: it lists a home's user rows that are Pi
-   skill bodies, by skill and by what it would do, and is a dry run until `--apply`,
-   which takes and verifies a dated backup, then in one transaction keeps the question
-   of an `mm-mirror` row that has one and removes every other such row, since a skill
-   invocation is not conversation and neither are its arguments (a `mm-build` slug).
-   Then it retitles the conversations whose title came from a block and recomputes the
-   embeddings of the conversations it changed. On the production home's numbers: 20
-   rows keep their question, 205 are removed, 25 conversations retitled, 8 re-embedded.
-4. **Docs:** the contract's *Invoking a skill on Pi* loses CR159's caveat; REFERENCE
-   gains the repair command; Getting Started's note on what Mirror records says a skill
-   invocation is not recorded.
-5. **A patch release**, so the production home gets the fix and the repair; then the
-   Navigator runs the repair on both homes, dry run first, as with CR154.
-
-- **Acceptance:** on Pi, a skill picked from the menu or typed leaves no user row and
-  no reply row; a Mirror question is recorded as the question; the repair's dry run
-  names exactly the rows it would change and `--apply` changes only those, after a
-  verified backup; the tests above, `npm test`, `checkDocLinks`, and the retired-surface
+- **Acceptance:** on Pi, a skill picked from the menu or typed leaves no user row and no
+  reply row; a Mirror question is recorded as the question, with its reply; one reply
+  row per prompt; the repair's dry run names exactly the rows and conversations it would
+  change, `--apply` changes only those after a verified backup, and a second dry run
+  finds nothing; the tests above, `npm test`, `checkDocLinks`, and the retired-surface
   sweep green.
-- **Validation:** CR159's measurement, made a re-runnable route, in a scratch home:
-  the Navigator picks `skill:mm-journeys` from the menu and asks one Mirror question,
-  then reads the scratch home's rows; then the repair's dry run and `--apply` on a
-  scratch copy of the development home, with the counts read before and after.
-- **Exclusions:** past replies, which are what the mirror said and cannot be told from
-  replies to ordinary turns (11,771 assistant rows in the production home's Pi
-  conversations have no user row right before them, most from prompts that log more
-  than one reply); the 34 memories drawn from affected conversations, which read as
-  real work; Pi's own session files; the other runtimes, which already apply the rule.
-- **Authority:** tests and routes use scratch homes only; the real homes are repaired
-  by the Navigator after the release; the release is its own decision.
+- **Validation:** the route before and after the fix in a scratch home, with the
+  Navigator's menu pick and one Mirror question; the repair's dry run and `--apply` on
+  scratch copies of both homes, the counts read against this plan's evidence.
+- **Exclusions:** past replies to skipped turns, which cannot be told apart; summaries
+  and their embeddings; the 34 memories; Pi's own session files; the other runtimes,
+  which already apply the rule.
+- **Authority:** tests and routes use scratch homes only; the real homes are repaired by
+  the Navigator after the release; the release is its own decision.
+
+**Started 2026-10-22:** Driver @viniciusteles, Delivery `main`.
 
 ## Evidence
 
