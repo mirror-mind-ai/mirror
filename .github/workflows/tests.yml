@@ -114,6 +114,12 @@ jobs:
       - name: Retired-surface tripwire (DS10 deletions must stay deleted)
         run: node ts/scripts/checkRetiredSurfaces.ts
 
+      # CR163: no test makes a temp home under a literal /tmp. The run-level
+      # check (scripts/test_leaves_nothing.sh) sees every home only because
+      # all of them are made under os.tmpdir(); this keeps it that way.
+      - name: Temp homes under os.tmpdir() (CR163)
+        run: node ts/scripts/checkTestTempHomes.ts
+
       # CV22.DS10.US3: the artifact half of DS10's Zero Python gate. `files`
       # is a whitelist and this proves it: `npm pack --dry-run` must list the
       # runtime subset and nothing else -- no test, golden, smoke, scratch,
