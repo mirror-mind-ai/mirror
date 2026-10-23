@@ -234,6 +234,17 @@ export default function (pi: ExtensionAPI) {
 	 */
 	const FRONT_DOOR_ARGV = [MIRROR_BIN];
 
+	/**
+	 * The Node the front-door children run on: MIRROR_NODE when it names a file
+	 * -- the repair route `runtime diagnose` gives for `hook_node_unresolvable`,
+	 * and what the hook wrappers already honor -- else `node` from the PATH.
+	 * Not `process.execPath`: Pi may run on a Node older than the core needs.
+	 */
+	function nodeCommand(): string {
+		const explicit = process.env.MIRROR_NODE ?? "";
+		return explicit !== "" && existsSync(explicit) ? explicit : "node";
+	}
+
 	function log(level: string, msg: string): void {
 		try {
 			const ts = new Date().toISOString();
@@ -249,7 +260,7 @@ export default function (pi: ExtensionAPI) {
 		try {
 			mkdirSync(MIRROR_DIR, { recursive: true });
 			logFd = openSync(LOG_FILE, "a");
-			const child = spawn("node", [...FRONT_DOOR_ARGV, ...args], {
+			const child = spawn(nodeCommand(), [...FRONT_DOOR_ARGV, ...args], {
 				cwd: process.cwd(),
 				stdio: ["ignore", logFd, logFd],
 				// Windows: a detached console child materializes as a visible
@@ -259,6 +270,15 @@ export default function (pi: ExtensionAPI) {
 				// POSIX keeps detached so the write survives Pi exiting.
 				detached: process.platform !== "win32",
 				windowsHide: true,
+			});
+			// A child that cannot start -- no `node` on the PATH a GUI-launched Pi
+			// inherited, a MIRROR_NODE that moved -- reports through 'error', not by
+			// throwing, so the catch below never sees it. Without a listener the event
+			// is an uncaught exception and Pi exits ("pi exiting due to
+			// uncaughtException: Error: spawn node ENOENT"). A logging failure must
+			// never break anything: log it and move on.
+			child.on("error", (error) => {
+				log("ERROR", `${label} failed to start: ${error.message.slice(0, 500)}`);
 			});
 			child.unref();
 			log("INFO", `${label} started in detached background process ${child.pid ?? "(unknown pid)"}`);
@@ -291,7 +311,7 @@ export default function (pi: ExtensionAPI) {
 		try {
 			const delay = testFrontDoorDelayMs();
 			if (delay > 0) await new Promise((resolve) => setTimeout(resolve, delay));
-			const result = await pi.exec("node", [...FRONT_DOOR_ARGV, ...args], {
+			const result = await pi.exec(nodeCommand(), [...FRONT_DOOR_ARGV, ...args], {
 				timeout: 30_000,
 			});
 			const stderr = (result?.stderr ?? "").trim();
