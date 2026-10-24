@@ -1,6 +1,6 @@
 [< RS010](index.md) · [Canonical status](../index.md#change-requests)
 
-# CR165 — Pi puts no Mirror context before the model, so Pi is L3 where the plugin runtimes are L4
+# CR165 — Pi puts no Mirror context before the model, so Pi is L3 where the plugin runtimes are L4: one doorman on every runtime
 
 ## Problem
 
@@ -20,13 +20,52 @@ back to L4). Pi is the harness Getting Started recommends.
 
 ## Expected Behavior
 
-Pi puts Mirror's context before the model the way the inject hook does on Claude Code
-and Codex: on an explicit Mirror turn (`/mm-mirror …` or `/skill:mm-mirror …`) and
-once on the first turn after Mirror Mode turns on in the session, through
-`before_agent_start`, which can add to the system prompt as the extension's D13
-handler already does. It uses the same `mirror load --context-only` and the same
-once-per-session mark. Measured live on the installed Pi, the matrix's Pi row then
-moves to L4 with its version, binary, and date.
+**One doorman.** The runtime, not the model, puts Mirror's context before the model, on
+every runtime that can carry it, by one decision made in one place in the core. Today
+there are three doormen with three policies: the Claude-family inject hook (the explicit
+form, then once after Mirror Mode turns on), Antigravity's `PreInvocation` (every turn
+while the session is marked active, with no prompt to route on), and Pi (none). After
+this CR:
+
+- **One decision module in the core** (`ts/src/mirror/doorman.ts`, reached as one
+  front-door command and in-process by the hooks) takes the prompt and the session's
+  state and answers: inject nothing, the full folder, or a delta. The hooks for Claude
+  Code and Codex, Antigravity's hook, and the Pi extension's `before_agent_start` all
+  call it and carry what it returns. Grok Build, which discards hook context, stays as
+  it is.
+- **The policy**, the same on every runtime:
+  1. The explicit Mirror form in the prompt: the full folder, routed from the query,
+     before the first token. The session is marked active, by its own id.
+  2. Mirror Mode active, an ordinary turn: the prompt is routed (`detectPersona`, a
+     keyword score, no model call). A persona that newly scores above threshold gets
+     its section injected as a delta and becomes the session's persona; the memories
+     and attachments relevant to this prompt are injected when any score above the
+     threshold. Nothing else is repeated: the identity layers already sit in the
+     transcript.
+  3. Mirror Mode not active, an ordinary turn: nothing from the doorman. The model's
+     own routing (the Operating Instructions) may invoke the skill; when the skill's
+     load runs, the session learns it (see below), so the doorman takes over from the
+     next turn.
+- **The skill trusts delivered context.** The injected block says, in one line the
+  model can read, that the runtime delivered Mirror's context for this turn. The
+  `mm-mirror` skill's hard constraint becomes: load first *unless the runtime already
+  delivered the context for this turn*; then render the transition from the delivered
+  block. An explicit Mirror turn loads once, on every runtime.
+- **The session learns Mirror Mode started by the model.** On Pi the extension sees
+  the `mirror mirror load` tool call and marks the session; on Claude Code and Codex
+  the hooks' per-turn state read catches `mirror_active` only when the load carried
+  `--session-id`, so the skill's load must reach the session id (CR100's lead:
+  `CLAUDE_CODE_SESSION_ID` in the agent's shell, to be measured) or the hook must learn
+  it another way. This is the one open mechanism in the design.
+- **One signature rule.** `AGENTS.md` signs an active persona `◇ persona-name`; the
+  `mm-mirror` skill says `✦ Persona:` and "do not reuse `◇`"; the core's banner prints
+  `✦ Persona:`. One spelling, stated in `AGENTS.md`, used by the skill's copies and the
+  core's banner, and held by a guard test. Which spelling is the Navigator's call.
+- **Measured, then the matrix.** Live on Pi and Claude Code (the explicit turn loads
+  once; a follow-up that changes domain re-routes; an unprompted personal question is
+  followed by doorman turns), with Codex and Antigravity run for no regression. Then
+  Pi's row moves to L4 with version, binary, and date, and the parity decision's line
+  stands: the runtime puts the context before the model.
 
 ## Impact
 
@@ -41,8 +80,17 @@ would also load twice, once here and once in the skill, as on Claude Code.
 ## Plan Or Decision
 
 Captured, unassigned, 2026-10-24, from CV21.DS11.TS1, in RS010 beside CR143 (the inject
-hook on Grok) and CR160 (the Pi extension's turns). Not planned. Current Focus
-unchanged.
+hook on Grok) and CR160 (the Pi extension's turns).
+
+**Direction decided by the Navigator, 2026-10-24,** after the measurement below: build
+the one-doorman design, the comprehensive solution over the expedient one (copying
+today's hook to Pi, which buys one folder on one turn for a double load on every
+explicit turn), and fold the signature rule into this CR. The Expected Behavior above
+is that design. Not planned: the plan, with its files, acceptance, validation, and the
+open mechanism's answer, is proposed to the Navigator for approval, together with the
+vehicle (this work touches the core, three hooks, the Pi extension, the skill's copies,
+`AGENTS.md`, the contract, and the matrix, and needs live measurement on four runtimes:
+a Delivery Story's size). Current Focus unchanged.
 
 ## Evidence
 
