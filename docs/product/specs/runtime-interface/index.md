@@ -74,6 +74,10 @@ which CV21 reuses:
   injects Mirror's context itself is captured as
   [CR165](../../../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr165-pi-puts-no-mirror-context-before-the-model.md).
 
+Gemini CLI was retired in [v0.35.0](../../../releases/v0.35.0.md) (CV21.DS8); Antigravity
+is its successor
+([decision](../../../project/decisions.md#gemini-cli-is-retired-and-antigravity-is-its-successor)).
+
 ---
 
 ## Lifecycle Events
