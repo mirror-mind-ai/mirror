@@ -104,3 +104,4 @@ evidence stays honest as both cores move.
 - [CR162 — Startup maintenance retitles only the 50 most recently ended conversations, so an older weak title is never improved](cr162-maintenance-retitles-only-the-latest-conversations.md)
 - [CR163 — The test suite leaves its temp homes behind, about 450 directories a run, and nothing notices](cr163-the-test-suite-leaves-its-temp-homes-behind.md)
 - [CR164 — `pathsWalk.test.ts` can see a leaked absolute path only under a short root, so `builderWorld` must stay in `/tmp`](cr164-paths-walk-sees-a-leaked-path-only-under-a-short-root.md)
+- [CR165 — Pi puts no Mirror context before the model, so Pi is L3 where the plugin runtimes are L4](cr165-pi-puts-no-mirror-context-before-the-model.md)
