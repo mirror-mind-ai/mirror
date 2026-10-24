@@ -29,7 +29,7 @@ out of `ts/test`, and CI's first suite run goes through
 is left there: red on the unchanged tree, 78 entries, and green after, on ubuntu and
 macOS. `builderWorld` keeps its `/tmp` root, because `pathsWalk` sees a leaked absolute
 path only under a short root: captured as CR164. Reviewed through five lenses before
-approval. Not yet validated by the Navigator. No release: tests, CI, and docs only.
+approval; validated by the Navigator. No release: tests, CI, and docs only.
 
 ### 2026-10-23 — v0.36.3 released: A Skill You Invoke Is Not Something You Said
 

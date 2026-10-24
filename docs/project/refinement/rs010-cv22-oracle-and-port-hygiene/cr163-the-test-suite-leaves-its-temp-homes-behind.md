@@ -296,6 +296,11 @@ parent exits would trip the check; that is an orphan to fix, not a retry.
   nothing behind."; the guard's step was clean, its two exceptions named.
 - **The count (A6):** 3,448 tests before; 3,456 after, the helper's five and the guard's
   three; none removed, the same three skipped.
+- **The Navigator's validation, 2026-10-24.** The validation route, run by the
+  Navigator in the repository on the maintainer's machine at `1efac01d`: `/tmp` listed,
+  `bash scripts/test_leaves_nothing.sh`, `/tmp` compared by name. It passed: the script
+  reported nothing left and exited 0, and `/tmp` gained no entry named after a test.
+  Accepted.
 
 ## Outcome
 
