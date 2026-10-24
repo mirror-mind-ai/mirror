@@ -55,6 +55,36 @@ unchanged.
 - `ts/src/hooks/claude.ts`, `claudeInject`: the two cases a Pi injection would follow.
 - The parity matrix's Pi row (CR159, CR160, Pi 1.4.0) and the decision "The contract's
   parity matrix is the single authority for runtime parity", 2026-10-24.
+- **Measured 2026-10-24, 18:57–18:59 UTC** ([`cr165-route.sh`](cr165-route.sh)): Pi 1.4.0
+  (`~/.pi/agent/bin/pi`), headless from the checkout at `26b02733`, `claude-haiku-4-5`
+  with thinking off, a seeded scratch home; evidence read from the scratch home's
+  `front-door.log` and Pi's session file, not from the model's word. Session A, run
+  twice, three turns: an explicit `/mm-mirror` question about pricing a mentorship, a
+  follow-up on the same topic ("But what if nobody pays that much?"), and a follow-up
+  in another domain (whether to write an article announcing it). Session B, once: a
+  personal question with no form.
+  - **Turn 1, both runs:** the model read the skill, ran `mirror mirror load --query
+    …` once, was routed to `financial`, and signed the reply (`◇ financial` in A1,
+    `✦ Persona: financial` in A2).
+  - **Turns 2 and 3, both runs:** no `mirror` command of any kind — no load, no
+    `detect-persona` — and no signature. The replies continued the thread from the
+    folder loaded in turn 1, in an advisor's second person. The domain change in turn 3
+    routed no persona.
+  - **Session B:** on the unprompted personal question the model read the skill and ran
+    the load by itself, routed to `strategist`: the Operating Instructions' own routing
+    worked on Pi without the form.
+  - So on Pi the folder is loaded once, on the turn that invokes the skill, and every
+    follow-up is answered from it. On Claude Code the same turn 2 would receive one
+    fresh folder from the inject hook, keyed to the follow-up's question, and turn 3
+    nothing; the model's own behavior on those turns was not measured there.
+  - Method limit: each headless turn is its own Pi process, so Mirror saw a session
+    start and end per turn and recorded each turn as its own conversation; the model's
+    transcript was continuous (`--continue`), which is what the measurement needs. In
+    A1's turn 3 the prompt and the reply landed in two conversations, seen once in
+    `-p` mode and not investigated.
+  - Found on the way: `AGENTS.md` signs an active persona `◇ persona-name`, and the
+    `mm-mirror` skill says `✦ Persona:` and "do not reuse `◇`"; the two runs used one
+    each.
 
 ## Outcome
 
