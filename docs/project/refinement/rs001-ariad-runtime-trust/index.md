@@ -53,3 +53,4 @@ cannot choose safely.
 - [CR117 — A Delivery Story's flow unit outlives it, and no story after it can be preauthorized](cr117-a-delivery-story-s-flow-unit-outlives-it.md)
 - [CR118 — A story's closure and a Delivery Story's report their record in two shapes](cr118-a-story-closure-and-a-delivery-story-closure-report-their-record-in-two-shapes.md)
 - [CR119 — The Delivery Story Done preflight reads a status line's last word](cr119-the-delivery-story-done-preflight-reads-a-status-line-s-last-word.md)
+- [CR168 — Pulling a Delivery Story with no package invents one placeholder story named after it](cr168-pulling-a-delivery-story-with-no-package-invents-one-placeholder-story.md)

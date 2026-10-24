@@ -105,3 +105,5 @@ evidence stays honest as both cores move.
 - [CR163 — The test suite leaves its temp homes behind, about 450 directories a run, and nothing notices](cr163-the-test-suite-leaves-its-temp-homes-behind.md)
 - [CR164 — `pathsWalk.test.ts` can see a leaked absolute path only under a short root, so `builderWorld` must stay in `/tmp`](cr164-paths-walk-sees-a-leaked-path-only-under-a-short-root.md)
 - [CR165 — Pi puts no Mirror context before the model, so Pi is L3 where the plugin runtimes are L4](cr165-pi-puts-no-mirror-context-before-the-model.md)
+- [CR166 — A plain-language journey switch strands its turn: the prompt alone in a journey-less conversation, the reply lost](cr166-a-plain-language-journey-switch-strands-its-turn.md)
+- [CR167 — The status line shows another session's journey beside Mirror Mode](cr167-the-status-line-shows-another-session-s-journey.md)

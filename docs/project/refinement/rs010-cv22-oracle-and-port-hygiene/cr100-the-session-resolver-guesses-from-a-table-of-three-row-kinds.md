@@ -98,6 +98,17 @@ stamp binds only if it was written under the name. Until then
   `$497` to nothing. `mm-mirror` already says not to call `mirror log` without a
   session-aware path. A stdin form of `mirror mirror log` would also keep a
   summary's text intact when an agent calls it anyway.
+- **A lead, not measured (CV21.DS11, 2026-10-24).** Claude Code 2.1.310 gives the
+  status line command `CLAUDE_CODE_SESSION_ID`, equal on every refresh to the
+  `session_id` its hooks register (all 9 refreshes recorded by DS11's route). If the
+  agent's shell, where `build load`, Explorer and Soul activation, and `mirror log`
+  run, gets the same variable, Claude Code sessions could name their session
+  instead of having it guessed. Whether the Bash tool receives it was not measured. In
+  the same route the guess bound correctly: with two sessions side by side, Builder
+  Mode landed on the one that ran `build load` (US2).
+- [CR166](cr166-a-plain-language-journey-switch-strands-its-turn.md) is the same
+  function on the right session: `switchConversation` mid-turn strands the activating
+  prompt and loses its reply.
 - `.pi/extensions/mirror-logger.ts`: `log-user` at `before_agent_start`, which
   is why the guess is usually the active window.
 - The heuristic was introduced on purpose on 2026-05-25:
