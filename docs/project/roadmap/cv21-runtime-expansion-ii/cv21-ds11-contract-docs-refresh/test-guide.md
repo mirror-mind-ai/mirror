@@ -136,3 +136,11 @@ in the route's config directory (`claude plugin list`: `mirror-mind@skills-dir`
   beside Mirror Mode, the other session's choice. Written in the step.
 
 The cell now carries the step as printed (`route.sh statusline printed`), for step 2.
+
+**Driver, 2026-10-24 — `route.sh untouched`**, 3 passed: the 13 real files and links
+as at setup; no `claude_code` or `antigravity` conversation in either real home since
+setup (11:24 UTC). The production home's count moved by 16 `pi` conversations,
+14:00–14:14 UTC, the Navigator's own sessions. The first `untouched` read the counts
+as empty: `sqlite3 -readonly` cannot open a WAL database with no `-shm` beside it, so
+the route now falls back to an immutable read-only open, and fails only on a changed
+file or on a conversation of the kind its own sessions write.

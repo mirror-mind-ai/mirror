@@ -81,7 +81,9 @@ show() { sed "s|$D|\$D|g; s|$REAL_HOME|~|g; s/^/      | /"; }
 result() { printf '\n  %d passed, %d failed\n' "$PASS" "$FAIL"; [ "$FAIL" = 0 ]; }
 need_setup() { [ -f "$D/.ds11" ] || { echo "Run: bash $SELF setup"; exit 2; }; }
 need_login() { need_setup; [ -d "$CFG" ] || { echo "Run: bash $SELF login (the Navigator's, once)"; exit 2; }; }
-dbq() { sqlite3 -readonly "$1" "$2" 2>/dev/null; }
+# Read-only, never a write: `-readonly` cannot open a WAL database whose -shm file is
+# gone (no connection open), so the immutable URI answers then.
+dbq() { sqlite3 -readonly "$1" "$2" 2>/dev/null || sqlite3 "file:$1?mode=ro&immutable=1" "$2" 2>/dev/null; }
 
 # The env every Claude Code cell runs with: the real HOME (the login is keyed to it),
 # the route's config directory, the scratch Mirror home, and no provider key, so a
@@ -438,11 +440,22 @@ untouched() {
   say "Untouched — the real configuration against the baseline"
   [ -f "$D_RAW.baseline" ] || { echo "No baseline at $D_RAW.baseline. Run setup first."; exit 2; }
   config_manifest >"$D_RAW.now"
-  if diff -u "$D_RAW.baseline" "$D_RAW.now" >"$D_RAW.diff"; then
-    ok "every entry as before setup, and every real home's conversation count unmoved ($(wc -l <"$D_RAW.now" | tr -d ' ') entries)"
+  # Files: any change fails. Conversation counts move with the person's own sessions,
+  # so they are reported, and the route's own kind of row is what fails.
+  if diff -u <(grep -v '^C ' "$D_RAW.baseline") <(grep -v '^C ' "$D_RAW.now") >"$D_RAW.diff"; then
+    ok "every real file and link as before setup ($(grep -vc '^C ' "$D_RAW.now") entries)"
   else
-    bad "the real configuration changed (see $D_RAW.diff):"; grep -E '^[-+][^-+]' "$D_RAW.diff" | show
+    bad "a real file changed (see $D_RAW.diff):"; grep -E '^[-+][^-+]' "$D_RAW.diff" | show
   fi
+  diff <(grep '^C ' "$D_RAW.baseline") <(grep '^C ' "$D_RAW.now") >/dev/null \
+    || { note "conversation counts moved (the person's own sessions count too):"; paste -d' ' <(grep '^C ' "$D_RAW.baseline") <(grep '^C ' "$D_RAW.now" | cut -d' ' -f4) | show; }
+  local since f n; since="$(date -u -r "$(stat -f %m "$D_RAW.baseline")" +%Y-%m-%dT%H:%M:%S)"
+  for f in "$REAL_HOME"/.mirror-minds/*/memory.db; do
+    [ -f "$f" ] || continue
+    n="$(dbq "$f" "SELECT COUNT(*) FROM conversations WHERE interface IN ('claude_code','antigravity') AND started_at >= '$since'")"
+    [ "$n" = 0 ] && ok "$(basename "$(dirname "$f")"): no claude_code or antigravity conversation since setup ($since UTC)" \
+      || bad "$(basename "$(dirname "$f")"): ${n:-?} claude_code or antigravity conversation(s) since setup"
+  done
   result
 }
 
