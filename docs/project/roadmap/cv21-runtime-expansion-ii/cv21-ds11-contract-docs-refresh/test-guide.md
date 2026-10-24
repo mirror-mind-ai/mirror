@@ -144,3 +144,9 @@ setup (11:24 UTC). The production home's count moved by 16 `pi` conversations,
 as empty: `sqlite3 -readonly` cannot open a WAL database with no `-shm` beside it, so
 the route now falls back to an immutable read-only open, and fails only on a changed
 file or on a conversation of the kind its own sessions write.
+
+**Navigator, 2026-10-24 — validated.** Steps 1–4 walked as the route gives them, and
+accepted. `route.sh clean` run: the scratch directory and the three worktrees gone
+(`git worktree list` names the main tree alone), the scratch login's keychain entry
+deleted (five `Claude Code-credentials` entries, as before setup). `route.sh untouched`
+after the cleanup, from the kept baseline: 3 passed.
