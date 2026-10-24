@@ -51,6 +51,7 @@ the bare `/mm-<skill>` and qualifies a skill only when two share a name; the
 | Pi | Codex | Claude Code | Purpose | Main Arguments |
 |---------|-------|-------------|---------|----------------|
 | `/mm-mirror` | `$mm-mirror` | `/mm:mirror` | Loads identity, persona, journey, and attachments for Mirror Mode | `load [--persona P] [--journey J] [--query Q] [--org]`, `log "summary"`, `journeys` |
+| `mirror mirror doorman` | — | — | Internal: the one doorman — what a runtime puts before the model on a turn ([The doorman](#the-doorman)) | `--prompt "<text>" [--session-id ID]` |
 | `/mm-build` | `$mm-build` | `/mm:build` | Builder Mode for a journey — loads context and project docs | `<slug>` |
 | `/mm-explore` | `$mm-explore` | `/mm:explore` | Explorer Mode for a journey, with explicit deactivation, in-session story surfaces, and Builder handoff artifacts — preserves uncertainty before construction | `<slug>`, `deactivate`, `story show|update|clear|open|thicken|snapshot|attractors|experiment|handoff|promote` |
 | `/mm-soul` | `$mm-soul` | `/mm:soul` | Soul Mode ritual entry and possible-listenings surface for inner-life listening | `[slug]` |
@@ -346,6 +347,54 @@ When no journey context is active it still shows the default mode:
 ```text
 ◇ alisson-vale · ◌ Mirror Mode · ✓
 ```
+
+## The doorman
+
+```bash
+mirror mirror doorman --prompt "<the turn's prompt>" [--session-id ID]
+```
+
+One decision in the core (`ts/src/mirror/doorman.ts`, CV9.DS8), called by every
+runtime that can carry context to the model before it answers: in-process by the
+hooks, and as this command by the Pi extension. Given the prompt and the session's
+state it prints nothing, the full folder, or a delta, by one policy:
+
+1. **The explicit Mirror form** opens the prompt (`/mm-mirror …`, `/mm:mirror …`, and
+   the plugin spellings): the full folder `mirror mirror load --query` builds, under
+   the delivered line; the session is marked active by its id.
+2. **Mirror Mode active, an ordinary turn:** the prompt is scored with
+   `detect-persona`; a persona that newly scores has its section delivered and
+   becomes the session's; the five memories ranked for the prompt and the
+   attachments above 0.4 follow. The identity layers are not repeated.
+3. **Mirror Mode not active:** nothing — no provider call, no write, no database
+   snapshot.
+
+Every turn Mirror Mode is active opens with one line the model reads, even when
+nothing follows it; it carries the persona and the signature rule across the
+conversation:
+
+```text
+=== mirror context delivered by the runtime for this turn: full — answer as the mirror; sign ◇ cfo ===
+=== mirror context delivered by the runtime for this turn: delta (persona: writer · journey: mirror) — answer as the mirror; sign ◇ writer ===
+```
+
+The session is the one named: `--session-id`, else `MIRROR_SESSION_ID`, else
+`CLAUDE_CODE_SESSION_ID`, else `CODEX_SESSION_ID` — the same reader `mirror mirror
+load` uses, so a load the model runs by itself marks the session the runtime's hooks
+write. The doorman never guesses a session.
+
+What a turn costs, and where it is counted:
+
+| Turn | Doorman | Model calls | `llm_calls` |
+|------|---------|-------------|-------------|
+| Mirror Mode off, ordinary | nothing | none | — |
+| explicit form | full folder | reception (when `MEMORY_RECEPTION` is on) and the attachment embedding, as `mirror load --query` | as `mirror load` writes them |
+| Mirror Mode on, ordinary | delta | one embedding, shared by the memory and attachment searches | one row, `role = embedding` |
+
+The delta's memory search writes no reinforcement (`memory_access_log`): the doorman
+searches on the system's behalf on every turn, and a turn's injection must not raise a
+memory's rank for the next. The five scores go to `front-door.log` as numbers
+(`doorman memory_scores=`), content-free, so the threshold can be set from measurement.
 
 ## Runtime Self-Update
 
@@ -861,6 +910,10 @@ reads them, and `runtime diagnose` names any still set.
 ### Set by External Runtimes (do not set manually)
 
 - `CLAUDE_PROJECT_DIR` — injected by Claude Code when it invokes hooks.
+- `CLAUDE_CODE_SESSION_ID` (Claude Code 2.1.310) and `CODEX_SESSION_ID` (Codex 0.164.0)
+  — undocumented, measured 2026-10-24 (CV9.DS8.TS1): the session id, in the model's
+  shell and in the hooks' own. `mirror mirror load` and `mirror mirror doorman` read them
+  when `MIRROR_SESSION_ID` is absent.
 - Claude Code hook payloads carry `session_id` on stdin.
 - Pi's extension passes the session file path to the logger CLI.
 
