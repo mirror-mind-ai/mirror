@@ -2,7 +2,7 @@
 
 # CV21.DS11.US2 — The status line is a step the user does on Claude Code
 
-**Status:** 🟢 Implemented — awaiting DS11's aggregate Navigator validation
+**Status:** ✅ Done
 **Type:** User Story
 **Delivery Story:** CV21.DS11 — Contract & Docs Refresh
 

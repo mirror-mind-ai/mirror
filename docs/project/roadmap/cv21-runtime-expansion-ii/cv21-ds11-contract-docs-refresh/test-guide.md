@@ -150,3 +150,8 @@ accepted. `route.sh clean` run: the scratch directory and the three worktrees go
 (`git worktree list` names the main tree alone), the scratch login's keychain entry
 deleted (five `Claude Code-credentials` entries, as before setup). `route.sh untouched`
 after the cleanup, from the kept baseline: 3 passed.
+
+**Navigator, 2026-10-24 — closure.** After Debt Review the Navigator directed one
+sentence beside the matrix, since CV21's Done condition names the retired runtime:
+Gemini CLI retired in v0.35.0 (CV21.DS8), Antigravity its successor, with the release
+note and the decision linked. Doc links clean; the guard 4 of 4.

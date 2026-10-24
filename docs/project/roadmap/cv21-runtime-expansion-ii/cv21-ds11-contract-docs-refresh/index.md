@@ -2,10 +2,12 @@
 
 # CV21.DS11 — Contract & Docs Refresh
 
-**Status:** 🟡 Planned
+**Status:** ✅ Done
 **Type:** Delivery Story
 **Renamed from:** CV21.E11, in the CV21 Ariad taxonomy migration (2026-10-13). The
 [code map](../index.md#code-map) resolves the old code.
+**Closed:** 2026-10-24 — validated by the Navigator through the four-step route in
+[test-guide.md](test-guide.md); debt deferred with triggers ([review.md](review.md)).
 **User-visible outcome:** A user who reads README, Getting Started, REFERENCE, the
 architecture, or the runtime interface contract finds the same five runtimes with the
 same honest parity, each row carrying the version, binary, and date it was measured
@@ -56,10 +58,10 @@ was measured:
 
 | Code | Story | Type | Outcome | Status |
 |------|-------|------|---------|--------|
-| CV21.DS11.TS1 | The parity matrix is written once, with version, binary, and date | Technical Story | The contract holds the one parity matrix: for each of the five runtimes its skills, instructions at start, per-turn injection, logging, MCP, and honest level, with the version, binary, and date the per-runtime story measured it on, Pi included. README, Getting Started, REFERENCE, and the architecture carry the matrix or point to it; the architecture's Runtime Model counts five harnesses and gains Grok's row. A decision record makes the matrix the single authority for parity, beside the DS12 snapshot. A guard test fails when a doc drops a runtime or the architecture's levels leave the matrix's | 🟡 Planned |
-| CV21.DS11.US2 | The status line is a step the user does on Claude Code | User Story | A Claude Code user who wants Mirror's status line wires `mirror welcome --status-line` in their own settings, in a step Getting Started prints. Measured on the installed Claude Code: the line shows, or the reason it cannot is written where the step would be. The contract's status line section names the step | 🟡 Planned |
-| CV21.DS11.TS3 | Claude Code reading a project `AGENTS.md` is written where a user reads it | Technical Story | The contract's Claude Code reference implementation and Getting Started say that Claude Code loads a project's `AGENTS.md` on its own (DS12.TS1 L8), what that means inside a checkout beside `CLAUDE.md`'s import and the hook's copy, and what it means in a user's project with its own `AGENTS.md`. Re-checked on the installed Claude Code | 🟡 Planned |
-| CV21.DS11.TS4 | `runtime diagnose` knows the canonical plugin's agy copy | Technical Story | Carried from DS5.US2. A canonical plugin copy agy staged behind an npm update is reported by `runtime diagnose` with its reinstall command, as the extensions plugin's copy already is; absence is not drift. The contract's wiring table and REFERENCE's diagnose findings name it | 🟡 Planned |
+| [CV21.DS11.TS1](cv21-ds11-ts1-the-parity-matrix-is-written-once-with-version-binary-and-date/index.md) | The parity matrix is written once, with version, binary, and date | Technical Story | The contract holds the one parity matrix: for each of the five runtimes its skills, instructions at start, per-turn injection, logging, MCP, and honest level, with the version, binary, and date the per-runtime story measured it on, Pi included. README, Getting Started, REFERENCE, and the architecture carry the matrix or point to it; the architecture's Runtime Model counts five harnesses and gains Grok's row. A decision record makes the matrix the single authority for parity, beside the DS12 snapshot. A guard test fails when a doc drops a runtime or the architecture's levels leave the matrix's | ✅ Done |
+| [CV21.DS11.US2](cv21-ds11-us2-the-status-line-is-a-step-the-user-does-on-claude-code/index.md) | The status line is a step the user does on Claude Code | User Story | A Claude Code user who wants Mirror's status line wires `mirror welcome --status-line` in their own settings, in a step Getting Started prints. Measured on the installed Claude Code: the line shows, or the reason it cannot is written where the step would be. The contract's status line section names the step | ✅ Done |
+| [CV21.DS11.TS3](cv21-ds11-ts3-claude-code-reading-a-project-agents-md-is-written-where-a-user-reads-it/index.md) | Claude Code reading a project `AGENTS.md` is written where a user reads it | Technical Story | The contract's Claude Code reference implementation and Getting Started say that Claude Code loads a project's `AGENTS.md` on its own (DS12.TS1 L8), what that means inside a checkout beside `CLAUDE.md`'s import and the hook's copy, and what it means in a user's project with its own `AGENTS.md`. Re-checked on the installed Claude Code | ✅ Done |
+| [CV21.DS11.TS4](cv21-ds11-ts4-runtime-diagnose-knows-the-canonical-plugin-s-agy-copy/index.md) | `runtime diagnose` knows the canonical plugin's agy copy | Technical Story | Carried from DS5.US2. A canonical plugin copy agy staged behind an npm update is reported by `runtime diagnose` with its reinstall command, as the extensions plugin's copy already is; absence is not drift. The contract's wiring table and REFERENCE's diagnose findings name it | ✅ Done |
 
 ## Non-goals
 

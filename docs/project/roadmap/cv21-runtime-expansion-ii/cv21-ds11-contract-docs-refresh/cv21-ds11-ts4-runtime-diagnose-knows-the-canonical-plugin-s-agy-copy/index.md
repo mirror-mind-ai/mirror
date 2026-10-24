@@ -2,7 +2,7 @@
 
 # CV21.DS11.TS4 — `runtime diagnose` knows the canonical plugin's agy copy
 
-**Status:** 🟢 Implemented — awaiting DS11's aggregate Navigator validation
+**Status:** ✅ Done
 **Type:** Technical Story
 **Delivery Story:** CV21.DS11 — Contract & Docs Refresh
 

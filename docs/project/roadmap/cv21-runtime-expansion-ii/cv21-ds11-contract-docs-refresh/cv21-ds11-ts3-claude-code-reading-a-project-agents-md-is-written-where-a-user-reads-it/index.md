@@ -2,7 +2,7 @@
 
 # CV21.DS11.TS3 — Claude Code reading a project `AGENTS.md` is written where a user reads it
 
-**Status:** 🟢 Implemented — awaiting DS11's aggregate Navigator validation
+**Status:** ✅ Done
 **Type:** Technical Story
 **Delivery Story:** CV21.DS11 — Contract & Docs Refresh
 

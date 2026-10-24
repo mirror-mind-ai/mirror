@@ -2,7 +2,7 @@
 
 # CV21.DS11.TS1 — The parity matrix is written once, with version, binary, and date
 
-**Status:** 🟢 Implemented — awaiting DS11's aggregate Navigator validation
+**Status:** ✅ Done
 **Type:** Technical Story
 **Delivery Story:** CV21.DS11 — Contract & Docs Refresh
 
@@ -33,6 +33,9 @@ no level is claimed that no record holds.
   Nothing about Pi changed. The way back is captured as CR165.
 - The contract's "Mirror Mode injection models" table: Codex moves from explicit
   invocation to the hook, as DS4.US4 measured.
+- Beside the matrix, at DS11's closure and the Navigator's direction: Gemini CLI retired
+  in v0.35.0 (CV21.DS8), Antigravity its successor, so the matrix itself meets CV21's
+  Done condition on the retired runtime.
 - The architecture: five harnesses in §1 and §6, Grok Build's row, Claude Code's
   installed path named as the plugin, Pi at L3, the levels pointed to the matrix.
 - README's "How It Works" and REFERENCE's Commands introduction link the matrix;

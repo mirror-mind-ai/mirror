@@ -12,6 +12,28 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-10-24 — CV21.DS11: one parity matrix, the two Claude Code facts measured, agy's stale copy named; DS11 done
+
+The runtime interface contract holds the one parity matrix: five runtimes, each row
+sourced to the record that measured it with version, binary, and date, and a guard in
+`npm test` holding README, Getting Started, REFERENCE, and the architecture to it. A
+decision makes the matrix the single authority. Writing it made the L3/L4 line
+explicit: at L4 the runtime hands Mirror's context to the model through a hook, at L3
+the model loads it through `/mm-mirror`. By that line Pi, claimed L4 with no record
+behind it, is L3, the Navigator's decision, and CR165 is the way back. Gemini CLI is
+named retired beside the matrix. Measured on Claude Code 2.1.310 through a scratch
+route: the status line is a step a user adds,
+`mirror welcome --status-line --session-id $CLAUDE_CODE_SESSION_ID`, and each session
+shows its own mode; a project's `AGENTS.md` is read by itself only without a
+`CLAUDE.md`, and this checkout's import is the only carrier of the Operating
+Instructions. `runtime diagnose` and `runtime update` name an agy copy of the plugin an
+update left behind, DS5.US2's deferred debt. Reviewed through five lenses before
+approval and validated by the Navigator; three debts deferred with triggers. Found on
+the way and captured: CR166 (a plain-language journey switch strands its turn), CR167
+(the status line shows another session's journey), CR168 (Pull invents a placeholder
+story for a package-less Delivery Story). DS11 was CV21's last Delivery Story; CV21's
+closure and its release boundary are next. Not yet released.
+
 ### 2026-10-24 — CR163: the suite leaves nothing behind, and CI notices if it does
 
 A full `npm test` run left 448 temp directories and a file behind, under `/tmp` and the
