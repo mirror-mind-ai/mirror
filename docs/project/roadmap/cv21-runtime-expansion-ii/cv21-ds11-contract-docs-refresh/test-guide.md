@@ -91,4 +91,17 @@ recorded.
 
 ## Validation Evidence
 
-Pending implementation and validation.
+**Driver, 2026-10-24 — setup and step 4 (TS4).** `route.sh setup`: the baseline (15
+entries of the real configuration, the two real homes' conversation counts), Claude
+Code 2.1.310 (`~/.local/share/claude/versions/2.1.310`), agy 1.4.7 (`~/.local/bin/agy`),
+Mirror 0.36.3 from this tree; the scratch home `ds11user` initialized and seeded with
+the `personal-growth` journey; a worktree at v0.36.2. `route.sh agy`, 4 passed: agy
+staged the v0.36.2 plugin at `.gemini/config/plugins/mirror-mind/.claude-plugin/plugin.json`
+(0.36.2); `mirror runtime diagnose` reported `agy_plugin_copy_behind`, copied 0.36.2 <
+installed 0.36.3, with `agy plugin install "<tree>/plugins/mirror-mind"`; that command
+replaced the copy (0.36.3), and diagnose reported nothing for agy. v0.36.2 is staged
+again for the Navigator's reading. Automated: TS4's tests failed first (the missing
+export; the hint `0 !== 1`), then `npm test` 3,458 passed, 0 failed, before TS1's guard
+was added.
+
+Steps 2 and 3 wait on `route.sh login` (the Navigator's).
