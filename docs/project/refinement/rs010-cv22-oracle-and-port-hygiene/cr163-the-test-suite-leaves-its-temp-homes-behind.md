@@ -191,6 +191,24 @@ and 5 are required by the check, which is otherwise blind to a home under a lite
 stay excluded. Known risk, not an amendment: a child a test spawns writing after its
 parent exits would trip the check; that is an orphan to fix, not a retry.
 
+**Reviewed 2026-10-24,** after the Navigator's validation; the debt accepted as
+recommended. Made on purpose: `builderWorld`'s literal `/tmp` root and its own registry,
+the guard's one exception and out of the run-level check's sight, *captured* as
+[CR164](cr164-paths-walk-sees-a-leaked-path-only-under-a-short-root.md); the helper's
+`tmp/` home, there for CR030's copy-only guard and pinned by a test against the real
+guard, *no action*; `mirrorLoggerExtension`'s wait, which reads the extension's log line
+for the processes to wait for and would fail loudly through the run-level check if that
+line changed, *no action*; npm's compile cache turned off for the script's run, *no
+action*; two clean-up idioms, 65 files on `tempDir` and 142 that make their homes under
+`os.tmpdir()` and remove them themselves, all proven by the check, *no action*, a file
+joining `tempDir` when it is next touched for its own reasons; the guard's documented
+blind spots, a `/tmp` held in a variable and a trailing comment, none in the tree, *no
+action*. Found, not made: `pathsWalk`'s short root, captured as CR164; the front door's
+detached processes outliving their parent, by design. Nothing disproportionate: about
+500 new lines of helper, guard, script, and their tests, against 448 directories a run
+that nothing noticed; the moves themselves 66 files, +237/−252, two registries and three
+copies of the copy-guard idiom gone.
+
 ## Evidence
 
 - **One full run on `main` at `f5636940`**, 2026-10-24: 3,448 tests, none failing, 53
@@ -304,4 +322,17 @@ parent exits would trip the check; that is an orphan to fix, not a retry.
 
 ## Outcome
 
-Open.
+**Done 2026-10-24.** A full `npm test` run leaves nothing behind, and CI notices if one
+does. One helper, `tempDir`, makes every temp home the suite needs under `os.tmpdir()`,
+hands back a `tmp/` directory the copy-only guard accepts, and removes it when the test
+file's process exits; the 40 sources and 21 of the 22 files that already cleaned up use
+it. A repository guard keeps a literal `/tmp` out of `ts/test`, with one exception,
+`builderWorld` (CR164). CI's first suite run goes through
+`scripts/test_leaves_nothing.sh`: red on the unchanged tree, 78 entries left and 372
+directories in `/tmp`, green after on ubuntu and macOS. Validated by the Navigator
+through the same script. On `main`: `684b25d2` (selected), `f75c12c9` (approved,
+started), `47ca4c59` (the red), `9934c5af` and `41dd4d3b` (the helper), `daea82e2`,
+`7fd97af0`, `4b5cb725`, and `4f849d23` (the 40 sources), `95d72723` (the files that
+cleaned up), `2a7f5c5b` (the guard), `5e094c24` (the run-level check in CI), `1efac01d`
+(the docs), `2f2535b5` (validated), and this closure. No release: tests, CI, and docs
+only.
