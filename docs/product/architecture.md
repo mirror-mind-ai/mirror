@@ -14,7 +14,7 @@ before touching code. The command line is the integration surface; see
 Mirror Mind is a local-first memory and identity framework for agentic AI
 runtimes. One TypeScript core (`ts/`), run directly by Node.js 24 or newer,
 handles all persistence, extraction, search, and identity management. Multiple
-harness interfaces — Pi, Claude Code, Codex, and Antigravity — connect to that
+harness interfaces — Pi, Claude Code, Codex, Antigravity, and Grok Build — connect to that
 core through thin adapters that all enter it the same way: a process running
 the front door, `ts/src/frontDoor/cli.ts`. The database is SQLite, stored in
 the user's home directory. Nothing runs on a server; all data stays on the
@@ -257,19 +257,27 @@ results.
 
 ## 6. Runtime Model
 
-Four harnesses connect to Mirror Core through different adapter patterns.
+Five harnesses connect to Mirror Core through different adapter patterns.
 Every adapter ends in a Node process running the core; none of them runs an
-interpreter of its own.
+interpreter of its own. The parity column repeats the levels of the
+[parity matrix](specs/runtime-interface/index.md#parity-matrix), the single
+authority, where each level carries the version, binary, and date it was measured
+on.
 
 | Harness | Parity | Adapter pattern | Session ID source |
 |---|---|---|---|
-| Pi | L4 | TypeScript extension (`.pi/extensions/mirror-logger.ts`) that spawns the front door | Session file path |
-| Claude Code | L4 | Shell wrappers in `.claude/hooks/` that exec `ts/src/hooks/main.ts` | Hook stdin payload |
+| Pi | L3 | TypeScript extension (`.pi/extensions/mirror-logger.ts`) that spawns the front door | Session file path |
+| Claude Code | L4 | The shipped plugin, linked under `~/.claude/skills/`, whose hooks run the installed `mirror-hook`; in a checkout, the shell wrappers in `.claude/hooks/`, which run the tree's own | Hook stdin payload |
 | Codex | L4 | The shipped plugin (installed through the package's marketplace), whose Claude-family hooks Codex runs as they are (CV21.DS4.US4) | Hook stdin payload |
 | Antigravity | L4 | The same plugin with its agy-native layer (`plugins/mirror-mind/agy/`, `hooks.json`, `rules/AGENTS.md`), staged by `agy plugin install` (CV21.DS7.US4) | Hook stdin payload (`conversationId`) |
+| Grok Build | L3 | The same plugin, copied by `grok plugin install --trust`, whose Claude-family hooks Grok runs as they are; the Operating Instructions as a home-level rule (CV21.DS10.US1, US3) | Hook stdin payload (`sessionId`) |
 
-**L4 (full parity):** session start, per-turn user logging, per-turn assistant
-logging, mirror mode context injection, session end with extraction.
+The levels are defined beside the matrix. In short: **L4** is logging, the command
+surface, Mirror Mode, Builder Mode, external skills, and an isolated smoke, with
+Mirror's context put before the model by the runtime itself, through a hook; **L3**
+has everything but that hook, so the model loads the context through `/mm-mirror`.
+Pi is L3 by that line, and a Pi that injects the context itself is
+[CR165](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr165-pi-puts-no-mirror-context-before-the-model.md).
 
 Skills (`SKILL.md` files) are the primary way users invoke Mirror Mind
 capabilities. Pi and a Codex checkout share the same skill files via symlinks:

@@ -378,6 +378,22 @@ the rule you linked in step 2. None of this needs a step beyond the wiring above
 Extensions you install later reach each runtime through a plugin of their own; see
 [Your extensions reach each runtime](#your-extensions-reach-each-runtime).
 
+What each runtime gives you, as measured:
+
+| Runtime | What you get | Measured on |
+|---------|--------------|-------------|
+| Pi | the skills from the menu, the Operating Instructions in every session, Mirror Mode when you ask for it (`/mm-mirror`): the model loads Mirror's context itself, your turns and replies remembered | Pi 1.4.0, 2026-10-22 |
+| Claude Code | the skills, the Operating Instructions in every session, Mirror's context handed to the model by the plugin when you enter Mirror Mode, your turns and replies remembered, Mirror's tools for the model | Claude Code 2.1.296, 2026-10-13 |
+| Codex | the same as Claude Code; a session is remembered once Codex closes it, about 30 minutes after you quit | Codex 0.163.0, 2026-10-17 |
+| Antigravity | the skills, the Operating Instructions as the plugin's rules, Mirror's context handed to the model on every turn from the start of a session, your turns and replies remembered, Mirror's tools | agy 1.4.2, 2026-10-18 |
+| Grok Build | the skills, the Operating Instructions from the rule you linked, Mirror Mode when you ask for it (`/mm-mirror`): the model loads Mirror's context itself, with no automatic context per turn, your turns and replies remembered, Mirror's tools | Grok Build 1.0.62, 2026-10-18 |
+
+Each runtime was measured on the version named; a newer version has not been
+re-measured, and `mirror runtime diagnose` reports wiring that has fallen behind or
+broken. The full [parity matrix](product/specs/runtime-interface/index.md#parity-matrix),
+with levels, binaries, and the record behind each row, is in the runtime interface
+contract.
+
 **If a runtime is launched from your desktop rather than a terminal**, it may not
 inherit the `PATH` that holds `node` and `mirror`, and its hooks will skip
 logging rather than fail your turn. Each skip writes one line to

@@ -4748,3 +4748,61 @@ not carried: `carriedForward` carries the cadence, which belongs to the journey,
 nothing else. A field that belongs to an item names the item it belongs to, and Pull
 keeps it only for that item. `flowUnitCarry.test.ts` grades Pull at every case and
 walks both preauthorized Plan routes on the story after a Delivery Story.
+
+### The contract's parity matrix is the single authority for runtime parity
+
+**Date:** 2026-10-24 · **Context:** [CV21.DS11.TS1](roadmap/cv21-runtime-expansion-ii/cv21-ds11-contract-docs-refresh/cv21-ds11-ts1-the-parity-matrix-is-written-once-with-version-binary-and-date/index.md).
+CV21's per-runtime Delivery Stories each measured their own runtime and left the
+cross-runtime view to DS11. By then parity was claimed in five places that disagreed:
+the [2026-10-13 decision](#cv21-converges-on-the-canonical-plugin-with-a-native-layer-for-antigravity-and-shared-hooks-that-know-their-runtime)
+held the only matrix, a snapshot with Codex and Antigravity at "L4 reachable"; the
+architecture counted four harnesses and had no Grok Build row; README and Getting
+Started named five runtimes in prose; the contract had a reference implementation per
+runtime and no matrix. Nothing failed while they drifted.
+
+**The decision.** The runtime interface contract's
+[Parity Matrix](../product/specs/runtime-interface/index.md#parity-matrix) is the single
+authority for what each runtime gets from Mirror and at what level.
+
+- Each row is a measurement: it carries the version, binary, and date it was taken on,
+  and the record that holds it. A fact the record does not hold is written as not
+  recorded, never filled from today's install.
+- A cell changes only with a new measurement. A newer version of a runtime is not
+  re-measured until a story does it, and Getting Started says so beside its table.
+- A matrix in a decision record, the one below included, is a dated snapshot.
+- README, Getting Started, and REFERENCE link the matrix instead of keeping levels of
+  their own; the architecture repeats the levels.
+  `ts/test/scripts/runtimeParityDocs.test.ts` fails when one of the five docs stops
+  naming a runtime, when a matrix row loses its provenance, or when the architecture's
+  levels leave the matrix's.
+
+**CV21's parity as measured**, beside the 2026-10-13 bet:
+
+| Runtime | 2026-10-13 (DS12) | Measured | Record |
+|---------|-------------------|----------|--------|
+| Claude Code | L4 on 2.1.296 | L4 on 2.1.296, 2026-10-13 | DS12.TS1, DS2 |
+| Codex | L4 reachable on 0.162.1 | L4 on 0.163.0, 2026-10-17 | DS4.US4 |
+| Antigravity | L4 reachable on agy 1.3.4 | L4 on agy 1.4.2, 2026-10-18 | DS7.US4 |
+| Grok Build | L3 on 1.0.52 | L3 on 1.0.62, 2026-10-18 | DS10.US3 |
+
+CV21 did not measure Pi; its row is sourced cell by cell, from CR159 and CR160 on Pi
+1.4.0 and from CV22.DS10.US3.
+
+**The line between L3 and L4**, which CV8's definitions left implicit and CV21
+measured: at L4 the runtime itself puts Mirror's context before the model, through a
+hook (Claude Code and Codex on a Mirror turn and once after Mirror Mode turns on,
+Antigravity once per user turn); at L3 the model loads it through `/mm-mirror`. The
+architecture claimed Pi at L4 with no record behind the claim. Pi's extension injects
+nothing, which is Grok Build's model, so Pi is L3 by the same line, decided by the
+Navigator on 2026-10-24. Nothing about Pi changed: the docs had said more than Pi does.
+A Pi that injects the context itself, as its `before_agent_start` event allows, is
+captured as
+[CR165](refinement/rs010-cv22-oracle-and-port-hygiene/cr165-pi-puts-no-mirror-context-before-the-model.md),
+outside DS11.
+
+**What was rejected.** Re-measuring every runtime on today's binaries to write the
+matrix: a re-baseline is a story of its own, as DS12 was, and a matrix filled from
+today's install would claim measurements nobody took. A matrix in each doc: that is
+how the five places drifted. CV8's L4 as written, which names no injection: it would
+have made Grok Build L4 and reversed DS10's measured decision, and the level would no
+longer tell a person whether Mirror's context arrives without the model asking for it.

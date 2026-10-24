@@ -60,8 +60,8 @@ This is not a chatbot with memory. This is a mirror — and yours.
 
 ## How It Works
 
-Local-first. SQLite. Five supported runtimes: Pi, Claude Code, Codex,
-Antigravity, Grok Build. One TypeScript core, run by Node.js. Jungian architecture: Self, Ego,
+Local-first. SQLite. [Five supported runtimes](docs/product/specs/runtime-interface/index.md#parity-matrix):
+Pi, Claude Code, Codex, Antigravity, Grok Build. One TypeScript core, run by Node.js. Jungian architecture: Self, Ego,
 Personas, Shadow.
 Context-activated modes — Mirror, Builder, Explorer, and Soul. The identity lives
 in your machine, not a server.

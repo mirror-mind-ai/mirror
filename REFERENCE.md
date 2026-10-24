@@ -37,6 +37,8 @@ about what anyone is told to type.
 
 ## Commands
 
+What each runtime gets from Mirror, and how well, with the version and date it was
+measured on, is the [parity matrix](docs/product/specs/runtime-interface/index.md#parity-matrix).
 Claude Code uses the `/mm:` prefix, Grok Build and Pi the `/mm-` prefix, and
 Codex the `$mm-` prefix. In Pi, typing `/mm-` opens its command menu, which lists
 each skill as `skill:mm-<skill>`: pick it there. All runtimes call the same core. A **plugin**

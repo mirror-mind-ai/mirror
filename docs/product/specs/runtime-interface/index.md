@@ -33,6 +33,49 @@ arguments, and their effects are the same, answered by the TypeScript core.
 
 ---
 
+## Parity Matrix
+
+What each runtime gets from Mirror, and how well. This table is the single
+authority for runtime parity
+([decision](../../../project/decisions.md#the-contracts-parity-matrix-is-the-single-authority-for-runtime-parity)):
+every row is a measurement, taken on the version and binary it names, on the date it
+names, and held in the record it links. A newer version of a runtime is not
+re-measured until a story does it, and a cell changes only with a new measurement.
+README, Getting Started, and REFERENCE link here rather than keep levels of their
+own; the [architecture](../../architecture.md#6-runtime-model) repeats the levels,
+and `ts/test/scripts/runtimeParityDocs.test.ts` holds the five docs to this table.
+
+| Runtime | Level | Skills | Instructions at start | Mirror context before the model answers | Logging | MCP | Version | Binary | Measured | Record |
+|---------|-------|--------|-----------------------|-----------------------------------------|---------|-----|---------|--------|----------|--------|
+| Pi | **L3** | `/skill:mm-<skill>`, picked from the menu as `/mm-` is typed | the extension adds `AGENTS.md` to Pi's context files (D13; [CV22.DS10.US3](../../../project/roadmap/cv22-typescript-core-port/cv22-ds10-python-retirement-npm-distribution/cv22-ds10-us3-npm-distribution/index.md), 2026-10-06, version not recorded) | none: the extension injects nothing, and the model loads the context through `/mm-mirror` | `pi`: the prompt as typed and its one reply; a skill turn is not recorded | not wired: the extension calls the front door | 1.4.0 | `~/.local/bin/pi` (the managed install's 1.4.0 release) | 2026-10-22 | [CR159](../../../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr159-pi-skills-are-spelled-by-their-bare-name-and-step-7a-lost-two-dashes.md), [CR160](../../../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr160-a-pi-skill-invoked-as-skill-is-logged-as-its-body.md) |
+| Claude Code | **L4** | 25, the plugin | the plugin's `SessionStart` hook | the inject hook: on a Mirror turn, and once on the first turn after Mirror Mode turns on | `claude_code`, replies from `Stop` | 7 tools | 2.1.296 | `~/.local/bin/claude` → `~/.local/share/claude/versions/2.1.296` | 2026-10-13 | [DS12.TS1](../../../project/roadmap/cv21-runtime-expansion-ii/cv21-ds12-runtime-re-baseline/cv21-ds12-ts1-claude-code-re-probe/index.md), [DS2](../../../project/roadmap/cv21-runtime-expansion-ii/cv21-ds2-mirror-plugin-mcp-foundation/index.md) |
+| Codex | **L4** | 25, the plugin from Mirror's marketplace | the plugin's `SessionStart` hook, as a developer message | the inject hook, as on Claude Code | `codex`, replies included; the session closes when Codex reaps its thread, 30 min after `/quit` | the tools, reached through `tool_search` | 0.163.0 | `/opt/homebrew/bin/codex` → `/opt/homebrew/Caskroom/codex/0.163.0/bin/codex` | 2026-10-17 | [DS4.US4](../../../project/roadmap/cv21-runtime-expansion-ii/cv21-ds4-codex-through-the-canonical-plugin/cv21-ds4-us4-codex-at-l4-through-the-shipped-plugin-measured-live/index.md) |
+| Antigravity | **L4** | 25, `agy plugin install` | the plugin's `rules/AGENTS.md`; Mirror Mode turned on at `SessionStart` | `PreInvocation`, once per user turn while Mirror Mode is on | `antigravity`, from the transcript | 7 tools | agy 1.4.2 | `~/.local/bin/agy` | 2026-10-18 | [DS7.US4](../../../project/roadmap/cv21-runtime-expansion-ii/cv21-ds7-antigravity-through-skills-and-a-native-layer/cv21-ds7-us4-antigravity-at-the-bar-measured-live/index.md) |
+| Grok Build | **L3** | 25, the plugin | the home-level rule `~/.grok/rules/mirror-mind.md` | none: Grok discards hook context, and the model loads it through `/mm-mirror` | `grok_build`, replies included | 7 tools, through `search_tool` and `use_tool` | 1.0.62 (1474f9cbdd91) | `~/.grok/bin/grok` → `~/.grok/downloads/grok-1.0.62-macos-aarch64` | 2026-10-18 | [DS10.US3](../../../project/roadmap/cv21-runtime-expansion-ii/cv21-ds10-grok-build-through-the-canonical-plugin/cv21-ds10-us3-grok-at-honest-l3-through-the-shipped-plugin-measured-live/index.md), [DS10.TS2](../../../project/roadmap/cv21-runtime-expansion-ii/cv21-ds10-grok-build-through-the-canonical-plugin/cv21-ds10-ts2-the-mcp-server-attaches-on-grok-or-the-reason-is-recorded/index.md) |
+
+The levels are [CV8's](../../../project/roadmap/cv8-runtime-expansion/index.md#runtime-parity-levels),
+which CV21 reuses:
+
+- **L0, CLI-assisted:** the runtime can call `mirror …`, with no automatic logging or
+  context.
+- **L1, logged:** user and assistant turns are recorded, sessions close cleanly, and
+  backups run.
+- **L2, command surface:** Mirror's commands are reachable through the runtime's own
+  command mechanism.
+- **L3, Mirror Mode:** Mirror Mode works, with session-scoped state: identity and
+  context reach the model, if only through the `/mm-mirror` skill the model runs.
+- **L4, full parity:** logging, the command surface, Mirror Mode, Builder Mode, external
+  skills, and an isolated smoke that proves them — and Mirror's context put before the
+  model by the runtime itself, a hook that injects it, rather than loaded by the model
+  through `/mm-mirror`. CV21 measured that line: Codex and Antigravity reached L4 by it,
+  and Grok Build stayed at L3 for want of it
+  ([decision](../../../project/decisions.md#grok-build-is-at-l3-through-the-canonical-plugin)).
+  Pi, claimed L4 until DS11, has Grok's model and is L3 by the same line; a Pi that
+  injects Mirror's context itself is captured as
+  [CR165](../../../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr165-pi-puts-no-mirror-context-before-the-model.md).
+
+---
+
 ## Lifecycle Events
 
 Every runtime must handle four events. The table below lists the event, the
@@ -958,8 +1001,8 @@ at session end. If yes, `session-end` gives better extraction timing. If no,
 | Model | Mechanism | Runtimes | UX |
 |---|---|---|---|
 | Automatic per-turn | `PreInvocation` injection on `invocationNum == 0` | Antigravity | Best UX — no user action; latency cost on every turn |
-| Hook-conditional | `UserPromptSubmit` inject when mirror state active | Claude Code | Zero cost when inactive; requires mirror state check |
-| Explicit invocation | User types `/mm-mirror` or `$mm-mirror` | Pi, Codex | Zero runtime cost; requires user awareness |
+| Hook-conditional | `UserPromptSubmit` inject when mirror state active | Claude Code, Codex (the plugin's hook, whose context Codex reads: CV21.DS4.US4) | Zero cost when inactive; requires mirror state check |
+| Explicit invocation | User types `/mm-mirror` | Pi | Zero runtime cost; requires user awareness |
 | Explicit invocation, the hook inert | The `UserPromptSubmit` inject hook is registered but returns at once: Grok discards prompt context (`runtimeReadsPromptContext`, CR143) | Grok Build | As Pi's; the Operating Instructions arrive as a home-level rule, not per turn |
 
 For new shell-hook runtimes with a `BeforeAgent`-equivalent hook: use the
