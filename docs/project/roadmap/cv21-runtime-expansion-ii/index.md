@@ -2,7 +2,7 @@
 
 # CV21 — Runtime Expansion II: Plugin & MCP Convergence
 
-**Status:** 🟢 In Progress
+**Status:** ✅ Done — 2026-10-24. All twelve Delivery Stories are done. Their work shipped in v0.33.0 through v0.36.3, except DS11's, which waits for CV21's own release.
 **Goal:** Bring Mirror Mind's runtime adapters into the plugin/hook/MCP era. Package Mirror once as a canonical plugin (Claude-compatible) plus an MCP server, prove it on Claude, then propagate it to Codex (upgrade L3→L4), Antigravity (migrate off the deprecated Gemini CLI), and Grok Build (new) — including the external extension surface, without duplicating business logic.
 
 > **Restart notice (2026-10-13):** CV21 stopped after DS2.US2 on 2026-06-23, the last
@@ -332,6 +332,32 @@ CV21 is done when:
 - the runtime interface contract, decisions log, and parity matrix across README,
   Getting Started, REFERENCE, and architecture clearly distinguish Claude Code, Pi,
   Codex, Antigravity, Grok Build, and the retired Gemini CLI.
+
+**Met on 2026-10-24.** Each condition, and where it was measured:
+
+- The canonical plugin and MCP server, installed by Claude Code as a plugin:
+  [DS2](cv21-ds2-mirror-plugin-mcp-foundation/index.md), validated live on Claude Code
+  2.1.296 on 2026-10-13; released in v0.33.0.
+- Codex at L4 through the plugin's hooks, logging as `codex`, with its skills:
+  [DS4](cv21-ds4-codex-through-the-canonical-plugin/index.md), measured on 0.163.0 on
+  2026-10-17; released in v0.34.0.
+- Antigravity at L4, logging as `antigravity`, through an isolated route:
+  [DS7](cv21-ds7-antigravity-through-skills-and-a-native-layer/cv21-ds7-us4-antigravity-at-the-bar-measured-live/index.md),
+  agy 1.4.2, 2026-10-18; released in v0.35.0.
+- Grok Build at its honest L3, logging as `grok_build`, through an isolated route:
+  [DS10](cv21-ds10-grok-build-through-the-canonical-plugin/index.md), 1.0.62,
+  2026-10-18; released in v0.36.0.
+- `review-copy` on Codex, Antigravity, and Grok Build, and every runtime's user
+  extensions through the per-home plugin:
+  [DS5](cv21-ds5-user-extensions-on-every-runtime/index.md), measured live on all four
+  plugin runtimes on 2026-10-20; released in v0.36.0 through v0.36.3.
+- Gemini CLI removed behind a documented cutoff and retired across the runtime-facing
+  docs: [DS8](cv21-ds8-gemini-cli-sunset/index.md), released in v0.35.0.
+- The contract, the decisions log, and the parity matrix, with README, Getting
+  Started, REFERENCE, and the architecture held to it:
+  [DS11](cv21-ds11-contract-docs-refresh/index.md), done 2026-10-24, not yet released.
+  The matrix gives Claude Code, Codex, and Antigravity L4, and Grok Build and Pi L3,
+  and names Gemini CLI retired.
 
 ---
 

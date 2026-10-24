@@ -52,7 +52,8 @@ story status, commit, push, or release.
 
 ## Next Ariad Movement
 
-CV21.DS12 Runtime Re-Baseline closed on 2026-10-13. CV21's next pull is
-[CV21.DS2](cv21-runtime-expansion-ii/cv21-ds2-mirror-plugin-mcp-foundation/index.md),
-the canonical plugin made ready for every runtime that takes it. See the
-[CV21 index](cv21-runtime-expansion-ii/index.md) for the reshaped sequence.
+CV21 closed on 2026-10-24 with
+[CV21.DS11](cv21-runtime-expansion-ii/cv21-ds11-contract-docs-refresh/index.md), and no
+CV21 candidate remains. The next pull is the Navigator's choice among the project-wide
+candidates `mirror build pull-candidates` lists. See the
+[CV21 index](cv21-runtime-expansion-ii/index.md) for how its Done condition was met.

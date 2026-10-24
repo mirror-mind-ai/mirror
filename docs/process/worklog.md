@@ -12,6 +12,17 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-10-24 — CV21 done: Runtime Expansion II
+
+CV21 closed with DS11, its last Delivery Story. Mirror Mind is one canonical plugin with
+an MCP server, and five runtimes run it at the parity the contract's matrix records:
+Claude Code, Codex, and Antigravity at L4; Grok Build and Pi at L3. Gemini CLI is
+retired, Antigravity its successor. A home's own extensions reach every runtime through
+a per-home plugin. CV21 resumed under Ariad on 2026-10-13 after its June spikes, was
+re-baselined by DS12 the same day, and shipped in v0.33.0 through v0.36.3; DS11 waits
+for CV21's own release. Each Done condition and the record that met it are in the
+[CV21 index](../project/roadmap/cv21-runtime-expansion-ii/index.md#done-condition).
+
 ### 2026-10-24 — CV21.DS11: one parity matrix, the two Claude Code facts measured, agy's stale copy named; DS11 done
 
 The runtime interface contract holds the one parity matrix: five runtimes, each row
