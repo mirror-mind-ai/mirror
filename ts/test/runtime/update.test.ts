@@ -767,3 +767,47 @@ test("a Grok copy behind the landed version earns the reinstall line with the in
     [],
   );
 });
+
+// CV21.DS11.TS4: agy stages a copy too, under ~/.gemini/config/plugins/mirror-mind/
+// (agy 1.4.7), and an update leaves it as it was. The hint names the install line
+// with the path `init` printed.
+
+function homeWithAgyCopy(version: string): string {
+  const home = mkdtempSync(join(tmpdir(), "update-hint-agy-"));
+  hintRoots.push(home);
+  const staged = join(home, ".gemini", "config", "plugins", "mirror-mind", ".claude-plugin");
+  mkdirSync(staged, { recursive: true });
+  writeFileSync(join(staged, "plugin.json"), JSON.stringify({ name: "mirror-mind", version }));
+  return home;
+}
+
+test("an agy copy behind the landed version earns the install line with the install's own path", () => {
+  const root = installTreeAt("0.34.0");
+  const install: InstallKind = { kind: "package", root, name: "mirror-mind", version: "0.33.4" };
+  const ok = runUpdate(deps());
+  // CODEX_HOME and GROK_HOME empty, so HOME's .codex and .grok are not read.
+  const quiet = {
+    PATH: "/usr/local/bin",
+    CODEX_HOME: installTreeAt("x"),
+    GROK_HOME: installTreeAt("x"),
+  };
+  const hints = postUpdateHints(install, ok, { ...quiet, HOME: homeWithAgyCopy("0.33.4") });
+  assert.equal(hints.length, 1, JSON.stringify(hints));
+  assert.match(hints[0] ?? "", /Antigravity's copy .*\(0\.33\.4 < 0\.34\.0\)/);
+  assert.ok(
+    (hints[0] ?? "").includes(`agy plugin install "${root}/plugins/mirror-mind"`),
+    hints[0],
+  );
+  // Current, ahead, and absent: silence.
+  assert.deepEqual(postUpdateHints(install, ok, { ...quiet, HOME: homeWithAgyCopy("0.34.0") }), []);
+  assert.deepEqual(postUpdateHints(install, ok, { ...quiet, HOME: homeWithAgyCopy("0.35.0") }), []);
+  assert.deepEqual(postUpdateHints(install, ok, { ...quiet, HOME: installTreeAt("x") }), []);
+  // A failed update's last words are its recovery block.
+  const failed = runUpdate(
+    deps({ gate: () => ({ ready: false, allowed: false, detail: "git tree is dirty" }) }),
+  );
+  assert.deepEqual(
+    postUpdateHints(install, failed, { ...quiet, HOME: homeWithAgyCopy("0.33.4") }),
+    [],
+  );
+});

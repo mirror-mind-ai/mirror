@@ -30,6 +30,7 @@ import { join } from "node:path";
 import { verifyBackupArchive } from "#runtime/backup.ts";
 import type { InstallKind } from "#runtime/installKind.ts";
 import {
+  agyPluginCopyState,
   codexPluginCacheState,
   grokPluginCopyState,
   installedPluginVersion,
@@ -43,7 +44,11 @@ import {
   type UpdateResult,
   type UpdateStage,
 } from "#runtime/updatePipeline.ts";
-import { CODEX_PLUGIN_ADD_COMMAND, grokPluginReinstallCommand } from "#runtime/wiring.ts";
+import {
+  agyPluginInstallCommand,
+  CODEX_PLUGIN_ADD_COMMAND,
+  grokPluginReinstallCommand,
+} from "#runtime/wiring.ts";
 import { commandOnPath } from "#util/paths.ts";
 import { PROGRAM } from "#util/program.ts";
 import { shellWord } from "#util/shellWord.ts";
@@ -453,6 +458,17 @@ export function postUpdateHints(
     if (copy.state === "behind") {
       hints.push(
         `Grok's copy of the plugin is behind the update (${copy.newestCopied} < ${landed}): run \`${grokPluginReinstallCommand(installRoot)}\` to bring it level.`,
+      );
+    }
+  }
+  // CV21.DS11.TS4: agy stages a copy too, and an update leaves it as it was;
+  // installing again from the path init printed brings it level.
+  const geminiHome = home ? join(home, ".gemini") : null;
+  if (installRoot && geminiHome && landed) {
+    const copy = agyPluginCopyState(geminiHome, landed, "mirror-mind");
+    if (copy.state === "behind") {
+      hints.push(
+        `Antigravity's copy of the plugin is behind the update (${copy.copiedVersion} < ${landed}): run \`${agyPluginInstallCommand(installRoot)}\` to bring it level.`,
       );
     }
   }

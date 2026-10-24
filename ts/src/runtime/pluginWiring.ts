@@ -1,4 +1,5 @@
-// The plugin wiring readers (CV21.DS4.TS6; Grok in CV21.DS10.US1).
+// The plugin wiring readers (CV21.DS4.TS6; Grok in CV21.DS10.US1; agy's
+// reader in CV21.DS5.US2, read for the canonical plugin since CV21.DS11.TS4).
 //
 // Three runtimes hold the plugin outside the install tree. Codex copies it
 // into a versioned cache (`$CODEX_HOME/plugins/cache/mirror-mind/mirror-mind/
@@ -226,9 +227,10 @@ export interface AgyCopyState {
  * Read agy's staged copy of a plugin below a `.gemini` home, read-only:
  * `agy plugin install <dir>` stages the tree under `config/plugins/<name>/`
  * (CV21.DS7.US1), and the copy's own `.claude-plugin/plugin.json` carries
- * its version. Written for the extensions plugin (CV21.DS5.US2); the
- * canonical plugin has no agy finding yet, and this reader serves it when
- * one is added.
+ * its version. Written for the extensions plugin (CV21.DS5.US2); since
+ * CV21.DS11.TS4 it reads the canonical plugin's copy too, which agy 1.4.7
+ * stages the same way (`mirror-mind/.claude-plugin/plugin.json`, measured in
+ * a scratch HOME on 2026-10-24).
  */
 export function agyPluginCopyState(
   geminiHome: string,
