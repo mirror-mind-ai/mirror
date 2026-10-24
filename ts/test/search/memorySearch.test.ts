@@ -536,3 +536,48 @@ function float32Blob(values: readonly number[]): Uint8Array {
   const array = new Float32Array(values);
   return new Uint8Array(array.buffer);
 }
+
+test("a precomputed query embedding skips the provider and the ledger; no provider at all degrades to FTS (CV9.DS8.TS2)", async () => {
+  const { db, path } = await makeDb("precomputed-embedding.db");
+  try {
+    insertMemory(db, {
+      id: "near",
+      content: "near the axis",
+      embedding: [1, 0, 0],
+      createdAt: "2026-01-02T00:00:00Z",
+    });
+    insertMemory(db, {
+      id: "far",
+      content: "far away",
+      embedding: [0, 1, 0],
+      createdAt: "2026-01-01T00:00:00Z",
+    });
+    rebuildFts(db);
+
+    const shared = await searchMemoriesWithStatus(db, {
+      query: "anything",
+      limit: 5,
+      provider: new FailingEmbeddingProvider(),
+      queryEmbedding: [1, 0, 0],
+      logAccess: false,
+    });
+    assert.equal(shared.degraded, false);
+    assert.equal(shared.results[0]?.id, "near");
+    assert.equal(db.prepare("SELECT COUNT(*) AS n FROM llm_calls").get()?.n, 0);
+
+    const none = await searchMemoriesWithStatus(db, {
+      query: "far",
+      limit: 5,
+      logAccess: false,
+    });
+    assert.equal(none.degraded, true);
+    assert.equal(none.degradedKind, "no_provider");
+    assert.deepEqual(
+      none.results.map((result) => result.id),
+      ["far"],
+    );
+  } finally {
+    db.close();
+    await rm(path, { force: true });
+  }
+});

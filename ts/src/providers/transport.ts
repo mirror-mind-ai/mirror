@@ -322,6 +322,20 @@ export const MIRROR_QUERY_TRANSPORT: ProviderTransportSpec = {
 };
 
 /**
+ * The mirror-query spec as the environment narrows it: with
+ * `MEMORY_RECEPTION=0` the classifier never runs, so the chat fixture stops
+ * being required and the embedding fixture alone is a complete replay. The
+ * router decided this way for `load --query` since CV22.DS8.US3; the doorman's
+ * route (CV9.DS8.TS2) resolves its providers from the same answer, so the
+ * route and the resolution cannot disagree about what "complete" means.
+ */
+export function mirrorQueryTransportFor(env: { MEMORY_RECEPTION?: string }): ProviderTransportSpec {
+  return env.MEMORY_RECEPTION === "0"
+    ? { ...MIRROR_QUERY_TRANSPORT, replay: { embedding: MIRROR_QUERY_TRANSPORT.replay?.embedding } }
+    : MIRROR_QUERY_TRANSPORT;
+}
+
+/**
  * `consolidate scan` and `shadow scan` -- the two cultivation leaves that send
  * a PROMPT. Everything around the call landed in CV22.DS8.US3; the flip
  * itself waited for CV22.DS8.TS2, because until then TypeScript sent a fenced

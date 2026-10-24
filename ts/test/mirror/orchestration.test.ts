@@ -200,3 +200,43 @@ test("title truncation follows first-sentence and 60-character contract", () => 
     "word word word word word word word word word word word word...",
   );
 });
+
+test("mirror load marks the session the harness named in the environment when no --session-id is passed (CV9.DS8.TS2)", async () => {
+  const db = fixture();
+  const newId = ids();
+  const nowIso = times();
+  db.prepare(
+    `INSERT INTO runtime_sessions (session_id, interface, started_at, updated_at)
+     VALUES ('claude-env', 'claude_code', 't0', 't0')`,
+  ).run();
+  await runMirrorLoad(db, {
+    identity: "mirror-dev",
+    persona: "engineer",
+    journey: "mirror-ts-core",
+    environmentSessionId: "claude-env",
+    receptionEnabled: false,
+    newId,
+    nowIso,
+  });
+  const row = db
+    .prepare("SELECT mirror_active, persona FROM runtime_sessions WHERE session_id = 'claude-env'")
+    .get();
+  assert.deepEqual(row, { mirror_active: 1, persona: "engineer" });
+  // The explicit id still wins over the environment's.
+  await runMirrorLoad(db, {
+    identity: "mirror-dev",
+    persona: "engineer",
+    journey: "mirror-ts-core",
+    sessionId: "s1",
+    environmentSessionId: "claude-env",
+    receptionEnabled: false,
+    newId,
+    nowIso,
+  });
+  assert.equal(
+    db.prepare("SELECT mirror_active FROM runtime_sessions WHERE session_id = 's1'").get()
+      ?.mirror_active,
+    1,
+  );
+  db.close();
+});

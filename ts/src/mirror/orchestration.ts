@@ -23,6 +23,7 @@ import {
   decodeMetadata,
   GLOBAL_STICKY_DEFAULTS_SESSION_ID,
   getRuntimeSession,
+  resolveNamedRuntimeSessionId,
   resolveRuntimeSessionId,
   upsertRuntimeSession,
 } from "./runtimeSession.ts";
@@ -120,13 +121,21 @@ export async function runMirrorLoad(
   });
   persistStickyDefaults(db, resolved.persona, resolved.journey, input.nowIso());
   activateOperatingMode(db, { mode: "Mirror Mode", journey: resolved.journey }, input.nowIso());
+  // The NAMED session -- explicit, else the one the harness put in the
+  // environment -- never a guess (CV9.DS8.TS2, closing TS1's measured gap:
+  // the skill's own load passed the environment id into the route and this
+  // write ignored it, so a self-started Mirror Mode left `mirror_active`
+  // unwritten and the doorman had nothing to learn from).
   writeMirrorState(
     db,
     {
       active: true,
       persona: resolved.persona,
       journey: resolved.journey,
-      sessionId: input.sessionId ?? null,
+      sessionId: resolveNamedRuntimeSessionId(
+        input.sessionId ?? null,
+        input.environmentSessionId ?? null,
+      ),
     },
     input.nowIso(),
   );

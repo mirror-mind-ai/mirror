@@ -137,6 +137,69 @@ export function compareAndSwapRuntimeSessionMetadata(
 }
 
 /**
+ * Columns the doorman moves one at a time (CV9.DS8.TS2).
+ *
+ * `upsertRuntimeSession` reads the row, rebuilds it, and writes every column
+ * back, with no transaction around the read and the write. Two writers on the
+ * same turn -- the prompt logger setting `conversation_id`/`active`, the doorman
+ * setting `persona` -- would each overwrite the other's column with the stale
+ * copy it read. A single-column UPDATE touches nothing it was not asked to.
+ */
+export interface RuntimeSessionColumnPatch {
+  persona?: string | null;
+  hookInjected?: boolean;
+}
+
+/** Set only the named columns on an existing row; false when there is no row. */
+export function updateRuntimeSessionColumns(
+  db: WritableDatabase,
+  sessionId: string,
+  patch: RuntimeSessionColumnPatch,
+  nowIso: string,
+): boolean {
+  const assignments: string[] = [];
+  const params: (string | number | null)[] = [];
+  if (patch.persona !== undefined) {
+    assignments.push("persona = ?");
+    params.push(patch.persona);
+  }
+  if (patch.hookInjected !== undefined) {
+    assignments.push("hook_injected = ?");
+    params.push(Number(patch.hookInjected));
+  }
+  if (assignments.length === 0) return false;
+  assignments.push("updated_at = ?");
+  params.push(nowIso, sessionId);
+  const result = db
+    .prepare(`UPDATE runtime_sessions SET ${assignments.join(", ")} WHERE session_id = ?`)
+    .run(...params);
+  return Number(result.changes) === 1;
+}
+
+/**
+ * The session the harness named in the environment (CV9.DS8.TS1, measured
+ * 2026-10-24): `MIRROR_SESSION_ID`, which the Pi extension sets at
+ * `session_start`; else `CLAUDE_CODE_SESSION_ID` (Claude Code 2.1.310) or
+ * `CODEX_SESSION_ID` (Codex 0.164.0), both undocumented, both equal to the
+ * session row the runtime's hooks write, both present in the model's own shell
+ * -- so a `mirror mirror load` the model runs by itself names the same session
+ * the hooks do. One reader, as `runtimeDetection` reads Grok's variables.
+ *
+ * Read by the mirror load route and the doorman only (TS2): widening it to the
+ * Builder, Soul, and Explorer routes would bind those sessions on Claude Code
+ * and Codex too, a CR008 question a later story may open.
+ */
+export function environmentSessionId(
+  env: Readonly<Record<string, string | undefined>>,
+): string | null {
+  for (const name of ["MIRROR_SESSION_ID", "CLAUDE_CODE_SESSION_ID", "CODEX_SESSION_ID"]) {
+    const value = env[name]?.trim();
+    if (value) return value;
+  }
+  return null;
+}
+
+/**
  * The session a caller was TOLD about: `--session-id`, else `MIRROR_SESSION_ID`.
  * `null` means nobody named one. It never guesses, so it is the only resolver a
  * caller may bind a journey or write project state on (CR008).

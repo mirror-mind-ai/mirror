@@ -177,7 +177,8 @@ function descriptorMap(db: Database, layer: string): Map<string, string> {
   return new Map(descriptorsByLayer(db, layer).map((row) => [row.key, row.descriptor]));
 }
 
-function personaRoutingRows(db: Database): PersonaRoutingRow[] {
+/** Every persona's routing table, as `detectPersona` scores it. Shared with the doorman (CV9.DS8.TS2). */
+export function personaRoutingRows(db: Database): PersonaRoutingRow[] {
   return identityRoutingRows(db, "persona").map((row) => ({
     key: row.key,
     routing_keywords: routingKeywords(row.metadata),

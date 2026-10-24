@@ -4,7 +4,7 @@ import test from "node:test";
 import { openDatabaseCopyForWrite } from "#db/database.ts";
 import { createIdentityTable } from "#helpers/identitySchema.ts";
 import { tempDir } from "#helpers/tempDir.ts";
-import { loadMirrorContext } from "#mirror/context.ts";
+import { loadMirrorContext, relevantAttachments } from "#mirror/context.ts";
 
 function fixture() {
   const dir = tempDir("mirror-context-");
@@ -106,5 +106,41 @@ test("attachment context uses replayed semantic score and selected journey only"
   assert.match(context, /plan\.md \(score: 1\.000\)/);
   assert.match(context, /Selected attachment/);
   assert.doesNotMatch(context, /Parent attachment/);
+  db.close();
+});
+
+test("relevantAttachments uses a precomputed query embedding and calls no provider (CV9.DS8.TS2)", async () => {
+  const db = fixture();
+  const embedding = Array.from({ length: 1536 }, (_, index) => (index === 0 ? 1 : 0));
+  const vector = Buffer.from(new Float32Array(embedding).buffer);
+  db.prepare(
+    `INSERT INTO attachments
+      (id, journey_id, name, description, content, embedding, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+  ).run("a1", "selected", "plan.md", "The plan", "Selected attachment", vector, "t1", "t1");
+  let providerCalls = 0;
+  let ledgerCalls = 0;
+  const scored = await relevantAttachments(
+    db,
+    "plan",
+    "selected",
+    {
+      embed: async () => {
+        providerCalls += 1;
+        return { vector: embedding, promptTokens: null };
+      },
+    },
+    () => {
+      ledgerCalls += 1;
+    },
+    embedding,
+  );
+  assert.equal(scored.length, 1);
+  assert.equal(scored[0]?.row.name, "plan.md");
+  assert.equal(providerCalls, 0);
+  assert.equal(ledgerCalls, 0);
+  // And with the vector given, no provider is needed at all.
+  const again = await relevantAttachments(db, "plan", "selected", undefined, undefined, embedding);
+  assert.equal(again.length, 1);
   db.close();
 });

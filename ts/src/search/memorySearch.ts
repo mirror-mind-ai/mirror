@@ -54,9 +54,22 @@ export interface FreshSearchOptions extends FreshSearchFilters {
    * tool: search never learns it exists.
    */
   recordEmbeddingLedger?: boolean | ((info: EmbeddingAttemptInfo) => void);
+  /**
+   * The query's embedding, already generated (CV9.DS8.TS2). The doorman embeds
+   * a turn's prompt once and hands the vector to this search and to the
+   * attachment search, so a Mirror Mode turn costs one embedding call, counted
+   * once (DS8 decision 1). When given, no provider is called and nothing is
+   * recorded here: the caller that embedded owns the ledger row.
+   */
+  queryEmbedding?: readonly number[];
   frozenNowMs?: number;
   now?: string;
-  provider: EmbeddingProvider;
+  /**
+   * Absent only with `queryEmbedding` given, or on a turn with no provider at
+   * all (the doorman without a key, CV9.DS8.TS2): the search then degrades to
+   * FTS as it does when the provider fails, with `no_provider` as the kind.
+   */
+  provider?: EmbeddingProvider;
   /** Test-injectable override for generateEmbeddingSafely's retry backoff
    * (real timers by default) -- avoids paying real backoff wait time in tests
    * that exercise the transient-retry path. */
@@ -111,26 +124,33 @@ export async function searchMemoriesWithStatus(
   options: FreshSearchOptions,
 ): Promise<FreshSearchOutcome> {
   const limit = options.limit ?? 5;
-  let queryEmbedding: readonly number[] = [];
+  let queryEmbedding: readonly number[] = options.queryEmbedding ?? [];
   let degraded = false;
   let degradedKind: string | undefined;
-  try {
-    // generateEmbeddingSafely (CR043) retries a transient empty response up to
-    // its default budget before giving up -- matching Python's search, which
-    // calls the same generate_embedding used everywhere else, not a bespoke
-    // single-shot attempt. Any exhausted/permanent/provider-exception failure
-    // still maps to degraded=true here, preserving CR037's contract exactly.
-    queryEmbedding = await generateEmbeddingSafely(options.provider, options.query, {
-      onAttempt: resolveLedgerSink(db, options.recordEmbeddingLedger),
-      sleep: options.embeddingRetrySleep,
-    });
-  } catch (error) {
+  if (options.queryEmbedding !== undefined) {
+    // The caller embedded: nothing to generate, nothing to record.
+  } else if (!options.provider) {
     degraded = true;
-    // Keep the CLASS of failure (AI-18 taxonomy) so an operator can tell an
-    // expired key from a timeout from a rate limit. Without this the front
-    // door only ever says "offline or no API key", which is a guess -- and
-    // the taxonomy the live transport builds would die here unseen.
-    degradedKind = classifyDegradedCause(error);
+    degradedKind = "no_provider";
+  } else {
+    try {
+      // generateEmbeddingSafely (CR043) retries a transient empty response up to
+      // its default budget before giving up -- matching Python's search, which
+      // calls the same generate_embedding used everywhere else, not a bespoke
+      // single-shot attempt. Any exhausted/permanent/provider-exception failure
+      // still maps to degraded=true here, preserving CR037's contract exactly.
+      queryEmbedding = await generateEmbeddingSafely(options.provider, options.query, {
+        onAttempt: resolveLedgerSink(db, options.recordEmbeddingLedger),
+        sleep: options.embeddingRetrySleep,
+      });
+    } catch (error) {
+      degraded = true;
+      // Keep the CLASS of failure (AI-18 taxonomy) so an operator can tell an
+      // expired key from a timeout from a rate limit. Without this the front
+      // door only ever says "offline or no API key", which is a guess -- and
+      // the taxonomy the live transport builds would die here unseen.
+      degradedKind = classifyDegradedCause(error);
+    }
   }
 
   const memories = listSearchMemoryRows(db, options);
