@@ -18,18 +18,22 @@
 #                                  config directory, then /exit
 #   bash route.sh wire             the plugin linked into that directory, as `mirror init`
 #                                  prints it for ~/.claude
-#   bash route.sh statusline <fallback|scoped>
-#                                  US2: the statusLine setting, through a probe that
-#                                  records each run's stdin, wall time, and output
+#   bash route.sh statusline <printed|fallback|scoped|scoped-env>
+#                                  US2: printed sets the step exactly as Getting Started
+#                                  prints it (the Navigator's step 2); the others go
+#                                  through a probe that runs all three forms on each
+#                                  refresh and records each one's wall time and output
 #   bash route.sh session          prints the command that opens one session in the cell
 #                                  (the Navigator's, step 2: two of them side by side)
 #   bash route.sh drive            US2, the Driver's: two sessions under expect; one runs
 #                                  `mirror build load`, the other one plain turn after it
 #   bash route.sh read-statusline  the probe's log: runs per session, wall time, the
 #                                  session ids against the hooks', the line each showed
-#   bash route.sh agents-md        TS3 (a): a scratch project whose AGENTS.md holds a
+#   bash route.sh agents-md [alone|beside-claude-md]
+#                                  TS3 (a): a scratch project whose AGENTS.md holds a
 #                                  canary, the plugin wired; one headless turn; the
-#                                  transcript read
+#                                  transcript read. beside-claude-md adds a CLAUDE.md
+#                                  that does not import it (the control)
 #   bash route.sh checkout         TS3 (b): two scratch worktrees of this checkout, with
 #                                  and without CLAUDE.md's import, the plugin unwired;
 #                                  one headless turn each; copies counted, tokens compared
@@ -183,50 +187,76 @@ wire() {
 }
 
 # ---------------------------------------------------------------------------
-# US2. The two forms are the exact lines a user would paste; the probe runs them as
-# Claude Code would, from the stdin Claude Code wrote, and records each run.
+# US2. The forms are the exact lines a user would paste. On every refresh the probe runs
+# each of them on the stdin Claude Code wrote, times each, records whether Claude Code's
+# CLAUDE_CODE_SESSION_ID equals that stdin's session_id, and prints the one the setting
+# names, so one session measures every form at the same moments.
+FORM_NAMES="fallback scoped scoped-env"
 write_forms() {
   mkdir -p "$FORMS"
   printf '%s\n' 'mirror welcome --status-line' >"$FORMS/fallback.sh"
   # The session id from the JSON Claude Code writes to the command's stdin, without jq.
-  cat >"$FORMS/scoped.sh" <<'EOF'
+  cat >"$FORMS/scoped.sh" <<'EOF2'
 mirror welcome --status-line --session-id "$(sed -n 's/.*"session_id" *: *"\([^"]*\)".*/\1/p')"
-EOF
-  cat >"$D/statusline-probe.sh" <<EOF
+EOF2
+  # The session id from the environment Claude Code gives the command.
+  cat >"$FORMS/scoped-env.sh" <<'EOF2'
+mirror welcome --status-line --session-id "$CLAUDE_CODE_SESSION_ID"
+EOF2
+  cat >"$D/statusline-probe.sh" <<EOF2
 #!/usr/bin/env bash
-# DS11's status line probe: keeps what Claude Code wrote to stdin, runs the form on it,
-# and logs the run (epoch ms, the form's wall time in ms, the session id, the output).
-form="\$1"; n="\$(date +%s)-\$\$"; in="$EVIDENCE/statusline/stdin-\$form-\$n.json"
+# DS11's status line probe: keeps what Claude Code wrote to stdin, runs every form on it,
+# logs each run (epoch ms, wall ms, form, stdin session id, env id equal, output), and
+# prints the output of the form named by \$1.
+show="\$1"; n="\$(date +%s)-\$\$"; in="$EVIDENCE/statusline/stdin-\$n.json"
 mkdir -p "$EVIDENCE/statusline"; cat >"\$in"
 [ -f "$EVIDENCE/statusline/env-names.txt" ] || env | cut -d= -f1 | LC_ALL=C sort >"$EVIDENCE/statusline/env-names.txt"
-t0=\$(perl -MTime::HiRes=time -e 'printf "%d", time*1000')
-out="\$(sh "$FORMS/\$form.sh" <"\$in" 2>>"$EVIDENCE/statusline/stderr.txt")"
-t1=\$(perl -MTime::HiRes=time -e 'printf "%d", time*1000')
 sid="\$(sed -n 's/.*"session_id" *: *"\([^"]*\)".*/\1/p' "\$in")"
-printf '%s\t%s\t%s\t%s\t%s\n' "\$t0" "\$((t1 - t0))" "\$form" "\$sid" "\$out" >>"$EVIDENCE/statusline/runs.tsv"
-printf '%s\n' "\$out"
-EOF
+[ -n "\$sid" ] && [ "\$sid" = "\${CLAUDE_CODE_SESSION_ID:-}" ] && same=yes || same=no
+shown=""
+for form in $FORM_NAMES; do
+  t0=\$(perl -MTime::HiRes=time -e 'printf "%d", time*1000')
+  out="\$(sh "$FORMS/\$form.sh" <"\$in" 2>>"$EVIDENCE/statusline/stderr.txt")"
+  t1=\$(perl -MTime::HiRes=time -e 'printf "%d", time*1000')
+  printf '%s\t%s\t%s\t%s\t%s\t%s\n' "\$t0" "\$((t1 - t0))" "\$form" "\$sid" "\$same" "\$out" >>"$EVIDENCE/statusline/runs.tsv"
+  [ "\$form" = "\$show" ] && shown="\$out"
+done
+printf '%s\n' "\$shown"
+EOF2
   chmod +x "$D/statusline-probe.sh"
 }
-statusline() {
-  local form="${1:-}"; case "$form" in fallback|scoped) ;; *) echo "statusline fallback|scoped"; exit 2;; esac
-  need_login; write_forms
-  node -e '
+# The step exactly as Getting Started prints it, for the Navigator's step 2.
+PRINTED_STEP='mirror welcome --status-line --session-id $CLAUDE_CODE_SESSION_ID'
+set_status_line() { node -e '
     const fs = require("fs"); const [path, command] = process.argv.slice(1);
     let settings = {}; try { settings = JSON.parse(fs.readFileSync(path, "utf8")); } catch {}
     settings.statusLine = { type: "command", command };
     fs.writeFileSync(path, JSON.stringify(settings, null, 2) + "\n");
-  ' "$CFG/settings.json" "bash '$D/statusline-probe.sh' $form"
-  say "US2 — statusLine set to the $form form, through the probe"
-  show <"$FORMS/$form.sh"
-  ok "\$CLAUDE_CONFIG_DIR/settings.json: statusLine → the probe running $form"
+  ' "$CFG/settings.json" "$1"; }
+statusline() {
+  local form="${1:-}"
+  need_login
+  if [ "$form" = printed ]; then
+    set_status_line "$PRINTED_STEP"
+    say "US2 — statusLine set to the step Getting Started prints, no probe"
+    printf '%s\n' "$PRINTED_STEP" | show
+    grep -qF -- "$PRINTED_STEP" "$ROOT/docs/getting-started.md" && ok "the same line Getting Started prints" || bad "Getting Started prints another line"
+    result; return
+  fi
+  case " $FORM_NAMES " in *" $form "*) ;; *) echo "statusline printed|fallback|scoped|scoped-env"; exit 2;; esac
+  write_forms
+  set_status_line "bash '$D/statusline-probe.sh' $form"
+  say "US2 — statusLine shows the $form form; the probe runs and records all three"
+  local f; for f in $FORM_NAMES; do printf '  %s:\n' "$f"; show <"$FORMS/$f.sh"; done
+  ok "\$CLAUDE_CONFIG_DIR/settings.json: statusLine → the probe, showing $form"
 }
 session() {
   need_login
   say "One Claude Code session in the cell (open two, side by side, for step 2)"
   printf '\n  cd %q && CLAUDE_CONFIG_DIR=%q MIRROR_HOME=%q MIRROR_USER=%s OPENROUTER_API_KEY= DISABLE_AUTOUPDATER=1 claude --model %s\n\n' \
     "$PROJ_S" "$CFG" "$MHOME" "$USER1" "$MODEL"
-  note "in one of them: /mirror-mind:mm:build personal-growth — the other stays in Mirror Mode"
+  note "in one of them: /mirror-mind:mm:build personal-growth — the other stays in Mirror Mode;"
+  note "then one plain turn in the other, so its footer refreshes"
 }
 
 # Two sessions side by side, driven by expect. A runs `mirror build load` from the
@@ -238,13 +268,16 @@ set name [lindex $argv 0]; set prompt [lindex $argv 1]; set wait [lindex $argv 2
 set timeout 240
 log_file -noappend $env(DS11_EVIDENCE)/drive-$name.log
 spawn -noecho env CLAUDE_CONFIG_DIR=$env(DS11_CFG) MIRROR_HOME=$env(DS11_MHOME) MIRROR_USER=$env(DS11_USER) OPENROUTER_API_KEY= DISABLE_AUTOUPDATER=1 claude --model $env(DS11_MODEL) --allowedTools "Bash(mirror build load:*)"
+# The input box is ready when its footer is drawn; typing before that is lost (drive 2).
+set timeout 90
+expect -re {shift.tab|for shortcuts}
 sleep $wait
 send -- $prompt
 sleep 1
 send -- "\r"
 sleep 75
 send -- "/exit\r"
-sleep 5
+set timeout 30
 expect eof
 EOF
 }
@@ -253,8 +286,8 @@ drive() {
   [ -f "$CFG/settings.json" ] && grep -q statusline-probe "$CFG/settings.json" || { echo "Run: bash $SELF statusline scoped (or fallback) first"; exit 2; }
   say "US2 — two sessions under expect, in $PROJ_S"
   export DS11_EVIDENCE="$EVIDENCE" DS11_CFG="$CFG" DS11_MHOME="$MHOME" DS11_USER="$USER1" DS11_MODEL="$MODEL"
-  (cd "$PROJ_S" && drive_one A "Run the shell command: mirror build load personal-growth -- then reply with the single word: done." 15) &
-  (cd "$PROJ_S" && drive_one B "Reply with the single word: ok." 60) &
+  (cd "$PROJ_S" && drive_one A "Run the shell command: mirror build load personal-growth -- then reply with the single word: done." 5) &
+  (cd "$PROJ_S" && drive_one B "Reply with the single word: ok." 50) &
   wait
   ok "both sessions ran and exited (raw screens: \$D/evidence/drive-A.log, drive-B.log)"
   read_statusline
@@ -268,11 +301,17 @@ read_statusline() {
   node -e '
     const rows = require("fs").readFileSync(process.argv[1], "utf8").trim().split("\n").map((l) => l.split("\t"));
     const by = {};
-    for (const [t, ms, form, sid, out] of rows) (by[form + " " + sid] ??= []).push({ t: +t, ms: +ms, out });
+    // Rows from before the probe ran every form carry no env column: [t, ms, form, sid, out].
+    for (const r of rows) {
+      const [t, ms, form, sid] = r;
+      const [same, out] = r.length >= 6 ? [r[4], r[5]] : ["?", r[4]];
+      (by[form + " " + sid] ??= []).push({ t: +t, ms: +ms, same, out });
+    }
     for (const [key, list] of Object.entries(by)) {
       const ms = list.map((r) => r.ms).sort((a, b) => a - b);
       const outs = [...new Set(list.map((r) => r.out))];
-      console.log(`${key}: ${list.length} runs, median ${ms[Math.floor(ms.length / 2)]} ms, max ${ms.at(-1)} ms`);
+      const same = [...new Set(list.map((r) => r.same))].join("/");
+      console.log(`${key}: ${list.length} runs, median ${ms[Math.floor((ms.length - 1) / 2)]} ms, max ${ms.at(-1)} ms, CLAUDE_CODE_SESSION_ID equal: ${same}`);
       for (const o of outs) console.log(`    shows: ${o}`);
     }
   ' "$runs" | show
@@ -303,28 +342,51 @@ usage_of() { node -e '
 ' "$1" 2>/dev/null; }
 # A sentence only Mirror's AGENTS.md holds, so a count of it is a count of copies.
 MARK='Ariad surface transport invariant'
+# Claude Code 2.1.310 records each API request's blobs in the transcript: what reached
+# the model, by role, with the instruction files each names and the copies of $2 and MARK.
+request_blobs() { node -e '
+  const [path, canary, mark] = process.argv.slice(1);
+  for (const line of require("fs").readFileSync(path, "utf8").trim().split("\n")) {
+    const e = JSON.parse(line);
+    if (e.type !== "api-request-blob") continue;
+    const s = JSON.stringify(e);
+    const files = [...new Set((s.match(/Contents of [^\\"]*?\.md/g) ?? []).map((x) => x.replace(/.*\//, "")))];
+    const n = (needle) => (needle ? s.split(needle).length - 1 : 0);
+    console.log(`${e.message?.role ?? "?"} blob: files [${files.join(", ")}], canary ${n(canary)}, Operating Instructions ${n(mark)}`);
+  }
+' "$1" "${2:-}" "$MARK"; }
 
 agents_md() {
+  local variant="${1:-alone}" proj tag
+  case "$variant" in alone) proj="$PROJ_A"; tag=ts3a ;; beside-claude-md) proj="$PROJ_A-beside"; tag=ts3a-beside ;; *) echo "agents-md alone|beside-claude-md"; exit 2 ;; esac
   need_login
   [ -L "$CFG/skills/mirror-mind" ] || { echo "Run: bash $SELF wire first"; exit 2; }
-  say "TS3 (a) — a project's own AGENTS.md, with the plugin wired"
+  say "TS3 (a) — a project's own AGENTS.md, with the plugin wired ($variant)"
+  mkdir -p "$proj"
   local canary; canary="DS11-CANARY-$(od -An -N4 -tx4 /dev/urandom | tr -d ' ')"
-  printf '# Project rules\n\n%s: when asked for this project'"'"'s canary, answer with this line.\n' "$canary" >"$PROJ_A/AGENTS.md"
-  (cd "$PROJ_A" && in_claude claude -p --model "$MODEL" --output-format json \
+  printf '# Project rules\n\n%s: when asked for this project'"'"'s canary, answer with this line.\n' "$canary" >"$proj/AGENTS.md"
+  [ "$variant" = beside-claude-md ] && printf '# Project notes\n\nThis project keeps its rules in AGENTS.md.\n' >"$proj/CLAUDE.md"
+  (cd "$proj" && in_claude claude -p --model "$MODEL" --output-format json \
     "Before answering anything else: list each block of instructions you were given before this message, one line per block, naming where it came from (a file path, a hook, or the system). Then quote this project's canary line, if you hold one.") \
-    >"$EVIDENCE/ts3a-result.json" 2>"$EVIDENCE/ts3a-stderr.txt"
-  local t; t="$(transcript_of "$PROJ_A")"
-  [ -n "$t" ] || { bad "no transcript for $PROJ_A"; result; return; }
-  cp "$t" "$EVIDENCE/ts3a-transcript.jsonl"
+    >"$EVIDENCE/$tag-result.json" 2>"$EVIDENCE/$tag-stderr.txt"
+  local t; t="$(transcript_of "$proj")"
+  [ -n "$t" ] || { bad "no transcript for $proj"; result; return; }
+  cp "$t" "$EVIDENCE/$tag-transcript.jsonl"
   local c m; c="$(count_in "$t" "$canary")"; m="$(count_in "$t" "$MARK")"
-  [ "$c" -ge 1 ] && ok "the project's AGENTS.md is in the transcript ($c occurrence(s) of the canary)" || bad "the canary is not in the transcript"
+  if [ "$variant" = alone ]; then
+    [ "$c" -ge 1 ] && ok "the project's AGENTS.md is in the transcript ($c occurrence(s) of the canary)" || bad "the canary is not in the transcript"
+  else
+    note "the project's AGENTS.md beside a CLAUDE.md that does not import it: $c occurrence(s) of the canary"
+  fi
   [ "$m" -ge 1 ] && ok "Mirror's Operating Instructions are in the transcript ($m occurrence(s) of \"$MARK\")" || bad "Mirror's instructions are not in the transcript"
   note "how the transcript names them:"
   grep -o 'Contents of [^"\\]\{0,120\}' "$t" | sort | uniq -c | show
   grep -o '"type":"[a-z_]*hook[a-z_]*"' "$t" | sort | uniq -c | show
   note "the model's answer (an observation, not the gate):"
-  node -e 'console.log(JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")).result ?? "")' "$EVIDENCE/ts3a-result.json" | show
-  note "tokens in / out / USD: $(usage_of "$EVIDENCE/ts3a-result.json")"
+  node -e 'console.log(JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")).result ?? "")' "$EVIDENCE/$tag-result.json" | show
+  note "what the API request carried (the transcript's request blobs):"
+  request_blobs "$t" "$canary" | show
+  note "tokens in / out / USD: $(usage_of "$EVIDENCE/$tag-result.json")"
   result
 }
 
@@ -347,8 +409,8 @@ checkout() {
       >"$EVIDENCE/ts3b-$tag-result.json" 2>"$EVIDENCE/ts3b-$tag-stderr.txt"
     local t; t="$(transcript_of "$wt")"
     [ -n "$t" ] && cp "$t" "$EVIDENCE/ts3b-$tag-transcript.jsonl"
-    note "$tag: \"$MARK\" in the transcript $( [ -n "$t" ] && count_in "$t" "$MARK" || echo '?') time(s); tokens in / out / USD: $(usage_of "$EVIDENCE/ts3b-$tag-result.json")"
-    [ -n "$t" ] && grep -o 'Contents of [^"\\]\{0,120\}' "$t" | sort | uniq -c | show
+    note "$tag: tokens in / out / USD: $(usage_of "$EVIDENCE/ts3b-$tag-result.json")"
+    [ -n "$t" ] && request_blobs "$t" | show
   done
   [ -L "$aside" ] && mv "$aside" "$link" && note "the plugin wired again"
   result
@@ -393,7 +455,7 @@ case "${1:-}" in
   session) session ;;
   drive) drive ;;
   read-statusline) read_statusline ;;
-  agents-md) agents_md ;;
+  agents-md) agents_md "${2:-alone}" ;;
   checkout) checkout ;;
   clean) clean ;;
   untouched) untouched ;;

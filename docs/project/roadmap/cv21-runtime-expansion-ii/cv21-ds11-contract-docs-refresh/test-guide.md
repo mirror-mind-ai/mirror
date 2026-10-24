@@ -56,22 +56,24 @@ The route is `route.sh` in this package. Every live step runs under `DS11_DIR`
    architecture; every matrix row with version, binary, date, and record, or "not
    recorded". Pass: no disagreement, and the guard green. Fail: a doc drops a runtime, a
    level differs, or a cell claims a measurement its record does not hold.
-2. **The status line, Claude Code.** `route.sh login claude` once (the Navigator's
-   `/login` in the route's config directory, then `/exit`). Then two sessions side by
-   side, each opened as the route prints, wired by the printed step; in one,
-   `/mm-build` with the scratch journey.
-   Expected: each footer shows Mirror's line; under the session-scoped form only the
-   Builder session's footer shows `■ Builder Mode`; under the fallback, one session
-   and the line. Pass: as expected, and the step's per-run time matches the probe log.
-   Fail: no line, or a mode in the wrong footer under the scoped form.
-3. **A project's `AGENTS.md`, Claude Code.** The Driver's headless turns (a) and (b),
-   read from the transcripts, not from the model's answer.
-   Expected: (a) the project file loaded natively and the plugin hook's
-   `additionalContext`, both in the transcript; (b) the number of copies of the
-   Operating Instructions in a checkout session and the input-token difference with
-   and without `CLAUDE.md`'s import. Pass: the contract and Getting Started say exactly
-   that, with version and date, and claim no precedence. Fail: a doc claims more than
-   the transcript shows.
+2. **The status line, Claude Code.** `route.sh statusline printed` puts the step
+   exactly as Getting Started prints it in the route's config directory (logged in by
+   `route.sh login`, done). Then two terminals, each with the command `route.sh session`
+   prints. In one, `/mirror-mind:mm:build personal-growth`; then one plain turn in the
+   other, so its footer refreshes.
+   Expected: both footers show `◇ ds11user · …`; only the Builder session's shows
+   `■ Builder Mode`, the other `◌ Mirror Mode` (with the sticky journey beside it, as
+   the step says). Pass: as expected. Fail: no line, or Builder Mode in the wrong
+   footer.
+3. **A project's `AGENTS.md`, Claude Code.** The Driver's headless turns, read from
+   the API request blobs each transcript records, not from the model's answer:
+   `route.sh agents-md` (a project with only `AGENTS.md`), `route.sh agents-md
+   beside-claude-md` (the same beside a `CLAUDE.md` that does not import it), and
+   `route.sh checkout` (worktrees with and without the import). Any of them can be
+   re-run; each prints what the request carried.
+   Expected: the evidence below, and the contract's Claude Code section and Getting
+   Started saying exactly that, with version and date. Pass: they do, and claim no
+   precedence. Fail: a doc claims more than the blobs show.
 4. **The agy finding.** In the route's scratch agy `HOME` (this machine has no agy copy:
    `agy plugin list` reports none): the v0.36.2 plugin staged by `agy plugin install`
    from a worktree at v0.36.2; `mirror runtime diagnose` from this tree.
@@ -104,4 +106,33 @@ again for the Navigator's reading. Automated: TS4's tests failed first (the miss
 export; the hint `0 !== 1`), then `npm test` 3,458 passed, 0 failed, before TS1's guard
 was added.
 
-Steps 2 and 3 wait on `route.sh login` (the Navigator's).
+**Navigator, 2026-10-24 — `route.sh login`.** The scratch Claude Code login, in
+`$D/claude-login/.claude`, the project folder trusted.
+
+**Driver, 2026-10-24 — steps 2 and 3 measured** on Claude Code 2.1.310
+(`~/.local/share/claude/versions/2.1.310`), model `claude-haiku-5-5`, the plugin wired
+in the route's config directory (`claude plugin list`: `mirror-mind@skills-dir`
+0.36.3, loaded; nothing of the real `~/.claude/skills` listed).
+
+- TS3, from the request blobs: (a) a project with only `AGENTS.md`: the canary in the
+  user blob, Mirror's instructions once in the system blob from the plugin's hook;
+  (a′) beside a `CLAUDE.md` without the import: the canary absent, Mirror's
+  instructions once; (b) a checkout worktree, the plugin unwired: `CLAUDE.md` and the
+  imported `AGENTS.md`, one copy, no hook context, 28,443 input tokens; (b′) without
+  the import: no copy, 25,033. The tree's hooks ran in (b) and (b′), each session
+  logged as `claude_code`. US$ 0.004 a turn.
+- US2, three drives of two sessions under `expect`, A running `mirror build load
+  personal-growth` from the agent's shell. Drive 1 (the stdin form shown): A's footer
+  `Personal Growth on ■ Builder Mode`, B's `◌ Mirror Mode`, the stdin session ids the
+  hooks' own. Drive 2: A's prompt was typed before the TUI was ready and lost; its
+  three refreshes still showed `CLAUDE_CODE_SESSION_ID` equal to the stdin id. The
+  driver now waits for the input footer. Drive 3 (all forms on every refresh): the
+  stdin and env forms showed A's Builder Mode and B's Mirror Mode; the plain form
+  never showed Builder Mode. `CLAUDE_CODE_SESSION_ID` equal to the stdin id on all 9
+  refreshes of drives 2 and 3. Per run 289–872 ms (drive 1), up to 1.75 s with three
+  forms in a row under two busy sessions (drive 3), 0.7–1.5 s idle from a shell; Apple
+  M3 Pro.
+- Found, not fixed: a session that chose no journey shows the global sticky journey
+  beside Mirror Mode, the other session's choice. Written in the step.
+
+The cell now carries the step as printed (`route.sh statusline printed`), for step 2.

@@ -316,7 +316,19 @@ while preserving sticky journey context. Deactivation clears only the explicit
 active mode state; it does not erase sticky persona/journey defaults or rewrite
 conversation history.
 
-`mirror welcome --status-line [--session-id ID]` includes active mode context when present:
+`mirror welcome --status-line [--session-id ID]` includes active mode context when present.
+Pi renders it through its extension. On Claude Code the user wires it once, since a
+plugin cannot carry a status line: this command, as `statusLine.command` in
+`~/.claude/settings.json`
+([Getting Started](docs/getting-started.md#mirrors-status-line-in-claude-code); Claude
+Code 2.1.310, CV21.DS11.US2):
+
+```bash
+mirror welcome --status-line --session-id $CLAUDE_CODE_SESSION_ID
+```
+
+Without `--session-id` the line shows no Claude Code session's mode, because a mode is
+bound to its session. With a mode active:
 
 ```text
 ◇ alisson-vale · Explorer Mode on ■ Builder Mode · ✓

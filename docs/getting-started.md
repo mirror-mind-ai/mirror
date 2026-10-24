@@ -294,6 +294,12 @@ A plugin's skills carry the plugin's name. Type `/mm` and the menu lists them:
 project resources, the same commands are `/mm:mirror`, `/mm:journeys`, and
 so on.)
 
+If your project has its own `AGENTS.md`, Claude Code reads it only when the project
+has no `CLAUDE.md`; if it has one, add the line `@AGENTS.md` to it. Mirror's
+instructions reach the model beside your project's either way, and nothing needs
+merging. Mirror's status line is an optional step on Claude Code: see
+[Mirror's status line in Claude Code](#mirrors-status-line-in-claude-code).
+
 ### Antigravity
 
 ```bash
@@ -471,6 +477,31 @@ install printed; running the install again prints it again. Codex, Antigravity, 
 Grok Build keep a copy of the plugin, so after you change an extension, `mirror runtime
 diagnose` names the reinstall each still needs. The
 [extension docs](product/extensions/index.md#reaching-each-runtime) have the rest.
+
+### Mirror's status line in Claude Code
+
+Pi shows Mirror's status line by itself. Claude Code can show it too, but a plugin
+cannot add one, so it is a step you take once, if you want it: add `statusLine` to
+`~/.claude/settings.json`, beside what is already there.
+
+```json
+{
+  "statusLine": {
+    "type": "command",
+    "command": "mirror welcome --status-line --session-id $CLAUDE_CODE_SESSION_ID"
+  }
+}
+```
+
+Each session then shows its own line, such as
+`◇ your-name · Personal Growth on ■ Builder Mode · ✓`: your Mirror home, the journey,
+and the session's own mode. The journey shown beside Mirror Mode is the last one any
+session chose. Claude Code runs the command when the conversation changes, and each
+run starts one `mirror` process: 0.3 to 1.5 seconds on the machine it was measured
+on. If you start Claude Code from your desktop rather than a terminal, it may not find
+`mirror` or `node`; then begin the command with their full paths, as
+`command -v node` and `command -v mirror` print them. Measured on Claude Code 2.1.310,
+2026-10-24.
 
 ## Upgrading from a clone
 

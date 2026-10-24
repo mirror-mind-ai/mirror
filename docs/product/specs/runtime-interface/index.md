@@ -349,7 +349,37 @@ When no journey context is active, it still shows the default Mirror lens:
 ```
 
 Pi renders this through `ctx.ui.setStatus("mirror", ...)` and refreshes it at
-startup and after agent turns. Other runtimes may ignore this optional surface.
+startup and after agent turns.
+
+**Claude Code** shows it when the user wires it, once, as `statusLine.command` in
+`~/.claude/settings.json`:
+
+```bash
+mirror welcome --status-line --session-id $CLAUDE_CODE_SESSION_ID
+```
+
+It is a user step because a plugin cannot carry a status line: on 2.1.296 a manifest
+`statusLine` is ignored at load time and a plugin-root `settings.json` status line did
+not show (CV21.DS12.TS1, static 3 and L7). Measured on Claude Code 2.1.310
+(`~/.local/share/claude/versions/2.1.310`), 2026-10-24, through
+[CV21.DS11's route](../../../project/roadmap/cv21-runtime-expansion-ii/cv21-ds11-contract-docs-refresh/route.sh)
+with two sessions side by side, one of which ran `mirror build load` from the agent's
+shell (CV21.DS11.US2):
+
+- Claude Code runs the command at the start of a session and when the conversation
+  changes, and gives it `CLAUDE_CODE_SESSION_ID`, equal on every run to the
+  `session_id` in the JSON it writes to the command's stdin and to the session the
+  plugin's hooks registered.
+- With `--session-id`, each footer shows its own session's mode: `■ Builder Mode` in
+  the session that activated it, `◌ Mirror Mode` in the other. Without it, neither
+  footer shows Builder Mode, because the activation is bound to the session; a
+  missing variable degrades to that unscoped line.
+- The journey beside Mirror Mode is the global sticky journey, so a session that chose
+  none shows the last one any session chose.
+- Each run is one `mirror` process, 0.3 to 1.5 s on the Apple M3 Pro measured.
+
+Codex, Antigravity, and Grok Build have no Mirror status line; they may ignore this
+optional surface.
 
 Operating mode lifecycle is explicit and lives in the core as an internal
 surface for Mirror skills and runtime integrations. Session-aware runtimes should
@@ -441,6 +471,19 @@ hooks too, once the project is trusted (CV21.DS2.US8). Its
 the tree the hook runs from) as `hookSpecificOutput.additionalContext`, unless
 the project the session opened in is that same tree — the checkout, whose
 `CLAUDE.md` imports the file (US3, D13).
+
+Claude Code reads a project's own `AGENTS.md` by itself only when the project has no
+`CLAUDE.md`. Beside a `CLAUDE.md`, the file reaches the model only if `CLAUDE.md`
+imports it (`@AGENTS.md`). The project's files arrive in the conversation among the
+project instructions ("Contents of …/AGENTS.md (project instructions, checked into
+the codebase)"), and Mirror's Operating Instructions in the system prompt, from the
+plugin's `SessionStart` hook: both reach the model, one copy each, and Mirror claims
+no precedence between them. In this repository's checkout, the import brings the Operating
+Instructions in and the tree's hook withholds its copy, so they arrive once, 3,410
+input tokens on `claude-haiku-5-5`; without the import they would not arrive at all.
+Read from the API request blobs each session's transcript records, on Claude Code
+2.1.310, 2026-10-24 (CV21.DS11.TS3). DS12.TS1 L8 first saw the native read on 2.1.296,
+in a folder with no `CLAUDE.md`.
 
 External skills reach Claude Code at home level through the per-home extensions
 plugin, linked once into `~/.claude/skills/mirror-ext-<user>` and read in place
