@@ -63,8 +63,14 @@ folder*, or *a delta*:
    the session's persona; the memories and attachments relevant to this prompt are
    injected when any score above the threshold. The identity layers are not repeated.
 3. **Mirror Mode not active, an ordinary turn:** nothing. The model's own routing may
-   invoke the skill; the session learns that the load ran (TS1 decides how), and the
-   doorman takes over from the next turn.
+   invoke the skill; the session learns that the load ran, and the doorman takes over
+   from the next turn. How it learns, measured by TS1 (2026-10-24): the load names its
+   session from the environment — `CLAUDE_CODE_SESSION_ID` on Claude Code 2.1.310,
+   `CODEX_SESSION_ID` on Codex 0.164.0 (both in the model's shell and in the hooks'
+   own, both undocumented), and `MIRROR_SESSION_ID`, which Pi's extension sets at
+   `session_start` — read by the front door as its environment session id and honored
+   by `writeMirrorState`, which today takes the explicit option alone. A session learns
+   from the harness, never from the model's reply.
 
 Every injected block carries one line the model can read: the runtime delivered
 Mirror's context for this turn. The skill's constraint becomes *load first, unless it

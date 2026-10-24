@@ -40,4 +40,15 @@ including `~/.codex`, and the real homes, against the baseline).
 
 ## Validation Evidence
 
-Pending implementation and validation.
+**Driver, 2026-10-24.** `setup`: baseline 22 entries; Pi 1.4.0, Claude Code 2.1.310,
+Codex 0.164.0, Mirror 0.36.3 at `fd7527b9`; the home seeded; the probe staged under the
+scratch dir. `pi p2` and `pi p1` (two sessions, paths with a space), `codex` (the
+credential borrowed under a trap and gone after), `claude` (two headless sessions after
+the Navigator's login): every row in the story's Outcome table, read from the probe
+log, the transcripts, the Stop payloads, and `runtime_sessions`. The route's `read`
+re-prints them. Cost: seven cheap-model turns, about US$ 0.02.
+
+**Navigator, 2026-10-24.** `route.sh login` in the scratch config dir; the Codex TUI
+turn in the scratch `CODEX_HOME`: `CODEX_SESSION_ID=01a16f79-758c-7f73-bfbb-a77776554dc8`,
+equal to the `codex` row the hooks wrote; `CODEX_SANDBOX=seatbelt`; the credential
+removed after.
