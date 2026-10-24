@@ -16,10 +16,16 @@ export function renderMirrorModeTransition(input: {
   return box("◌  MIRROR MODE ACTIVE", rows);
 }
 
+/**
+ * The stderr banner `mirror mirror load` prints. An active persona is signed
+ * `◇ <persona>`, the one rule `AGENTS.md` states (DS8 decision 2) -- on Pi the
+ * model reads stderr inside the tool result, so the banner is also an example
+ * of the signature it is asked to write.
+ */
 export function renderMirrorBanner(persona: string | null): string {
   const first = "\u001b[38;5;183m⏺ Mirror Mode active\u001b[0m\n";
   return persona
-    ? `${first}\u001b[38;5;183m  ✦ Persona: ${persona}\u001b[0m\n`
+    ? `${first}\u001b[38;5;183m  ◇ ${persona}\u001b[0m\n`
     : `${first}\u001b[38;5;183m  Ego responding without persona\u001b[0m\n`;
 }
 

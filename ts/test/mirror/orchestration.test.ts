@@ -75,7 +75,7 @@ test("mirror load composes context and persists mode, mirror, sticky, and conver
   assert.match(result.stdout, /=== persona\/engineer ===\nEngineer context/);
   assert.match(result.stdout, /=== journey\/mirror-ts-core ===/);
   assert.match(result.stderr, /⏺ Mirror Mode active/);
-  assert.match(result.stderr, /✦ Persona: engineer/);
+  assert.match(result.stderr, /◇ engineer/);
   const session = db.prepare("SELECT * FROM runtime_sessions WHERE session_id = 's1'").get();
   assert.equal(session?.mirror_active, 1);
   assert.equal(session?.hook_injected, 0);
