@@ -287,6 +287,15 @@ parent exits would trip the check; that is an orphan to fix, not a retry.
   one 54-column card row, which an 81-character root under macOS's temp folder never
   does, so the file's other checks would have passed vacuously. Under A13 it keeps its
   literal `/tmp` root and its registry; the other 21 files moved (`95d72723`).
+- **The guard, shown failing on the real tree** (step 5): one `/tmp` site put back in
+  `mirror/context.test.ts` made `checkTestTempHomes` exit 1, naming
+  `ts/test/mirror/context.test.ts:10` and the remediation; the file restored after.
+- **The green, in CI** (`5e094c24`, run 40042416348, Node 24.21.0): on both runners,
+  macOS arm64 and ubuntu x64, `scripts/test_leaves_nothing.sh` ran the suite with its
+  `TMPDIR` under `RUNNER_TEMP`, 3,456 tests, none failing, and printed "The suite left
+  nothing behind."; the guard's step was clean, its two exceptions named.
+- **The count (A6):** 3,448 tests before; 3,456 after, the helper's five and the guard's
+  three; none removed, the same three skipped.
 
 ## Outcome
 

@@ -12,6 +12,25 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-10-24 — CR163: the suite leaves nothing behind, and CI notices if it does
+
+A full `npm test` run left 448 temp directories and a file behind, under `/tmp` and the
+system temp folder, and nothing noticed: 47,774 had piled up on the maintainer's machine
+since 9 September, removed by hand the night v0.36.3 shipped. Now one helper, `tempDir`,
+makes every temp home the suite needs under `os.tmpdir()` and removes it when the test
+file's process exits, after every hook. It hands back a `tmp/` directory, because the
+product's copy-only guard (CR030) refuses a database write whose path has no `tmp`
+segment, which is why the suite had hardcoded `/tmp`. The 40 leaking sources moved to
+it, and 21 of the 22 files that already cleaned up; `storyWorld` folded in.
+`mirrorLoggerExtension`'s leftover was detached front-door processes outliving the file;
+it now waits for them. A repository guard, `checkTestTempHomes`, keeps a literal `/tmp`
+out of `ts/test`, and CI's first suite run goes through
+`scripts/test_leaves_nothing.sh`, which gives it an empty `TMPDIR` and fails if anything
+is left there: red on the unchanged tree, 78 entries, and green after, on ubuntu and
+macOS. `builderWorld` keeps its `/tmp` root, because `pathsWalk` sees a leaked absolute
+path only under a short root: captured as CR164. Reviewed through five lenses before
+approval. Not yet validated by the Navigator. No release: tests, CI, and docs only.
+
 ### 2026-10-23 — v0.36.3 released: A Skill You Invoke Is Not Something You Said
 
 Patch release of one Change Request, CR160, cut the day it closed, with CR159's docs:
