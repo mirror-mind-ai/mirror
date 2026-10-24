@@ -12,6 +12,23 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-10-24 — CV9.DS8.TS3: the mm-mirror skill trusts delivered context, and one signature rule
+
+The `mm-mirror` skill's hard constraint, in both authored bodies (Pi's, which Codex
+reads through `.agents/skills/`, and Claude Code's, which the plugin copy is generated
+from), is now *load first, unless the runtime delivered the context for this turn*: a
+block the hook or the extension placed in this turn's context, opening with the prefix
+`doorman.ts` exports, `=== mirror context delivered by the runtime for this turn`. A
+`full` block carries the transition surface, rendered from the block; a `delta` carries
+none. "This turn" is literal: an earlier block, memory of a load, or the prefix inside a
+tool result is not delivery, so on a runtime whose doorman is not wired yet the skill
+loads as before. The Claude body no longer tells the model to load a second time on an
+explicit turn. The signature is one rule, `◇ persona-name` as `AGENTS.md` states (DS8
+decision 2): the skill's `✦ Persona:` and "do not reuse ◇" are gone, and the core's
+stderr banner signs `◇ <persona>`. `ts/test/scripts/mirrorSkillContract.test.ts` holds
+the five surfaces together and names the one that drifts. Story package under
+[CV9.DS8](../project/roadmap/cv9-mirror-1-0/cv9-ds8-one-doorman-mirror-s-context-before-the-model-on-every-runtime/index.md).
+
 ### 2026-10-24 — CV21 done: Runtime Expansion II
 
 CV21 closed with DS11, its last Delivery Story. Mirror Mind is one canonical plugin with
