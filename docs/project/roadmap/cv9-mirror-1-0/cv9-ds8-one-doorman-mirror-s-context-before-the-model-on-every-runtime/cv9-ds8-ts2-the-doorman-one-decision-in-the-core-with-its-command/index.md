@@ -2,7 +2,7 @@
 
 # CV9.DS8.TS2 — The doorman: one decision in the core, with its command
 
-**Status:** 🟡 Planned
+**Status:** ✅ Done — 2026-10-24
 **Type:** Technical Story
 **Delivery Story:** CV9.DS8 — One Doorman: Mirror's Context Before the Model on Every Runtime
 
