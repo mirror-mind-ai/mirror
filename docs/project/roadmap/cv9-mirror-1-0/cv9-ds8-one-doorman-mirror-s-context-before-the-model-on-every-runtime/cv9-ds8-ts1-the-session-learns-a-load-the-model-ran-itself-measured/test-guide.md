@@ -52,3 +52,8 @@ re-prints them. Cost: seven cheap-model turns, about US$ 0.02.
 turn in the scratch `CODEX_HOME`: `CODEX_SESSION_ID=01a16f79-758c-7f73-bfbb-a77776554dc8`,
 equal to the `codex` row the hooks wrote; `CODEX_SANDBOX=seatbelt`; the credential
 removed after.
+
+**Navigator, 2026-10-24 — validated.** `untouched` 3 of 3 (every real file as at setup;
+no `claude_code` or `codex` conversation in either real home since setup); `clean`
+removed the scratch directory, nothing under `.pi/`; the scratch login's keychain entry
+`Claude Code-credentials-a5a9ec5f` is the Navigator's to delete.
