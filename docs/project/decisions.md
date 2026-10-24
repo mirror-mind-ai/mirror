@@ -4806,3 +4806,48 @@ today's install would claim measurements nobody took. A matrix in each doc: that
 how the five places drifted. CV8's L4 as written, which names no injection: it would
 have made Grok Build L4 and reversed DS10's measured decision, and the level would no
 longer tell a person whether Mirror's context arrives without the model asking for it.
+
+### One doorman puts Mirror's context before the model on every runtime
+
+**Date:** 2026-10-24 · **Context:** [CR165](refinement/rs010-cv22-oracle-and-port-hygiene/cr165-pi-puts-no-mirror-context-before-the-model.md),
+measured on Pi 1.4.0 the same day, promoted to
+[CV9.DS8](roadmap/cv9-mirror-1-0/cv9-ds8-one-doorman-mirror-s-context-before-the-model-on-every-runtime/index.md).
+
+CV21.DS11's parity matrix drew the L3/L4 line: at L4 the runtime hands Mirror's
+context to the model through a hook; at L3 the model loads it through the `/mm-mirror`
+skill. Pi, the recommended harness, is L3. Measured on Pi: the folder is loaded once,
+on the turn that invokes the skill or on an unprompted personal question the model
+recognizes, and every follow-up is answered from it — no reload, no persona re-routing
+when the topic changes domain, no signature after the first reply. There are three
+doormen today with three policies (the Claude-family hook: the explicit form, then once;
+Antigravity: every turn, with no prompt to route on; Pi: none), and wherever a doorman
+exists the skill's hard constraint makes an explicit turn load twice.
+
+**The decision.** One doorman: one decision module in the core, called by the
+Claude-family hooks, Antigravity's hook, and the Pi extension, with one policy — the
+full folder on the explicit form, loaded once; on each ordinary turn while Mirror Mode
+is on, the persona the question newly calls for and the memories relevant to that
+question; nothing when Mirror Mode is off — and a skill that trusts delivered context.
+Three choices inside it, the Navigator's:
+
+1. **Memories are refreshed on every ordinary turn in Mirror Mode.** One embedding call
+   per turn, a fraction of a cent, counted in the ledger. The alternative, refreshing
+   only when the persona changes, was declined: the best possible answer is the aim,
+   and the cost is small and visible.
+2. **The signature is `◇ persona-name`**, the rule `AGENTS.md` states and every runtime
+   reads. The skill's `✦ Persona:` and the core's banner follow it. The skill's
+   objection, that `◇` is the mirror's own symbol on the status line, is noted and
+   outweighed by one rule in the one file every runtime reads.
+3. **The work is a Delivery Story under CV9**, Mirror Mind 1.0, not a Change Request:
+   it touches the core, three hooks, the Pi extension, the skill's copies, `AGENTS.md`,
+   the contract, and the matrix, and needs live measurement on four runtimes.
+
+**What was rejected.** Copying today's hook to Pi as it stands: Pi would read L4 for
+one fresh folder on one turn, at the price of the double load on every explicit turn.
+Accepting L3 on Pi: Mirror Mode works there through the skill, but the recommended
+harness would hold a lower level than the plugin runtimes with no plan to close it.
+
+**What follows.** Grok Build stays L3 and inert, since it discards hook context. The one
+open mechanism — how a session learns a load the model ran by itself — is measured
+first (CV9.DS8.TS1), on CR100's lead that Claude Code hands commands
+`CLAUDE_CODE_SESSION_ID`.

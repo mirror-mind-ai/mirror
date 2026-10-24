@@ -136,4 +136,10 @@ a Delivery Story's size). Current Focus unchanged.
 
 ## Outcome
 
-Open.
+**Promoted, 2026-10-24,** to
+[CV9.DS8 — One Doorman: Mirror's Context Before the Model on Every Runtime](../../roadmap/cv9-mirror-1-0/cv9-ds8-one-doorman-mirror-s-context-before-the-model-on-every-runtime/index.md),
+with the Navigator's three decisions recorded in
+[decisions.md](../../decisions.md#one-doorman-puts-mirrors-context-before-the-model-on-every-runtime):
+memories refreshed on every ordinary turn in Mirror Mode; the signature `◇
+persona-name`; the work a Delivery Story under CV9. The Delivery Story's TS1 measures
+the one open mechanism first; its TS3 carries the signature rule this CR folded in.
