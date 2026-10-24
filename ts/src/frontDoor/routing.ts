@@ -8,7 +8,7 @@ import {
   CULTIVATION_SCAN_TRANSPORT,
   DESCRIPTOR_TRANSPORT,
   JOURNAL_TRANSPORT,
-  MIRROR_QUERY_TRANSPORT,
+  mirrorQueryTransportFor,
   type ProviderTransportSpec,
   resolveComposedProviderTransport,
   resolveProviderTransport,
@@ -745,22 +745,23 @@ export function routeByFamily(
 
   if (command === "mirror") {
     const sub = argv[1];
-    if (sub === "load") {
-      const hasQuery = argv.includes("--query");
+    // CV9.DS8.TS2: the doorman decides before it resolves a provider, and a
+    // `nothing` turn resolves none -- but a `full` turn is `load --query`, so
+    // the route answers for the doorman exactly as it answers for that.
+    if (sub === "load" || sub === "doorman") {
+      const hasQuery = sub === "doorman" || argv.includes("--query");
       if (!hasQuery) {
         return { command, engine: "ts", reason: "DS7.US4 deterministic mirror load ported to TS" };
       }
-      // `MEMORY_RECEPTION=0` skips the classifier on both engines, so the
-      // chat fixture stops being required for a replay run; the embedding half
-      // still is, because the query still searches attachments and journeys.
-      const spec =
-        env.MEMORY_RECEPTION === "0"
-          ? {
-              ...MIRROR_QUERY_TRANSPORT,
-              replay: { embedding: MIRROR_QUERY_TRANSPORT.replay?.embedding },
-            }
-          : MIRROR_QUERY_TRANSPORT;
-      return providerRoute(command, env, spec, "load --query");
+      // `MEMORY_RECEPTION=0` skips the classifier, so the chat fixture stops
+      // being required for a replay run; the embedding half still is, because
+      // the query still searches attachments and journeys.
+      return providerRoute(
+        command,
+        env,
+        mirrorQueryTransportFor(env),
+        sub === "doorman" ? "doorman" : "load --query",
+      );
     }
     if (sub === "deactivate" || sub === "log" || sub === "journeys") {
       return { command, engine: "ts", reason: `DS7.US4 mirror ${sub} ported to TS` };
@@ -952,7 +953,7 @@ const TASKS_SUBCOMMANDS = [
 const WEEK_SUBCOMMANDS = ["view", "plan", "save"];
 const CONSOLIDATE_SUBCOMMANDS = ["scan", "apply", "reject", "list"];
 const SHADOW_SUBCOMMANDS = ["scan", "apply", "reject", "list", "show"];
-const MIRROR_SUBCOMMANDS = ["load", "deactivate", "log", "journeys"];
+const MIRROR_SUBCOMMANDS = ["load", "deactivate", "log", "journeys", "doorman"];
 const MODE_SUBCOMMANDS = ["activate", "deactivate", "status"];
 
 /** `mode`'s first positional, past the two options its parser declares; "" when none. */

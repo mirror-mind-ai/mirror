@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -294,6 +294,192 @@ test("front door mode activate/status/deactivate preserves the Python surface", 
     assert.equal(deactivate.stdout, "Deactivated active mode\n");
     const after = spawnFrontDoor(["mode", "status", "--db-path", ws.dbPath]);
     assert.equal(after.stdout, "Mirror Mode\n");
+  } finally {
+    ws.cleanup();
+  }
+});
+
+// --- CV9.DS8.TS2: the one doorman as a command -------------------------------
+
+function embeddingFixture(dir: string): string {
+  const path = join(dir, "embedding.json");
+  writeFileSync(
+    path,
+    JSON.stringify({
+      kind: "embedding",
+      response: {
+        embedding: Array.from({ length: 1536 }, (_, index) => (index === 0 ? 1 : 0)),
+      },
+    }),
+  );
+  return path;
+}
+
+test("mirror doorman: a quiet turn prints nothing and never opens the live-write path", () => {
+  const ws = mirrorDbCopy();
+  try {
+    const fixtureDir = join(ws.dbPath, "..");
+    const result = spawnFrontDoor(
+      [
+        "mirror",
+        "doorman",
+        "--prompt",
+        "how do I split this module",
+        "--session-id",
+        "cli-session",
+        "--db-path",
+        ws.dbPath,
+      ],
+      { MIRROR_TS_MIRROR_EMBEDDING_REPLAY: embeddingFixture(fixtureDir), MEMORY_RECEPTION: "0" },
+    );
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(result.stdout, "");
+    // No snapshot: the pre-write backup directory was never created.
+    assert.equal(existsSync(join(fixtureDir, "backups", "frontdoor-pre-write-backup.db")), false);
+    const db = openDatabaseReadOnly(ws.dbPath);
+    assert.equal(
+      db
+        .prepare("SELECT mirror_active FROM runtime_sessions WHERE session_id = 'cli-session'")
+        .get()?.mirror_active,
+      0,
+    );
+    db.close();
+  } finally {
+    ws.cleanup();
+  }
+});
+
+test("mirror doorman: the explicit form delivers the folder once, then an ordinary turn delivers a delta", () => {
+  const ws = mirrorDbCopy();
+  try {
+    const fixtureDir = join(ws.dbPath, "..");
+    const env = {
+      MIRROR_TS_MIRROR_EMBEDDING_REPLAY: embeddingFixture(fixtureDir),
+      MEMORY_RECEPTION: "0",
+    };
+    const full = spawnFrontDoor(
+      [
+        "mirror",
+        "doorman",
+        "--prompt",
+        "/mm-mirror help me debug this",
+        "--session-id",
+        "cli-session",
+        "--db-path",
+        ws.dbPath,
+      ],
+      env,
+    );
+    assert.equal(full.status, 0, full.stderr);
+    assert.match(
+      full.stdout,
+      /^=== mirror context delivered by the runtime for this turn: full — answer as the mirror; sign ◇ engineer ===\n/,
+    );
+    assert.match(full.stdout, /◌ {2}MIRROR MODE ACTIVE/);
+    assert.match(full.stdout, /=== persona\/engineer ===\nEngineer context/);
+    let db = openDatabaseReadOnly(ws.dbPath);
+    assert.deepEqual(
+      db
+        .prepare(
+          "SELECT mirror_active, hook_injected, persona FROM runtime_sessions WHERE session_id = 'cli-session'",
+        )
+        .get(),
+      { mirror_active: 1, hook_injected: 1, persona: "engineer" },
+    );
+    db.close();
+
+    const delta = spawnFrontDoor(
+      [
+        "mirror",
+        "doorman",
+        "--prompt",
+        "and what about the next step",
+        "--session-id",
+        "cli-session",
+        "--db-path",
+        ws.dbPath,
+      ],
+      env,
+    );
+    assert.equal(delta.status, 0, delta.stderr);
+    assert.match(
+      delta.stdout,
+      /^=== mirror context delivered by the runtime for this turn: delta \(persona: engineer · journey: mirror-ts-core\) — answer as the mirror; sign ◇ engineer ===\n/,
+    );
+    assert.doesNotMatch(delta.stdout, /MIRROR MODE ACTIVE|=== persona\/|=== user\/identity ===/);
+    db = openDatabaseReadOnly(ws.dbPath);
+    assert.equal(
+      db.prepare("SELECT COUNT(*) AS n FROM llm_calls WHERE role = 'embedding'").get()?.n,
+      1,
+    );
+    db.close();
+    const log = readFileSync(join(fixtureDir, "front-door.log"), "utf8");
+    assert.doesNotMatch(log, /help me debug|next step|Engineer context/);
+    assert.match(log, /doorman memory_scores=/);
+  } finally {
+    ws.cleanup();
+  }
+});
+
+test("mirror doorman: the environment names the session when --session-id is absent; --prompt is required", () => {
+  const ws = mirrorDbCopy();
+  try {
+    const fixtureDir = join(ws.dbPath, "..");
+    const env = {
+      MIRROR_TS_MIRROR_EMBEDDING_REPLAY: embeddingFixture(fixtureDir),
+      MEMORY_RECEPTION: "0",
+      MIRROR_SESSION_ID: "",
+      CLAUDE_CODE_SESSION_ID: "cli-session",
+    };
+    const full = spawnFrontDoor(
+      ["mirror", "doorman", "--prompt", "/mm:mirror debug", "--db-path", ws.dbPath],
+      env,
+    );
+    assert.equal(full.status, 0, full.stderr);
+    const db = openDatabaseReadOnly(ws.dbPath);
+    assert.equal(
+      db
+        .prepare("SELECT mirror_active FROM runtime_sessions WHERE session_id = 'cli-session'")
+        .get()?.mirror_active,
+      1,
+    );
+    db.close();
+
+    const missing = spawnFrontDoor(["mirror", "doorman", "--db-path", ws.dbPath], env);
+    assert.equal(missing.status, 2);
+    assert.match(missing.stderr, /requires --prompt/);
+  } finally {
+    ws.cleanup();
+  }
+});
+
+test("mirror load marks the session CLAUDE_CODE_SESSION_ID names when no --session-id is passed (CV9.DS8.TS2)", () => {
+  const ws = mirrorDbCopy();
+  try {
+    const result = spawnFrontDoor(
+      [
+        "mirror",
+        "load",
+        "--persona",
+        "engineer",
+        "--journey",
+        "mirror-ts-core",
+        "--db-path",
+        ws.dbPath,
+      ],
+      { MIRROR_SESSION_ID: "", CLAUDE_CODE_SESSION_ID: "cli-session" },
+    );
+    assert.equal(result.status, 0, result.stderr);
+    const db = openDatabaseReadOnly(ws.dbPath);
+    assert.deepEqual(
+      db
+        .prepare(
+          "SELECT mirror_active, persona FROM runtime_sessions WHERE session_id = 'cli-session'",
+        )
+        .get(),
+      { mirror_active: 1, persona: "engineer" },
+    );
+    db.close();
   } finally {
     ws.cleanup();
   }

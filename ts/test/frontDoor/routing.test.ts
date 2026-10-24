@@ -347,6 +347,21 @@ test("mirror load --query is live, and MEMORY_RECEPTION=0 drops the chat half", 
   );
 });
 
+test("mirror doorman routes as load --query does: the same providers, the same replay rule (CV9.DS8.TS2)", () => {
+  assert.equal(routeMemoryCommand(["mirror", "doorman", "--prompt", "hello"]).engine, "ts");
+  const halfConfigured = routeMemoryCommand(["mirror", "doorman", "--prompt", "hello"], {
+    MIRROR_TS_MIRROR_EMBEDDING_REPLAY: "/tmp/embedding.json",
+  });
+  assert.match(halfConfigured.reason, /incomplete replay fixture/);
+  assert.equal(
+    routeMemoryCommand(["mirror", "doorman", "--prompt", "hello"], {
+      MIRROR_TS_MIRROR_EMBEDDING_REPLAY: "/tmp/embedding.json",
+      MEMORY_RECEPTION: "0",
+    }).engine,
+    "ts",
+  );
+});
+
 test("no command at all is the front door's top-level usage answer", () => {
   assert.deepEqual(routeMemoryCommand([]), {
     command: null,

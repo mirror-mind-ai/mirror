@@ -116,9 +116,11 @@ import {
 import { applyJourneySetPath } from "./journeyWriteRoute.ts";
 import { openLiveWriteDatabase } from "./liveBackup.ts";
 import {
+  isMirrorDoorman,
   isMirrorWrite,
   isModeWrite,
   mirrorDeactivateMissingSession,
+  runMirrorDoormanRoute,
   runMirrorRead,
   runMirrorWriteRoute,
   runModeRead,
@@ -1477,7 +1479,10 @@ function runShadowWrite(argv: readonly string[]): number | Promise<number> {
   return runShadowScanWrite(argv); // "scan"
 }
 
-function withMirrorReadDb(argv: readonly string[], read: (db: Database) => number): number {
+function withMirrorReadDb<T = number>(
+  argv: readonly string[],
+  read: (db: Database) => T,
+): T | number {
   const dbPath = resolveDbPathForCli(argv.slice(1));
   if (dbPath === null) return 2;
   ensureDatabaseReadyForCli(dbPath, argv[0] ?? null);
@@ -1537,6 +1542,32 @@ function runMirrorWrite(argv: readonly string[]): Promise<number> | number {
 
 function runModeWrite(argv: readonly string[]): Promise<number> {
   return withMirrorWriteDb(argv, (db) => runModeWriteRoute(db, argv));
+}
+
+/**
+ * `mirror doorman` (CV9.DS8.TS2): decide on a read-only handle, write behind
+ * the pre-write snapshot only for a turn that delivers. The memory scores a
+ * delta turn ranks go to the front-door log as numbers -- content-free -- so
+ * US5's live walk can set the threshold DS8 names.
+ */
+function runMirrorDoorman(argv: readonly string[]): Promise<number> {
+  const reporter = outcomeReporter(argv, "reception");
+  const logPath = resolveLogPath(argv);
+  return runMirrorDoormanRoute(argv, {
+    withReadOnlyDatabase: (read) => withMirrorReadDb(argv, read),
+    withLiveWriteDatabase: (write) => withMirrorWriteDb(argv, write),
+    onReceptionOutcome: reporter.onOutcome,
+    onMemoryScores: (scores) =>
+      logFrontDoor(logPath, {
+        command: "mirror",
+        route: "ts",
+        exitCode: 0,
+        detail: `doorman memory_scores=${scores.map((score) => score.toFixed(3)).join(",")}`,
+      }),
+  }).then((exitCode) => {
+    if (reporter.calls > 0) reporter.logSummary();
+    return exitCode;
+  });
 }
 
 function runSoulWrite(argv: readonly string[]): Promise<number> {
@@ -1759,6 +1790,7 @@ async function dispatchTs(argv: readonly string[]): Promise<number | DispatchOut
   if (argv[0] === "descriptor" && argv[1] === "generate") return runDescriptorContentRoute(argv);
   if (isConsolidateSubcommandWrite(argv)) return runConsolidateWrite(argv);
   if (isShadowSubcommandWrite(argv)) return runShadowWrite(argv);
+  if (isMirrorDoorman(argv)) return runMirrorDoorman(argv);
   if (isMirrorWrite(argv)) return runMirrorWrite(argv);
   if (isModeWrite(argv)) return runModeWrite(argv);
   // CV22.DS7.US6: the Soul ritual; `routing.ts` allowlists its subcommands by
