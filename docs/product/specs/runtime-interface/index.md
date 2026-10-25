@@ -48,8 +48,8 @@ and `ts/test/scripts/runtimeParityDocs.test.ts` holds the five docs to this tabl
 | Runtime | Level | Skills | Instructions at start | Mirror context before the model answers | Logging | MCP | Version | Binary | Measured | Record |
 |---------|-------|--------|-----------------------|-----------------------------------------|---------|-----|---------|--------|----------|--------|
 | Pi | **L4** | `/skill:mm-<skill>`, picked from the menu as `/mm-` is typed | the extension adds `AGENTS.md` to Pi's context files (D13; [CV22.DS10.US3](../../../project/roadmap/cv22-typescript-core-port/cv22-ds10-python-retirement-npm-distribution/cv22-ds10-us3-npm-distribution/index.md), 2026-10-06, version not recorded) | the extension's `before_agent_start`, through the one doorman (`mirror doorman`): the full folder on the explicit form, a delta on each ordinary turn while Mirror Mode is on, nothing otherwise — carried into the run as a `mirror-context` message; the session named in the environment for the model's own loads | `pi`: the prompt as typed and its one reply; a skill turn is not recorded | not wired: the extension calls the front door | 1.4.0 | `~/.local/bin/pi` (the managed install's 1.4.0 release) | 2026-10-25 | [DS8.US5](../../../project/roadmap/cv9-mirror-1-0/cv9-ds8-one-doorman-mirror-s-context-before-the-model-on-every-runtime/cv9-ds8-us5-pi-through-the-one-doorman-at-l4/index.md) (the extension's harness test is Pi's automated proof; there is no isolated `smoke_pi.sh`), [CR159](../../../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr159-pi-skills-are-spelled-by-their-bare-name-and-step-7a-lost-two-dashes.md), [CR160](../../../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr160-a-pi-skill-invoked-as-skill-is-logged-as-its-body.md) |
-| Claude Code | **L4** | 25, the plugin | the plugin's `SessionStart` hook | the inject hook: on a Mirror turn, and once on the first turn after Mirror Mode turns on | `claude_code`, replies from `Stop` | 7 tools | 2.1.296 | `~/.local/bin/claude` → `~/.local/share/claude/versions/2.1.296` | 2026-10-13 | [DS12.TS1](../../../project/roadmap/cv21-runtime-expansion-ii/cv21-ds12-runtime-re-baseline/cv21-ds12-ts1-claude-code-re-probe/index.md), [DS2](../../../project/roadmap/cv21-runtime-expansion-ii/cv21-ds2-mirror-plugin-mcp-foundation/index.md) |
-| Codex | **L4** | 25, the plugin from Mirror's marketplace | the plugin's `SessionStart` hook, as a developer message | the inject hook, as on Claude Code | `codex`, replies included; the session closes when Codex reaps its thread, 30 min after `/quit` | the tools, reached through `tool_search` | 0.163.0 | `/opt/homebrew/bin/codex` → `/opt/homebrew/Caskroom/codex/0.163.0/bin/codex` | 2026-10-17 | [DS4.US4](../../../project/roadmap/cv21-runtime-expansion-ii/cv21-ds4-codex-through-the-canonical-plugin/cv21-ds4-us4-codex-at-l4-through-the-shipped-plugin-measured-live/index.md) |
+| Claude Code | **L4** | 25, the plugin (2.1.296, DS12.TS1) | the plugin's `SessionStart` hook (2.1.296, DS12.TS1) | the inject hook on `UserPromptSubmit`, through the one doorman (`mirror doorman`): the full folder on the explicit form, a delta on each ordinary turn while Mirror Mode is on, nothing otherwise — returned as the hook's context; the session named in the environment (`CLAUDE_CODE_SESSION_ID`) for the model's own loads | `claude_code`, replies from `Stop` | 7 tools (2.1.296, DS12.TS1) | 2.1.310 | `~/.local/bin/claude` → `~/.local/share/claude/versions/2.1.310` | 2026-10-25 | [DS8.US4](../../../project/roadmap/cv9-mirror-1-0/cv9-ds8-one-doorman-mirror-s-context-before-the-model-on-every-runtime/cv9-ds8-us4-claude-code-and-codex-through-the-one-doorman/index.md) (the doorman's turns, the logging), [DS12.TS1](../../../project/roadmap/cv21-runtime-expansion-ii/cv21-ds12-runtime-re-baseline/cv21-ds12-ts1-claude-code-re-probe/index.md), [DS2](../../../project/roadmap/cv21-runtime-expansion-ii/cv21-ds2-mirror-plugin-mcp-foundation/index.md) |
+| Codex | **L4** | 25, the plugin from Mirror's marketplace (0.163.0, DS4.US4) | the plugin's `SessionStart` hook, as a developer message (0.163.0, DS4.US4) | the inject hook, through the one doorman, as on Claude Code; the session named in the environment (`CODEX_SESSION_ID`) for the model's own loads | `codex`, replies included; the session closes when Codex reaps its thread, 30 min after `/quit` (0.163.0, DS4.US4) | the tools, reached through `tool_search` (0.163.0, DS4.US4) | 0.164.0 | `/opt/homebrew/bin/codex` → `/opt/homebrew/Caskroom/codex/0.164.0/bin/codex` | 2026-10-25 | [DS8.US4](../../../project/roadmap/cv9-mirror-1-0/cv9-ds8-one-doorman-mirror-s-context-before-the-model-on-every-runtime/cv9-ds8-us4-claude-code-and-codex-through-the-one-doorman/index.md) (the doorman's turns, the logging), [DS4.US4](../../../project/roadmap/cv21-runtime-expansion-ii/cv21-ds4-codex-through-the-canonical-plugin/cv21-ds4-us4-codex-at-l4-through-the-shipped-plugin-measured-live/index.md) |
 | Antigravity | **L4** | 25, `agy plugin install` | the plugin's `rules/AGENTS.md` (its marker quoted on agy 1.4.2, DS7.US4); Mirror Mode turned on at `SessionStart` | `PreInvocation`, through the one doorman (`mirror doorman`), the turn's prompt read from the payload's `lastUserInput`: the full folder on the explicit form and on a new conversation's first turn, a delta on each ordinary turn while Mirror Mode is on, nothing otherwise — one persistent `systemMessage` step; a payload without the prompt (agy before 1.4.7) gets the whole folder each turn as an `ephemeralMessage` | `antigravity`, from the transcript | 7 tools (agy 1.4.2, DS7.US4) | agy 1.4.7 | `~/.local/bin/agy` | 2026-10-25 | [DS8.TS6](../../../project/roadmap/cv9-mirror-1-0/cv9-ds8-one-doorman-mirror-s-context-before-the-model-on-every-runtime/cv9-ds8-ts6-antigravity-through-the-one-doorman/index.md) (the skills, the doorman's turns, the logging), [DS7.US4](../../../project/roadmap/cv21-runtime-expansion-ii/cv21-ds7-antigravity-through-skills-and-a-native-layer/cv21-ds7-us4-antigravity-at-the-bar-measured-live/index.md) |
 | Grok Build | **L3** | 25, the plugin | the home-level rule `~/.grok/rules/mirror-mind.md` | none: Grok discards hook context, and the model loads it through `/mm-mirror` | `grok_build`, replies included | 7 tools, through `search_tool` and `use_tool` | 1.0.62 (1474f9cbdd91) | `~/.grok/bin/grok` → `~/.grok/downloads/grok-1.0.62-macos-aarch64` | 2026-10-18 | [DS10.US3](../../../project/roadmap/cv21-runtime-expansion-ii/cv21-ds10-grok-build-through-the-canonical-plugin/cv21-ds10-us3-grok-at-honest-l3-through-the-shipped-plugin-measured-live/index.md), [DS10.TS2](../../../project/roadmap/cv21-runtime-expansion-ii/cv21-ds10-grok-build-through-the-canonical-plugin/cv21-ds10-ts2-the-mcp-server-attaches-on-grok-or-the-reason-is-recorded/index.md) |
 
@@ -236,9 +236,12 @@ The transcript backfill at session end stays as the fallback, and fills only a
 conversation that holds no assistant message, so a Stop-logged reply is not
 recorded twice (CV21.DS2.US8).
 
-**Antigravity** — hook payloads carry no text, so the `Stop` handler reads
-the session's transcript JSONL and logs each turn beside its prompt, keyed on
-a `step_index` high-water mark (CV21.DS7.TS3). (Gemini CLI, retired by
+**Antigravity** — the `Stop` handler reads the session's transcript JSONL and
+logs each turn beside its prompt, keyed on a `step_index` high-water mark
+(CV21.DS7.TS3). It was built when agy's hook payloads carried no text (agy 1.4.2,
+CV21.DS12.TS3 L7); since agy 1.4.7 they carry the turn's prompt as
+`lastUserInput`, which the doorman reads (CV9.DS8.TS6), and the logging still reads
+the transcript. (Gemini CLI, retired by
 CV21.DS8, logged from the `AfterAgent` payload's `prompt_response` field; the
 Node port first read the wrong field and dropped every assistant turn for a
 day — CV22.DS10.TS5 finding F11. The payload shape is the contract, not the
@@ -498,7 +501,7 @@ What a turn costs, and where it is counted, is in
 |-------|--------------|------------|---------------------|
 | Session start | `.claude/hooks/session-start.sh` | `claude:session-start` | `SessionStart` |
 | User prompt | `.claude/hooks/log-user-prompt.sh` | `claude:user-prompt` | `UserPromptSubmit` |
-| Mirror inject | `.claude/hooks/mirror-inject.sh` | `claude:inject` | `UserPromptSubmit` |
+| Mirror context, through the one doorman | `.claude/hooks/mirror-inject.sh` | `claude:inject` | `UserPromptSubmit` |
 | Assistant reply | `.claude/hooks/log-assistant-reply.sh` | `claude:stop` | `Stop` |
 | Session end + backup | `.claude/hooks/log-session-end.sh` | `claude:session-end` | `SessionEnd` |
 
@@ -586,7 +589,8 @@ to remove when the route is done.
 | User prompt | `.pi/extensions/mirror-logger.ts` | `input`, then `before_agent_start` |
 | Assistant response | `.pi/extensions/mirror-logger.ts` | `agent_end`, then `agent_settled` |
 | Session end + backup | `.pi/extensions/mirror-logger.ts` | `session_shutdown` |
-| Mirror load | `.pi/skills/mm-mirror/SKILL.md` | `/mm-mirror` skill invocation |
+| Mirror context, through the one doorman (`mirror doorman`, awaited) | `.pi/extensions/mirror-logger.ts` | `before_agent_start` |
+| The folder left the transcript (`mirror doorman --forget`) | `.pi/extensions/mirror-logger.ts` | `session_compact` |
 
 #### Invoking a skill on Pi
 
@@ -611,14 +615,17 @@ skill-turns` repairs what earlier versions stored.
 
 | Event | Hook wrapper | Node entry | agy trigger |
 |-------|--------------|------------|-------------|
-| Session start (logging on, Mirror Mode on) | `plugins/mirror-mind/agy/session-start.sh` | `agy:session-start` | `SessionStart` |
-| Mirror inject, once per turn | `plugins/mirror-mind/agy/pre-invocation.sh` | `agy:pre-invocation` | `PreInvocation` (`invocationNum == 0`) |
+| Session start (logging on, Mirror Mode on, the first turn full) | `plugins/mirror-mind/agy/session-start.sh` | `agy:session-start` | `SessionStart` |
+| Mirror context, through the one doorman, once per user turn | `plugins/mirror-mind/agy/pre-invocation.sh` | `agy:pre-invocation` | `PreInvocation` (`invocationNum == 0`) |
 | Turn logging from the transcript | `plugins/mirror-mind/agy/stop.sh` | `agy:stop` | `Stop` |
 
 Hook files are registered in the plugin's `hooks.json`, in agy's schema, and
 staged with the plugin by `agy plugin install`. Payloads are camelCase
-protojson and carry no text: the session id is `conversationId`, and the
-`Stop` handler reads the transcript JSONL for the turn (CV21.DS7.TS3). The
+protojson, and the session id is `conversationId`. Since agy 1.4.7 every payload
+carries the turn's prompt, verbatim, as `lastUserInput` (a skill turn in its slash
+form), and `PreInvocation` hands it to the doorman (CV9.DS8.TS6); on agy 1.4.2 the
+payloads carried no text (CV21.DS12.TS3 L7). The `Stop` handler reads the transcript
+JSONL for the turn (CV21.DS7.TS3). The
 Operating Instructions reach the model as `rules/AGENTS.md`, merged into the
 active rule set. Skills are the plugin's, as `mm:*`, invoked as
 `/mirror-mind:mm:<skill>` (CV21.DS7.US4, agy 1.4.2).
@@ -631,7 +638,7 @@ active rule set. Skills are the plugin's, as `mm:*`, invoked as
 | User prompt | plugin `UserPromptSubmit` hooks | Each prompt |
 | Assistant response | plugin `Stop` hook | Each reply |
 | Session end + backup | plugin `SessionEnd` hook, with the deferred tail and the stale-orphan fallback close | Daemon reaps the idle thread |
-| Mirror load | `SessionStart` context + `$mm-mirror` skill | Explicit invocation |
+| Mirror context, through the one doorman | plugin `UserPromptSubmit` inject hook | Each prompt |
 
 Codex installs the shipped plugin from the package's marketplace
 (`codex plugin marketplace add "<pkg>"`, then
