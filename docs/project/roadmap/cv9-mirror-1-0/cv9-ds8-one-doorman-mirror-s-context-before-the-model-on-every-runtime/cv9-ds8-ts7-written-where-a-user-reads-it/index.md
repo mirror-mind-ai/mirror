@@ -2,7 +2,7 @@
 
 # CV9.DS8.TS7 — Written where a user reads it
 
-**Status:** 🟢 In Progress — written 2026-10-25; Navigator validation pending
+**Status:** ✅ Done — 2026-10-25
 **Type:** Technical Story
 **Delivery Story:** CV9.DS8 — One Doorman: Mirror's Context Before the Model on Every Runtime
 
