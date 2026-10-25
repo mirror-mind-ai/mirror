@@ -148,6 +148,8 @@ export function compareAndSwapRuntimeSessionMetadata(
 export interface RuntimeSessionColumnPatch {
   persona?: string | null;
   hookInjected?: boolean;
+  /** The whole metadata JSON, as the caller re-dumped it after its own read. */
+  metadata?: string | null;
 }
 
 /** Set only the named columns on an existing row; false when there is no row. */
@@ -166,6 +168,10 @@ export function updateRuntimeSessionColumns(
   if (patch.hookInjected !== undefined) {
     assignments.push("hook_injected = ?");
     params.push(Number(patch.hookInjected));
+  }
+  if (patch.metadata !== undefined) {
+    assignments.push("metadata = ?");
+    params.push(patch.metadata);
   }
   if (assignments.length === 0) return false;
   assignments.push("updated_at = ?");

@@ -534,6 +534,68 @@ test("runDoorman delta: a memory exactly at the threshold is rendered; one under
   }
 });
 
+test("runDoorman: a memory delivered once in a session is not delivered again; a full load resets", async () => {
+  // Debt paid by CV9.DS8.US5: every delta is a user-role message that stays in the
+  // transcript, and US4 measured 3 of 5 memories repeating on a follow-up. The
+  // session row remembers what the doorman delivered (`doorman_delivered` in its
+  // metadata); a later delta skips those and fills from the next ones above the
+  // threshold. The explicit turn's full load starts the list over: the folder is
+  // fresh and so is the conversation's context.
+  const { db } = fixture();
+  try {
+    // A second relevant memory (cosine 0.9 with the query, 0.9 with the first --
+    // under the ranker's 0.92 MMR line, so both rank), so the first delta has two
+    // to deliver and the second none.
+    const near2 = Array(DIMENSIONS).fill(0);
+    near2[0] = 0.9;
+    near2[1] = Math.sqrt(1 - 0.81);
+    db.prepare(
+      `INSERT INTO memories (id, memory_type, layer, title, content, journey, created_at, embedding)
+       VALUES ('m-near-2', 'insight', 'ego', 'Second near memory', 'also about drafting', 'mirror', '2026-10-02T00:00:00Z', ?)`,
+    ).run(float32Blob(near2));
+    db.prepare("INSERT INTO memories_fts(memories_fts) VALUES ('rebuild')").run();
+    activate(db, "cfo", "mirror");
+    const provider = new CountingEmbeddingProvider(unitVector(0));
+    const first = await runDoorman(
+      db,
+      { kind: "delta", query: "drafting", persona: null },
+      runInput(provider),
+    );
+    assert.match(first.stdout, /Near memory/);
+    assert.match(first.stdout, /Second near memory/);
+    const remembered = JSON.parse(
+      String(
+        db.prepare("SELECT metadata FROM runtime_sessions WHERE session_id = 'S'").get()?.metadata,
+      ),
+    ) as { doorman_delivered?: string[] };
+    assert.deepEqual([...(remembered.doorman_delivered ?? [])].sort(), ["m-near", "m-near-2"]);
+
+    const second = await runDoorman(
+      db,
+      { kind: "delta", query: "drafting again", persona: null },
+      runInput(provider),
+    );
+    assert.doesNotMatch(second.stdout, /=== relevant memories ===|Near memory/);
+
+    // The explicit turn: the list starts over, and the next delta delivers again.
+    await runDoorman(db, { kind: "full", query: "drafting" }, runInput(provider));
+    const reset = JSON.parse(
+      String(
+        db.prepare("SELECT metadata FROM runtime_sessions WHERE session_id = 'S'").get()?.metadata,
+      ),
+    ) as { doorman_delivered?: string[] };
+    assert.deepEqual(reset.doorman_delivered ?? [], []);
+    const third = await runDoorman(
+      db,
+      { kind: "delta", query: "drafting", persona: null },
+      runInput(provider),
+    );
+    assert.match(third.stdout, /Near memory/);
+  } finally {
+    db.close();
+  }
+});
+
 test("runDoorman delta without a provider: FTS memories, no attachments, no throw, line present", async () => {
   const { db } = fixture();
   try {

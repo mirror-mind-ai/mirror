@@ -42,6 +42,7 @@
 // attachment embedding), plus the skill's own load until TS3 teaches it to
 // trust this line.
 
+import { isCommandTurn } from "#conversation/commandTurn.ts";
 import type { Database, WritableDatabase } from "#db/database.ts";
 import { memoriesById } from "#frontDoor/searchRoute.ts";
 import { getIdentityContent } from "#identity/identityRead.ts";
@@ -50,12 +51,16 @@ import { embeddingLedgerHook } from "#observability/ledgerHooks.ts";
 import { detectPersona, type PersonaRoutingRow } from "#persona/detectPersona.ts";
 import { type EmbeddingProvider, generateEmbeddingSafely } from "#providers/embedding.ts";
 import { searchMemoriesWithStatus } from "#search/memorySearch.ts";
-import { isCommandTurn } from "#conversation/commandTurn.ts";
+import { pythonJsonDumps } from "#util/pyGenerators.ts";
 import { relevantAttachments } from "./context.ts";
 import { personaRoutingRows } from "./defaultResolution.ts";
 import { mirrorForm } from "./mirrorForm.ts";
 import { type MirrorLoadInput, runMirrorLoad } from "./orchestration.ts";
-import { getRuntimeSession, updateRuntimeSessionColumns } from "./runtimeSession.ts";
+import {
+  decodeMetadata,
+  getRuntimeSession,
+  updateRuntimeSessionColumns,
+} from "./runtimeSession.ts";
 
 /** The session's Mirror fields as the decision reads them; null when unnamed or unknown. */
 export interface DoormanSessionState {
@@ -95,6 +100,43 @@ export const DOORMAN_MEMORY_LIMIT = 5;
  * behavior: a lexical hit is relevance by another signal, not a miss.
  */
 export const DOORMAN_MEMORY_SEMANTIC_THRESHOLD = 0.4;
+
+/**
+ * Where the session remembers the memories the doorman has delivered
+ * (`runtime_sessions.metadata`, beside `operating_mode`). Every delta is a
+ * message that stays in the transcript, and US4 measured 3 of 5 memories
+ * repeating on a follow-up: a delta skips what the conversation already holds
+ * and fills from the next ones above the threshold. A full load starts the
+ * list over -- the folder is fresh, and so is what the model has read.
+ */
+export const DOORMAN_DELIVERED_METADATA_KEY = "doorman_delivered";
+
+/** How many ranked memories a delta may read through to fill its five. */
+const DOORMAN_SEARCH_CEILING = 25;
+
+function deliveredMemoryIds(db: Database, sessionId: string | null): Set<string> {
+  if (!sessionId) return new Set();
+  const raw = decodeMetadata(getRuntimeSession(db, sessionId)?.metadata ?? null)[
+    DOORMAN_DELIVERED_METADATA_KEY
+  ];
+  return new Set(
+    Array.isArray(raw) ? raw.filter((id): id is string => typeof id === "string") : [],
+  );
+}
+
+function rememberDelivered(
+  db: WritableDatabase,
+  sessionId: string | null,
+  ids: readonly string[],
+  nowIso: string,
+): void {
+  if (!sessionId) return;
+  const session = getRuntimeSession(db, sessionId);
+  if (!session) return;
+  const metadata = decodeMetadata(session.metadata);
+  metadata[DOORMAN_DELIVERED_METADATA_KEY] = [...ids];
+  updateRuntimeSessionColumns(db, sessionId, { metadata: pythonJsonDumps(metadata) }, nowIso);
+}
 
 /** One ranked memory's scores, content-free, for the front-door log. */
 export interface MemoryScore {
@@ -211,6 +253,9 @@ async function runFull(
     // hook's case 2, until US4) owes nothing. The doorman itself never reads
     // this column; US4 retires its last reader and this write with it.
     updateRuntimeSessionColumns(db, input.sessionId, { hookInjected: true }, input.nowIso());
+    // The conversation's context starts over with the folder: so does the
+    // list of memories the deltas have put in it.
+    rememberDelivered(db, input.sessionId, [], input.nowIso());
   }
   const line = deliveredLine({
     kind: "full",
@@ -249,9 +294,11 @@ async function runDelta(
   // persona.
   const queryEmbedding = await embedOnce(db, decision.query, input);
 
+  const delivered = deliveredMemoryIds(db, input.sessionId);
   const memories = await searchMemoriesWithStatus(db, {
     query: decision.query,
-    limit: DOORMAN_MEMORY_LIMIT,
+    // Read past what the transcript already holds, so a delta still fills.
+    limit: Math.min(DOORMAN_MEMORY_LIMIT + delivered.size, DOORMAN_SEARCH_CEILING),
     provider: input.embeddingProvider,
     ...(queryEmbedding ? { queryEmbedding } : {}),
     // The doorman searches on the system's behalf N times a session: a turn's
@@ -264,10 +311,20 @@ async function runDelta(
   input.onMemoryScores?.(
     memories.results.map((result) => ({ score: result.score, semantic: result.semantic })),
   );
-  const relevant = memories.degraded
-    ? memories.results
-    : memories.results.filter((result) => result.semantic >= DOORMAN_MEMORY_SEMANTIC_THRESHOLD);
+  const relevant = (
+    memories.degraded
+      ? memories.results
+      : memories.results.filter((result) => result.semantic >= DOORMAN_MEMORY_SEMANTIC_THRESHOLD)
+  )
+    .filter((result) => !delivered.has(result.id))
+    .slice(0, DOORMAN_MEMORY_LIMIT);
   if (relevant.length > 0) {
+    rememberDelivered(
+      db,
+      input.sessionId,
+      [...delivered, ...relevant.map((result) => result.id)],
+      input.nowIso(),
+    );
     const rows = memoriesById(
       db,
       relevant.map((result) => result.id),
