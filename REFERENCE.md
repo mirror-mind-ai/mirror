@@ -404,7 +404,7 @@ What a turn costs, and where it is counted:
 | Turn | Doorman | Model calls | `llm_calls` |
 |------|---------|-------------|-------------|
 | Mirror Mode off, ordinary | nothing | none | — |
-| explicit form | full folder | reception (when `MEMORY_RECEPTION` is on) and the attachment embedding, as `mirror load --query` | as `mirror load` writes them |
+| explicit form | full folder | reception (when `MEMORY_RECEPTION` is on) and, when there are attachments to score, the query's embedding, as `mirror load --query` | as `mirror load` writes them |
 | Mirror Mode on, ordinary | delta | one embedding, shared by the memory and attachment searches | one row, `role = embedding` |
 
 The delta's memory search writes no reinforcement (`memory_access_log`): the doorman
