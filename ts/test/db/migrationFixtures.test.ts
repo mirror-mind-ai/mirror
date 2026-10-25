@@ -12,8 +12,8 @@ import { diffTsInventoryAgainstSnapshot } from "#db/schemaTsDivergence.ts";
 // CV22.DS10.TS5 deleted `TS_AUTHORED_MIGRATION_IDS` from the schema module:
 // with one custodian, "which engine authored this migration" stopped being a
 // schema fact. The id survives here as a FIXTURE fact -- these cases compare
-// against end-states the Python oracle recorded, and 017 is what TypeScript
-// applies beyond them. It goes with the oracle at plateau 3.
+// against end-states the Python oracle recorded, and 017 and 018 are what
+// TypeScript applies beyond them. It goes with the oracle at plateau 3.
 const TS_ONLY_MIGRATION_IDS: readonly string[] = [
   "017_journey_parent_column",
   "018_drop_hook_injected",
