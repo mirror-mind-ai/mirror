@@ -18,6 +18,8 @@
 //      scores has its section delivered and becomes the session's; the
 //      memories and attachments relevant to the prompt follow; the identity
 //      layers are not repeated -- they already sit in the transcript;
+//      a skill invocation other than the Mirror form is not a question and
+//      gets nothing (CR160's command-turn rule);
 //   3. Mirror Mode not active -> nothing. The model's own routing may invoke
 //      the skill; the session learns that load from the harness (TS1), and the
 //      doorman takes over from the next turn.
@@ -48,6 +50,7 @@ import { embeddingLedgerHook } from "#observability/ledgerHooks.ts";
 import { detectPersona, type PersonaRoutingRow } from "#persona/detectPersona.ts";
 import { type EmbeddingProvider, generateEmbeddingSafely } from "#providers/embedding.ts";
 import { searchMemoriesWithStatus } from "#search/memorySearch.ts";
+import { isCommandTurn } from "#conversation/commandTurn.ts";
 import { relevantAttachments } from "./context.ts";
 import { personaRoutingRows } from "./defaultResolution.ts";
 import { mirrorForm } from "./mirrorForm.ts";
@@ -132,6 +135,12 @@ export function decideDoorman(input: {
   const explicit = mirrorForm(input.prompt);
   if (explicit) return { kind: "full", query: explicit.query };
   if (!input.state?.active) return { kind: "nothing" };
+  // A skill invocation is not a question to the mirror (CR160's rule for the
+  // logger, held here since CV9.DS8.US5's walk): `/mm-build`, `/mm-journeys`,
+  // `/mm-explore` paid an embedding and got a delta, and one Builder card was
+  // signed. The Mirror form, the one skill whose argument IS the question,
+  // was answered above.
+  if (isCommandTurn(input.prompt)) return { kind: "nothing" };
   const match = detectPersona(input.prompt, input.personas)[0]?.key ?? null;
   const persona = match !== null && match !== input.state.persona ? match : null;
   return { kind: "delta", query: input.prompt, persona };

@@ -197,6 +197,39 @@ test("decideDoorman: an unnamed session reads as inactive", () => {
   );
 });
 
+test("decideDoorman: a skill command that is not the Mirror form → nothing, even with Mirror Mode on", () => {
+  // Debt paid by CV9.DS8.US5's walk: `/skill:mm-build mirror`, `/skill:mm-journeys`,
+  // and `/skill:mm-explore` each paid an embedding and got a delta, and on one
+  // build turn the model signed the Builder card. A skill invocation is not a
+  // question to the mirror (CR160's rule for logging holds here too).
+  const active = { active: true, persona: "cfo", journey: "mirror" };
+  for (const prompt of [
+    "/skill:mm-build mirror",
+    "/skill:mm-journeys",
+    "/mm-explore deactivate",
+    "$mm-journeys",
+    "$mirror-mind:mm:build mirror",
+    "/compact",
+  ]) {
+    assert.deepEqual(
+      decideDoorman({ prompt, state: active, personas: PERSONAS }),
+      { kind: "nothing" },
+      prompt,
+    );
+  }
+  // The Mirror form is the exception, in every spelling: it IS the question.
+  assert.equal(
+    decideDoorman({ prompt: "$mm-mirror what about the budget", state: active, personas: PERSONAS })
+      .kind,
+    "full",
+  );
+  // And "$5 a month" is English, not a command.
+  assert.equal(
+    decideDoorman({ prompt: "$5 a month for the budget", state: active, personas: PERSONAS }).kind,
+    "delta",
+  );
+});
+
 test("decideDoorman: the explicit form → full, with the query after the form, in any state", () => {
   for (const state of [null, { active: false, persona: null, journey: null }]) {
     assert.deepEqual(
