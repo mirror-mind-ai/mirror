@@ -79,8 +79,8 @@ a column-level assertion in the existing test, a few lines. Out of this story's 
 
 ## Validation Evidence
 
-**Driver's run, 2026-10-25** (commits `23e110c4`..`27859e51` on main; the Navigator's
-reading is pending):
+**Driver's run, 2026-10-25** (commits `23e110c4`..`27859e51` on main). **Accepted by the Navigator, 2026-10-25**, with memories kept out of
+Getting Started's shared sentence:
 
 - `runtimeParityDocs.test.ts` and `mirrorSkillContract.test.ts`: 10 tests, 10 pass.
   `checkDocLinks`: clean. `git diff --check` over the story's commits: clean.
