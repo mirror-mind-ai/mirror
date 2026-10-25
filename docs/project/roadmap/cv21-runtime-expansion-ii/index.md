@@ -2,7 +2,7 @@
 
 # CV21 — Runtime Expansion II: Plugin & MCP Convergence
 
-**Status:** ✅ Done — 2026-10-24. All twelve Delivery Stories are done. Their work shipped in v0.33.0 through v0.36.3, except DS11's, which waits for CV21's own release.
+**Status:** ✅ Done — 2026-10-24. All twelve Delivery Stories are done. Their work shipped in v0.33.0 through v0.36.3, and DS11's in [v0.37.0](../../../releases/v0.37.0.md).
 **Goal:** Bring Mirror Mind's runtime adapters into the plugin/hook/MCP era. Package Mirror once as a canonical plugin (Claude-compatible) plus an MCP server, prove it on Claude, then propagate it to Codex (upgrade L3→L4), Antigravity (migrate off the deprecated Gemini CLI), and Grok Build (new) — including the external extension surface, without duplicating business logic.
 
 > **Restart notice (2026-10-13):** CV21 stopped after DS2.US2 on 2026-06-23, the last
@@ -355,9 +355,9 @@ CV21 is done when:
   docs: [DS8](cv21-ds8-gemini-cli-sunset/index.md), released in v0.35.0.
 - The contract, the decisions log, and the parity matrix, with README, Getting
   Started, REFERENCE, and the architecture held to it:
-  [DS11](cv21-ds11-contract-docs-refresh/index.md), done 2026-10-24, not yet released.
+  [DS11](cv21-ds11-contract-docs-refresh/index.md), done 2026-10-24, released in [v0.37.0](../../../releases/v0.37.0.md).
   The matrix gives Claude Code, Codex, and Antigravity L4, and Grok Build and Pi L3,
-  and names Gemini CLI retired.
+  and names Gemini CLI retired. Pi has reached L4 since, through CV9.DS8, in the same release.
 
 ---
 

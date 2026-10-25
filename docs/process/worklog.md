@@ -12,6 +12,16 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-10-25 — v0.37.0 released: The Mirror Stays in the Conversation
+
+Minor release closing CV9.DS8, One Doorman, and with CV21.DS11, CV21, Runtime Expansion II.
+On Pi, Claude Code, Codex, and Antigravity, Mirror's context reaches the model before it
+answers through one doorman; an explicit turn loads once; one signature rule; Pi at L4,
+measured live. The runtime interface contract holds one parity matrix, sourced and held by
+a test. Migration 018 drops `runtime_sessions.hook_injected`, applied on each home's next
+open. Codex, Antigravity, and Grok Build keep a plugin copy that `runtime diagnose` names
+the command to bring level. Release note: [v0.37.0](../releases/v0.37.0.md).
+
 ### 2026-10-25 — CV9.DS8 closed: One Doorman
 
 CV9.DS8 is Done. On Pi, Claude Code, Codex, and Antigravity, Mirror's context reaches the
