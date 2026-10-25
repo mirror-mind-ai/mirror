@@ -145,3 +145,49 @@ walk on the installed Pi is pending):
 - Latency: a `nothing` turn 0.21 s (the per-turn cost of every non-Mirror turn on
   Pi); a delta ~1.0 s; the full turn 1.33 s with reception — under `pi.exec`'s 30 s
   cap, the embedding (15 s) and reception (10 s) timeouts unchanged from US4.
+
+- **Navigator walk 1, 2026-10-25** (Pi 1.4.0, `~/.pi/agent/bin/pi`, the tree linked on
+  both sides, home 61 MB): **in the checkout, the extension had no handlers** — no
+  welcome, no session row, no doorman, the model loaded itself on every turn (the
+  `mirror-logger.log` showed only `second registration skipped`); from `/tmp`, rows 1–2
+  and 6–7 passed (28,400 and 6,828 chars delivered, no load call, `◇ therapist` then
+  `◇ cfo`). Two defects found and fixed (plan, Found During Implementation 4 and 5):
+  the process-scoped registration guard against Pi 1.4.0's own dedupe, and the first
+  prompt's logger erasing the doorman's persona and journey. Re-walked below.
+- **Navigator walk 2, 2026-10-25, after the fixes** — Pi 1.4.0, the checkout
+  (`~/dev/workspace/mirror-dev`), `claude-sonnet-5-5`, embeddings read between turns:
+
+  | # | Prompt | Observed | Verdict |
+  |---|--------|----------|---------|
+  | A0 | startup | `session_start fired`, `welcome: ◇ Mirror · vinicius-dev` in the log (the card is a notify, not in the pasted transcript) | pass |
+  | 1 | `/skill:mm-mirror como lido com a ansiedade…` | `◇ therapist`, **no** `mirror mirror load` call; 28,400 chars delivered; embeddings 712 → 712 (reception, no embedding on the full turn) | pass |
+  | 2 | `qual seria o primeiro passo?` | `◇ therapist` — the persona held through a no-score turn (the logger fix); 370 chars; 713 | pass |
+  | 3 | `como organizo meu budget…` | `◇ cfo`, no load; 6,828 chars; 714 | pass |
+  | 4 | `e como separo reserva de emergência…` | `◇ cfo`; 134 chars (the line alone); 715 | pass |
+  | 5 | `e depois disso?` | `◇ cfo`; 134 chars; 716 | pass |
+  | 6 | `/skill:mm-build mirror`, then `what tests cover the hooks?` | Builder surface, then a plain answer, no signature; 719 after `build load` (its own two embeddings plus the switch turn's delta), **719 unchanged** on the Builder prompt, no block | pass |
+  | 7 | `/new`; `tenho sentido que estou me dispersando demais` | the model invoked the skill itself, `mirror mirror load` **once** (15.3 s), `◇ therapist`; no block (719) | pass |
+  | 8 | `como organizo meu budget…` | `◇ cfo`, **no** load call; 6,828 chars; 720 — TS1's P2 live: the model's load named the Pi session | pass |
+  | 9 | `/new`; `what time is it in Lisbon?` | ordinary answer; no block; 720 | pass |
+  | 10 | `/resume` session B; `e o que mais?` | `◇ cfo`, no load call; a 134-char delta (the line alone); 721. Observed: a resumed Mirror-active session gets deltas on a transcript Pi restored whole — no compaction had happened, so the folder was still there | observed |
+  | — | `/skill:mm-journeys`, `/skill:mm-build mirror`, `/skill:mm-explore mirror`, `/skill:mm-explore deactivate`, `/skill:mm-new` | each answered as before; `messages` holding the block: **0**; `mirror log` never called by the model | pass |
+  | 11 | from `/tmp` (walk 1): rows 1–2, 7–8 | rows 1–2 and 8 as above; the unprompted question in a fresh `/tmp` session was answered generically, in Portuguese, with no skill — the model's routing, as TS1 saw once on Claude Code | pass (7: the model) |
+
+  Semantic scores logged by the walk's deltas (`memory_semantic=`, top five): the
+  cfo budget prompt 0.403/0.398/0.428/0.384/0.373 (two kept, twice); reserve
+  0.237/0.219/0.229/0.387/0.381 (none); "e depois disso" 0.387/0.144/0.245/0.161/0.348
+  (none); the `/skill:mm-build mirror` turn 0.483/0.528/0.547/0.433/0.432 (five:
+  memories about this project); journeys 0.294…0.309 (none); explore
+  0.384/0.437/0.410/0.458/0.445 (four). **0.4 confirmed**: every memory that passed was
+  about the prompt; the empty deltas were 134 bytes.
+
+  **Observations, carried to Debt Review:** (1) a skill-command turn while Mirror Mode
+  is on (`/skill:mm-build`, `/skill:mm-journeys`, `/skill:mm-explore`) is an ordinary
+  turn to the doorman, so it pays an embedding and gets a delta — and on one
+  `/skill:mm-build mirror` turn the model signed `◇ engineer` on the Builder card; the
+  next Builder prompt was clean. DS8 policy, not US5's: the doorman could read a skill
+  command as not-a-question. (2) `/skill:mm-new` runs `mirror mirror deactivate`
+  without `--session-id`, which refuses with "no state change" — so `mm-new` does not
+  end Mirror Mode on Pi even with the session named; pre-existing (the route reads
+  `--session-id` alone). (3) The model's own load on row 7 took 15.3 s — the reception
+  call near its 10 s timeout plus the embedding; the doorman's turns were ~1 s.

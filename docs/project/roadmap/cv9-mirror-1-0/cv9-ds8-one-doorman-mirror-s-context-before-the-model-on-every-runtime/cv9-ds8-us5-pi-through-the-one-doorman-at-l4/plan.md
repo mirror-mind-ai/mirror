@@ -219,6 +219,33 @@ parity row to L4 with version, binary, and date — which is what this User Stor
    chars, still `◇ therapist`), a cfo follow-up (6,828 chars, `◇ cfo`); two
    embeddings for the two deltas.
 
+## Debt Paid (2026-10-25, Navigator: all of it, now)
+
+After the walk passed, the Navigator chose to pay every item the walk and the review
+had carried rather than defer them. Each landed with a test first, one commit each:
+
+1. **A skill command is not a question** — `decideDoorman` answers nothing for a
+   prompt that is a skill invocation other than the Mirror form (CR160's
+   `isCommandTurn`); `/skill:mm-journeys` no longer pays an embedding or gets a
+   delta, and no Builder card gets a signature. Confirmed live.
+2. **`mirror deactivate` honors the harness's session** — `/mm-new` ends Mirror Mode
+   on Pi; the warning stays for the truly unnamed case. Confirmed live.
+3. **Memories delivered once stay delivered** — the session row remembers the ids the
+   doorman delivered (`doorman_delivered`); a delta skips them and fills from the
+   next above the threshold; a full load resets.
+4. **Compaction** — the extension's `session_compact` runs `mirror doorman --forget`;
+   the next ordinary turn in Mirror Mode is full again, routed from its prompt
+   (`doorman_refresh`), then deltas resume.
+5. **`hook_injected`** — the four writers and the column are gone (migration 018);
+   the schema-divergence module enumerates the removal; the status and diagnose
+   goldens moved 17 → 18 by script (as TS5 F19 moved them 16 → 17); the
+   runtime-session goldens lost the key. The migration ran on a copy of the home:
+   `current (18/18)`, the column gone, the doorman answering.
+
+Not payable by code, left as observations: the model answering an unprompted
+question generically in a `/tmp` session (its routing), and US4's checkout-plus-plugin
+double hook on Claude Code (its own CR).
+
 ## Non-Goals
 
 - Do not implement sibling roadmap item: Antigravity through the one doorman.
