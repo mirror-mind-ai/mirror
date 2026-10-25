@@ -413,9 +413,11 @@ function seed(scenario: string, projectOverride?: string): WritableDatabase {
   } else if (scenario === "mode_without_journey") {
     activateOperatingMode(db, { mode: "Builder Mode", journey: null, sessionId: SESSION_ID }, NOW);
   } else if (scenario !== "no_active_mode") {
+    // The scenario's window loaded Builder itself: its stamp carries the name
+    // (CR008 option B, landed by CV9.DS8.US5).
     activateOperatingMode(
       db,
-      { mode: "Builder Mode", journey: "demo", sessionId: SESSION_ID },
+      { mode: "Builder Mode", journey: "demo", sessionId: SESSION_ID, named: true },
       NOW,
     );
   }
@@ -1041,6 +1043,17 @@ function addClosedBuilderSession(db: WritableDatabase): void {
   upsertRuntimeSession(db, CLOSED_SESSION, { active: false, closedAt: NOW }, NOW);
 }
 
+/**
+ * A live session carrying the demo journey in Builder Mode by a GUESSED stamp:
+ * another window's `build load`, which named no session, landed on this row as
+ * the most recently updated one (CR008 decision C keeps that write). Since
+ * CV9.DS8.US5 runtimes name their sessions, so a lifecycle command named to
+ * this row must not take the guess for the window's own choice (option B).
+ */
+function addGuessedBuilderSession(db: WritableDatabase): void {
+  activateOperatingMode(db, { mode: "Builder Mode", journey: "demo", sessionId: SESSION_ID }, NOW);
+}
+
 /** A live session carrying the demo journey in a mode that is not Builder's. */
 function addMirrorModeSession(db: WritableDatabase): void {
   activateOperatingMode(
@@ -1117,6 +1130,14 @@ const UNNAMED_VARIANTS: ReadonlyArray<{
       addDecoyGlobalMode(db);
     },
     environmentSessionId: MIRROR_WINDOW,
+  },
+  {
+    name: "MIRROR_SESSION_ID naming a session whose Builder stamp was guessed (CR008 option B)",
+    plant: (db) => {
+      addGuessedBuilderSession(db);
+      addDecoyGlobalMode(db);
+    },
+    environmentSessionId: SESSION_ID,
   },
 ];
 

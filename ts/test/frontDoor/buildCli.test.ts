@@ -138,6 +138,9 @@ test("build load names its session from CLAUDE_CODE_SESSION_ID or CODEX_SESSION_
         /"active_mode": "Builder Mode"/,
         `${name}: the named session is stamped`,
       );
+      // CR008 option B (landed by CV9.DS8.US5): the stamp says it was written
+      // under the name, which is what lets a lifecycle command bind from it.
+      assert.match(String(stamped), /"named_session": true/, `${name}: provenance`);
       assert.equal(decoy, null, `${name}: the guess was not taken`);
     }
   } finally {
