@@ -186,7 +186,7 @@ with `<pkg>` already filled in; `<pkg>` is `$(npm root -g)/mirror-mind`.
 | **Pi** | `pi install "<pkg>"` — Pi loads the package in place, so `npm install -g` upgrades it too |
 | **Claude Code** | `mkdir -p ~/.claude/skills && ln -s "<pkg>/plugins/mirror-mind" ~/.claude/skills/mirror-mind` — the plugin loads every session: its skills, its hooks, and the MCP server |
 | **Codex** | 1. `codex plugin marketplace add "<pkg>"` 2. `codex plugin add mirror-mind@mirror-mind` — the package is a marketplace with one plugin, the same one Claude Code loads; at the next session Codex asks once to trust its hooks, and from then on the plugin loads every session: its skills, its hooks, and the MCP server |
-| **Antigravity** | `agy plugin install "<pkg>/plugins/mirror-mind"` — one command stages the 25 skills and the plugin's agy-native layer (its rules, hooks file, and MCP entry): the skills, the Operating Instructions as rules, Mirror Mode context injected once per user turn, and each turn logged as `antigravity` from the transcript (CV21.DS7). agy has no session-end signal, so a conversation closes when your next session starts, like Codex's |
+| **Antigravity** | `agy plugin install "<pkg>/plugins/mirror-mind"` — one command stages the 25 skills and the plugin's agy-native layer (its rules, hooks file, and MCP entry): the skills, the Operating Instructions as rules, Mirror Mode from the first turn of every conversation (CV9.DS8.TS6), and each turn logged as `antigravity` from the transcript (CV21.DS7). agy has no session-end signal, so a conversation closes when your next session starts, like Codex's |
 | **Grok Build** | 1. `grok plugin install "<pkg>/plugins/mirror-mind" --trust` 2. `ln -s "<pkg>/AGENTS.md" ~/.grok/rules/mirror-mind.md` — the first copies the plugin under `~/.grok/installed-plugins/` and enables it: its skills, its hooks, and the MCP server; `--trust` activates the hooks and the server, and Grok does not ask again. The second loads the Operating Instructions as a rule in every Grok session, in every project, about 2.2k tokens each (Grok shows a session-start hook's context on screen only, so the plugin cannot deliver them the way it does on Claude Code and Codex). Grok keeps a copy, so after an update `mirror runtime diagnose` names the command that brings it level — `grok plugin update` leaves a local copy as it is. If you also wired Claude Code, Grok already read the skills from that link, with no hooks; after step 1 each skill appears twice in Grok's menu, and the hooks run once (measured on grok 1.0.62, CV21.DS10.US1). The MCP server attaches to every session; Grok's model reaches its seven tools through its `search_tool` and `use_tool` meta-tools, as `mirror-mind__list_journeys`, the way Codex's does through `tool_search` (CV21.DS10.TS2) |
 
 Each step was verified against the runtime's own documentation, or the runtime
@@ -315,9 +315,11 @@ name, as in Claude Code —
 /mirror-mind:mm:journey <slug>
 ```
 
-— the Operating Instructions arrive as the plugin's rules, and Mirror Mode
-context is injected once per turn without an explicit invocation (measured on
-agy 1.4.2, CV21.DS7.US4). Each turn is logged as `antigravity`; agy has no
+— the Operating Instructions arrive as the plugin's rules (measured on agy 1.4.2,
+CV21.DS7.US4), and Mirror Mode is on from the first turn of every conversation,
+with no command: Mirror's context reaches the model before each answer, all of it
+on the first turn, then the persona each question calls for (measured on agy 1.4.7,
+CV9.DS8.TS6). Each turn is logged as `antigravity`; agy has no
 session-end signal, so the conversation closes when your next session starts.
 
 **If you used Gemini CLI before this version.** You did if, at an earlier
@@ -384,21 +386,24 @@ the rule you linked in step 2. None of this needs a step beyond the wiring above
 Extensions you install later reach each runtime through a plugin of their own; see
 [Your extensions reach each runtime](#your-extensions-reach-each-runtime).
 
-What each runtime gives you, as measured:
+What each runtime gives you, as measured. On Pi, Claude Code, Codex, and
+Antigravity, Mirror hands the model its context before every answer while Mirror
+Mode is on: all of it on the turn Mirror Mode starts, then the persona each question
+calls for, so the answer comes signed with that persona's name.
 
 | Runtime | What you get | Measured on |
 |---------|--------------|-------------|
-| Pi | the skills from the menu, the Operating Instructions in every session, Mirror Mode when you ask for it (`/mm-mirror`): the model loads Mirror's context itself, your turns and replies remembered | Pi 1.4.0, 2026-10-22 |
-| Claude Code | the skills, the Operating Instructions in every session, Mirror's context handed to the model by the plugin when you enter Mirror Mode, your turns and replies remembered, Mirror's tools for the model | Claude Code 2.1.296, 2026-10-13 |
-| Codex | the same as Claude Code; a session is remembered once Codex closes it, about 30 minutes after you quit | Codex 0.163.0, 2026-10-17 |
-| Antigravity | the skills, the Operating Instructions as the plugin's rules, Mirror's context handed to the model on every turn from the start of a session, your turns and replies remembered, Mirror's tools | agy 1.4.2, 2026-10-18 |
+| Pi | the skills from the menu, the Operating Instructions in every session, Mirror Mode from the turn you ask for it (`/mm-mirror`), or from a personal question the model takes to the mirror on its own, your turns and replies remembered | Pi 1.4.0, 2026-10-25 |
+| Claude Code | the skills, the Operating Instructions in every session, Mirror Mode from the turn you ask for it, or from a personal question the model takes to the mirror on its own, your turns and replies remembered, Mirror's tools for the model | Claude Code 2.1.310, 2026-10-25 |
+| Codex | the same as Claude Code; a session is remembered once Codex closes it, about 30 minutes after you quit | Codex 0.164.0, 2026-10-25 |
+| Antigravity | the skills, the Operating Instructions as the plugin's rules, Mirror Mode from the first turn of every conversation, your turns and replies remembered, Mirror's tools | agy 1.4.7, 2026-10-25 |
 | Grok Build | the skills, the Operating Instructions from the rule you linked, Mirror Mode when you ask for it (`/mm-mirror`): the model loads Mirror's context itself, with no automatic context per turn, your turns and replies remembered, Mirror's tools | Grok Build 1.0.62, 2026-10-18 |
 
-Each runtime was measured on the version named; a newer version has not been
+Each row names the version Mirror was last measured on; a newer version has not been
 re-measured, and `mirror runtime diagnose` reports wiring that has fallen behind or
 broken. The full [parity matrix](product/specs/runtime-interface/index.md#parity-matrix),
-with levels, binaries, and the record behind each row, is in the runtime interface
-contract.
+with levels, binaries, the version behind each part of a row, and the record behind
+it, is in the runtime interface contract.
 
 **If a runtime is launched from your desktop rather than a terminal**, it may not
 inherit the `PATH` that holds `node` and `mirror`, and its hooks will skip
