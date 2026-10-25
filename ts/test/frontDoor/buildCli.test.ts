@@ -6,6 +6,7 @@ import { existsSync, mkdirSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import { bootstrapDatabase } from "#db/bootstrap.ts";
+import { openDatabaseReadOnly } from "#db/database.ts";
 import { tempDir } from "#helpers/tempDir.ts";
 import { createJourney } from "#journey/journeyWrite.ts";
 
@@ -92,6 +93,53 @@ test("build load crosses the real route and logs calls, never the derived briefi
     const log = readFileSync(join(f.home, "front-door.log"), "utf8");
     assert.match(log, /\tbuild\tts\texit=0\tleaf=load calls=2/);
     assert.doesNotMatch(log, /BRIEFING_SECRET/);
+  } finally {
+    rmSync(f.root, { recursive: true, force: true });
+  }
+});
+
+// CV9.DS8.US4, found by the live walk: on Claude Code the model's own
+// `mirror build load` carries no MIRROR_SESSION_ID, only CLAUDE_CODE_SESSION_ID,
+// and the Builder route read the first alone -- so Builder Mode was stamped on
+// a GUESSED session (the most recently updated row, another runtime's) and the
+// doorman kept delivering "answer as the mirror" on every Builder turn of the
+// Claude session. The route now names its session the way the mirror route
+// does (TS2's reader), so the mode lands where the doorman reads it.
+test("build load names its session from CLAUDE_CODE_SESSION_ID or CODEX_SESSION_ID when no --session-id is passed", () => {
+  const f = fixture();
+  const fixtures = new URL("../fixtures/builder-load/", import.meta.url).pathname;
+  try {
+    const db = bootstrapDatabase(join(f.home, "memory.db"));
+    // A decoy: the most recently updated active row, which the guess would pick.
+    db.prepare(
+      "INSERT INTO runtime_sessions (session_id, interface, active, started_at, updated_at) VALUES ('decoy', 'pi', 1, '2099-01-01T00:00:00Z', '2099-01-01T00:00:00Z')",
+    ).run();
+    db.close();
+    for (const [name, id] of [
+      ["CLAUDE_CODE_SESSION_ID", "claude-s1"],
+      ["CODEX_SESSION_ID", "codex-s1"],
+    ] as const) {
+      const result = run(f, ["build", "load", "demo"], {
+        MIRROR_TS_BUILD_LLM_REPLAY: join(fixtures, "replay-llm.json"),
+        MIRROR_TS_BUILD_EMBEDDING_REPLAY: join(fixtures, "replay-embedding.json"),
+        [name]: id,
+      });
+      assert.equal(result.status, 0, result.stderr);
+      const read = openDatabaseReadOnly(join(f.home, "memory.db"));
+      const stamped = read
+        .prepare("SELECT metadata FROM runtime_sessions WHERE session_id = ?")
+        .get(id)?.metadata;
+      const decoy = read
+        .prepare("SELECT metadata FROM runtime_sessions WHERE session_id = 'decoy'")
+        .get()?.metadata;
+      read.close();
+      assert.match(
+        String(stamped),
+        /"active_mode": "Builder Mode"/,
+        `${name}: the named session is stamped`,
+      );
+      assert.equal(decoy, null, `${name}: the guess was not taken`);
+    }
   } finally {
     rmSync(f.root, { recursive: true, force: true });
   }

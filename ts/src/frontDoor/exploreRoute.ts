@@ -61,7 +61,7 @@ import { getIdentityContent } from "#identity/identityRead.ts";
 import { getProjectPath } from "#journey/journeyStatus.ts";
 import { loadMirrorContext } from "#mirror/context.ts";
 import { persistStickyDefaults } from "#mirror/orchestration.ts";
-import { resolveRuntimeSessionId } from "#mirror/runtimeSession.ts";
+import { environmentSessionId, resolveRuntimeSessionId } from "#mirror/runtimeSession.ts";
 import { activateOperatingMode, deactivateOperatingMode } from "#mode/operatingMode.ts";
 import { newId, nowIso } from "#util/pyGenerators.ts";
 import { optionValue, stripOptionWithValue } from "./args.ts";
@@ -430,7 +430,7 @@ async function runPromote(
   // `--session-id`, which its promote parser does not even accept.
   const result = await runBuildLoad(
     db,
-    { slug, environmentSessionId: process.env.MIRROR_SESSION_ID ?? null },
+    { slug, environmentSessionId: environmentSessionId(process.env) },
     runtime.deps,
   );
   process.stderr.write(result.stderr);

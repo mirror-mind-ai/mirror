@@ -52,6 +52,7 @@ import { setIdentity } from "#identity/setIdentity.ts";
 import { IdentityRootExistsError, initUserHome, TemplatesNotFoundError } from "#init/init.ts";
 import { JOURNEY_PATH_LAYER } from "#journey/journeyStatus.ts";
 import { JourneyNotFoundError } from "#journey/journeyWrite.ts";
+import { environmentSessionId } from "#mirror/runtimeSession.ts";
 import {
   CallOutcomeTally,
   formatCallOutcome,
@@ -1770,7 +1771,11 @@ async function dispatchTs(argv: readonly string[]): Promise<number | DispatchOut
       createLoadRuntime: (db, dbPath, ignoreProductionRole) =>
         createBuildLoadRuntime({ db, dbPath, ignoreProductionRole }),
       nowIso,
-      environmentSessionId: process.env.MIRROR_SESSION_ID ?? null,
+      // The session the harness named -- MIRROR_SESSION_ID, else Claude Code's or
+      // Codex's own -- the same reader the mirror route uses (CV9.DS8.US4: read
+      // MIRROR_SESSION_ID alone, a Builder switch on Claude Code stamped a guessed
+      // session and the doorman never saw it).
+      environmentSessionId: environmentSessionId(process.env),
     });
   }
   if (isInit(argv)) return runInit(argv);
