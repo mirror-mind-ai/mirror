@@ -12,6 +12,29 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-10-24 — CV9.DS8.US4: Claude Code and Codex through the one doorman
+
+The Claude-family inject hook (`mirror-inject.sh` → `claudeInject`) no longer carries a
+policy of its own. It keeps CR143's runtime check and CR100's missing-session warning,
+then hands the turn to `mirror doorman --prompt … --session-id …` in-process and writes
+back what it delivers: the full folder on the explicit form, opened by the delivered
+line the `mm-mirror` skill trusts (TS3), so the turn loads once; a delta — the newly
+routed persona, the memories and attachments for the prompt, one embedding — on each
+ordinary turn while the session is in Mirror Mode; nothing otherwise. The hook's two
+cases and their reader (`needsInject`, `markInjected`) are gone; nothing reads
+`runtime_sessions.hook_injected` any more, and the column with its four writers is one
+debt item for a `runtime_sessions` migration. The review found what "Mirror Mode on"
+had to mean: `mirror_active` alone is cleared only by `mm-new`, so a `/mm:build` in the
+same session would have put "answer as the mirror" on every Builder turn — the doorman
+now also requires the session's active operating mode (its own row, else the global)
+to be Mirror Mode, and a Mirror load stamps the named session's row so a re-entry
+resumes the deltas. Measured on the CLI against a 61 MB home: a delta is ~1 s and
+2.5–8.5 KB, 3 of 5 memories repeat on a same-domain follow-up (US5's threshold input);
+embedding 15 s and reception 10 s timeouts sit under the hook's 30 s cap. Live
+measurement on the installed Claude Code and Codex is the story's validation; story
+package under
+[CV9.DS8](../project/roadmap/cv9-mirror-1-0/cv9-ds8-one-doorman-mirror-s-context-before-the-model-on-every-runtime/index.md).
+
 ### 2026-10-24 — CV9.DS8.TS3: the mm-mirror skill trusts delivered context, and one signature rule
 
 The `mm-mirror` skill's hard constraint, in both authored bodies (Pi's, which Codex
