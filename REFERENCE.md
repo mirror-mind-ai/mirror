@@ -51,7 +51,7 @@ the bare `/mm-<skill>` and qualifies a skill only when two share a name; the
 | Pi | Codex | Claude Code | Purpose | Main Arguments |
 |---------|-------|-------------|---------|----------------|
 | `/mm-mirror` | `$mm-mirror` | `/mm:mirror` | Loads identity, persona, journey, and attachments for Mirror Mode | `load [--persona P] [--journey J] [--query Q] [--org]`, `log "summary"`, `journeys` |
-| `mirror mirror doorman` | — | — | Internal: the one doorman — what a runtime puts before the model on a turn ([The doorman](#the-doorman)) | `--prompt "<text>" [--session-id ID]` |
+| `mirror mirror doorman` | — | — | Internal: the one doorman — what a runtime puts before the model on a turn ([The doorman](#the-doorman)) | `--prompt "<text>" [--session-id ID]`, `--forget [--session-id ID]` |
 | `/mm-build` | `$mm-build` | `/mm:build` | Builder Mode for a journey — loads context and project docs | `<slug>` |
 | `/mm-explore` | `$mm-explore` | `/mm:explore` | Explorer Mode for a journey, with explicit deactivation, in-session story surfaces, and Builder handoff artifacts — preserves uncertainty before construction | `<slug>`, `deactivate`, `story show|update|clear|open|thicken|snapshot|attractors|experiment|handoff|promote` |
 | `/mm-soul` | `$mm-soul` | `/mm:soul` | Soul Mode ritual entry and possible-listenings surface for inner-life listening | `[slug]` |
@@ -352,22 +352,37 @@ When no journey context is active it still shows the default mode:
 
 ```bash
 mirror mirror doorman --prompt "<the turn's prompt>" [--session-id ID]
+mirror mirror doorman --forget [--session-id ID]
 ```
 
 One decision in the core (`ts/src/mirror/doorman.ts`, CV9.DS8), called by every
-runtime that can carry context to the model before it answers: in-process by the
-hooks, and as this command by the Pi extension. Given the prompt and the session's
-state it prints nothing, the full folder, or a delta, by one policy:
+runtime that can carry context to the model before it answers: in process by Claude
+Code's and Codex's inject hook and by Antigravity's `PreInvocation`, and as this
+command by the Pi extension. Given the prompt and the session's state it prints
+nothing, the full folder, or a delta, by one policy:
 
 1. **The explicit Mirror form** opens the prompt (`/mm-mirror …`, `/mm:mirror …`, and
    the plugin spellings): the full folder `mirror mirror load --query` builds, under
    the delivered line; the session is marked active by its id.
 2. **Mirror Mode active, an ordinary turn:** the prompt is scored with
    `detect-persona`; a persona that newly scores has its section delivered and
-   becomes the session's; the five memories ranked for the prompt and the
-   attachments above 0.4 follow. The identity layers are not repeated.
+   becomes the session's; up to five memories scoring at least 0.4 on the semantic
+   score, not delivered earlier in the session, and the attachments above 0.4
+   follow. The identity layers are not repeated.
 3. **Mirror Mode not active:** nothing — no provider call, no write, no database
    snapshot.
+
+Mirror Mode is active for a session when its `mirror_active` flag is set and its
+operating mode (the session's own, else the global one) is Mirror Mode
+(CV9.DS8.US4). `mirror mirror deactivate`, which `/mm-new` runs, clears the flag;
+switching to Builder, Explorer, or Soul Mode changes the mode, so those turns get
+nothing while the flag stays set. A skill invocation other than the Mirror form gets
+nothing even in Mirror Mode: it is a command, not a question (CV9.DS8.US5).
+`--forget`, which the Pi extension runs when Pi compacts the session, makes the next
+ordinary turn in Mirror Mode full again, since the folder in the transcript is now a
+summary, and starts the list of delivered memories over (CV9.DS8.US5). Without an
+embedding (no provider, or the call failed) the memory search falls back to the
+lexical index, with no threshold, and the attachments are skipped.
 
 Every turn Mirror Mode is active opens with one line the model reads, even when
 nothing follows it; it carries the persona and the signature rule across the
@@ -380,8 +395,9 @@ conversation:
 
 The session is the one named: `--session-id`, else `MIRROR_SESSION_ID`, else
 `CLAUDE_CODE_SESSION_ID`, else `CODEX_SESSION_ID` — the same reader `mirror mirror
-load` uses, so a load the model runs by itself marks the session the runtime's hooks
-write. The doorman never guesses a session.
+load` uses, so on Pi, Claude Code, and Codex a load the model runs by itself marks the
+session the runtime's hooks write (CV9.DS8.TS1). On Antigravity the model's own
+commands cannot name the session yet (CR169). The doorman never guesses a session.
 
 What a turn costs, and where it is counted:
 
@@ -393,8 +409,9 @@ What a turn costs, and where it is counted:
 
 The delta's memory search writes no reinforcement (`memory_access_log`): the doorman
 searches on the system's behalf on every turn, and a turn's injection must not raise a
-memory's rank for the next. The five scores go to `front-door.log` as numbers
-(`doorman memory_scores=`), content-free, so the threshold can be set from measurement.
+memory's rank for the next. Every ranked memory's scores go to `front-door.log` as numbers
+(`doorman memory_scores=… memory_semantic=…`), content-free, the ones under the
+threshold included; US5 set the threshold from them.
 
 ## Runtime Self-Update
 
