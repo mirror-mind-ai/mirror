@@ -404,41 +404,89 @@ continuity. Rendering and clearing runtime UI are internal effects.
 
 ## Optional: Mirror Mode Identity Injection
 
-Mirror Mode runtimes inject identity context before the model responds. This
+Mirror Mode runtimes put Mirror's context before the model before it answers, and
+one decision in the core says what that context is: the doorman
+(`ts/src/mirror/doorman.ts`, CV9.DS8). A runtime hands it the turn's prompt and its
+session and passes on whatever it returns; the runtime decides nothing itself. This
 is optional — a runtime that does not support Mirror Mode skips this entirely.
 
 ```
-mirror mirror load --context-only --query "<user prompt>" [--persona <id>] [--journey <id>] [--org] [--session-id <id>]
+mirror mirror doorman --prompt "<the turn's prompt>" [--session-id <id>]
+mirror mirror doorman --forget [--session-id <id>]
 ```
 
-- `--context-only` — loads identity without starting a new database session
-  (the model skill starts the session)
-- `--query` — used for attachment search; pass the user's full prompt
-- `--persona`, `--journey`, `--org` — optional; omit to let auto-detection decide
-- `--session-id` — optional but preferred when the runtime has an explicit session identifier; enables session-scoped mirror state and routing
+Given the prompt and the session's state, the doorman prints one of three answers:
 
-The command prints the identity block. The runtime injects this as a system
-note before the model sees the prompt.
+1. **The full folder**, when the prompt opens with the Mirror skill's explicit form:
+   what `mirror mirror load --query` builds from the question — the identity
+   layers, the persona routed from it, the journey, the shadow patterns, and the
+   memories and attachments relevant to it. The session is marked in Mirror Mode
+   by its id.
+2. **A delta**, on an ordinary turn while Mirror Mode is on: the section of a
+   persona the prompt newly scores above threshold (`detectPersona`, a keyword
+   score, no model call), which becomes the session's persona; up to five memories
+   scoring at least 0.4 on the semantic score that the session has not been given
+   yet; and the attachments scoring above 0.4. The identity layers are not
+   repeated: they are already in the transcript. Without an embedding (no provider,
+   or the call failed) the memories come from the lexical search and the
+   attachments are skipped.
+3. **Nothing**, when Mirror Mode is off, and on a skill invocation other than the
+   Mirror form, which is a command, not a question (CR160's rule, held by the
+   doorman since CV9.DS8.US5).
 
-**Claude Code** runs this synchronously in its inject hook
-(`.claude/hooks/mirror-inject.sh` → `ts/src/hooks/main.ts claude:inject`) on
-`UserPromptSubmit`, triggered when the prompt opens with the Mirror skill's
-explicit form or when Mirror Mode is already active. The form is read by one
-grammar (`ts/src/mirror/mirrorForm.ts`, CV21.DS2.US7) in every runtime's
-spelling: `/mm:mirror`, `/mirror-mind:mm-mirror`, `/mirror-mind:mm:mirror`,
-`$mirror-mind:mm:mirror`, `/mm-mirror`, and `$mm-mirror`, followed by
-whitespace or the end of the prompt. The same hook runs on Codex, which reads
-the context it returns; Grok discards UserPromptSubmit context, so Mirror Mode
-there comes from the skill.
+Mirror Mode is on for a session when its `mirror_active` flag is set **and** its
+operating mode (the session's own, else the global record) is still Mirror Mode
+(CV9.DS8.US4). `mirror mirror deactivate`, which `/mm-new` runs, clears the flag;
+switching to Builder, Explorer, or Soul Mode in the same session changes the mode,
+and the deltas stop. When the runtime compacts the transcript, `--forget` tells the
+doorman the folder has left it: the next ordinary turn in Mirror Mode gets the full
+folder again, and the list of memories already given starts over (CV9.DS8.US5).
 
-**Pi** does not auto-inject. The `/mm-mirror` skill calls `mirror load`
-explicitly at the start of each Mirror Mode response.
+Every block opens with one line the model reads, on every turn Mirror Mode is on,
+even when nothing follows it. It says what was delivered and carries the signature
+rule `AGENTS.md` states, `◇ persona-name`, across the conversation:
 
-**Antigravity** runs this in the `PreInvocation` hook, once per user turn: the
-adapter injects on `invocationNum == 0` and stays quiet on the later model
-calls of the same turn; Mirror Mode is activated for the session at
-`SessionStart`, so the injection fires without an explicit invocation
-(CV21.DS7.TS2, US4).
+```text
+=== mirror context delivered by the runtime for this turn: full — answer as the mirror; sign ◇ cfo ===
+```
+
+The `mm-mirror` skill loads the folder itself only when no such line arrived with
+the turn, so an explicit turn loads once (CV9.DS8.TS3).
+
+The session is the one the runtime names: `--session-id`, else `MIRROR_SESSION_ID`,
+else `CLAUDE_CODE_SESSION_ID`, else `CODEX_SESSION_ID`. The doorman never guesses
+one. On Pi, Claude Code, and Codex, a load the model runs by itself names the same
+session from its shell's environment, so the doorman takes over from the next turn
+(CV9.DS8.TS1). On Antigravity the model's own commands — a load, a mode switch —
+cannot name the session yet
+([CR169](../../../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr169-on-agy-the-model-s-own-mirror-commands-cannot-name-the-session.md)).
+
+The explicit form is read by one grammar (`ts/src/mirror/mirrorForm.ts`,
+CV21.DS2.US7) in every runtime's spelling: `/mm:mirror`, `/mirror-mind:mm-mirror`,
+`/mirror-mind:mm:mirror`, `$mirror-mind:mm:mirror`, `/mm-mirror`, and `$mm-mirror`,
+followed by whitespace or the end of the prompt.
+
+How each runtime reaches the doorman:
+
+- **Claude Code** and **Codex** run it in process from the inject hook on
+  `UserPromptSubmit` (`mirror-inject.sh` → `claude:inject`), with the payload's
+  prompt and `session_id`, and return the block as the hook's context, which both
+  read (CV9.DS8.US4).
+- **Pi** runs the command from the extension's `before_agent_start`, awaited, and
+  carries the block into the run as a `mirror-context` message; on
+  `session_compact` it runs `--forget` (CV9.DS8.US5).
+- **Antigravity** runs it in process from `PreInvocation` at `invocationNum == 0`
+  (once per user turn), with the payload's `lastUserInput` and `conversationId`, and
+  answers the block as one persistent `systemMessage` step. `SessionStart` turns
+  Mirror Mode on and sets the refresh, so a conversation's first turn gets the full
+  folder. A payload without `lastUserInput` (agy before 1.4.7) keeps the earlier
+  injection: the whole folder every turn, from `mirror load --context-only`, as an
+  `ephemeralMessage` (CV9.DS8.TS6).
+- **Grok Build** registers the inject hook, which returns at once: Grok discards
+  `UserPromptSubmit` context (CR143), so Mirror Mode there comes from the skill.
+
+What a turn costs, and where it is counted, is in
+[REFERENCE — The doorman](../../../../REFERENCE.md#the-doorman).
 
 ---
 
@@ -962,6 +1010,8 @@ mirror conversation-logger log-assistant <session_id> <content> --interface <nam
 mirror conversation-logger session-end          # reads JSON from stdin
 mirror conversation-logger session-end-pi <id>  # explicit session id, deferred extraction
 mirror mirror load --context-only --query <q> [--persona <p>] [--journey <j>] [--org] [--session-id <id>]
+mirror mirror doorman --prompt <p> [--session-id <id>]   # the one doorman: the block, or nothing
+mirror mirror doorman --forget [--session-id <id>]       # the runtime compacted the transcript
 mirror backup --silent
 ```
 
@@ -1047,15 +1097,15 @@ at session end. If yes, `session-end` gives better extraction timing. If no,
 
 | Model | Mechanism | Runtimes | UX |
 |---|---|---|---|
-| Automatic per-turn | `PreInvocation` injection on `invocationNum == 0` | Antigravity | Best UX — no user action; latency cost on every turn |
-| Hook-conditional | `UserPromptSubmit` inject when mirror state active | Claude Code, Codex (the plugin's hook, whose context Codex reads: CV21.DS4.US4) | Zero cost when inactive; requires mirror state check |
-| Explicit invocation | User types `/mm-mirror` | Pi | Zero runtime cost; requires user awareness |
-| Explicit invocation, the hook inert | The `UserPromptSubmit` inject hook is registered but returns at once: Grok discards prompt context (`runtimeReadsPromptContext`, CR143) | Grok Build | As Pi's; the Operating Instructions arrive as a home-level rule, not per turn |
+| The one doorman | An event that runs before the model answers hands the turn's prompt and session to the doorman and carries its block: the inject hook on `UserPromptSubmit`, as the hook's context (Claude Code and Codex, CV9.DS8.US4); the extension's `before_agent_start`, as a `mirror-context` message (Pi, US5); `PreInvocation` at `invocationNum == 0`, as a persistent `systemMessage` step (Antigravity, TS6) | Pi, Claude Code, Codex, Antigravity | The full folder on the turn Mirror Mode starts, then the persona and memories each question calls for, with no further action; no model call outside Mirror Mode |
+| Explicit invocation, the hook inert | The `UserPromptSubmit` inject hook is registered but returns at once: Grok discards prompt context (`runtimeReadsPromptContext`, CR143) | Grok Build | No runtime cost; the model loads Mirror's context itself through `/mm-mirror`, and the Operating Instructions arrive as a home-level rule, not per turn |
 
-For new shell-hook runtimes with a `BeforeAgent`-equivalent hook: use the
-automatic per-turn model. Call `mirror load --context-only` and return the
-identity block as the hook's context-injection field. Condition on mirror state
-to avoid the cost when Mirror Mode is not active.
+For a new runtime with an event that runs before the model answers and can carry
+context: hand the doorman the turn's prompt and the runtime's session id
+(`mirror mirror doorman --prompt <p> --session-id <id>`, or in process from a hook
+that runs the core) and give the model whatever it prints. Do not check Mirror Mode
+in the adapter: the doorman reads the session and prints nothing when Mirror Mode is
+off. If the runtime compacts its transcript, run `--forget` when it does.
 
 ---
 
