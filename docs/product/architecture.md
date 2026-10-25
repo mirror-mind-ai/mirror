@@ -269,7 +269,7 @@ on.
 | Pi | L4 | TypeScript extension (`.pi/extensions/mirror-logger.ts`) that spawns the front door; `before_agent_start` carries the one doorman's block into the run (CV9.DS8.US5) | Session file path, also set as `MIRROR_SESSION_ID` for the model's own commands |
 | Claude Code | L4 | The shipped plugin, linked under `~/.claude/skills/`, whose hooks run the installed `mirror-hook`; in a checkout, the shell wrappers in `.claude/hooks/`, which run the tree's own | Hook stdin payload |
 | Codex | L4 | The shipped plugin (installed through the package's marketplace), whose Claude-family hooks Codex runs as they are (CV21.DS4.US4) | Hook stdin payload |
-| Antigravity | L4 | The same plugin with its agy-native layer (`plugins/mirror-mind/agy/`, `hooks.json`, `rules/AGENTS.md`), staged by `agy plugin install` (CV21.DS7.US4) | Hook stdin payload (`conversationId`) |
+| Antigravity | L4 | The same plugin with its agy-native layer (`plugins/mirror-mind/agy/`, `hooks.json`, `rules/AGENTS.md`), staged by `agy plugin install` (CV21.DS7.US4); `PreInvocation` hands each user turn to the one doorman and returns its block as a persistent `systemMessage` step (CV9.DS8.TS6) | Hook stdin payload (`conversationId`; the turn's prompt as `lastUserInput` since agy 1.4.7) |
 | Grok Build | L3 | The same plugin, copied by `grok plugin install --trust`, whose Claude-family hooks Grok runs as they are; the Operating Instructions as a home-level rule (CV21.DS10.US1, US3) | Hook stdin payload (`sessionId`) |
 
 The levels are defined beside the matrix. In short: **L4** is logging, the command

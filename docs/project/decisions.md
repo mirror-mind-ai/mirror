@@ -4851,3 +4851,34 @@ harness would hold a lower level than the plugin runtimes with no plan to close 
 open mechanism — how a session learns a load the model ran by itself — is measured
 first (CV9.DS8.TS1), on CR100's lead that Claude Code hands commands
 `CLAUDE_CODE_SESSION_ID`.
+
+### Antigravity's doorman reads the prompt from the payload and delivers persistent steps
+
+**Date:** 2026-10-25 · **Context:** [CV9.DS8.TS6](roadmap/cv9-mirror-1-0/cv9-ds8-one-doorman-mirror-s-context-before-the-model-on-every-runtime/cv9-ds8-ts6-antigravity-through-the-one-doorman/index.md),
+its [probe](roadmap/cv9-mirror-1-0/cv9-ds8-one-doorman-mirror-s-context-before-the-model-on-every-runtime/cv9-ds8-ts6-antigravity-through-the-one-doorman/evidence/probe-20261025.md)
+and [walk](roadmap/cv9-mirror-1-0/cv9-ds8-one-doorman-mirror-s-context-before-the-model-on-every-runtime/cv9-ds8-ts6-antigravity-through-the-one-doorman/evidence/walk-20261025.md) on agy 1.4.7.
+
+On agy 1.4.2 no hook payload carried the user's text (DS12.TS3 L7), so Antigravity's
+`PreInvocation` re-injected the whole folder every turn, routed from nothing, as an
+`ephemeralMessage` — CV21.DS7.TS2's data-minimizing choice. The one doorman needs the
+turn's prompt, and its deltas need the folder to stay before the model.
+
+**The decision.** Three parts, the last the Navigator's:
+
+1. **The prompt comes from the payload.** agy 1.4.7 carries it in every hook payload as
+   `lastUserInput`, verbatim; the hook reads no transcript.
+2. **The block rides in a persistent `systemMessage` step.** Ephemeral never kept
+   identity off disk: agy writes an ephemeral step into the stored transcript all the
+   same (measured on 1.4.2 and again on 1.4.7). It only kept the folder out of later
+   turns, which is what every delta needs it to be in. An ephemeral step with the whole
+   folder every turn was declined: a reception call and the full identity on the wire per
+   turn, for a signature.
+3. **A payload without the prompt keeps the old injection**, unchanged (agy before
+   1.4.7), rather than going quiet or reading a transcript whose timing was measured only
+   on 1.4.7. Removable when the matrix's floor for agy reaches 1.4.7.
+
+**What follows.** `SessionStart` stamps the conversation's own mode Mirror Mode, since the
+doorman reads the mode and the old hook did not. The model's own `mirror` commands on agy
+still name no session ([CR169](refinement/rs010-cv22-oracle-and-port-hygiene/cr169-on-agy-the-model-s-own-mirror-commands-cannot-name-the-session.md)),
+and agy's compaction has no hook to re-deliver the folder
+([CR173](refinement/rs010-cv22-oracle-and-port-hygiene/cr173-agy-compaction-has-no-hook-to-re-deliver-the-folder.md)).

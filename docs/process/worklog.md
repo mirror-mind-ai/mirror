@@ -12,6 +12,30 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-10-25 — CV9.DS8.TS6: Antigravity through the one doorman
+
+Antigravity's `PreInvocation` hook is the fifth caller of the one doorman. The plan read
+the turn's prompt from the transcript, since agy 1.4.2's payloads carried none (DS12.TS3
+L7); the probe that was to time that read found agy 1.4.7 carrying the prompt in every
+hook payload, as `lastUserInput`, verbatim — a skill turn in its slash form — so the hook
+reads no transcript at all. At invocation 0 it hands the turn to `mirror doorman` in
+process, as Claude's inject hook does, and answers its block as one persistent
+`systemMessage` step: the full folder on the explicit form, even in a conversation no
+`SessionStart` activated; a delta on an ordinary turn in Mirror Mode; nothing on a skill
+turn or outside it. The step type is revised from DS7's `ephemeralMessage`: the probe
+measured again that agy stores an ephemeral step at rest anyway, and only the persistent
+one stays before the model on later turns, which every delta stands on. `SessionStart`
+now also stamps the session's own operating mode Mirror Mode — the doorman reads the
+mode, the old hook never did, and a global Builder stamp would have silenced a new
+conversation — and sets the doorman's refresh, so a conversation's first turn is the
+full folder; a resumed conversation fires no `SessionStart` and keeps its folder. A
+payload without the prompt (agy before 1.4.7) keeps the pre-TS6 injection, unchanged
+(Navigator decision). Measured live on agy 1.4.7 with real providers, headless and
+interactive: every verdict passed, the model signed every delta turn, and the hook took
+0.23–1.02 s against agy's 15 s budget; the parity matrix's Antigravity row now reads
+agy 1.4.7. Story package under
+[CV9.DS8](../project/roadmap/cv9-mirror-1-0/cv9-ds8-one-doorman-mirror-s-context-before-the-model-on-every-runtime/index.md).
+
 ### 2026-10-25 — CV9.DS8.US5: Pi through the one doorman, at L4
 
 The Pi extension (`.pi/extensions/mirror-logger.ts`) is the fourth caller of the one
