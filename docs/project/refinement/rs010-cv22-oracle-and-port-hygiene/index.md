@@ -112,3 +112,5 @@ evidence stays honest as both cores move.
 - [CR172 — `smoke_claude_plugin.sh` fails its missing-hook step on a machine with a global `mirror-hook`](cr172-the-claude-plugin-smoke-fails-beside-a-global-mirror-hook.md)
 - [CR173 — On Antigravity the doorman's steps accumulate, and agy's compaction has no hook to re-deliver the folder](cr173-agy-compaction-has-no-hook-to-re-deliver-the-folder.md)
 - [CR174 — Getting Started's measured-on versions are not held to the parity matrix](cr174-getting-started-s-measured-on-versions-are-not-held-to-the-matrix.md)
+- [CR175 — `runtime update` does not say which home it backs up and migrates, and an inherited `MIRROR_USER` silently picks another](cr175-runtime-update-does-not-say-which-home-it-backs-up-and-migrates.md)
+- [CR176 — The front-door-errors finding counts every non-zero exit, its own included, so it cannot settle](cr176-the-front-door-errors-finding-counts-every-non-zero-exit-its-own-included.md)
