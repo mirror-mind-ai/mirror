@@ -185,6 +185,39 @@ parity row to L4 with version, binary, and date — which is what this User Stor
 3. **`.pi` typecheck:** three pre-existing errors in the AGENTS.md handler
    (`contextFiles` optional in the pinned 0.70.0 types), unchanged; the new
    return typechecks.
+4. **Found by the Navigator's first walk (2026-10-25): in the checkout, the
+   extension had no handlers at all.** No welcome card, no session row, no
+   doorman, no logging — the model loaded itself every turn; from `/tmp` every
+   row passed. `mirror-logger.log` showed only `second registration skipped` for
+   every checkout session since the morning. Cause: Pi reaches the file twice in
+   a checkout (project `.pi/extensions/` and the linked package), and Pi 1.4.0
+   dedupes the two by real path itself, keeping the instance it loaded second;
+   the process-scoped "register once" guard (CV22.DS10.US3) let the *first*
+   instance claim the flag, Pi dropped that one, and the survivor had skipped
+   registration. Reproduced with `pi -p` in the checkout; with the guard off,
+   handlers fired exactly once. Fix: every instance registers and the guard is on
+   the **event** — a process-scoped map of per-handler `WeakSet`s; the first
+   registration an event object reaches handles it (Pi hands every handler the
+   same object). Robust to both Pi behaviors: one instance kept, or both. One
+   harness test (two registrations, the same event, one process; the second
+   instance alone still handles). The guard in the extension was broken for every
+   checkout session on Pi 1.4.0 before this story — not only the doorman: the
+   logger and the welcome too.
+5. **Found by the same walk, deterministic on Pi: the first prompt's logger
+   erased the doorman's persona and journey.** `getOrCreateSessionConversation`'s
+   conflict clause wrote `persona = excluded.persona` (NULL) on the first prompt
+   of a session — a port of the retired service's clause. On Claude Code the hook
+   and the logger raced and US4's walk saw it hold by order; on Pi the doorman
+   runs first by design, so the row read `persona NULL` after every explicit
+   turn, and a follow-up that scored no persona got "answer as the mirror" with
+   no signature — the sticky voice CR165 is about, lost on turn two. Fix, in
+   `logger.ts`, across the Non-Goal line and recorded for that reason:
+   `COALESCE(excluded.persona, runtime_sessions.persona)`, journey likewise — a
+   caller that names one still sets it. One test in `logger.test.ts`, red
+   before. Verified with `pi -p` in the checkout: explicit turn (28,400 chars
+   delivered, no load call, signed `◇ therapist`), a no-score follow-up (370
+   chars, still `◇ therapist`), a cfo follow-up (6,828 chars, `◇ cfo`); two
+   embeddings for the two deltas.
 
 ## Non-Goals
 
