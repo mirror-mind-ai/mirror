@@ -12,8 +12,10 @@ import { createRuntimeTables } from "#helpers/runtimeSchema.ts";
 import { tempDir } from "#helpers/tempDir.ts";
 import {
   DELIVERED_LINE_PREFIX,
+  DOORMAN_MEMORY_SEMANTIC_THRESHOLD,
   decideDoorman,
   deliveredLine,
+  type MemoryScore,
   readDoormanSessionState,
   runDoorman,
 } from "#mirror/doorman.ts";
@@ -161,7 +163,7 @@ function times() {
   return () => `2026-10-24T00:00:0${value++}.000000Z`;
 }
 
-function runInput(provider?: EmbeddingProvider, scores?: number[][]) {
+function runInput(provider?: EmbeddingProvider, scores?: MemoryScore[][]) {
   return {
     identity: "mirror-dev",
     sessionId: "S",
@@ -170,7 +172,7 @@ function runInput(provider?: EmbeddingProvider, scores?: number[][]) {
     newId: ids(),
     nowIso: times(),
     onMemoryScores: scores
-      ? (turn: readonly number[]) => {
+      ? (turn: readonly MemoryScore[]) => {
           scores.push([...turn]);
         }
       : undefined,
@@ -345,7 +347,7 @@ test("runDoorman delta with a new persona: line, persona section, memories, atta
   try {
     activate(db, "cfo", "mirror");
     const provider = new CountingEmbeddingProvider(unitVector(0));
-    const scores: number[][] = [];
+    const scores: MemoryScore[][] = [];
     const result = await runDoorman(
       db,
       { kind: "delta", query: "review this article draft", persona: "writer" },
@@ -375,9 +377,14 @@ test("runDoorman delta with a new persona: line, persona section, memories, atta
     assert.deepEqual(ledger, [{ role: "embedding", prompt: "", session_id: "S" }]);
     // No reinforcement: the doorman searches on the system's behalf.
     assert.equal(db.prepare("SELECT COUNT(*) AS n FROM memory_access_log").get()?.n, 0);
-    // The scores went to the caller's sink, for US5 to set the threshold.
+    // Every ranked memory's scores went to the caller's sink, the one under the
+    // threshold included (US5): the log measures, the block selects.
     assert.equal(scores.length, 1);
-    assert.equal(scores[0]?.length, 2);
+    assert.deepEqual(
+      scores[0]?.map((s) => s.semantic),
+      [1, 0],
+    );
+    assert.doesNotMatch(result.stdout, /Far memory/);
     // The persona moved, by a targeted write: the other columns are untouched.
     assert.deepEqual(sessionRow(db), {
       conversation_id: "conv-1",
@@ -427,6 +434,68 @@ test("runDoorman delta with nothing under it prints the line alone", async () =>
       result.stdout,
       `${DELIVERED_LINE_PREFIX}: delta (persona: none · journey: mirror) — answer as the mirror ===\n`,
     );
+  } finally {
+    db.close();
+  }
+});
+
+// --- the memory threshold (CV9.DS8.US5) ------------------------------------------
+//
+// DS8's policy injects the memories relevant to the prompt "when any score above
+// the threshold". The threshold is on the semantic score the ranker reports, the
+// rule `relevantAttachments` already applies to attachments: the hybrid score
+// floors near 0.35 for a fresh, reinforced memory with no match at all.
+
+test("runDoorman delta: memories under the semantic threshold are logged, not rendered", async () => {
+  const { db } = fixture();
+  try {
+    activate(db, "cfo", "mirror");
+    const scores: MemoryScore[][] = [];
+    // A query on an axis no memory shares: both score 0 semantically.
+    const result = await runDoorman(
+      db,
+      { kind: "delta", query: "something else entirely", persona: null },
+      runInput(new CountingEmbeddingProvider(unitVector(2)), scores),
+    );
+    assert.match(result.stdout, /^=== mirror context delivered/);
+    assert.doesNotMatch(result.stdout, /=== relevant memories ===|Near memory|Far memory/);
+    assert.equal(scores.length, 1);
+    assert.equal(scores[0]?.length, 2, "both ranked memories reached the log");
+    assert.ok(scores[0]?.every((s) => s.semantic === 0 && s.score > 0));
+  } finally {
+    db.close();
+  }
+});
+
+test("runDoorman delta: a memory exactly at the threshold is rendered; one under it is not", async () => {
+  const { db } = fixture();
+  try {
+    // |[2, 4, 2, 1]| = 5 and the query is the unit vector on axis 0: cosine 2/5,
+    // exact in Float32 and in the division, so the boundary is tested, not a
+    // neighbour of it.
+    const edge = Array(DIMENSIONS).fill(0);
+    edge[0] = 2;
+    edge[1] = 4;
+    edge[2] = 2;
+    edge[3] = 1;
+    db.prepare(
+      `INSERT INTO memories (id, memory_type, layer, title, content, journey, created_at, embedding)
+       VALUES ('m-edge', 'insight', 'ego', 'Edge memory', 'at the threshold', 'mirror', '2026-10-01T00:00:00Z', ?)`,
+    ).run(float32Blob(edge));
+    db.prepare("INSERT INTO memories_fts(memories_fts) VALUES ('rebuild')").run();
+    activate(db, "cfo", "mirror");
+    const scores: MemoryScore[][] = [];
+    const result = await runDoorman(
+      db,
+      { kind: "delta", query: "drafting", persona: null },
+      runInput(new CountingEmbeddingProvider(unitVector(0)), scores),
+    );
+    assert.equal(DOORMAN_MEMORY_SEMANTIC_THRESHOLD, 0.4);
+    assert.match(result.stdout, /=== relevant memories ===\n/);
+    assert.match(result.stdout, /\[ego\] Near memory/);
+    assert.match(result.stdout, /\[ego\] Edge memory/);
+    assert.doesNotMatch(result.stdout, /Far memory/);
+    assert.deepEqual(scores[0]?.map((s) => s.semantic).sort(), [0, 0.4, 1]);
   } finally {
     db.close();
   }

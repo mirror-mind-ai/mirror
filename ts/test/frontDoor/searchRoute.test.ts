@@ -43,7 +43,7 @@ test("formatSearchResults: no results, degraded -> the degraded note stands alon
 });
 
 test("formatSearchResults: results + degraded -> degraded note precedes the results header", () => {
-  const results = [{ id: "m1", score: 0.5 }];
+  const results = [{ id: "m1", score: 0.5, semantic: 0.5 }];
   const rows = new Map([["m1", row()]]);
 
   const output = formatSearchResults("q", results, rows, true);
@@ -56,7 +56,7 @@ test("formatSearchResults: results + degraded -> degraded note precedes the resu
 });
 
 test("formatSearchResults: results + not degraded -> no degraded text at all (unchanged shape)", () => {
-  const results = [{ id: "m1", score: 0.5 }];
+  const results = [{ id: "m1", score: 0.5, semantic: 0.5 }];
   const rows = new Map([["m1", row()]]);
 
   const output = formatSearchResults("q", results, rows, false);

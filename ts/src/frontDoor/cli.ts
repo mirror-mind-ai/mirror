@@ -1548,8 +1548,9 @@ function runModeWrite(argv: readonly string[]): Promise<number> {
 /**
  * `mirror doorman` (CV9.DS8.TS2): decide on a read-only handle, write behind
  * the pre-write snapshot only for a turn that delivers. The memory scores a
- * delta turn ranks go to the front-door log as numbers -- content-free -- so
- * US5's live walk can set the threshold DS8 names.
+ * delta turn ranks go to the front-door log as numbers -- content-free -- the
+ * hybrid and the semantic the threshold reads (US5), every ranked memory's,
+ * so the threshold is read against measurement.
  */
 function runMirrorDoorman(argv: readonly string[]): Promise<number> {
   const reporter = outcomeReporter(argv, "reception");
@@ -1563,7 +1564,9 @@ function runMirrorDoorman(argv: readonly string[]): Promise<number> {
         command: "mirror",
         route: "ts",
         exitCode: 0,
-        detail: `doorman memory_scores=${scores.map((score) => score.toFixed(3)).join(",")}`,
+        detail:
+          `doorman memory_scores=${scores.map((s) => s.score.toFixed(3)).join(",")}` +
+          ` memory_semantic=${scores.map((s) => s.semantic.toFixed(3)).join(",")}`,
       }),
   }).then((exitCode) => {
     if (reporter.calls > 0) reporter.logSummary();

@@ -5,6 +5,7 @@ import {
   type DoormanDecision,
   decideDoorman,
   doormanPersonas,
+  type MemoryScore,
   readDoormanSessionState,
   runDoorman,
 } from "#mirror/doorman.ts";
@@ -65,8 +66,8 @@ export interface DoormanRouteDeps {
     write: (db: WritableDatabase, dbPath: string) => Promise<number>,
   ) => Promise<number>;
   onReceptionOutcome?: OnProviderCallOutcome;
-  /** Content-free: the turn's memory scores, for the front-door log. */
-  onMemoryScores?: (scores: readonly number[]) => void;
+  /** Content-free: the turn's memory scores, hybrid and semantic, for the front-door log. */
+  onMemoryScores?: (scores: readonly MemoryScore[]) => void;
 }
 
 /**

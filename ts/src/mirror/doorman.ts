@@ -74,8 +74,30 @@ export type DoormanDecision =
 /** The stable prefix TS3's skill reads; everything after the colon varies. */
 export const DELIVERED_LINE_PREFIX = "=== mirror context delivered by the runtime for this turn";
 
-/** How many memories a delta carries. The threshold DS8 names is set from US5's measurement, not here. */
+/** How many memories a delta carries at most. */
 export const DOORMAN_MEMORY_LIMIT = 5;
+
+/**
+ * The threshold DS8's policy names ("injected when any score above the
+ * threshold"), on the SEMANTIC score the ranker reports -- the cosine of the
+ * prompt and the memory -- not the hybrid one (CV9.DS8.US5). The hybrid is
+ * half recency, reinforcement, relevance, and lexical: a fresh, reinforced,
+ * relevance-1 memory floors at 0.35 with no semantic match and would pass a
+ * composite 0.40 at cosine 0.10, which unrelated texts reach routinely; the 27
+ * composite rows TS2 and US4 logged (off-topic deltas topping at 0.331-0.377,
+ * 3 of 5 memories repeating; on-topic at 0.444-0.448 and 0.587-0.591) show the
+ * gap in one home, not a property. 0.4 is the rule `relevantAttachments`
+ * already applies to attachments: one rule for both. Inclusive. A degraded
+ * search (no embedding) reports no semantic score and keeps TS2's FTS
+ * behavior: a lexical hit is relevance by another signal, not a miss.
+ */
+export const DOORMAN_MEMORY_SEMANTIC_THRESHOLD = 0.4;
+
+/** One ranked memory's scores, content-free, for the front-door log. */
+export interface MemoryScore {
+  readonly score: number;
+  readonly semantic: number;
+}
 
 /**
  * The session's state as the decision reads it. "Mirror Mode on" is
@@ -136,11 +158,11 @@ export interface RunDoormanInput
   sessionId: string | null;
   embeddingProvider?: EmbeddingProvider;
   /**
-   * Where a delta turn's memory scores go, so the threshold DS8 names can be set
-   * from measurement (US5's live walk) rather than invented here. Content-free:
-   * numbers only.
+   * Where a delta turn's memory scores go -- every ranked memory's, the ones
+   * under the threshold included -- so the threshold is read against
+   * measurement (US5's live walk), not invented. Content-free: numbers only.
    */
-  onMemoryScores?: (scores: readonly number[]) => void;
+  onMemoryScores?: (scores: readonly MemoryScore[]) => void;
 }
 
 export interface RenderedDoorman {
@@ -230,14 +252,19 @@ async function runDelta(
     recordEmbeddingLedger: false,
     now: input.nowIso(),
   });
-  input.onMemoryScores?.(memories.results.map((result) => result.score));
-  if (memories.results.length > 0) {
+  input.onMemoryScores?.(
+    memories.results.map((result) => ({ score: result.score, semantic: result.semantic })),
+  );
+  const relevant = memories.degraded
+    ? memories.results
+    : memories.results.filter((result) => result.semantic >= DOORMAN_MEMORY_SEMANTIC_THRESHOLD);
+  if (relevant.length > 0) {
     const rows = memoriesById(
       db,
-      memories.results.map((result) => result.id),
+      relevant.map((result) => result.id),
     );
     const block = ["=== relevant memories ==="];
-    for (const result of memories.results) {
+    for (const result of relevant) {
       const memory = rows.get(result.id);
       if (!memory) continue;
       block.push(`\n[${memory.layer}] ${memory.title}\n${memory.content}`);

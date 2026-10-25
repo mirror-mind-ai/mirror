@@ -33,12 +33,22 @@ export interface RankableMemory {
 
 export interface RankedMemory {
   id: string;
+  /** The hybrid score the order is by. */
   score: number;
+  /**
+   * The semantic component alone: the cosine of the query and the memory, 0 on
+   * a degraded search. Reported, not ranked by (CV9.DS8.US5): the doorman's
+   * memory threshold reads it, because half of `score` is recency,
+   * reinforcement, relevance, and lexical, and a fresh, reinforced memory
+   * floors near 0.35 with no semantic match at all.
+   */
+  semantic: number;
 }
 
 interface Candidate {
   id: string;
   score: number;
+  semantic: number;
   embedding: Float32Array;
 }
 
@@ -131,7 +141,7 @@ export function rankMemories(
       lexical: memory.lexical_score ?? 0,
       weights: config.weights,
     });
-    return { id: memory.id, score, embedding };
+    return { id: memory.id, score, semantic, embedding };
   });
 
   candidates.sort((a, b) => b.score - a.score);
@@ -150,5 +160,9 @@ export function rankMemories(
     if (selected.length >= config.limit) break;
   }
 
-  return selected.map((candidate) => ({ id: candidate.id, score: candidate.score }));
+  return selected.map((candidate) => ({
+    id: candidate.id,
+    score: candidate.score,
+    semantic: candidate.semantic,
+  }));
 }

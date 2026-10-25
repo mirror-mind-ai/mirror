@@ -415,7 +415,9 @@ test("mirror doorman: the explicit form delivers the folder once, then an ordina
     db.close();
     const log = readFileSync(join(fixtureDir, "front-door.log"), "utf8");
     assert.doesNotMatch(log, /help me debug|next step|Engineer context/);
-    assert.match(log, /doorman memory_scores=/);
+    // Both numbers per ranked memory, content-free (US5): the hybrid, and the
+    // semantic the threshold reads.
+    assert.match(log, /doorman memory_scores=[\d.,]* memory_semantic=[\d.,-]*\n/);
   } finally {
     ws.cleanup();
   }
