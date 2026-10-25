@@ -1,6 +1,8 @@
 // Mirror Mode state for one runtime session, as Antigravity's PreInvocation
-// hook needs it (the Claude-family inject hook stopped reading it in
-// CV9.DS8.US4: it hands the turn to `mirror doorman`, which reads for itself).
+// hook needs it on agy before 1.4.7, whose payload carries no prompt. The
+// Claude-family inject hook stopped reading it in CV9.DS8.US4, and agy's hook
+// stopped on 1.4.7 in CV9.DS8.TS6: both hand the turn to `mirror doorman`,
+// which reads for itself.
 //
 // The TypeScript replacement for the Python hook module `mirror_state` (144
 // lines, deleted with the core at CV22.DS10.TS5), which
