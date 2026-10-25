@@ -107,3 +107,7 @@ evidence stays honest as both cores move.
 - [CR165 — Pi puts no Mirror context before the model, so Pi is L3 where the plugin runtimes are L4](cr165-pi-puts-no-mirror-context-before-the-model.md)
 - [CR166 — A plain-language journey switch strands its turn: the prompt alone in a journey-less conversation, the reply lost](cr166-a-plain-language-journey-switch-strands-its-turn.md)
 - [CR167 — The status line shows another session's journey beside Mirror Mode](cr167-the-status-line-shows-another-session-s-journey.md)
+- [CR169 — On Antigravity the model's own `mirror` commands cannot name the session: the Builder switch guesses, and a self-started Mirror load leaves the doorman silent](cr169-on-agy-the-model-s-own-mirror-commands-cannot-name-the-session.md)
+- [CR170 — An Antigravity execution with no new user input would hand the doorman the last prompt again](cr170-an-agy-execution-with-no-new-user-input-repeats-the-last-prompt.md)
+- [CR172 — `smoke_claude_plugin.sh` fails its missing-hook step on a machine with a global `mirror-hook`](cr172-the-claude-plugin-smoke-fails-beside-a-global-mirror-hook.md)
+- [CR173 — On Antigravity the doorman's steps accumulate, and agy's compaction has no hook to re-deliver the folder](cr173-agy-compaction-has-no-hook-to-re-deliver-the-folder.md)

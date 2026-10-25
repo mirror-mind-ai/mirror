@@ -44,3 +44,4 @@ inherit a TS route it was never ported into.
 - [CR095 — `journey <slug>` renders an empty status document, exit 0, for a journey that does not exist — on both engines](cr095-journey-status-renders-an-empty-document-for-an-unknown-slug.md)
 - [CR096 — `conversations <options> append` renders the listing, exit 0, and drops the payload on stdin](cr096-conversations-lists-instead-of-appending-when-options-come-first.md)
 - [CR109 — `mirror log --help` records `--help` as the response and renames the conversation to it](cr109-mirror-log-help-records-help-and-renames-the-conversation.md)
+- [CR171 — A prompt equal to a `mirror doorman` flag is read as the flag](cr171-a-prompt-equal-to-a-doorman-flag-is-read-as-the-flag.md)
