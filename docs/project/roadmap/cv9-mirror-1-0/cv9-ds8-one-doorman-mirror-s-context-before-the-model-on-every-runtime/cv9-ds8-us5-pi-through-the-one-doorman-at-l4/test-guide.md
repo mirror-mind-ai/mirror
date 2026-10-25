@@ -191,3 +191,15 @@ walk on the installed Pi is pending):
   end Mirror Mode on Pi even with the session named; pre-existing (the route reads
   `--session-id` alone). (3) The model's own load on row 7 took 15.3 s — the reception
   call near its 10 s timeout plus the embedding; the doorman's turns were ~1 s.
+- **Navigator walk 3, 2026-10-25, the debts paid** (Pi 1.4.0, the checkout): explicit
+  turn `◇ therapist`, cfo follow-up, each delta +1 embedding (726 → 727 → 728); a
+  first `/compact` was refused by Pi ("session too small"); after two full file reads
+  (~90k tokens) `/compact` compacted; the next ordinary prompt was delivered **full**
+  (16,409 chars; one `reception` call in `front-door.log`; `session_compact` once in
+  `mirror-logger.log`), signed `◇ cfo`, no `mirror mirror load` call; the prompt after
+  it a 138-char delta. Observed: on that full turn the model did not re-render the
+  transition box mid-conversation — it answered as the mirror directly. Earlier in the
+  same walk: `/skill:mm-journeys` got no block and no embedding (726 → 726) and
+  `/skill:mm-new` ended Mirror Mode (`mirror_active = 0`) — the two Pi-visible debts,
+  confirmed. The `hook_injected` migration ran on a copy of the home: `current (18/18)`.
+

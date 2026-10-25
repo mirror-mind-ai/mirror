@@ -2,7 +2,7 @@
 
 # CV9.DS8.US5 — Pi through the one doorman, at L4
 
-**Status:** 🟡 Planned
+**Status:** ✅ Done — 2026-10-25
 **Type:** User Story
 **Delivery Story:** CV9.DS8 — One Doorman: Mirror's Context Before the Model on Every Runtime
 
