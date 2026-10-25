@@ -12,6 +12,29 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-10-25 — CV9.DS8.TS7: Written where a user reads it
+
+The pages a person reads now describe the one doorman as DS8 built and measured it,
+not the three policies it retired. The runtime interface contract's injection section
+opens with what the doorman is, then its command, its three answers and the policy
+that chooses them, the delivered line, and how each runtime reaches it; the
+injection-models table has one doorman model for Pi, Claude Code, Codex, and
+Antigravity, beside Grok Build's inert hook; the CLI Reference lists
+`mirror mirror doorman`, and Pi's reference table no longer points at the skill. The
+parity matrix's Claude Code and Codex rows move to US4's accepted walk (2.1.310 and
+0.164.0, 2026-10-25), and the cells that walk did not re-measure keep their own
+version and story inline, the convention TS6 set on the Antigravity row. Getting
+Started says in one plain sentence what Mirror Mode does on the four doorman
+runtimes, claiming only what all four walks measured — memories stay out of it,
+since TS6's agy walk did not record them — and its note says the parity matrix names
+the version behind each part of a row. The architecture drops `hook_injected`
+(migration 018) and names `metadata`; the decisions log records what a turn costs,
+each figure dated to its story, and that no price was measured; REFERENCE's doorman
+section matches the code after US4, US5, and TS6. Docs only. Before approval the plan
+was reviewed through the writer, engineer, and quality-assurance lenses, and five
+amendments were folded in. Story package under
+[CV9.DS8](../project/roadmap/cv9-mirror-1-0/cv9-ds8-one-doorman-mirror-s-context-before-the-model-on-every-runtime/index.md).
+
 ### 2026-10-25 — CV9.DS8.TS6: Antigravity through the one doorman
 
 Antigravity's `PreInvocation` hook is the fifth caller of the one doorman. The plan read
