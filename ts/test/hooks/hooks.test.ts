@@ -27,7 +27,6 @@ import { join, resolve } from "node:path";
 import { after, describe, test } from "node:test";
 import { bootstrapDatabase } from "#db/bootstrap.ts";
 import { openDatabaseForBootstrap } from "#db/database.ts";
-import { needsInject } from "#hooks/mirrorState.ts";
 import { parseHookPayload } from "#hooks/payload.ts";
 import { noteHookFailure } from "#hooks/runtime.ts";
 import {
@@ -71,20 +70,6 @@ describe("payload parsing", () => {
 
   test("a non-string prompt is not coerced", () => {
     assert.equal(parseHookPayload('{"prompt":{"text":"x"}}').prompt, "");
-  });
-});
-
-describe("mirror state", () => {
-  test("injection is owed only when Mirror Mode is active and nothing was injected", () => {
-    const state = (active: boolean, hookInjected: boolean) => ({
-      active,
-      hookInjected,
-      persona: "",
-      journey: "",
-    });
-    assert.equal(needsInject(state(true, false)), true);
-    assert.equal(needsInject(state(true, true)), false, "already injected");
-    assert.equal(needsInject(state(false, false)), false, "Mirror Mode is off");
   });
 });
 

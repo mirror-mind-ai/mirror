@@ -12,10 +12,6 @@
 // loud, and every failure is still non-fatal to the user's turn.
 
 import { runtimeReadsPromptContext } from "#conversation/runtimePolicy.ts";
-import { resolveDbPath } from "#frontDoor/dbPath.ts";
-import { openLiveWriteDatabase } from "#frontDoor/liveBackup.ts";
-import { mirrorForm } from "#mirror/mirrorForm.ts";
-import { markInjected, needsInject, readMirrorState } from "./mirrorState.ts";
 import { parseHookPayload, readStdin } from "./payload.ts";
 import {
   noteHookFailure,
@@ -108,105 +104,48 @@ export async function claudeSessionEnd(stdin: string): Promise<number> {
 }
 
 /**
- * `mirror-inject.sh`: inject identity context before the model answers.
+ * `mirror-inject.sh`: put Mirror's context before the model, by the one
+ * doorman (CV9.DS8.US4).
  *
- * Two cases, exactly as the shell had them:
+ * Until US4 this hook carried a policy of its own -- the explicit Mirror form
+ * loaded the folder; a session in Mirror Mode was loaded once more and marked
+ * `hook_injected` -- and neither block carried the line the `mm-mirror` skill
+ * reads (TS3), so every explicit turn loaded twice, and once the one injection
+ * was spent a follow-up in another domain re-routed nothing (CR165).
  *
- *   1. an explicit Mirror form -- `/mm:mirror [query]`, or the same skill in
- *      any runtime's spelling (`#mirror/mirrorForm.ts`; CV21.DS2.US7) -- load context
- *      for that query;
- *   2. Mirror Mode already active for this session with context not yet
- *      injected -- load it with the session's persona and journey, then mark
- *      it injected so it happens once.
+ * Now the hook decides nothing. It hands the prompt and the session to
+ * `mirror doorman` (TS2), in-process through the front door, and writes back
+ * what it delivers: the full folder on the explicit form, opened by the
+ * delivered line; a delta -- the newly routed persona, the memories and
+ * attachments for this prompt -- on an ordinary turn while the session is in
+ * Mirror Mode; nothing otherwise. The session writes, the one embedding per
+ * delta turn, the memory-score log, and the handle discipline (a quiet turn
+ * opens no writable handle) are the doorman's. The Pi extension reaches the
+ * same route (US5).
  *
- * `--context-only` matters in both: it loads context WITHOUT starting a
- * conversation session, because the model does that. A hook that silently
- * opened conversations would fork every session in two.
+ * Two things from before are kept on purpose. CR143: on a runtime that
+ * discards what this hook returns (Grok), return before any load. CR100: a
+ * payload with no session id is reported on stderr rather than passed over in
+ * silence -- it is the difference between "Mirror Mode is off" and "this hook
+ * is misconfigured" -- and the doorman still runs, so an explicit turn delivers
+ * its folder unnamed, as `mirror doorman` does without `--session-id`.
  */
 export async function claudeInject(stdin: string): Promise<number> {
   const payload = parseHookPayload(stdin);
-  // CR143: on a runtime that discards what this hook returns (Grok), neither
-  // case is worth its load — nor the state read below, nor the "injected"
-  // mark, which would say the model received what it did not. Detected the
-  // way the sibling hooks detect it, from the payload and the environment.
   if (!runtimeReadsPromptContext(detectHookRuntime(payload.raw))) return 0;
+
   const sessionId = payload.sessionId;
-
-  // Case 1: the explicit invocation.
-  const explicit = mirrorForm(payload.prompt);
-  if (explicit) {
-    const argv = ["mirror", "load", "--context-only", "--query", explicit.query];
-    if (sessionId) argv.push("--session-id", sessionId);
-    const result = await runFrontDoor(argv);
-    if (result.stdout.trim()) process.stdout.write(result.stdout);
-    return 0;
-  }
-
-  // Case 2: active Mirror Mode owed an injection.
   if (!sessionId) {
-    // Python's `mirror_state` warned on stderr rather than no-op'ing silently,
-    // so a hook wired without a session id is visible. Kept: it is the
-    // difference between "Mirror Mode is off" and "this hook is misconfigured".
     process.stderr.write("warning: mirror inject hook received no session_id; no state read.\n");
-    return 0;
   }
 
-  let dbPath: string;
+  const argv = ["mirror", "doorman", "--prompt", payload.prompt];
+  if (sessionId) argv.push("--session-id", sessionId);
   try {
-    dbPath = resolveDbPath([], process.env);
-  } catch (error) {
-    noteHookFailure("claude:inject", error instanceof Error ? error.message : String(error));
-    return 0;
-  }
-
-  const state = readMirrorState(dbPath, sessionId);
-  if (!needsInject(state)) return 0;
-
-  const argv = [
-    "mirror",
-    "load",
-    "--context-only",
-    "--query",
-    payload.prompt,
-    "--session-id",
-    sessionId,
-  ];
-  if (state.persona) argv.push("--persona", state.persona);
-  if (state.journey) argv.push("--journey", state.journey);
-
-  const result = await runFrontDoor(argv);
-  if (!result.stdout.trim()) return 0;
-
-  process.stdout.write(result.stdout);
-  // Only after the context actually reached the model: the shell marked it
-  // inside `if [ -n "$CONTEXT" ]` for the same reason. Marking first would
-  // lose the injection whenever the load produced nothing.
-  try {
-    // The sanctioned live-write path: a verified pre-write snapshot, same as
-    // every other routed write.
-    //
-    // Python's `mark_injected` wrote UNGATED, so this adds a `VACUUM INTO`
-    // that the old hook did not pay. Measured on a real 53 MB database:
-    // **95 ms**, once per Mirror Mode session -- only the single prompt that
-    // owes an injection reaches this line, and that turn is already loading
-    // identity and memories. The ordinary turn returns above without opening
-    // a writable handle at all (114 ms end to end, nothing written).
-    //
-    // Paying the front door's own safety contract for a real write to a real
-    // user database beat inventing a second narrowed write handle inside a
-    // deletion story. Recorded with the number so the trade is visible.
-    //
-    // This hook runs AT THE SAME TIME as `log-user-prompt`, which writes too.
-    // Until finding F21 the two snapshots collided on one fixed file and one
-    // write was lost -- in the Navigator walk, two injections in three
-    // prompts. `openLiveWriteDatabase` gives each writer its own staging
-    // snapshot, so concurrent hooks no longer race.
-    const db = openLiveWriteDatabase(dbPath);
-    try {
-      markInjected(db, sessionId, new Date().toISOString());
-    } finally {
-      db.close();
-    }
+    const result = await runFrontDoor(argv);
+    if (result.code !== 0)
+      noteHookFailure("claude:inject", `\`mirror doorman\` exited ${result.code}`);
+    if (result.stdout) process.stdout.write(result.stdout);
   } catch (error) {
     noteHookFailure("claude:inject", error instanceof Error ? error.message : String(error));
   }

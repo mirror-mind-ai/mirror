@@ -59,11 +59,14 @@ describe("the inject hook, fed each runtime's explicit form", () => {
   ];
 
   for (const [index, form] of forms.entries()) {
-    test(`${form} in a fresh session injects context`, () => {
-      // One fresh session per form: a second prompt in the same session is
-      // owed context by case 2 of the hook, which would mask case 1.
+    test(`${form} in a fresh session injects context, opened by the delivered line`, () => {
+      // One fresh session per form, so each spelling is seen on an explicit
+      // turn and not as a delta of the previous one.
       const out = inject(home, `us7-form-${index}`, `${form} should I raise my price?`);
       assert.ok(out.length > 0, "context was returned");
+      // CV9.DS8.US4: the hook delivers through the doorman, so the block opens
+      // with the line the mm-mirror skill reads to know it must not load again.
+      assert.match(out, /^=== mirror context delivered by the runtime for this turn: full — /);
       assert.match(out, /MIRROR MODE/);
     });
   }
