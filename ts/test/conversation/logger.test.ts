@@ -169,6 +169,34 @@ test("logUserMessage on a fresh session creates conversation, provisional title,
   db.close();
 });
 
+test("logUserMessage's first prompt keeps the persona and journey the doorman already wrote (CV9.DS8.US5)", () => {
+  // On Pi the doorman runs before the prompt logger, and an explicit turn's
+  // full load writes the routed persona and journey to the session's row before
+  // the logger binds its conversation. The bind must not erase them.
+  const { db } = fixture();
+  db.prepare(
+    `INSERT INTO runtime_sessions (session_id, interface, mirror_active, persona, journey, active, started_at, updated_at)
+     VALUES ('sess-1', 'pi', 1, 'therapist', 'mirror', 1, ?, ?)`,
+  ).run(NOW, NOW);
+  logUserMessage(
+    db,
+    "sess-1",
+    "/skill:mm-mirror como lido com a ansiedade",
+    { interface: "pi" },
+    deps,
+  );
+  const row = db
+    .prepare(
+      "SELECT mirror_active, persona, journey, conversation_id FROM runtime_sessions WHERE session_id = 'sess-1'",
+    )
+    .get();
+  assert.equal(row?.mirror_active, 1);
+  assert.equal(row?.persona, "therapist");
+  assert.equal(row?.journey, "mirror");
+  assert.ok(row?.conversation_id, "the conversation is bound");
+  db.close();
+});
+
 test("logUserMessage on an existing bound session appends without touching the title", () => {
   const { db } = fixture();
   logUserMessage(db, "sess-1", "first message", { interface: "pi" }, deps);

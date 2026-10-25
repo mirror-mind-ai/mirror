@@ -173,8 +173,14 @@ export function getOrCreateSessionConversation(
       options.persona ?? null,
       options.journey ?? null,
     );
-    // Mirrors the service's conflict clause exactly: it does NOT touch
-    // mirror_active, hook_injected, started_at, or metadata on update.
+    // Mirrors the service's conflict clause: it does NOT touch mirror_active,
+    // hook_injected, started_at, or metadata on update. Since CV9.DS8.US5 it
+    // does not erase a persona or journey either when the caller names none:
+    // on the first prompt of a session the doorman has already routed the
+    // explicit turn and written both to this row, and the prompt logger, which
+    // runs after it, wrote NULL over them -- the mirror lost its voice until a
+    // later prompt scored a persona again. A caller that names a persona or
+    // journey still sets it.
     db.prepare(
       `INSERT INTO runtime_sessions
          (session_id, conversation_id, interface, mirror_active, persona, journey,
@@ -183,8 +189,8 @@ export function getOrCreateSessionConversation(
        ON CONFLICT(session_id) DO UPDATE SET
          conversation_id = excluded.conversation_id,
          interface = excluded.interface,
-         persona = excluded.persona,
-         journey = excluded.journey,
+         persona = COALESCE(excluded.persona, runtime_sessions.persona),
+         journey = COALESCE(excluded.journey, runtime_sessions.journey),
          active = 1,
          closed_at = NULL,
          updated_at = excluded.updated_at`,
