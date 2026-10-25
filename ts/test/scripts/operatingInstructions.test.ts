@@ -46,7 +46,9 @@ test("the Pi extension runs the core it ships with and carries the instructions 
   assert.match(extension, /join\(TREE_ROOT, "AGENTS\.md"\)/);
   assert.match(extension, /contextFiles/);
   assert.match(extension, /_mirrorOnPath\(\)/);
-  assert.match(extension, /__mirrorLoggerRegistered/, "the one-registration-per-process guard");
+  // Reached twice in a checkout; guarded on the event, not the registration,
+  // since Pi 1.4.0 keeps only one of the two instances (CV9.DS8.US5).
+  assert.match(extension, /__mirrorLoggerHandledEvents/, "the once-per-event guard");
   assert.doesNotMatch(extension, /ts\/src\/frontDoor\/cli\.ts"/);
   assert.doesNotMatch(extension, /--env-file/);
   assert.doesNotMatch(extension, /_readDotenv\(process\.cwd\(\)\)/);

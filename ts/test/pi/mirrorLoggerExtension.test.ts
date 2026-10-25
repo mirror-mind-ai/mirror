@@ -22,7 +22,6 @@ import { tempDir } from "#helpers/tempDir.ts";
 
 const EXTENSION_PATH = new URL("../../../.pi/extensions/mirror-logger.ts", import.meta.url)
   .pathname;
-const LOADED_KEY = "__mirrorLoggerRegistered";
 
 // The extension resolves where `mirror-logger.log` goes ONCE, at module load,
 // from `MEMORY_DIR`. Point it at a directory of this file's own before the
@@ -195,8 +194,6 @@ async function loadExtension(): Promise<{ default: (pi: unknown) => void }> {
 async function harness(env: Record<string, string> = {}): Promise<Harness> {
   for (const [key, value] of Object.entries(env)) process.env[key] = value;
   const mod = await loadExtension();
-  // The extension registers once per process; each harness is a fresh registration.
-  (globalThis as Record<string, unknown>)[LOADED_KEY] = undefined;
   const pi = fakePi();
   mod.default(pi);
   const logMark = (() => {
@@ -421,7 +418,8 @@ const expandedSkill = (name: string, args = ""): string =>
   `References are relative to /tree/.pi/skills/${name}.\n\n# Body\n\nRun the thing.\n</skill>` +
   (args ? `\n\n${args}` : "");
 
-const settledEvent = { type: "agent_settled", aborted: false };
+/** A fresh object per fire: Pi makes a new event per dispatch, and the extension's guard is on the object. */
+const settledEvent = () => ({ type: "agent_settled", aborted: false });
 
 /** The `mirror doorman` execs so far, settled or not (CV9.DS8.US5). */
 const doormanExecs = (h: Harness): Deferred[] =>
@@ -723,7 +721,7 @@ test("agent_settled sends one stop for the prompt, with every run's text, under 
     await h.drain(h.fireNoWait("agent_end", agentEndEvent("first run"), ctx));
     await h.drain(h.fireNoWait("agent_end", agentEndEvent("second run"), ctx));
     assert.ok(!h.logLines().some((l) => l.includes("stop started")), "nothing sent per run");
-    await h.fire("agent_settled", settledEvent, ctx);
+    await h.fire("agent_settled", settledEvent(), ctx);
     const started = h.logLines().filter((l) => l.includes("stop started in detached background"));
     assert.equal(started.length, 1, "one stop for the prompt");
     assert.ok(
@@ -741,7 +739,7 @@ test("agent_settled spawns stop only after the pending user-prompt has exited", 
     const ctx = fakeCtx("/sessions/a.jsonl");
     await userPrompt(h, promptEvent("hello"), ctx);
     const end = h.fireNoWait("agent_end", agentEndEvent("answer"), ctx);
-    const settled = h.fireNoWait("agent_settled", settledEvent, ctx);
+    const settled = h.fireNoWait("agent_settled", settledEvent(), ctx);
     await tick();
     assert.ok(
       !h.logLines().some((l) => l.includes("stop started")),
@@ -762,7 +760,7 @@ test("agent_settled still sends stop when user-prompt failed or timed out", asyn
       const ctx = fakeCtx("/sessions/a.jsonl");
       await userPrompt(h, promptEvent("hello"), ctx);
       const end = h.fireNoWait("agent_end", agentEndEvent("answer"), ctx);
-      const settled = h.fireNoWait("agent_settled", settledEvent, ctx);
+      const settled = h.fireNoWait("agent_settled", settledEvent(), ctx);
       userPromptExecs(h)[0]?.reject(new Error(failure));
       await h.drain(Promise.all([end, settled]).then(() => undefined));
       assert.ok(h.logLines().some((l) => l.includes("stop started in detached background")));
@@ -880,7 +878,7 @@ test("a session switch does not gate the new session on the old one's chain", as
     userPromptExecs(h)[1]?.resolve("");
     const end = h.fireNoWait("agent_end", agentEndEvent("answer on B"), ctxB);
     await tick();
-    await h.fire("agent_settled", settledEvent, ctxB);
+    await h.fire("agent_settled", settledEvent(), ctxB);
     assert.ok(
       h.logLines().some((l) => l.includes("stop started")),
       "B's reply did not wait for A",
@@ -922,4 +920,49 @@ test("the knob is inert outside MEMORY_ENV=test", async () => {
   } finally {
     h.cleanup();
   }
+});
+
+// --- one extension, reached twice (CV22.DS10.US3 plateau 2; CV9.DS8.US5) ------------
+//
+// In a checkout Pi reaches this file twice: the project's `.pi/extensions/`
+// and the package installed from `npm root -g`, which `npm link` makes the
+// same file under two paths. Pi 1.4.0 dedupes the two itself and keeps ONE of
+// them -- the one it loaded second -- so a process-scoped "register once"
+// guard made the kept instance a no-op and the checkout's Pi logged nothing
+// (found by US5's live walk). An older Pi kept both and would log every turn
+// twice. The guard is on the EVENT, not on the registration: every instance
+// registers, and the first to see an event object handles it.
+
+test("two registrations handle each event once, whichever of them Pi keeps", async () => {
+  const mod = await loadExtension();
+  const first = fakePi();
+  const second = fakePi();
+  mod.default(first);
+  mod.default(second);
+  const fire = (pi: FakePi, event: string, payload: unknown, ctx: unknown) =>
+    Promise.all((pi.handlers.get(event) ?? []).map((h) => Promise.resolve(h(payload, ctx))));
+
+  // Pi keeps both: the same event object reaches both, one process spawns.
+  const ctx = fakeCtx("/sessions/a.jsonl");
+  const start = { type: "session_start", reason: "startup" };
+  const both = Promise.all([
+    fire(first, "session_start", start, ctx),
+    fire(second, "session_start", start, ctx),
+  ]);
+  await tick();
+  assert.equal(first.execs.length + second.execs.length, 1, "one session open, not two");
+  for (const d of [...first.execs, ...second.execs]) d.resolve(ENVELOPE);
+  await both;
+
+  // Pi kept only the second: it still handles.
+  const prompt = promptEvent("hello");
+  const run = fire(second, "before_agent_start", prompt, ctx);
+  await tick();
+  assert.equal(
+    second.execs.filter((d) => d.args[1] === "mirror").length,
+    1,
+    "the doorman was asked",
+  );
+  for (const d of second.execs) if (!d.settled) d.resolve("");
+  await run;
 });

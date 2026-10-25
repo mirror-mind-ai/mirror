@@ -218,26 +218,48 @@ type MirrorStatusContext = {
 };
 
 /**
- * One registration per Pi process. Pi can reach this file twice -- as the
- * project's `.pi/extensions/` inside the checkout and as a personal package
- * installed from `npm root -g`, which `npm link` makes the same file under
- * two paths -- and two registrations would log every turn twice. The guard is
- * process-scoped, not module-scoped, because two paths are two module
- * instances (CV22.DS10.US3 plateau 2, the quality-assurance finding).
+ * One extension, reached twice. Pi can reach this file as the project's
+ * `.pi/extensions/` inside the checkout AND as a personal package installed
+ * from `npm root -g`, which `npm link` makes the same file under two paths:
+ * two module instances in one process (CV22.DS10.US3 plateau 2). Which of
+ * them Pi keeps is Pi's: 1.4.0 dedupes the two by their real path and keeps
+ * the one it loaded second; an older Pi kept both. A "register once per
+ * process" guard chose the first -- and on 1.4.0 that was the instance Pi
+ * dropped, so the checkout's Pi had no handlers at all (found by CV9.DS8.US5's
+ * live walk). So every instance registers, and the guard is on the EVENT: the
+ * handled set is process-scoped, and the first instance to see an event
+ * object handles it, the other returns. Pi hands every registration the same
+ * event object (its documented in-place mutation of `systemPromptOptions`
+ * depends on it), which is what makes the set a guard.
  */
-const LOADED_KEY = "__mirrorLoggerRegistered";
+const HANDLED_KEY = "__mirrorLoggerHandledEvents";
 
 export default function (pi: ExtensionAPI) {
 	const globals = globalThis as Record<string, unknown>;
-	if (globals[LOADED_KEY]) {
-		try {
-			appendFileSync(LOG_FILE, `${new Date().toISOString()} [INFO] second registration skipped: ${import.meta.url}\n`);
-		} catch {
-			// never block Pi
+	const handled = (globals[HANDLED_KEY] ??= new Map<string, WeakSet<object>>()) as Map<
+		string,
+		WeakSet<object>
+	>;
+	/**
+	 * The handler, run by the first registration an event reaches. `slot` names
+	 * the handler, not the event: this file registers two handlers on
+	 * `before_agent_start`, and each must see the event once.
+	 */
+	function once<E, C, R>(slot: string, handler: (event: E, ctx: C) => R): (event: E, ctx: C) => R | undefined {
+		let seen = handled.get(slot);
+		if (!seen) {
+			seen = new WeakSet<object>();
+			handled.set(slot, seen);
 		}
-		return;
+		const set = seen;
+		return (event, ctx) => {
+			if (event !== null && typeof event === "object") {
+				if (set.has(event)) return undefined;
+				set.add(event);
+			}
+			return handler(event, ctx);
+		};
 	}
-	globals[LOADED_KEY] = import.meta.url;
 
 	// --- Helpers ---
 
@@ -596,13 +618,16 @@ export default function (pi: ExtensionAPI) {
 
 	// --- dynamic resources → installed external Pi skills ---
 
-	pi.on("resources_discover", async () => {
-		const skillPaths = getInstalledPiSkillPaths();
-		if (skillPaths.length > 0) {
-			log("INFO", `resources_discover: loaded ${skillPaths.length} installed Pi external skill(s)`);
-		}
-		return { skillPaths };
-	});
+	pi.on(
+		"resources_discover",
+		once("resources_discover", async () => {
+			const skillPaths = getInstalledPiSkillPaths();
+			if (skillPaths.length > 0) {
+				log("INFO", `resources_discover: loaded ${skillPaths.length} installed Pi external skill(s)`);
+			}
+			return { skillPaths };
+		}),
+	);
 
 	// --- 0. the Operating Instructions, for a session Pi did not open in the tree ---
 	//
@@ -613,7 +638,7 @@ export default function (pi: ExtensionAPI) {
 	// a Mirror session (CV22.DS10.US3 D13). So the extension appends the file
 	// it ships with, unless Pi already loaded that very file.
 
-	pi.on("before_agent_start", async (event) => {
+	pi.on("before_agent_start", once("operating_instructions", async (event) => {
 		const files = event.systemPromptOptions.contextFiles;
 		if (files.some((file) => _isOurAgentsFile(file.path))) return;
 		let content: string;
@@ -626,7 +651,7 @@ export default function (pi: ExtensionAPI) {
 		if (files.some((file) => file.content === content)) return;
 		files.push({ path: AGENTS_FILE, content });
 		log("INFO", `operating instructions appended from ${AGENTS_FILE}`);
-	});
+	}));
 
 	// --- 1. session_start → unmute + welcome + status line in one process ---
 	//
@@ -635,7 +660,7 @@ export default function (pi: ExtensionAPI) {
 	// the composite runs them in one process, write first. Maintenance stays
 	// detached. Fires on startup, reload, new, resume, and fork alike.
 
-	pi.on("session_start", async (_event, ctx) => {
+	pi.on("session_start", once("session_start", async (_event, ctx) => {
 		log("INFO", "session_start fired");
 		// The session's name, for the model's own `mirror` commands (CV9.DS8.US5;
 		// see the header). Fires again on `/new`, `/resume`, and `/fork`, with the
@@ -680,11 +705,11 @@ export default function (pi: ExtensionAPI) {
 			setMirrorStatus(ctx, (envelope?.statusLine ?? "").trim());
 		}
 		runMirrorBackground(["conversation-logger", "session-maintenance"], "session-maintenance");
-	});
+	}));
 
 	// --- 2. input → what the person typed, for the run it starts (CR160) ---
 
-	pi.on("input", async (event, ctx) => {
+	pi.on("input", once("input", async (event, ctx) => {
 		const sessionId = ctx.sessionManager.getSessionFile() ?? null;
 		if (!sessionId) return;
 		// The fields are Pi's (`InputEvent`); the types this directory pins predate one.
@@ -692,11 +717,11 @@ export default function (pi: ExtensionAPI) {
 		// Queued while Pi streams: it joins a run already going and starts none.
 		if (streamingBehavior) return;
 		typedInput.set(sessionId, text);
-	});
+	}));
 
 	// --- 3. before_agent_start → the turn to the core's prompt rule ---
 
-	pi.on("before_agent_start", async (event, ctx) => {
+	pi.on("before_agent_start", once("prompt", async (event, ctx) => {
 		const sessionId = ctx.sessionManager.getSessionFile() ?? null;
 		if (!sessionId) return;
 		// A run a custom message started answers no prompt of the person's. Pi's
@@ -740,7 +765,7 @@ export default function (pi: ExtensionAPI) {
 		// is speaking, and the `mm-mirror` skill reads that line as delivery (TS3).
 		// Not displayed: the person sees the mirror's reply, not the plumbing.
 		return { message: { customType: "mirror-context", content: block, display: false } };
-	});
+	}));
 
 	// --- 4. agent_end → the run's assistant text, kept for the prompt's reply ---
 	//
@@ -749,7 +774,7 @@ export default function (pi: ExtensionAPI) {
 	// assistant text is kept until the prompt settles: the hooks' `stop` takes
 	// one answer per turn (CR160, A2).
 
-	pi.on("agent_end", async (event, ctx) => {
+	pi.on("agent_end", once("agent_end", async (event, ctx) => {
 		const sessionId = ctx.sessionManager.getSessionFile() ?? null;
 		if (!sessionId) return;
 
@@ -778,7 +803,7 @@ export default function (pi: ExtensionAPI) {
 		// find nothing waiting, as on the other runtimes.
 		pendingReply.get(sessionId)?.texts.push(...assistantTexts);
 		await refreshMirrorStatus(ctx);
-	});
+	}));
 
 	// --- 5. agent_settled → the prompt's whole reply to `stop` ---
 
@@ -786,10 +811,13 @@ export default function (pi: ExtensionAPI) {
 	// (`.pi/package.json`), so it is registered by its name alone.
 	const onEvent = pi.on.bind(pi) as unknown as (
 		event: string,
-		handler: (event: unknown, ctx: { sessionManager: { getSessionFile(): string | undefined } }) => Promise<void>,
+		handler: (
+			event: unknown,
+			ctx: { sessionManager: { getSessionFile(): string | undefined } },
+		) => Promise<void> | undefined,
 	) => void;
 
-	onEvent("agent_settled", async (_event, ctx) => {
+	onEvent("agent_settled", once("agent_settled", async (_event, ctx) => {
 		const sessionId = ctx.sessionManager.getSessionFile() ?? null;
 		if (!sessionId) return;
 		const args = takeStopArgs(sessionId);
@@ -798,14 +826,14 @@ export default function (pi: ExtensionAPI) {
 		// the write survives Pi exiting right after the answer.
 		await settleUserLog(sessionId);
 		runMirrorBackground(args, "stop");
-	});
+	}));
 
 	// --- 6. session_shutdown → close conversation + backup ---
 	//
 	// Uses extract=False because extraction calls the LLM and can take 30s+.
 	// Extraction happens at the next session_start via extract_pending.
 
-	pi.on("session_shutdown", async (_event, ctx) => {
+	pi.on("session_shutdown", once("session_shutdown", async (_event, ctx) => {
 		const sessionId = ctx.sessionManager.getSessionFile() ?? null;
 		// Nothing inherits a stale name between sessions (CV9.DS8.US5).
 		delete process.env.MIRROR_SESSION_ID;
@@ -824,5 +852,5 @@ export default function (pi: ExtensionAPI) {
 
 		// The dated zip backup answers from TypeScript (CV22.DS7.TS1).
 		await runMirror(["backup", "--silent"]);
-	});
+	}));
 }
