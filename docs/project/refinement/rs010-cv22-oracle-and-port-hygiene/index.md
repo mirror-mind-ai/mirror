@@ -111,3 +111,4 @@ evidence stays honest as both cores move.
 - [CR170 — An Antigravity execution with no new user input would hand the doorman the last prompt again](cr170-an-agy-execution-with-no-new-user-input-repeats-the-last-prompt.md)
 - [CR172 — `smoke_claude_plugin.sh` fails its missing-hook step on a machine with a global `mirror-hook`](cr172-the-claude-plugin-smoke-fails-beside-a-global-mirror-hook.md)
 - [CR173 — On Antigravity the doorman's steps accumulate, and agy's compaction has no hook to re-deliver the folder](cr173-agy-compaction-has-no-hook-to-re-deliver-the-folder.md)
+- [CR174 — Getting Started's measured-on versions are not held to the parity matrix](cr174-getting-started-s-measured-on-versions-are-not-held-to-the-matrix.md)
