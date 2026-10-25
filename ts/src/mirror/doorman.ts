@@ -43,6 +43,7 @@
 import type { Database, WritableDatabase } from "#db/database.ts";
 import { memoriesById } from "#frontDoor/searchRoute.ts";
 import { getIdentityContent } from "#identity/identityRead.ts";
+import { getActiveOperatingMode } from "#mode/operatingMode.ts";
 import { embeddingLedgerHook } from "#observability/ledgerHooks.ts";
 import { detectPersona, type PersonaRoutingRow } from "#persona/detectPersona.ts";
 import { type EmbeddingProvider, generateEmbeddingSafely } from "#providers/embedding.ts";
@@ -76,6 +77,15 @@ export const DELIVERED_LINE_PREFIX = "=== mirror context delivered by the runtim
 /** How many memories a delta carries. The threshold DS8 names is set from US5's measurement, not here. */
 export const DOORMAN_MEMORY_LIMIT = 5;
 
+/**
+ * The session's state as the decision reads it. "Mirror Mode on" is
+ * `mirror_active` -- which only `mirror deactivate` clears -- AND the active
+ * operating mode (the session's own row, else the global one) still being
+ * Mirror Mode (CV9.DS8.US4). `build load`, `explore`, and `soul load` switch the
+ * mode and leave the column set; read alone, it would put "answer as the
+ * mirror" on every Builder turn of a session that was once in Mirror Mode. A
+ * home with no mode record at all leaves the column to decide.
+ */
 export function readDoormanSessionState(
   db: Database,
   sessionId: string | null,
@@ -83,7 +93,13 @@ export function readDoormanSessionState(
   if (!sessionId) return null;
   const session = getRuntimeSession(db, sessionId);
   if (!session) return null;
-  return { active: session.mirrorActive, persona: session.persona, journey: session.journey };
+  const mode = getActiveOperatingMode(db, sessionId);
+  const inMirrorMode = mode === null || mode.mode === "Mirror Mode";
+  return {
+    active: session.mirrorActive && inMirrorMode,
+    persona: session.persona,
+    journey: session.journey,
+  };
 }
 
 export function decideDoorman(input: {

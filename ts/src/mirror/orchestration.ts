@@ -126,16 +126,28 @@ export async function runMirrorLoad(
   // the skill's own load passed the environment id into the route and this
   // write ignored it, so a self-started Mirror Mode left `mirror_active`
   // unwritten and the doorman had nothing to learn from).
+  const namedSessionId = resolveNamedRuntimeSessionId(
+    input.sessionId ?? null,
+    input.environmentSessionId ?? null,
+  );
+  if (namedSessionId) {
+    // The session's own mode row as well as the global one (CV9.DS8.US4): the
+    // doorman reads the session's row first, and `build load` stamps that same
+    // row Builder -- without this write a Mirror re-entry in the same session
+    // would read as Builder and the deltas would never resume.
+    activateOperatingMode(
+      db,
+      { mode: "Mirror Mode", journey: resolved.journey, sessionId: namedSessionId },
+      input.nowIso(),
+    );
+  }
   writeMirrorState(
     db,
     {
       active: true,
       persona: resolved.persona,
       journey: resolved.journey,
-      sessionId: resolveNamedRuntimeSessionId(
-        input.sessionId ?? null,
-        input.environmentSessionId ?? null,
-      ),
+      sessionId: namedSessionId,
     },
     input.nowIso(),
   );

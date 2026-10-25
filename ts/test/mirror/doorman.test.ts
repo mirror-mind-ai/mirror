@@ -17,6 +17,7 @@ import {
   readDoormanSessionState,
   runDoorman,
 } from "#mirror/doorman.ts";
+import { activateOperatingMode } from "#mode/operatingMode.ts";
 import type { EmbeddingProvider, EmbeddingResult } from "#providers/embedding.ts";
 
 const DIMENSIONS = 1536;
@@ -271,6 +272,37 @@ test("readDoormanSessionState: the row's fields, null when unnamed or unknown", 
       persona: "cfo",
       journey: "mirror",
     });
+  } finally {
+    db.close();
+  }
+});
+
+// CV9.DS8.US4, the review's mixed-mode finding: `mirror_active` is cleared by
+// `mirror deactivate` alone, while `build load` switches the operating mode and
+// leaves it set. Read on its own, the column would put "answer as the mirror"
+// on every Builder turn of a session that was once in Mirror Mode. So the
+// session is in Mirror Mode for the doorman only while the active operating
+// mode -- the session's own, else the global row -- says so; no mode record at
+// all (an older home) leaves the column to decide.
+test("readDoormanSessionState: active only while the operating mode is Mirror Mode", () => {
+  const { db } = fixture();
+  try {
+    activate(db, "cfo", "mirror");
+    const read = () => readDoormanSessionState(db, "S")?.active;
+
+    assert.equal(read(), true, "no mode record anywhere: mirror_active decides");
+
+    activateOperatingMode(db, { mode: "Builder Mode", journey: "mirror" }, "t1");
+    assert.equal(read(), false, "the global row says Builder, the session has none");
+
+    activateOperatingMode(db, { mode: "Mirror Mode", journey: "mirror", sessionId: "S" }, "t2");
+    assert.equal(read(), true, "the session's own row says Mirror, and wins over the global");
+
+    activateOperatingMode(db, { mode: "Builder Mode", journey: "mirror", sessionId: "S" }, "t3");
+    assert.equal(read(), false, "/mm:build in this session: the deltas stop");
+
+    activateOperatingMode(db, { mode: "Soul Mode", journey: null, sessionId: "S" }, "t4");
+    assert.equal(read(), false, "Soul Mode is not Mirror Mode either");
   } finally {
     db.close();
   }

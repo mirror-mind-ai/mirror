@@ -12,6 +12,7 @@ import {
   runMirrorLoad,
   titleFromSummary,
 } from "#mirror/orchestration.ts";
+import { getSessionOperatingMode } from "#mode/operatingMode.ts";
 import { ReplayLlmProvider } from "#providers/llm.ts";
 
 function fixture() {
@@ -94,6 +95,13 @@ test("mirror load composes context and persists mode, mirror, sticky, and conver
       .get()?.active,
     1,
   );
+  // CV9.DS8.US4: the named session's own row is stamped too, so the doorman's
+  // mode check (session first, global as fallback) sees Mirror Mode on a
+  // re-entry after `build load` stamped the same session Builder.
+  assert.deepEqual(getSessionOperatingMode(db, "s1"), {
+    mode: "Mirror Mode",
+    journey: "mirror-ts-core",
+  });
   db.close();
 });
 

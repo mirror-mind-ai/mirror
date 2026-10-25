@@ -12,6 +12,11 @@ const golden = JSON.parse(
   readFileSync(new URL("../goldens/mirror-state.golden.json", import.meta.url), "utf8"),
 ) as { sessions: unknown[]; conversations: unknown[]; messages: unknown[] };
 
+// The golden was normalized from the Python core's rows. One deliberate
+// departure since: a Mirror load stamps the NAMED session's own operating-mode
+// metadata as well as the global row (CV9.DS8.US4), so the doorman's
+// session-first mode read sees Mirror Mode again after `build load` stamped the
+// same session Builder. Python never wrote that key on the session.
 test("TS Mirror load/log/deactivate state reproduces the normalized Python oracle", async () => {
   const dir = tempDir("mirror-state-golden-");
   const db = openDatabaseCopyForWrite(join(dir, "copy.db"));
