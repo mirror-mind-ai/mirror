@@ -149,7 +149,7 @@ function activate(db: WritableDatabase, persona: string | null, journey: string 
 function sessionRow(db: WritableDatabase) {
   return db
     .prepare(
-      "SELECT conversation_id, mirror_active, hook_injected, persona, journey FROM runtime_sessions WHERE session_id = 'S'",
+      "SELECT conversation_id, mirror_active, persona, journey FROM runtime_sessions WHERE session_id = 'S'",
     )
     .get();
 }
@@ -424,7 +424,6 @@ test("runDoorman full: the delivered line, the transition surface, the folder; t
     assert.deepEqual(sessionRow(db), {
       conversation_id: "conv-1",
       mirror_active: 1,
-      hook_injected: 1,
       persona: "cfo",
       journey: "mirror",
     });
@@ -482,7 +481,6 @@ test("runDoorman delta with a new persona: line, persona section, memories, atta
     assert.deepEqual(sessionRow(db), {
       conversation_id: "conv-1",
       mirror_active: 1,
-      hook_injected: 0,
       persona: "writer",
       journey: "mirror",
     });

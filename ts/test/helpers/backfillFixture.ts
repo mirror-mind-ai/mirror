@@ -41,7 +41,6 @@ export interface RuntimeSessionState {
   mirror_active: number;
   persona: string | null;
   journey: string | null;
-  hook_injected: number;
   active: number;
   started_at: string;
   updated_at: string;
@@ -139,7 +138,6 @@ export function snapshotState(db: WritableDatabase): BackfillState {
     mirror_active: Number(row.mirror_active),
     persona: nullableString(row.persona),
     journey: nullableString(row.journey),
-    hook_injected: Number(row.hook_injected),
     active: Number(row.active),
     started_at: String(row.started_at),
     updated_at: String(row.updated_at),

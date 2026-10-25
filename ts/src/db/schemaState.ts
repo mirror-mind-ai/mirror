@@ -47,6 +47,8 @@ export const KNOWN_MIGRATION_IDS: readonly string[] = [
   "016_builder_workbench_display_codes",
   // TS-authored, no Python counterpart (CV22.DS6.US2 — first TS ⊋ Python migration).
   "017_journey_parent_column",
+  // CV9.DS8.US5: the inject hook's once-per-session flag, without a reader since US4.
+  "018_drop_hook_injected",
 ];
 
 /**

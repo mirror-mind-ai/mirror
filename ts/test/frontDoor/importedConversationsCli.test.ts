@@ -32,7 +32,7 @@ function seedImport(db: WritableDatabase, id: string, folder: string): void {
     ).run(`${id}-m${index}`, id, role);
   }
   db.prepare(
-    "INSERT INTO runtime_sessions (session_id, conversation_id, interface, mirror_active, hook_injected, active, started_at, updated_at, closed_at) VALUES (?, ?, 'pi', 0, 0, 0, '2026-10-20T10:00:00.000Z', '2026-10-20T10:00:00.000Z', '2026-10-19T09:00:00+00:00')",
+    "INSERT INTO runtime_sessions (session_id, conversation_id, interface, mirror_active, active, started_at, updated_at, closed_at) VALUES (?, ?, 'pi', 0, 0, '2026-10-20T10:00:00.000Z', '2026-10-20T10:00:00.000Z', '2026-10-19T09:00:00+00:00')",
   ).run(`/home/p/.pi/agent/sessions/--${folder}--/${id}.jsonl`, id);
 }
 

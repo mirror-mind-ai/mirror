@@ -119,7 +119,8 @@ function errorMessage(error: unknown): string {
  *
  * One rule, `assertSchemaState`'s, so the codebase keeps ONE definition of a
  * healthy ledger: every id in `KNOWN_MIGRATION_IDS` is required, and an id
- * outside it is unknown. A current database renders `current (17/17)`.
+ * outside it is unknown. A current database renders `current (18/18)` (CV9.DS8.US5's
+ * 018 is the eighteenth; the history below is TS5's).
  *
  * Until CV22.DS10.TS5 this grader kept a second rule for one migration.
  * `017_journey_parent_column` is the first one TypeScript authored, and the
@@ -131,7 +132,7 @@ function errorMessage(error: unknown): string {
  * the forgiveness hid a pending migration behind "ready" on exactly the
  * databases `runtime migrate` exists to bring forward. TS5 finding F19 (a
  * removal the comment here promised for plateau 3 and nobody performed) made
- * the denominator honest: seventeen, everywhere.
+ * the denominator honest: every known migration, everywhere.
  */
 export function inspectCoreMigrations(
   dbPath: string | null,

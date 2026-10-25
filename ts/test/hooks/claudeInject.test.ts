@@ -2,7 +2,7 @@
 //
 // Until this story the hook carried a policy of its own: the explicit form
 // loaded the folder, and a session in Mirror Mode was loaded once more and
-// then marked `hook_injected`. Neither block carried the line the skill reads
+// then marked `hook_injected` (a column migration 018 dropped). Neither block carried the line the skill reads
 // (TS3), so every explicit turn loaded twice; and once the once-injection was
 // spent, a follow-up in another domain re-routed nothing. Now the hook hands
 // the prompt and the session to `mirror doorman` and writes back what it

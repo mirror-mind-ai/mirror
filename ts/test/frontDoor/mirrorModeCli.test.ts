@@ -381,10 +381,10 @@ test("mirror doorman: the explicit form delivers the folder once, then an ordina
     assert.deepEqual(
       db
         .prepare(
-          "SELECT mirror_active, hook_injected, persona FROM runtime_sessions WHERE session_id = 'cli-session'",
+          "SELECT mirror_active, persona FROM runtime_sessions WHERE session_id = 'cli-session'",
         )
         .get(),
-      { mirror_active: 1, hook_injected: 1, persona: "engineer" },
+      { mirror_active: 1, persona: "engineer" },
     );
     db.close();
 

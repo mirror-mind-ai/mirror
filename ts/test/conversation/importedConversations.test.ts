@@ -59,7 +59,7 @@ function seed(db: WritableDatabase, row: Seed): void {
   }
   if (row.sessionPath !== null && row.sessionPath !== undefined) {
     db.prepare(
-      "INSERT INTO runtime_sessions (session_id, conversation_id, interface, mirror_active, hook_injected, active, started_at, updated_at) VALUES (?, ?, ?, 0, 0, 0, ?, ?)",
+      "INSERT INTO runtime_sessions (session_id, conversation_id, interface, mirror_active, active, started_at, updated_at) VALUES (?, ?, ?, 0, 0, ?, ?)",
     ).run(row.sessionPath, row.id, iface, row.startedAt, row.startedAt);
   }
 }

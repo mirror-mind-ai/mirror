@@ -267,7 +267,6 @@ export function persistStickyDefaults(
       mirrorActive: false,
       ...(persona !== null ? { persona } : {}),
       ...(journey !== null ? { journey } : {}),
-      hookInjected: true,
       active: false,
     },
     nowIso,
@@ -292,7 +291,6 @@ function writeMirrorState(
       mirrorActive: input.active,
       ...(input.persona !== undefined && input.persona !== null ? { persona: input.persona } : {}),
       ...(input.journey !== undefined && input.journey !== null ? { journey: input.journey } : {}),
-      hookInjected: !input.active,
     },
     nowIso,
   );

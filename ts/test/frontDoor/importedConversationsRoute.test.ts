@@ -40,7 +40,7 @@ function seedImport(db: WritableDatabase, id: string, folder: string | null): vo
   }
   if (folder !== null) {
     db.prepare(
-      "INSERT INTO runtime_sessions (session_id, conversation_id, interface, mirror_active, hook_injected, active, started_at, updated_at) VALUES (?, ?, 'pi', 0, 0, 0, '2026-10-20T10:00:00.000Z', '2026-10-20T10:00:00.000Z')",
+      "INSERT INTO runtime_sessions (session_id, conversation_id, interface, mirror_active, active, started_at, updated_at) VALUES (?, ?, 'pi', 0, 0, '2026-10-20T10:00:00.000Z', '2026-10-20T10:00:00.000Z')",
     ).run(`${SESSIONS}/--${folder}--/${id}.jsonl`, id);
   }
 }

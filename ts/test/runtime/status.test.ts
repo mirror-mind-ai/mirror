@@ -44,7 +44,7 @@ interface Golden {
   meta: {
     fixture_version: string;
     python_migration_ids: string[];
-    ts_authored_migration_id: string;
+    ts_authored_migration_ids: string[];
     checksums: { canonical: string; reformatted: string; bom: string };
   };
   scenarios: Record<string, Scenario>;
@@ -52,12 +52,13 @@ interface Golden {
 
 const golden: Golden = JSON.parse(readFileSync(GOLDEN_PATH, "utf8"));
 const PYTHON_IDS = golden.meta.python_migration_ids;
-const TS_AUTHORED_ID = golden.meta.ts_authored_migration_id;
+const TS_AUTHORED_IDS = golden.meta.ts_authored_migration_ids;
 // A CURRENT database since CV22.DS10.TS5 (F19): every migration this core
 // knows. Until then the "current" fixtures stopped at the oracle's sixteen and
 // the status grader counted only those, to keep matching a recorded Python
-// answer. With one custodian there is one honest denominator.
-const CURRENT_IDS = [...PYTHON_IDS, TS_AUTHORED_ID];
+// answer. With one custodian there is one honest denominator: eighteen since
+// CV9.DS8.US5's 018.
+const CURRENT_IDS = [...PYTHON_IDS, ...TS_AUTHORED_IDS];
 
 const MIGRATION_SQL =
   "CREATE TABLE IF NOT EXISTS ext_demo_widget_notes (id INTEGER PRIMARY KEY);\n";
@@ -207,8 +208,10 @@ function fixture(): Fixture {
   createDatabase(join(current, "memory.db"), PYTHON_IDS);
   homes.set("python_current", current);
 
+  // The oracle's scenario: a database the TypeScript core had migrated past the
+  // oracle's sixteen -- every TS-authored migration applied, 017 at the time.
   current = home("home-ts-migrated");
-  createDatabase(join(current, "memory.db"), [...PYTHON_IDS, TS_AUTHORED_ID]);
+  createDatabase(join(current, "memory.db"), [...PYTHON_IDS, ...TS_AUTHORED_IDS]);
   homes.set("ts_migrated", current);
 
   current = home("home-migrations-missing");
@@ -392,8 +395,9 @@ test("a TS-migrated database is clean here and a false alarm to the oracle", () 
     );
     assert.equal(oracle.status, "attention needed");
 
-    // TypeScript owns the schema since DS6, so 017 is known, not unknown.
-    assert.match(actual.render, /Core migrations: current \(17\/17\)/);
+    // TypeScript owns the schema since DS6, so 017 is known, not unknown --
+    // and the fixture carries every TS-authored migration since.
+    assert.match(actual.render, /Core migrations: current \(18\/18\)/);
     assert.equal(actual.verdict, "ready");
 
     // The divergence must be EXACTLY those two lines. Every other line of the
@@ -402,7 +406,7 @@ test("a TS-migrated database is clean here and a false alarm to the oracle", () 
     const expected = oracle.render
       .replace(
         "Core migrations: attention needed (16/16 applied; unknown 017_journey_parent_column)",
-        "Core migrations: current (17/17)",
+        "Core migrations: current (18/18)",
       )
       .replace("Status: attention needed", "Status: ready");
     assert.equal(actual.render, expected);
@@ -422,7 +426,7 @@ test("F19: a database missing 017 is told so, and names it", () => {
     const actual = renderScenario(f, f.homes.get("python_current") as string);
     assert.match(
       actual.render,
-      /Core migrations: attention needed \(16\/17 applied; missing 017_journey_parent_column\)/,
+      /Core migrations: attention needed \(16\/18 applied; missing 017_journey_parent_column, 018_drop_hook_injected\)/,
     );
     assert.equal(actual.verdict, "attention needed");
   } finally {

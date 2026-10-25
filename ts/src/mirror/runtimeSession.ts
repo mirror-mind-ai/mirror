@@ -10,7 +10,6 @@ export interface RuntimeSessionRow {
   mirrorActive: boolean;
   persona: string | null;
   journey: string | null;
-  hookInjected: boolean;
   active: boolean;
   startedAt: string;
   updatedAt: string;
@@ -24,7 +23,6 @@ export interface RuntimeSessionPatch {
   mirrorActive?: boolean;
   persona?: string | null;
   journey?: string | null;
-  hookInjected?: boolean;
   active?: boolean;
   closedAt?: string | null;
   metadata?: string | null;
@@ -40,7 +38,6 @@ export function getRuntimeSession(db: Database, sessionId: string): RuntimeSessi
     mirrorActive: Boolean(row.mirror_active),
     persona: nullableString(row.persona),
     journey: nullableString(row.journey),
-    hookInjected: Boolean(row.hook_injected),
     active: Boolean(row.active),
     startedAt: String(row.started_at),
     updatedAt: String(row.updated_at),
@@ -67,7 +64,6 @@ export function upsertRuntimeSession(
     mirrorActive: value("mirrorActive", existing?.mirrorActive ?? false) as boolean,
     persona: value("persona", existing?.persona ?? null) as string | null,
     journey: value("journey", existing?.journey ?? null) as string | null,
-    hookInjected: value("hookInjected", existing?.hookInjected ?? false) as boolean,
     active: value("active", existing?.active ?? true) as boolean,
     startedAt: existing?.startedAt ?? nowIso,
     updatedAt: nowIso,
@@ -77,15 +73,14 @@ export function upsertRuntimeSession(
   db.prepare(
     `INSERT INTO runtime_sessions
        (session_id, conversation_id, interface, mirror_active, persona, journey,
-        hook_injected, active, started_at, updated_at, closed_at, metadata)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        active, started_at, updated_at, closed_at, metadata)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(session_id) DO UPDATE SET
        conversation_id = excluded.conversation_id,
        interface = excluded.interface,
        mirror_active = excluded.mirror_active,
        persona = excluded.persona,
        journey = excluded.journey,
-       hook_injected = excluded.hook_injected,
        active = excluded.active,
        updated_at = excluded.updated_at,
        closed_at = excluded.closed_at,
@@ -97,7 +92,6 @@ export function upsertRuntimeSession(
     Number(row.mirrorActive),
     row.persona,
     row.journey,
-    Number(row.hookInjected),
     Number(row.active),
     row.startedAt,
     row.updatedAt,
@@ -147,7 +141,6 @@ export function compareAndSwapRuntimeSessionMetadata(
  */
 export interface RuntimeSessionColumnPatch {
   persona?: string | null;
-  hookInjected?: boolean;
   /** The whole metadata JSON, as the caller re-dumped it after its own read. */
   metadata?: string | null;
 }
@@ -164,10 +157,6 @@ export function updateRuntimeSessionColumns(
   if (patch.persona !== undefined) {
     assignments.push("persona = ?");
     params.push(patch.persona);
-  }
-  if (patch.hookInjected !== undefined) {
-    assignments.push("hook_injected = ?");
-    params.push(Number(patch.hookInjected));
   }
   if (patch.metadata !== undefined) {
     assignments.push("metadata = ?");

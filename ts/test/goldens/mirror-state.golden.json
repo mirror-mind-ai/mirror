@@ -23,7 +23,6 @@
       "active": 1,
       "closed_at": null,
       "conversation_id": null,
-      "hook_injected": 0,
       "interface": null,
       "journey": null,
       "metadata": {
@@ -38,7 +37,6 @@
       "active": 0,
       "closed_at": null,
       "conversation_id": null,
-      "hook_injected": 1,
       "interface": "global_defaults",
       "journey": "mirror-ts-core",
       "metadata": null,
@@ -50,7 +48,6 @@
       "active": 1,
       "closed_at": null,
       "conversation_id": "<conversation-1>",
-      "hook_injected": 1,
       "interface": "pi",
       "journey": "mirror-ts-core",
       "metadata": {

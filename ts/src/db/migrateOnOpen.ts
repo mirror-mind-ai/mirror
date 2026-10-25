@@ -132,7 +132,7 @@ function appliedMigrationIds(dbPath: string, options: OpenOptions): Set<string> 
  * No split any more. Until CV22.DS10.TS5 this separated the TS-authored tail
  * from Python-authored ids and declined the whole thing whenever a Python one
  * was pending -- correct while Python could still apply them. TypeScript
- * carries all seventeen and is the only engine left, so every pending known
+ * carries all of them and is the only engine left, so every pending known
  * migration is simply pending.
  */
 function pendingMigrations(applied: Set<string>): string[] {

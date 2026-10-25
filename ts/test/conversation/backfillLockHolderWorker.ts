@@ -27,9 +27,9 @@ try {
   ).run(NOW);
   db.prepare(
     `INSERT INTO runtime_sessions
-       (session_id, conversation_id, interface, mirror_active, hook_injected, active,
+       (session_id, conversation_id, interface, mirror_active, active,
         started_at, updated_at)
-     VALUES (?, 'conv-live', 'pi', 0, 0, 1, ?, ?)`,
+     VALUES (?, 'conv-live', 'pi', 0, 1, ?, ?)`,
   ).run(sessionId, NOW, NOW);
   db.exec("COMMIT");
   process.exit(0);

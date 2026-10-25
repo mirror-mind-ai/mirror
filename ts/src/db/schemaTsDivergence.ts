@@ -17,6 +17,15 @@ const TS_ONLY_COLUMNS: Record<string, ColumnInventory[]> = {
   identity: [{ name: "parent_journey", type: "TEXT", notnull: 0, dflt_value: null, pk: 0 }],
 };
 
+/**
+ * Columns the Python snapshot has that TS has dropped (CV9.DS8.US5, migration
+ * 018): `runtime_sessions.hook_injected`, the inject hook's once-per-session
+ * flag, without a reader since CV9.DS8.US4.
+ */
+const TS_REMOVED_COLUMNS: Record<string, string[]> = {
+  runtime_sessions: ["hook_injected"],
+};
+
 /** Indexes TS creates that the Python snapshot does not have. */
 const TS_ONLY_INDEXES: Record<string, { table: string; unique: number; columns: string[] }> = {
   idx_identity_parent_journey: { table: "identity", unique: 0, columns: ["parent_journey"] },
@@ -46,19 +55,31 @@ export function diffTsInventoryAgainstSnapshot(
     const actualTable = actual.tables[name];
     if (!actualTable) continue;
     const additions = TS_ONLY_COLUMNS[name] ?? [];
-    const expectedColumns = [...snapshot.tables[name].columns, ...additions];
+    const removals = TS_REMOVED_COLUMNS[name] ?? [];
+    const expectedColumns = [
+      ...snapshot.tables[name].columns.filter((column) => !removals.includes(column.name)),
+      ...additions,
+    ];
     if (!isDeepStrictEqual(actualTable.columns, expectedColumns)) {
-      problems.push(`tables[${name}].columns differ from snapshot + enumerated TS-only additions`);
+      problems.push(
+        `tables[${name}].columns differ from snapshot + enumerated TS-only additions and removals`,
+      );
     }
     if (!isDeepStrictEqual(actualTable.foreign_keys, snapshot.tables[name].foreign_keys)) {
       problems.push(`tables[${name}].foreign_keys differ from snapshot`);
     }
-    if (additions.length > 0) {
+    if (additions.length > 0 || removals.length > 0) {
       // The raw CREATE TABLE text diverges by exactly these columns; assert each
-      // added column name is present rather than reproduce SQLite's stored text.
+      // added column name is present and each removed one absent, rather than
+      // reproduce SQLite's stored text.
       for (const column of additions) {
         if (!(actualTable.sql ?? "").includes(column.name)) {
           problems.push(`tables[${name}].sql is missing TS-only column ${column.name}`);
+        }
+      }
+      for (const column of removals) {
+        if ((actualTable.sql ?? "").includes(column)) {
+          problems.push(`tables[${name}].sql still carries the dropped column ${column}`);
         }
       }
     } else if (!isDeepStrictEqual(actualTable.sql, snapshot.tables[name].sql)) {

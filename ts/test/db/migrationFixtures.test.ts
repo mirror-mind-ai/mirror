@@ -14,7 +14,10 @@ import { diffTsInventoryAgainstSnapshot } from "#db/schemaTsDivergence.ts";
 // schema fact. The id survives here as a FIXTURE fact -- these cases compare
 // against end-states the Python oracle recorded, and 017 is what TypeScript
 // applies beyond them. It goes with the oracle at plateau 3.
-const TS_ONLY_MIGRATION_IDS: readonly string[] = ["017_journey_parent_column"];
+const TS_ONLY_MIGRATION_IDS: readonly string[] = [
+  "017_journey_parent_column",
+  "018_drop_hook_injected",
+];
 
 const FIXTURES_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "fixtures", "migrations");
 

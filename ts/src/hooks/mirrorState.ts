@@ -14,9 +14,8 @@
 // surface this story exists to shrink.
 //
 // `needs_inject` and `mark_injected` -- the once-injection the inject hook
-// used to owe a Mirror Mode session -- left with US4; nothing reads
-// `hook_injected` since. The column and the writes that still fill it are one
-// debt item, dropped together in a `runtime_sessions` migration.
+// used to owe a Mirror Mode session -- left with US4, and the `hook_injected`
+// column they read left with US5 (migration 018).
 
 import { openDatabaseReadOnly } from "#db/database.ts";
 import { getRuntimeSession } from "#mirror/runtimeSession.ts";

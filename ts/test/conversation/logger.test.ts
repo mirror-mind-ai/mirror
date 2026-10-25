@@ -123,7 +123,6 @@ test("getOrCreateSessionConversation creates conversation and binds session atom
   assert.equal(session.interface, "pi");
   assert.equal(session.active, 1);
   assert.equal(session.mirror_active, 0);
-  assert.equal(session.hook_injected, 0);
   assert.equal(session.closed_at, null);
   assert.equal(session.started_at, NOW);
   db.close();

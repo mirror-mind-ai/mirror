@@ -286,10 +286,6 @@ async function runFull(
     sessionId: input.sessionId,
   });
   if (input.sessionId) {
-    // The folder reached the model, so the legacy once-injection (the inject
-    // hook's case 2, until US4) owes nothing. The doorman itself never reads
-    // this column; US4 retires its last reader and this write with it.
-    updateRuntimeSessionColumns(db, input.sessionId, { hookInjected: true }, input.nowIso());
     // The conversation's context starts over with the folder: so does the
     // list of memories the deltas have put in it, and a compaction's refresh
     // is answered.

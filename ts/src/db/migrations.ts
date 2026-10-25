@@ -514,6 +514,21 @@ function migrateJourneyParentColumn(db: WritableDatabase): void {
   );
 }
 
+/**
+ * 018 (CV9.DS8.US5) -- `runtime_sessions.hook_injected` goes. It was the
+ * Claude-family inject hook's once-per-session flag (CV21.DS2); US4 handed the
+ * hook to the one doorman and retired its last reader, and the four writers
+ * that still filled it were carried as one debt item, paid here with the
+ * column. Guarded on the column's presence: a fresh database's `createSchema`
+ * no longer has it, and a re-run finds nothing to drop. `DROP COLUMN` is
+ * SQLite 3.35; the engine ships 3.54.
+ */
+function migrateDropHookInjected(db: WritableDatabase): void {
+  if (!tableExists(db, "runtime_sessions")) return;
+  if (!tableColumns(db, "runtime_sessions").has("hook_injected")) return;
+  db.exec("ALTER TABLE runtime_sessions DROP COLUMN hook_injected");
+}
+
 export type MigrationApply = (db: WritableDatabase) => void;
 
 export const MIGRATIONS: readonly (readonly [string, MigrationApply])[] = [
@@ -534,6 +549,7 @@ export const MIGRATIONS: readonly (readonly [string, MigrationApply])[] = [
   ["015_create_builder_workbench", migrateCreateBuilderWorkbench],
   ["016_builder_workbench_display_codes", migrateBuilderWorkbenchDisplayCodes],
   ["017_journey_parent_column", migrateJourneyParentColumn],
+  ["018_drop_hook_injected", migrateDropHookInjected],
 ];
 
 /**

@@ -68,7 +68,7 @@ test("TS Mirror load/log/deactivate state reproduces the normalized Python oracl
   const sessionRows = db
     .prepare(
       `SELECT session_id,conversation_id,interface,mirror_active,persona,journey,
-              hook_injected,active,closed_at,metadata
+              active,closed_at,metadata
        FROM runtime_sessions
        WHERE session_id IN ('state-session','__global_operating_mode__','__global_sticky_defaults__')
        ORDER BY session_id`,
@@ -86,7 +86,6 @@ test("TS Mirror load/log/deactivate state reproduces the normalized Python oracl
     mirror_active: row.mirror_active,
     persona: row.persona,
     journey: row.journey,
-    hook_injected: row.hook_injected,
     active: row.active,
     closed_at: row.closed_at,
     metadata: normalizeMetadata(row.metadata),

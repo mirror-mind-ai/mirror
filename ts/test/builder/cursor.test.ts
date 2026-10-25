@@ -49,7 +49,6 @@ interface RowDump {
   mirror_active: number;
   persona: string | null;
   journey: string | null;
-  hook_injected: number;
   active: number;
   started_at: string;
   updated_at: string;
@@ -169,7 +168,6 @@ function readRow(db: WritableDatabase): RowDump | null {
     mirror_active: Number(record.mirror_active),
     persona: (record.persona as string | null) ?? null,
     journey: (record.journey as string | null) ?? null,
-    hook_injected: Number(record.hook_injected),
     active: Number(record.active),
     started_at: String(record.started_at),
     updated_at: String(record.updated_at),

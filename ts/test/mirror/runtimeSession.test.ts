@@ -43,14 +43,14 @@ test("updateRuntimeSessionColumns: only the named columns move; a missing row is
     assert.equal(updateRuntimeSessionColumns(db, "S", {}, "t1"), false);
     assert.equal(updateRuntimeSessionColumns(db, "missing", { persona: "x" }, "t1"), false);
     assert.equal(updateRuntimeSessionColumns(db, "S", { persona: "writer" }, "t1"), true);
-    assert.equal(updateRuntimeSessionColumns(db, "S", { hookInjected: true }, "t2"), true);
+    assert.equal(updateRuntimeSessionColumns(db, "S", { metadata: '{"k": 1}' }, "t2"), true);
     const row = getRuntimeSession(db, "S");
     assert.deepEqual(
       {
         conversationId: row?.conversationId,
         mirrorActive: row?.mirrorActive,
         persona: row?.persona,
-        hookInjected: row?.hookInjected,
+        metadata: row?.metadata,
         updatedAt: row?.updatedAt,
         interface: row?.interface,
       },
@@ -58,7 +58,7 @@ test("updateRuntimeSessionColumns: only the named columns move; a missing row is
         conversationId: "conv-1",
         mirrorActive: true,
         persona: "writer",
-        hookInjected: true,
+        metadata: '{"k": 1}',
         updatedAt: "t2",
         interface: "pi",
       },

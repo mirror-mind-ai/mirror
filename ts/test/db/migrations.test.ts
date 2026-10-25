@@ -56,6 +56,40 @@ test("migration 017 backfills parent_journey from JSON metadata for journey rows
   }
 });
 
+// --- CV9.DS8.US5: migration 018 drops runtime_sessions.hook_injected ---
+
+test("migration 018 drops hook_injected from an existing runtime_sessions, and is idempotent", () => {
+  const { db, cleanup } = freshDb();
+  try {
+    // A pre-018 table, as every home since v0.7.0 carried it: the inject
+    // hook's once-per-session flag, without a reader since CV9.DS8.US4.
+    db.exec(`
+      CREATE TABLE runtime_sessions (
+        session_id TEXT PRIMARY KEY, conversation_id TEXT, interface TEXT,
+        mirror_active INTEGER NOT NULL DEFAULT 0, persona TEXT, journey TEXT,
+        hook_injected INTEGER NOT NULL DEFAULT 0, active INTEGER NOT NULL DEFAULT 1,
+        started_at TEXT NOT NULL, updated_at TEXT NOT NULL, closed_at TEXT, metadata TEXT
+      )`);
+    db.prepare(
+      "INSERT INTO runtime_sessions (session_id, mirror_active, persona, hook_injected, started_at, updated_at) VALUES ('s', 1, 'cfo', 1, 't', 't')",
+    ).run();
+    runMigrations(db);
+    const columns = (
+      db.prepare("PRAGMA table_info(runtime_sessions)").all() as { name: string }[]
+    ).map((row) => row.name);
+    assert.ok(!columns.includes("hook_injected"), "the column is gone");
+    assert.deepEqual(
+      db.prepare("SELECT session_id, mirror_active, persona FROM runtime_sessions").get(),
+      { session_id: "s", mirror_active: 1, persona: "cfo" },
+      "the row survived with its other columns",
+    );
+    runMigrations(db); // the ledger says done; nothing to drop twice
+  } finally {
+    db.close();
+    cleanup();
+  }
+});
+
 // --- Track A: fresh-DB ledger completeness (extends TS1) ---
 
 test("runMigrations then createSchema on a fresh DB records exactly the KNOWN_MIGRATION_IDS", () => {

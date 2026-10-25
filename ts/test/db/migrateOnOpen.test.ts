@@ -304,6 +304,7 @@ test("a database Python v0.7.0 created reaches a fresh database's schema on open
         "015_create_builder_workbench",
         "016_builder_workbench_display_codes",
         "017_journey_parent_column",
+        "018_drop_hook_injected",
       ],
     );
     const migrated = canonicalInventory(old.dbPath);

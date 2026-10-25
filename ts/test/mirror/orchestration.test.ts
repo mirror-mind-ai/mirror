@@ -79,7 +79,6 @@ test("mirror load composes context and persists mode, mirror, sticky, and conver
   assert.match(result.stderr, /◇ engineer/);
   const session = db.prepare("SELECT * FROM runtime_sessions WHERE session_id = 's1'").get();
   assert.equal(session?.mirror_active, 1);
-  assert.equal(session?.hook_injected, 0);
   assert.equal(session?.persona, "engineer");
   assert.equal(session?.journey, "mirror-ts-core");
   assert.ok(session?.conversation_id);
@@ -139,14 +138,12 @@ test("reception replay is logged metadata-only", async () => {
 
 test("mirror deactivate changes only session mirror state", () => {
   const db = fixture();
-  db.prepare(
-    "UPDATE runtime_sessions SET mirror_active = 1, hook_injected = 0 WHERE session_id = 's1'",
-  ).run();
+  db.prepare("UPDATE runtime_sessions SET mirror_active = 1 WHERE session_id = 's1'").run();
   deactivateMirrorState(db, "s1", "t1");
   const row = db
-    .prepare("SELECT mirror_active, hook_injected FROM runtime_sessions WHERE session_id = 's1'")
+    .prepare("SELECT mirror_active FROM runtime_sessions WHERE session_id = 's1'")
     .get();
-  assert.deepEqual(row, { mirror_active: 0, hook_injected: 1 });
+  assert.deepEqual(row, { mirror_active: 0 });
   db.close();
 });
 
