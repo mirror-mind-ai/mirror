@@ -5,14 +5,29 @@
  *
  * Events handled:
  * - session_start      → unmute + welcome card + status line, in ONE front-door
- *                        process (CV9.E2.S32); maintenance detached
+ *                        process (CV9.E2.S32); maintenance detached; the session
+ *                        named in the environment (`MIRROR_SESSION_ID`, CV9.DS8.US5)
  * - input              → what the person typed, kept for the run it starts (CR160)
- * - before_agent_start → the turn to the core's prompt rule (`user-prompt`), with a
- *                        turn id minted for it, NOT awaited: queued on a per-session
- *                        chain so the turn starts at once (CV9.E2.S32)
+ * - before_agent_start → the turn to the one doorman (`mirror doorman`), AWAITED:
+ *                        its block, when there is one, is the run's message, so
+ *                        Mirror's context is before the model on this turn
+ *                        (CV9.DS8.US5); then the turn to the core's prompt rule
+ *                        (`user-prompt`), with a turn id minted for it, NOT
+ *                        awaited: queued on the per-session chain behind the
+ *                        doorman, so the turn starts at once (CV9.E2.S32)
  * - agent_end          → the run's assistant text, kept for the prompt's reply
  * - agent_settled      → the prompt's whole reply to `stop`, after the chain settles
- * - session_shutdown   → close conversation (after the chain settles) + backup
+ * - session_shutdown   → close conversation (after the chain settles) + backup;
+ *                        the session's name cleared from the environment
+ *
+ * The session's name (CV9.DS8.US5, from TS1's P2 measurement on Pi 1.4.0): at
+ * `session_start` this extension sets `MIRROR_SESSION_ID` in Pi's OWN process
+ * environment, which every later `pi.exec` and every bash command the model runs
+ * inherits. So a `mirror mirror load` the model runs by itself on an unprompted
+ * personal question, and a `mirror build load` on a mode switch, name THIS
+ * session's row instead of guessing one -- and the doorman, which reads that row,
+ * takes the next turn. Named-session behaviors that were dormant on Pi while no
+ * session was named wake with it (`mirror log`, journey binding, the mode stamps).
  *
  * All heavy logic lives in the TypeScript core, reached through the `mirror`
  * bin that ships beside this file (`bin/mirror.js`). This extension is a thin
@@ -351,13 +366,58 @@ export default function (pi: ExtensionAPI) {
 	 */
 	const pendingUserLog = new Map<string, Promise<void>>();
 
-	function enqueueUserLog(sessionId: string, args: string[]): void {
+	/**
+	 * One front-door process on the session's chain: spawned when the link
+	 * before it has exited, its stdout returned to the caller. A failure settles
+	 * the chain all the same and reads as empty stdout (`runMirror` swallows).
+	 */
+	function runOnChain(sessionId: string, args: string[]): Promise<string> {
 		const prior = pendingUserLog.get(sessionId) ?? Promise.resolve();
-		const next = prior.then(() => runMirror(args)).then(
-			() => undefined,
-			() => undefined,
+		const stdout = prior.then(() => runMirror(args));
+		pendingUserLog.set(
+			sessionId,
+			stdout.then(
+				() => undefined,
+				() => undefined,
+			),
 		);
-		pendingUserLog.set(sessionId, next);
+		return stdout.then(
+			(out) => out,
+			() => "",
+		);
+	}
+
+	function enqueueUserLog(sessionId: string, args: string[]): void {
+		void runOnChain(sessionId, args);
+	}
+
+	/**
+	 * CV9.DS8.US5: the turn through the one doorman. `mirror doorman` decides
+	 * nothing, the full folder, or a delta from the prompt and the session's
+	 * state (`ts/src/mirror/doorman.ts`, DS8's policy); this extension decides
+	 * nothing itself and carries the answer. Awaited: the turn cannot start
+	 * before the block exists. Outside Mirror Mode the doorman reads and exits
+	 * with nothing -- one process, no snapshot, no embedding, no context (0.21 s
+	 * on a 61 MB home, measured 2026-10-25).
+	 *
+	 * On the chain AHEAD of the `user-prompt` logger: the logger's first-turn
+	 * upsert rebuilds the whole `runtime_sessions` row from what it read, and
+	 * overlapping the doorman's full load it would write back `mirror_active = 0`
+	 * and a null persona. The doorman's process has exited before the logger's is
+	 * spawned, so it does not race. The prompt is truncated as the payload is:
+	 * the explicit form is at its start, routing and the embedding do not need
+	 * the tail, and an untruncated paste would fail the exec on ARG_MAX --
+	 * silently, and the skill would load twice.
+	 */
+	function deliverMirrorContext(sessionId: string, prompt: string): Promise<string> {
+		return runOnChain(sessionId, [
+			"mirror",
+			"doorman",
+			"--prompt",
+			truncate(prompt),
+			"--session-id",
+			sessionId,
+		]);
 	}
 
 	async function settleUserLog(sessionId: string): Promise<void> {
@@ -577,6 +637,12 @@ export default function (pi: ExtensionAPI) {
 
 	pi.on("session_start", async (_event, ctx) => {
 		log("INFO", "session_start fired");
+		// The session's name, for the model's own `mirror` commands (CV9.DS8.US5;
+		// see the header). Fires again on `/new`, `/resume`, and `/fork`, with the
+		// new file; the shutdown before it cleared the old one.
+		const namedSession = ctx.sessionManager.getSessionFile();
+		if (namedSession) process.env.MIRROR_SESSION_ID = namedSession;
+		else delete process.env.MIRROR_SESSION_ID;
 		if (ctx.hasUI) {
 			ctx.ui.setStatus("mirror", "◇ Mirror · starting… maintenance will continue in background");
 		}
@@ -651,6 +717,10 @@ export default function (pi: ExtensionAPI) {
 		pendingReply.set(sessionId, { turnId, texts: [] });
 		if (!prompt) return;
 
+		// The doorman first, awaited (CV9.DS8.US5): Mirror's context before the
+		// model, on the turn that asks for it.
+		const block = await deliverMirrorContext(sessionId, prompt);
+
 		log("INFO", `user-prompt (turn ${turnId}): ${prompt.slice(0, 80)}...`);
 		// Not awaited (CV9.E2.S32): the turn starts now; `agent_settled` and
 		// `session_shutdown` settle the chain before anything that must follow.
@@ -662,6 +732,14 @@ export default function (pi: ExtensionAPI) {
 			"--payload",
 			JSON.stringify({ session_id: sessionId, prompt: truncate(prompt), turn_id: turnId }),
 		]);
+
+		if (!block) return;
+		log("INFO", `mirror-context (turn ${turnId}): ${block.length} chars delivered`);
+		// Pi adds it to this run after the user message and hands it to the model
+		// as a user-role message; its first line says the runtime, not the person,
+		// is speaking, and the `mm-mirror` skill reads that line as delivery (TS3).
+		// Not displayed: the person sees the mirror's reply, not the plumbing.
+		return { message: { customType: "mirror-context", content: block, display: false } };
 	});
 
 	// --- 4. agent_end → the run's assistant text, kept for the prompt's reply ---
@@ -729,6 +807,8 @@ export default function (pi: ExtensionAPI) {
 
 	pi.on("session_shutdown", async (_event, ctx) => {
 		const sessionId = ctx.sessionManager.getSessionFile() ?? null;
+		// Nothing inherits a stale name between sessions (CV9.DS8.US5).
+		delete process.env.MIRROR_SESSION_ID;
 
 		if (sessionId) {
 			// A reply still unsent (a Pi without `agent_settled`) lands before the

@@ -166,6 +166,8 @@ interface Harness {
   fire(event: string, payload: unknown, ctx: unknown): Promise<void>;
   /** Fire and return without waiting for the handlers to settle. */
   fireNoWait(event: string, payload: unknown, ctx: unknown): Promise<void>;
+  /** Fire and return what every handler returned, in registration order (CV9.DS8.US5). */
+  fireResults(event: string, payload: unknown, ctx: unknown): Promise<unknown[]>;
   /** The argv of every exec so far, bin path stripped: `["conversation-logger", ...]`. */
   commands(): string[][];
   /** The detached spawns are not `pi.exec`; they leave a line in the log instead. */
@@ -220,6 +222,10 @@ async function harness(env: Record<string, string> = {}): Promise<Harness> {
       // Let the handlers reach their first await.
       return new Promise((resolve) => setImmediate(() => resolve(all)));
     },
+    fireResults: (event, payload, ctx) =>
+      Promise.all(
+        (pi.handlers.get(event) ?? []).map((handler) => Promise.resolve(handler(payload, ctx))),
+      ),
     commands: () => pi.execs.map((d) => d.args.slice(1)),
     drain: async (until) => {
       let done = false;
@@ -417,13 +423,63 @@ const expandedSkill = (name: string, args = ""): string =>
 
 const settledEvent = { type: "agent_settled", aborted: false };
 
-test("before_agent_start returns while user-prompt is still running", async () => {
+/** The `mirror doorman` execs so far, settled or not (CV9.DS8.US5). */
+const doormanExecs = (h: Harness): Deferred[] =>
+  h.pi.execs.filter((d) => d.args[1] === "mirror" && d.args[2] === "doorman");
+
+/** The user-prompt execs so far: the doorman's answer comes first, the logger follows. */
+const userPromptExecs = (h: Harness): Deferred[] =>
+  h.pi.execs.filter((d) => d.args[1] === "conversation-logger" && d.args[2] === "user-prompt");
+
+/**
+ * A person's prompt through `before_agent_start`. The handler asks the doorman
+ * and AWAITS it (US5) -- the turn cannot start before the block exists -- so
+ * the test answers that exec with `block` and then collects what the handlers
+ * returned. The user-prompt logger is spawned after the doorman exits, and is
+ * left running, as the handler leaves it.
+ */
+async function userPrompt(
+  h: Harness,
+  event: unknown,
+  ctx: unknown,
+  block = "",
+): Promise<{ message?: Record<string, unknown> } | undefined> {
+  const results = h.fireResults("before_agent_start", event, ctx);
+  await tick();
+  const doorman = doormanExecs(h).find((d) => !d.settled);
+  assert.ok(doorman, "the doorman was asked");
+  doorman.resolve(block);
+  const all = await results;
+  return all.find((r): r is { message?: Record<string, unknown> } => !!r && typeof r === "object");
+}
+
+test("before_agent_start asks the doorman for the turn, awaits it, then returns while user-prompt is still running", async () => {
   const h = await harness();
   try {
     const ctx = fakeCtx("/sessions/a.jsonl");
-    await h.fire("before_agent_start", promptEvent("hello"), ctx);
-    assert.equal(h.pi.execs.length, 1);
-    const command = h.commands()[0];
+    const results = h.fireResults("before_agent_start", promptEvent("hello"), ctx);
+    await tick();
+    assert.equal(h.pi.execs.length, 1, "the doorman alone: the logger waits for it");
+    assert.deepEqual(h.commands()[0], [
+      "mirror",
+      "doorman",
+      "--prompt",
+      "hello",
+      "--session-id",
+      "/sessions/a.jsonl",
+    ]);
+    let settled = false;
+    void results.then(() => (settled = true));
+    await tick();
+    assert.equal(settled, false, "the handler waits for the doorman");
+    h.pi.execs[0]?.resolve("");
+    const returned = await results;
+    assert.ok(
+      returned.every((r) => r === undefined),
+      "nothing delivered: the handler returns no message",
+    );
+    assert.equal(h.pi.execs.length, 2, "the user-prompt spawned once the doorman exited");
+    const command = h.commands()[1];
     assert.deepEqual(command?.slice(0, 4), [
       "conversation-logger",
       "user-prompt",
@@ -435,7 +491,66 @@ test("before_agent_start returns while user-prompt is still running", async () =
     assert.equal(payload.prompt, "hello");
     assert.equal(typeof payload.turn_id, "string");
     assert.ok((payload.turn_id as string).length > 0, "a turn id is minted");
-    assert.equal(h.pi.execs[0]?.settled, false, "the handler settled before the process did");
+    assert.equal(h.pi.execs[1]?.settled, false, "the handler settled before the logger did");
+  } finally {
+    h.cleanup();
+  }
+});
+
+test("a block from the doorman is returned as the run's mirror-context message, hidden from the TUI", async () => {
+  const h = await harness();
+  try {
+    const block =
+      "=== mirror context delivered by the runtime for this turn: full — answer as the mirror ===\nfolder\n";
+    const result = await userPrompt(
+      h,
+      promptEvent("/skill:mm-mirror hello"),
+      fakeCtx("/sessions/a.jsonl"),
+      block,
+    );
+    // `runMirror` trims stdout: the block's trailing newline is not content.
+    assert.deepEqual(result?.message, {
+      customType: "mirror-context",
+      content: block.trimEnd(),
+      display: false,
+    });
+  } finally {
+    h.cleanup();
+  }
+});
+
+test("a doorman that fails leaves the turn to start without a message, and says so in the log", async () => {
+  // `runMirror` swallows the rejection to "" (a characterization, not new code).
+  const h = await harness();
+  try {
+    const ctx = fakeCtx("/sessions/a.jsonl");
+    const results = h.fireResults("before_agent_start", promptEvent("hello"), ctx);
+    await tick();
+    h.pi.execs[0]?.reject(new Error("timeout after 30000ms"));
+    const returned = await results;
+    assert.ok(returned.every((r) => r === undefined));
+    assert.ok(h.logLines().some((l) => l.includes("[ERROR] runMirror failed [mirror doorman]")));
+    assert.equal(userPromptExecs(h).length, 1, "the prompt is still logged");
+  } finally {
+    h.cleanup();
+  }
+});
+
+test("a prompt over the argument limit reaches the doorman truncated, its opening intact", async () => {
+  const h = await harness();
+  try {
+    const long = `/skill:mm-mirror ${"x".repeat(60_000)}`;
+    const results = h.fireResults(
+      "before_agent_start",
+      promptEvent(long),
+      fakeCtx("/sessions/a.jsonl"),
+    );
+    await tick();
+    const sent = h.commands()[0]?.[3] ?? "";
+    assert.ok(sent.startsWith("/skill:mm-mirror xxx"), "the form at the start");
+    assert.ok(sent.length < long.length && sent.length <= 50_100, "truncated for ARG_MAX");
+    h.pi.execs[0]?.resolve("");
+    await results;
   } finally {
     h.cleanup();
   }
@@ -445,16 +560,24 @@ test("two prompts in a row serialize: the second user-prompt starts only after t
   const h = await harness();
   try {
     const ctx = fakeCtx("/sessions/a.jsonl");
-    await h.fire("before_agent_start", promptEvent("one"), ctx);
-    await h.fire("before_agent_start", promptEvent("two"), ctx);
+    await userPrompt(h, promptEvent("one"), ctx);
+    const second = h.fireResults("before_agent_start", promptEvent("two"), ctx);
     await tick();
-    assert.equal(h.pi.execs.length, 1, "the second is queued, not spawned");
-    h.pi.execs[0]?.resolve("");
+    assert.equal(doormanExecs(h).length, 1, "the second doorman is queued behind the first logger");
+    assert.equal(userPromptExecs(h).length, 1);
+    userPromptExecs(h)[0]?.resolve("");
     await tick();
-    assert.equal(h.pi.execs.length, 2, "the second spawned after the first exited");
+    assert.equal(
+      doormanExecs(h).length,
+      2,
+      "the second doorman spawned after the first logger exited",
+    );
+    doormanExecs(h)[1]?.resolve("");
+    await second;
+    assert.equal(userPromptExecs(h).length, 2, "the second logger after its doorman");
     assert.notEqual(
-      payloadOf(h.commands()[0]).turn_id,
-      payloadOf(h.commands()[1]).turn_id,
+      payloadOf(loggerCommands(h)[0]).turn_id,
+      payloadOf(loggerCommands(h)[1]).turn_id,
       "each prompt has its own turn",
     );
   } finally {
@@ -470,8 +593,13 @@ test("what reaches the core is what the person typed, not Pi's expansion of it",
   try {
     const ctx = fakeCtx("/sessions/a.jsonl");
     await h.fire("input", inputEvent("/skill:mm-journeys"), ctx);
-    await h.fire("before_agent_start", promptEvent(expandedSkill("mm-journeys")), ctx);
-    assert.equal(payloadOf(h.commands()[0]).prompt, "/skill:mm-journeys");
+    await userPrompt(h, promptEvent(expandedSkill("mm-journeys")), ctx);
+    assert.equal(
+      h.commands()[0]?.[3],
+      "/skill:mm-journeys",
+      "the doorman reads the typed text too",
+    );
+    assert.equal(payloadOf(loggerCommands(h)[0]).prompt, "/skill:mm-journeys");
   } finally {
     h.cleanup();
   }
@@ -483,7 +611,7 @@ test("a slash command goes to the core's rule as typed, which decides it is one"
   try {
     const ctx = fakeCtx("/sessions/a.jsonl");
     await h.fire("input", inputEvent("/mm-help"), ctx);
-    await h.fire("before_agent_start", promptEvent("/mm-help"), ctx);
+    await userPrompt(h, promptEvent("/mm-help"), ctx);
     assert.equal(loggerCommands(h).length, 1);
     assert.equal(loggerCommands(h)[0]?.[1], "user-prompt");
     assert.equal(payloadOf(loggerCommands(h)[0]).prompt, "/mm-help");
@@ -497,8 +625,8 @@ test("input queued while Pi streams is not taken for the next run", async () => 
   try {
     const ctx = fakeCtx("/sessions/a.jsonl");
     await h.fire("input", inputEvent("/skill:mm-journeys", "followUp"), ctx);
-    await h.fire("before_agent_start", promptEvent("what changed today?"), ctx);
-    assert.equal(payloadOf(h.commands()[0]).prompt, "what changed today?");
+    await userPrompt(h, promptEvent("what changed today?"), ctx);
+    assert.equal(payloadOf(loggerCommands(h)[0]).prompt, "what changed today?");
   } finally {
     h.cleanup();
   }
@@ -508,23 +636,24 @@ test("with nothing typed kept for a run, Pi's skill wrapper is read back to its 
   const h = await harness();
   try {
     const ctx = fakeCtx("/sessions/a.jsonl");
-    await h.fire(
-      "before_agent_start",
-      promptEvent(expandedSkill("mm-mirror", "should I raise my price?")),
-      ctx,
-    );
-    h.pi.execs[0]?.resolve("");
+    await userPrompt(h, promptEvent(expandedSkill("mm-mirror", "should I raise my price?")), ctx);
+    userPromptExecs(h)[0]?.resolve("");
     await tick();
-    await h.fire("before_agent_start", promptEvent(expandedSkill("mm-journeys")), ctx);
+    await userPrompt(h, promptEvent(expandedSkill("mm-journeys")), ctx);
     await tick();
     const prompts = loggerCommands(h).map((command) => payloadOf(command).prompt);
     assert.deepEqual(prompts, ["/skill:mm-mirror should I raise my price?", "/skill:mm-journeys"]);
+    // The doorman, which reads the explicit form, got the command, not the body.
+    assert.deepEqual(
+      doormanExecs(h).map((d) => d.args[4]),
+      ["/skill:mm-mirror should I raise my price?", "/skill:mm-journeys"],
+    );
   } finally {
     h.cleanup();
   }
 });
 
-test("a run a custom message started sends nothing", async () => {
+test("a run a custom message started sends nothing, and asks no doorman", async () => {
   const h = await harness();
   try {
     await h.fire(
@@ -538,15 +667,59 @@ test("a run a custom message started sends nothing", async () => {
   }
 });
 
+test("a session without a file asks no doorman", async () => {
+  const h = await harness();
+  try {
+    await h.fire("before_agent_start", promptEvent("hello"), fakeCtx(undefined));
+    assert.equal(h.pi.execs.length, 0);
+  } finally {
+    h.cleanup();
+  }
+});
+
+// --- the session named for the model's own commands (CV9.DS8.US5, TS1's P2) ---------
+
+test("session_start names the session in the environment, a later one re-names it, and shutdown clears it", async () => {
+  const h = await harness();
+  const saved = process.env.MIRROR_SESSION_ID;
+  try {
+    delete process.env.MIRROR_SESSION_ID;
+    await h.drain(
+      h.fireNoWait(
+        "session_start",
+        { type: "session_start", reason: "startup" },
+        fakeCtx("/sessions/a.jsonl"),
+      ),
+    );
+    assert.equal(process.env.MIRROR_SESSION_ID, "/sessions/a.jsonl");
+    await h.drain(
+      h.fireNoWait(
+        "session_start",
+        { type: "session_start", reason: "new" },
+        fakeCtx("/sessions/b.jsonl"),
+      ),
+    );
+    assert.equal(process.env.MIRROR_SESSION_ID, "/sessions/b.jsonl");
+    await h.drain(
+      h.fireNoWait("session_shutdown", { type: "session_shutdown" }, fakeCtx("/sessions/b.jsonl")),
+    );
+    assert.equal(process.env.MIRROR_SESSION_ID, undefined, "nothing inherits a stale file");
+  } finally {
+    if (saved === undefined) delete process.env.MIRROR_SESSION_ID;
+    else process.env.MIRROR_SESSION_ID = saved;
+    h.cleanup();
+  }
+});
+
 // --- agent_end and agent_settled: one reply per prompt (CR160) -----------------------
 
 test("agent_settled sends one stop for the prompt, with every run's text, under its turn", async () => {
   const h = await harness();
   try {
     const ctx = fakeCtx("/sessions/a.jsonl");
-    await h.fire("before_agent_start", promptEvent("hello"), ctx);
-    const turnId = payloadOf(h.commands()[0]).turn_id as string;
-    h.pi.execs[0]?.resolve("");
+    await userPrompt(h, promptEvent("hello"), ctx);
+    const turnId = payloadOf(loggerCommands(h)[0]).turn_id as string;
+    userPromptExecs(h)[0]?.resolve("");
     await h.drain(h.fireNoWait("agent_end", agentEndEvent("first run"), ctx));
     await h.drain(h.fireNoWait("agent_end", agentEndEvent("second run"), ctx));
     assert.ok(!h.logLines().some((l) => l.includes("stop started")), "nothing sent per run");
@@ -566,7 +739,7 @@ test("agent_settled spawns stop only after the pending user-prompt has exited", 
   const h = await harness();
   try {
     const ctx = fakeCtx("/sessions/a.jsonl");
-    await h.fire("before_agent_start", promptEvent("hello"), ctx);
+    await userPrompt(h, promptEvent("hello"), ctx);
     const end = h.fireNoWait("agent_end", agentEndEvent("answer"), ctx);
     const settled = h.fireNoWait("agent_settled", settledEvent, ctx);
     await tick();
@@ -574,7 +747,7 @@ test("agent_settled spawns stop only after the pending user-prompt has exited", 
       !h.logLines().some((l) => l.includes("stop started")),
       "not yet: user-prompt still running",
     );
-    h.pi.execs[0]?.resolve("");
+    userPromptExecs(h)[0]?.resolve("");
     await h.drain(Promise.all([end, settled]).then(() => undefined));
     assert.ok(h.logLines().some((l) => l.includes("stop started in detached background")));
   } finally {
@@ -587,10 +760,10 @@ test("agent_settled still sends stop when user-prompt failed or timed out", asyn
     const h = await harness();
     try {
       const ctx = fakeCtx("/sessions/a.jsonl");
-      await h.fire("before_agent_start", promptEvent("hello"), ctx);
+      await userPrompt(h, promptEvent("hello"), ctx);
       const end = h.fireNoWait("agent_end", agentEndEvent("answer"), ctx);
       const settled = h.fireNoWait("agent_settled", settledEvent, ctx);
-      h.pi.execs[0]?.reject(new Error(failure));
+      userPromptExecs(h)[0]?.reject(new Error(failure));
       await h.drain(Promise.all([end, settled]).then(() => undefined));
       assert.ok(h.logLines().some((l) => l.includes("stop started in detached background")));
     } finally {
@@ -603,11 +776,15 @@ test("a prompt with no assistant text sends no stop, and the chain stays intact"
   const h = await harness();
   try {
     const ctx = fakeCtx("/sessions/a.jsonl");
-    await h.fire("before_agent_start", promptEvent("hello"), ctx);
+    await userPrompt(h, promptEvent("hello"), ctx);
     await h.fire("agent_end", { type: "agent_end", messages: [] }, ctx);
     await h.fire("agent_settled", { type: "agent_settled", aborted: true }, ctx);
     assert.ok(!h.logLines().some((l) => l.includes("stop started")));
-    assert.equal(h.pi.execs[0]?.settled, false, "the aborted prompt did not wait on the chain");
+    assert.equal(
+      userPromptExecs(h)[0]?.settled,
+      false,
+      "the aborted prompt did not wait on the chain",
+    );
   } finally {
     h.cleanup();
   }
@@ -619,11 +796,11 @@ test("a Pi without agent_settled: the reply goes out before the next prompt, on 
   const h = await harness();
   try {
     const ctx = fakeCtx("/sessions/a.jsonl");
-    await h.fire("before_agent_start", promptEvent("one"), ctx);
-    const firstTurn = payloadOf(h.commands()[0]).turn_id;
-    h.pi.execs[0]?.resolve("");
+    await userPrompt(h, promptEvent("one"), ctx);
+    const firstTurn = payloadOf(loggerCommands(h)[0]).turn_id;
+    userPromptExecs(h)[0]?.resolve("");
     await h.drain(h.fireNoWait("agent_end", agentEndEvent("answer one"), ctx));
-    await h.fire("before_agent_start", promptEvent("two"), ctx);
+    await h.drain(h.fireNoWait("before_agent_start", promptEvent("two"), ctx));
     await h.drain(tick());
     const commands = loggerCommands(h);
     assert.deepEqual(
@@ -645,22 +822,22 @@ test("session_shutdown runs session-end-pi only after the pending user-prompt ha
   const h = await harness();
   try {
     const ctx = fakeCtx("/sessions/a.jsonl");
-    await h.fire("before_agent_start", promptEvent("hello"), ctx);
+    await userPrompt(h, promptEvent("hello"), ctx);
     const shutdown = h.fireNoWait("session_shutdown", { type: "session_shutdown" }, ctx);
     await tick();
-    assert.equal(h.pi.execs.length, 1, "session-end-pi not spawned while user-prompt runs");
-    h.pi.execs[0]?.resolve("");
+    assert.equal(h.pi.execs.length, 2, "session-end-pi not spawned while user-prompt runs");
+    userPromptExecs(h)[0]?.resolve("");
     await tick();
-    assert.equal(h.pi.execs.length, 2);
-    assert.deepEqual(h.commands()[1], [
+    assert.equal(h.pi.execs.length, 3);
+    assert.deepEqual(h.commands()[2], [
       "conversation-logger",
       "session-end-pi",
       "/sessions/a.jsonl",
     ]);
-    h.pi.execs[1]?.resolve("");
-    await tick();
-    assert.deepEqual(h.commands()[2], ["backup", "--silent"]);
     h.pi.execs[2]?.resolve("");
+    await tick();
+    assert.deepEqual(h.commands()[3], ["backup", "--silent"]);
+    h.pi.execs[3]?.resolve("");
     await shutdown;
   } finally {
     h.cleanup();
@@ -671,8 +848,8 @@ test("session_shutdown sends a reply still unsent before it closes the conversat
   const h = await harness();
   try {
     const ctx = fakeCtx("/sessions/a.jsonl");
-    await h.fire("before_agent_start", promptEvent("hello"), ctx);
-    h.pi.execs[0]?.resolve("");
+    await userPrompt(h, promptEvent("hello"), ctx);
+    userPromptExecs(h)[0]?.resolve("");
     await h.drain(h.fireNoWait("agent_end", agentEndEvent("answer"), ctx));
     await h.drain(h.fireNoWait("session_shutdown", { type: "session_shutdown" }, ctx));
     assert.deepEqual(
@@ -689,18 +866,18 @@ test("a session switch does not gate the new session on the old one's chain", as
   try {
     const ctxA = fakeCtx("/sessions/a.jsonl");
     const ctxB = fakeCtx("/sessions/b.jsonl");
-    await h.fire("before_agent_start", promptEvent("on A"), ctxA);
+    await userPrompt(h, promptEvent("on A"), ctxA);
     const start = h.fireNoWait(
       "session_start",
       { type: "session_start", reason: "new", previousSessionFile: "/sessions/a.jsonl" },
       ctxB,
     );
-    assert.equal(h.pi.execs.length, 2, "B's session open spawned while A's user-prompt still runs");
-    h.pi.execs[1]?.resolve(ENVELOPE);
+    assert.equal(h.pi.execs.length, 3, "B's session open spawned while A's user-prompt still runs");
+    h.pi.execs[2]?.resolve(ENVELOPE);
     await start;
-    await h.fire("before_agent_start", promptEvent("on B"), ctxB);
-    assert.equal(h.pi.execs.length, 3, "B's user-prompt did not wait for A's");
-    h.pi.execs[2]?.resolve("");
+    await userPrompt(h, promptEvent("on B"), ctxB);
+    assert.equal(h.pi.execs.length, 5, "B's doorman and user-prompt did not wait for A's");
+    userPromptExecs(h)[1]?.resolve("");
     const end = h.fireNoWait("agent_end", agentEndEvent("answer on B"), ctxB);
     await tick();
     await h.fire("agent_settled", settledEvent, ctxB);
@@ -708,7 +885,7 @@ test("a session switch does not gate the new session on the old one's chain", as
       h.logLines().some((l) => l.includes("stop started")),
       "B's reply did not wait for A",
     );
-    assert.equal(h.pi.execs[0]?.settled, false, "A's write is still in flight, untouched");
+    assert.equal(userPromptExecs(h)[0]?.settled, false, "A's write is still in flight, untouched");
     await h.drain(end);
   } finally {
     h.cleanup();
@@ -721,10 +898,13 @@ test("MIRROR_TEST_FRONT_DOOR_DELAY_MS delays the exec only under MEMORY_ENV=test
   const h = await harness({ MEMORY_ENV: "test", MIRROR_TEST_FRONT_DOOR_DELAY_MS: "40" });
   try {
     const ctx = fakeCtx("/sessions/a.jsonl");
-    await h.fire("before_agent_start", promptEvent("hello"), ctx);
+    const results = h.fireResults("before_agent_start", promptEvent("hello"), ctx);
+    await tick();
     assert.equal(h.pi.execs.length, 0, "not spawned yet: the knob is sleeping");
     await new Promise((resolve) => setTimeout(resolve, 60));
     assert.equal(h.pi.execs.length, 1, "spawned after the delay");
+    h.pi.execs[0]?.resolve("");
+    await results;
   } finally {
     h.cleanup();
   }
@@ -734,9 +914,11 @@ test("the knob is inert outside MEMORY_ENV=test", async () => {
   const h = await harness({ MEMORY_ENV: "", MIRROR_TEST_FRONT_DOOR_DELAY_MS: "5000" });
   try {
     const ctx = fakeCtx("/sessions/a.jsonl");
-    await h.fire("before_agent_start", promptEvent("hello"), ctx);
+    const results = h.fireResults("before_agent_start", promptEvent("hello"), ctx);
     await tick();
     assert.equal(h.pi.execs.length, 1, "spawned at once");
+    h.pi.execs[0]?.resolve("");
+    await results;
   } finally {
     h.cleanup();
   }
