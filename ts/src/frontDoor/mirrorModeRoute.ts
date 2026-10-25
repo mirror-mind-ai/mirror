@@ -136,8 +136,21 @@ export function isModeWrite(argv: readonly string[]): boolean {
   return args[0] === "activate" || args[0] === "deactivate";
 }
 
-export function mirrorDeactivateMissingSession(argv: readonly string[]): boolean {
-  return argv[0] === "mirror" && argv[1] === "deactivate" && !optionValue(argv, "--session-id");
+/**
+ * `mirror deactivate` with nobody naming a session: `--session-id` absent AND
+ * no harness variable (CV9.DS8.US5 -- until then `--session-id` alone, so
+ * `/mm-new` on a Pi whose extension had named the session still refused).
+ */
+export function mirrorDeactivateMissingSession(
+  argv: readonly string[],
+  env: MirrorRouteEnvironment = process.env,
+): boolean {
+  return (
+    argv[0] === "mirror" &&
+    argv[1] === "deactivate" &&
+    !optionValue(argv, "--session-id") &&
+    environmentSessionId(env) === null
+  );
 }
 
 export function runMirrorRead(db: Database, args: readonly string[]): number {
@@ -163,7 +176,10 @@ export async function runMirrorWriteRoute(
   const args = argv.slice(2);
   const sessionId = optionValue(args, "--session-id");
   if (sub === "deactivate") {
-    deactivateMirrorState(db, sessionId as string, nowIso());
+    // The session the caller named, else the harness's (TS2's reader): the
+    // unnamed case was refused before this route ran.
+    const named = resolveNamedRuntimeSessionId(sessionId ?? null, environmentSessionId(env));
+    deactivateMirrorState(db, named as string, nowIso());
     console.error("Mirror Mode deactivated.");
     return 0;
   }

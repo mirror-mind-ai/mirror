@@ -486,3 +486,50 @@ test("mirror load marks the session CLAUDE_CODE_SESSION_ID names when no --sessi
     ws.cleanup();
   }
 });
+
+// Debt paid by CV9.DS8.US5's walk: `/mm-new` runs `mirror mirror deactivate`
+// with no `--session-id`, which refused with "no state change" even on a Pi
+// whose session the extension had named -- so `mm-new` never ended Mirror
+// Mode there. The route now reads the session the harness named, as `load`
+// and the doorman do (TS2's reader); the warning stays for the unnamed case.
+test("mirror deactivate ends the session the environment names when --session-id is absent", () => {
+  const ws = mirrorDbCopy();
+  try {
+    const env = { MIRROR_SESSION_ID: "cli-session" };
+    const load = spawnFrontDoor(
+      [
+        "mirror",
+        "load",
+        "--persona",
+        "engineer",
+        "--journey",
+        "mirror-ts-core",
+        "--db-path",
+        ws.dbPath,
+      ],
+      env,
+    );
+    assert.equal(load.status, 0, load.stderr);
+    const off = spawnFrontDoor(["mirror", "deactivate", "--db-path", ws.dbPath], env);
+    assert.equal(off.status, 0, off.stderr);
+    assert.equal(off.stderr, "Mirror Mode deactivated.\n");
+    const db = openDatabaseReadOnly(ws.dbPath);
+    assert.equal(
+      db
+        .prepare("SELECT mirror_active FROM runtime_sessions WHERE session_id = 'cli-session'")
+        .get()?.mirror_active,
+      0,
+    );
+    db.close();
+    // Nobody named a session: the warning, and nothing written.
+    const unnamed = spawnFrontDoor(["mirror", "deactivate", "--db-path", ws.dbPath], {
+      MIRROR_SESSION_ID: "",
+      CLAUDE_CODE_SESSION_ID: "",
+      CODEX_SESSION_ID: "",
+    });
+    assert.equal(unnamed.status, 0);
+    assert.match(unnamed.stderr, /without --session-id; no state change/);
+  } finally {
+    ws.cleanup();
+  }
+});
