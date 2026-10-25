@@ -4852,6 +4852,32 @@ open mechanism — how a session learns a load the model ran by itself — is me
 first (CV9.DS8.TS1), on CR100's lead that Claude Code hands commands
 `CLAUDE_CODE_SESSION_ID`.
 
+**What it costs, measured** (added 2026-10-25 by CV9.DS8.TS7, from the stories'
+records). A turn in Mirror Mode writes one `embedding` row in `llm_calls`, shared by
+the memory and attachment searches, and no reinforcement. The explicit turn costs what
+`mirror load --query` costs: the reception call when enabled and, when there are
+attachments to score, the query's embedding; in US4's and US5's runs it wrote one
+`reception` row and no `embedding` row. A turn outside Mirror Mode writes nothing.
+The stories measured time and size, not price:
+
+- the `mirror mirror doorman` command on a copy of the home, in
+  [US5's run](roadmap/cv9-mirror-1-0/cv9-ds8-one-doorman-mirror-s-context-before-the-model-on-every-runtime/cv9-ds8-us5-pi-through-the-one-doorman-at-l4/test-guide.md)
+  (2026-10-25): a delta about 1.0 s; 142–154 bytes when no memory passes the
+  threshold (the delivered line alone) and up to 8.5 KB when some do; the full
+  folder, 33 KB, in 1.33 s; a turn outside Mirror Mode 0.21 s;
+- the same command in
+  [US4's run](roadmap/cv9-mirror-1-0/cv9-ds8-one-doorman-mirror-s-context-before-the-model-on-every-runtime/cv9-ds8-us4-claude-code-and-codex-through-the-one-doorman/test-guide.md)
+  (2026-10-24), before the threshold: a delta 0.97–1.08 s; the full folder in 1.09 s;
+- agy 1.4.7's hook with real providers, in
+  [TS6's walk](roadmap/cv9-mirror-1-0/cv9-ds8-one-doorman-mirror-s-context-before-the-model-on-every-runtime/cv9-ds8-ts6-antigravity-through-the-one-doorman/test-guide.md)
+  (2026-10-25): quiet 0.23 s, full 0.90 s, a delta 0.96–1.02 s, against agy's 15 s
+  budget.
+
+No story measured a turn's price in dollars, so decision 1's "a fraction of a cent"
+remains the estimate it was made on. In US4's walk Claude Code paid two embeddings per
+turn because a checkout's hooks and the installed plugin's both ran; that is a debt US4
+carried, not the doorman's cost.
+
 ### Antigravity's doorman reads the prompt from the payload and delivers persistent steps
 
 **Date:** 2026-10-25 · **Context:** [CV9.DS8.TS6](roadmap/cv9-mirror-1-0/cv9-ds8-one-doorman-mirror-s-context-before-the-model-on-every-runtime/cv9-ds8-ts6-antigravity-through-the-one-doorman/index.md),
