@@ -2,7 +2,7 @@
 
 # CV9.DS8.TS6 — Antigravity through the one doorman
 
-**Status:** 🟡 Planned
+**Status:** ✅ Done — 2026-10-25
 **Type:** Technical Story
 **Delivery Story:** CV9.DS8 — One Doorman: Mirror's Context Before the Model on Every Runtime
 
