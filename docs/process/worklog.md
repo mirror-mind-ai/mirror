@@ -20,7 +20,15 @@ answers through one doorman; an explicit turn loads once; one signature rule; Pi
 measured live. The runtime interface contract holds one parity matrix, sourced and held by
 a test. Migration 018 drops `runtime_sessions.hook_injected`, applied on each home's next
 open. Codex, Antigravity, and Grok Build keep a plugin copy that `runtime diagnose` names
-the command to bring level. Release note: [v0.37.0](../releases/v0.37.0.md).
+the command to bring level. Release note: [v0.37.0](../releases/v0.37.0.md). CI green on
+the release commit; tag and `stable` pushed by `release:promote`; the trusted-publisher
+stage approved; `latest` and `stable` at 0.37.0; GitHub Release published, marked latest.
+The production install updated through `runtime update`, from a shell that exported
+`MIRROR_USER=vinicius-dev`: the update's backup and migrate step ran against the
+development home, not the production one, which the printed backup path showed. The
+production home was then backed up and verified, and migrated with `runtime migrate
+--mirror-home` and the variable unset: 018 applied, 18/18, status ready. `runtime
+diagnose` names Codex's cached plugin as behind.
 
 ### 2026-10-25 — CV9.DS8 closed: One Doorman
 
