@@ -12,6 +12,28 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-10-25 — CV9.DS8.US5: Pi through the one doorman, at L4
+
+The Pi extension (`.pi/extensions/mirror-logger.ts`) is the fourth caller of the one
+doorman. On every run a person starts, `before_agent_start` runs `mirror doorman
+--prompt … --session-id <session file>`, awaits it, and returns the block as a
+`mirror-context` custom message — a user-role message after the prompt, opened by the
+delivered line the `mm-mirror` skill reads as delivery (TS3) — or nothing: outside
+Mirror Mode the doorman reads and exits in 0.21 s with no snapshot, no embedding, no
+context. The doorman runs on the per-session chain ahead of the `user-prompt` logger,
+so the logger's whole-row upsert cannot overwrite the full load's session state. At
+`session_start` the extension sets `MIRROR_SESSION_ID` to the session file (TS1's P2,
+cleared at shutdown), so the model's own `mirror mirror load` on an unprompted question
+and `mirror build load` on a mode switch name this session instead of guessing one.
+The memory threshold DS8's policy names is on the **semantic** score, which the ranker
+now reports beside the hybrid one: a fresh, reinforced memory floors at 0.35 on the
+hybrid with no semantic match at all, so a composite threshold would have been a
+recency gate; 0.4 is the rule the attachments already obey, and the front-door log
+carries both numbers per ranked memory. Pi's parity row moves to L4 (the extension's
+harness test is its automated proof; no isolated `smoke_pi.sh`). Live measurement on
+the installed Pi is the story's validation; story package under
+[CV9.DS8](../project/roadmap/cv9-mirror-1-0/cv9-ds8-one-doorman-mirror-s-context-before-the-model-on-every-runtime/index.md).
+
 ### 2026-10-24 — CV9.DS8.US4: Claude Code and Codex through the one doorman
 
 The Claude-family inject hook (`mirror-inject.sh` → `claudeInject`) no longer carries a

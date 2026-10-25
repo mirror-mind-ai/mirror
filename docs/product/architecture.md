@@ -266,7 +266,7 @@ on.
 
 | Harness | Parity | Adapter pattern | Session ID source |
 |---|---|---|---|
-| Pi | L3 | TypeScript extension (`.pi/extensions/mirror-logger.ts`) that spawns the front door | Session file path |
+| Pi | L4 | TypeScript extension (`.pi/extensions/mirror-logger.ts`) that spawns the front door; `before_agent_start` carries the one doorman's block into the run (CV9.DS8.US5) | Session file path, also set as `MIRROR_SESSION_ID` for the model's own commands |
 | Claude Code | L4 | The shipped plugin, linked under `~/.claude/skills/`, whose hooks run the installed `mirror-hook`; in a checkout, the shell wrappers in `.claude/hooks/`, which run the tree's own | Hook stdin payload |
 | Codex | L4 | The shipped plugin (installed through the package's marketplace), whose Claude-family hooks Codex runs as they are (CV21.DS4.US4) | Hook stdin payload |
 | Antigravity | L4 | The same plugin with its agy-native layer (`plugins/mirror-mind/agy/`, `hooks.json`, `rules/AGENTS.md`), staged by `agy plugin install` (CV21.DS7.US4) | Hook stdin payload (`conversationId`) |
@@ -276,8 +276,8 @@ The levels are defined beside the matrix. In short: **L4** is logging, the comma
 surface, Mirror Mode, Builder Mode, external skills, and an isolated smoke, with
 Mirror's context put before the model by the runtime itself, through a hook; **L3**
 has everything but that hook, so the model loads the context through `/mm-mirror`.
-Pi is L3 by that line, and a Pi that injects the context itself is
-[CR165](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr165-pi-puts-no-mirror-context-before-the-model.md).
+Pi was L3 by that line until CV9.DS8.US5 gave its extension the one doorman
+([CR165](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr165-pi-puts-no-mirror-context-before-the-model.md)).
 
 Skills (`SKILL.md` files) are the primary way users invoke Mirror Mind
 capabilities. Pi and a Codex checkout share the same skill files via symlinks:
