@@ -12,6 +12,22 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-10-25 — CV9.DS8 closed: One Doorman
+
+CV9.DS8 is Done. On Pi, Claude Code, Codex, and Antigravity, Mirror's context reaches the
+model before it answers through one decision in the core, the doorman: the full folder on
+the turn Mirror Mode starts, then on each ordinary turn the persona the question calls
+for and the memories relevant to it, with the `◇ persona-name` signature held across
+the conversation. Pi, the recommended harness, moved from L3 to L4, measured. Seven
+stories, worked story by story: TS1 measured how a session learns a load the model ran
+itself; TS2 built the doorman; TS3 taught the skill to trust delivered context; US4, US5,
+and TS6 put Claude Code and Codex, Pi, and Antigravity through it, each walked live; TS7
+wrote it where a user reads it. Each bullet of the Done Condition is met by the story
+that owns it, and CR165, the measurement that started it, reads promoted. Closed in the
+roadmap and here, as story-by-story Delivery Stories are; CR169 to CR174 carry what the
+stories' Debt Reviews deferred. Package:
+[CV9.DS8](../project/roadmap/cv9-mirror-1-0/cv9-ds8-one-doorman-mirror-s-context-before-the-model-on-every-runtime/index.md).
+
 ### 2026-10-25 — CV9.DS8.TS7: Written where a user reads it
 
 The pages a person reads now describe the one doorman as DS8 built and measured it,

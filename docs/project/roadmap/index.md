@@ -59,7 +59,9 @@ home for every environment, unconfigured resolution fails loudly instead of
 writing to the homes root, and `runtime diagnose` reports legacy root
 artifacts. Conversation
 metadata lifecycle was delivered as CV9.DS7, done on 2026-09-26 and since ported
-to TypeScript by CV22.DS7.US10.
+to TypeScript by CV22.DS7.US10. The one doorman was delivered as CV9.DS8, done on
+2026-10-25: on Pi, Claude Code, Codex, and Antigravity the runtime puts Mirror's
+context before the model, and Pi reached L4.
 Boundary Hardening and the remaining stabilization stories are still open before
 the full CV9 done condition is met.
 

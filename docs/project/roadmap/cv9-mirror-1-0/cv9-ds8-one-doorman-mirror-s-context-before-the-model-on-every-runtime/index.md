@@ -2,7 +2,7 @@
 
 # CV9.DS8 — One Doorman: Mirror's Context Before the Model on Every Runtime
 
-**Status:** 🟡 Planned
+**Status:** ✅ Done
 **Type:** Delivery Story
 **Source:** [CR165](../../../refinement/rs010-cv22-oracle-and-port-hygiene/cr165-pi-puts-no-mirror-context-before-the-model.md),
 promoted on 2026-10-24 after its measurement and the Navigator's three decisions.
@@ -117,3 +117,27 @@ DS8 is done when:
 - the parity matrix records Pi at L4 with version, binary, and date, and every doc the
   guard holds agrees;
 - CR165 reads `promoted` with this Delivery Story as its target.
+
+## Closure
+
+Closed on 2026-10-25. DS8 was worked story by story, so it closes the way DS7 and
+CV22's story-by-story Delivery Stories did: this status line, CV9's row, the roadmap
+summary, and a worklog entry. No Ariad Delivery Story record exists, because none was planned at that
+level. All seven stories are Done: TS1, TS2, and TS3 on 2026-10-24; US4, US5, TS6, and
+TS7 on 2026-10-25. Each bullet of the Done Condition is met by the story that owns it:
+
+- one module decides (`ts/src/mirror/doorman.ts`, TS2), and the Claude-family inject
+  hook (US4), Antigravity's `PreInvocation` (TS6), and the Pi extension (US5) call it;
+- an explicit Mirror turn loads the folder once, measured live on Claude Code 2.1.310
+  and Codex 0.164.0 (US4's walk 2) and on Pi 1.4.0 (US5's walk 2);
+- on each of those runtimes a follow-up in another domain re-routes its persona and
+  signs `◇ persona-name`, and an unprompted personal question is followed by doorman
+  turns, in the same walks;
+- Antigravity runs the doorman with no regression, measured live on agy 1.4.7 (TS6);
+- the parity matrix records Pi at L4 with version, binary, and date (US5), and every
+  doc the guard holds agrees (TS7, `runtimeParityDocs.test.ts` green);
+- CR165 reads `promoted` with this Delivery Story as its target.
+
+Carried out of this Delivery Story, not open in it: the Change Requests its stories'
+Debt Reviews captured, CR169 to CR174, and the checkout-plus-plugin double hook US4
+named as a Change Request candidate, not yet captured.
