@@ -533,3 +533,62 @@ test("mirror deactivate ends the session the environment names when --session-id
     ws.cleanup();
   }
 });
+
+// Debt paid by CV9.DS8.US5: the Pi extension says the transcript was compacted
+// through `mirror doorman --forget`; the next ordinary turn is full again.
+test("mirror doorman --forget marks the named session so its next ordinary turn is full", () => {
+  const ws = mirrorDbCopy();
+  try {
+    const env = { MIRROR_SESSION_ID: "cli-session" };
+    const load = spawnFrontDoor(
+      [
+        "mirror",
+        "load",
+        "--persona",
+        "engineer",
+        "--journey",
+        "mirror-ts-core",
+        "--db-path",
+        ws.dbPath,
+      ],
+      env,
+    );
+    assert.equal(load.status, 0, load.stderr);
+    const forget = spawnFrontDoor(["mirror", "doorman", "--forget", "--db-path", ws.dbPath], env);
+    assert.equal(forget.status, 0, forget.stderr);
+    assert.equal(forget.stdout, "");
+    let db = openDatabaseReadOnly(ws.dbPath);
+    assert.match(
+      String(
+        db.prepare("SELECT metadata FROM runtime_sessions WHERE session_id = 'cli-session'").get()
+          ?.metadata,
+      ),
+      /"doorman_refresh": true/,
+    );
+    db.close();
+    const next = spawnFrontDoor(
+      ["mirror", "doorman", "--prompt", "and what about the next step", "--db-path", ws.dbPath],
+      env,
+    );
+    assert.equal(next.status, 0, next.stderr);
+    assert.match(next.stdout, /^=== mirror context delivered by the runtime for this turn: full/);
+    db = openDatabaseReadOnly(ws.dbPath);
+    assert.doesNotMatch(
+      String(
+        db.prepare("SELECT metadata FROM runtime_sessions WHERE session_id = 'cli-session'").get()
+          ?.metadata,
+      ),
+      /doorman_refresh/,
+    );
+    db.close();
+    // Unnamed: nothing to mark, exit 0, nothing printed.
+    const unnamed = spawnFrontDoor(["mirror", "doorman", "--forget", "--db-path", ws.dbPath], {
+      MIRROR_SESSION_ID: "",
+      CLAUDE_CODE_SESSION_ID: "",
+      CODEX_SESSION_ID: "",
+    });
+    assert.equal(unnamed.status, 0);
+  } finally {
+    ws.cleanup();
+  }
+});

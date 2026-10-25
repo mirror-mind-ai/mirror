@@ -67,6 +67,11 @@ export interface DoormanSessionState {
   readonly active: boolean;
   readonly persona: string | null;
   readonly journey: string | null;
+  /**
+   * The folder left the transcript (the runtime compacted it, and said so
+   * through `forgetDoormanDelivery`): the next ordinary turn is full again.
+   */
+  readonly refresh?: boolean;
 }
 
 export type DoormanDecision =
@@ -111,6 +116,32 @@ export const DOORMAN_MEMORY_SEMANTIC_THRESHOLD = 0.4;
  */
 export const DOORMAN_DELIVERED_METADATA_KEY = "doorman_delivered";
 
+/**
+ * Set on the session when the runtime compacted the transcript (the Pi
+ * extension's `session_compact`, CV9.DS8.US5): a delta's premise -- the
+ * identity layers already sit in the transcript -- no longer holds, so the
+ * next ordinary turn in Mirror Mode delivers the full folder, routed from that
+ * prompt, and the full load clears the flag.
+ */
+export const DOORMAN_REFRESH_METADATA_KEY = "doorman_refresh";
+
+/**
+ * The runtime says the folder left the transcript: the next ordinary turn is
+ * full, and the delivered list is forgotten with it. Unknown session: no-op.
+ */
+export function forgetDoormanDelivery(
+  db: WritableDatabase,
+  sessionId: string,
+  nowIso: string,
+): void {
+  const session = getRuntimeSession(db, sessionId);
+  if (!session) return;
+  const metadata = decodeMetadata(session.metadata);
+  metadata[DOORMAN_REFRESH_METADATA_KEY] = true;
+  metadata[DOORMAN_DELIVERED_METADATA_KEY] = [];
+  updateRuntimeSessionColumns(db, sessionId, { metadata: pythonJsonDumps(metadata) }, nowIso);
+}
+
 /** How many ranked memories a delta may read through to fill its five. */
 const DOORMAN_SEARCH_CEILING = 25;
 
@@ -129,12 +160,14 @@ function rememberDelivered(
   sessionId: string | null,
   ids: readonly string[],
   nowIso: string,
+  options: { clearRefresh?: boolean } = {},
 ): void {
   if (!sessionId) return;
   const session = getRuntimeSession(db, sessionId);
   if (!session) return;
   const metadata = decodeMetadata(session.metadata);
   metadata[DOORMAN_DELIVERED_METADATA_KEY] = [...ids];
+  if (options.clearRefresh) delete metadata[DOORMAN_REFRESH_METADATA_KEY];
   updateRuntimeSessionColumns(db, sessionId, { metadata: pythonJsonDumps(metadata) }, nowIso);
 }
 
@@ -166,6 +199,7 @@ export function readDoormanSessionState(
     active: session.mirrorActive && inMirrorMode,
     persona: session.persona,
     journey: session.journey,
+    refresh: decodeMetadata(session.metadata)[DOORMAN_REFRESH_METADATA_KEY] === true,
   };
 }
 
@@ -183,6 +217,9 @@ export function decideDoorman(input: {
   // signed. The Mirror form, the one skill whose argument IS the question,
   // was answered above.
   if (isCommandTurn(input.prompt)) return { kind: "nothing" };
+  // The runtime compacted the transcript: the folder is a summary now, so this
+  // turn delivers it whole, routed from the prompt, and the deltas resume after.
+  if (input.state.refresh) return { kind: "full", query: input.prompt };
   const match = detectPersona(input.prompt, input.personas)[0]?.key ?? null;
   const persona = match !== null && match !== input.state.persona ? match : null;
   return { kind: "delta", query: input.prompt, persona };
@@ -254,8 +291,9 @@ async function runFull(
     // this column; US4 retires its last reader and this write with it.
     updateRuntimeSessionColumns(db, input.sessionId, { hookInjected: true }, input.nowIso());
     // The conversation's context starts over with the folder: so does the
-    // list of memories the deltas have put in it.
-    rememberDelivered(db, input.sessionId, [], input.nowIso());
+    // list of memories the deltas have put in it, and a compaction's refresh
+    // is answered.
+    rememberDelivered(db, input.sessionId, [], input.nowIso(), { clearRefresh: true });
   }
   const line = deliveredLine({
     kind: "full",

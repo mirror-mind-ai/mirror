@@ -17,6 +17,8 @@
  *                        doorman, so the turn starts at once (CV9.E2.S32)
  * - agent_end          → the run's assistant text, kept for the prompt's reply
  * - agent_settled      → the prompt's whole reply to `stop`, after the chain settles
+ * - session_compact    → the folder left the transcript: `mirror doorman --forget`,
+ *                        so the next ordinary turn is delivered whole (CV9.DS8.US5)
  * - session_shutdown   → close conversation (after the chain settles) + backup;
  *                        the session's name cleared from the environment
  *
@@ -827,6 +829,23 @@ export default function (pi: ExtensionAPI) {
 		await settleUserLog(sessionId);
 		runMirrorBackground(args, "stop");
 	}));
+
+	// --- 5b. session_compact → the folder left the transcript (CV9.DS8.US5) ---
+	//
+	// A delta's premise is that the identity layers sit in the transcript. Pi
+	// compacts on its own (threshold, overflow) and on `/compact`; after that
+	// the folder is a summary. The core is told, on the chain and not awaited;
+	// the next ordinary turn in Mirror Mode is full again, routed from its prompt.
+
+	pi.on(
+		"session_compact",
+		once("session_compact", async (_event, ctx) => {
+			const sessionId = ctx.sessionManager.getSessionFile() ?? null;
+			if (!sessionId) return;
+			log("INFO", "session_compact: the doorman forgets what the transcript held");
+			enqueueUserLog(sessionId, ["mirror", "doorman", "--forget", "--session-id", sessionId]);
+		}),
+	);
 
 	// --- 6. session_shutdown → close conversation + backup ---
 	//

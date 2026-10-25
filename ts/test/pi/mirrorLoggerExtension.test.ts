@@ -966,3 +966,36 @@ test("two registrations handle each event once, whichever of them Pi keeps", asy
   for (const d of second.execs) if (!d.settled) d.resolve("");
   await run;
 });
+
+// --- session_compact: the folder left the transcript (CV9.DS8.US5) ----------------
+
+test("session_compact tells the doorman to forget, on the chain, so the next turn is full", async () => {
+  const h = await harness();
+  try {
+    const ctx = fakeCtx("/sessions/a.jsonl");
+    const compact = h.fireNoWait(
+      "session_compact",
+      { type: "session_compact", reason: "threshold", fromExtension: false, willRetry: false },
+      ctx,
+    );
+    await tick();
+    assert.deepEqual(h.commands()[0], [
+      "mirror",
+      "doorman",
+      "--forget",
+      "--session-id",
+      "/sessions/a.jsonl",
+    ]);
+    h.pi.execs[0]?.resolve("");
+    await compact;
+    // Without a session file there is nothing to mark.
+    await h.fire(
+      "session_compact",
+      { type: "session_compact", reason: "manual" },
+      fakeCtx(undefined),
+    );
+    assert.equal(h.pi.execs.length, 1);
+  } finally {
+    h.cleanup();
+  }
+});

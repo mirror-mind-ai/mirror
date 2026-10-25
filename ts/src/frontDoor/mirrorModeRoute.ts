@@ -5,6 +5,7 @@ import {
   type DoormanDecision,
   decideDoorman,
   doormanPersonas,
+  forgetDoormanDelivery,
   type MemoryScore,
   readDoormanSessionState,
   runDoorman,
@@ -73,6 +74,9 @@ export interface DoormanRouteDeps {
 /**
  * `mirror doorman --prompt "<text>" [--session-id <id>]`: the one doorman as a
  * command, for the Pi extension (US5). Prints the block or nothing; exit 0.
+ * `mirror doorman --forget [--session-id <id>]`: the runtime compacted the
+ * transcript; the named session's next ordinary turn is full again (US5's
+ * debt). Nothing printed; an unnamed session is nothing to mark.
  *
  * Two steps on purpose. The decision is read from a read-only handle; the
  * live-write handle -- `VACUUM INTO` first, 95 ms measured on a 53 MB database
@@ -85,15 +89,22 @@ export async function runMirrorDoormanRoute(
   env: MirrorRouteEnvironment = process.env,
 ): Promise<number> {
   const args = argv.slice(2);
+  const sessionId = resolveNamedRuntimeSessionId(
+    optionValue(args, "--session-id") ?? null,
+    environmentSessionId(env),
+  );
+  if (hasOption(args, "--forget")) {
+    if (!sessionId) return 0;
+    return deps.withLiveWriteDatabase(async (db) => {
+      forgetDoormanDelivery(db, sessionId, nowIso());
+      return 0;
+    });
+  }
   const prompt = optionValue(args, "--prompt");
   if (prompt === null || prompt === undefined) {
     console.error("mirror doorman requires --prompt");
     return 2;
   }
-  const sessionId = resolveNamedRuntimeSessionId(
-    optionValue(args, "--session-id") ?? null,
-    environmentSessionId(env),
-  );
   const decided = deps.withReadOnlyDatabase((db) =>
     decideDoorman({
       prompt,

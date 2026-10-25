@@ -15,6 +15,7 @@ import {
   DOORMAN_MEMORY_SEMANTIC_THRESHOLD,
   decideDoorman,
   deliveredLine,
+  forgetDoormanDelivery,
   type MemoryScore,
   readDoormanSessionState,
   runDoorman,
@@ -230,6 +231,63 @@ test("decideDoorman: a skill command that is not the Mirror form → nothing, ev
   );
 });
 
+test("decideDoorman: a session told to forget delivers the full folder on its next ordinary turn", () => {
+  // Debt paid by CV9.DS8.US5: a delta's premise is that the folder sits in the
+  // transcript, and after Pi compacts it is a summary. The extension tells the
+  // doorman (`forgetDoormanDelivery`); the next ordinary turn is full, routed
+  // from that prompt, and deltas resume after it.
+  const decision = decideDoorman({
+    prompt: "and what about the budget",
+    state: { active: true, persona: "cfo", journey: "mirror", refresh: true },
+    personas: PERSONAS,
+  });
+  assert.deepEqual(decision, { kind: "full", query: "and what about the budget" });
+  // Off, a forgotten session still gets nothing; a command still gets nothing.
+  assert.deepEqual(
+    decideDoorman({
+      prompt: "x",
+      state: { active: false, persona: null, journey: null, refresh: true },
+      personas: PERSONAS,
+    }),
+    { kind: "nothing" },
+  );
+  assert.deepEqual(
+    decideDoorman({
+      prompt: "/skill:mm-journeys",
+      state: { active: true, persona: null, journey: null, refresh: true },
+      personas: PERSONAS,
+    }),
+    { kind: "nothing" },
+  );
+});
+
+test("forgetDoormanDelivery marks the session, readDoormanSessionState reads it, and the full load clears it", async () => {
+  const { db } = fixture();
+  try {
+    activate(db, "cfo", "mirror");
+    assert.equal(readDoormanSessionState(db, "S")?.refresh, false);
+    forgetDoormanDelivery(db, "S", "2026-10-25T00:00:00.000000Z");
+    assert.equal(readDoormanSessionState(db, "S")?.refresh, true);
+    // The delivered list goes with it: the transcript no longer holds those.
+    const metadata = JSON.parse(
+      String(
+        db.prepare("SELECT metadata FROM runtime_sessions WHERE session_id = 'S'").get()?.metadata,
+      ),
+    ) as Record<string, unknown>;
+    assert.deepEqual(metadata.doorman_delivered, []);
+    await runDoorman(
+      db,
+      { kind: "full", query: "and what about the budget" },
+      runInput(new CountingEmbeddingProvider(unitVector(0))),
+    );
+    assert.equal(readDoormanSessionState(db, "S")?.refresh, false);
+    // An unknown session is a no-op, not an error.
+    forgetDoormanDelivery(db, "no-such-session", "2026-10-25T00:00:00.000000Z");
+  } finally {
+    db.close();
+  }
+});
+
 test("decideDoorman: the explicit form → full, with the query after the form, in any state", () => {
   for (const state of [null, { active: false, persona: null, journey: null }]) {
     assert.deepEqual(
@@ -300,12 +358,14 @@ test("readDoormanSessionState: the row's fields, null when unnamed or unknown", 
       active: false,
       persona: null,
       journey: null,
+      refresh: false,
     });
     activate(db, "cfo", "mirror");
     assert.deepEqual(readDoormanSessionState(db, "S"), {
       active: true,
       persona: "cfo",
       journey: "mirror",
+      refresh: false,
     });
   } finally {
     db.close();
