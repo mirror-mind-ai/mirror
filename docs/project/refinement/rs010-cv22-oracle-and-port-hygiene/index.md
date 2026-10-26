@@ -114,3 +114,4 @@ evidence stays honest as both cores move.
 - [CR174 — Getting Started's measured-on versions are not held to the parity matrix](cr174-getting-started-s-measured-on-versions-are-not-held-to-the-matrix.md)
 - [CR175 — `runtime update` does not say which home it backs up and migrates, and an inherited `MIRROR_USER` silently picks another](cr175-runtime-update-does-not-say-which-home-it-backs-up-and-migrates.md)
 - [CR176 — The front-door-errors finding counts every non-zero exit, its own included, so it cannot settle](cr176-the-front-door-errors-finding-counts-every-non-zero-exit-its-own-included.md)
+- [CR177 — A Pi session in a clone also loads the installed Mirror package: 25 skill-collision warnings, and the extension twice](cr177-a-pi-session-in-a-clone-also-loads-the-installed-mirror-package.md)
