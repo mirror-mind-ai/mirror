@@ -34,6 +34,16 @@ And unrelated Delivery Story scope remains untouched
 
 - Sibling Delivery Story scope.
 
+## Carried From TS1
+
+TS1's Debt Review (2026-10-26) deferred two items to this story's Plan:
+
+- **D2, the ledger.** `llm_calls` cannot tell which calls ran with which reasoning
+  setting. That matters once the default changes here.
+- **D3, Flash Lite's rate limits.** Flash Lite drew HTTP 429 on 31% of its eval
+  attempts across TS1's runs, and production logged one rate-limited reception on
+  2026-10-25. If the pin stays, capture this as a Change Request.
+
 ## Validation
 
 Navigator-visible validation route plus automated checks.

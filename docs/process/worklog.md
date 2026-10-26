@@ -12,6 +12,39 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-10-26 — CV9.DS9.TS1: Extraction calls carry a reasoning setting, and the candidates are re-measured with reasoning off
+
+CV9.DS9 opened to choose the extraction model by measurement. A baseline of seven
+`eval --all` runs per model found GPT-6 Luna and Claude Haiku 5.5 fixing most of the four
+probes Gemini 2.5 Flash Lite has always failed. It also found them reasoning by default,
+which spent the title call's 40-token budget.
+
+TS1 gives the transport `MEMORY_EXTRACTION_REASONING`, OpenRouter's `reasoning.effort`
+on every call on the extraction pin:
+
+- unset, the request is unchanged;
+- `consult` never carries it, by a per-role table the compiler checks;
+- a value that is not an effort, such as `off`, is ignored and shown by
+  `runtime status` and `runtime diagnose`, because a failed call would quarantine
+  conversations
+  ([CR178](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr178-a-configuration-error-counts-as-an-extraction-attempt-and-nothing-releases-a-quarantine.md),
+  captured);
+- eval records carry the setting at schema 4, and `--history` labels a flip across a
+  model or reasoning change.
+
+Re-measured at `4a74f098`, two sets of seven runs per model ($0.25). With reasoning
+off, both candidates pass all six blocking probes 14/14 with real answers, and none of
+their 1,428 calls is cut off. Luna keeps every fix and improves two. Haiku loses
+`conversation-summary` (6/7 → 4/14), accepted as measured. The control's
+`tags-exclude-noise` drift was accepted, and Flash Lite drew HTTP 429 on 31% of its
+attempts.
+
+The Navigator validated it from the clone's own entry point, after the first attempt
+reached the released package that `mirror` resolves to in an interactive shell; the
+development guide now says so. The Debt Review deferred the kit and the control
+threshold to TS2's Plan, and the ledger and Flash Lite's rate limits to US3's. Package:
+[CV9.DS9.TS1](../project/roadmap/cv9-mirror-1-0/cv9-ds9-the-extraction-model-chosen-by-measurement/cv9-ds9-ts1-extraction-calls-carry-a-reasoning-setting-and-the-candidates-are-re-measured-wi/index.md).
+
 ### 2026-10-25 — v0.37.0 released: The Mirror Stays in the Conversation
 
 Minor release closing CV9.DS8, One Doorman, and with CV21.DS11, CV21, Runtime Expansion II.

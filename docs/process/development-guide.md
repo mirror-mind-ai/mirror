@@ -133,6 +133,8 @@ This is WIP discipline: new work discovered during a story is not absorbed autom
 
 The Driver creates or updates `test-guide.md`. It must include copy-paste-runnable commands and expected results. The Driver runs automated tests. For runtime behavior, the Driver runs an isolated smoke test that cannot touch the production database.
 
+A route that exercises a clone's code calls the clone's own entry point, `node bin/mirror.js` from the clone's root, or starts by confirming which install answers (`runtime version` prints it). In a person's shell a bare `mirror` may resolve to an installed package that predates the change, and a route that runs it validates the wrong program (CV9.DS9.TS1).
+
 Then the Driver prepares a manual validation route for the Navigator. The route should include, when relevant:
 
 - commands to run,

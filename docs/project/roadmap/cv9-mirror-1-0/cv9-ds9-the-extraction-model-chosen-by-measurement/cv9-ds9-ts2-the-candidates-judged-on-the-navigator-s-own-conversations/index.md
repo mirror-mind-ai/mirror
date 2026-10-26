@@ -51,6 +51,15 @@ was validated:
 - **Flash Lite's rate limits must be counted apart.** It drew HTTP 429 on 31% of its
   eval attempts, so a replay counts its failures separately from its answers.
 
+TS1's Debt Review deferred two items to this story's Plan:
+
+- **D1, the measurement kit.** The scripts exist twice, as evidence outside the eval
+  harness (the baseline's and TS1's). Decide here whether a replay needs them a third
+  time, or whether request tracing becomes an eval-harness feature.
+- **D5, the control's threshold.** TS1's control rule ("moved by more than one run in
+  seven", on rates) flagged a single failure once rate limits shrank the clean runs.
+  State control thresholds in failures, with a minimum number of clean runs.
+
 ## Validation
 
 Navigator-visible validation route plus automated checks.

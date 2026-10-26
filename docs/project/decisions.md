@@ -4908,3 +4908,36 @@ doorman reads the mode and the old hook did not. The model's own `mirror` comman
 still name no session ([CR169](refinement/rs010-cv22-oracle-and-port-hygiene/cr169-on-agy-the-model-s-own-mirror-commands-cannot-name-the-session.md)),
 and agy's compaction has no hook to re-deliver the folder
 ([CR173](refinement/rs010-cv22-oracle-and-port-hygiene/cr173-agy-compaction-has-no-hook-to-re-deliver-the-folder.md)).
+
+### Extraction calls carry an opt-in reasoning effort, and a value that is not one is ignored
+
+**Date:** 2026-10-26 · **Context:** [CV9.DS9.TS1](roadmap/cv9-mirror-1-0/cv9-ds9-the-extraction-model-chosen-by-measurement/cv9-ds9-ts1-extraction-calls-carry-a-reasoning-setting-and-the-candidates-are-re-measured-wi/index.md),
+measured in its [evidence](roadmap/cv9-mirror-1-0/cv9-ds9-the-extraction-model-chosen-by-measurement/cv9-ds9-ts1-extraction-calls-carry-a-reasoning-setting-and-the-candidates-are-re-measured-wi/evidence/2026-10-26-reasoning-off/README.md).
+
+The transport sent `model`, `messages`, `temperature`, and `max_tokens`, and nothing
+about reasoning. Gemini 2.5 Flash Lite does not reason unless asked; GPT-6 Luna and
+Claude Haiku 5.5, the candidates CV9.DS9 measures, reason by default. Their reasoning
+spent the title call's 40-token budget, so 13 of 56 title calls came back cut off, mostly
+empty, and the blocking title-injection probe passed without an answer.
+
+**The decision.** Four parts:
+
+1. **`MEMORY_EXTRACTION_REASONING` names an OpenRouter reasoning effort** (`none`,
+   `minimal`, `low`, `medium`, `high`, `xhigh`, `max`). It is sent as `reasoning.effort` on
+   every call that runs on the extraction pin. `none` turns reasoning off: with it, neither
+   candidate's calls were cut off in 1,428, and both passed every blocking probe.
+2. **Unset sends the request unchanged.** The default pin's behavior and every frozen
+   golden stay as they were; the setting is opt-in until a pin needs it.
+3. **`consult` never carries it.** It picks its own model on every call. A per-role table
+   the compiler checks makes every future role declare whether it does.
+4. **A value that is not an effort is ignored, not fatal.** The other resolvers beside the
+   pins fail loudly. This one cannot: it is read inside the session-end hooks, where a
+   failed call is an extraction attempt and three attempts quarantine a conversation for
+   good ([CR178](refinement/rs010-cv22-oracle-and-port-hygiene/cr178-a-configuration-error-counts-as-an-extraction-attempt-and-nothing-releases-a-quarantine.md)).
+   So `off`, the most natural typo, sends nothing; `runtime status` shows
+   `reasoning=invalid (off)` and `runtime diagnose` reports `extraction_reasoning_invalid`.
+
+**What follows.** Eval records carry the setting at schema 4, and `--history` labels a
+flip across a model or reasoning change. Which value, if any, ships with a new pin is
+CV9.DS9.US3's decision. That decision rests on TS2's comparison on the Navigator's own
+conversations, where both candidates run at `none`.
