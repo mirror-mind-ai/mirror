@@ -27,6 +27,7 @@ import {
   type DriftFinding,
   deferredCloseTailFindings,
   diagnoseRuntime,
+  extractionReasoningFindings,
   frontDoorErrorFindings,
   identityKeyFindings,
   loosePermissionFindings,
@@ -562,4 +563,26 @@ test("deferred close tails younger than a day, or none, are not a finding", () =
   } finally {
     home.cleanup();
   }
+});
+
+test("CV9.DS9.TS1: an invalid MEMORY_EXTRACTION_REASONING is reported, a valid or absent one is not", () => {
+  assert.deepEqual(extractionReasoningFindings({} as NodeJS.ProcessEnv), []);
+  assert.deepEqual(
+    extractionReasoningFindings({ MEMORY_EXTRACTION_REASONING: "none" } as NodeJS.ProcessEnv),
+    [],
+  );
+  const findings = extractionReasoningFindings({
+    MEMORY_EXTRACTION_REASONING: "off",
+  } as NodeJS.ProcessEnv);
+  assert.equal(findings.length, 1);
+  assert.equal(findings[0]?.code, "extraction_reasoning_invalid");
+  assert.equal(findings[0]?.severity, "attention");
+  assert.equal(findings[0]?.subject, "MEMORY_EXTRACTION_REASONING");
+  assert.match(findings[0]?.detail ?? "", /"off" is not a reasoning effort/);
+  assert.match(findings[0]?.detail ?? "", /no reasoning setting/);
+  assert.match(
+    findings[0]?.recommendation ?? "",
+    /none, minimal, low, medium, high, xhigh, or max/,
+  );
+  assert.match(findings[0]?.recommendation ?? "", /~\/\.config\/mirror\/env/);
 });

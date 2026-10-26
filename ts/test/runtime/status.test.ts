@@ -626,3 +626,40 @@ test("CV21.DS5.US2: status names the home's extensions plugin only when the home
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test("CV9.DS9.TS1: the models line shows a reasoning setting only when one is set", () => {
+  const root = mkdtempSync(join(tmpdir(), "status-reasoning-"));
+  try {
+    const home = join(root, "ana");
+    mkdirSync(home, { recursive: true });
+    const report = buildRuntimeStatus({
+      start: root,
+      mirrorHome: home,
+      env: {} as NodeJS.ProcessEnv,
+      version: "0.0.0",
+      nodeVersion: "<node-version>",
+      install: { kind: "clone", repository: root },
+    });
+    const modelsLine = (env: Record<string, string>) =>
+      renderRuntimeStatus(report, env as NodeJS.ProcessEnv)
+        .split("\n")
+        .find((line) => line.startsWith("Models: "));
+
+    // Unset: byte for byte the line every frozen status scenario records.
+    assert.equal(
+      modelsLine({}),
+      "Models: extraction=google/gemini-2.5-flash-lite, embedding=openai/text-embedding-3-small",
+    );
+    assert.equal(
+      modelsLine({ MEMORY_EXTRACTION_REASONING: "none" }),
+      "Models: extraction=google/gemini-2.5-flash-lite, reasoning=none, embedding=openai/text-embedding-3-small",
+    );
+    // Invalid: shown, not thrown. The calls send no reasoning field meanwhile.
+    assert.equal(
+      modelsLine({ MEMORY_EXTRACTION_REASONING: "off" }),
+      "Models: extraction=google/gemini-2.5-flash-lite, reasoning=invalid (off), embedding=openai/text-embedding-3-small",
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});

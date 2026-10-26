@@ -3,7 +3,7 @@ import { test } from "node:test";
 
 import { stubOpenRouterClient } from "#helpers/openRouterStub.ts";
 import { ProviderConfigError } from "#providers/config.ts";
-import { LiveLlmProvider } from "#providers/llm.ts";
+import { CARRIES_EXTRACTION_REASONING, LiveLlmProvider, LLM_ROLES } from "#providers/llm.ts";
 import { LlmTransportError, type ProviderRequestOptions } from "#providers/openrouter.ts";
 
 const LIVE_ENV = { OPENROUTER_API_KEY: "sk-or-v1-live-chat-test" };
@@ -112,6 +112,70 @@ test("no streaming, no tools, no system message for a single-prompt role", async
   assert.equal(body.stream, undefined);
   assert.equal(body.tools, undefined);
   assert.deepEqual(Object.keys(body).sort(), ["max_tokens", "messages", "model", "temperature"]);
+});
+
+// CV9.DS9.TS1: MEMORY_EXTRACTION_REASONING. Unset, the body is the key-set test's
+// above, unchanged. Set, one field is added for the roles on the extraction pin.
+
+test("an extraction-family call carries the reasoning effort when it is set (CV9.DS9.TS1)", async () => {
+  const { provider, calls } = liveProvider(() => chatReply("ok"), {
+    ...LIVE_ENV,
+    MEMORY_EXTRACTION_REASONING: "none",
+  });
+
+  await provider.complete({ role: "extraction", prompt: "p" });
+  await provider.complete({ role: "reception", prompt: "p" });
+
+  for (const call of calls) {
+    assert.deepEqual(call.body.reasoning, { effort: "none" });
+    assert.deepEqual(Object.keys(call.body).sort(), [
+      "max_tokens",
+      "messages",
+      "model",
+      "reasoning",
+      "temperature",
+    ]);
+  }
+});
+
+test("consult never carries the extraction reasoning effort: it picks its own model (CV9.DS9.TS1)", async () => {
+  const { provider, calls } = liveProvider(() => chatReply("ok"), {
+    ...LIVE_ENV,
+    MEMORY_EXTRACTION_REASONING: "none",
+  });
+
+  await provider.complete({
+    role: "consult",
+    prompt: "p",
+    model: "vendor/other",
+    messages: [
+      { role: "system", content: "s" },
+      { role: "user", content: "u" },
+    ],
+  });
+
+  assert.equal(calls[0]?.body.reasoning, undefined);
+});
+
+test("an invalid reasoning value sends no field and fails no call (CV9.DS9.TS1)", async () => {
+  // A throw here would become an extraction attempt; three of those quarantine a
+  // conversation for good (CR178).
+  const { provider, calls } = liveProvider(() => chatReply("ok"), {
+    ...LIVE_ENV,
+    MEMORY_EXTRACTION_REASONING: "off",
+  });
+
+  const response = await provider.complete({ role: "conversation_title", prompt: "p" });
+
+  assert.equal(response.content, "ok");
+  assert.equal(calls[0]?.body.reasoning, undefined);
+});
+
+test("every role declares whether it carries the extraction reasoning effort (CV9.DS9.TS1)", () => {
+  // The Record type makes the compiler ask for each new role; this pins the answers.
+  assert.deepEqual(Object.keys(CARRIES_EXTRACTION_REASONING).sort(), [...LLM_ROLES].sort());
+  const ownModel = LLM_ROLES.filter((role) => !CARRIES_EXTRACTION_REASONING[role]);
+  assert.deepEqual(ownModel, ["consult"]);
 });
 
 test("content is trimmed, matching Python's .strip()", async () => {

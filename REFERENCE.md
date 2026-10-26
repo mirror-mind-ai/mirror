@@ -863,7 +863,7 @@ is permanent supported behavior. To stop the warning, run
 
 | Variable | Role |
 |----------|------|
-| `OPENROUTER_API_KEY` | Embeddings (`openai/text-embedding-3-small` via OpenRouter), extraction (Gemini Flash), and the multi-LLM `consult` command. |
+| `OPENROUTER_API_KEY` | Embeddings and every model call through OpenRouter: extraction and the other calls on the extraction model (see [Model Pins](#model-pins)), and the multi-LLM `consult` command. |
 
 ### Intelligence Flags
 
@@ -877,6 +877,20 @@ conversation. Their 1.0 posture and full reasoning are recorded in
 | `MEMORY_TWO_PASS` | unset (off) | Second-pass curation that dedups and refines new memories against history at write time: a query embedding per candidate plus one curation call. Set `1` to enable — fewer near-duplicate memories, at added per-conversation cost (not yet in the `llm_calls` ledger, debt D-003) and a risk of over-merging distinct memories. Off for 1.0; revisit when embedding spend is measurable. |
 | `MEMORY_SUMMARIZE` | unset (off) | LLM-written conversation summary instead of the free mechanical one. Set `1` to enable — marginal summary-quality gain for one call per conversation. |
 | `MEMORY_LOG_LLM_CALLS` | `metadata` | `off`, `metadata`, or `full`. `metadata` records role/model/tokens/latency/estimated-cost with no bodies; `full` adds prompt/response bodies; `off` disables logging. Legacy `1` maps to `full`. |
+
+### Model Pins
+
+The models Mirror calls, and how the extraction model reasons. They are read like
+every setting in this section: the real environment, the clone's `.env`, then
+`~/.config/mirror/env`. A variable exported in one shell reaches only the runtimes
+started from that shell, so put a lasting value in a file. `mirror runtime status`
+prints the values in force.
+
+| Variable | Default | Role |
+|----------|---------|------|
+| `MEMORY_EXTRACTION_MODEL` | `google/gemini-2.5-flash-lite` | The OpenRouter model behind every model call except `consult`: memory and task extraction, curation, conversation titles, tags, and summaries, reception, journal classification, week plans, persona descriptors, shadow, and consolidation. Setting it repoints an install without a release, and unsetting it rolls back. A model change is a migration: see the development guide's model upgrade playbook. |
+| `MEMORY_EMBEDDING_MODEL` | `openai/text-embedding-3-small` | The embedding model for memory and attachment search. |
+| `MEMORY_EXTRACTION_REASONING` | unset | The reasoning effort those calls ask for, sent as OpenRouter's `reasoning.effort`: `none` (reasoning off), `minimal`, `low`, `medium`, `high`, `xhigh`, or `max`. Unset, no reasoning field is sent, and each model reasons as its provider defaults: Gemini 2.5 Flash Lite not at all, newer models often by default, which can spend a short call's token budget before it answers. On Flash Lite, any effort but `none` turns its thinking on. A value that is not an effort is ignored rather than failing the calls: `runtime status` shows `reasoning=invalid (<value>)` and `runtime diagnose` reports it. `consult` never carries it. |
 
 ### Environment Selection
 

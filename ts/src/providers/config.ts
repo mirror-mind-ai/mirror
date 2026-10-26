@@ -51,6 +51,51 @@ export function resolveEmbeddingModel(options: ModelPinOptions = {}): string {
   return env.MEMORY_EMBEDDING_MODEL ?? DEFAULT_EMBEDDING_MODEL;
 }
 
+/**
+ * The reasoning efforts OpenRouter's catalogue lists across its models (checked
+ * 2026-10-26, CV9.DS9.TS1). `none` turns reasoning off. Whether a given model
+ * honours a given effort is the operator's choice; this list is the vocabulary.
+ */
+export const REASONING_EFFORTS = [
+  "none",
+  "minimal",
+  "low",
+  "medium",
+  "high",
+  "xhigh",
+  "max",
+] as const;
+
+export type ReasoningEffort = (typeof REASONING_EFFORTS)[number];
+
+/** What `MEMORY_EXTRACTION_REASONING` says: an effort to send, or a value that is not one. */
+export interface ExtractionReasoning {
+  /** The effort to send as `reasoning.effort`, or null to send no reasoning field. */
+  effort: ReasoningEffort | null;
+  /** The value as written when it is not an effort; null otherwise. */
+  invalid: string | null;
+}
+
+/**
+ * Read `MEMORY_EXTRACTION_REASONING` (CV9.DS9.TS1): the reasoning effort every
+ * extraction-family call sends. Absent or blank sends nothing, which is the request
+ * as it was before the setting existed.
+ *
+ * Unlike the numeric resolvers below, this never throws. They fail loudly, but they
+ * are read inside the session-end hooks, where a throw becomes an extraction attempt
+ * and three attempts quarantine a conversation for good (CR178). So a value that is
+ * not an effort sends nothing too, and comes back as `invalid` for `runtime status`
+ * and `runtime diagnose` to show.
+ */
+export function readExtractionReasoning(options: ModelPinOptions = {}): ExtractionReasoning {
+  const env = options.env ?? process.env;
+  const raw = env.MEMORY_EXTRACTION_REASONING ?? "";
+  const value = raw.trim().toLowerCase();
+  if (value === "") return { effort: null, invalid: null };
+  const effort = REASONING_EFFORTS.find((candidate) => candidate === value);
+  return effort ? { effort, invalid: null } : { effort: null, invalid: raw.trim() };
+}
+
 // Observability (AI-09, CV9.E2.S13): mirrors Python's MEMORY_LOG_LLM_CALLS
 // resolution exactly -- off | metadata | full, default metadata (never a
 // silent full -- bodies are opt-in only). Legacy "1" maps to "full" for

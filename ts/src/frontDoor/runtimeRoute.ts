@@ -25,6 +25,7 @@ import { channelFor, channelForReport, renderChannel, setChannel } from "#runtim
 import {
   diagnoseRuntime,
   extensionPluginFindings,
+  extractionReasoningFindings,
   hookFailureFindings,
   hookNodeFindings,
   pluginWiringFindings,
@@ -324,6 +325,9 @@ export async function runRuntimeReadRoute(
       // skip; and hooks.log holds what the hooks met in their own context.
       // All three are invisible without being asked for.
       ...staleRevertGateFindings(env),
+      // CV9.DS9.TS1: a reasoning setting the transport ignores rather than fail
+      // on (CR178) is silently not in force unless diagnose says so.
+      ...extractionReasoningFindings(env),
       ...hookFailureFindings(report),
       ...hookNodeFindings(env, (path) => {
         try {

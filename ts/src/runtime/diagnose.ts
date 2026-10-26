@@ -34,6 +34,7 @@ import {
   readExtensionPlugin,
 } from "#extensions/extensionPlugin.ts";
 import { identityKeyBreaksGrammar, SLUG_KEYED_LAYERS } from "#identity/identityKey.ts";
+import { REASONING_EFFORTS, readExtractionReasoning } from "#providers/config.ts";
 import { pyRepr, sortByCodePoint } from "#util/pythonText.ts";
 import { configFilePath } from "./config.ts";
 import { extensionPluginStates } from "./extensionPluginWiring.ts";
@@ -769,6 +770,35 @@ export function staleRevertGateFindings(env: NodeJS.ProcessEnv): DriftFinding[] 
       repair_route: "edit .env",
     },
   ];
+}
+
+/**
+ * A `MEMORY_EXTRACTION_REASONING` that is not a reasoning effort (CV9.DS9.TS1).
+ *
+ * The transport sends no reasoning field for it rather than fail the call -- a
+ * failed call is an extraction attempt, and three quarantine a conversation for
+ * good (CR178) -- so the setting is silently not in force. Diagnose says so, with
+ * the values that would be.
+ */
+export function extractionReasoningFindings(env: NodeJS.ProcessEnv): DriftFinding[] {
+  const { invalid } = readExtractionReasoning({ env });
+  if (invalid === null) return [];
+  return [
+    {
+      code: "extraction_reasoning_invalid",
+      severity: "attention",
+      subject: "MEMORY_EXTRACTION_REASONING",
+      detail: `"${invalid}" is not a reasoning effort, so extraction calls send no reasoning setting`,
+      recommendation:
+        `set it to ${formatEffortList()}, or unset it, where it is set: ` +
+        "the environment, the clone's .env, or ~/.config/mirror/env",
+      repair_route: "edit the setting",
+    },
+  ];
+}
+
+function formatEffortList(): string {
+  return `${REASONING_EFFORTS.slice(0, -1).join(", ")}, or ${REASONING_EFFORTS.at(-1)}`;
 }
 
 /**

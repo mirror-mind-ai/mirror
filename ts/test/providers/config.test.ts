@@ -4,6 +4,8 @@ import test from "node:test";
 import {
   DEFAULT_EMBEDDING_MODEL,
   DEFAULT_EXTRACTION_MODEL,
+  REASONING_EFFORTS,
+  readExtractionReasoning,
   resolveEmbeddingModel,
   resolveExtractionModel,
   resolveLlmMaxRetries,
@@ -147,4 +149,54 @@ test("resolveLlmMaxRetries fails loudly on a non-integer override, as Python's i
     () => resolveLlmMaxRetries({ env: { MEMORY_LLM_MAX_RETRIES: "2.5" } }),
     /invalid literal for int\(\)/i,
   );
+});
+
+// CV9.DS9.TS1: the reasoning setting is read, never thrown. Inside the session-end
+// hooks a throw becomes an extraction attempt, and three attempts quarantine a
+// conversation for good (CR178), so an invalid value sends nothing and is reported.
+
+test("readExtractionReasoning sends nothing when the variable is absent or empty (CV9.DS9.TS1)", () => {
+  assert.deepEqual(readExtractionReasoning({ env: {} }), { effort: null, invalid: null });
+  assert.deepEqual(readExtractionReasoning({ env: { MEMORY_EXTRACTION_REASONING: "" } }), {
+    effort: null,
+    invalid: null,
+  });
+  assert.deepEqual(readExtractionReasoning({ env: { MEMORY_EXTRACTION_REASONING: "   " } }), {
+    effort: null,
+    invalid: null,
+  });
+});
+
+test("readExtractionReasoning accepts every effort OpenRouter's catalogue lists (CV9.DS9.TS1)", () => {
+  assert.deepEqual(
+    [...REASONING_EFFORTS],
+    ["none", "minimal", "low", "medium", "high", "xhigh", "max"],
+  );
+  for (const effort of REASONING_EFFORTS) {
+    assert.deepEqual(readExtractionReasoning({ env: { MEMORY_EXTRACTION_REASONING: effort } }), {
+      effort,
+      invalid: null,
+    });
+  }
+});
+
+test("readExtractionReasoning ignores case and surrounding whitespace (CV9.DS9.TS1)", () => {
+  assert.deepEqual(readExtractionReasoning({ env: { MEMORY_EXTRACTION_REASONING: " None\n" } }), {
+    effort: "none",
+    invalid: null,
+  });
+  assert.deepEqual(readExtractionReasoning({ env: { MEMORY_EXTRACTION_REASONING: "LOW" } }), {
+    effort: "low",
+    invalid: null,
+  });
+});
+
+test("readExtractionReasoning reports an invalid value as written, and never throws (CV9.DS9.TS1)", () => {
+  // `off` is the most natural typo: the Delivery Story itself says "reasoning off".
+  for (const value of ["off", "false", "0", "disabled", "Sometimes"]) {
+    assert.deepEqual(readExtractionReasoning({ env: { MEMORY_EXTRACTION_REASONING: value } }), {
+      effort: null,
+      invalid: value,
+    });
+  }
 });

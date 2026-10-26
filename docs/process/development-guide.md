@@ -469,13 +469,18 @@ changing `EXTRACTION_MODEL` or `EMBEDDING_MODEL`:
    against stale runs.
 2. **Swap the pin** in `ts/src/providers/config.ts` (or via the
    `MEMORY_EXTRACTION_MODEL` / `MEMORY_EMBEDDING_MODEL` env overrides for a dry
-   run).
+   run). A model that reasons by default can spend a short call's token budget
+   before it answers; `MEMORY_EXTRACTION_REASONING` sets the effort it is asked for
+   (`none` turns reasoning off), and is part of the configuration under test.
+   Run a dry run's evals in a scratch `MIRROR_HOME`, so the candidate's records
+   stay out of the production history.
 3. **Re-run** `eval --all` on the new pin.
 4. **Diff per probe, not just score.** `eval <name> --history` surfaces any
-   probe that flipped. For a pure model swap the `prompt_hash` is unchanged and
-   only `model` differs, so **`prompt_hash` equal + `model` changed + a flipped
-   probe = a model-attributable regression** — distinct from a prompt-change
-   regression.
+   probe that flipped, and labels a flip across a model or reasoning change. For a
+   pure model swap the `prompt_hash` is unchanged and only `model` or `reasoning`
+   differs, so **`prompt_hash` equal + `model` or `reasoning` changed + a flipped
+   probe = a configuration-attributable regression** — distinct from a
+   prompt-change regression.
 5. **Confirm a flip is real, not noise.** Evals are non-deterministic. A single
    `--all` run is a release *smoke*; before calling a flipped probe a genuine
    regression, re-run that eval **n≥5** times.
@@ -488,9 +493,9 @@ override without waiting for a release.
 Example of the regression signal in `--history`:
 
 ```text
-✓  2026-07-20T…  score=1.00/0.80  model=google/gemini-2.5-flash-lite  prompt_hash=a1b2c3
-✗  2026-07-20T…  score=0.83/0.80  model=google/gemini-3.0-flash       prompt_hash=a1b2c3
-      ⚠ probe 'grounded-no-fabrication' regressed vs previous run
+✗  2026-07-20T…  score=0.83/0.80  model=google/gemini-3.0-flash  reasoning=—  prompt_hash=a1b2c3  v4
+      ⚠ probe 'grounded-no-fabrication' regressed vs previous run (model changed)
+✓  2026-07-20T…  score=1.00/0.80  model=google/gemini-2.5-flash-lite  reasoning=—  prompt_hash=a1b2c3  v4
 ```
 
 ---

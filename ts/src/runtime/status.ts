@@ -25,7 +25,11 @@ import { readExtensionPlugin } from "#extensions/extensionPlugin.ts";
 import { loadExtensionManifest } from "#extensions/manifest.ts";
 import { inspectMigrationFiles } from "#extensions/migrations.ts";
 import { type DbPathEnv, dbNameForEnv, resolveMirrorHome } from "#frontDoor/dbPath.ts";
-import { DEFAULT_EMBEDDING_MODEL, DEFAULT_EXTRACTION_MODEL } from "#providers/config.ts";
+import {
+  DEFAULT_EMBEDDING_MODEL,
+  DEFAULT_EXTRACTION_MODEL,
+  readExtractionReasoning,
+} from "#providers/config.ts";
 import { sortByCodePoint } from "#util/pythonText.ts";
 import { channelForReport } from "./channel.ts";
 import type { MarkerValue } from "./git.ts";
@@ -529,6 +533,18 @@ function intEnv(raw: string | undefined, fallback: number): number {
   return Number.isNaN(parsed) ? fallback : parsed;
 }
 
+/**
+ * The models line's reasoning clause (CV9.DS9.TS1): empty when the setting is
+ * unset, so the line stays byte for byte what every frozen status scenario
+ * records; the effort when set; and an invalid value shown, never thrown.
+ */
+function reasoningClause(env: NodeJS.ProcessEnv): string {
+  const { effort, invalid } = readExtractionReasoning({ env });
+  if (effort !== null) return `reasoning=${effort}, `;
+  if (invalid !== null) return `reasoning=invalid (${invalid}), `;
+  return "";
+}
+
 /** Port of `render_runtime_status`. */
 export function renderRuntimeStatus(
   report: RuntimeStatusReport,
@@ -571,6 +587,7 @@ export function renderRuntimeStatus(
   );
   lines.push(
     `Models: extraction=${env.MEMORY_EXTRACTION_MODEL ?? DEFAULT_EXTRACTION_MODEL}, ` +
+      reasoningClause(env) +
       `embedding=${env.MEMORY_EMBEDDING_MODEL ?? DEFAULT_EMBEDDING_MODEL}`,
   );
   lines.push("");
