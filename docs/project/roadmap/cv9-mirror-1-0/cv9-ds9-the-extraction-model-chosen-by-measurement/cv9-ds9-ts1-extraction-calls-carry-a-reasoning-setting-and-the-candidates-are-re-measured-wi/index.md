@@ -100,6 +100,32 @@ And the comparison with the baseline is recorded in this story's evidence
 - Prompts, `temperature`, per-role token budgets, a `low` arm, and a per-role
   reasoning setting.
 
+## Result (2026-10-26)
+
+Implemented at `4a74f098`, and re-measured at that commit in two sets of seven runs
+per model ([evidence](evidence/2026-10-26-reasoning-off/README.md), $0.25).
+
+**Met:**
+
+- **Criterion 1:** with reasoning off, both candidates passed all six blocking
+  probes in 14 of 14 runs, with real answers.
+- **Criterion 2:** none of their 1,428 calls was cut off at its budget.
+- **Luna at `none`** kept every fix it had and improved two: `two-pass-dedup` from
+  2/7 to 7/14, and `open-existential-no-persona` from 5/7 to 14/14.
+- **Latency fell for both candidates.** Haiku's reception p95 is 1.3 s, against
+  3.0 s with reasoning on.
+
+**Two stop conditions were met, and both await the Navigator:**
+
+1. **Haiku at `none` lost the `conversation-summary` fix:** 6/7 with reasoning on,
+   4/14 off. Every failure opens "The conversation centered on…", Flash Lite's own
+   failure.
+2. **The control moved twice in a row:** Flash Lite's `tags-exclude-noise` went
+   from 7/7 to 5/6 and then 6/7, with the same tag ("canonical fix") counted as noise
+   each time. Flash Lite also drew HTTP 429 on 31% of its attempts.
+
+No further arm ran.
+
 ## Validation
 
 The automated suite pins the request bodies, the reader, the role table, the record,

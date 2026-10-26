@@ -94,4 +94,29 @@ Pass criteria, from the plan:
 
 ## Validation Evidence
 
-Pending implementation and validation.
+**Automated, at `4a74f098`:**
+
+- `npm test`: 3,544 tests, 3,541 passed, 0 failed, 3 skipped (as before).
+- `npm run typecheck`: clean.
+- `npm run lint`: clean, apart from one warning that predates the story, in
+  `ts/test/scripts/testTempHomes.test.ts`.
+- `checkDocLinks` and `checkRetiredSurfaces` (files staged): clean.
+- The frozen `runtime-status` and `runtime-diagnose` goldens pass unedited.
+
+**E2E, the re-measurement:** two sets of seven runs per model, at `4a74f098`
+([evidence](evidence/2026-10-26-reasoning-off/README.md)).
+
+- **Criterion 1:** met (14/14 on all six blocking probes, both candidates).
+- **Criterion 2:** met (no cut-offs).
+- **Criterion 3:** reported. Luna kept every fix; Haiku lost `conversation-summary`.
+- **Criterion 4:** not met twice, on `tags-exclude-noise`.
+
+Two stop conditions are met and await the Navigator's decision.
+
+**Smoke, on the checkout's `mirror`:**
+
+- The three status lines read as specified: today's line, `reasoning=none`, and
+  `reasoning=invalid (off)`.
+- `runtime diagnose` with `off` reports `extraction_reasoning_invalid`.
+
+**Navigator validation:** pending.
