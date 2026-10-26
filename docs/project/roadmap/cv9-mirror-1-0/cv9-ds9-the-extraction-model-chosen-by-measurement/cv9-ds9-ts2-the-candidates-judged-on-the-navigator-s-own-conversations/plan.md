@@ -340,9 +340,11 @@ Rules:
    what matters; padding, repetition, and trivia count against it.
 5. An empty output is correct when the transcript holds nothing that belongs on
    that surface.
-6. Flag every problem you find. An invented_fact flag quotes the output's claim and
-   either quotes the transcript it contradicts or says "no support in the
-   transcript".
+6. Flag every problem you find. For an invented_fact flag, put the output's claim
+   in quote, and in evidence either the exact transcript words it contradicts, in
+   double quotes, or exactly the words: no support in the transcript. For a
+   missed_key_item flag, put in evidence the exact transcript words that hold the
+   missed item, in double quotes.
 7. Rank all three outputs on every surface, best first. Do not tie: when two are
    equal, rank the more faithful first, then the more concise.
 
