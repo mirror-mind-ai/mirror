@@ -19,8 +19,9 @@ results are summarized in the [Delivery Story](../../index.md#the-baseline-measu
    with:
    - `MEMORY_EXTRACTION_MODEL` set to the model;
    - `MIRROR_HOME` set to a scratch directory per model, so each model's eval history
-     is its own and the production history is untouched;
-   - `DB_PATH` set to the production database, which reception's eval reads
+     is its own and the development home's history is untouched;
+   - `DB_PATH` set to the development home's database (`vinicius-dev`), which
+     reception's eval reads
      read-only for the persona and journey catalogue;
    - `MM_TRACE` naming the trace file the preload writes.
 3. **The trace** (`shim.mjs`): a preload that wraps `fetch` and appends one line per
@@ -59,7 +60,7 @@ results are summarized in the [Delivery Story](../../index.md#the-baseline-measu
 | `run_after.sh` | Waits for runs 1–5, then runs 6–7 with the corrected preload |
 | `analyze.mjs` | Quality and operations analysis |
 | `report.json` | The analysis output for the 21 runs |
-| `prod30.json` | Production extraction-family calls in the 30 days before 2026-10-26, per role: count, mean prompt and completion tokens, cost |
+| `prod30.json` | The development home's (`vinicius-dev`) extraction-family calls in the 30 days before 2026-10-26, per role: count, mean prompt and completion tokens, cost |
 | `eval-history/<model>/` | Every eval record of the seven runs per model |
 
 The scripts carry the paths they ran with (`/tmp/mm-model-eval`, the author's

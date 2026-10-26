@@ -16,8 +16,8 @@ compared with the [baseline](../../../evidence/2026-10-26-baseline/README.md)
   `none`, and no Flash Lite call sent a reasoning field.
 - **Two sets, seven runs each:** `eval --all` seven times per model, the three models
   in parallel (`run_model.sh`).
-  - Each model ran with a scratch `MIRROR_HOME`, and reception read the production
-    persona catalogue read-only through `DB_PATH`.
+  - Each model ran with a scratch `MIRROR_HOME`, and reception read the development
+    home's persona catalogue read-only through `DB_PATH`.
   - The second set, `repeat/`, ran because criterion 4 flagged the control in the
     first, `set1/`. The plan requires one repeat before any comparison is drawn.
   - `pooled/` is both sets together (`combine.sh`), fourteen runs per model.
@@ -104,7 +104,7 @@ runs 6 and 7; "now" is all fourteen runs:
   - Flash Lite $0.0041;
   - Luna $0.0061 → $0.0039, below Flash Lite;
   - Haiku $0.0130 → $0.0102.
-- **The last 30 days of production calls, priced** with each candidate's token ratios
+- **The development home's last 30 days of calls, priced** with each candidate's token ratios
   from these runs:
   - Flash Lite $0.61 (actual);
   - Luna $0.58;

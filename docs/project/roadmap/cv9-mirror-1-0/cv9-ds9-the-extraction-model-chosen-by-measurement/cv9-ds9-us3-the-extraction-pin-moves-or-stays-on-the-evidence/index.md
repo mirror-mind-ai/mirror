@@ -41,8 +41,8 @@ TS1's Debt Review (2026-10-26) deferred two items to this story's Plan:
 - **D2, the ledger.** `llm_calls` cannot tell which calls ran with which reasoning
   setting. That matters once the default changes here.
 - **D3, Flash Lite's rate limits.** Flash Lite drew HTTP 429 on 31% of its eval
-  attempts across TS1's runs, and production logged one rate-limited reception on
-  2026-10-25. If the pin stays, capture this as a Change Request.
+  attempts across TS1's runs, and the development home logged one rate-limited
+  reception on 2026-10-25. The production home's log shows none. If the pin stays, capture this as a Change Request.
 
 ## Validation
 

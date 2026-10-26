@@ -81,8 +81,8 @@ interactive shell resolves `mirror` to the released package
 
    - **Expected:** an `extraction_reasoning_invalid` finding naming the accepted
      efforts, then `0`.
-3. Run one module on a candidate in a scratch home, so the production eval history
-   stays clean. `MIRROR_USER` is set beside `MIRROR_HOME` because the home's last
+3. Run one module on a candidate in a scratch home, so the development home's eval
+   history stays clean. `MIRROR_USER` is set beside `MIRROR_HOME` because the home's last
    segment must match it:
 
    ```bash

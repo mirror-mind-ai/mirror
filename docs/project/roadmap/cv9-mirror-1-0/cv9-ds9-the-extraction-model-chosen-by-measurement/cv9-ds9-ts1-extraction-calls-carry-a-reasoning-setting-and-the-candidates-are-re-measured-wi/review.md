@@ -8,7 +8,7 @@ Reviewed
 
 - D1: the measurement scripts exist in two copies as evidence outside the eval harness (baseline, TS1); TS2 would make a third
 - D2: the llm_calls ledger cannot attribute calls to a reasoning setting
-- D3: Flash Lite is rate-limited upstream (HTTP 429 on 31% of eval attempts; one production reception rate_limit)
+- D3: Flash Lite is rate-limited upstream (HTTP 429 on 31% of eval attempts; one development-home reception rate_limit; none in the production home)
 - D4: tags-exclude-noise and shadow-touch-vague-discomfort are unstable on Flash Lite; recorded, the playbook's n>=5 step covers noise
 - D5: the control rule (more than one run in seven, on rates) flagged a single failure once rate limits shrank the clean runs; lesson carried to TS2's plan
 - D6: a validation route can reach the wrong install (a bare mirror is the released package in the Navigator's shell); fixed in TS1's route, the development guide gets one sentence during Coherence

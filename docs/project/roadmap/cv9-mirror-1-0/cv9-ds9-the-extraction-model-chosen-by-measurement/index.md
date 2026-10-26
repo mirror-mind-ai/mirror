@@ -31,10 +31,10 @@ Story is that migration, measured before it is decided.
 ### The baseline, measured 2026-10-26
 
 Seven full `eval --all` runs per model, the three models in parallel. Each model had
-its own eval history (a scratch `MIRROR_HOME`, with reception reading the production
+its own eval history (a scratch `MIRROR_HOME`, with reception reading the development home's
 persona catalogue read-only through `DB_PATH`), and a preload traced every call:
 status, tokens, reasoning tokens, finish reason, and latency. The repository and the
-production eval history were untouched. The measurement cost $0.17.
+development home's eval history were untouched. The measurement cost $0.17.
 
 Probes whose results differed, counting only runs that no rate limit or truncation
 touched:
@@ -58,7 +58,7 @@ injection probes of extraction and tags.
 | Input tokens for the same text | 1.00× | 0.98× | 1.53× |
 | Reception latency, p50 / p95 | 0.64 / 0.96 s | 2.6 / 4.5 s | 1.5 / 3.0 s |
 | Extraction latency, p50 / p95 | 0.58 / 1.7 s | 2.2 / 4.8 s | 1.3 / 4.0 s |
-| The last 30 days of production calls, priced | $0.61 (actual) | $0.59–0.61 | $0.91–0.97 |
+| The development home's last 30 days of calls, priced | $0.61 (actual) | $0.59–0.61 | $0.91–0.97 |
 
 What it showed:
 
@@ -75,15 +75,16 @@ What it showed:
    `temperature` parameter for either, so the 0.2 and 0.7 the pipeline sends are
    dropped. Both accept `reasoning.effort`, with `none` among the efforts.
 4. **Flash Lite is rate-limited upstream.** 16% of its attempts drew HTTP 429 from
-   Google AI Studio, and production logged a reception
-   `transport_failed kind=rate_limit` on 2026-10-25.
+   Google AI Studio, and the development home (`vinicius-dev`) logged a reception
+   `transport_failed kind=rate_limit` on 2026-10-25. The production home's log
+   (`vinicius`) shows none.
 5. **Cost is immaterial at this volume.** Haiku's tokenizer counts 1.53× the input
    tokens Flash Lite does for the same text, so it costs about half again as much.
 
 Limits: the suite is about fifty synthetic probes built to catch regressions. It says
 "no regression, standing failures fixed", not "better memories". Latency was measured
-end to end only in runs 6 and 7, on short eval inputs, while production prompts run
-from 2k to 21k tokens.
+end to end only in runs 6 and 7, on short eval inputs, while real prompts run from 2k to
+21k tokens (the development home's ledger).
 
 ## Candidate Stories
 

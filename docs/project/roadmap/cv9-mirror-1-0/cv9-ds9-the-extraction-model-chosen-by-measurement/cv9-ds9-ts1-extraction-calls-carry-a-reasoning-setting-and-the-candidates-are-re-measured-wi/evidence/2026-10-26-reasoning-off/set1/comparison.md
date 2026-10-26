@@ -56,4 +56,4 @@ Criterion 4: NOT met: the run is suspect and is repeated
 - flash-lite: reasoning 0 → 0 tokens/call; cost per suite $0.0043 → $0.0041
 - luna: reasoning 71 → 0 tokens/call; cost per suite $0.0061 → $0.0041
 - haiku: reasoning 105 → 0 tokens/call; cost per suite $0.0130 → $0.0101
-- the last 30 days of production calls, priced: flash-lite $0.61, luna $0.58, haiku $0.92
+- the development home's last 30 days of calls, priced: flash-lite $0.61, luna $0.58, haiku $0.92

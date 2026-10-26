@@ -147,7 +147,7 @@ for (const m of MODELS) {
       `cost per suite $${base[m].cost_per_suite.toFixed(4)} → $${now[m].cost_per_suite.toFixed(4)}`,
   );
 }
-// 30-day production projection: Flash Lite's actual cost, the candidates scaled by
+// 30-day projection on the development home's calls (prod30.json): Flash Lite's actual cost, the candidates scaled by
 // the input and output token ratios they showed against Flash Lite in THESE runs.
 const projection = {};
 for (const m of MODELS) projection[m] = 0;
@@ -166,7 +166,7 @@ for (const row of prod) {
 }
 result.projection_30d = projection;
 out.push(
-  `- the last 30 days of production calls, priced: ${MODELS.map((m) => `${m} $${projection[m].toFixed(2)}`).join(", ")}`,
+  `- the development home's last 30 days of calls, priced: ${MODELS.map((m) => `${m} $${projection[m].toFixed(2)}`).join(", ")}`,
 );
 
 console.log(out.join("\n"));

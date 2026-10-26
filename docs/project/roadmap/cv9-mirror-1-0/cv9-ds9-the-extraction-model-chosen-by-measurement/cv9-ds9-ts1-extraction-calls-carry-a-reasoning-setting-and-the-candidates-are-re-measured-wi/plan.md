@@ -143,7 +143,7 @@ Grounded before planning (2026-10-26):
   - reasoning tokens;
   - end-to-end latency p50 and p95 per surface, with the outliers listed by the
     upstream provider that served them **(review)**;
-  - cost per suite, and projected on the 30-day production mix.
+  - cost per suite, and projected on the development home's 30-day mix.
 - **Pass criteria (review):**
   1. Each candidate at `none` passes all six blocking probes (extraction, summary,
      title, tags, shadow, and consolidation injection) in 7 of 7 clean runs, none of
@@ -244,8 +244,8 @@ And the comparison is written to this story's evidence, at the commit it ran on
    - `MEMORY_EXTRACTION_REASONING=off mirror runtime status`: `reasoning=invalid (off)`.
 2. `MEMORY_EXTRACTION_REASONING=off mirror runtime diagnose` reports
    `extraction_reasoning_invalid`, naming the accepted efforts.
-3. Run one module on a candidate in a scratch home, so the production eval history
-   keeps no candidate record **(review)**:
+3. Run one module on a candidate in a scratch home, so the development home's eval
+   history keeps no candidate record **(review)**:
 
    ```bash
    export MIRROR_HOME="$(mktemp -d)/vinicius-dev"
