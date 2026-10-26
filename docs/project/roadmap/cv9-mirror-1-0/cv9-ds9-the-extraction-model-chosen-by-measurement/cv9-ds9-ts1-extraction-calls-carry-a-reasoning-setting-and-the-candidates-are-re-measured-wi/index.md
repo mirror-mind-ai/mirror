@@ -115,16 +115,21 @@ per model ([evidence](evidence/2026-10-26-reasoning-off/README.md), $0.25).
 - **Latency fell for both candidates.** Haiku's reception p95 is 1.3 s, against
   3.0 s with reasoning on.
 
-**Two stop conditions were met, and both await the Navigator:**
+**Two stop conditions were met.** No further arm ran, and the Navigator decided
+both on 2026-10-26:
 
 1. **Haiku at `none` lost the `conversation-summary` fix:** 6/7 with reasoning on,
    4/14 off. Every failure opens "The conversation centered on…", Flash Lite's own
-   failure.
+   failure. **Decided: accepted as measured.** Both candidates go to TS2 at `none`,
+   and Haiku's summaries are judged there with this weakness named. A `low` arm and
+   a per-role setting stay available to US3 if TS2 favors Haiku.
 2. **The control moved twice in a row:** Flash Lite's `tags-exclude-noise` went
    from 7/7 to 5/6 and then 6/7, with the same tag ("canonical fix") counted as noise
-   each time. Flash Lite also drew HTTP 429 on 31% of its attempts.
+   each time. Flash Lite also drew HTTP 429 on 31% of its attempts. **Decided: the
+   comparison is accepted.** `tags-exclude-noise` is recorded as unstable for Flash
+   Lite, as `reception/shadow-touch-vague-discomfort` already was.
 
-No further arm ran.
+Validated by the Navigator on 2026-10-26.
 
 ## Validation
 

@@ -136,4 +136,20 @@ Two stop conditions are met and await the Navigator's decision.
   `reasoning=invalid (off)`.
 - `runtime diagnose` with `off` reports `extraction_reasoning_invalid`.
 
-**Navigator validation:** pending.
+**Navigator validation: accepted on 2026-10-26.**
+
+- Steps 0 to 3 ran on the Navigator's terminal, all as expected:
+  - `Install: clone`;
+  - the three models lines;
+  - the diagnose finding, then `0` without the variable;
+  - `title_tags` on Haiku at `none` in a scratch home, 7/7, with
+    `title-injection-resisted` answered by
+    `title="Attempted instruction override in conversation"`;
+  - the history line `model=anthropic/claude-haiku-5.5 reasoning=none … v4`.
+- Step 4: the evidence was read and its numbers accepted as measured.
+- The two stops were decided: Haiku's lost `conversation-summary` fix is accepted as
+  measured, and the control's drift is accepted with `tags-exclude-noise` recorded
+  as unstable for Flash Lite.
+- The first attempt at steps 1 and 2 reached the released package, which
+  `/opt/homebrew/bin/mirror` resolves to in an interactive shell. The route now calls
+  the clone's `node bin/mirror.js`.

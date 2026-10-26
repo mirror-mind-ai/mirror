@@ -35,6 +35,22 @@ And unrelated Delivery Story scope remains untouched
 
 - Sibling Delivery Story scope.
 
+## Carried From TS1
+
+Decided by the Navigator on 2026-10-26, when
+[TS1](../cv9-ds9-ts1-extraction-calls-carry-a-reasoning-setting-and-the-candidates-are-re-measured-wi/index.md)
+was validated:
+
+- **Both candidates run at `MEMORY_EXTRACTION_REASONING=none`.** With it, neither
+  candidate's calls were cut off, and both passed every blocking probe.
+- **Haiku's summaries are judged with one weakness named.** At `none`, Haiku opened
+  "The conversation centered on…" in 10 of 14 runs of the summary probe, as Flash
+  Lite always does. It was accepted as measured, not fixed.
+- **Latency differs by candidate.** Luna is the slower one: its reception p95 is
+  3.2 s, against Haiku's 1.3 s and Flash Lite's 0.8 s.
+- **Flash Lite's rate limits must be counted apart.** It drew HTTP 429 on 31% of its
+  eval attempts, so a replay counts its failures separately from its answers.
+
 ## Validation
 
 Navigator-visible validation route plus automated checks.

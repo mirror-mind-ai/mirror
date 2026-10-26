@@ -72,7 +72,11 @@ Two of the plan's stop conditions were met, and both go to the Navigator. No fur
 arm ran.
 
 1. **At `none`, Haiku lost a fix it had with reasoning on:** `conversation-summary`.
+   Decided 2026-10-26: accepted as measured. Both candidates go to TS2 at `none`,
+   with this weakness named for its judging.
 2. **Flash Lite moved from its baseline twice in a row,** on `tags-exclude-noise`.
+   Decided 2026-10-26: the comparison is accepted, and the probe is recorded as
+   unstable for Flash Lite.
 
 ## Latency and cost
 
