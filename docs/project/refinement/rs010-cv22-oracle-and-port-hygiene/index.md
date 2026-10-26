@@ -115,3 +115,4 @@ evidence stays honest as both cores move.
 - [CR175 — `runtime update` does not say which home it backs up and migrates, and an inherited `MIRROR_USER` silently picks another](cr175-runtime-update-does-not-say-which-home-it-backs-up-and-migrates.md)
 - [CR176 — The front-door-errors finding counts every non-zero exit, its own included, so it cannot settle](cr176-the-front-door-errors-finding-counts-every-non-zero-exit-its-own-included.md)
 - [CR177 — A Pi session in a clone also loads the installed Mirror package: 25 skill-collision warnings, and the extension twice](cr177-a-pi-session-in-a-clone-also-loads-the-installed-mirror-package.md)
+- [CR178 — A configuration error counts as an extraction attempt, so a typo can quarantine conversations, and nothing releases a quarantine](cr178-a-configuration-error-counts-as-an-extraction-attempt-and-nothing-releases-a-quarantine.md)
