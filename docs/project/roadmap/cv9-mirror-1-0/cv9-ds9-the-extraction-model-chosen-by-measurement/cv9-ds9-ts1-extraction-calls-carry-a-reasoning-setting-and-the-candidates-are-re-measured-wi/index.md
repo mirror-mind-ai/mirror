@@ -2,7 +2,7 @@
 
 # CV9.DS9.TS1 — Extraction calls carry a reasoning setting, and the candidates are re-measured with reasoning off
 
-**Status:** 🟢 In Progress
+**Status:** ✅ Done
 **Type:** Technical Story
 
 ---
