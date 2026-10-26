@@ -49,37 +49,54 @@ Pass criteria, from the plan:
 
 ## Navigator Validation
 
+Run every command from the clone's root. The code under test is the clone's, so
+call its own entry point, `node bin/mirror.js`, not `mirror`. On this machine, an
+interactive shell resolves `mirror` to the released package
+(`/opt/homebrew/bin/mirror`, mirror-mind@0.37.0), which predates this story.
+`npm run eval` always runs the clone's code.
+
+0. Confirm which Mirror answers:
+
+   ```bash
+   cd ~/dev/workspace/mirror-dev
+   node bin/mirror.js runtime version | grep Install
+   ```
+
+   - **Expected:** `Install: clone (/Users/vinicius/dev/workspace/mirror-dev)`.
 1. Check the status line three ways:
 
    ```bash
-   mirror runtime status | grep Models
-   MEMORY_EXTRACTION_REASONING=none mirror runtime status | grep Models
-   MEMORY_EXTRACTION_REASONING=off mirror runtime status | grep Models
+   node bin/mirror.js runtime status | grep Models
+   MEMORY_EXTRACTION_REASONING=none node bin/mirror.js runtime status | grep Models
+   MEMORY_EXTRACTION_REASONING=off node bin/mirror.js runtime status | grep Models
    ```
 
    - **Expected:** today's line, then `reasoning=none`, then `reasoning=invalid (off)`.
-2. Run diagnose with an invalid value:
+2. Run diagnose with an invalid value, then without the variable:
 
    ```bash
-   MEMORY_EXTRACTION_REASONING=off mirror runtime diagnose
+   MEMORY_EXTRACTION_REASONING=off node bin/mirror.js runtime diagnose | grep -A3 extraction_reasoning_invalid
+   node bin/mirror.js runtime diagnose | grep -c extraction_reasoning
    ```
 
    - **Expected:** an `extraction_reasoning_invalid` finding naming the accepted
-     efforts.
+     efforts, then `0`.
 3. Run one module on a candidate in a scratch home, so the production eval history
-   stays clean:
+   stays clean. `MIRROR_USER` is set beside `MIRROR_HOME` because the home's last
+   segment must match it:
 
    ```bash
-   export MIRROR_HOME="$(mktemp -d)/vinicius-dev"
+   SCRATCH="$(mktemp -d)/vinicius-dev"
+   MIRROR_USER=vinicius-dev MIRROR_HOME="$SCRATCH" \
    MEMORY_EXTRACTION_MODEL=anthropic/claude-haiku-5.5 MEMORY_EXTRACTION_REASONING=none \
      npm run eval -- title_tags
-   npm run eval -- title_tags --history 1
-   unset MIRROR_HOME
+   MIRROR_USER=vinicius-dev MIRROR_HOME="$SCRATCH" npm run eval -- title_tags --history 1
    ```
 
    - **Expected:** 7/7 passed, `title-injection-resisted` with a real title in its
-     notes, and a history line with `model=anthropic/claude-haiku-5.5 reasoning=none`.
-4. Read `evidence/<date>-reasoning-off/README.md`.
+     notes, and a history line with
+     `model=anthropic/claude-haiku-5.5 reasoning=none … v4`.
+4. Read `evidence/2026-10-26-reasoning-off/README.md`.
    - **Expected:** the four pass criteria answered, with latency per surface, its
      outliers by provider, and cost.
 
