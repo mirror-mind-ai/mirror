@@ -198,3 +198,16 @@ committed, and the copies were deleted.
   - package smoke: 87 of 87.
 - **Production** stayed at migration 016.
 
+### Core CI, and a miss the local run could not catch
+
+- **Run `40771396466` failed** on `f614b712`, in `retiredSurfaces.test.ts`. Three new files named the
+  retired verb in comments, and that verb is forbidden outside the project's history. The local run
+  had passed only because the sweep reads `git ls-files`, and the files were not yet committed. The
+  guard's own comment says so: "Local green on new files is not evidence."
+- **The fix (`036de549`)** rewords the comments to name the surface by its id. No exemption was
+  added.
+- **After committing,** the full local suite and the sweep were rerun, and both were clean.
+- **Run `40772335181` passed** on `036de549` across all four jobs. In its first attempt, GitHub never
+  allocated a macOS runner ("not acquired by Runner"), so that job was rerun, and it passed on the
+  second attempt.
+
