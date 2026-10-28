@@ -2,8 +2,9 @@
 
 # CV24.DS5 — Migrate on Request
 
-**Status:** 🟡 Planned (2026-10-28). One decision is the Navigator's: **backup custody**, below.
-Nothing is built until it is answered.
+**Status:** 🟠 Implemented (2026-10-28) on branch `desktop/library-seam-1a`. Not merged, not released.
+The Navigator chose the verified, retained backup, recorded as the decision
+[A host migrates a home only behind a verified, retained backup](../../../decisions.md#a-host-migrates-a-home-only-behind-a-verified-retained-backup).
 
 ## Outcome
 
@@ -110,3 +111,43 @@ both gaps into the call that phase 5 will run against production.
 - every new file committed before the final local run;
 - Core CI dispatched on the branch;
 - DS1's isolation, with the production ledger read before and after.
+
+## Built (2026-10-28)
+
+### What changed
+
+- **`ts/src/db/migrateHome.ts`** holds `migrateHome` and `MigrateHomeRejectedError`. The refusal is
+  decided once before the bootstrap lock and again under it. The backup is verified before
+  `runMigrations` and `createSchema` run. The empty sidecars that the report's read-only open
+  leaves beside the backup are removed, so the backup is one file.
+- **`lib/desktop.js`** re-exports both, for 15 names in all. `DESKTOP_API_VERSION` stays at 1.
+- **Package smoke, step 7,** reports a home at 016, migrates it on request from the installed
+  tarball, records a Conversation in it, and reads the backup as the 016 home it was.
+
+### Evidence
+
+- **`ts/test/db/migrateHome.test.ts`**, 8 tests, red first on the missing module. They cover:
+  - **migration:** a home at 016 migrates to `current`, and DS2 and DS3 then accept it;
+  - **the backup:** its name pattern, mode 0600, its hash and size match the receipt, its header
+    records WAL, `quick_check` reads `ok`, DS1 reads it as pending 017 and 018, and its row
+    counts equal the pre-migration home's;
+  - **retention:** two migrations of one home leave two backups;
+  - **refusals:** four changed lists and a missing list give `pending_changed`. Current, missing
+    and ahead homes are refused with their bytes unchanged and no backup;
+  - **`backup_failed`,** forced with a read-only `backups/` directory, leaves no file and no lock,
+    and the home stays pending;
+  - **`MIRROR_HOME` and `DB_PATH`** aimed at a canary are ignored;
+  - **two processes,** started together on one home, give exactly one migration and one backup.
+    The test does not force the two to overlap in time; it pins the outcome either way.
+- **Mutations, each caught and then restored, with no load errors:**
+  - ignoring `expectedPending`: 1 failure;
+  - skipping the WAL preparation and `quick_check`: 1 failure, on the backup's header;
+  - the fixed backup name: 2 failures;
+  - migrating before the backup is verified: 6 failures.
+- **Gates.** Every new file was committed before the final local run:
+  - typecheck: clean;
+  - lint: clean, apart from the baseline warning;
+  - `npm test`: 3,581 passed, 1 skipped, and the local-only `diagnose` failure;
+  - package smoke: 92 of 92.
+- **Production** stayed at migration 016.
+
