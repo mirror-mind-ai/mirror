@@ -2,7 +2,7 @@
 
 # CV9.DS9.US3 — The extraction pin moves, or stays, on the evidence
 
-**Status:** 🟡 Planned
+**Status:** ✅ Done
 **Type:** User Story
 
 ---
@@ -123,6 +123,16 @@ TS2's result, accepted as measured by the Navigator on 2026-10-28
     ([CR180](../../../../refinement/rs010-cv22-oracle-and-port-hygiene/cr180-the-summary-prompt-s-opening-rule-invites-the-framing-its-standalone-rule-forbids.md)),
     not only the model's.
 - **Either candidate runs at reasoning `none`** (TS1).
+
+## Decision
+
+Decided 2026-10-28 at Plan approval: **move to `anthropic/claude-haiku-5.5` at reasoning
+`none`.** The record, with its evidence and the reasoning-default rule, is in the
+[decisions log](../../../decisions.md#the-extraction-pin-moves-to-claude-haiku-55-at-reasoning-none-and-a-pins-reasoning-default-is-the-models);
+the gate in [evidence/2026-10-28-gate](evidence/2026-10-28-gate/README.md); the
+release-note section in [release-note.md](release-note.md). D2 is
+[CR181](../../../refinement/rs010-cv22-oracle-and-port-hygiene/cr181-the-ledger-cannot-say-which-reasoning-effort-a-call-carried.md);
+D3 is retired by the move for the default pin.
 
 ## Validation
 
