@@ -34,7 +34,7 @@ import {
   readExtensionPlugin,
 } from "#extensions/extensionPlugin.ts";
 import { identityKeyBreaksGrammar, SLUG_KEYED_LAYERS } from "#identity/identityKey.ts";
-import { REASONING_EFFORTS, readExtractionReasoning } from "#providers/config.ts";
+import { REASONING_EFFORTS, resolveExtractionReasoning } from "#providers/config.ts";
 import { pyRepr, sortByCodePoint } from "#util/pythonText.ts";
 import { configFilePath } from "./config.ts";
 import { extensionPluginStates } from "./extensionPluginWiring.ts";
@@ -775,20 +775,22 @@ export function staleRevertGateFindings(env: NodeJS.ProcessEnv): DriftFinding[] 
 /**
  * A `MEMORY_EXTRACTION_REASONING` that is not a reasoning effort (CV9.DS9.TS1).
  *
- * The transport sends no reasoning field for it rather than fail the call -- a
- * failed call is an extraction attempt, and three quarantine a conversation for
- * good (CR178) -- so the setting is silently not in force. Diagnose says so, with
- * the values that would be.
+ * The transport reads it as unset rather than fail the call -- a failed call is
+ * an extraction attempt, and three quarantine a conversation for good (CR178) --
+ * so the setting is silently not in force: the calls send the model's own default
+ * effort (CV9.DS9.US3), or no reasoning field for a model without one. Diagnose
+ * says which, with the values that would be in force.
  */
 export function extractionReasoningFindings(env: NodeJS.ProcessEnv): DriftFinding[] {
-  const { invalid } = readExtractionReasoning({ env });
+  const { model, effort, invalid } = resolveExtractionReasoning({ env });
   if (invalid === null) return [];
+  const sent = effort === null ? "no reasoning setting" : `${model}'s own default, ${effort}`;
   return [
     {
       code: "extraction_reasoning_invalid",
       severity: "attention",
       subject: "MEMORY_EXTRACTION_REASONING",
-      detail: `"${invalid}" is not a reasoning effort, so extraction calls send no reasoning setting`,
+      detail: `"${invalid}" is not a reasoning effort, so extraction calls send ${sent}`,
       recommendation:
         `set it to ${formatEffortList()}, or unset it, where it is set: ` +
         "the environment, the clone's .env, or ~/.config/mirror/env",

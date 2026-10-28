@@ -579,7 +579,13 @@ test("CV9.DS9.TS1: an invalid MEMORY_EXTRACTION_REASONING is reported, a valid o
   assert.equal(findings[0]?.severity, "attention");
   assert.equal(findings[0]?.subject, "MEMORY_EXTRACTION_REASONING");
   assert.match(findings[0]?.detail ?? "", /"off" is not a reasoning effort/);
-  assert.match(findings[0]?.detail ?? "", /no reasoning setting/);
+  // US3: on the pin the calls send the model's default, and the finding says so.
+  assert.match(findings[0]?.detail ?? "", /anthropic\/claude-haiku-5\.5's own default, none/);
+  const rollback = extractionReasoningFindings({
+    MEMORY_EXTRACTION_MODEL: "google/gemini-2.5-flash-lite",
+    MEMORY_EXTRACTION_REASONING: "off",
+  } as NodeJS.ProcessEnv);
+  assert.match(rollback[0]?.detail ?? "", /no reasoning setting/);
   assert.match(
     findings[0]?.recommendation ?? "",
     /none, minimal, low, medium, high, xhigh, or max/,
