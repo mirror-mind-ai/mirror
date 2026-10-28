@@ -2,7 +2,7 @@
 
 # CV9.DS9 — The Extraction Model, Chosen by Measurement
 
-**Status:** 🟢 In Progress
+**Status:** ✅ Done
 **Type:** Delivery Story
 **Source:** the Navigator's request in a Builder session on 2026-10-26, after a
 baseline measurement of the current pin against two candidates
@@ -110,6 +110,21 @@ thinking; the Navigator's own conversations second; the decision last.
   Lite.
 - Making the measurement kit an eval-harness feature. It stays evidence in this
   package; a trace built into the harness is a candidate for later.
+
+## Closed 2026-10-28
+
+All three stories Done. TS1 gave every extraction-family call a reasoning setting
+and re-measured both candidates with it off; TS2 replayed 24 of the Navigator's own
+conversations through the product's functions and had them ranked blind, where the
+judge did not stand and the Navigator's own rankings did; US3 decided on that
+evidence: the pin moved to `anthropic/claude-haiku-5.5` at reasoning `none`, in one
+migration commit behind a fresh baseline and a green `eval --all`, and a pin's
+reasoning default became the model's. The decision is in the
+[decisions log](../../../decisions.md#the-extraction-pin-moves-to-claude-haiku-55-at-reasoning-none-and-a-pins-reasoning-default-is-the-models).
+Release intent: planned; the release-note section is drafted in
+[US3's package](cv9-ds9-us3-the-extraction-pin-moves-or-stays-on-the-evidence/release-note.md),
+and CR180 is pulled into the same release so the new model's summaries read as notes.
+Spend for the whole Delivery Story: about $4.50.
 
 ## Done Condition
 

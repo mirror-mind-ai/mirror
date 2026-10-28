@@ -61,9 +61,10 @@ artifacts. Conversation
 metadata lifecycle was delivered as CV9.DS7, done on 2026-09-26 and since ported
 to TypeScript by CV22.DS7.US10. The one doorman was delivered as CV9.DS8, done on
 2026-10-25: on Pi, Claude Code, Codex, and Antigravity the runtime puts Mirror's
-context before the model, and Pi reached L4. CV9.DS9, opened on 2026-10-26,
-chooses the extraction model by measurement: Flash Lite against GPT-6 Luna and
-Claude Haiku 5.5, on the eval suite and on the Navigator's own conversations.
+context before the model, and Pi reached L4. CV9.DS9, done on 2026-10-28, chose
+the extraction model by measurement: Flash Lite against GPT-6 Luna and Claude
+Haiku 5.5, on the eval suite and on the Navigator's own conversations, and the pin
+moved to Claude Haiku 5.5 at reasoning off.
 Boundary Hardening and the remaining stabilization stories are still open before
 the full CV9 done condition is met.
 
