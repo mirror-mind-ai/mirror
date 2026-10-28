@@ -2,8 +2,9 @@
 
 # CV24.DS4 — Create a Home
 
-**Status:** 🟡 Planned (2026-10-28). Two decisions are the Navigator's, below. Nothing is built
-until they are answered.
+**Status:** 🟠 Implemented (2026-10-28) on branch `desktop/library-seam-1a`. Not merged, not released.
+The Navigator chose both recommendations, recorded as the decision
+[A host creates a home beside its target and renames it into place, writing nothing outside it](../../../decisions.md#a-host-creates-a-home-beside-its-target-and-renames-it-into-place-writing-nothing-outside-it).
 
 ## Outcome
 
@@ -115,3 +116,47 @@ CV24 call requires. A person who later wants their terminal Mirror on that home 
   only committed files, as DS3 learned;
 - Core CI dispatched on the branch;
 - DS1's isolation, with the production ledger read before and after.
+
+## Built (2026-10-28)
+
+### What changed
+
+- **`ts/src/init/createHome.ts`** holds `createHome` and `CreateHomeRejectedError`. It composes
+  the ported pieces in a staging directory: `initUserHome` with an explicit `userHome`,
+  `bootstrapDatabase` and `runSeed`. It reads no environment variable.
+- **`lib/desktop.js`** re-exports both, for 13 names in all. `DESKTOP_API_VERSION` stays at 1.
+- **Package smoke, step 7,** creates a home from the installed tarball and records a Conversation
+  in it. It checks that the machine-wide config file is byte-identical before and after.
+
+### Evidence
+
+- **`ts/test/init/createHome.test.ts`**, 6 tests, red first on the missing module. They cover:
+  - **a complete home:** no `{{user_name}}` left, `current`, at least 20 entries seeded, readable
+    by DS3 and writable by DS2, and nothing left beside it;
+  - **CLI parity:** `mirror init` plus `mirror seed` on a scratch `HOME` seed the same `identity`
+    rows (layer, key, content, version);
+  - **a failed seed,** forced with an empty `self/soul.yaml`, leaves nothing. Missing templates
+    leave nothing too;
+  - **nothing outside the target:** `HOME`, `MIRROR_HOME`, `MIRROR_USER` and `DB_PATH` aimed at
+    canaries leave them empty;
+  - **every refusal:** an occupied directory and an empty one are both untouched, and five bad
+    names and four bad paths are refused.
+- **Mutations, each caught and then restored:**
+  - writing the global config: 1 failure;
+  - renaming before the seed check: 4 failures, including the failed-seed test;
+  - accepting an empty directory: 1 failure;
+  - skipping the name check: 1 failure.
+
+  A first attempt at the global-config mutation imported a module that does not exist, so it
+  failed on loading and proved nothing. It was redone with the right import.
+- **The mutation itself showed the danger.** The real global-config mutation wrote
+  `MIRROR_USER=ana` into the scratch `HOME` that the isolated test run uses. That is exactly what
+  the decision forbids, and it never reached the Navigator's real `HOME`. The file was removed,
+  and the restored code was rerun on a clean scratch `HOME`, where it wrote nothing.
+- **Gates.** Every new file was committed before the final local run:
+  - typecheck: clean;
+  - lint: clean, apart from the baseline warning;
+  - `npm test`: 3,573 passed, 1 skipped, and the local-only `diagnose` failure;
+  - package smoke: 90 of 90.
+- **Production** stayed at migration 016.
+
