@@ -2,7 +2,7 @@
 
 # CV24.DS3 — Journey Reads
 
-**Status:** 🟡 Planned (2026-10-28). Not built.
+**Status:** 🟠 Implemented (2026-10-28) on branch `desktop/library-seam-1a`. Not merged, not released.
 
 ## Outcome
 
@@ -130,3 +130,71 @@ on a WAL database is `-wal` and `-shm`.
   failure), and the package smoke;
 - Core CI dispatched on the branch;
 - every command under DS1's isolation, with the production ledger read before and after.
+
+## Built (2026-10-28)
+
+### What changed
+
+- **`ts/src/journey/journeyTree.ts`** holds `buildJourneyTree(rows)`. It is pure, with the export's
+  node rules and sibling order, and it names findings instead of failing.
+- **`ts/src/conversation/hostReads.ts`** holds the three reads:
+  - `readJourneyTree`;
+  - `listJourneyConversations`, which builds on the ported `listRecentConversationSummaries`;
+  - `inspectConversation`.
+
+  Each opens a `current` home read-only. They reuse DS2's two errors.
+- **`lib/desktop.js`** re-exports the three reads, for 11 names in all. `DESKTOP_API_VERSION` stays
+  at 1, because the change is additive.
+- **Package smoke, step 7,** runs the three reads from the installed tarball.
+
+### Parity with the removed export
+
+The check ran on the Navigator's production home, through scratch copies only:
+
+1. **Copies.** Two copies were made through SQLite's read-only backup API. That read updated the
+   production `-shm`, as every SQLite reader does, and changed nothing else.
+2. **Python.** The installed Python 0.31.14 ran `journey export-registry` on one copy.
+   - `MIRROR_HOME` and `MIRROR_USER` both named the copy, so the checkout's `.env` could not
+     redirect it.
+   - A file snapshot of the production home taken around a second run was unchanged.
+   - Two runs gave the same tree.
+3. **TypeScript, two ways:**
+   - `buildJourneyTree` read the 016 copy's rows;
+   - `readJourneyTree` read the other copy after `ensureMigratedOnOpen` brought it to current.
+
+**Result.** 81 Journeys in 13 roots. Both TypeScript trees are **equal** to the export's, with
+`nativeId` and the envelope removed. There were no findings, and the tree's canonical hash is
+`2a153cacdbdb`. A name-ordered tree (mutation 1) makes the comparison fail. No production data was
+committed, and the copies were deleted.
+
+### Evidence
+
+- **`ts/test/journey/journeyTree.test.ts`**, 9 tests. They cover:
+  - the fields and the three name sources;
+  - both description headings;
+  - position, then key, with the unpositioned last;
+  - an orphan parent and malformed metadata;
+  - five malformed orders;
+  - a cycle, and a 21-node chain cut at depth 17. Every Journey appears exactly once.
+
+  One test's expected value had a misplaced bracket. It was corrected; the code was not changed.
+- **`ts/test/conversation/hostReads.test.ts`**, 6 tests. They cover:
+  - the stored order;
+  - the catalog's filter, order, counts and limit bounds;
+  - exact-id inspection;
+  - refusal of a home at 016 and of a missing home;
+  - no write, and no `MIRROR_HOME`.
+
+  Both files were red first, on missing modules. The entry test was red, then green, with 11 names.
+- **Mutations, each caught and then restored:**
+  - name order: 3 failures, and the parity check failed too;
+  - throwing on `malformed_order`: 1;
+  - a prefix in `inspectConversation`: 1;
+  - no `current` check: 1.
+- **Gates:**
+  - typecheck: clean;
+  - lint: clean, apart from the baseline warning;
+  - `npm test`: 3,567 passed, 1 skipped, and the local-only `diagnose` failure;
+  - package smoke: 87 of 87.
+- **Production** stayed at migration 016.
+
