@@ -6,7 +6,7 @@ Done
 
 ## History Action
 
-Local commits on main, 7f3d9265 to 4b1bfc94, plus this done record; nothing pushed. Kit 1e3af9e2; results a672a85b; validation 3e164c7d; CR180 ff320b94; debt review and coherence 479fe705 and 4b1bfc94. The scratch folder ~/mirror-ts2-replay, which held the transcripts, outputs, traces, and verdicts, was deleted at Done.
+Local commits on main, 7f3d9265 to 7ef60fd0, plus this done record; nothing pushed. Kit 1e3af9e2; results a672a85b; validation 3e164c7d; CR180 ff320b94; debt review and coherence 479fe705 and 4b1bfc94; marked Done 7ef60fd0. The scratch folder ~/mirror-ts2-replay, which held the transcripts, outputs, traces, and verdicts, was deleted at Done.
 
 ## Roadmap Update
 
