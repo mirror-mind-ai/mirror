@@ -76,6 +76,34 @@ And the unblinded results and the recommendation, by the fixed rule, are in this
 - Writing anything to either home.
 - An eval-harness replay feature (TS1's D1: the kit stays evidence).
 
+## Result (2026-10-28)
+
+**The judge's verdict does not stand, and TS2 makes no recommendation from it.** The
+plan's stop condition sends the result to the Navigator.
+[Evidence](evidence/2026-10-26-replay/README.md), $3.90.
+
+**Every gate but one passed:**
+
+- complete triples on every surface (16/16 and 24/24);
+- every call on its arm's model;
+- no row written to either home;
+- the judge's self-consistency at 0.83;
+- the content check.
+
+The one that failed: the Navigator's blind calibration agreed with the judge on 43 of
+78 pairwise orderings, 0.55, where the plan needs more than 0.60.
+
+**What both signals show.** The judge's arithmetic has both candidates beating Flash
+Lite, with Haiku ahead of Luna. The Navigator's own blind rankings point the same way
+on the six conversations he ranked:
+
+- Haiku ranked first on 16 of 26 surfaces;
+- Haiku over Flash Lite 17–9;
+- Haiku over Luna 20–6.
+
+They disagree item by item. The Navigator ranked the longest output first 17 times in
+26, the judge 9: he values coverage more than the rubric's restraint does.
+
 ## Carried From TS1
 
 Decided by the Navigator on 2026-10-26, when

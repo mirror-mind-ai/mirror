@@ -72,4 +72,28 @@ Thresholds, from the plan:
 
 ## Validation Evidence
 
-Pending implementation and validation.
+**Automated:**
+
+- `sample.mjs --check`: the same draw; all 25 ended, with at least four messages; the
+  16/8 shape with the cap of 5.
+- `replay.mjs --assert-arms`: 117, 109, and 109 traced calls (Flash Lite, Luna,
+  Haiku), none on another model or setting.
+- `judge.mjs --check`: every label mapping inverts.
+- All 30 verdicts were valid against the schema, with the prompt hash frozen after
+  the pilot.
+- `score.mjs --check-no-rows`: 0 rows in production, 0 in development.
+- `score.mjs --check-content`: passed on every file of the evidence. It ignores
+  whitespace-only runs and single common words, and prints any other hit, which can
+  only be the kit's own text.
+
+**E2E:**
+
+- the replay of 24 production-home conversations, with no surface failed after
+  retries;
+- the judge's self-consistency at 0.83;
+- the Navigator's calibration of 26 surfaces: agreement 0.55, below the plan's 0.60.
+
+The stop condition is met; see the [evidence](evidence/2026-10-26-replay/README.md).
+
+**Navigator validation:** step 1 (calibration) done 2026-10-28. Steps 2 to 4 and the
+decision on the stop are pending.

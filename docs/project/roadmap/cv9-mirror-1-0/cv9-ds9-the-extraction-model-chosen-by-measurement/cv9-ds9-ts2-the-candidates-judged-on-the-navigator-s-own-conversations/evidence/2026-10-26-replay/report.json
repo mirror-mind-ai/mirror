@@ -1,0 +1,667 @@
+{
+ "product_commit": "1e3af9e2da6a6fd9aa947d50d0a64782f85d68bb",
+ "sample": {
+  "seed": "CV9.DS9.TS2/draw/2026-10-26",
+  "cutoff": "2026-10-26T22:29:18.943Z",
+  "eligible": 329,
+  "eligible_with_journey": 141,
+  "drawn": 24,
+  "with_journey": 16
+ },
+ "judge": {
+  "model": "moonshotai/kimi-k3.1-pro",
+  "reasoning": "high",
+  "prompt_sha256": "31f1de148c3f5126487c889b02fe6d547b1555b139fa4fbd80b9baa01b5f1de4",
+  "calls": 32,
+  "formats": [
+   "json_schema"
+  ],
+  "providers": [
+   "Moonshot AI"
+  ],
+  "spend": 3.2548
+ },
+ "quality": {
+  "complete": {
+   "memories": 16,
+   "tasks": 16,
+   "title": 24,
+   "summary": 24,
+   "tags": 24
+  },
+  "pairwise": {
+   "memories": {
+    "luna_vs_flash": {
+     "wins": 11,
+     "losses": 5,
+     "verdict": "beats"
+    },
+    "haiku_vs_flash": {
+     "wins": 12,
+     "losses": 4,
+     "verdict": "beats"
+    },
+    "haiku_vs_luna": {
+     "wins": 10,
+     "losses": 6,
+     "verdict": "tie"
+    }
+   },
+   "tasks": {
+    "luna_vs_flash": {
+     "wins": 10,
+     "losses": 6,
+     "verdict": "tie"
+    },
+    "haiku_vs_flash": {
+     "wins": 8,
+     "losses": 8,
+     "verdict": "tie"
+    },
+    "haiku_vs_luna": {
+     "wins": 12,
+     "losses": 4,
+     "verdict": "beats"
+    }
+   },
+   "title": {
+    "luna_vs_flash": {
+     "wins": 12,
+     "losses": 12,
+     "verdict": "tie"
+    },
+    "haiku_vs_flash": {
+     "wins": 19,
+     "losses": 5,
+     "verdict": "beats"
+    },
+    "haiku_vs_luna": {
+     "wins": 19,
+     "losses": 5,
+     "verdict": "beats"
+    }
+   },
+   "summary": {
+    "luna_vs_flash": {
+     "wins": 24,
+     "losses": 0,
+     "verdict": "beats"
+    },
+    "haiku_vs_flash": {
+     "wins": 21,
+     "losses": 3,
+     "verdict": "beats"
+    },
+    "haiku_vs_luna": {
+     "wins": 9,
+     "losses": 15,
+     "verdict": "tie"
+    }
+   },
+   "tags": {
+    "luna_vs_flash": {
+     "wins": 18,
+     "losses": 6,
+     "verdict": "beats"
+    },
+    "haiku_vs_flash": {
+     "wins": 11,
+     "losses": 13,
+     "verdict": "tie"
+    },
+    "haiku_vs_luna": {
+     "wins": 10,
+     "losses": 14,
+     "verdict": "tie"
+    }
+   }
+  },
+  "scores": {
+   "memories": {
+    "flash": {
+     "fidelity": 3.69,
+     "coverage": 3.44,
+     "classification": 4.25,
+     "restraint": 3.38
+    },
+    "luna": {
+     "fidelity": 4.81,
+     "coverage": 3.06,
+     "classification": 5,
+     "restraint": 5
+    },
+    "haiku": {
+     "fidelity": 4.69,
+     "coverage": 3.38,
+     "classification": 4.63,
+     "restraint": 5
+    }
+   },
+   "tasks": {
+    "flash": {
+     "fidelity": 4.13,
+     "coverage": 3.38,
+     "restraint": 3.13
+    },
+    "luna": {
+     "fidelity": 4.94,
+     "coverage": 3,
+     "restraint": 4.94
+    },
+    "haiku": {
+     "fidelity": 4.25,
+     "coverage": 3.19,
+     "restraint": 4.25
+    }
+   },
+   "title": {
+    "flash": {
+     "topic": 4.29,
+     "concision": 4.75
+    },
+    "luna": {
+     "topic": 4.54,
+     "concision": 4.71
+    },
+    "haiku": {
+     "topic": 4.83,
+     "concision": 4.83
+    }
+   },
+   "summary": {
+    "flash": {
+     "accuracy": 4.5,
+     "coverage": 3.29,
+     "standalone": 2.21
+    },
+    "luna": {
+     "accuracy": 4.96,
+     "coverage": 4.71,
+     "standalone": 4.5
+    },
+    "haiku": {
+     "accuracy": 4.42,
+     "coverage": 4.75,
+     "standalone": 3.58
+    }
+   },
+   "tags": {
+    "flash": {
+     "relevance": 4.83,
+     "durability": 4.17
+    },
+    "luna": {
+     "relevance": 4.83,
+     "durability": 4.63
+    },
+    "haiku": {
+     "relevance": 4.63,
+     "durability": 4.25
+    }
+   }
+  },
+  "flags": {
+   "memories": {
+    "flash": {
+     "invented_fact": 16,
+     "missed_key_item": 23,
+     "wrong_classification": 8,
+     "trivial_or_duplicate": 12,
+     "not_standalone": 0,
+     "noise": 0
+    },
+    "luna": {
+     "invented_fact": 2,
+     "missed_key_item": 21,
+     "wrong_classification": 0,
+     "trivial_or_duplicate": 0,
+     "not_standalone": 0,
+     "noise": 0
+    },
+    "haiku": {
+     "invented_fact": 4,
+     "missed_key_item": 18,
+     "wrong_classification": 3,
+     "trivial_or_duplicate": 0,
+     "not_standalone": 0,
+     "noise": 0
+    }
+   },
+   "tasks": {
+    "flash": {
+     "invented_fact": 5,
+     "missed_key_item": 15,
+     "wrong_classification": 0,
+     "trivial_or_duplicate": 4,
+     "not_standalone": 0,
+     "noise": 9
+    },
+    "luna": {
+     "invented_fact": 0,
+     "missed_key_item": 12,
+     "wrong_classification": 0,
+     "trivial_or_duplicate": 0,
+     "not_standalone": 0,
+     "noise": 1
+    },
+    "haiku": {
+     "invented_fact": 3,
+     "missed_key_item": 8,
+     "wrong_classification": 0,
+     "trivial_or_duplicate": 0,
+     "not_standalone": 0,
+     "noise": 6
+    }
+   },
+   "title": {
+    "flash": {
+     "invented_fact": 0,
+     "missed_key_item": 0,
+     "wrong_classification": 0,
+     "trivial_or_duplicate": 0,
+     "not_standalone": 0,
+     "noise": 0
+    },
+    "luna": {
+     "invented_fact": 0,
+     "missed_key_item": 0,
+     "wrong_classification": 0,
+     "trivial_or_duplicate": 0,
+     "not_standalone": 0,
+     "noise": 0
+    },
+    "haiku": {
+     "invented_fact": 0,
+     "missed_key_item": 0,
+     "wrong_classification": 0,
+     "trivial_or_duplicate": 0,
+     "not_standalone": 0,
+     "noise": 0
+    }
+   },
+   "summary": {
+    "flash": {
+     "invented_fact": 5,
+     "missed_key_item": 23,
+     "wrong_classification": 0,
+     "trivial_or_duplicate": 0,
+     "not_standalone": 24,
+     "noise": 0
+    },
+    "luna": {
+     "invented_fact": 1,
+     "missed_key_item": 6,
+     "wrong_classification": 0,
+     "trivial_or_duplicate": 0,
+     "not_standalone": 6,
+     "noise": 0
+    },
+    "haiku": {
+     "invented_fact": 9,
+     "missed_key_item": 5,
+     "wrong_classification": 0,
+     "trivial_or_duplicate": 0,
+     "not_standalone": 17,
+     "noise": 1
+    }
+   },
+   "tags": {
+    "flash": {
+     "invented_fact": 0,
+     "missed_key_item": 0,
+     "wrong_classification": 0,
+     "trivial_or_duplicate": 0,
+     "not_standalone": 0,
+     "noise": 12
+    },
+    "luna": {
+     "invented_fact": 0,
+     "missed_key_item": 0,
+     "wrong_classification": 0,
+     "trivial_or_duplicate": 0,
+     "not_standalone": 0,
+     "noise": 5
+    },
+    "haiku": {
+     "invented_fact": 0,
+     "missed_key_item": 0,
+     "wrong_classification": 0,
+     "trivial_or_duplicate": 0,
+     "not_standalone": 0,
+     "noise": 12
+    }
+   }
+  },
+  "length_spearman": {
+   "memories": -0.23,
+   "tasks": -0.22,
+   "title": 0.09,
+   "summary": 0.09,
+   "tags": 0.18,
+   "all": -0.21
+  }
+ },
+ "self_consistency": {
+  "items": 6,
+  "orderings": 78,
+  "agree": 65,
+  "rate": 0.83
+ },
+ "calibration": {
+  "items": 6,
+  "surfaces": 26,
+  "orderings": 78,
+  "agree": 43,
+  "rate": 0.55,
+  "best_pick_agree": 10,
+  "by_surface": {
+   "memories": {
+    "agree": 7,
+    "orderings": 12
+   },
+   "tasks": {
+    "agree": 6,
+    "orderings": 12
+   },
+   "title": {
+    "agree": 9,
+    "orderings": 18
+   },
+   "summary": {
+    "agree": 12,
+    "orderings": 18
+   },
+   "tags": {
+    "agree": 9,
+    "orderings": 18
+   }
+  },
+  "first_pick": {
+   "navigator": {
+    "flash": 6,
+    "luna": 4,
+    "haiku": 16
+   },
+   "judge": {
+    "haiku": 14,
+    "luna": 8,
+    "flash": 4
+   }
+  },
+  "pairwise": {
+   "navigator": {
+    "luna_over_flash": {
+     "wins": 16,
+     "losses": 10
+    },
+    "haiku_over_flash": {
+     "wins": 17,
+     "losses": 9
+    },
+    "haiku_over_luna": {
+     "wins": 20,
+     "losses": 6
+    }
+   },
+   "judge": {
+    "luna_over_flash": {
+     "wins": 19,
+     "losses": 7
+    },
+    "haiku_over_flash": {
+     "wins": 19,
+     "losses": 7
+    },
+    "haiku_over_luna": {
+     "wins": 16,
+     "losses": 10
+    }
+   }
+  },
+  "longest_output_ranked_first": {
+   "navigator": 17,
+   "judge": 9
+  }
+ },
+ "operations": {
+  "flash": {
+   "model": "google/gemini-2.5-flash-lite",
+   "reasoning": null,
+   "calls": 112,
+   "non200": 8,
+   "surfaces_failed_after_retries": 0,
+   "surfaces_recovered_by_retry": 2,
+   "cost": 0.1699,
+   "by_surface": {
+    "memories": {
+     "calls": 16,
+     "ok": 16,
+     "non200": 0,
+     "p50_ms": 3680,
+     "p95_ms": 9055,
+     "prompt_tokens": 15911,
+     "completion_tokens": 1386,
+     "reasoning_tokens": 0,
+     "cut_off": 0,
+     "cost": 0.0343
+    },
+    "tasks": {
+     "calls": 18,
+     "ok": 16,
+     "non200": 2,
+     "p50_ms": 1430,
+     "p95_ms": 2028,
+     "prompt_tokens": 15510,
+     "completion_tokens": 336,
+     "reasoning_tokens": 0,
+     "cut_off": 0,
+     "cost": 0.027
+    },
+    "title": {
+     "calls": 24,
+     "ok": 24,
+     "non200": 0,
+     "p50_ms": 624,
+     "p95_ms": 958,
+     "prompt_tokens": 14775,
+     "completion_tokens": 11,
+     "reasoning_tokens": 0,
+     "cut_off": 0,
+     "cost": 0.0356
+    },
+    "summary": {
+     "calls": 27,
+     "ok": 24,
+     "non200": 3,
+     "p50_ms": 1061,
+     "p95_ms": 1643,
+     "prompt_tokens": 14793,
+     "completion_tokens": 139,
+     "reasoning_tokens": 0,
+     "cut_off": 0,
+     "cost": 0.0368
+    },
+    "tags": {
+     "calls": 27,
+     "ok": 24,
+     "non200": 3,
+     "p50_ms": 666,
+     "p95_ms": 881,
+     "prompt_tokens": 14973,
+     "completion_tokens": 27,
+     "reasoning_tokens": 0,
+     "cut_off": 0,
+     "cost": 0.0362
+    }
+   }
+  },
+  "luna": {
+   "model": "openai/gpt-6-luna",
+   "reasoning": "none",
+   "calls": 104,
+   "non200": 0,
+   "surfaces_failed_after_retries": 0,
+   "surfaces_recovered_by_retry": 0,
+   "cost": 0.1843,
+   "by_surface": {
+    "memories": {
+     "calls": 16,
+     "ok": 16,
+     "non200": 0,
+     "p50_ms": 4955,
+     "p95_ms": 7167,
+     "prompt_tokens": 14452,
+     "completion_tokens": 404,
+     "reasoning_tokens": 0,
+     "cut_off": 0,
+     "cost": 0.0321
+    },
+    "tasks": {
+     "calls": 16,
+     "ok": 16,
+     "non200": 0,
+     "p50_ms": 1138,
+     "p95_ms": 4239,
+     "prompt_tokens": 14039,
+     "completion_tokens": 89,
+     "reasoning_tokens": 0,
+     "cut_off": 0,
+     "cost": 0.0288
+    },
+    "title": {
+     "calls": 24,
+     "ok": 24,
+     "non200": 0,
+     "p50_ms": 1191,
+     "p95_ms": 1924,
+     "prompt_tokens": 13395,
+     "completion_tokens": 15,
+     "reasoning_tokens": 0,
+     "cut_off": 0,
+     "cost": 0.0403
+    },
+    "summary": {
+     "calls": 24,
+     "ok": 24,
+     "non200": 0,
+     "p50_ms": 2695,
+     "p95_ms": 4409,
+     "prompt_tokens": 13416,
+     "completion_tokens": 144,
+     "reasoning_tokens": 0,
+     "cut_off": 0,
+     "cost": 0.0419
+    },
+    "tags": {
+     "calls": 24,
+     "ok": 24,
+     "non200": 0,
+     "p50_ms": 1298,
+     "p95_ms": 1720,
+     "prompt_tokens": 13586,
+     "completion_tokens": 31,
+     "reasoning_tokens": 0,
+     "cut_off": 0,
+     "cost": 0.0411
+    }
+   }
+  },
+  "haiku": {
+   "model": "anthropic/claude-haiku-5.5",
+   "reasoning": "none",
+   "calls": 104,
+   "non200": 0,
+   "surfaces_failed_after_retries": 0,
+   "surfaces_recovered_by_retry": 0,
+   "cost": 0.2342,
+   "by_surface": {
+    "memories": {
+     "calls": 16,
+     "ok": 16,
+     "non200": 0,
+     "p50_ms": 4422,
+     "p95_ms": 8476,
+     "prompt_tokens": 22175,
+     "completion_tokens": 940,
+     "reasoning_tokens": 0,
+     "cut_off": 0,
+     "cost": 0.043
+    },
+    "tasks": {
+     "calls": 16,
+     "ok": 16,
+     "non200": 0,
+     "p50_ms": 1807,
+     "p95_ms": 4133,
+     "prompt_tokens": 21522,
+     "completion_tokens": 315,
+     "reasoning_tokens": 0,
+     "cut_off": 0,
+     "cost": 0.037
+    },
+    "title": {
+     "calls": 24,
+     "ok": 24,
+     "non200": 0,
+     "p50_ms": 1051,
+     "p95_ms": 1346,
+     "prompt_tokens": 20713,
+     "completion_tokens": 26,
+     "reasoning_tokens": 0,
+     "cut_off": 0,
+     "cost": 0.05
+    },
+    "summary": {
+     "calls": 24,
+     "ok": 24,
+     "non200": 0,
+     "p50_ms": 2163,
+     "p95_ms": 2936,
+     "prompt_tokens": 20724,
+     "completion_tokens": 290,
+     "reasoning_tokens": 0,
+     "cut_off": 0,
+     "cost": 0.0532
+    },
+    "tags": {
+     "calls": 24,
+     "ok": 24,
+     "non200": 0,
+     "p50_ms": 1077,
+     "p95_ms": 1410,
+     "prompt_tokens": 21015,
+     "completion_tokens": 45,
+     "reasoning_tokens": 0,
+     "cut_off": 0,
+     "cost": 0.051
+    }
+   }
+  }
+ },
+ "projection_30d": {
+  "flash": 0.77,
+  "luna": 0.68,
+  "haiku": 1.06
+ },
+ "rule": {
+  "luna_vs_flash": {
+   "memories": true,
+   "other_surfaces_won": 2,
+   "invented_fact": 3,
+   "flash_invented_fact": 26,
+   "beats": true
+  },
+  "haiku_vs_flash": {
+   "memories": true,
+   "other_surfaces_won": 2,
+   "invented_fact": 16,
+   "flash_invented_fact": 26,
+   "beats": true
+  },
+  "arithmetic": "haiku",
+  "reason": "both beat Flash Lite; head to head Haiku wins 2 surfaces to 0",
+  "judge_stands": false,
+  "recommendation": null,
+  "spend_replay": 0.5884
+ }
+}

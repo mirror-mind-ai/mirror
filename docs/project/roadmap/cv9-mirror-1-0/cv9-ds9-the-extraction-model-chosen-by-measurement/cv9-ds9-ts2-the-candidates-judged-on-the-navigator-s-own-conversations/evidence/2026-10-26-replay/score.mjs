@@ -210,21 +210,48 @@ function calibration() {
   let total = 0;
   let topAgree = 0;
   let surfaces = 0;
-  for (const [item, bySurface] of Object.entries(answers)) {
+  const bySurface = {};
+  const firstPick = { navigator: {}, judge: {} };
+  const pairwise = { navigator: {}, judge: {} };
+  const longestFirst = { navigator: 0, judge: 0 };
+  for (const [item, bySurfaceAnswer] of Object.entries(answers)) {
     const record = readJson(scratch("verdicts", "pass1", `${item}.json`));
-    for (const [surface, ranking] of Object.entries(bySurface)) {
+    const { outputs } = judgedSurfaces(item);
+    for (const [surface, ranking] of Object.entries(bySurfaceAnswer)) {
       const navigator = Object.fromEntries(
         ranking.map((label, i) => [record.labels[surface][label], i]),
       );
       const judge = ranksOf(record, surface);
       const pn = pairwiseOrderings(navigator);
       const pj = pairwiseOrderings(judge);
-      for (let i = 0; i < pn.length; i++) {
+      const b = (bySurface[surface] ??= { agree: 0, orderings: 0 });
+      PAIRS.forEach(([x, y], i) => {
         total += 1;
-        if (pn[i] === pj[i]) agree += 1;
-      }
+        b.orderings += 1;
+        if (pn[i] === pj[i]) {
+          agree += 1;
+          b.agree += 1;
+        }
+        for (const [who, ranks] of [
+          ["navigator", navigator],
+          ["judge", judge],
+        ]) {
+          const key = `${x}_over_${y}`;
+          const tally = (pairwise[who][key] ??= { wins: 0, losses: 0 });
+          if (ranks[x] < ranks[y]) tally.wins += 1;
+          else tally.losses += 1;
+        }
+      });
       surfaces += 1;
       if (ranking[0] === record.verdict[surface].ranking[0]) topAgree += 1;
+      const navTop = record.labels[surface][ranking[0]];
+      const judgeTop = record.labels[surface][record.verdict[surface].ranking[0]];
+      firstPick.navigator[navTop] = (firstPick.navigator[navTop] ?? 0) + 1;
+      firstPick.judge[judgeTop] = (firstPick.judge[judgeTop] ?? 0) + 1;
+      const len = (arm) => render(surface, outputs[arm].results[surface].value).length;
+      const longest = Math.max(...ARM_NAMES.map(len));
+      if (len(navTop) === longest) longestFirst.navigator += 1;
+      if (len(judgeTop) === longest) longestFirst.judge += 1;
     }
   }
   return {
@@ -234,6 +261,10 @@ function calibration() {
     agree,
     rate: round(total ? agree / total : null),
     best_pick_agree: topAgree,
+    by_surface: bySurface,
+    first_pick: firstPick,
+    pairwise,
+    longest_output_ranked_first: longestFirst,
   };
 }
 
@@ -377,9 +408,12 @@ function rule(q, sc, cal, ops) {
   return {
     luna_vs_flash: luna,
     haiku_vs_flash: haiku,
-    recommendation,
+    // The arithmetic is always reported; it becomes TS2's recommendation only when
+    // the judge stands. Otherwise the plan's stop condition sends it to the Navigator.
+    arithmetic: recommendation,
     reason,
     judge_stands: judgeStands,
+    recommendation: judgeStands === true ? recommendation : null,
     spend_replay: round(ARM_NAMES.reduce((s, a) => s + ops[a].cost, 0), 4),
   };
 }
@@ -492,7 +526,13 @@ function writeResults(report) {
     "",
     `- Self-consistency: ${report.self_consistency.agree}/${report.self_consistency.orderings} pairwise orderings (${report.self_consistency.rate}) over ${report.self_consistency.items} re-judged conversations.`,
     report.calibration
-      ? `- The Navigator's calibration: ${report.calibration.agree}/${report.calibration.orderings} pairwise orderings (${report.calibration.rate}); best pick agreed on ${report.calibration.best_pick_agree} of ${report.calibration.surfaces} surfaces.`
+      ? [
+          `- The Navigator's calibration: ${report.calibration.agree}/${report.calibration.orderings} pairwise orderings (${report.calibration.rate}); best pick agreed on ${report.calibration.best_pick_agree} of ${report.calibration.surfaces} surfaces.`,
+          `- Agreement by surface: ${Object.entries(report.calibration.by_surface).map(([s, v]) => `${s} ${v.agree}/${v.orderings}`).join(", ")}.`,
+          `- Ranked first on the calibration's ${report.calibration.surfaces} surfaces: the Navigator ${ARM_NAMES.map((a) => `${a} ${report.calibration.first_pick.navigator[a] ?? 0}`).join(", ")}; the judge ${ARM_NAMES.map((a) => `${a} ${report.calibration.first_pick.judge[a] ?? 0}`).join(", ")}.`,
+          `- Pairwise on those surfaces, the Navigator / the judge: ${Object.keys(report.calibration.pairwise.navigator).map((k) => `${k.replaceAll("_", " ")} ${report.calibration.pairwise.navigator[k].wins}–${report.calibration.pairwise.navigator[k].losses} / ${report.calibration.pairwise.judge[k].wins}–${report.calibration.pairwise.judge[k].losses}`).join("; ")}.`,
+          `- The longest of the three outputs ranked first: the Navigator ${report.calibration.longest_output_ranked_first.navigator} of ${report.calibration.surfaces}, the judge ${report.calibration.longest_output_ranked_first.judge}.`,
+        ].join("\n")
       : "- The Navigator's calibration: pending.",
     `- Judge spend: $${report.judge.spend}; prompt SHA-256 ${report.judge.prompt_sha256}.`,
     "",
@@ -500,8 +540,12 @@ function writeResults(report) {
     "",
     `- Luna vs Flash Lite: memories ${report.rule.luna_vs_flash.memories ? "won" : "not won"}, other surfaces won ${report.rule.luna_vs_flash.other_surfaces_won}/4, invented facts ${report.rule.luna_vs_flash.invented_fact} vs ${report.rule.luna_vs_flash.flash_invented_fact}: ${report.rule.luna_vs_flash.beats ? "beats" : "does not beat"} Flash Lite.`,
     `- Haiku vs Flash Lite: memories ${report.rule.haiku_vs_flash.memories ? "won" : "not won"}, other surfaces won ${report.rule.haiku_vs_flash.other_surfaces_won}/4, invented facts ${report.rule.haiku_vs_flash.invented_fact} vs ${report.rule.haiku_vs_flash.flash_invented_fact}: ${report.rule.haiku_vs_flash.beats ? "beats" : "does not beat"} Flash Lite.`,
-    `- Recommendation: **${report.rule.recommendation}** (${report.rule.reason}).`,
-    `- The judge's verdict stands: ${report.rule.judge_stands === null ? "pending the calibration" : report.rule.judge_stands}.`,
+    `- The rule's arithmetic: ${report.rule.arithmetic} (${report.rule.reason}).`,
+    report.rule.judge_stands === true
+      ? `- The judge stands, so TS2 recommends **${report.rule.recommendation}**.`
+      : report.rule.judge_stands === false
+        ? "- **The judge does not stand**: self-consistency must be at least 0.70 and the Navigator's agreement above 0.60. TS2 makes no recommendation from the judge; the plan's stop condition sends the result to the Navigator."
+        : "- The judge's standing is pending the Navigator's calibration.",
     "",
   ].join("\n");
   writeFileSync(join(KIT, "results.md"), md);
@@ -658,5 +702,7 @@ else {
   writeFileSync(join(KIT, "report.json"), `${JSON.stringify(report, null, 1)}\n`);
   writeResults(report);
   writeReview(items);
-  console.log(`report.json and results.md written; review.md in scratch. Recommendation: ${report.rule.recommendation}`);
+  console.log(
+    `report.json and results.md written; review.md in scratch. Arithmetic: ${report.rule.arithmetic}; judge stands: ${report.rule.judge_stands}`,
+  );
 }
