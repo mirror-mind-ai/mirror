@@ -52,6 +52,63 @@ the new wording, compared probe by probe.
 **Revisit:** after CV9.DS9.US3 decides the pin, so the fix is measured on the model
 that ships.
 
+### Plan (2026-10-28, selected after CV9.DS9 closed; pending Navigator approval)
+
+**Objective.** The summary opens with its subject, never with a frame around the
+conversation, on the pin that ships (`anthropic/claude-haiku-5.5` at `none`), with
+no loss on the other rules, and the change measured on the prompt-change path.
+
+**The wording.** Two rules in `CONVERSATION_SUMMARY_PROMPT`
+(`ts/src/extraction/prompts.ts`) change, nothing else in the prompt:
+
+- the opening rule, from "Open with the main topic or question the conversation
+  addressed." to: "Open with the subject itself, stated directly, as a note would:
+  "Pricing moves from per-seat to usage-based…", not "The conversation centered
+  on…" or "The discussion addressed…"."
+- the standalone rule's quoted list gains "the discussion" and the sentence "Do
+  not refer to the conversation at all; write about what was said as if stating
+  it."
+
+The rules then agree: the first says what to write, the second what not to frame.
+The fence paragraph, the trivial-conversation rule, and the tone rule are untouched.
+
+**Affected files.**
+
+- `ts/src/extraction/prompts.ts`: the two rules.
+- `ts/test/goldens/prompt-assembly.golden.json`: the five `conversation_summary`
+  scenarios' `prompt` and `prompt_sha256`, edited by a script that replaces exactly
+  the two rule strings and recomputes the digest, with asserted counts; a row in
+  `ts/test/goldens/README.md`. The golden is frozen; this is a deliberate change.
+- `ts/evals/extraction.ts`, probe `conversation-summary`: `isStandalone` also
+  rejects "the discussion", so the eval holds the prompt to its new rule.
+- `docs/project/decisions.md`: one short entry, because a prompt is a measured
+  dependency and this changes its hash.
+
+**Measurement (the playbook's prompt-change path).** `prompt_hash` moves for the
+`extraction` and `conversation_summary` modules, the two that send this prompt.
+
+1. Baseline, before the edit: US3's gate run of 2026-10-28 (Haiku at `none`,
+   `conversation-summary` failed, "The conversation centered on…") and TS1's 14
+   runs (4 of 14 passed). No new baseline run is needed; the probe is the failure.
+2. After the edit: `eval extraction` and `eval conversation_summary` seven times
+   each (n≥5, playbook step 5), in the development home.
+3. Pass: `conversation-summary` passes at least 6 of 7; `summary-injection-resisted`
+   (blocking, same prompt) passes 7 of 7; no other extraction probe moves from US3's
+   run. `eval extraction --history` labels the flip as a prompt change, with model
+   and reasoning unchanged.
+
+**Navigator validation.** End one substantive conversation in a Pi session on the
+development home; its summary opens with the subject and nowhere says "the
+conversation" or "the discussion". The before is US3's E2E conversation
+(`70f7dcda`), whose summary opened "The conversation asked which of the open CRs…".
+
+**Exclusions.** No other prompt changes; no change to the title, tags, or
+extraction prompts; no model or reasoning change; the summaries already stored are
+not rewritten. Commit, push, and the release that carries this stay separate gates.
+
+**Driver and Delivery.** To be assigned at start, per the protocol: proposed
+`@viniciusteles` on `main`, as the DS9 stories were.
+
 ## Evidence
 
 - `ts/src/extraction/prompts.ts`, `CONVERSATION_SUMMARY_PROMPT`: the two rules quoted
