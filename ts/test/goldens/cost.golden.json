@@ -77,9 +77,37 @@
       "cost_usd": null,
       "model": "openai/text-embedding-3-small",
       "prompt_tokens": null
+    },
+    {
+      "completion_tokens": 500,
+      "cost_usd": 0.00035,
+      "model": "anthropic/claude-haiku-5.5",
+      "prompt_tokens": 1000
+    },
+    {
+      "completion_tokens": 6789,
+      "cost_usd": 0.004629,
+      "model": "anthropic/claude-haiku-5.5",
+      "prompt_tokens": 12345
+    },
+    {
+      "completion_tokens": null,
+      "cost_usd": 0.0001,
+      "model": "anthropic/claude-haiku-5.5",
+      "prompt_tokens": 1000
+    },
+    {
+      "completion_tokens": 500,
+      "cost_usd": null,
+      "model": "anthropic/claude-haiku-5.5",
+      "prompt_tokens": null
     }
   ],
   "prices": {
+    "anthropic/claude-haiku-5.5": {
+      "completion_per_1k": 0.0005,
+      "prompt_per_1k": 0.0001
+    },
     "google/gemini-2.5-flash-lite": {
       "completion_per_1k": 0.0004,
       "prompt_per_1k": 0.0001

@@ -4,10 +4,12 @@ import test from "node:test";
 import {
   DEFAULT_EMBEDDING_MODEL,
   DEFAULT_EXTRACTION_MODEL,
+  MODEL_DEFAULT_REASONING,
   REASONING_EFFORTS,
   readExtractionReasoning,
   resolveEmbeddingModel,
   resolveExtractionModel,
+  resolveExtractionReasoning,
   resolveLlmMaxRetries,
   resolveLlmTimeoutMs,
   resolveLogLlmCallsMode,
@@ -53,7 +55,8 @@ test("resolveProviderConfig fails with a redacted error when the key is missing"
 
 test("resolveExtractionModel returns the default when no override is set (AI-06)", () => {
   assert.equal(resolveExtractionModel({ env: {} }), DEFAULT_EXTRACTION_MODEL);
-  assert.equal(DEFAULT_EXTRACTION_MODEL, "google/gemini-2.5-flash-lite");
+  // CV9.DS9.US3: the pin moved to Haiku on DS9's evidence.
+  assert.equal(DEFAULT_EXTRACTION_MODEL, "anthropic/claude-haiku-5.5");
 });
 
 test("resolveExtractionModel honors a MEMORY_EXTRACTION_MODEL override (AI-06)", () => {
@@ -199,4 +202,78 @@ test("readExtractionReasoning reports an invalid value as written, and never thr
       invalid: value,
     });
   }
+});
+
+// CV9.DS9.US3: the reasoning default is a property of the model. What DS9 measured
+// is a fact about each model: Haiku needs `none` (it reasons by default and spends
+// the title call's budget), Flash Lite was measured with no field. The effective
+// model is resolved first, then the effort: the setting when it names an effort,
+// else the model's table entry, else no field.
+
+test("the default pin carries its model default effort, none (CV9.DS9.US3)", () => {
+  assert.deepEqual(MODEL_DEFAULT_REASONING, { "anthropic/claude-haiku-5.5": "none" });
+  assert.deepEqual(resolveExtractionReasoning({ env: {} }), {
+    model: "anthropic/claude-haiku-5.5",
+    effort: "none",
+    source: "model_default",
+    invalid: null,
+  });
+});
+
+test("naming the default pin explicitly sends the same request as leaving it unset (CV9.DS9.US3)", () => {
+  assert.deepEqual(
+    resolveExtractionReasoning({ env: { MEMORY_EXTRACTION_MODEL: "anthropic/claude-haiku-5.5" } }),
+    resolveExtractionReasoning({ env: {} }),
+  );
+});
+
+test("a model outside the table carries no effort: the rollback is the measured request (CV9.DS9.US3)", () => {
+  // The playbook's rollback. Flash Lite was measured with no reasoning field, and
+  // that is what it gets back.
+  assert.deepEqual(
+    resolveExtractionReasoning({
+      env: { MEMORY_EXTRACTION_MODEL: "google/gemini-2.5-flash-lite" },
+    }),
+    { model: "google/gemini-2.5-flash-lite", effort: null, source: null, invalid: null },
+  );
+  assert.deepEqual(resolveExtractionReasoning({ env: { MEMORY_EXTRACTION_MODEL: "vendor/new" } }), {
+    model: "vendor/new",
+    effort: null,
+    source: null,
+    invalid: null,
+  });
+});
+
+test("an explicit effort wins on any model (CV9.DS9.US3)", () => {
+  assert.deepEqual(resolveExtractionReasoning({ env: { MEMORY_EXTRACTION_REASONING: "low" } }), {
+    model: "anthropic/claude-haiku-5.5",
+    effort: "low",
+    source: "setting",
+    invalid: null,
+  });
+  assert.deepEqual(
+    resolveExtractionReasoning({
+      env: {
+        MEMORY_EXTRACTION_MODEL: "google/gemini-2.5-flash-lite",
+        MEMORY_EXTRACTION_REASONING: "none",
+      },
+    }),
+    { model: "google/gemini-2.5-flash-lite", effort: "none", source: "setting", invalid: null },
+  );
+});
+
+test("an invalid effort reads as unset: the default pin still sends none, and the value is reported (CV9.DS9.US3)", () => {
+  // The case most easily got wrong: invalid -> nothing, as before this story.
+  assert.deepEqual(resolveExtractionReasoning({ env: { MEMORY_EXTRACTION_REASONING: "off" } }), {
+    model: "anthropic/claude-haiku-5.5",
+    effort: "none",
+    source: "model_default",
+    invalid: "off",
+  });
+  assert.deepEqual(
+    resolveExtractionReasoning({
+      env: { MEMORY_EXTRACTION_MODEL: "vendor/new", MEMORY_EXTRACTION_REASONING: "off" },
+    }),
+    { model: "vendor/new", effort: null, source: null, invalid: "off" },
+  );
 });

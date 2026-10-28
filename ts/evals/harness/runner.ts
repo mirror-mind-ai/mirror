@@ -29,7 +29,7 @@ import {
   evalPassed,
   evalScore,
 } from "#evals/harness/types.ts";
-import { readExtractionReasoning } from "#providers/config.ts";
+import { resolveExtractionReasoning } from "#providers/config.ts";
 
 const EVALS_DIR = dirname(dirname(fileURLToPath(import.meta.url)));
 const DEFAULT_THRESHOLD = 0.8;
@@ -56,7 +56,7 @@ export interface RunnerIo {
   now?: () => Date;
   newSuiteRunId?: () => string;
   write?: (line: string) => void;
-  /** The reasoning effort extraction calls send (CV9.DS9.TS1), or null for none. */
+  /** The reasoning effort extraction calls send (CV9.DS9.TS1, US3), or null for none. */
   reasoning?: () => string | null;
 }
 
@@ -84,7 +84,8 @@ function resolved(io: RunnerIo = {}): Required<RunnerIo> {
     now: io.now ?? (() => new Date()),
     newSuiteRunId: io.newSuiteRunId ?? (() => crypto.randomUUID()),
     write: io.write ?? ((line: string) => console.log(line)),
-    reasoning: io.reasoning ?? (() => readExtractionReasoning().effort),
+    // The effort the calls send: the setting, else the model's default (US3).
+    reasoning: io.reasoning ?? (() => resolveExtractionReasoning().effort),
   };
 }
 

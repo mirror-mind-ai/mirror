@@ -3,8 +3,8 @@ import { createHash } from "node:crypto";
 import {
   type LlmTimeoutRole,
   type ProviderConfig,
-  readExtractionReasoning,
   resolveExtractionModel,
+  resolveExtractionReasoning,
   resolveLlmMaxRetries,
   resolveLlmTimeoutMs,
   resolveProviderConfig,
@@ -301,10 +301,12 @@ export class LiveLlmProvider implements LlmProvider {
   async complete(request: LlmRequest): Promise<LlmResponse> {
     const client = this.resolveClient();
     const model = request.model ?? resolveExtractionModel({ env: this.env });
-    // CV9.DS9.TS1: the one opt-in field. An invalid value reads as no effort, so
-    // it sends nothing and fails nothing (a failed call would become an
-    // extraction attempt, CR178); `runtime status` and `diagnose` report it.
-    const { effort } = readExtractionReasoning({ env: this.env });
+    // CV9.DS9.TS1: the one added field; US3: the setting, else the model's own
+    // default (Haiku sends `none`; a model outside the table sends nothing). An
+    // invalid value reads as unset, so it fails nothing (a failed call would
+    // become an extraction attempt, CR178); `runtime status` and `diagnose`
+    // report it.
+    const { effort } = resolveExtractionReasoning({ env: this.env });
     const reasoning =
       effort !== null && CARRIES_EXTRACTION_REASONING[request.role]
         ? { reasoning: { effort } }

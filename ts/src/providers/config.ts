@@ -18,7 +18,14 @@ const ARG_SECRET_PATTERN =
 // Model pins (AI-06, CV9.E2.S12): a deprecated pinned model would fail every
 // extraction/embedding call, and those paths fail soft -- so the pins must be
 // env-overridable to repoint a deployed instance without a release.
-export const DEFAULT_EXTRACTION_MODEL = "google/gemini-2.5-flash-lite";
+//
+// The extraction pin moved from `google/gemini-2.5-flash-lite` to Claude Haiku 5.5
+// on 2026-10-28 (CV9.DS9.US3), on DS9's measurement: the Navigator's own blind
+// rankings on his conversations, the suite at reasoning off, and Flash Lite's
+// upstream rate limits. A pin change is a migration: the pin, its entry in
+// MODEL_DEFAULT_REASONING, and MODEL_PRICES (cost.ts) move in one commit, behind
+// a green `eval --all` (the development guide's model upgrade playbook).
+export const DEFAULT_EXTRACTION_MODEL = "anthropic/claude-haiku-5.5";
 export const DEFAULT_EMBEDDING_MODEL = "openai/text-embedding-3-small";
 
 export interface ModelPinOptions {
@@ -94,6 +101,58 @@ export function readExtractionReasoning(options: ModelPinOptions = {}): Extracti
   if (value === "") return { effort: null, invalid: null };
   const effort = REASONING_EFFORTS.find((candidate) => candidate === value);
   return effort ? { effort, invalid: null } : { effort: null, invalid: raw.trim() };
+}
+
+/**
+ * The reasoning effort a model sends when `MEMORY_EXTRACTION_REASONING` is unset
+ * (CV9.DS9.US3). A property of the model, because what DS9 measured is: Haiku
+ * reasons by default and spent the title call's 40-token budget, so it was
+ * measured and chosen at `none`; Flash Lite was measured with no reasoning field,
+ * and a model absent from this table gets none, which is the request as it was
+ * before the setting existed. So the playbook's rollback, `MEMORY_EXTRACTION_MODEL`
+ * set to the old pin, reproduces exactly the request the old pin was measured with,
+ * and naming the default pin explicitly sends the same request as leaving it unset.
+ */
+export const MODEL_DEFAULT_REASONING: Readonly<Record<string, ReasoningEffort>> = {
+  "anthropic/claude-haiku-5.5": "none",
+};
+
+/** Where the effective effort came from: the setting, the model's default, or nowhere. */
+export type ReasoningSource = "setting" | "model_default";
+
+/** The effective pair every extraction-family call sends: the model and its effort. */
+export interface EffectiveExtractionReasoning {
+  /** The model the call names: `MEMORY_EXTRACTION_MODEL` or the default pin. */
+  model: string;
+  /** The effort to send as `reasoning.effort`, or null to send no reasoning field. */
+  effort: ReasoningEffort | null;
+  /** What decided `effort`; null when no field is sent. */
+  source: ReasoningSource | null;
+  /** `MEMORY_EXTRACTION_REASONING` as written when it is not an effort; null otherwise. */
+  invalid: string | null;
+}
+
+/**
+ * Resolve the model and the reasoning effort an extraction-family call sends
+ * (CV9.DS9.US3): the model first, then the effort: the setting when it names an
+ * effort, else the model's entry in `MODEL_DEFAULT_REASONING`, else no field. An
+ * invalid setting reads as unset, so the default pin still sends its model default;
+ * `invalid` carries the value for `runtime status` and `runtime diagnose`. The
+ * transport, the eval harness, and `runtime status` all read this one resolver.
+ */
+export function resolveExtractionReasoning(
+  options: ModelPinOptions = {},
+): EffectiveExtractionReasoning {
+  const model = resolveExtractionModel(options);
+  const setting = readExtractionReasoning(options);
+  if (setting.effort !== null) {
+    return { model, effort: setting.effort, source: "setting", invalid: null };
+  }
+  const modelDefault = MODEL_DEFAULT_REASONING[model];
+  if (modelDefault !== undefined) {
+    return { model, effort: modelDefault, source: "model_default", invalid: setting.invalid };
+  }
+  return { model, effort: null, source: null, invalid: setting.invalid };
 }
 
 // Observability (AI-09, CV9.E2.S13): mirrors Python's MEMORY_LOG_LLM_CALLS

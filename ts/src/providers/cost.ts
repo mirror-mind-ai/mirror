@@ -29,7 +29,11 @@ export interface ModelPrice {
 
 /** Estimated OpenRouter list prices (USD / 1K tokens). Verify on every pin change. */
 export const MODEL_PRICES: Readonly<Record<string, ModelPrice>> = {
-  // Extraction pin -- google/gemini-2.5-flash-lite: ~$0.10/M in, ~$0.40/M out.
+  // Extraction pin since CV9.DS9.US3 -- anthropic/claude-haiku-5.5: $0.10/M in,
+  // $0.50/M out, read from OpenRouter's catalogue on 2026-10-28.
+  "anthropic/claude-haiku-5.5": { promptPer1k: 0.0001, completionPer1k: 0.0005 },
+  // The pin before it, kept so a rolled-back install (`MEMORY_EXTRACTION_MODEL`)
+  // keeps pricing its calls -- google/gemini-2.5-flash-lite: ~$0.10/M in, ~$0.40/M out.
   "google/gemini-2.5-flash-lite": { promptPer1k: 0.0001, completionPer1k: 0.0004 },
   // Embedding pin -- openai/text-embedding-3-small: ~$0.02/M, no completion side.
   "openai/text-embedding-3-small": { promptPer1k: 0.00002, completionPer1k: 0.0 },

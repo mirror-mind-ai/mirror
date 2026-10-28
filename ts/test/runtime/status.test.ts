@@ -627,7 +627,7 @@ test("CV21.DS5.US2: status names the home's extensions plugin only when the home
   }
 });
 
-test("CV9.DS9.TS1: the models line shows a reasoning setting only when one is set", () => {
+test("CV9.DS9.TS1/US3: the models line shows the effort the calls send, and where it came from", () => {
   const root = mkdtempSync(join(tmpdir(), "status-reasoning-"));
   try {
     const home = join(root, "ana");
@@ -645,18 +645,31 @@ test("CV9.DS9.TS1: the models line shows a reasoning setting only when one is se
         .split("\n")
         .find((line) => line.startsWith("Models: "));
 
-    // Unset: byte for byte the line every frozen status scenario records.
+    // Unset: the default pin and its model default (US3); byte for byte the line
+    // every frozen status scenario records.
     assert.equal(
       modelsLine({}),
+      "Models: extraction=anthropic/claude-haiku-5.5, reasoning=none (model default), embedding=openai/text-embedding-3-small",
+    );
+    assert.equal(
+      modelsLine({ MEMORY_EXTRACTION_REASONING: "low" }),
+      "Models: extraction=anthropic/claude-haiku-5.5, reasoning=low, embedding=openai/text-embedding-3-small",
+    );
+    // Invalid: shown, not thrown. The calls send the model default meanwhile.
+    assert.equal(
+      modelsLine({ MEMORY_EXTRACTION_REASONING: "off" }),
+      "Models: extraction=anthropic/claude-haiku-5.5, reasoning=none (model default, invalid setting: off), embedding=openai/text-embedding-3-small",
+    );
+    // The rollback pin: the request it was measured with, so no clause (TS1's line).
+    assert.equal(
+      modelsLine({ MEMORY_EXTRACTION_MODEL: "google/gemini-2.5-flash-lite" }),
       "Models: extraction=google/gemini-2.5-flash-lite, embedding=openai/text-embedding-3-small",
     );
     assert.equal(
-      modelsLine({ MEMORY_EXTRACTION_REASONING: "none" }),
-      "Models: extraction=google/gemini-2.5-flash-lite, reasoning=none, embedding=openai/text-embedding-3-small",
-    );
-    // Invalid: shown, not thrown. The calls send no reasoning field meanwhile.
-    assert.equal(
-      modelsLine({ MEMORY_EXTRACTION_REASONING: "off" }),
+      modelsLine({
+        MEMORY_EXTRACTION_MODEL: "google/gemini-2.5-flash-lite",
+        MEMORY_EXTRACTION_REASONING: "off",
+      }),
       "Models: extraction=google/gemini-2.5-flash-lite, reasoning=invalid (off), embedding=openai/text-embedding-3-small",
     );
   } finally {

@@ -473,7 +473,11 @@ changing `EXTRACTION_MODEL` or `EMBEDDING_MODEL`:
    `MEMORY_EXTRACTION_MODEL` / `MEMORY_EMBEDDING_MODEL` env overrides for a dry
    run). A model that reasons by default can spend a short call's token budget
    before it answers; `MEMORY_EXTRACTION_REASONING` sets the effort it is asked for
-   (`none` turns reasoning off), and is part of the configuration under test.
+   (`none` turns reasoning off), and is part of the configuration under test. A
+   pin carries its own default effort in `MODEL_DEFAULT_REASONING`, beside the
+   pins: the effort the model was measured and chosen with, sent whenever the
+   setting is unset. A new pin gets its entry in the same commit, or none if it
+   was measured with no reasoning field.
    Run a dry run's evals in a scratch `MIRROR_HOME`, so the candidate's records
    stay out of the production history.
 3. **Re-run** `eval --all` on the new pin.
@@ -506,9 +510,9 @@ override without waiting for a release.
 Example of the regression signal in `--history`:
 
 ```text
-✗  2026-07-20T…  score=0.83/0.80  model=google/gemini-3.0-flash  reasoning=—  prompt_hash=a1b2c3  v4
-      ⚠ probe 'grounded-no-fabrication' regressed vs previous run (model changed)
-✓  2026-07-20T…  score=1.00/0.80  model=google/gemini-2.5-flash-lite  reasoning=—  prompt_hash=a1b2c3  v4
+✗  2026-10-28T…  score=0.83/0.80  model=anthropic/claude-haiku-5.5  reasoning=none  prompt_hash=a1b2c3  v4
+      ⚠ probe 'grounded-no-fabrication' regressed vs previous run (model and reasoning changed)
+✓  2026-10-28T…  score=1.00/0.80  model=google/gemini-2.5-flash-lite  reasoning=—  prompt_hash=a1b2c3  v4
 ```
 
 ---

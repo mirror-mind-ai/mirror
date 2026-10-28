@@ -25,11 +25,7 @@ import { readExtensionPlugin } from "#extensions/extensionPlugin.ts";
 import { loadExtensionManifest } from "#extensions/manifest.ts";
 import { inspectMigrationFiles } from "#extensions/migrations.ts";
 import { type DbPathEnv, dbNameForEnv, resolveMirrorHome } from "#frontDoor/dbPath.ts";
-import {
-  DEFAULT_EMBEDDING_MODEL,
-  DEFAULT_EXTRACTION_MODEL,
-  readExtractionReasoning,
-} from "#providers/config.ts";
+import { DEFAULT_EMBEDDING_MODEL, resolveExtractionReasoning } from "#providers/config.ts";
 import { sortByCodePoint } from "#util/pythonText.ts";
 import { channelForReport } from "./channel.ts";
 import type { MarkerValue } from "./git.ts";
@@ -534,13 +530,19 @@ function intEnv(raw: string | undefined, fallback: number): number {
 }
 
 /**
- * The models line's reasoning clause (CV9.DS9.TS1): empty when the setting is
- * unset, so the line stays byte for byte what every frozen status scenario
- * records; the effort when set; and an invalid value shown, never thrown.
+ * The models line's reasoning clause (CV9.DS9.TS1, US3): the effort the calls
+ * send, marked `(model default)` when it is the model's rather than the setting's;
+ * empty when no field is sent, so a rolled-back pin's line stays byte for byte
+ * what the frozen status scenarios before US3 recorded; and an invalid setting
+ * shown, never thrown, beside the model default it falls back to.
  */
 function reasoningClause(env: NodeJS.ProcessEnv): string {
-  const { effort, invalid } = readExtractionReasoning({ env });
-  if (effort !== null) return `reasoning=${effort}, `;
+  const { effort, source, invalid } = resolveExtractionReasoning({ env });
+  if (effort !== null && source === "setting") return `reasoning=${effort}, `;
+  if (effort !== null) {
+    const note = invalid === null ? "model default" : `model default, invalid setting: ${invalid}`;
+    return `reasoning=${effort} (${note}), `;
+  }
   if (invalid !== null) return `reasoning=invalid (${invalid}), `;
   return "";
 }
@@ -586,7 +588,7 @@ export function renderRuntimeStatus(
       `embedding=${formatG(embedding)}, extraction=${formatG(extraction)}; retries=${retries}`,
   );
   lines.push(
-    `Models: extraction=${env.MEMORY_EXTRACTION_MODEL ?? DEFAULT_EXTRACTION_MODEL}, ` +
+    `Models: extraction=${resolveExtractionReasoning({ env }).model}, ` +
       reasoningClause(env) +
       `embedding=${env.MEMORY_EMBEDDING_MODEL ?? DEFAULT_EMBEDDING_MODEL}`,
   );
