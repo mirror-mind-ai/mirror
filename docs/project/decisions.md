@@ -11,6 +11,44 @@ resolved.
 
 ## Completed Decisions
 
+### A host migrates a home only behind a verified, retained backup
+
+**Date:** 2026-10-28
+**Reference:** [CV24.DS5](roadmap/cv24-embeddable-core-for-mirror-desktop/cv24-ds5-migrate-on-request/index.md)
+**Participants:** Alisson Vale (Navigator, from the `mirror-desktop` Journey)
+
+`migrateHome` is the call Mirror Desktop's last 0.3 phase will run against
+the Navigator's production home. The backup `ensureMigratedOnOpen` takes has
+two gaps that matter there:
+
+- **It is overwritten.** It always writes one fixed name,
+  `frontdoor-pre-migration-backup.db`, and removes the previous file first, so
+  the next migration of the same home destroys the last pre-image.
+- **It is never verified.** Nobody checks it, records its hash, or prepares
+  it to restore. `prepareArchiveSnapshot` (CR061) does exactly that for
+  `runtime backup --verify`, but the migration path never calls it.
+
+**`migrateHome` takes its own backup, and nothing migrates until the backup
+is verified.** Under the bootstrap lock, it:
+
+1. snapshots the database to
+   `backups/pre-migration-<last applied id>-<UTC stamp>-<random>.db`, mode
+   0600, a name never reused;
+2. runs `prepareArchiveSnapshot`, which converts it to WAL and runs
+   `quick_check`, and requires `ok`;
+3. records its SHA-256 and size;
+4. requires the migration report of the backup to name the same pending list
+   as the live database, so the backup is a true pre-image.
+
+Only then does it migrate. Any failure removes the backup file and changes
+nothing in the home.
+
+**The core never deletes these backups.** They are kept until the person or
+the host removes them.
+
+**`ensureMigratedOnOpen` and the CLI's backup are unchanged.** Giving the
+front door the same custody is a separate decision.
+
 ### A host creates a home beside its target and renames it into place, writing nothing outside it
 
 **Date:** 2026-10-28
