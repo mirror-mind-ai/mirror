@@ -11,6 +11,51 @@ resolved.
 
 ## Completed Decisions
 
+### A host creates a home beside its target and renames it into place, writing nothing outside it
+
+**Date:** 2026-10-28
+**Reference:** [CV24.DS4](roadmap/cv24-embeddable-core-for-mirror-desktop/cv24-ds4-create-a-home/index.md)
+**Participants:** Alisson Vale (Navigator, from the `mirror-desktop` Journey)
+
+Mirror Desktop 0.3's first-run assistant creates a person's first home through
+`createHome`. That home has to be seeded, and seeding writes the `identity`
+table, which neither narrowed host handle may write. The CLI's `seed` writes
+through `openLiveWriteDatabase`. On a database created a moment earlier, that
+snapshot is an undo of nothing, and the CLI has no all-or-nothing property:
+an interrupted `init` plus `seed` leaves half a home that the next `init`
+refuses.
+
+**`createHome` builds the whole home in a staging directory beside the
+target.** The directory is named `.<name>.creating-<pid>-<random>` and created
+0700. In it, `createHome`:
+
+1. copies the templates;
+2. bootstraps the database through `bootstrapDatabase`;
+3. seeds it through the bootstrap handle;
+4. confirms that the migration report reads `current` and that the seed
+   recorded no errors.
+
+Only then does it rename the directory to the target. On any failure it
+removes the staging directory. Until the rename, no other process knows the
+path, so there is no prior state to protect. This is the reason
+`openDatabaseForBootstrap` may write a file it is creating.
+
+**It writes nothing outside the target.** In particular, it never writes
+`~/.config/mirror/env`. The CLI's `init` writes `MIRROR_USER` there when no
+user is configured, and every `mirror` and `mirror-hook` process on the
+machine reads that file, including the runtime hooks of Pi, Claude Code and
+Codex. A host creating its own home must not redirect the person's terminal
+Mirror. The host keeps the path itself and passes it explicitly, as every
+CV24 call requires.
+
+**It grants no write to an existing home.** Anything at the target, even an
+empty directory, is refused. Re-seeding an existing home (`seed --force`)
+overwrites a person's edited identity, so it is a separate decision.
+
+One race is accepted and named. On POSIX, `rename` replaces an *empty*
+directory created at the target between the final check and the rename. The
+window is one system call, and what it could replace is empty.
+
 ### A host's Conversation writes are narrowed, not snapshotted
 
 **Date:** 2026-10-28
