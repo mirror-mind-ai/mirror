@@ -67,9 +67,11 @@ describe("mirror-mind/desktop from node_modules", () => {
     assert.equal(out.api, 1);
     assert.deepEqual(out.names, [
       "ConversationCallRejectedError",
+      "CreateHomeRejectedError",
       "DESKTOP_API_VERSION",
       "DatabaseNotCurrentError",
       "appendConversationMessages",
+      "createHome",
       "ensureConversation",
       "inspectConversation",
       "inspectMigrationState",

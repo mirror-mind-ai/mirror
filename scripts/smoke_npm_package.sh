@@ -275,6 +275,21 @@ console.log([Array.isArray(tree.roots), tree.findings.length, list.length, one.t
     "$(cd "$HOST" && node --input-type=module -e "$READS_PROBE" "$WORK/lib-calls/memory.db" 2>/dev/null)" "true|0|1|Renamed|other-journey|1"
   check "and left that home's bytes alone" "$(cksum <"$WORK/lib-calls/memory.db")" "$READS_HASH"
 fi
+# CV24.DS4: a host creates a home from the installed package, then records a
+# Conversation in it. The machine-wide config must be exactly what it was.
+CONFIG_BEFORE="$(cksum <"$HOME/.config/mirror/env")"
+mkdir -p "$WORK/lib-created"
+CREATE_PROBE='const d = await import("mirror-mind/desktop");
+const home = d.createHome({ homePath: process.argv[1], userName: "hostuser" });
+const state = d.inspectMigrationState(home.dbPath).state;
+const c = d.ensureConversation(home.dbPath, { sessionId: "s", journeyId: "j", title: "First", interface: "smoke" });
+let again = "no";
+try { d.createHome({ homePath: process.argv[1], userName: "hostuser" }); } catch (e) { again = e instanceof d.CreateHomeRejectedError ? e.reason : "wrong"; }
+console.log([state, home.seeded.created >= 20, typeof c.conversationId, again].join("|"));'
+check "createHome makes a current, seeded home from the installed package, and refuses to make it twice" \
+  "$(cd "$HOST" && node --input-type=module -e "$CREATE_PROBE" "$WORK/lib-created/hostuser" 2>/dev/null)" "current|true|string|home_exists"
+check "and left the machine-wide config alone" "$(cksum <"$HOME/.config/mirror/env")" "$CONFIG_BEFORE"
+check "and left nothing beside the home" "$(ls -A "$WORK/lib-created")" "hostuser"
 
 # --- the runtimes, against the installed package ------------------------------
 # Each hook resolves the home from the config file `init` wrote (MIRROR_USER=
