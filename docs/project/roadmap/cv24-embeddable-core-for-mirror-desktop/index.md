@@ -40,7 +40,7 @@ and the consumer's plan is its CV-010.DS-005, phase 1.
 | [CV24.DS2](cv24-ds2-conversations-as-calls/index.md) | Conversations as Calls | Create or ensure a Conversation, append explicitly, rename, and rebind its Journey | 🟠 Implemented — on branch, not released |
 | [CV24.DS3](cv24-ds3-journey-reads/index.md) | Journey Reads | The Journey tree, a Journey's Conversations, and one Conversation by id, read-only, honouring the stored sibling order | 🟠 Implemented — on branch, not released |
 | [CV24.DS4](cv24-ds4-create-a-home/index.md) | Create a Home | One call creates a complete, seeded home at an explicit path, all or nothing, writing nothing outside it | 🟠 Implemented — on branch, not released |
-| CV24.DS5 | Migrate on Request | Apply pending migrations as an explicit call, with the backup and lock `ensureMigratedOnOpen` already takes | 🟡 Candidate |
+| [CV24.DS5](cv24-ds5-migrate-on-request/index.md) | Migrate on Request | Apply exactly the pending migrations the person was shown, behind a verified, retained backup | 🟡 Planned — backup custody awaits the Navigator |
 
 ## Owed at Release
 
