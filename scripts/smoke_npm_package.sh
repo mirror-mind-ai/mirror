@@ -245,6 +245,24 @@ if [ -n "$REAL_SQLITE" ]; then
     "$(cd "$HOST" && node --input-type=module -e "$LIB_PROBE" "$WORK/lib-016/memory.db" 2>/dev/null)" "1|pending|017_journey_parent_column,018_drop_hook_injected"
   check "and the report left its bytes alone" "$(cksum <"$WORK/lib-016/memory.db")" "$LIB_HASH"
   [ ! -e "$WORK/lib-016/backups" ] && ok "and took no backup" || bad "the report took a backup"
+  # CV24.DS2: the four Conversation calls, on a scratch copy of a current home.
+  mkdir -p "$WORK/lib-calls"
+  sqlite3 "$HOME/.mirror-minds/smokeuser/memory.db" ".backup '$WORK/lib-calls/memory.db'"
+  CALLS_PROBE='const d = await import("mirror-mind/desktop");
+const db = process.argv[1];
+const c = d.ensureConversation(db, { sessionId: "smoke-session", journeyId: "smoke-journey", title: "Smoke", interface: "smoke" });
+const a = d.appendConversationMessages(db, { schemaVersion: "1.0.0", conversationId: c.conversationId, journeyId: "smoke-journey", sourceInterface: "smoke", messages: [{ id: "smoke-msg-1", role: "user", content: "hi", createdAt: "2026-10-28T12:00:00Z" }] });
+const r = d.renameConversation(db, { conversationId: c.conversationId, journeyId: "smoke-journey", title: "Renamed" });
+const b = d.rebindConversationJourney(db, { conversationId: c.conversationId, journeyId: "other-journey" });
+let refused = "no";
+try { d.ensureConversation(process.argv[2], { sessionId: "s", journeyId: "j", title: "t", interface: "smoke" }); } catch (e) { refused = e instanceof d.DatabaseNotCurrentError ? e.state : "wrong"; }
+console.log([a.status, a.insertedCount, r.title, b.rebound, refused].join("|"));'
+  check "the four Conversation calls run from the installed package, and a home at 016 is refused" \
+    "$(cd "$HOST" && node --input-type=module -e "$CALLS_PROBE" "$WORK/lib-calls/memory.db" "$WORK/lib-016/memory.db" 2>/dev/null)" "accepted|1|Renamed|true|pending"
+  check "and they landed in that home" \
+    "$(sqlite3 "$WORK/lib-calls/memory.db" "SELECT title || '|' || journey FROM conversations WHERE id IN (SELECT conversation_id FROM messages WHERE id='smoke-msg-1')")" "Renamed|other-journey"
+  [ ! -e "$WORK/lib-calls/backups" ] && ok "and took no snapshot" || bad "a Conversation call took a snapshot"
+  check "and the refused home kept its bytes" "$(cksum <"$WORK/lib-016/memory.db")" "$LIB_HASH"
 fi
 
 # --- the runtimes, against the installed package ------------------------------

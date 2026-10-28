@@ -65,7 +65,16 @@ describe("mirror-mind/desktop from node_modules", () => {
     assert.equal(result.status, 0, result.stderr);
     const out = JSON.parse(result.stdout);
     assert.equal(out.api, 1);
-    assert.deepEqual(out.names, ["DESKTOP_API_VERSION", "inspectMigrationState"]);
+    assert.deepEqual(out.names, [
+      "ConversationCallRejectedError",
+      "DESKTOP_API_VERSION",
+      "DatabaseNotCurrentError",
+      "appendConversationMessages",
+      "ensureConversation",
+      "inspectMigrationState",
+      "rebindConversationJourney",
+      "renameConversation",
+    ]);
     assert.equal(out.state, "current");
     assert.deepEqual(out.pending, []);
   });

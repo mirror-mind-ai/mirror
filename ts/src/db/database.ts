@@ -341,6 +341,85 @@ export function openDatabaseForLedgerAppend(
 }
 
 /**
+ * The statements a host's Conversation calls may form (CV24.DS2). Matched on
+ * the normalized text: whitespace collapsed, lower-cased, one trailing `;`
+ * dropped. Anything with a second statement fails before these are tried.
+ */
+const CONVERSATION_READ = /^select\b/;
+const CONVERSATION_INSERT =
+  /^insert into (conversations|messages|runtime_sessions) ?\([^)]*\) values ?\(/;
+const CONVERSATION_COLUMN = "(title|journey|interface|metadata) = \\?";
+const CONVERSATION_UPDATE = new RegExp(
+  `^update conversations set ${CONVERSATION_COLUMN}(, ?${CONVERSATION_COLUMN})* where id = \\?$`,
+);
+const TRANSACTION_CONTROL = /^(begin immediate|commit|rollback)$/;
+
+function normalizeStatement(sql: string): string {
+  return sql.trim().replace(/\s+/g, " ").toLowerCase().replace(/ ?;$/, "");
+}
+
+function assertConversationStatement(sql: string): void {
+  const normalized = normalizeStatement(sql);
+  const permitted =
+    !normalized.includes(";") &&
+    (CONVERSATION_READ.test(normalized) ||
+      CONVERSATION_INSERT.test(normalized) ||
+      CONVERSATION_UPDATE.test(normalized));
+  if (!permitted) {
+    throw new Error(
+      `this connection may write only Conversations; refused: ${sql.trim().slice(0, 60)}`,
+    );
+  }
+}
+
+/**
+ * Open a live database for a host's Conversation writes and nothing else
+ * (CV24.DS2) — the second narrowed writer, after the MCP server's ledger.
+ *
+ * See the decision "A host's Conversation writes are narrowed, not
+ * snapshotted". A host that embeds the core writes on every turn, and the
+ * per-write `VACUUM INTO` of `openLiveWriteDatabase` measured about 0.9 s on a
+ * 108 MB home. So instead of an undo, destructive writes are made unreachable:
+ * `prepare` accepts a single SELECT, an INSERT … VALUES into `conversations`,
+ * `messages` or `runtime_sessions`, and an UPDATE of `conversations`' title,
+ * journey, interface or metadata by id; `exec` accepts only transaction
+ * control. It is shaped as a `WritableDatabase` because the ported
+ * Conversation functions take one and run their own transactions; the
+ * narrowing lives in the handle, so it holds wherever the handle goes.
+ *
+ * The sole sanctioned caller is `conversation/hostCalls.ts`, which opens it
+ * only after the migration report says the database is `current`.
+ */
+export function openDatabaseForConversationWrites(
+  path: string,
+  options: OpenOptions = {},
+): WritableDatabase {
+  const driver = new DatabaseSync(path);
+  applyConnectionPragmas(driver, options);
+  return {
+    prepare(sql: string): WritablePreparedQuery {
+      assertConversationStatement(sql);
+      const statement = driver.prepare(sql);
+      return {
+        ...readableStatement(statement),
+        run: (...params: SqlValue[]): RunResult => statement.run(...params),
+      };
+    },
+    exec(sql: string): void {
+      if (!TRANSACTION_CONTROL.test(normalizeStatement(sql))) {
+        throw new Error(
+          `this connection may run only transaction control; refused: ${sql.trim().slice(0, 60)}`,
+        );
+      }
+      driver.exec(sql);
+    },
+    close: (): void => {
+      driver.close();
+    },
+  };
+}
+
+/**
  * Snapshot a live database into `targetPath` using `VACUUM INTO` from a
  * read-only connection. Unlike a raw file copy, this captures committed
  * transactions still living in the `-wal` sidecar and cannot produce a torn

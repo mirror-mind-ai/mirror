@@ -2,8 +2,9 @@
 
 # CV24.DS2 — Conversations as Calls
 
-**Status:** 🟡 Planned (2026-10-28). One decision is open, and it is the Navigator's: **write custody**,
-below. Nothing is built until it is answered.
+**Status:** 🟠 Implemented (2026-10-28) on branch `desktop/library-seam-1a`. Not merged, not released.
+The Navigator chose **option B** for write custody, and it is recorded as the decision
+[A host's Conversation writes are narrowed, not snapshotted](../../../decisions.md#a-hosts-conversation-writes-are-narrowed-not-snapshotted).
 
 ## Outcome
 
@@ -94,3 +95,65 @@ snapshot that DS5 will keep. If the Navigator chooses B, it is recorded as a dec
 - typecheck, lint, `npm test` against DS1's baseline, and the package smoke;
 - all of it under the isolation DS1 recorded;
 - the production ledger read before and after.
+
+## Built (2026-10-28)
+
+### What changed
+
+- **`openDatabaseForConversationWrites`** in `ts/src/db/database.ts` is the narrowed handle described
+  in the decision.
+- **`ts/src/conversation/hostCalls.ts`** holds the four calls. They are:
+  - `ensureConversation`;
+  - `appendConversationMessages`;
+  - `renameConversation`;
+  - `rebindConversationJourney`.
+
+  It also defines two errors. `DatabaseNotCurrentError` carries the DS1 state.
+  `ConversationCallRejectedError` names one of `invalid_request`, `conversation_unavailable` and
+  `invalid_title`, which are the reasons Mirror Desktop's catalog script used.
+- **`lib/desktop.js`** re-exports the four calls and the two errors. `DESKTOP_API_VERSION` stays at
+  1, because the change is additive.
+- **`ts/test/helpers/legacyDb.ts`** gains `regressTo016`.
+- **Package smoke, step 7,** runs the four calls from the installed tarball.
+
+### Two choices made while building
+
+- **`ensureConversation` is a faithful port** of the Python script. On an already-bound session, it
+  still sets the Conversation's title, Journey and interface to the ones given, as
+  `update_conversation` did.
+- **Rename and rebind take an exact id** and refuse a prefix. This matches Desktop's
+  `IDENTIFIER_RE`, unlike `resolveConversation`, which accepts prefixes. Rename also requires the
+  Conversation's own Journey, as Desktop's `exact_conversation` did. Rebind does not, as Desktop's
+  `owned_conversation` did not (CR093).
+
+### Evidence
+
+- **The narrowed handle:** `ts/test/db/conversationWriteHandle.test.ts`, 3 tests.
+  - It accepts 8 statements, and refuses 16 statements and 4 `exec` strings.
+  - A refused statement never reaches the driver.
+- **The four calls:** `ts/test/conversation/hostCalls.test.ts`, 11 tests.
+  - **Append parity:** append matches the CLI **byte for byte** across 7 cases: accepted, replay,
+    `conversation_not_found`, `journey_mismatch`, `idempotency_conflict`,
+    `unsupported_schema_version` and `malformed_request`. The CLI side ran with `--db-path` on a
+    twin home.
+  - **Refusal:** a home at 016 is refused by all four calls, keeping its bytes and with no backup.
+    A missing home is refused without being created.
+  - **No snapshot:** the calls write no `backups/` file.
+  - **Environment ignored:** `MIRROR_HOME` and `DB_PATH` aimed at a canary are ignored.
+
+  Both test files were red first, on the missing module and the missing export.
+- **The entry test** was red with the old two-name list, then green with eight names.
+- **Mutations, each caught and then restored:**
+  - skipping the `current` check: 1 failure;
+  - the allowlist accepting `DELETE`: 2 failures;
+  - routing through `openLiveWriteDatabase`: 1 failure, "a backups directory appeared". A control
+    that added only the import passed, so the failure is the routing's;
+  - a prefix lookup in place of the exact id: 1 failure.
+- **Gates:**
+  - typecheck: clean;
+  - lint: clean, apart from the 1 baseline warning;
+  - `npm test`: 3,552 passed, 1 skipped and 1 failing. The failure is the baseline `diagnose`
+    failure, which is local only and passes in CI;
+  - package smoke: 85 of 85.
+- **Production** stayed at migration 016 throughout.
+

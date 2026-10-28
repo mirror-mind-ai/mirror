@@ -2,7 +2,7 @@
 
 # CV24 — Embeddable Core for Mirror Desktop
 
-**Status:** 🟢 In Progress — DS1 built on `desktop/library-seam-1a`, not released
+**Status:** 🟢 In Progress — DS1 and DS2 built on `desktop/library-seam-1a`, not released
 **Opened:** 2026-10-28, at the Navigator's word, from the `mirror-desktop` Journey.
 
 ## Goal
@@ -37,7 +37,7 @@ and the consumer's plan is its CV-010.DS-005, phase 1.
 | Code | Delivery Story | Outcome | Status |
 |------|----------------|---------|--------|
 | [CV24.DS1](cv24-ds1-inspect-a-home-without-migrating/index.md) | Inspect a Home Without Migrating | `mirror-mind/desktop` exists, importable from `node_modules`, and reports a database's migration state without changing it | 🟠 Implemented — on branch, not released |
-| [CV24.DS2](cv24-ds2-conversations-as-calls/index.md) | Conversations as Calls | Create or ensure a Conversation, append explicitly, rename, and rebind its Journey | 🟡 Planned — write custody awaits the Navigator |
+| [CV24.DS2](cv24-ds2-conversations-as-calls/index.md) | Conversations as Calls | Create or ensure a Conversation, append explicitly, rename, and rebind its Journey | 🟠 Implemented — on branch, not released |
 | CV24.DS3 | Journey Reads | The Journey reads Desktop renders | 🟡 Candidate |
 | CV24.DS4 | Init and Seed as Functions | Create a home and seed its identity without the CLI | 🟡 Candidate |
 | CV24.DS5 | Migrate on Request | Apply pending migrations as an explicit call, with the backup and lock `ensureMigratedOnOpen` already takes | 🟡 Candidate |
