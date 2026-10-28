@@ -12,6 +12,41 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-10-28 — CV9.DS9.US3: The extraction pin moves to Claude Haiku 5.5 at reasoning `none`
+
+The decision DS9 was opened to make. The Navigator decided at Plan approval, on the
+evidence in the order it weighed: his own blind rankings on his conversations (Haiku
+first on 16 of 26 surfaces, ahead of Flash Lite 17–9 and of Luna 20–6), the suite at
+`none` (three of Flash Lite's four standing failures fixed, no call cut off), Flash
+Lite's rate limits (429 on 31% of attempts; Haiku none), and fewer invented facts.
+Accepted against it: about 40% more cost at this volume, half a second more on
+reception, and summaries that still open with the framing CR180 traces to the prompt.
+
+The plan went through four persona reviews before approval (AI engineer, devops, QA,
+product designer), and all eight findings were folded. Two of them changed the design:
+the reasoning default became a property of the model (`MODEL_DEFAULT_REASONING`, looked
+up by the effective model, so naming Haiku explicitly sends the same request as leaving
+it unset and the rollback reproduces exactly the request Flash Lite was measured with),
+and the release-note section stayed in the story package because `release-notes latest`
+picks the highest semver filename under `docs/releases/`.
+
+One migration commit changed the pin, its reasoning default, and `MODEL_PRICES` (Haiku
+at $0.10/M in, $0.50/M out, read from OpenRouter's catalogue that day; Flash Lite kept
+for rolled-back installs), `runtime status`, `REFERENCE.md`'s operable rollback, the
+playbook, and the tests and goldens that name the pin, 27 `runtime-status` renders among
+them. The gate ran as the playbook orders: a fresh `eval --all` on Flash Lite before
+the change (9/9, no 429), then on Haiku after it (9/9, one expected probe failure,
+`conversation-summary`, module at 10/11), every module's `prompt_hash` equal, and
+`--history` labelling the flip `(model and reasoning changed)`. The plan's claim that
+reception had 3 probes was wrong (it has 12) and was corrected in the package.
+
+TS1's D2 is captured as
+[CR181](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr181-the-ledger-cannot-say-which-reasoning-effort-a-call-carried.md)
+rather than built; D3 is retired by the move. The decision is in the
+[decisions log](../project/decisions.md#the-extraction-pin-moves-to-claude-haiku-55-at-reasoning-none-and-a-pins-reasoning-default-is-the-models).
+Package:
+[CV9.DS9.US3](../project/roadmap/cv9-mirror-1-0/cv9-ds9-the-extraction-model-chosen-by-measurement/cv9-ds9-us3-the-extraction-pin-moves-or-stays-on-the-evidence/index.md).
+
 ### 2026-10-28 — CV9.DS9.TS2: The candidates judged on the Navigator's own conversations
 
 24 ended conversations from the production home, drawn by a recorded seed, were

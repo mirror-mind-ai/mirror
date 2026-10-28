@@ -4941,3 +4941,99 @@ empty, and the blocking title-injection probe passed without an answer.
 flip across a model or reasoning change. Which value, if any, ships with a new pin is
 CV9.DS9.US3's decision. That decision rests on TS2's comparison on the Navigator's own
 conversations, where both candidates run at `none`.
+
+### The extraction pin moves to Claude Haiku 5.5 at reasoning `none`, and a pin's reasoning default is the model's
+
+**Date:** 2026-10-28 · **Context:** [CV9.DS9.US3](roadmap/cv9-mirror-1-0/cv9-ds9-the-extraction-model-chosen-by-measurement/cv9-ds9-us3-the-extraction-pin-moves-or-stays-on-the-evidence/index.md),
+the decision CV9.DS9 was opened to make, on the evidence its three stories produced:
+the [baseline](roadmap/cv9-mirror-1-0/cv9-ds9-the-extraction-model-chosen-by-measurement/evidence/2026-10-26-baseline/README.md),
+[TS1's re-measurement at reasoning off](roadmap/cv9-mirror-1-0/cv9-ds9-the-extraction-model-chosen-by-measurement/cv9-ds9-ts1-extraction-calls-carry-a-reasoning-setting-and-the-candidates-are-re-measured-wi/evidence/2026-10-26-reasoning-off/README.md),
+[TS2's replay of the Navigator's own conversations](roadmap/cv9-mirror-1-0/cv9-ds9-the-extraction-model-chosen-by-measurement/cv9-ds9-ts2-the-candidates-judged-on-the-navigator-s-own-conversations/evidence/2026-10-26-replay/README.md),
+and [US3's release gate](roadmap/cv9-mirror-1-0/cv9-ds9-the-extraction-model-chosen-by-measurement/cv9-ds9-us3-the-extraction-pin-moves-or-stays-on-the-evidence/evidence/2026-10-28-gate/README.md).
+
+`DEFAULT_EXTRACTION_MODEL` had been `google/gemini-2.5-flash-lite`, a mid-2025 model,
+behind every model call but `consult`: memories, tasks, titles, summaries, tags,
+reception, journal classification, week plans, descriptors, shadow, and consolidation.
+DS9 measured it against two newer models at about the same price, GPT-6 Luna and
+Claude Haiku 5.5, and the Navigator decided at US3's Plan approval.
+
+**The decision.** The pin is `anthropic/claude-haiku-5.5`, at reasoning `none`.
+
+What decided it, in the order it weighed:
+
+1. **The Navigator's own blind rankings** (TS2). The LLM judge did not stand (0.55
+   agreement with the Navigator, under the 0.60 the plan required), so the
+   Navigator's rankings on 26 surfaces of six of his own conversations are the main
+   evidence: Haiku first 16 times, ahead of Flash Lite 17–9 and of Luna 20–6. The
+   judge's arithmetic, by the rule fixed before any output was seen, lands on Haiku
+   too.
+2. **The suite at `none`** (TS1). Haiku fixes three of the four probes Flash Lite has
+   failed in every recorded run, passes every blocking probe 14 of 14, and no call
+   was cut off in 714. US3's gate run: 9 of 9 modules, reception 12 of 12 and
+   title_tags 7 of 7 where Flash Lite's baseline that day failed one probe in each.
+3. **Reliability.** Flash Lite drew HTTP 429 from Google AI Studio on 31% of TS1's
+   attempts and 8 of 112 of TS2's; Haiku drew none in either. The move retires TS1's
+   D3 for the default pin.
+4. **Fewer invented facts** on the Navigator's conversations: 16 flags against Flash
+   Lite's 26 across memories, tasks, and summaries.
+
+What was weighed against it and accepted:
+
+- **Cost**, about 40% more: $1.06 against $0.77 for the production home's last 30
+  days, because Haiku's tokenizer counts 1.5× the input tokens. Immaterial at this
+  volume, and one honest line in the release note.
+- **Latency.** Reception, which runs before every Mirror Mode answer, goes from
+  0.6/0.8 s to 1.0/1.3 s at p50/p95 (TS1, at `none`). Half a second before a turn
+  that then waits seconds for the answering model.
+- **Summaries.** Haiku's are weaker as standalone notes than Luna's (3.58 against
+  4.50 of 5), though better than Flash Lite's (2.21), and at `none` Haiku fails
+  `extraction/conversation-summary` in about 10 of 14 runs, opening with "The
+  conversation centered on…". That framing is the prompt's doing
+  ([CR180](refinement/rs010-cv22-oracle-and-port-hygiene/cr180-the-summary-prompt-s-opening-rule-invites-the-framing-its-standalone-rule-forbids.md)),
+  which DS9 kept fixed so its comparison stayed attributable to the models. The
+  module clears its threshold at 10 of 11; the fix is CR180's, recommended for the
+  same release as the pin so a user meets the new model and a summary that reads as
+  a note together.
+- **Luna** is the better summarizer and the cheaper candidate, and the Navigator
+  ranked Haiku above it 20–6; Luna is also the slower one on reception.
+
+**A pin's reasoning default is the model's.** The [TS1 decision](#extraction-calls-carry-an-opt-in-reasoning-effort-and-a-value-that-is-not-one-is-ignored)
+made `MEMORY_EXTRACTION_REASONING` opt-in "until a pin needs it". This pin needs it:
+Haiku reasons by default and spent the title call's 40-token budget. The rule now:
+
+- `MODEL_DEFAULT_REASONING`, beside the pins, maps a model to the effort it was
+  measured and chosen with: Haiku to `none`. Flash Lite is absent, because it was
+  measured with no reasoning field, and so is any model not measured.
+- The effective model is resolved first, then the effort: the setting when it names
+  an effort, else the model's entry, else no field. So leaving everything unset sends
+  Haiku `none`; naming Haiku explicitly sends the same request; and the rollback the
+  playbook promises, `MEMORY_EXTRACTION_MODEL=google/gemini-2.5-flash-lite`,
+  reproduces exactly the request Flash Lite was measured with.
+- An invalid setting still reads as unset, so the pin still sends `none`, and
+  `runtime status` shows both: `reasoning=none (model default, invalid setting: off)`.
+
+Two alternatives were rejected. `none` for every model when unset would have sent
+Flash Lite a request it was never measured with on the one path meant to be a
+rollback. Keying the default on whether the variable is set, rather than on the
+model, would have made `MEMORY_EXTRACTION_MODEL` set to its own default value send a
+different request from leaving it unset, and reasoning would have come back on with
+the title cut-offs TS1 fixed.
+
+**The migration.** One commit (`53f4d976`) changed the pin, `MODEL_DEFAULT_REASONING`,
+and `MODEL_PRICES` (Haiku at $0.10/M in, $0.50/M out, read from OpenRouter's
+catalogue that day; Flash Lite's entry kept so a rolled-back install keeps pricing),
+with `runtime status`, `REFERENCE.md`, the tests and goldens that name the pin, and
+the playbook. The gate ran as the playbook orders: a fresh `eval --all` on Flash Lite
+before the change (9 of 9), then on Haiku after it (9 of 9, one expected probe
+failure), every module's `prompt_hash` equal, and `--history` labelling the flip
+`(model and reasoning changed)`.
+
+**What follows.** TS1's D2, the ledger's inability to say which effort a call
+carried, is captured as
+[CR181](refinement/rs010-cv22-oracle-and-port-hygiene/cr181-the-ledger-cannot-say-which-reasoning-effort-a-call-carried.md)
+rather than built: after the swap the `model` column separates the two regimes, and
+no one has asked the ledger the remaining question. A week after the swap, the
+development home's ledger is read for reception latency, 30-day cost, and non-200
+calls against the numbers above. The release that carries the pin says what a user
+sees and how to roll back; its note is drafted in the story package until DS9's
+close names the version.
