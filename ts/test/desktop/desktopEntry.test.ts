@@ -71,7 +71,10 @@ describe("mirror-mind/desktop from node_modules", () => {
       "DatabaseNotCurrentError",
       "appendConversationMessages",
       "ensureConversation",
+      "inspectConversation",
       "inspectMigrationState",
+      "listJourneyConversations",
+      "readJourneyTree",
       "rebindConversationJourney",
       "renameConversation",
     ]);

@@ -263,6 +263,17 @@ console.log([a.status, a.insertedCount, r.title, b.rebound, refused].join("|"));
     "$(sqlite3 "$WORK/lib-calls/memory.db" "SELECT title || '|' || journey FROM conversations WHERE id IN (SELECT conversation_id FROM messages WHERE id='smoke-msg-1')")" "Renamed|other-journey"
   [ ! -e "$WORK/lib-calls/backups" ] && ok "and took no snapshot" || bad "a Conversation call took a snapshot"
   check "and the refused home kept its bytes" "$(cksum <"$WORK/lib-016/memory.db")" "$LIB_HASH"
+  # CV24.DS3: the three reads a sidebar is built from, on the same home.
+  READS_PROBE='const d = await import("mirror-mind/desktop");
+const db = process.argv[1];
+const tree = d.readJourneyTree(db);
+const list = d.listJourneyConversations(db, { journeyId: "other-journey", limit: 10 });
+const one = d.inspectConversation(db, { conversationId: list[0].conversationId });
+console.log([Array.isArray(tree.roots), tree.findings.length, list.length, one.title, one.journeyId, one.messageCount].join("|"));'
+  READS_HASH="$(cksum <"$WORK/lib-calls/memory.db")"
+  check "the three reads run from the installed package" \
+    "$(cd "$HOST" && node --input-type=module -e "$READS_PROBE" "$WORK/lib-calls/memory.db" 2>/dev/null)" "true|0|1|Renamed|other-journey|1"
+  check "and left that home's bytes alone" "$(cksum <"$WORK/lib-calls/memory.db")" "$READS_HASH"
 fi
 
 # --- the runtimes, against the installed package ------------------------------
