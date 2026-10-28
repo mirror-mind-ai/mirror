@@ -290,6 +290,23 @@ check "createHome makes a current, seeded home from the installed package, and r
   "$(cd "$HOST" && node --input-type=module -e "$CREATE_PROBE" "$WORK/lib-created/hostuser" 2>/dev/null)" "current|true|string|home_exists"
 check "and left the machine-wide config alone" "$(cksum <"$HOME/.config/mirror/env")" "$CONFIG_BEFORE"
 check "and left nothing beside the home" "$(ls -A "$WORK/lib-created")" "hostuser"
+# CV24.DS5: a home at 016 is reported, migrated on request, then used.
+if [ -n "$REAL_SQLITE" ]; then
+  mkdir -p "$WORK/lib-migrate"
+  cp "$WORK/lib-016/memory.db" "$WORK/lib-migrate/memory.db"
+  MIGRATE_PROBE='const d = await import("mirror-mind/desktop");
+const db = process.argv[1];
+const shown = d.inspectMigrationState(db);
+const r = d.migrateHome(db, { expectedPending: shown.pending });
+const c = d.ensureConversation(db, { sessionId: "m", journeyId: "j", title: "After", interface: "smoke" });
+let again = "no";
+try { d.migrateHome(db, { expectedPending: shown.pending }); } catch (e) { again = e instanceof d.MigrateHomeRejectedError ? e.reason : "wrong"; }
+console.log([shown.state, r.appliedIds.join(","), r.after.state, r.backup.sha256.length, typeof c.conversationId, again].join("|"));'
+  check "migrateHome migrates a home at 016 on request from the installed package, then refuses a second time" \
+    "$(cd "$HOST" && node --input-type=module -e "$MIGRATE_PROBE" "$WORK/lib-migrate/memory.db" 2>/dev/null)" "pending|017_journey_parent_column,018_drop_hook_injected|current|64|string|nothing_pending"
+  check "and its backup reads as the 016 home it was" \
+    "$(sqlite3 "$(ls "$WORK"/lib-migrate/backups/pre-migration-016_*.db)" "SELECT count(*) FROM _migrations WHERE id LIKE '017%' OR id LIKE '018%'")" "0"
+fi
 
 # --- the runtimes, against the installed package ------------------------------
 # Each hook resolves the home from the config file `init` wrote (MIRROR_USER=
