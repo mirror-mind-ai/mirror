@@ -136,6 +136,30 @@ not rewritten. Commit, push, and the release that carries this stay separate gat
 **Driver and Delivery.** `@viniciusteles` on `main`, confirmed by the Navigator
 2026-10-28.
 
+### Implementation evidence (2026-10-28)
+
+Three wordings of the standalone sentence, each measured seven times on `extraction`,
+`conversation_summary`, and `title_tags` in the development home, on
+`anthropic/claude-haiku-5.5` at `none`:
+
+| Standalone sentence | `conversation-summary` | "the conversation" / "the discussion" | "the user" | blocking probe | `title_tags` |
+|---|---|---|---|---|---|
+| "Do not describe the conversation; record what it established." | 5/7 | 2 ("What the conversation established is…") | 1 | 7/7 | 7/7 |
+| "Name people by name, never as "the user"." | 7/7 | 0 | 4, and one invented name | 7/7 | 7/7 |
+| "Call the person by the name the transcript gives them." (shipped) | 7/7 | 0 | 7, correct: the fixture's label is `**User:**` | 7/7 | 7/7 |
+
+Across all 21 runs every summary opened subject-first with its status; none said "the
+conversation" or "the discussion"; no other extraction probe moved from US3's run. The
+`conversation_summary` module's `prompt_hash` moved (`9ed1f1871294` → `f696bec2d17c` →
+the shipped hash); the `extraction` module's did not, because its `EVAL_PROMPTS`
+excludes this prompt (see Outcome). Residuals: one run in 21 attributed the fixture's
+company to "Mirror Mind", from the unchanged system line; every summary closes with
+"What stays/remains open is…", the example's shape.
+
+The plan's pass condition "`eval extraction --history` labels the flip as a prompt
+change" was impossible as written and is replaced by the `conversation_summary`
+module's hash.
+
 ## Evidence
 
 - `ts/src/extraction/prompts.ts`, `CONVERSATION_SUMMARY_PROMPT`: the two rules quoted

@@ -5037,3 +5037,47 @@ development home's ledger is read for reception latency, 30-day cost, and non-20
 calls against the numbers above. The release that carries the pin says what a user
 sees and how to roll back; its note is drafted in the story package until DS9's
 close names the version.
+
+### The summary prompt says who will read it and shows one opening, instead of naming the conversation
+
+**Date:** 2026-10-28 · **Context:** [CR180](refinement/rs010-cv22-oracle-and-port-hygiene/cr180-the-summary-prompt-s-opening-rule-invites-the-framing-its-standalone-rule-forbids.md),
+pulled right after CV9.DS9 closed so the fix was measured on the pin that ships.
+
+`CONVERSATION_SUMMARY_PROMPT` named the conversation as the thing being described
+twice, early and heavily weighted ("a summary of the conversation below", "the topic or
+question the conversation addressed"), and forbade naming it once, fourth in its list.
+Claude Haiku 5.5 at reasoning `none` opened "The conversation centered on…" in 10 of 14
+eval runs with the prohibition in view, and every Flash Lite summary in TS2 was flagged
+not standalone. The positive pull won over the negative list.
+
+**The decision.** Three edits, measured three times, in the prompt engineer's loop of
+hypothesis and data:
+
+1. The first line puts the reader and the purpose first: "It will be read on its own,
+   months from now, by someone deciding whether the full transcript is worth opening."
+2. The opening rule shows one example with modality in it, on a subject no eval
+   touches ("The move to Porto is set for March; what stays open is whether to sell the
+   car."), instead of describing what to open with. The first draft's example was the
+   `conversation-summary` probe's own topic and would have let a model pass by echoing it.
+3. The standalone rule gains "Write what is now known or decided, not that it was
+   talked about. Call the person by the name the transcript gives them." and "the
+   discussion" in its forbidden list.
+
+**What the measurement taught.** Each wording ran seven times on `extraction`,
+`conversation_summary`, and `title_tags`. The first standalone sentence, "Do not
+describe the conversation; record what it established", came back as "What the
+conversation established is…" in 2 of 7: a rule that names the thing it forbids gets
+echoed. The second, "Name people by name, never as "the user"", produced "the user" in
+4 of 7 and, once, a name that appears nowhere in the prompt. The third produced "the
+user" in 7 of 7, which is correct: the eval fixture's speaker label is `**User:**`, and
+the rule asks for the name the transcript gives. The framing was gone from the first
+iteration on: 0 of 21 summaries said "the conversation" or "the discussion", every one
+opened subject-first with its status, the blocking injection probe passed 21 of 21,
+and `title_tags`, which takes the summary as input, moved nowhere.
+
+**What follows.** The `extraction` module's `prompt_hash` excludes this prompt by a
+Python-parity decision whose reason retired with the oracle, so its records cannot
+attribute a `conversation-summary` flip to a prompt change; the `conversation_summary`
+module's hash moved as expected. That gap is captured as a Change Request. Every
+summary in the measurement closes with "What stays/remains open is…", the example's
+shape; acceptable for a note, and left as is.
