@@ -24,34 +24,52 @@
 // stands on; `scripts/smoke_npm_package.sh` runs both bins from a real global
 // install on CI's Node 24.
 //
-// The warning filter below is the shim's own copy, because the hook emits its
+// The warning filter is the shim's own copy, because the hook emits its
 // ExperimentalWarning before the core's filter can be imported through it.
+// `boot` installs it; `registerTypeStripping` alone does not (CV24.DS1).
 
 import { readFileSync } from "node:fs";
 import { registerHooks, stripTypeScriptTypes } from "node:module";
 import { fileURLToPath } from "node:url";
 
-process.removeAllListeners("warning");
-process.on("warning", (warning) => {
-  if (warning.name === "ExperimentalWarning") return;
-  process.stderr.write(`${warning.name}: ${warning.message}\n`);
-});
-
 const packageRoot = new URL("../", import.meta.url).href;
+const REGISTERED = Symbol.for("mirror-mind.typeStripping");
 
-registerHooks({
-  load(url, context, nextLoad) {
-    if (url.startsWith(packageRoot) && url.endsWith(".ts")) {
-      const source = readFileSync(fileURLToPath(url), "utf8");
-      return {
-        format: "module",
-        source: stripTypeScriptTypes(source, { mode: "strip" }),
-        shortCircuit: true,
-      };
-    }
-    return nextLoad(url, context);
-  },
-});
+/**
+ * Register the load hook that strips types for `.ts` files under this package
+ * root. Idempotent per package root, so the bins and the library entry
+ * (`lib/desktop.js`, CV24.DS1) can both call it in one process.
+ *
+ * It does nothing to the process's warnings: a library entry runs inside a
+ * host that owns them. Only `boot`, which owns its process, filters them.
+ */
+export function registerTypeStripping() {
+  if (!globalThis[REGISTERED]) globalThis[REGISTERED] = new Set();
+  const roots = globalThis[REGISTERED];
+  if (roots.has(packageRoot)) return;
+  roots.add(packageRoot);
+  registerHooks({
+    load(url, context, nextLoad) {
+      if (url.startsWith(packageRoot) && url.endsWith(".ts")) {
+        const source = readFileSync(fileURLToPath(url), "utf8");
+        return {
+          format: "module",
+          source: stripTypeScriptTypes(source, { mode: "strip" }),
+          shortCircuit: true,
+        };
+      }
+      return nextLoad(url, context);
+    },
+  });
+}
+
+function filterExperimentalWarnings() {
+  process.removeAllListeners("warning");
+  process.on("warning", (warning) => {
+    if (warning.name === "ExperimentalWarning") return;
+    process.stderr.write(`${warning.name}: ${warning.message}\n`);
+  });
+}
 
 /**
  * Import the entry at `entryPath` (relative to the package root) and run its
@@ -62,6 +80,9 @@ registerHooks({
  * @returns {Promise<number>}
  */
 export async function boot(entryPath) {
+  // The filter first: registering the hook emits its own ExperimentalWarning.
+  filterExperimentalWarnings();
+  registerTypeStripping();
   const { runAsEntry } = await import(new URL(entryPath, packageRoot).href);
   return runAsEntry();
 }

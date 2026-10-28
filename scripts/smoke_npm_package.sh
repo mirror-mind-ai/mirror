@@ -222,6 +222,31 @@ else
   grep -q migrate_on_open "$HOME/.mirror-minds/legacy/front-door.log" 2>/dev/null && ok "front-door log records migrate_on_open" || bad "front-door log lacks migrate_on_open"
 fi
 
+# CV24.DS1: Mirror Desktop imports the core as a library, by package name,
+# from its own node_modules -- where Node refuses to strip types unless the
+# entry registers the loader's hook. The host project links the INSTALLED
+# package, so its real path stays under node_modules, as Desktop's will.
+say "7. mirror-mind/desktop, imported by a host project from the installed package"
+HOST="$WORK/desktop-host"
+mkdir -p "$HOST/node_modules"
+ln -s "$PKG" "$HOST/node_modules/mirror-mind"
+LIB_PROBE='const desktop = await import("mirror-mind/desktop");
+const r = desktop.inspectMigrationState(process.argv[1]);
+console.log([desktop.DESKTOP_API_VERSION, r.state, r.pending.join(",")].join("|"));'
+check "a current home reads as current" \
+  "$(cd "$HOST" && node --input-type=module -e "$LIB_PROBE" "$HOME/.mirror-minds/smokeuser/memory.db" 2>"$WORK/lib.err")" "1|current|"
+check "and the import writes nothing to stderr" "$(grep -v ExperimentalWarning "$WORK/lib.err" | grep -cv 'node --trace-warnings' | tr -d ' ')" "0"
+if [ -n "$REAL_SQLITE" ]; then
+  mkdir -p "$WORK/lib-016"
+  cp "$HOME/.mirror-minds/smokeuser/memory.db" "$WORK/lib-016/memory.db"
+  sqlite3 "$WORK/lib-016/memory.db" "DELETE FROM _migrations WHERE id IN ('017_journey_parent_column','018_drop_hook_injected');"
+  LIB_HASH="$(cksum <"$WORK/lib-016/memory.db")"
+  check "a home at 016 reports 017 and 018 pending" \
+    "$(cd "$HOST" && node --input-type=module -e "$LIB_PROBE" "$WORK/lib-016/memory.db" 2>/dev/null)" "1|pending|017_journey_parent_column,018_drop_hook_injected"
+  check "and the report left its bytes alone" "$(cksum <"$WORK/lib-016/memory.db")" "$LIB_HASH"
+  [ ! -e "$WORK/lib-016/backups" ] && ok "and took no backup" || bad "the report took a backup"
+fi
+
 # --- the runtimes, against the installed package ------------------------------
 # Each hook resolves the home from the config file `init` wrote (MIRROR_USER=
 # smokeuser): the environment carries no Mirror variable, and the package has

@@ -27,8 +27,13 @@
     "mirror": "bin/mirror.js",
     "mirror-hook": "bin/mirror-hook.js"
   },
+  "exports": {
+    "./desktop": "./lib/desktop.js",
+    "./package.json": "./package.json"
+  },
   "files": [
     "bin",
+    "lib",
     "ts/src",
     "templates",
     "docs/releases",
