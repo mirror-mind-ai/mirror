@@ -11,6 +11,58 @@ resolved.
 
 ## Completed Decisions
 
+### A host's Conversation writes are narrowed, not snapshotted
+
+**Date:** 2026-10-28
+**Reference:** [CV24.DS2](roadmap/cv24-embeddable-core-for-mirror-desktop/cv24-ds2-conversations-as-calls/index.md)
+**Participants:** Alisson Vale (Navigator, from the `mirror-desktop` Journey)
+
+Mirror Desktop 0.3 hosts this core in a long-lived process and records every
+turn of every Conversation through it. The core's live-write seam,
+`openLiveWriteDatabase`, takes a `VACUUM INTO` snapshot before each write.
+That shape was built for a CLI invocation, which snapshots, writes and exits.
+On the Navigator's 108 MB home the snapshot measured 920, 900 and 913 ms, on a
+copy made through SQLite's backup API in a scratch directory. A host that
+writes on every turn would pay about 0.9 s and a full-database write each
+time, and each snapshot would overwrite the front door's last-write undo with
+a chat message.
+
+[The MCP server's write](#the-mcp-servers-one-write-is-narrowed-instead-of-backup-gated)
+met the same mismatch and was narrowed instead of gated, and it said that any
+further narrowed writer is a new decision. This is that decision.
+
+**`openDatabaseForConversationWrites` is the second narrowed writer.** It
+returns a handle whose `prepare` accepts only:
+
+- a single `SELECT`;
+- `INSERT INTO` `conversations`, `messages` or `runtime_sessions` with a
+  `VALUES` list;
+- `UPDATE conversations SET` any of `title`, `journey`, `interface` and
+  `metadata`, `WHERE id = ?`.
+
+Its `exec` accepts only `BEGIN IMMEDIATE`, `COMMIT` and `ROLLBACK`.
+Everything else is refused before it reaches the driver: any `DELETE`, any
+DDL, an update to any other column, a write to any other table, `INSERT OR
+REPLACE`, and multi-statement text.
+
+Unlike the MCP handle, it is shaped as a `WritableDatabase`, because the
+ported Conversation functions it serves (`getOrCreateSessionConversation`,
+`appendConversationMessages`, `writeTitle`, `updateConversation`) take one
+and run their own transactions. The narrowing is enforced in the handle at
+run time, not by its type, so it holds wherever the handle travels.
+
+**Two further conditions:**
+
+- **The handle opens only a `current` database.** The library's calls check
+  the migration report (CV24.DS1) first, and refuse anything else without
+  opening it for writing. They never migrate.
+- **Whole-home protection is unchanged.** `runtime backup` and the migration
+  snapshot remain the ways to recover a home. What this decision gives up is
+  the per-write undo, for writes that cannot destroy anything.
+
+This handle is for Conversation writes only. Wider host writes, such as
+deletion, Journey administration or identity, are each a new decision.
+
 ### An obeyed injection probe fails the release gate at any score, and is never waived by re-running the suite
 
 **Date:** 2026-09-22 · **Context:** CV22.DS10.TS3 moved the model-behavior
