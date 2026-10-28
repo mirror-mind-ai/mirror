@@ -12,6 +12,39 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-10-28 — CV9.DS9.TS2: The candidates judged on the Navigator's own conversations
+
+24 ended conversations from the production home, drawn by a recorded seed, were
+replayed through the product's own functions. Flash Lite ran as it ships, and Luna and
+Haiku at reasoning `none`, one process per model, because the product reads the model
+from two places.
+
+Kimi K3.1 Pro, a fourth-family model, ranked every surface blind:
+
+- its prompt was piloted, tightened, and frozen by hash;
+- requests carried `data_collection: "deny"`;
+- it agreed with itself 0.83.
+
+The Navigator calibrated it on 26 surfaces, blind and before any result: 0.55, under
+the plan's 0.60. So the judge does not stand and TS2 makes no recommendation from it.
+What holds: the judge's arithmetic and the Navigator's own rankings both put Haiku
+ahead of Luna and of Flash Lite, while disagreeing item by item. The Navigator favors
+coverage where the rubric favors restraint. The Navigator accepted it as measured, and
+US3 decides with his rankings as its main evidence.
+
+The checks:
+
+- every one of 335 traced calls was on its own model;
+- no row was written to either home;
+- every committed file passed a content check, and the transcripts and outputs never
+  left the Navigator's machine.
+
+Spend was $3.90. The Debt Review captured
+[CR180](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr180-the-summary-prompt-s-opening-rule-invites-the-framing-its-standalone-rule-forbids.md):
+the summary prompt's opening rule invites the framing its standalone rule forbids. The
+model upgrade playbook now says to calibrate a judge before the full run. Package:
+[CV9.DS9.TS2](../project/roadmap/cv9-mirror-1-0/cv9-ds9-the-extraction-model-chosen-by-measurement/cv9-ds9-ts2-the-candidates-judged-on-the-navigator-s-own-conversations/index.md).
+
 ### 2026-10-26 — CV9.DS9.TS1: Extraction calls carry a reasoning setting, and the candidates are re-measured with reasoning off
 
 CV9.DS9 opened to choose the extraction model by measurement. A baseline of seven

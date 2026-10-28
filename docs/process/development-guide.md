@@ -488,6 +488,17 @@ changing `EXTRACTION_MODEL` or `EMBEDDING_MODEL`:
    regression, re-run that eval **n≥5** times.
 6. **Only then commit.** Investigate every real regression first.
 
+**Beyond the suite: real conversations.** The suite says whether a candidate
+regresses, not whether it writes better for the person who uses it. CV9.DS9.TS2
+replayed real conversations through the product's own functions, one process per
+model, and had a model from a fourth family judge the outputs blind.
+
+Calibrate such a judge with the person *before* the full run. Both rank four to six
+conversations blind, and the full run goes ahead only if they agree on clearly more
+than half of the pairwise orderings. A judge can agree with itself (TS2: 0.83) and
+still not with the person (0.55). Learning that after the full run cost six times what
+learning it first would have.
+
 If a swap ships and misbehaves, the rollback is to revert the pin commit; an
 installed user can roll back immediately via the `MEMORY_EXTRACTION_MODEL` env
 override without waiting for a release.
