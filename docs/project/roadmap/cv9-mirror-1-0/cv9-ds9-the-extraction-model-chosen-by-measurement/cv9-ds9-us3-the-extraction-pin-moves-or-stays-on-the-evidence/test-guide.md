@@ -17,8 +17,7 @@ Move branch:
 - `npm run check`: lint and types.
 - The gate, in the development home: `npm run eval -- --all` on the current pin
   before the swap (fresh baseline, re-run until every module has a window no 429
-  touched; not expected to be green, since Flash Lite fails one of reception's three
-  probes in every recorded run), then on the new pin after it. Green, by the rule the
+  touched), then on the new pin after it. Green, by the rule the
   plan fixes before the run: every blocking probe passes and every module clears its
   threshold, or clears it in the majority of an n≥5 re-run; `conversation-summary`
   and `reception/open-existential-no-persona` are known noise at `none`, any other

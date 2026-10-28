@@ -156,18 +156,20 @@ approval.
     the pin changes (playbook step 1), so `--history` has a fresh anchor. Flash Lite
     drew 429 on 31% of TS1's attempts, so a module whose window held a rate-limited
     request is dirty: re-run until every module has one clean window, and let TS1's
-    14 pooled control runs stand as the regression reference. The baseline is not
-    expected to be green: Flash Lite fails `reception/open-existential-no-persona`
-    in every recorded run, and `reception` has 3 probes at threshold 0.8, so that
-    module has been red on the current pin all along. Record this in the evidence.
+    14 pooled control runs stand as the regression reference. Correction, made at
+    the baseline run: the plan as approved said `reception` has 3 probes and had been
+    red on the current pin all along; it has 12, and the baseline passed 9 of 9
+    modules with no 429. Flash Lite's standing probe failures (`two-pass-dedup`,
+    `conversation-summary`, `open-existential-no-persona`, `title-trivial-empty`)
+    leave every module above its threshold.
 14. After the swap: `eval --all` on the new pin in the development home. The rule for
     green, fixed before the run: a single run is the release smoke. Green is every
     blocking probe passing and every module at or above its threshold. A module that
     misses is re-run n≥5 (playbook step 5), and clears if the majority of those runs
     clear it. Two misses are known noise at `none` from TS1 and are not regressions
     unless the re-run says so: `extraction/conversation-summary` (4/14, module still
-    10/11) and `reception/open-existential-no-persona` (11/14, which turns the
-    3-probe reception module red about one run in five). Any other flip is a
+    10/11) and `reception/open-existential-no-persona` (11/14; reception has 12
+    probes, so the module stays green either way). Any other flip is a
     candidate regression and gets the same n≥5 before it is called one. Both runs'
     summaries go in `evidence/` here, numbers and probe names only.
 15. Post-swap observation, recorded as a dated follow-up in this story's Done: a week
