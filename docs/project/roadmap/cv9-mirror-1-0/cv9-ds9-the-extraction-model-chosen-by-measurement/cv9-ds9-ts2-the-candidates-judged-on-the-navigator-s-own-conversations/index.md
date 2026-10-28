@@ -2,7 +2,7 @@
 
 # CV9.DS9.TS2 — The candidates judged on the Navigator's own conversations
 
-**Status:** 🟢 In Progress
+**Status:** ✅ Done
 **Type:** Technical Story
 
 ---
