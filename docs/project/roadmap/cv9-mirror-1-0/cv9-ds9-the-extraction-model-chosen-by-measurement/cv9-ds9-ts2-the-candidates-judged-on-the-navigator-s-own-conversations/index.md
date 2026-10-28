@@ -104,6 +104,21 @@ on the six conversations he ranked:
 They disagree item by item. The Navigator ranked the longest output first 17 times in
 26, the judge 9: he values coverage more than the rubric's restraint does.
 
+**Decided by the Navigator on 2026-10-28: accepted as measured** (option (a) of three):
+
+- TS2 closes recording that the judge does not stand, and that the Navigator's blind
+  rankings and the judge's arithmetic both favor Haiku.
+- US3 decides the pin with the Navigator's preference as its main evidence, and weighs
+  the trade-offs against Flash Lite:
+  - Haiku costs about 40% more;
+  - its reception responses are about 0.5 s slower;
+  - its summaries are weaker as standalone notes.
+- The options not taken: strengthening the Navigator's own sample, and re-judging with
+  a rubric weighted toward coverage, which would change the instrument after seeing its
+  results.
+
+Validated by the Navigator on 2026-10-28.
+
 ## Carried From TS1
 
 Decided by the Navigator on 2026-10-26, when

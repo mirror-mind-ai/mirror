@@ -95,5 +95,8 @@ Thresholds, from the plan:
 
 The stop condition is met; see the [evidence](evidence/2026-10-26-replay/README.md).
 
-**Navigator validation:** step 1 (calibration) done 2026-10-28. Steps 2 to 4 and the
-decision on the stop are pending.
+**Navigator validation: accepted on 2026-10-28.** Step 1, the blind calibration of 26
+surfaces, was done before any result was computed. Steps 2 to 4 followed: the evidence
+read, the local review page, and the content and no-row checks. The stop was decided:
+accepted as measured, and US3 decides with the Navigator's rankings as its main
+evidence.

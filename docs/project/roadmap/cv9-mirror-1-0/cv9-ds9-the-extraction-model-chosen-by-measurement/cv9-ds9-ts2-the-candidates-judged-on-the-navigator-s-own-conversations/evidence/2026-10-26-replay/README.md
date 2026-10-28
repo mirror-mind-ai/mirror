@@ -82,6 +82,9 @@ The plan fixed the condition: the verdict stands only if the judge agrees with i
 the plan's stop condition sends the result to the Navigator. **TS2 makes no
 recommendation from the judge.**
 
+**Decided by the Navigator on 2026-10-28:** accepted as measured. TS2 closes with this
+record, and US3 decides the pin with the Navigator's own rankings as its main evidence.
+
 ## What the calibration shows
 
 On the 26 surfaces the Navigator ranked, he and the judge often chose a different
