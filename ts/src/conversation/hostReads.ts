@@ -3,8 +3,9 @@
 // Three calls for a host that embeds this core (Mirror Desktop 0.3), each
 // replacing a route it took through Python:
 //
-//   - `readJourneyTree`: every Journey as a tree (was `journey export-registry`,
-//     retired; this is a new contract, see `journey/journeyTree.ts`);
+//   - `readJourneyTree`: every Journey as a tree (was the Journey registry dump
+//     CV22.DS10.TS4 retired as `journey-admin-verbs`; this is a new contract,
+//     see `journey/journeyTree.ts`);
 //   - `listJourneyConversations`: one Journey's Conversations, newest first
 //     (was the catalog script's `catalog`);
 //   - `inspectConversation`: one Conversation by EXACT id (was its `inspect`).

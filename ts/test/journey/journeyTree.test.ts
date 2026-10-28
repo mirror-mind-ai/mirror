@@ -1,6 +1,6 @@
 // CV24.DS3 — the Journey tree a host renders.
 //
-// The rules are the removed `journey export-registry`'s, so a host's sidebar
+// The rules are the removed Journey registry dump's, so a host's sidebar
 // reads the same on the day it moves to this core: names from `display_name`,
 // then the first `# ` heading, then the key; siblings by `sibling_position`,
 // then by key. Unlike the export, malformed data does not fail the read: the

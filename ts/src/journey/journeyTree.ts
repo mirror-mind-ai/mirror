@@ -1,7 +1,7 @@
 // The Journey tree a host renders — CV24.DS3.
 //
 // A new contract for a named consumer (Mirror Desktop 0.3), not a revival of
-// `journey export-registry`, which CV22.DS10.TS4 retired. Its node rules are
+// the Journey registry dump CV22.DS10.TS4 retired (`journey-admin-verbs`). Its node rules are
 // the removed export's, so a host's sidebar reads the same after it moves to
 // this core:
 //
