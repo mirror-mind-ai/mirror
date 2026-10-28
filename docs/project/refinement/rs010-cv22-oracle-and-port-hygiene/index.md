@@ -118,3 +118,4 @@ evidence stays honest as both cores move.
 - [CR178 — A configuration error counts as an extraction attempt, so a typo can quarantine conversations, and nothing releases a quarantine](cr178-a-configuration-error-counts-as-an-extraction-attempt-and-nothing-releases-a-quarantine.md)
 - [CR180 — The summary prompt's opening rule invites the framing its standalone rule forbids](cr180-the-summary-prompt-s-opening-rule-invites-the-framing-its-standalone-rule-forbids.md)
 - [CR181 — The ledger cannot say which reasoning effort a call carried](cr181-the-ledger-cannot-say-which-reasoning-effort-a-call-carried.md)
+- [CR182 — The consult replay test writes a row into the developer's real home](cr182-the-consult-replay-test-writes-a-row-into-the-developer-s-real-home.md)

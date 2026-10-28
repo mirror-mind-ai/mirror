@@ -55,3 +55,4 @@ cannot choose safely.
 - [CR119 — The Delivery Story Done preflight reads a status line's last word](cr119-the-delivery-story-done-preflight-reads-a-status-line-s-last-word.md)
 - [CR168 — Pulling a Delivery Story with no package invents one placeholder story named after it](cr168-pulling-a-delivery-story-with-no-package-invents-one-placeholder-story.md)
 - [CR179 — The recommended next pull ranks a user story above a technical story, ignoring the order a Delivery Story authors](cr179-the-recommended-next-pull-ignores-the-order-a-delivery-story-authors.md)
+- [CR183 — The active checkpoint card lists a record that does not exist, and repeats a label](cr183-the-active-checkpoint-card-lists-a-record-that-does-not-exist-and-repeats-a-label.md)
