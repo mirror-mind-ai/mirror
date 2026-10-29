@@ -60,9 +60,14 @@ import {
 import { chatLedgerHook } from "#observability/ledgerHooks.ts";
 import { runWeekSave } from "#planning/weekSave.ts";
 import type { EmbeddingProvider } from "#providers/embedding.ts";
-import { resolveFamilyProviders } from "#providers/familyProviders.ts";
+import {
+  requireFamilyProviders,
+  requireKeyForFamily,
+  resolveFamilyProviders,
+} from "#providers/familyProviders.ts";
 import type { LlmProvider } from "#providers/llm.ts";
 import {
+  CONSULT_ASK_TRANSPORT,
   CULTIVATION_APPLY_TRANSPORT,
   CULTIVATION_SCAN_TRANSPORT,
   DESCRIPTOR_TRANSPORT,
@@ -447,7 +452,10 @@ function runWeekSaveWrite(argv: readonly string[]): number {
  * in depth.
  */
 async function runJournalContentRoute(argv: readonly string[]): Promise<number> {
-  const family = await resolveFamilyProviders(process.env, JOURNAL_TRANSPORT);
+  // CR187: refused before the database opens, saying what was not kept.
+  const family = await requireFamilyProviders(process.env, JOURNAL_TRANSPORT, {
+    consequence: "the journal entry was not saved",
+  });
   if (!family?.llm || !family.embedding) {
     throw new Error("journal requires an LLM and an embedding provider");
   }
@@ -460,14 +468,15 @@ async function runJournalContentRoute(argv: readonly string[]): Promise<number> 
 }
 
 async function runWeekPlanContentRoute(argv: readonly string[]): Promise<number> {
-  const family = await resolveFamilyProviders(process.env, WEEK_PLAN_TRANSPORT);
+  const family = await requireFamilyProviders(process.env, WEEK_PLAN_TRANSPORT);
   if (!family?.llm) throw new Error("week plan requires an LLM provider");
   const llm = family.llm;
   return withLiveWriteDbAsync(argv, (db) => runWeekPlanRoute(db, argv.slice(2), llm));
 }
 
 async function runDescriptorContentRoute(argv: readonly string[]): Promise<number> {
-  const family = await resolveFamilyProviders(process.env, DESCRIPTOR_TRANSPORT);
+  // CR187: without the key every persona would read "skipped (empty response)".
+  const family = await requireFamilyProviders(process.env, DESCRIPTOR_TRANSPORT);
   if (!family?.llm) throw new Error("descriptor generate requires an LLM provider");
   const llm = family.llm;
   const reporter = outcomeReporter(argv, "descriptor");
@@ -1317,7 +1326,7 @@ async function runConsolidateScanWrite(argv: readonly string[]): Promise<number>
   const limit = limitRaw !== null ? Number(limitRaw) : DEFAULT_CONSOLIDATE_SCAN_LIMIT;
   const thresholdRaw = optionValue(args, "--threshold");
   const threshold = thresholdRaw !== null ? Number(thresholdRaw) : DEFAULT_CLUSTER_THRESHOLD;
-  const family = await resolveFamilyProviders(process.env, CULTIVATION_SCAN_TRANSPORT);
+  const family = await requireFamilyProviders(process.env, CULTIVATION_SCAN_TRANSPORT);
   if (!family?.llm) throw new Error("consolidate scan requires an LLM provider");
   const provider = family.llm;
   const reporter = outcomeReporter(argv, "consolidation");
@@ -1344,7 +1353,7 @@ async function runShadowScanWrite(argv: readonly string[]): Promise<number> {
   const args = argv.slice(2);
   const limitRaw = optionValue(args, "--limit");
   const limit = limitRaw !== null ? Number(limitRaw) : DEFAULT_SHADOW_SCAN_LIMIT;
-  const family = await resolveFamilyProviders(process.env, CULTIVATION_SCAN_TRANSPORT);
+  const family = await requireFamilyProviders(process.env, CULTIVATION_SCAN_TRANSPORT);
   if (!family?.llm) throw new Error("shadow scan requires an LLM provider");
   const provider = family.llm;
   const reporter = outcomeReporter(argv, "shadow_scan");
@@ -1572,6 +1581,9 @@ function resolveLogPath(argv: readonly string[]): string | null {
  * itself, extended to db resolution.
  */
 async function runConsultAskWithDb(argv: readonly string[]): Promise<number> {
+  // CR187: before the ledger database opens, because that open takes the
+  // pre-write snapshot; the route checks again, for `consult credits`.
+  requireKeyForFamily(process.env, CONSULT_ASK_TRANSPORT);
   const db = tryOpenDbForConsultLogging(argv);
   try {
     process.stdout.write(await runConsultRoute(db, argv.slice(1)));
