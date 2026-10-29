@@ -5075,9 +5075,28 @@ iteration on: 0 of 21 summaries said "the conversation" or "the discussion", eve
 opened subject-first with its status, the blocking injection probe passed 21 of 21,
 and `title_tags`, which takes the summary as input, moved nowhere.
 
+**What the real conversation taught, the same day.** The Navigator's validation
+conversation, about a prior session's roadmap, opened "The conversation consists of
+the user asking…" after 21 clean fixture runs. Two more decisions followed, in the
+same Change Request at the Navigator's direction:
+
+4. **The prompts carry the owner's name.** The close tail had never passed one, and
+   the extraction path's resolver did not match the template's "You are speaking
+   with", so every lifecycle prompt had labelled the speaker `**User:**` since the
+   port. One fail-soft resolver (`conversation/userName.ts`) serves both paths. The
+   name alone removed "the user" entirely; it was the larger lever.
+5. **A framed opening is regenerated once, with feedback, in the system, not the
+   words.** On content that is itself about sessions, the model opened with the frame
+   about half the time whatever the wording said. `generateConversationSummary`
+   detects the frame (the conversation, discussion, session, exchange, chat,
+   dialogue, transcript, or user as the first clause's subject), sends the prompt
+   once more with a short positive note, and keeps the second only if it opens
+   clean. A blind retry recovered 2 of 5; the note recovered 5 of 5. Both calls
+   reach the ledger.
+
 **What follows.** The `extraction` module's `prompt_hash` excludes this prompt by a
 Python-parity decision whose reason retired with the oracle, so its records cannot
 attribute a `conversation-summary` flip to a prompt change; the `conversation_summary`
-module's hash moved as expected. That gap is captured as a Change Request. Every
-summary in the measurement closes with "What stays/remains open is…", the example's
-shape; acceptable for a note, and left as is.
+module's hash moved as expected and covers the retry note. That gap is captured as a
+Change Request. Every summary in the measurement closes with "What stays/remains open
+is…", the example's shape; acceptable for a note, and left as is.

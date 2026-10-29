@@ -160,6 +160,38 @@ The plan's pass condition "`eval extraction --history` labels the flip as a prom
 change" was impossible as written and is replaced by the `conversation_summary`
 module's hash.
 
+### Validation on a real conversation, and what it found (2026-10-28)
+
+The Navigator ended a six-message conversation on the development home
+(`a56727f4`, about a prior session's roadmap ranking). Its summary opened "The
+conversation consists of the user asking… The assistant established…": a fail on
+every count, after 21 clean fixture runs. Replaying that transcript showed two
+causes the fixture could not show, and the Navigator directed both fixes into this CR:
+
+1. **The prompts never saw the owner's name.** `createCloseHooks` was built without
+   one, so every title, summary, and tags transcript labelled the speaker `**User:**`;
+   and the extraction path's resolver matched only "You are talking to" while the
+   shipped template writes "You are speaking with", so it fell back to `User` too
+   (CR014's finding, confirmed live). With the name, "the user" went from 5 of 5 to
+   0; the opening frame fell to 1 to 3 of 5. Fixed in `conversation/userName.ts`,
+   fail-soft, used by both paths (`6ba6dbeb`). CR014 keeps the unification with the
+   cultivation resolver.
+2. **On a transcript that is itself about sessions, the frame is a model attractor
+   wording cannot remove.** With the name and the new prompt, about half of the
+   attempts still opened "The conversation centers on…". A blind regeneration
+   recovered 2 of 5; a regeneration with a short positive note recovered 5 of 5. The
+   guard is in `generateConversationSummary` (`7c8df441`): the frame nouns
+   (conversation, discussion, session, exchange, chat, dialogue, transcript, user),
+   one retry, the second kept only if it opens clean, every call in the ledger.
+
+On the hard transcript after both fixes, 10 of 10 openings were clean ("Vinícius
+asked Mirror to rank…", "The Mirror 1.0 readiness question is open: …"). Residuals,
+recorded not fixed: a mid-text "the conversation" or "the assistant" in about 2 of
+10 on that transcript and about 1 of 3 fixture runs (the probe checks the whole
+text, so `conversation-summary` still fails at that rate; the module stays green);
+and "The subject is <name>'s question…" as an opening in some runs, the opening
+rule's own word, tolerated as a weak frame.
+
 ## Evidence
 
 - `ts/src/extraction/prompts.ts`, `CONVERSATION_SUMMARY_PROMPT`: the two rules quoted
