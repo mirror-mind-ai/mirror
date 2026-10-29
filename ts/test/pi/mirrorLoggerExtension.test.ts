@@ -392,6 +392,68 @@ test("session_start without `mirror` on the PATH warns before the card, naming t
   }
 });
 
+test("a detached child that cannot start is logged, and Pi stays up", async () => {
+  // No `node` on the PATH and no MIRROR_NODE: the maintenance spawn fails with
+  // ENOENT, which arrives as the child's 'error' event. Unhandled, that event
+  // was an uncaught exception and took Pi down (seen on 2026-10-16:
+  // "pi exiting due to uncaughtException: Error: spawn node ENOENT").
+  const emptyDir = tempDir("mirror-logger-ext-empty-");
+  const savedPath = process.env.PATH;
+  const savedNode = process.env.MIRROR_NODE;
+  const uncaught: unknown[] = [];
+  const onUncaught = (error: unknown) => uncaught.push(error);
+  process.on("uncaughtException", onUncaught);
+  process.env.PATH = emptyDir;
+  delete process.env.MIRROR_NODE;
+  const h = await harness();
+  try {
+    const ctx = fakeCtx("/sessions/a.jsonl");
+    const done = h.fireNoWait("session_start", { type: "session_start", reason: "startup" }, ctx);
+    h.pi.execs[0]?.resolve(ENVELOPE);
+    await done;
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    assert.deepEqual(uncaught, [], "the failed spawn did not escape as an uncaught exception");
+    assert.ok(
+      h.logLines().some((l) => l.includes("[ERROR] session-maintenance failed to start")),
+      h.logLines().join("\n"),
+    );
+  } finally {
+    process.off("uncaughtException", onUncaught);
+    process.env.PATH = savedPath;
+    if (savedNode === undefined) delete process.env.MIRROR_NODE;
+    else process.env.MIRROR_NODE = savedNode;
+    h.cleanup();
+  }
+});
+
+test("MIRROR_NODE runs the detached children when `node` is not on the PATH", async () => {
+  // The repair route `runtime diagnose` names for hook_node_unresolvable, and
+  // what the hook wrappers honor; the extension ignored it.
+  const emptyDir = tempDir("mirror-logger-ext-empty-");
+  const savedPath = process.env.PATH;
+  const savedNode = process.env.MIRROR_NODE;
+  process.env.PATH = emptyDir;
+  process.env.MIRROR_NODE = process.execPath;
+  const h = await harness();
+  try {
+    const ctx = fakeCtx("/sessions/a.jsonl");
+    const done = h.fireNoWait("session_start", { type: "session_start", reason: "startup" }, ctx);
+    h.pi.execs[0]?.resolve(ENVELOPE);
+    await done;
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    assert.ok(
+      h.logLines().some((l) => l.includes("session-maintenance started")),
+      h.logLines().join("\n"),
+    );
+    assert.ok(!h.logLines().some((l) => l.includes("failed to start")), h.logLines().join("\n"));
+  } finally {
+    process.env.PATH = savedPath;
+    if (savedNode === undefined) delete process.env.MIRROR_NODE;
+    else process.env.MIRROR_NODE = savedNode;
+    h.cleanup();
+  }
+});
+
 // --- before_agent_start: the turn, as typed, to the core's prompt rule (CR160) ------
 
 /** The JSON a `user-prompt` or `stop` command carries after `--payload`. */
