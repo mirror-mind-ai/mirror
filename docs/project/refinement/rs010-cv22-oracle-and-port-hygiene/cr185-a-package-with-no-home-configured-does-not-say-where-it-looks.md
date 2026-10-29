@@ -363,6 +363,65 @@ skipped.
   `identity/`: `mirror init leandro` printed `Identity root already exists and is not
   empty: …`, exited 1, and created no `~/.config/mirror/`.
 
+## Validation (2026-10-29, Navigator)
+
+The Navigator ran the package-lane route: this checkout packed as
+`mirror-mind-0.38.0.tgz` and installed into a scratch prefix, with a scratch home.
+
+1. With no home, `runtime update --dry-run` printed how to create one, naming the scratch
+   home's `.config/mirror/env`.
+2. `init probe` created the home and the configuration.
+3. With the config file removed (the move from a clone), the bare `mirror` printed
+   `To use the home at …/.mirror-minds/probe, run: mirror init probe`.
+4. `runtime update --dry-run` printed the same command, and the file it writes.
+5. `init probe` printed `Found user home: … (nothing in it was changed)`, the configuration
+   line, and the key step. The `diff` of the identity tree printed nothing, and the file's
+   mode was `600`.
+6. `init probe` again printed `Configuration: already selects this home`, and the file
+   still held only `MIRROR_USER=probe`.
+7. `runtime status` found `Mirror home: …/.mirror-minds/probe` through the file.
+
+Accepted.
+
+## Review (debt and proportionality)
+
+No debt that blocks closure. Accepted costs:
+
+- On a machine with no home configured, each hook reads `~/.mirror-minds` once to build a
+  sentence it then discards.
+- The not-configured line grows by one sentence for each home whose name `init` would
+  refuse. Such homes should be rare.
+
+The Navigator's run also showed something older than this CR: the wiring lines print the
+install through its real path (`/private/var/…` on macOS), while paths built from `HOME`
+print as given. Both forms work.
+
+The change is proportionate:
+
+- one 95-line module;
+- one route moved out of `cli.ts`;
+- about 400 lines of product code, the move included;
+- 22 tests.
+
+Follow-ups outside this CR:
+
+- the note on PR #45, after the push;
+- CR187, captured from this review: a missing `OPENROUTER_API_KEY` has the same gap, and
+  worse;
+- CR129: `mirror mcp`'s stack trace now carries the new sentence, still as a trace.
+
 ## Outcome
 
-Pending: in progress since 2026-10-29.
+Done 2026-10-29. Driver @viniciusteles, delivery `main`:
+
+- `e095e2b8`: the homes root and the rule for a home;
+- `e4fa0821`: the `init` route moved out of `cli.ts`;
+- `a4b3a956`: the not-configured sentence;
+- `5676bfd3`: adoption;
+- `dbe77f4a`: the bare `mirror`;
+- `2d0cf209`: docs and the package smoke;
+- `e0891181`: the package-lane validation route.
+
+With no home configured, a person is now handed the command that finishes the job, and
+the file it writes. That command works on a home that already exists, which was the move
+from a clone to the package that Leandro made on PR #42.
