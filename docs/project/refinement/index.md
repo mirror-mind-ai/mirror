@@ -9,7 +9,7 @@ If a linked document and this index disagree, this index wins.
 ## Current Focus
 
 - Refinement Story: RS010
-- Change Request: none
+- Change Request: CR186
 
 Selecting a focus is an explicit project decision. Reading this file never selects or
 executes work.
@@ -110,7 +110,7 @@ Open work is ordered intentionally. Terminal history follows open work.
 | 76 | [CR182](rs010-cv22-oracle-and-port-hygiene/cr182-the-consult-replay-test-writes-a-row-into-the-developer-s-real-home.md) | RS010 | The consult replay test writes a row into the developer's real home on every `npm test` | captured | — | — |
 | 77 | [CR183](rs001-ariad-runtime-trust/cr183-the-active-checkpoint-card-lists-a-record-that-does-not-exist-and-repeats-a-label.md) | RS001 | The active checkpoint card lists a record that does not exist, and repeats a label | captured | — | — |
 | 78 | [CR184](rs010-cv22-oracle-and-port-hygiene/cr184-the-extraction-eval-s-prompt-hash-excludes-the-summary-prompt-its-probe-sends.md) | RS010 | The extraction eval's prompt hash excludes the summary prompt its probe sends | captured | — | — |
-| 80 | [CR186](rs010-cv22-oracle-and-port-hygiene/cr186-runtime-update-reads-main-s-commits-as-local-work.md) | RS010 | `runtime update` reads a clone's commits from `origin/main` as local work, and tells the person to push or reset | captured | — | — |
+| 80 | [CR186](rs010-cv22-oracle-and-port-hygiene/cr186-runtime-update-reads-main-s-commits-as-local-work.md) | RS010 | `runtime update` reads a clone's commits from `origin/main` as local work, and tells the person to push or reset | in_progress | @viniciusteles | `main` |
 | 82 | [CR188](rs010-cv22-oracle-and-port-hygiene/cr188-a-provider-outage-crashes-the-commands-that-call-a-model-with-a-stack-trace.md) | RS010 | A timeout, an outage, a rate limit, or a server error crashes the commands that call a model with a stack trace, and `journal` loses the entry | captured | — | — |
 | — | [CR187](rs010-cv22-oracle-and-port-hygiene/cr187-a-missing-openrouter-key-crashes-three-commands-with-a-stack-trace-that-names-no-file.md) | RS010 | A missing `OPENROUTER_API_KEY` crashes `consult`, `journal`, and `week plan` with a stack trace that names no file, and the journal entry is lost | done | @viniciusteles | `main` |
 | — | [CR185](rs010-cv22-oracle-and-port-hygiene/cr185-a-package-with-no-home-configured-does-not-say-where-it-looks.md) | RS010 | A package with no Mirror home configured does not say where it looks, and the route Getting Started gives refuses an existing home | done | @viniciusteles | `main` |
