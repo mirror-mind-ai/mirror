@@ -225,9 +225,9 @@ S=$(mktemp -d)
 npm install -g --silent --prefix "$S/prefix" "$S"/mirror-mind-*.tgz
 m() { env -u MIRROR_USER -u MIRROR_HOME -u XDG_CONFIG_HOME -u OPENROUTER_API_KEY HOME="$S" PATH="$S/prefix/bin:$PATH" mirror "$@"; }
 m init probe >/dev/null && m seed >/dev/null
-ls -l "$S/.mirror-minds/probe/backups"   #    note the snapshot's time
+mv "$S/.mirror-minds/probe/backups" "$S/backups.aside"   # set the snapshot aside
 m journal "a note about the day"     # 1. "Error: the journal entry was not saved, because … Add … $S/.config/mirror/env, then …"
-ls -l "$S/.mirror-minds/probe/backups"   #    the same snapshot, untouched
+ls "$S/.mirror-minds/probe/backups"  #    "No such file or directory": no snapshot was taken
 m week plan "Monday: write"          # 2. "Error: nothing was done, because …"
 m consult credits                    # 3. the same, for consult
 m memories --search "day"            # 4. the degraded note names the file
@@ -242,8 +242,8 @@ Step 8 makes one real request to OpenRouter with a bogus key. It is refused and 
 nothing.
 
 Pass: steps 1, 2, 3, and 8 print one line each, exit 2, with no stack trace; the file named
-is the scratch home's; the snapshot is untouched by step 1; and no step prints the key.
-Fail: a stack trace, a line that names no file, a changed snapshot, or a key on screen.
+is the scratch home's; step 1 recreates no `backups/`; and no step prints the key.
+Fail: a stack trace, a line that names no file, a `backups/` after step 1, or a key on screen.
 
 **Exclusions.**
 
@@ -281,6 +281,60 @@ each contributed is folded into the plan above:
 - **Security engineer:** the owner-only clause when the config file does not exist yet;
   no `echo` of a real key; a canary test that no output carries the key; a refused-key
   line that echoes neither the key nor the response. No other objection.
+
+### Implementation evidence (2026-10-29)
+
+The work went in as five commits on `main`, test-first, each one green:
+
+1. `a92c5a6e`: the sentences and their trimmed predicate; `requireFamilyProviders` and
+   `requireKeyForFamily`; `EmbeddingError` keeping the transport's kind and status; and
+   `namedRefusal` answering a missing key and a refused key.
+2. `19fe8238`: the commands that cannot work without the key check it up front.
+3. `3fd7f13f`: the degraded-search notes.
+4. `8f881435`: the status line and the diagnose finding, with the golden edit and its
+   README row.
+5. `89a6df93`: the configuration reference, REFERENCE.md, and the package smoke.
+
+**Tests.** 28 new tests: unit tests for config, embedding, memory search,
+familyProviders, namedRefusal, the search route, status, and diagnose, plus
+`openRouterKeyMissing.test.ts` through the real front door.
+
+The whole suite ran twice:
+
+- as CI runs it, with `MEMORY_ENV=test` and the key blank, through
+  `test_leaves_nothing.sh`;
+- with no `mirror` on the PATH.
+
+Both gave 3618 tests: 3615 pass, 0 fail, 3 skipped. Nothing was left behind.
+
+**Checks.**
+
+- Clean: typecheck; `git diff --check`; and the retired-surface, pack-contents (507
+  files), doc-link, skill-parity, temp-home, and Claude-plugin checks.
+- Lint is clean apart from the warning that was already there, in
+  `testTempHomes.test.ts`.
+- These smokes pass: migration structural parity, bootstrap custody, migrate-on-open,
+  conversation lifecycle, Builder lifecycle, extension catalog, `smoke_mirror_mcp.sh`, and
+  `smoke_runtime_update.sh`.
+- `smoke_npm_package.sh` passes 95 checks, with a new step 5c for the package lane with
+  no key.
+- `smoke_claude_plugin.sh` fails at its known CR172 step, as it did before CR185.
+
+**Decided while implementing.**
+
+- **`consolidate apply` is not checked up front, although the plan listed it.** Its own
+  route shows that only a `merge` proposal embeds; `identity_update` and
+  `shadow_candidate` need no provider. An up-front check would refuse proposals that can
+  be applied without a key. A keyless `merge` still gets the one-line answer from the
+  front-door handler. The check covers six commands, not seven.
+- `keyFileTarget` (the file plus the new-file clause) is split out of the instruction, so
+  search's note names exactly what the refusals name.
+- `smoke_npm_package.sh` now unsets `OPENROUTER_API_KEY` with the other variables. A
+  developer shell that exports one would otherwise hide the keyless lane.
+- The agent dry-ran the validation route on the package lane, and every step showed what
+  it says, with no key printed. That run showed `ls -l`'s minute resolution was too
+  coarse to prove no snapshot, so step 1 now sets `backups/` aside and checks that
+  nothing recreates it. The dry run is evidence, not the Navigator's validation.
 
 ## Evidence
 
