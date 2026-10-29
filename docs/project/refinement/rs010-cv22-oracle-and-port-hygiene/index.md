@@ -120,3 +120,5 @@ evidence stays honest as both cores move.
 - [CR181 — The ledger cannot say which reasoning effort a call carried](cr181-the-ledger-cannot-say-which-reasoning-effort-a-call-carried.md)
 - [CR182 — The consult replay test writes a row into the developer's real home](cr182-the-consult-replay-test-writes-a-row-into-the-developer-s-real-home.md)
 - [CR184 — The extraction eval's prompt hash excludes the summary prompt its probe sends](cr184-the-extraction-eval-s-prompt-hash-excludes-the-summary-prompt-its-probe-sends.md)
+- [CR185 — A package with no Mirror home configured does not say where it looks, and the route Getting Started gives refuses an existing home](cr185-a-package-with-no-home-configured-does-not-say-where-it-looks.md)
+- [CR186 — `runtime update` reads a clone's commits from `origin/main` as local work, and tells the person to push or reset](cr186-runtime-update-reads-main-s-commits-as-local-work.md)
