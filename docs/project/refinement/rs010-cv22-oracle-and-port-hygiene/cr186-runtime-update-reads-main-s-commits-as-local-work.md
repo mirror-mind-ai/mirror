@@ -162,7 +162,7 @@ S=$(mktemp -d)
 git init -q --bare "$S/origin.git"
 git push -q "$S/origin.git" origin/stable:refs/heads/stable HEAD:refs/heads/main
 git clone -q --branch main "$S/origin.git" "$S/clone"
-ln -s "$PWD/node_modules" "$S/clone/node_modules"
+ln -s "$PWD/node_modules" "$S/clone/node_modules" && echo /node_modules >> "$S/clone/.git/info/exclude"
 m() { env -u MIRROR_USER -u MIRROR_HOME -u XDG_CONFIG_HOME -u OPENROUTER_API_KEY HOME="$S" node "$S/clone/bin/mirror.js" "$@"; }
 m init probe >/dev/null && m seed >/dev/null
 m runtime channel stable
@@ -173,6 +173,10 @@ m runtime channel stable
 git -C "$S/clone" -c user.name=probe -c user.email=probe@example.invalid commit -q --allow-empty -m "local work"
 m runtime update --dry-run; echo "exit=$?"   # 3. local commits present, push or reset, as today
 ```
+
+The `exclude` line keeps the scratch tree clean. `.gitignore` says `node_modules/`, which
+matches only a directory, so the symlink would make the tree dirty and the status gate would
+refuse before the plan runs.
 
 Pass: step 1 exits 1 with the new plan line and recovery, and its output says neither
 "push" nor "reset". Step 2 exits 0 with `already up to date`. Step 3 exits 1 with today's
@@ -215,6 +219,84 @@ contributed is folded into the plan above:
   second fetch, the `--check` wording); the smoke step deferred, because nothing past plan
   changes.
 
+### Implementation evidence (2026-10-29)
+
+The work went in as one commit on `main`, `af53174e`, test-first: the new tests failed
+before the code existed, and the mixed case passed against today's code, as a guard
+should.
+
+- `git.ts`: `readChannelPosition` counts and classifies, and `describeChannelPosition`
+  gives the words. `inspectGitUpdatePlan` maps the result. It no longer runs its own
+  `rev-list --left-right` count. `GitRunner` and `splitUpstream` moved here.
+- `strategies/clone.ts`: `plan` maps the same result, and adds each refusal's way out.
+- `REFERENCE.md`: the plan stage of `runtime update`.
+
+**Tests.** Seven new tests:
+
+- `channelPosition.test.ts` (new, four tests over a real `file://` origin): the eight-row
+  parity table; the carried case's exact words, with no "push" or "reset" and no welcome
+  update line; real local work keeping today's words; and the missing `origin/main`
+  reading as local work.
+- `update.test.ts`: the pipeline refusing the carried case at plan with no backup, both as
+  an update and as a dry run; the mixed case keeping today's words.
+- `cloneStrategy.test.ts`: the new count keeping the local timeout.
+
+The boundary test in `git.test.ts` now also scans calls made through a runner named
+`git`, and it was checked to find the new count.
+
+The whole suite ran three times, each with 3625 tests: 3622 pass, 0 fail, 3 skipped.
+
+- as `npm test`;
+- as CI runs it, with `MEMORY_ENV=test`, through `test_leaves_nothing.sh`, which left
+  nothing behind;
+- with no `mirror` on the PATH.
+
+**Checks.**
+
+- Clean: typecheck; `git diff --check`; and the retired-surface, pack-contents (507
+  files), doc-link, skill-parity, and Claude-plugin checks.
+- Lint is clean apart from the warning that was already there, in
+  `testTempHomes.test.ts`.
+- These smokes pass: `smoke_runtime_update.sh` (103 checks), migration structural parity,
+  bootstrap custody, migrate-on-open, conversation lifecycle, Builder lifecycle, and
+  extension catalog.
+
+**Decided while implementing.**
+
+- The words for every position are given once, in `describeChannelPosition`. The plan's
+  detail and the inspection's note were already the same four lines, written twice.
+  Only an unreadable comparison keeps a different line in each, as before.
+- The package lane's recovery lines are not shared with the clone's. Each strategy owns
+  its words (`updatePipeline.ts`), and the clone's "stay" line says more than the
+  package's: the next release contains these commits.
+
+**The agent's run of the validation route.** The run is evidence, not the Navigator's
+validation. As first written, the route never reached the plan: the `node_modules`
+symlink made the scratch tree dirty, and the status gate refused all three steps. The
+route now excludes the link. Run again, from `af53174e`, every step showed what it says:
+
+1. Exit 1, refused at plan, with no backup taken:
+
+   ```text
+   [✗] plan: 'stable' is behind this checkout (28 commit(s), all on origin/main)
+
+   Recovery:
+   - A downgrade is refused: migrations do not run backwards.
+   - Follow the channel that carries af53174e: runtime channel main
+   - Or stay on af53174e until 'stable' reaches it: the next release contains these commits.
+   - The working tree and the database are unchanged.
+   ```
+
+2. After `runtime channel main`: `[✓] plan: already up to date`, exit 0. The advice is
+   safe to follow.
+3. After one local commit: `[✗] plan: local commits present`, with "Local branch is
+   ahead of upstream; push or reset before updating.", exit 1.
+
+In this checkout at the same time, the two CR186 commits not yet pushed were real local
+work, and `mirror runtime update --channel stable --dry-run --no-fetch` answered with
+today's `local commits present`, as it should. Once they are pushed, the checkout is the
+case the scratch clone shows.
+
 ## Evidence
 
 - [Leandro's comment on PR #42](https://github.com/mirror-mind-ai/mirror/pull/42#issuecomment-6234421624),
@@ -232,4 +314,4 @@ contributed is folded into the plan above:
 
 ## Outcome
 
-Pending: in progress since 2026-10-29.
+Pending: implemented on `main`, not yet pushed, and awaiting the Navigator's validation.
