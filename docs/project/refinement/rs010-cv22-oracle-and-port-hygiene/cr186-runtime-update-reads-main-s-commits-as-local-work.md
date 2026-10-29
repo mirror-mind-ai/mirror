@@ -312,6 +312,54 @@ case the scratch clone shows.
 - Where the instruction came from: CR140's release-note scope, and the v0.33.3 release
   comment on PR #42.
 
+## Validation (2026-10-29, Navigator)
+
+The Navigator ran the scratch-clone route from this checkout at `4a120fbd`. A scratch
+origin had `origin/stable` as its `stable` and `HEAD` as its `main`, and was cloned,
+with a scratch home created by `init probe` and `seed`.
+
+1. On `stable`, `runtime update --dry-run` stopped at plan with
+   `'stable' is behind this checkout (29 commit(s), all on origin/main)`. The recovery
+   gave the downgrade refusal, `runtime channel main`, staying on `4a120fbd` until
+   `stable` reaches it at the next release, and the unchanged tree and database. It said
+   neither "push" nor "reset". Exit 1.
+2. `runtime channel main` reported `main (was stable)`, and the same command then passed
+   the plan with `already up to date`. Exit 0: the advice was safe to follow.
+3. Back on `stable`, after one local commit, it stopped at plan with
+   `local commits present` and today's push-or-reset advice. Exit 1.
+
+Every step met the plan's pass condition. The Navigator sent the run in reply to the
+route, as its result, and it is accepted on that basis.
+
+## Review (debt and proportionality)
+
+No debt blocks closure. These known limits are recorded in the exclusions:
+
+- `runtime update --check` still reports `local_ahead` for this state, while a package
+  reports `channel_behind`.
+- A `main`-channel clone ahead by commits on another pushed branch keeps today's refusal.
+- The other channel's ref is read as last fetched. A stale ref makes published commits
+  look local, which is today's refusal.
+
+The change is proportionate: 231 lines added and 98 removed across three product files,
+much of it comments and the position's type. It also takes things away. Two ways of
+counting became one, and four lines that were written twice are now written once. There
+are seven new tests, and the read-only boundary test now also sees calls made through a
+runner.
+
+No follow-up was captured. Aligning `--check`'s wording with the package lane can be
+captured if wanted.
+
 ## Outcome
 
-Pending: implemented on `main`, not yet pushed, and awaiting the Navigator's validation.
+Done 2026-10-29. Driver @viniciusteles, delivery `main`:
+
+- `af53174e`: one reading of where a clone stands, for both the update plan and the
+  inspection, and the refusal in the package lane's words;
+- `4a120fbd`: the record, and a validation route that reaches the plan.
+
+A `stable` clone that took `main`'s commits before their release is now told that
+`stable` is behind it, with two safe ways out: `runtime channel main`, or the next
+release. It is no longer told to push commits the remote already has, or to reset its
+code below a database that may be newer than `stable`'s code. Real local work is refused
+as before.
