@@ -115,7 +115,7 @@ check "the marketplace names mirror-mind, one local plugin" "$MP_PLUGIN" "mirror
 # --- from here on: no checkout, no real HOME, interpreters shadowed ---------
 export PATH="$WORK/stubs:$WORK/prefix/bin:$WORK/bin:/usr/bin:/bin"
 export HOME="$WORK/home"
-unset MIRROR_HOME MIRROR_USER MEMORY_DIR DB_PATH MEMORY_ENV NODE_OPTIONS XDG_CONFIG_HOME
+unset MIRROR_HOME MIRROR_USER MEMORY_DIR DB_PATH MEMORY_ENV NODE_OPTIONS XDG_CONFIG_HOME OPENROUTER_API_KEY
 cd "$WORK/home"
 
 say "2. mirror is on the PATH, from the install, with nothing else set"
@@ -236,6 +236,26 @@ set -e
 check "init again exits 0" "$AGAIN_CODE" "0"
 contains "and says the home is already selected" "$AGAIN_OUT" "Configuration: already selects this home"
 check "and writes nothing" "$(cat "$CONFIG")" "MIRROR_USER=smokeuser"
+
+say "5c. no OpenRouter key: a command that needs one refuses before it touches anything (CR187)"
+# Every package install starts here: init writes MIRROR_USER and leaves the key to
+# the person. Before, journal printed a stack trace, copied the database into its
+# pre-write snapshot, and lost the entry.
+BACKUPS="$HOME/.mirror-minds/smokeuser/backups"
+mv "$BACKUPS" "$BACKUPS.before-5c"
+set +e
+JOURNAL_ERR="$(mirror journal "a note about the day" 2>&1 >/dev/null)"; JOURNAL_CODE=$?
+set -e
+check "journal with no key exits 2" "$JOURNAL_CODE" "2"
+check "in one line" "$(printf '%s\n' "$JOURNAL_ERR" | wc -l | tr -d ' ')" "1"
+check "that says the entry was not saved, and where the key goes" "$JOURNAL_ERR" \
+  "Error: the journal entry was not saved, because OPENROUTER_API_KEY is not configured. Add OPENROUTER_API_KEY=<your key> to $CONFIG, then run the same command again."
+[ ! -e "$BACKUPS" ] && ok "and took no pre-write snapshot" || bad "journal opened the database before refusing"
+mv "$BACKUPS.before-5c" "$BACKUPS"
+KEY_STATUS="$(mirror runtime status 2>&1 || true)"
+contains "runtime status says the key is missing" "$KEY_STATUS" "OpenRouter key: not configured"
+KEY_DIAGNOSE="$(mirror runtime diagnose 2>&1 || true)"
+contains "runtime diagnose reports it, naming the file" "$KEY_DIAGNOSE" "Recommendation: add OPENROUTER_API_KEY=<your key> to $CONFIG"
 
 say "6. a database that needs migration 017, opened through the installed package"
 if [ -z "$REAL_SQLITE" ]; then
