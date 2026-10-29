@@ -31,6 +31,7 @@ import {
   frontDoorErrorFindings,
   identityKeyFindings,
   loosePermissionFindings,
+  openRouterKeyFindings,
   probeModelPins,
   ReplayModelCatalogProvider,
   renderRuntimeDiagnosis,
@@ -594,4 +595,30 @@ test("CV9.DS9.TS1: an invalid MEMORY_EXTRACTION_REASONING is reported, a valid o
     /none, minimal, low, medium, high, xhigh, or max/,
   );
   assert.match(findings[0]?.recommendation ?? "", /~\/\.config\/mirror\/env/);
+});
+
+// --- CR187: a missing OpenRouter key is a finding, named by where the key goes ---
+
+test("CR187: no key is an attention finding that names the file the key goes in", () => {
+  const home = tempDir("diagnose-openrouter-key-");
+  const config = join(home, ".config", "mirror", "env");
+  for (const env of [{}, { OPENROUTER_API_KEY: "" }, { OPENROUTER_API_KEY: "   " }]) {
+    assert.deepEqual(openRouterKeyFindings(env as NodeJS.ProcessEnv, home), [
+      {
+        code: "openrouter_key_missing",
+        severity: "attention",
+        subject: "OPENROUTER_API_KEY",
+        detail: "not set, so embeddings, memory extraction, and consult are off",
+        recommendation:
+          `add OPENROUTER_API_KEY=<your key> to ${config} ` +
+          `(a new file; make it readable only by you: chmod 600 ${config})`,
+        repair_route: "configuration",
+      },
+    ]);
+  }
+});
+
+test("CR187: a configured key is no finding, and its value is printed nowhere", () => {
+  const env = { OPENROUTER_API_KEY: "sk-or-canary-7f3a" } as NodeJS.ProcessEnv;
+  assert.deepEqual(openRouterKeyFindings(env), []);
 });

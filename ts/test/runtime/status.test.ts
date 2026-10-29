@@ -679,3 +679,34 @@ test("CV9.DS9.TS1/US3: the models line shows the effort the calls send, and wher
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test("CR187: status says whether a key is configured, right after the models it would call, never the key", () => {
+  const root = tempDir("status-openrouter-key-");
+  const home = join(root, "ana");
+  mkdirSync(home, { recursive: true });
+  const report = buildRuntimeStatus({
+    start: root,
+    mirrorHome: home,
+    env: {} as NodeJS.ProcessEnv,
+    version: "0.0.0",
+    nodeVersion: "<node-version>",
+    install: { kind: "clone", repository: root },
+  });
+  const render = (env: Record<string, string>) =>
+    renderRuntimeStatus(report, env as NodeJS.ProcessEnv).split("\n");
+  const keyLine = (env: Record<string, string>) => {
+    const lines = render(env);
+    const at = lines.findIndex((line) => line.startsWith("OpenRouter key: "));
+    assert.ok(lines[at - 1]?.startsWith("Models: "), "after the models line");
+    return lines[at];
+  };
+
+  assert.equal(keyLine({}), "OpenRouter key: not configured");
+  // Spaces only is no key, as the provider and the refusals read it.
+  assert.equal(keyLine({ OPENROUTER_API_KEY: "   " }), "OpenRouter key: not configured");
+  assert.equal(keyLine({ OPENROUTER_API_KEY: "sk-or-canary-7f3a" }), "OpenRouter key: configured");
+  assert.ok(!render({ OPENROUTER_API_KEY: "sk-or-canary-7f3a" }).join("\n").includes("canary"));
+  // The verdict does not move: the update gate reads it, and a keyless install
+  // must still be able to update.
+  assert.equal(render({}).at(-2), render({ OPENROUTER_API_KEY: "sk-or-canary-7f3a" }).at(-2));
+});

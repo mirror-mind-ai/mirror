@@ -25,7 +25,11 @@ import { readExtensionPlugin } from "#extensions/extensionPlugin.ts";
 import { loadExtensionManifest } from "#extensions/manifest.ts";
 import { inspectMigrationFiles } from "#extensions/migrations.ts";
 import { type DbPathEnv, dbNameForEnv, resolveMirrorHome } from "#frontDoor/dbPath.ts";
-import { DEFAULT_EMBEDDING_MODEL, resolveExtractionReasoning } from "#providers/config.ts";
+import {
+  DEFAULT_EMBEDDING_MODEL,
+  hasOpenRouterKey,
+  resolveExtractionReasoning,
+} from "#providers/config.ts";
 import { sortByCodePoint } from "#util/pythonText.ts";
 import { channelForReport } from "./channel.ts";
 import type { MarkerValue } from "./git.ts";
@@ -594,6 +598,10 @@ export function renderRuntimeStatus(
       reasoningClause(env) +
       `embedding=${env.MEMORY_EMBEDDING_MODEL ?? DEFAULT_EMBEDDING_MODEL}`,
   );
+  // CR187: whether those models can be called at all. Presence only, by the
+  // predicate every refusal uses; never the value, and never the verdict -- the
+  // update gate reads the verdict, and a keyless install must still update.
+  lines.push(`OpenRouter key: ${hasOpenRouterKey(env) ? "configured" : "not configured"}`);
   lines.push("");
   lines.push(`Status: ${statusVerdict(report)}`);
   return `${lines.join("\n")}\n`;

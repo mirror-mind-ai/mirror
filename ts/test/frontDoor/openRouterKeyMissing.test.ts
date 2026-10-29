@@ -136,3 +136,33 @@ test("`memories --search` still answers, and its note says where the key goes", 
     `${home.config} (a new file; make it readable only by you: chmod 600 ${home.config})).`;
   assert.ok(result.stdout.includes(note), result.stdout);
 });
+
+test("`runtime status` and `runtime diagnose` say the key is missing, and where it goes", () => {
+  const home = keylessHome();
+  const status = spawnFrontDoor(["runtime", "status"], home.env);
+  assert.match(status.stdout, /\nOpenRouter key: not configured\n/);
+  const diagnose = spawnFrontDoor(["runtime", "diagnose"], home.env);
+  assert.match(
+    diagnose.stdout,
+    /\[attention\] openrouter_key_missing: not set, so embeddings, memory extraction, and consult are off\n/,
+  );
+  assert.ok(
+    diagnose.stdout.includes(
+      `Recommendation: add OPENROUTER_API_KEY=<your key> to ${home.config} ` +
+        `(a new file; make it readable only by you: chmod 600 ${home.config})\n`,
+    ),
+    diagnose.stdout,
+  );
+});
+
+test("with a key set, neither report prints it", () => {
+  const home = keylessHome();
+  const env = { ...home.env, OPENROUTER_API_KEY: "sk-or-canary-7f3a" };
+  const status = spawnFrontDoor(["runtime", "status"], env);
+  assert.match(status.stdout, /\nOpenRouter key: configured\n/);
+  const diagnose = spawnFrontDoor(["runtime", "diagnose"], env);
+  assert.doesNotMatch(diagnose.stdout, /openrouter_key_missing/);
+  for (const output of [status.stdout, status.stderr, diagnose.stdout, diagnose.stderr]) {
+    assert.ok(!output.includes("canary"), output);
+  }
+});

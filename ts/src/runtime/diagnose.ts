@@ -34,7 +34,12 @@ import {
   readExtensionPlugin,
 } from "#extensions/extensionPlugin.ts";
 import { identityKeyBreaksGrammar, SLUG_KEYED_LAYERS } from "#identity/identityKey.ts";
-import { REASONING_EFFORTS, resolveExtractionReasoning } from "#providers/config.ts";
+import {
+  hasOpenRouterKey,
+  keyFileInstruction,
+  REASONING_EFFORTS,
+  resolveExtractionReasoning,
+} from "#providers/config.ts";
 import { pyRepr, sortByCodePoint } from "#util/pythonText.ts";
 import { configFilePath } from "./config.ts";
 import { extensionPluginStates } from "./extensionPluginWiring.ts";
@@ -768,6 +773,28 @@ export function staleRevertGateFindings(env: NodeJS.ProcessEnv): DriftFinding[] 
         "set, but inert since CV22.DS10.TS5: the Python engine these gates reverted to no longer exists",
       recommendation: "remove from .env and the environment; routing ignores them",
       repair_route: "edit .env",
+    },
+  ];
+}
+
+/**
+ * No OpenRouter key (CR187), read by the predicate every refusal uses, so
+ * diagnose and the refusals cannot disagree about what "configured" means.
+ * Presence only: the value is never read into a finding. Attention, not a
+ * blocker -- a keyless install still runs and updates; it just remembers
+ * nothing new and answers no `consult`. The recommendation names the file the
+ * key goes in, and says to make it owner-only when it does not exist yet.
+ */
+export function openRouterKeyFindings(env: NodeJS.ProcessEnv, home?: string): DriftFinding[] {
+  if (hasOpenRouterKey(env)) return [];
+  return [
+    {
+      code: "openrouter_key_missing",
+      severity: "attention",
+      subject: "OPENROUTER_API_KEY",
+      detail: "not set, so embeddings, memory extraction, and consult are off",
+      recommendation: `add ${keyFileInstruction(env, home)}`,
+      repair_route: "configuration",
     },
   ];
 }

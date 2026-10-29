@@ -29,6 +29,7 @@ import {
   extractionReasoningFindings,
   hookFailureFindings,
   hookNodeFindings,
+  openRouterKeyFindings,
   pluginWiringFindings,
   probeModelPins,
   renderRuntimeDiagnosis,
@@ -329,6 +330,9 @@ export async function runRuntimeReadRoute(
       // CV9.DS9.TS1: a reasoning setting the transport ignores rather than fail
       // on (CR178) is silently not in force unless diagnose says so.
       ...extractionReasoningFindings(env),
+      // CR187: with no key, memory extraction, embeddings, and consult are off,
+      // and nothing else on this report would say so.
+      ...openRouterKeyFindings(env),
       ...hookFailureFindings(report),
       ...hookNodeFindings(env, (path) => {
         try {
