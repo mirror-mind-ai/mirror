@@ -422,6 +422,12 @@ Done 2026-10-29. Driver @viniciusteles, delivery `main`:
 - `2d0cf209`: docs and the package smoke;
 - `e0891181`: the package-lane validation route.
 
+CI on the push (`3aa2f19a`) failed one test, "an existing home with a key set and a
+database prints no step it does not need". CI runs the suite with `MEMORY_ENV=test`, so
+the home must hold `memory_test.db`, and the `seed` step it printed was correct. The
+test's assumption was wrong, not the product. The test now pins `MEMORY_ENV`, and the
+suite passes under `test`, `development`, and unset.
+
 With no home configured, a person is now handed the command that finishes the job, and
 the file it writes. That command works on a home that already exists, which was the move
 from a clone to the package that Leandro made on PR #42.

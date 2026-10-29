@@ -216,6 +216,9 @@ test("an existing home with a key set and a database prints no step it does not 
       PATH: "/usr/bin:/bin",
       ...NO_USER,
       OPENROUTER_API_KEY: "sk-test",
+      // The environment names the database a home must hold: CI runs the suite
+      // with MEMORY_ENV=test, whose database is memory_test.db, not this one.
+      MEMORY_ENV: "",
     });
     assert.equal(result.status, 0, result.stderr);
     assert.doesNotMatch(result.stdout, /Next steps|OPENROUTER_API_KEY|mirror seed/);
