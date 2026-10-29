@@ -54,6 +54,22 @@ test("`runtime status` reports the same sentence as its Mirror home note", () =>
   assert.ok(result.stdout.includes(`\nMirror home note: ${sentence}\n`), result.stdout);
 });
 
+test("bare `mirror`, the first thing a new install sees, names the home and the same command", () => {
+  const { home } = movedFromAClone();
+  const result = spawnFrontDoor([], { HOME: home, ...NO_USER });
+  assert.equal(result.status, 1, result.stderr);
+  assert.equal(
+    result.stdout,
+    "No user configured yet.\n" +
+      `  To use the home at ${join(home, ".mirror-minds", "leandro")}, run: mirror init leandro\n` +
+      `  Configuration will live at: ${join(home, ".config", "mirror", "env")}\n`,
+  );
+  // With no home on disk, the orientation is the one a new install has always had.
+  const empty = tempDir("home-not-configured-empty-");
+  const fresh = spawnFrontDoor([], { HOME: empty, ...NO_USER });
+  assert.match(fresh.stdout, /^ {2}Run: mirror init <your-name>$/m);
+});
+
 test("an ordinary command prints it after the front door's prefix", () => {
   const { home, sentence } = movedFromAClone();
   const result = spawnFrontDoor(["journeys"], { HOME: home, ...NO_USER });

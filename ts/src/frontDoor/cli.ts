@@ -96,7 +96,7 @@ import {
   runReject,
   runShadowApply as runShadowApplyRoute,
 } from "./cultivationRoute.ts";
-import { MirrorHomeNotConfiguredError, resolveDbPath } from "./dbPath.ts";
+import { initCommandFor, MirrorHomeNotConfiguredError, resolveDbPath } from "./dbPath.ts";
 import { runBackupRoute, runRepairEncodingRoute } from "./dbSafetyToolsRoute.ts";
 import { defaultExploreRouteDeps, runExploreRoute } from "./exploreRoute.ts";
 import { frontDoorLogPath, logFrontDoor } from "./frontDoorLog.ts";
@@ -108,6 +108,7 @@ import {
 import { runInit } from "./initRoute.ts";
 import { applyJourneySetPath } from "./journeyWriteRoute.ts";
 import { openLiveWriteDatabase } from "./liveBackup.ts";
+import { findMirrorHomes, homesRoot } from "./mirrorHomes.ts";
 import {
   isMirrorDoorman,
   isMirrorWrite,
@@ -1812,9 +1813,17 @@ export async function main(rawArgv = process.argv.slice(2)): Promise<number> {
   // name is whatever the caller typed, and it stays out of the log.
   if (decision.engine === "usage") {
     const env = process.env;
+    const userConfigured = Boolean(
+      env.MIRROR_USER || env.MIRROR_HOME || env.MEMORY_DIR || env.DB_PATH,
+    );
     const answer = answerUsage(decision.request, {
-      userConfigured: Boolean(env.MIRROR_USER || env.MIRROR_HOME || env.MEMORY_DIR || env.DB_PATH),
+      userConfigured,
       configFile: configFilePath(env),
+      // CR185: a home on disk that nothing selects is named, read only when no
+      // user is configured -- the one case the orientation is rendered.
+      useHome: userConfigured
+        ? null
+        : (initCommandFor(findMirrorHomes(), homesRoot())?.sentence ?? null),
     });
     (answer.stream === "stdout" ? process.stdout : process.stderr).write(answer.text);
     logFrontDoor(logPath, {
