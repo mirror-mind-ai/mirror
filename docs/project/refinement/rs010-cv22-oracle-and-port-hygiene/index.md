@@ -119,3 +119,4 @@ evidence stays honest as both cores move.
 - [CR180 — The summary prompt's opening rule invites the framing its standalone rule forbids](cr180-the-summary-prompt-s-opening-rule-invites-the-framing-its-standalone-rule-forbids.md)
 - [CR181 — The ledger cannot say which reasoning effort a call carried](cr181-the-ledger-cannot-say-which-reasoning-effort-a-call-carried.md)
 - [CR182 — The consult replay test writes a row into the developer's real home](cr182-the-consult-replay-test-writes-a-row-into-the-developer-s-real-home.md)
+- [CR184 — The extraction eval's prompt hash excludes the summary prompt its probe sends](cr184-the-extraction-eval-s-prompt-hash-excludes-the-summary-prompt-its-probe-sends.md)

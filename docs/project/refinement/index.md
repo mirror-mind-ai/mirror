@@ -9,7 +9,7 @@ If a linked document and this index disagree, this index wins.
 ## Current Focus
 
 - Refinement Story: RS010
-- Change Request: CR180
+- Change Request: none
 
 Selecting a focus is an explicit project decision. Reading this file never selects or
 executes work.
@@ -106,10 +106,11 @@ Open work is ordered intentionally. Terminal history follows open work.
 | 71 | [CR177](rs010-cv22-oracle-and-port-hygiene/cr177-a-pi-session-in-a-clone-also-loads-the-installed-mirror-package.md) | RS010 | A Pi session in a clone also loads the installed Mirror package: 25 skill-collision warnings, and the extension twice | captured | — | — |
 | 72 | [CR178](rs010-cv22-oracle-and-port-hygiene/cr178-a-configuration-error-counts-as-an-extraction-attempt-and-nothing-releases-a-quarantine.md) | RS010 | A configuration error counts as an extraction attempt, so a typo can quarantine conversations, and nothing releases a quarantine | captured | — | — |
 | 73 | [CR179](rs001-ariad-runtime-trust/cr179-the-recommended-next-pull-ignores-the-order-a-delivery-story-authors.md) | RS001 | The recommended next pull ranks a user story above a technical story, ignoring the order a Delivery Story authors | captured | — | — |
-| 74 | [CR180](rs010-cv22-oracle-and-port-hygiene/cr180-the-summary-prompt-s-opening-rule-invites-the-framing-its-standalone-rule-forbids.md) | RS010 | The summary prompt's opening rule invites the framing its standalone rule forbids | in_progress | @viniciusteles | `main` |
 | 75 | [CR181](rs010-cv22-oracle-and-port-hygiene/cr181-the-ledger-cannot-say-which-reasoning-effort-a-call-carried.md) | RS010 | The ledger cannot say which reasoning effort a call carried | captured | — | — |
 | 76 | [CR182](rs010-cv22-oracle-and-port-hygiene/cr182-the-consult-replay-test-writes-a-row-into-the-developer-s-real-home.md) | RS010 | The consult replay test writes a row into the developer's real home on every `npm test` | captured | — | — |
 | 77 | [CR183](rs001-ariad-runtime-trust/cr183-the-active-checkpoint-card-lists-a-record-that-does-not-exist-and-repeats-a-label.md) | RS001 | The active checkpoint card lists a record that does not exist, and repeats a label | captured | — | — |
+| 78 | [CR184](rs010-cv22-oracle-and-port-hygiene/cr184-the-extraction-eval-s-prompt-hash-excludes-the-summary-prompt-its-probe-sends.md) | RS010 | The extraction eval's prompt hash excludes the summary prompt its probe sends | captured | — | — |
+| — | [CR180](rs010-cv22-oracle-and-port-hygiene/cr180-the-summary-prompt-s-opening-rule-invites-the-framing-its-standalone-rule-forbids.md) | RS010 | The summary prompt's opening rule invites the framing its standalone rule forbids | done | @viniciusteles | `main` |
 | — | [CR165](rs010-cv22-oracle-and-port-hygiene/cr165-pi-puts-no-mirror-context-before-the-model.md) | RS010 | Pi puts no Mirror context before the model, so Pi is L3 where the plugin runtimes are L4: one doorman on every runtime | promoted | — | `CV9.DS8` |
 | — | [CR163](rs010-cv22-oracle-and-port-hygiene/cr163-the-test-suite-leaves-its-temp-homes-behind.md) | RS010 | The test suite leaves its temp homes behind, about 450 directories a run, and nothing notices | done | @viniciusteles | `main` |
 | — | [CR160](rs010-cv22-oracle-and-port-hygiene/cr160-a-pi-skill-invoked-as-skill-is-logged-as-its-body.md) | RS010 | A Pi skill invoked as `/skill:<name>` is logged as the skill's body, as if the person had said it | done | @viniciusteles | `main` |

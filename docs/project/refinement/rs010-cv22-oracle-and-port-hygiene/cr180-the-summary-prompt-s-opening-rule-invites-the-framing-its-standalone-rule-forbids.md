@@ -203,6 +203,26 @@ rule's own word, tolerated as a weak frame.
   [evidence](../../roadmap/cv9-mirror-1-0/cv9-ds9-the-extraction-model-chosen-by-measurement/cv9-ds9-ts1-extraction-calls-carry-a-reasoning-setting-and-the-candidates-are-re-measured-wi/evidence/2026-10-26-reasoning-off/README.md):
   `extraction/conversation-summary` per model, with reasoning on and off.
 
+## Validation (2026-10-28, Navigator)
+
+The Navigator ended a four-message conversation on the development home
+(`a5fff801`, Mirror's four modes). Its summary opens "Vinícius asked the mirror to
+explain its operating modes…", carries status ("Settled: … Open: …"), and nowhere
+describes the conversation or says "the user". The ledger shows the guard fired on
+this very conversation: two `conversation_summary` calls two seconds apart, the second
+with the retry note, both priced. Accepted.
+
+## Review
+
+Debt: none introduced in the prompt; the guard is one regeneration with a bounded
+cost (one extra call when the first opens framed, observed on about half of
+meta-heavy conversations and rarely otherwise), tested without a model. The name
+resolver duplicates the cultivation path's; unifying them stays CR014's. The
+extraction eval's hash gap is CR184. Residuals are recorded above. Proportionate.
+
 ## Outcome
 
-In progress since 2026-10-28.
+Done 2026-10-28. Driver @viniciusteles, delivery `main`: `b72be393` (the prompt),
+`6ba6dbeb` (the owner's name), `7c8df441` (the guard), `7a13e50f` (the record).
+The summary opens with its subject or the person's name on ordinary and meta-heavy
+conversations alike; "the user" is gone from every lifecycle prompt; CR184 captured.
