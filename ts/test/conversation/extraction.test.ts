@@ -8,6 +8,7 @@ import {
   recordFailedExtractionAttempt,
   runExtractionWithAccounting,
 } from "#conversation/extractionRun.ts";
+import { userNameFromIdentity } from "#conversation/userName.ts";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
 import { DEFAULT_EXTRACTION_MODEL } from "#providers/config.ts";
 import {
@@ -794,3 +795,19 @@ function idSequence(values: string[]): () => string {
     return value;
   };
 }
+
+// CR180: the resolver accepts the phrasing the shipped identity template writes,
+// "You are speaking with <name>", beside the "talking to" form it was ported with.
+// Against a live identity seeded from the template it had matched nothing and
+// fallen back to "User" silently (CR014's finding), on every extraction.
+
+test("userNameFromIdentity accepts the template's phrasing and the ported ones (CR180)", () => {
+  assert.equal(
+    userNameFromIdentity("You are speaking with Vinícius Manhães Teles. Address him"),
+    "Vinícius",
+  );
+  assert.equal(userNameFromIdentity("You are talking to Alisson today."), "Alisson");
+  assert.equal(userNameFromIdentity("Você está falando com João."), "João");
+  assert.equal(userNameFromIdentity("# About\n\nNo marker phrase here."), "User");
+  assert.equal(userNameFromIdentity(null), "User");
+});

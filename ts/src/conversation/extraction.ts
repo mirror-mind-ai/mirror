@@ -1,4 +1,5 @@
 import { metadataDict } from "#conversation/closeTail.ts";
+import { resolveUserName } from "#conversation/userName.ts";
 import type { WritableDatabase } from "#db/database.ts";
 import { embeddingToBytes } from "#db/decode.ts";
 import { optionalString, requireString } from "#db/rowDecode.ts";
@@ -271,17 +272,6 @@ function getMessages(db: WritableDatabase, conversationId: string): ExtractionMe
     .prepare("SELECT role, content FROM messages WHERE conversation_id = ? ORDER BY created_at ASC")
     .all(conversationId)
     .map((row) => ({ role: requireString(row, "role"), content: requireString(row, "content") }));
-}
-
-function resolveUserName(db: WritableDatabase): string {
-  const row = db
-    .prepare("SELECT content FROM identity WHERE layer = ? AND key = ? LIMIT 1")
-    .get("user", "identity");
-  const content = row ? optionalString(row, "content") : null;
-  const match = content?.match(
-    /(?:You are talking to|Você está falando com) ([A-Z][a-zA-Záéíóúãõ]+)/,
-  );
-  return match?.[1] ?? "User";
 }
 
 /**
