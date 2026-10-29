@@ -471,7 +471,7 @@ test("D1: the malformed-manifest note matches the oracle up to the parser's own 
   }
 });
 
-test("an unconfigured mirror home reports the oracle's sentence", () => {
+test("an unconfigured mirror home reports the not-configured sentence (CR185)", () => {
   const f = fixture();
   try {
     const report = buildRuntimeStatus({
@@ -480,6 +480,9 @@ test("an unconfigured mirror home reports the oracle's sentence", () => {
       version: golden.meta.fixture_version,
       nodeVersion: "<node-version>",
       install: { kind: "clone", repository: f.repo },
+      // The sentence names what is found under the OS home: an empty one here,
+      // never the developer's own homes.
+      osHome: join(f.root, "os-home"),
     });
     const render = renderRuntimeStatus(report, ENV).replaceAll(f.root, "<root>");
     assert.equal(render, (golden.scenarios.home_not_configured as Scenario).render);

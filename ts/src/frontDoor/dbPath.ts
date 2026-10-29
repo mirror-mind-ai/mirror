@@ -14,7 +14,10 @@
 //   modern `~/.mirror-minds/<user>` does not exist (one-line stderr warning,
 //   permanent support — see docs/project/decisions.md).
 // - Nothing configured fails loudly (CV9.E2.S6: unconfigured resolution must
-//   not write to the homes root), unlike the pre-CR024 silent fallback.
+//   not write to the homes root), unlike the pre-CR024 silent fallback. The
+//   sentence says what to run and which file that writes, naming the homes it
+//   finds (CR185): a move from a clone to the package leaves a home that no
+//   configuration points at, and the person needs the command, not the cause.
 //
 // Front-door-only extension: the CLI flags `--db-path` and `--mirror-home`
 // are explicit per-invocation intent and take precedence over all env vars.
@@ -22,9 +25,13 @@
 import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { basename, join } from "node:path";
+import { configFilePath } from "#runtime/config.ts";
 import { expandHome } from "#util/paths.ts";
+import { PROGRAM } from "#util/program.ts";
+import { pyRepr } from "#util/pythonText.ts";
+import { shellWord } from "#util/shellWord.ts";
 import { optionValue } from "./args.ts";
-import { userHomePath } from "./mirrorHomes.ts";
+import { type FoundHome, findMirrorHomes, homesRoot, userHomePath } from "./mirrorHomes.ts";
 
 /** Raised when no database location can be resolved — maps to CLI exit 2. */
 export class MirrorHomeNotConfiguredError extends Error {}
@@ -50,6 +57,8 @@ export interface DbPathEnv {
   MEMORY_DIR?: string;
   MIRROR_HOME?: string;
   MIRROR_USER?: string;
+  /** Read only to name the config file in the not-configured sentence. */
+  XDG_CONFIG_HOME?: string;
 }
 
 /** Injection points so tests can run without touching the real filesystem. */
@@ -57,6 +66,8 @@ export interface DbPathIo {
   home?: string;
   exists?: (path: string) => boolean;
   warn?: (message: string) => void;
+  /** The homes under `<home>/.mirror-minds`, for the not-configured sentence. */
+  homes?: (home: string) => readonly FoundHome[];
 }
 
 /**
@@ -94,10 +105,72 @@ export function resolveMirrorHome(env: DbPathEnv, io: DbPathIo = {}): string {
     }
     return derivedHome;
   }
-  throw new MirrorHomeNotConfiguredError(
-    "Mirror home is not configured. Set MIRROR_HOME or MIRROR_USER " +
-      "(or pass an explicit MEMORY_DIR/DB_PATH override).",
-  );
+  throw new MirrorHomeNotConfiguredError(homeNotConfiguredMessage(env, io));
+}
+
+/**
+ * The not-configured sentence (CR185), one line: what to run, and which file
+ * that command writes.
+ *
+ * Every surface prints it: `runtime update`, `migrate`, and `backup` bare, the
+ * other commands after `Mirror TS front door:`, and `runtime status` as its
+ * `Mirror home note:`. Built only when nothing resolves, so a hook on an
+ * unconfigured machine pays one directory read for a message it discards.
+ *
+ * A home name reaches the line bare only when `init` accepts it, so the line
+ * cannot be broken, or carry an escape sequence, by a directory name. Any other
+ * home is offered `MIRROR_HOME`, its path printed as a repr.
+ */
+export function homeNotConfiguredMessage(env: DbPathEnv, io: DbPathIo = {}): string {
+  const home = io.home ?? homedir();
+  const config = configFilePath({ XDG_CONFIG_HOME: env.XDG_CONFIG_HOME }, home);
+  const homes = (io.homes ?? findMirrorHomes)(home);
+  const sentences: string[] = [];
+  const command = initCommandFor(homes, homesRoot(home));
+  if (command !== null) {
+    sentences.push(`${command.sentence} (it writes MIRROR_USER=${command.name} to ${config}).`);
+  }
+  for (const other of homes.filter((found) => !found.nameable)) {
+    const path = pyRepr(other.path);
+    sentences.push(`To use the home at ${path}, add MIRROR_HOME=${path} to ${config}.`);
+  }
+  if (sentences.length === 0) {
+    const create = `${PROGRAM} init <your-name>`;
+    sentences.push(
+      `To create one, run: ${create} (it writes MIRROR_USER=<your-name> to ${config}).`,
+      `If yours lives elsewhere, add MIRROR_HOME=<path> to ${config}.`,
+    );
+  }
+  return ["Mirror home is not configured.", ...sentences].join(" ");
+}
+
+/**
+ * "To use the home at <path>, run: mirror init <name>", or the form for
+ * several, for the homes `init` can name; null when there are none. `name` is
+ * what the command takes: the one home's own name, or `<name>`. Bare `mirror`
+ * prints the same sentence.
+ *
+ * The command is built on a line of its own, its value through `shellWord`
+ * (CR104): an agent runs it as printed. A name `init` accepts is a plain token,
+ * so it prints unchanged. The path and the names around the command are prose.
+ */
+export function initCommandFor(
+  homes: readonly FoundHome[],
+  root: string,
+): { sentence: string; name: string } | null {
+  const nameable = homes.filter((found) => found.nameable);
+  const [only] = nameable;
+  if (only === undefined) return null;
+  if (nameable.length === 1) {
+    const command = `${PROGRAM} init ${shellWord(only.name)}`;
+    return { sentence: `To use the home at ${only.path}, run: ${command}`, name: only.name };
+  }
+  const names = nameable.map((found) => found.name).join(", ");
+  const command = `${PROGRAM} init <name>`;
+  return {
+    sentence: `To use one of the homes in ${root} (${names}), run: ${command}`,
+    name: "<name>",
+  };
 }
 
 /**

@@ -520,7 +520,7 @@
       "status": "attention needed"
     },
     "home_not_configured": {
-      "render": "Mirror runtime status\n\nVersion: 9.9.9\nInstall: clone (<root>/repo)\nRepository: <root>/repo\nGit branch: stable\nGit commit: 7e4705d\nGit dirty: no\nMirror home: not configured\nMirror home note: Mirror home is not configured. Set MIRROR_HOME or MIRROR_USER.\nDatabase: unknown\nDatabase exists: unknown\nCore migrations: attention needed (unknown/18 applied; database path unknown)\nInstalled extensions: 0\nExtension health: ready (0 checked)\nClone role: production\nUpdate channel: stable\nNode: <node-version>\nMEMORY_ENV: production\nLLM timeouts (s): reception=10, embedding=15, extraction=60; retries=2\nModels: extraction=anthropic/claude-haiku-5.5, reasoning=none (model default), embedding=openai/text-embedding-3-small\n\nStatus: attention needed\n",
+      "render": "Mirror runtime status\n\nVersion: 9.9.9\nInstall: clone (<root>/repo)\nRepository: <root>/repo\nGit branch: stable\nGit commit: 7e4705d\nGit dirty: no\nMirror home: not configured\nMirror home note: Mirror home is not configured. To create one, run: mirror init <your-name> (it writes MIRROR_USER=<your-name> to <root>/os-home/.config/mirror/env). If yours lives elsewhere, add MIRROR_HOME=<path> to <root>/os-home/.config/mirror/env.\nDatabase: unknown\nDatabase exists: unknown\nCore migrations: attention needed (unknown/18 applied; database path unknown)\nInstalled extensions: 0\nExtension health: ready (0 checked)\nClone role: production\nUpdate channel: stable\nNode: <node-version>\nMEMORY_ENV: production\nLLM timeouts (s): reception=10, embedding=15, extraction=60; retries=2\nModels: extraction=anthropic/claude-haiku-5.5, reasoning=none (model default), embedding=openai/text-embedding-3-small\n\nStatus: attention needed\n",
       "report": {
         "clone_role": {
           "note": null,
@@ -548,7 +548,7 @@
         },
         "memory_env": "production",
         "mirror_home": null,
-        "mirror_home_error": "Mirror home is not configured. Set MIRROR_HOME or MIRROR_USER.",
+        "mirror_home_error": "Mirror home is not configured. To create one, run: mirror init <your-name> (it writes MIRROR_USER=<your-name> to <root>/os-home/.config/mirror/env). If yours lives elsewhere, add MIRROR_HOME=<path> to <root>/os-home/.config/mirror/env.",
         "node_version": "<node-version>",
         "update_channel": {
           "note": null,

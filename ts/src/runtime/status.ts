@@ -373,28 +373,30 @@ export interface BuildStatusOptions {
    * front door with no npm probe (see `installKind.ts`).
    */
   install?: InstallKind;
+  /**
+   * The OS user's home, where the homes root and the config file are found when
+   * no home is configured; `composeWelcome` takes the same seam. The golden tests
+   * pin it, since the not-configured sentence names what is found there.
+   */
+  osHome?: string;
 }
 
 /**
  * Python's `resolve_mirror_home` raises `ValueError`, and
- * `build_runtime_status` prints `str(exc)` as `Mirror home note:`. The front
- * door's own resolver adds a MEMORY_DIR/DB_PATH hint that is right for a
- * front-door failure and wrong for this report, which is graded against the
- * oracle -- so the not-configured sentence is restated in the oracle's words.
- * The conflict sentence already matches byte-for-byte.
+ * `build_runtime_status` prints `str(exc)` as `Mirror home note:`. Until CR185
+ * the not-configured sentence was restated here in the oracle's shorter words;
+ * it is now the front door's own, the same on every surface, saying what to
+ * run and which file that writes.
  */
-function mirrorHomeForStatus(env: DbPathEnv): { home: string | null; error: string | null } {
+function mirrorHomeForStatus(
+  env: DbPathEnv,
+  osHome: string | undefined,
+): { home: string | null; error: string | null } {
   try {
-    return { home: resolveMirrorHome(env), error: null };
+    const io = osHome === undefined ? {} : { home: osHome };
+    return { home: resolveMirrorHome(env, io), error: null };
   } catch (error) {
-    const message = errorMessage(error);
-    if (message.startsWith("Mirror home is not configured")) {
-      return {
-        home: null,
-        error: "Mirror home is not configured. Set MIRROR_HOME or MIRROR_USER.",
-      };
-    }
-    return { home: null, error: message };
+    return { home: null, error: errorMessage(error) };
   }
 }
 
@@ -417,7 +419,7 @@ export function buildRuntimeStatus(options: BuildStatusOptions = {}): RuntimeSta
     mirrorHome = existsSync(expanded) ? realpathSync(expanded) : expanded;
     mirrorHomeError = null;
   } else {
-    ({ home: mirrorHome, error: mirrorHomeError } = mirrorHomeForStatus(env));
+    ({ home: mirrorHome, error: mirrorHomeError } = mirrorHomeForStatus(env, options.osHome));
   }
 
   const memoryEnv = env.MEMORY_ENV || "production";

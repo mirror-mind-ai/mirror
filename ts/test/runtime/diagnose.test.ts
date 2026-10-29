@@ -266,6 +266,9 @@ function reportFor(f: Fixture, home: string | null): RuntimeStatusReport {
     version: golden.meta.fixture_version,
     nodeVersion: "<node-version>",
     install: { kind: "clone", repository: f.repo },
+    // CR185: the not-configured sentence names what is found under the OS home,
+    // so the unconfigured scenario reads an empty one, never the developer's.
+    osHome: join(f.root, "os-home"),
   });
 }
 
