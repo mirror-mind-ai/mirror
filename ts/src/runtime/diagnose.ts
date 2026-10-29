@@ -25,7 +25,7 @@
 // inconclusive without a key; the live fetch belongs to DS8.
 
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
-import { basename, dirname, join } from "node:path";
+import { basename, delimiter, dirname, join } from "node:path";
 import { openDatabaseReadOnly } from "#db/database.ts";
 import {
   type ExtensionPluginReport,
@@ -892,10 +892,14 @@ export function hookNodeFindings(
   const candidates = HOOK_NODE_CANDIDATES.map((candidate) =>
     candidate.replace("$HOME", env.HOME ?? ""),
   );
+  // The platform's PATH separator and its executable names: `;` and `node.exe`
+  // on Windows, where splitting on `:` cut `C:\Program Files\nodejs` into `C`
+  // and a path and the finding fired on every install that had Node.
+  const names = process.platform === "win32" ? ["node.exe", "node"] : ["node"];
   const onPath = (env.PATH ?? "")
-    .split(":")
+    .split(delimiter)
     .filter(Boolean)
-    .some((entry) => isExecutable(`${entry}/node`));
+    .some((entry) => names.some((name) => isExecutable(join(entry, name))));
   if (onPath || candidates.some((candidate) => isExecutable(candidate))) return [];
   return [
     {

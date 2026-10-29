@@ -23,7 +23,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { delimiter, join, resolve } from "node:path";
 import { after, describe, test } from "node:test";
 import { bootstrapDatabase } from "#db/bootstrap.ts";
 import { openDatabaseForBootstrap } from "#db/database.ts";
@@ -223,6 +223,23 @@ describe("diagnose reports the transition's leftovers", () => {
     assert.equal(findings.length, 1);
     assert.equal(findings[0]?.code, "hook_node_unresolvable");
     assert.match(findings[0]?.recommendation ?? "", /MIRROR_NODE/);
+  });
+
+  test("node is looked for with the platform's PATH separator and executable name", () => {
+    // Splitting on `:` cut `C:\Program Files\nodejs` into `C` and a path, and
+    // `/node` never matched `node.exe`: the finding fired on every Windows
+    // install that had Node. The platform's delimiter and name, on each.
+    const nodeDir = process.platform === "win32" ? "C:\\Program Files\\nodejs" : "/opt/node/bin";
+    const nodeName = process.platform === "win32" ? "node.exe" : "node";
+    const other = process.platform === "win32" ? "C:\\Windows" : "/usr/bin";
+    const expected = join(nodeDir, nodeName);
+    assert.deepEqual(
+      hookNodeFindings(
+        { PATH: [other, nodeDir].join(delimiter), HOME: "/h" } as NodeJS.ProcessEnv,
+        (p) => p === expected,
+      ),
+      [],
+    );
   });
 
   test("node on PATH, or MIRROR_NODE set, reports nothing", () => {
