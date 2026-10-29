@@ -188,6 +188,40 @@ function pythonStr(value: unknown): string {
  * Generate a 3-4 sentence summary. Returns "" on empty messages, provider
  * failure, or trivial conversation.
  */
+/**
+ * The opening the summary prompt forbids, as a model writes it (CR180): a first
+ * clause whose subject is the conversation itself rather than its content. One
+ * adjective is allowed between the article and the noun ("The Mirror conversation").
+ */
+const CONVERSATION_FRAME =
+  /^\s*(?:the|this)\s+(?:[\p{L}\d.]+\s+)?(?:conversation|discussion|session|exchange|chat|dialogue|transcript|user)\b/iu;
+
+/**
+ * Appended to the prompt for the one regeneration (CR180): what the first sentence
+ * must do, said positively. It never quotes the frame it is replacing, because a
+ * quoted phrase comes back as the phrase.
+ */
+export const SUMMARY_RETRY_NOTE = `
+
+Rewrite the summary. Its first sentence states the matter itself with its status, or begins with the person's name and what they decided or asked. Nothing in it describes what kind of text this is.`;
+
+/** Whether a summary opens by describing the conversation instead of stating its content. */
+export function opensWithConversationFrame(summary: string): boolean {
+  return CONVERSATION_FRAME.test(summary);
+}
+
+/**
+ * The summary, with one regeneration when it opens with the frame (CR180).
+ *
+ * After the prompt stopped naming the conversation, ordinary conversations opened
+ * clean 21 of 21 on the pin, but a conversation that is itself about sessions and
+ * roadmaps still opened "The conversation centers on…" about half the time, and a
+ * rule that names the frame gets echoed. So the guard is here, not in the words:
+ * a framed summary is generated once more, the prompt plus a positive retry note,
+ * and the second is kept only if it opens clean. Every call that happened reaches `onLlmCall`, so
+ * the ledger prices both. An empty summary (the trivial-conversation answer) and
+ * a failed second call keep the first result; failure never costs the summary.
+ */
 export async function generateConversationSummary(
   llm: LlmProvider,
   messages: readonly ExtractionMessage[],
@@ -195,12 +229,23 @@ export async function generateConversationSummary(
 ): Promise<string> {
   if (messages.length === 0) return "";
   const prompt = buildConversationSummaryPrompt(messages, options.userName ?? "User");
-  let response: LlmResponse;
-  try {
-    response = await llm.complete({ role: "conversation_summary", prompt, temperature: 0.3 });
-  } catch {
-    return "";
-  }
-  options.onLlmCall?.(response, prompt);
-  return response.content.trim();
+  const once = async (sent: string): Promise<string | null> => {
+    let response: LlmResponse;
+    try {
+      response = await llm.complete({
+        role: "conversation_summary",
+        prompt: sent,
+        temperature: 0.3,
+      });
+    } catch {
+      return null;
+    }
+    options.onLlmCall?.(response, sent);
+    return response.content.trim();
+  };
+  const first = await once(prompt);
+  if (first === null) return "";
+  if (!opensWithConversationFrame(first)) return first;
+  const second = await once(`${prompt}${SUMMARY_RETRY_NOTE}`);
+  return second !== null && second !== "" && !opensWithConversationFrame(second) ? second : first;
 }

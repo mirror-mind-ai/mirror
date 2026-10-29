@@ -16,7 +16,10 @@ import { capturedMessages } from "#evals/harness/fixture.ts";
 import { liveProvider } from "#evals/harness/liveProvider.ts";
 import { assertedInOwnVoice } from "#evals/harness/support.ts";
 import type { EvalProbe } from "#evals/harness/types.ts";
-import { generateConversationSummary } from "#extraction/conversationMetadata.ts";
+import {
+  generateConversationSummary,
+  SUMMARY_RETRY_NOTE,
+} from "#extraction/conversationMetadata.ts";
 import { CONVERSATION_SUMMARY_PROMPT } from "#extraction/prompts.ts";
 import { resolveExtractionModel } from "#providers/config.ts";
 
@@ -24,7 +27,8 @@ const MODULE = "conversation_summary";
 
 export const THRESHOLD = 0.8;
 export const EVAL_MODEL = resolveExtractionModel();
-export const EVAL_PROMPTS = [CONVERSATION_SUMMARY_PROMPT];
+// CR180: the retry note is a prompt this module's calls can send, so the hash covers it.
+export const EVAL_PROMPTS = [CONVERSATION_SUMMARY_PROMPT, SUMMARY_RETRY_NOTE];
 
 export const PROBES: EvalProbe[] = [
   {
