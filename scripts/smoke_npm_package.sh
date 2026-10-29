@@ -204,6 +204,29 @@ mirror --help 2>"$WORK/pipe.err" | true
 check "mirror --help | true exits 0 (the reader asked us to stop)" "${PIPESTATUS[0]}" "0"
 check "and writes nothing to stderr (no EPIPE, no stack trace)" "$(wc -c <"$WORK/pipe.err" | tr -d ' ')" "0"
 
+say "5b. a home on disk and no configuration: the move from a clone to the package (CR185)"
+# Leandro's path on PR #42: the home stayed, the configuration lived in the
+# clone's .env, which a package does not read. The error names the command,
+# and the command adopts the home without touching it.
+identity_sums() { (cd "$HOME/.mirror-minds/smokeuser" && find identity -type f -exec cksum {} + | sort); }
+IDENTITY_BEFORE="$(identity_sums)"
+rm "$CONFIG"
+set +e
+MOVED_OUT="$(mirror runtime migrate 2>&1)"; MOVED_CODE=$?
+ADOPT_OUT="$(mirror init smokeuser 2>"$WORK/adopt.err")"; ADOPT_CODE=$?
+set -e
+check "with no configuration, runtime migrate exits 1" "$MOVED_CODE" "1"
+contains "and names the home and the command that finishes the job" "$MOVED_OUT" \
+  "To use the home at $HOME/.mirror-minds/smokeuser, run: mirror init smokeuser (it writes MIRROR_USER=smokeuser to $CONFIG)."
+check "init on the existing home exits 0" "$ADOPT_CODE" "0"
+check "its first line says what it found" "$(printf '%s\n' "$ADOPT_OUT" | head -1)" \
+  "Found user home: $HOME/.mirror-minds/smokeuser (nothing in it was changed)"
+check "the configuration is back" "$(cat "$CONFIG")" "MIRROR_USER=smokeuser"
+check "the config file is 0600 again" "$(mode_of "$CONFIG")" "600"
+check "nothing under identity/ changed" "$(identity_sums)" "$IDENTITY_BEFORE"
+[[ "$ADOPT_OUT" != *"mirror seed"* ]] && ok "no seed step for a home that has its database" || bad "init asked to seed a seeded home"
+check "init writes nothing to stderr" "$(wc -c <"$WORK/adopt.err" | tr -d ' ')" "0"
+
 say "6. a database that needs migration 017, opened through the installed package"
 if [ -z "$REAL_SQLITE" ]; then
   printf '  \033[33m-\033[0m sqlite3 unavailable; the migrating open is skipped\n'

@@ -21,8 +21,8 @@ first; then a clone's own `.env`, located from the running front door's tree;
 then the OS user's `~/.config/mirror/env` (`$XDG_CONFIG_HOME/mirror/env`).
 A package install ships no `.env` and reads none. One command writes one
 value: `mirror init <user>` records `MIRROR_USER` in the user's file when no
-other source configured a user, creating the file `0600` in a `0700`
-directory; `mirror runtime channel` writes the update channel beside it. Secrets
+other source configured a user, for a new home or one that already exists,
+creating the file `0600` in a `0700` directory; `mirror runtime channel` writes the update channel beside it. Secrets
 are read from the environment and these files only, never accepted as a
 command-line argument, never logged, and never included in an error message.
 
@@ -36,7 +36,7 @@ command-line argument, never logged, and never included in an error message.
 
 **Active in code:** yes. Resolution happens in `ts/src/frontDoor/dbPath.ts`; the MCP server resolves the same chain in `ts/src/mcp/main.ts`.
 
-**Effects:** changing the active home changes which local database, extensions, and backups the runtime sees. Conflicting `MIRROR_HOME` and `MIRROR_USER` values fail hard when the basename does not match.
+**Effects:** changing the active home changes which local database, extensions, and backups the runtime sees. Conflicting `MIRROR_HOME` and `MIRROR_USER` values fail hard when the basename does not match. With neither set, a command that needs a home stops with one line: the homes it finds under `~/.mirror-minds` and the `mirror init <name>` that selects one, or how to create one, with the file that command writes (CR185).
 
 ## Database
 

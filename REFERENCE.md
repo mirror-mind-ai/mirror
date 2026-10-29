@@ -783,7 +783,11 @@ files, and the first file to set a variable keeps it.
    when no other source configured a user, readable by you only (`0600` in a
    `0700` directory; `runtime diagnose` grades the mode), and tells you to add
    `OPENROUTER_API_KEY` to it by hand. The key is never read from the command
-   line.
+   line. It does so for a new home and for one that already exists under
+   `~/.mirror-minds`, which `init` uses as it is, changing nothing in it
+   (CR185). With no home configured, every command that needs one stops with
+   one line naming the homes it finds there and the `mirror init <name>` that
+   selects one.
 
 A second mirror on the same machine runs with `MIRROR_USER=<other>` set in the
 shell, as before. The per-install update channel lives beside the configuration
