@@ -431,3 +431,5 @@ suite passes under `test`, `development`, and unset.
 With no home configured, a person is now handed the command that finishes the job, and
 the file it writes. That command works on a home that already exists, which was the move
 from a clone to the package that Leandro made on PR #42.
+
+Carried by [v0.38.1](../../../releases/v0.38.1.md), a patch release with CR186 and CR187.

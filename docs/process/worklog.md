@@ -12,6 +12,21 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-10-30 — v0.38.1: The Refusal Names the Way Out
+
+Patch release of three Change Requests, cut the night the last of them closed. Two come
+from Leandro's report on PR #42, and CR187 from CR185's review:
+
+- CR185: a package with no home configured names the homes it finds and the
+  `mirror init <name>` that selects one, and `init` adopts a home that already exists.
+- CR187: a missing or refused OpenRouter key is one line that names the file, before
+  anything is touched.
+- CR186: a `stable` clone ahead only by `main`'s commits is told that `stable` is behind
+  it, not to push or reset.
+
+No migration. No model or prompt changed, so the model-behavior gate does not apply.
+Release note: [v0.38.1](../releases/v0.38.1.md).
+
 ### 2026-10-29 — CR186: a `stable` clone that took `main`'s commits early is told `stable` is behind it; PR #42 answered
 
 [CR186](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr186-runtime-update-reads-main-s-commits-as-local-work.md)

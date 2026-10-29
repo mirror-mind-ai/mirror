@@ -363,3 +363,5 @@ A `stable` clone that took `main`'s commits before their release is now told tha
 release. It is no longer told to push commits the remote already has, or to reset its
 code below a database that may be newer than `stable`'s code. Real local work is refused
 as before.
+
+Carried by [v0.38.1](../../../releases/v0.38.1.md), a patch release with CR185 and CR187.

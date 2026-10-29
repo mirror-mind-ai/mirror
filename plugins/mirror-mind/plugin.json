@@ -1,7 +1,7 @@
 {
   "name": "mirror-mind",
   "description": "Mirror Mind — local-first memory and identity for agentic runtimes.",
-  "version": "0.38.0",
+  "version": "0.38.1",
   "mcpServers": {
     "mirror-mind": {
       "command": "/bin/sh",

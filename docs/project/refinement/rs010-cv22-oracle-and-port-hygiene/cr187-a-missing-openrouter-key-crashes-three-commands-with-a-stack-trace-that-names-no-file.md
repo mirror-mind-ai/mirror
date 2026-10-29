@@ -425,3 +425,5 @@ A missing key is now one line that says what was not done and where the key goes
 before anything is touched; a refused key is one line too. Status, diagnose, and search
 all say it. No journal entry is lost to a missing key any more, and no output prints a
 key.
+
+Carried by [v0.38.1](../../../releases/v0.38.1.md), a patch release with CR185 and CR186.
