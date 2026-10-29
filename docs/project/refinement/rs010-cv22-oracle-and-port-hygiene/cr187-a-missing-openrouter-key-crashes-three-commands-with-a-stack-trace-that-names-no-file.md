@@ -405,7 +405,8 @@ end in a stack trace.
 
 Follow-ups outside this CR:
 
-- the transport failures above, if wanted, as a CR of their own;
+- the transport failures above, captured on 2026-10-29 as
+  [CR188](cr188-a-provider-outage-crashes-the-commands-that-call-a-model-with-a-stack-trace.md);
 - CR178, extraction at session end with no key, which is unchanged.
 
 ## Outcome

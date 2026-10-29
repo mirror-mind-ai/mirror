@@ -56,9 +56,10 @@ The plan was reviewed through four lenses and validated by the Navigator on the 
 lane.
 
 Both ship in the next release. Still open from the session: CR186, and transport
-failures other than a refused key, which still crash and are not captured. At the
-wrap-up the agent ran `mirror mirror log --help`, which wrote `--help` into the
-session's conversation: CR109's defect again, and its evidence now says so.
+failures other than a refused key, which still crash: captured as
+[CR188](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr188-a-provider-outage-crashes-the-commands-that-call-a-model-with-a-stack-trace.md).
+At the wrap-up the agent ran `mirror mirror log --help`, which wrote `--help` into
+the session's conversation: CR109's defect again, and its evidence now says so.
 
 ### 2026-10-29 — v0.38.0: The Model Behind the Memories, Chosen by Measurement
 

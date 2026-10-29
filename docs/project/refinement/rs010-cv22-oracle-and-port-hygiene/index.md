@@ -123,3 +123,4 @@ evidence stays honest as both cores move.
 - [CR185 — A package with no Mirror home configured does not say where it looks, and the route Getting Started gives refuses an existing home](cr185-a-package-with-no-home-configured-does-not-say-where-it-looks.md)
 - [CR186 — `runtime update` reads a clone's commits from `origin/main` as local work, and tells the person to push or reset](cr186-runtime-update-reads-main-s-commits-as-local-work.md)
 - [CR187 — A missing `OPENROUTER_API_KEY` crashes `consult`, `journal`, and `week plan` with a stack trace that names no file, and the journal entry is lost](cr187-a-missing-openrouter-key-crashes-three-commands-with-a-stack-trace-that-names-no-file.md)
+- [CR188 — A timeout, an outage, a rate limit, or a server error crashes the commands that call a model with a stack trace, and `journal` loses the entry](cr188-a-provider-outage-crashes-the-commands-that-call-a-model-with-a-stack-trace.md)
