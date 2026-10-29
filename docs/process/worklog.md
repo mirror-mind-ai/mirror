@@ -24,6 +24,17 @@ release gate on the final code: `eval --all` 9 of 9 modules, 70 of 70 probes, th
 fully clean run on record. Release note:
 [v0.38.0](../releases/v0.38.0.md).
 
+After the release commit: tag and `stable` pushed by `release:promote`; the
+trusted-publisher stage approved; `latest` and `stable` at 0.38.0; GitHub Release
+published, marked latest. CI on the release commit was green on the two test jobs and
+the smoke and red on the Windows checkout, for a path in TS1's evidence folder that had
+exceeded Windows' limit since the 26th and broke that job on every push of the day; the
+folder was shortened two commits later and a dispatched run on `main` is green on all
+four jobs. Four roadmap links written at the wrong depth were fixed in between. Both
+commits are docs; the tag's code is `main`'s. The production install is updated through
+`runtime update` next, with `MIRROR_USER` unset so the backup names the production
+home (the v0.37.0 lesson); no migration this time.
+
 ### 2026-10-28 — CV9.DS9.US3: The extraction pin moves to Claude Haiku 5.5 at reasoning `none`
 
 The decision DS9 was opened to make. The Navigator decided at Plan approval, on the
