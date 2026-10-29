@@ -6,8 +6,6 @@ set "MIRROR_APP=%~dp0.."
 for %%I in ("%MIRROR_APP%") do set "MIRROR_APP=%%~fI"
 set "Path=%MIRROR_APP%\node;%MIRROR_APP%\git\cmd;%Path%"
 set "npm_config_prefix=%MIRROR_APP%\node"
-ode"
-ode"
 title Mirror Mind - Status
 echo.
 call mirror runtime status

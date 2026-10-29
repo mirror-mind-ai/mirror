@@ -240,8 +240,10 @@ function Invoke-Configure {
     }
 
     Step "mirror init $MirrorUser + seed" {
-        # init refuses an identity that already exists (it never overwrites a profile);
-        # a re-run or a repair skips it. seed is idempotent: it only adds what is missing.
+        # init never overwrites a profile. Up to 0.38.0 it also refuses an existing one,
+        # so a re-run or a repair skips it; from CR185 on it reuses the home unchanged
+        # and exits 0, and the skip is only a shortcut. seed is idempotent: it only adds
+        # what is missing.
         $identity = Join-Path $env:USERPROFILE ".mirror-minds\$MirrorUser\identity"
         if (Test-Path $identity) {
             $initLine = "identity already present"

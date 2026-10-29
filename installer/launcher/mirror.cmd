@@ -15,8 +15,6 @@ set "MIRROR_APP=%~dp0.."
 for %%I in ("%MIRROR_APP%") do set "MIRROR_APP=%%~fI"
 set "Path=%MIRROR_APP%\node;%MIRROR_APP%\git\cmd;%Path%"
 set "npm_config_prefix=%MIRROR_APP%\node"
-ode"
-ode"
 if not defined EDITOR set "EDITOR=notepad"
 rem The installer stores the key in the user's environment (registry). A window
 rem opened before the install -- or Explorer before it refreshed -- does not

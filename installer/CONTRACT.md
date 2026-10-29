@@ -10,7 +10,7 @@ launchers; `tests/contract.ps1` asserts every line of it.
 
 **Tested with:** `mirror-mind@0.33.4`, Pi 1.3.0, Node 24.22.0, Git 2.56.0.2.
 **Contract still held by:** `mirror-mind@0.35.0` (2026-10-19), `mirror-mind@0.36.0`
-(2026-10-21), `mirror-mind@0.36.2` (2026-10-22), `mirror-mind@0.37.0` (2026-10-26; migration 018 applies on first open), `mirror-mind@0.38.0` (2026-10-29; npm package carries no `docs/`, so the tag's 271-char path does not reach it) — 21/21, run on the host. The release build stays pinned at
+(2026-10-21), `mirror-mind@0.36.2` (2026-10-22), `mirror-mind@0.37.0` (2026-10-26; migration 018 applies on first open), `mirror-mind@0.38.0` (2026-10-29; npm package carries no `docs/`, so the tag's 271-char path does not reach it), and `main` at `7f716189` packed locally (2026-10-29; CR185: `init` reuses an existing home and exits 0; CR187: keyless commands refuse in one line, none of them in the installer's path) — 21/21, run on the host. The release build stays pinned at
 0.33.4 until a core release carries the Windows `runtime update` fix
 (mirror-mind-ai/mirror#46); without it the installed Mirror cannot update
 itself.
