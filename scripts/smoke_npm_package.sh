@@ -226,6 +226,16 @@ check "the config file is 0600 again" "$(mode_of "$CONFIG")" "600"
 check "nothing under identity/ changed" "$(identity_sums)" "$IDENTITY_BEFORE"
 [[ "$ADOPT_OUT" != *"mirror seed"* ]] && ok "no seed step for a home that has its database" || bad "init asked to seed a seeded home"
 check "init writes nothing to stderr" "$(wc -c <"$WORK/adopt.err" | tr -d ' ')" "0"
+# The package reads the file back: nothing else selects the home now. A clone
+# cannot show this, because its own .env is read before the config file.
+ADOPTED_STATUS="$(mirror runtime status 2>&1 || true)"
+contains "runtime status finds the home through the config file" "$ADOPTED_STATUS" "Mirror home: $HOME/.mirror-minds/smokeuser"
+set +e
+AGAIN_OUT="$(mirror init smokeuser 2>&1)"; AGAIN_CODE=$?
+set -e
+check "init again exits 0" "$AGAIN_CODE" "0"
+contains "and says the home is already selected" "$AGAIN_OUT" "Configuration: already selects this home"
+check "and writes nothing" "$(cat "$CONFIG")" "MIRROR_USER=smokeuser"
 
 say "6. a database that needs migration 017, opened through the installed package"
 if [ -z "$REAL_SQLITE" ]; then

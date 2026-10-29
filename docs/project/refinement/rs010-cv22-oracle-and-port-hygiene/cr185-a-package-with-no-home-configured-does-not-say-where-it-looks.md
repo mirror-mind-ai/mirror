@@ -220,10 +220,14 @@ identity, as the guard under all of this.
   fresh install runs first.
 - `bash scripts/smoke_runtime_update.sh`, because its failure output changes.
 
-**Navigator validation.** In a terminal, with a scratch home and this checkout's `mirror`:
+**Navigator validation.** In a terminal, as a package user: this checkout, packed and
+installed into a scratch prefix, with a scratch home. This is the lane Leandro was on.
 
 ```bash
-S=$(mktemp -d); m() { HOME="$S" MIRROR_USER= MIRROR_HOME= XDG_CONFIG_HOME= OPENROUTER_API_KEY= mirror "$@"; }
+S=$(mktemp -d)
+(cd ~/dev/workspace/mirror-dev && npm pack --silent --pack-destination "$S")
+npm install -g --silent --prefix "$S/prefix" "$S"/mirror-mind-*.tgz
+m() { env -u MIRROR_USER -u MIRROR_HOME -u XDG_CONFIG_HOME -u OPENROUTER_API_KEY HOME="$S" PATH="$S/prefix/bin:$PATH" mirror "$@"; }
 m runtime update --dry-run   # 1. "To create one, run: mirror init <your-name> (it writes … $S/.config/mirror/env)…"
 m init probe                 # 2. creates the home and the config file, as today
 rm "$S/.config/mirror/env"   #    the move from a clone: the home exists, nothing selects it
@@ -235,8 +239,14 @@ find "$S/.mirror-minds/probe/identity" -type f -exec shasum {} + | diff "$S/befo
 stat -f %Lp "$S/.config/mirror/env"   # 600
 m init probe                 # 6. "Configuration: already selects this home"
 cat "$S/.config/mirror/env"  #    still the one line step 5 wrote
-m runtime status             # 7. Mirror home: $S/.mirror-minds/probe
+m runtime status | grep '^Mirror home'   # 7. Mirror home: $S/.mirror-minds/probe
 ```
+
+*Amended 2026-10-29, during implementation:* the first version of this route ran this
+checkout's own `mirror` with `MIRROR_USER=` blank. A dry run showed that steps 6 and 7
+could not pass that way. A clone reads its own `.env` before the config file, and this
+checkout's `.env` sets `MIRROR_USER`, so the only way to hide it also hides the file the
+route is meant to exercise. The route now runs the packed package.
 
 Pass: each step shows what its comment says, `diff` prints nothing, and the mode is `600`.
 Fail: step 5 refuses, anything under `identity/` changes, or a message names no file or a
@@ -283,6 +293,60 @@ into the plan above:
 - **DevOps engineer:** PR #45's installer depends on today's refusal through its skip, and
   stays compatible. Adoption keeps the first stdout line a one-line summary, which is the
   installer's contract.
+
+### Implementation evidence (2026-10-29)
+
+The work went in as six commits on `main`, test-first, each one green:
+
+1. One homes root and one rule for a home: `frontDoor/mirrorHomes.ts`, with `dbPath.ts`,
+   `init.ts`, and `runtimeRoute.ts` delegating to it.
+2. `init`'s route moved, unchanged, to `frontDoor/initRoute.ts`.
+3. The not-configured sentence, the status seam, and the two goldens with their README
+   row.
+4. Adoption, and the selection read once for both branches.
+5. The bare `mirror` orientation.
+6. Getting Started, the references, and the package smoke.
+
+**Tests.** 22 tests were added:
+
+- `mirrorHomes.test.ts`, new, with 5 tests;
+- `homeNotConfigured.test.ts`, new, with 5 tests that replay Leandro's
+  `runtime update --dry-run`, `runtime migrate`, `runtime status`, the bare `mirror`, and
+  a command behind the front door's prefix;
+- 8 more in `dbPath.test.ts`;
+- in `initCli.test.ts`, the refusal test became 9 adoption and selection tests;
+- 1 more in `usage.test.ts`.
+
+The whole suite, run with no `mirror` on the PATH: 3590 tests, 3587 pass, 0 fail, 3
+skipped.
+
+**Checks.**
+
+- Clean: typecheck; `git diff --check`; and the retired-surface, pack-contents (507
+  files), doc-link, skill-parity, temp-home, and Claude-plugin checks.
+- Lint is clean apart from one warning that was there before this work, in
+  `testTempHomes.test.ts`.
+- These smokes pass: migration structural parity, bootstrap custody, migrate-on-open,
+  conversation lifecycle, Builder lifecycle, extension catalog, `smoke_mirror_mcp.sh`, and
+  `smoke_runtime_update.sh`.
+- `smoke_npm_package.sh` passes 89 checks. Step 5b is new: it replays the move from a
+  clone on the packed tarball, then checks the two things a clone cannot show, namely
+  that `runtime status` finds the home through the file, and that `init` run again writes
+  nothing.
+- `smoke_claude_plugin.sh` fails at "no hooks.log line after mirror-hook went missing".
+  It fails the same way on `f91897ad`, the commit before CR185. That is CR172: this
+  machine has a global `mirror-hook`.
+
+**Decided while implementing.**
+
+- The CR104 guard requires every printed command to quote what it interpolates, and it
+  flagged the new lines. The home name now goes through `shellWord`, which leaves a name
+  `init` accepts unchanged. The prose around each command is built on a line of its own.
+- The adoption key step reads: "Add OPENROUTER_API_KEY=<your key> to <config> (moving
+  from a clone? copy the line from its .env)".
+- The validation route moved to the package lane, as recorded above. The agent's dry run
+  of that route on 2026-10-29 showed each step as described. That run is evidence, not
+  the Navigator's validation.
 
 ## Evidence
 
