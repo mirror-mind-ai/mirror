@@ -7,6 +7,7 @@ import test from "node:test";
 import { openDatabaseCopyForWrite } from "#db/database.ts";
 import { createSchema } from "#db/schema.ts";
 import {
+  degradedNoteFor,
   formatSearchResults,
   resolveSearchEmbeddingProvider,
   runMemorySearchRoute,
@@ -145,4 +146,37 @@ test("memories --search does not reinforce retrieval (AI-12 parity)", async () =
   } finally {
     db.close();
   }
+});
+
+// --- CR187: the degraded note says which cause it was, when it knows ---
+
+test("CR187: a search degraded by a missing key says where the key goes", () => {
+  const home = tempDir("cr187-search-note-");
+  const config = join(home, ".config", "mirror", "env");
+  assert.equal(
+    degradedNoteFor("config", {}, home),
+    "⚠ Degraded: lexical-only search (OPENROUTER_API_KEY is not configured: add it to " +
+      `${config} (a new file; make it readable only by you: chmod 600 ${config})).`,
+  );
+});
+
+test("CR187: a search degraded by a refused key says to check the key", () => {
+  assert.equal(
+    degradedNoteFor("auth", {}),
+    "⚠ Degraded: lexical-only search (OpenRouter refused OPENROUTER_API_KEY: check the key where it is set).",
+  );
+});
+
+test("CR187: every other cause keeps the note it always had", () => {
+  for (const kind of [undefined, "no_provider", "timeout", "rate_limit", "embedding_exhausted"]) {
+    assert.equal(degradedNoteFor(kind, {}), DEGRADED_NOTE, String(kind));
+  }
+});
+
+test("CR187: formatSearchResults renders the note it is given, alone or above the results", () => {
+  const note = degradedNoteFor("auth", {});
+  assert.equal(formatSearchResults("q", [], new Map(), true, note), `${note}\n`);
+  const results = [{ id: "m1", score: 0.5, semantic: 0.5 }];
+  const output = formatSearchResults("q", results, new Map([["m1", row()]]), true, note);
+  assert.ok(output.startsWith(`${note} Ranked by keyword match.\n`), output);
 });

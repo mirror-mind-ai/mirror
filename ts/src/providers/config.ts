@@ -221,11 +221,19 @@ export function keyFileInstruction(
   env: Record<string, string | undefined>,
   home: string = homedir(),
 ): string {
+  return `OPENROUTER_API_KEY=<your key> to ${keyFileTarget(env, home)}`;
+}
+
+/** The config file to add the key to, with the owner-only clause when it is new. */
+export function keyFileTarget(
+  env: Record<string, string | undefined>,
+  home: string = homedir(),
+): string {
   const config = configFilePath({ XDG_CONFIG_HOME: env.XDG_CONFIG_HOME }, home);
   const created = existsSync(config)
     ? ""
     : ` (a new file; make it readable only by you: chmod 600 ${config})`;
-  return `OPENROUTER_API_KEY=<your key> to ${config}${created}`;
+  return `${config}${created}`;
 }
 
 /**

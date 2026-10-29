@@ -125,3 +125,14 @@ test("the other commands that cannot work without the key refuse the same way", 
     refusedBeforeAnyWork(home, args, "nothing was done");
   }
 });
+
+test("`memories --search` still answers, and its note says where the key goes", () => {
+  // A search can work without the key, lexically, so it is not refused: it says why.
+  const home = keylessHome();
+  const result = spawnFrontDoor(["memories", "--search", "identity"], home.env);
+  assert.equal(result.status, 0, result.stderr);
+  const note =
+    "⚠ Degraded: lexical-only search (OPENROUTER_API_KEY is not configured: add it to " +
+    `${home.config} (a new file; make it readable only by you: chmod 600 ${home.config})).`;
+  assert.ok(result.stdout.includes(note), result.stdout);
+});
