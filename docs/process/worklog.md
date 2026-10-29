@@ -12,6 +12,54 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-10-29 — CR185 and CR187: a missing home or key is one line that says what to run; PR #42 answered
+
+Leandro's last comment on PR #42 (2026-10-17) was answered, late and with an apology,
+and turned into captures and a correction.
+[CR186](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr186-runtime-update-reads-main-s-commits-as-local-work.md)
+is captured and open: `runtime update` reads a clone's commits from `origin/main` as
+local work. The v0.33.3 manual step for a clone, `git pull --ff-only`, was wrong for the
+default channel, because on `main` it pulls past the release. The release notes, the
+published GitHub Release, and the release comment on the PR now give
+`git fetch origin` and `git merge --ff-only origin/stable`, each with a dated correction.
+
+[CR185](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr185-a-package-with-no-home-configured-does-not-say-where-it-looks.md)
+is done:
+
+- With no home configured, every surface prints one sentence. It names the homes found
+  under `~/.mirror-minds` and the `mirror init <name>` that selects one, or says how to
+  create a home, and it names the file that command writes.
+- `init <name>` adopts an existing home instead of refusing it. Nothing in the home
+  changes, the configuration is written owner-only, and only the steps left are printed.
+- The bare `mirror` names the home too.
+- A new home no longer tells the person to select a user who is already selected.
+
+The plan was reviewed through five lenses, and the Navigator validated it as a package
+user, the lane Leandro was on. The first push failed one test on CI, which runs the suite
+under `MEMORY_ENV=test`. The test, not the product, had assumed `memory.db`. The suite is
+now also run that way before a push. A note on PR #45 tells the Windows installer that
+its skip of `init` is now optional.
+
+[CR187](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr187-a-missing-openrouter-key-crashes-three-commands-with-a-stack-trace-that-names-no-file.md)
+is done. A missing `OPENROUTER_API_KEY` used to crash `consult`, `journal`, and
+`week plan` with a stack trace, and `journal` lost the entry after copying the database
+into its snapshot. Now:
+
+- The six commands that cannot work without the key refuse before they touch anything,
+  in one line that says what was not done and where the key goes.
+- A key OpenRouter refuses is one line too, whether it was met by a chat call or an
+  embedding call.
+- Search's degraded note, `runtime status`, and `runtime diagnose` say the same.
+- `consolidate apply` is checked lazily, because only a merge embeds.
+
+The plan was reviewed through four lenses and validated by the Navigator on the package
+lane.
+
+Both ship in the next release. Still open from the session: CR186, and transport
+failures other than a refused key, which still crash and are not captured. At the
+wrap-up the agent ran `mirror mirror log --help`, which wrote `--help` into the
+session's conversation: CR109's defect again, and its evidence now says so.
+
 ### 2026-10-29 — v0.38.0: The Model Behind the Memories, Chosen by Measurement
 
 Minor release closing CV9.DS9, with CR180. The extraction pin is Claude Haiku 5.5 at
