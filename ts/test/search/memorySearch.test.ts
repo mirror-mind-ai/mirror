@@ -7,6 +7,7 @@ import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts
 import { ProviderConfigError } from "#providers/config.ts";
 import type { EmbeddingProvider, EmbeddingResult } from "#providers/embedding.ts";
 import { ReplayEmbeddingProvider } from "#providers/embedding.ts";
+import { LlmTransportError } from "#providers/openrouter.ts";
 import {
   accessCountsByMemoryId,
   ftsLexicalScores,
@@ -575,6 +576,42 @@ test("a precomputed query embedding skips the provider and the ledger; no provid
     assert.deepEqual(
       none.results.map((result) => result.id),
       ["far"],
+    );
+  } finally {
+    db.close();
+    await rm(path, { force: true });
+  }
+});
+
+test("CR187: a search degraded by a refused key reports `auth`, not the embedding layer", async () => {
+  // The wrapper used to keep only the provider's message, so a key OpenRouter
+  // refused degraded as `embedding_exhausted`, indistinguishable from an outage;
+  // the front door could not tell the person to check the key.
+  const { db, path } = await makeDb("refused-key.db");
+  try {
+    insertMemory(db, {
+      id: "only",
+      content: "a note about the day",
+      embedding: [1, 0, 0],
+      createdAt: "2026-01-01T00:00:00Z",
+    });
+    rebuildFts(db);
+    const refused: EmbeddingProvider = {
+      embed: async () => {
+        throw new LlmTransportError("auth", "provider returned HTTP 401", { status: 401 });
+      },
+    };
+    const outcome = await searchMemoriesWithStatus(db, {
+      query: "day",
+      limit: 5,
+      provider: refused,
+      logAccess: false,
+    });
+    assert.equal(outcome.degraded, true);
+    assert.equal(outcome.degradedKind, "auth");
+    assert.deepEqual(
+      outcome.results.map((result) => result.id),
+      ["only"],
     );
   } finally {
     db.close();

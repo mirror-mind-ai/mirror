@@ -1,3 +1,7 @@
+import { existsSync } from "node:fs";
+import { homedir } from "node:os";
+import { configFilePath } from "#runtime/config.ts";
+
 export type ProviderName = "openrouter";
 
 export interface ProviderConfig {
@@ -9,6 +13,8 @@ export interface ProviderConfig {
 export interface ProviderConfigOptions {
   env?: Record<string, string | undefined>;
   argv?: readonly string[];
+  /** The OS user's home, where the config file is named from (tests only). */
+  home?: string;
 }
 
 const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
@@ -184,9 +190,82 @@ export function resolveProviderConfig(
   const env = options.env ?? process.env;
   const apiKey = env.OPENROUTER_API_KEY?.trim();
   if (!apiKey) {
-    throw new ProviderConfigError("OPENROUTER_API_KEY is not configured.");
+    // Reached lazily, at a command's first model call, so it claims nothing
+    // about what the command did before it (CR187).
+    const where = keyFileInstruction(env, options.home);
+    throw new ProviderConfigError(`OPENROUTER_API_KEY is not configured. Add ${where}.`);
   }
   return { provider, apiKey, baseUrl: OPENROUTER_BASE_URL };
+}
+
+// --- CR187: the key's presence, and the sentences that say where it goes ---
+//
+// A missing key reached Node as a stack trace that named no file, and a key
+// OpenRouter refused did the same. Every sentence about the key is built here,
+// from one predicate, so the refusal, the status line, and the diagnose finding
+// cannot disagree about what "configured" means. None of them carries the key.
+
+/** Whether a key is configured: present and not blank, trimmed as the provider reads it. */
+export function hasOpenRouterKey(env: Record<string, string | undefined>): boolean {
+  return Boolean(env.OPENROUTER_API_KEY?.trim());
+}
+
+/**
+ * "OPENROUTER_API_KEY=<your key> to <config>", naming the file this install
+ * reads (`XDG_CONFIG_HOME` honoured). When that file does not exist yet, the
+ * person is about to create it by hand, where the usual umask makes it 0644 --
+ * the key readable by every account on the machine -- so the instruction says
+ * to make it owner-only. A file `init` created is 0600 already.
+ */
+export function keyFileInstruction(
+  env: Record<string, string | undefined>,
+  home: string = homedir(),
+): string {
+  const config = configFilePath({ XDG_CONFIG_HOME: env.XDG_CONFIG_HOME }, home);
+  const created = existsSync(config)
+    ? ""
+    : ` (a new file; make it readable only by you: chmod 600 ${config})`;
+  return `OPENROUTER_API_KEY=<your key> to ${config}${created}`;
+}
+
+/**
+ * Refuse, before a command does anything, when the key it cannot work without
+ * is missing. The sentence says first what was not done, then how to fix it:
+ * the person's first question is whether their entry, plan, or question went
+ * anywhere.
+ */
+export function requireOpenRouterKey(
+  env: Record<string, string | undefined>,
+  options: { consequence?: string; home?: string } = {},
+): void {
+  if (hasOpenRouterKey(env)) return;
+  const consequence = options.consequence ?? "nothing was done";
+  throw new ProviderConfigError(
+    `${consequence}, because OPENROUTER_API_KEY is not configured. ` +
+      `Add ${keyFileInstruction(env, options.home)}, then run the same command again.`,
+  );
+}
+
+/**
+ * A key OpenRouter refused (HTTP 401 or 403), named by status and by where a
+ * key can be set -- never by value, and never with anything the provider sent
+ * back. The key may come from the shell or a clone's `.env` as well as the
+ * config file, so all three are named, as diagnose does for its own settings.
+ */
+export function keyRefusedMessage(
+  status: number | null,
+  options: { env?: Record<string, string | undefined>; home?: string } = {},
+): string {
+  const env = options.env ?? process.env;
+  const config = configFilePath(
+    { XDG_CONFIG_HOME: env.XDG_CONFIG_HOME },
+    options.home ?? homedir(),
+  );
+  const code = status === null ? "" : ` (HTTP ${status})`;
+  return (
+    `OpenRouter refused OPENROUTER_API_KEY${code}. Check the key where it is set: ` +
+    `the environment, the clone's .env, or ${config}.`
+  );
 }
 
 function rejectArgvSecrets(argv: readonly string[]): void {

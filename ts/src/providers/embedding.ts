@@ -6,7 +6,12 @@ import {
   resolveLlmTimeoutMs,
   resolveProviderConfig,
 } from "./config.ts";
-import { createOpenRouterClient, LlmTransportError, type OpenRouterClient } from "./openrouter.ts";
+import {
+  createOpenRouterClient,
+  LlmTransportError,
+  type LlmTransportErrorKind,
+  type OpenRouterClient,
+} from "./openrouter.ts";
 import { loadReplayFixture } from "./replay.ts";
 
 /**
@@ -33,12 +38,28 @@ export const EMBEDDING_DIMENSIONS = 1536;
 export const DEFAULT_EMBEDDING_ATTEMPTS = 3;
 export const DEFAULT_EMBEDDING_RETRY_BACKOFF_MS = 500;
 
+/** The classification a wrapped transport failure carried: nothing else of it (CR187). */
+export interface WrappedTransport {
+  readonly kind: LlmTransportErrorKind;
+  readonly status: number | null;
+}
+
 export class EmbeddingError extends Error {
   readonly permanent: boolean;
-  constructor(message: string, options: { permanent?: boolean } = {}) {
+  /**
+   * The transport failure this wraps, by kind and status, or null. Kept so a key
+   * OpenRouter refused on an embedding call can be named like one refused on a
+   * chat call (CR187); a message or a cause would carry what the provider sent.
+   */
+  readonly transport: WrappedTransport | null;
+  constructor(
+    message: string,
+    options: { permanent?: boolean; transport?: WrappedTransport | null } = {},
+  ) {
     super(message);
     this.name = "EmbeddingError";
     this.permanent = options.permanent ?? false;
+    this.transport = options.transport ?? null;
   }
 }
 
@@ -116,7 +137,9 @@ export async function generateEmbeddingSafely(
       // Provider/transport exception: terminal at this layer, not retried.
       options.onAttempt?.({ text, vector: null, latencyMs: Date.now() - t0, promptTokens: null });
       const detail = error instanceof Error ? error.message : String(error);
-      throw new EmbeddingError(`Embedding provider call failed: ${detail}`);
+      const transport =
+        error instanceof LlmTransportError ? { kind: error.kind, status: error.status } : null;
+      throw new EmbeddingError(`Embedding provider call failed: ${detail}`, { transport });
     }
     const { vector, promptTokens } = result;
     if (!vector || vector.length === 0) {
