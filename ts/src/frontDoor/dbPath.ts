@@ -24,6 +24,7 @@ import { homedir } from "node:os";
 import { basename, join } from "node:path";
 import { expandHome } from "#util/paths.ts";
 import { optionValue } from "./args.ts";
+import { userHomePath } from "./mirrorHomes.ts";
 
 /** Raised when no database location can be resolved — maps to CLI exit 2. */
 export class MirrorHomeNotConfiguredError extends Error {}
@@ -34,7 +35,6 @@ const DB_NAMES: Record<string, string> = {
   test: "memory_test.db",
 };
 
-const DEFAULT_USER_HOMES_DIR = ".mirror-minds";
 const LEGACY_USER_HOMES_DIR = ".mirror";
 
 /** Port of Python `db_name_for_env`: one (environment) → one database name. */
@@ -72,7 +72,7 @@ export function resolveMirrorHome(env: DbPathEnv, io: DbPathIo = {}): string {
   const explicitHome = env.MIRROR_HOME ?? "";
   const explicitUser = env.MIRROR_USER ?? "";
   const resolvedHome = explicitHome ? expandHome(explicitHome) : null;
-  const derivedHome = explicitUser ? join(home, DEFAULT_USER_HOMES_DIR, explicitUser) : null;
+  const derivedHome = explicitUser ? userHomePath(explicitUser, home) : null;
 
   if (resolvedHome && explicitUser && basename(resolvedHome) !== explicitUser) {
     throw new MirrorHomeNotConfiguredError(

@@ -15,6 +15,7 @@ import { join } from "node:path";
 import { createZipBackup } from "#backup/zipBackup.ts";
 import { dbNameForEnv, resolveMirrorHome } from "#frontDoor/dbPath.ts";
 import { frontDoorLogPath, logFrontDoor } from "#frontDoor/frontDoorLog.ts";
+import { homesRoot } from "#frontDoor/mirrorHomes.ts";
 import { renderUnknownSubcommand } from "#frontDoor/usage.ts";
 import {
   renderBackupVerification,
@@ -319,7 +320,7 @@ export async function runRuntimeReadRoute(
           : null;
     const findings = [
       ...diagnoseRuntime(report, inspectGitWorktree(report.git.repository)),
-      ...rootStateFindings(homesRoot(env)),
+      ...rootStateFindings(ambientHomesRoot(env)),
       // CV22.DS10.TS5: the transition's own leftovers. A stale MIRROR_TS_*
       // gate is inert and silently so; an unresolvable Node makes every hook
       // skip; and hooks.log holds what the hooks met in their own context.
@@ -778,8 +779,7 @@ function firstPositional(args: readonly string[]): string | null {
   return null;
 }
 
-/** Python's ambient `DEFAULT_USER_HOMES_DIR`: `<home>/.mirror-minds`. */
-function homesRoot(env: NodeJS.ProcessEnv): string {
-  const home = env.HOME ?? env.USERPROFILE ?? "";
-  return join(home, ".mirror-minds");
+/** Python's ambient `DEFAULT_USER_HOMES_DIR`: the homes root under the environment's home. */
+function ambientHomesRoot(env: NodeJS.ProcessEnv): string {
+  return homesRoot(env.HOME ?? env.USERPROFILE ?? "");
 }
