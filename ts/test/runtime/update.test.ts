@@ -10,8 +10,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test, { after } from "node:test";
 import { assertNamesNoInterpreter } from "#helpers/noInterpreter.ts";
+import type { GitRunner } from "#runtime/git.ts";
 import type { InstallKind } from "#runtime/installKind.ts";
-import type { GitRunner } from "#runtime/strategies/clone.ts";
 import type { NpmRunner } from "#runtime/strategies/package.ts";
 import { postUpdateHints, runUpdate, type UpdateDeps } from "#runtime/update.ts";
 import { renderUpdateResult, updateLogDetail } from "#runtime/updatePipeline.ts";
@@ -150,6 +150,74 @@ test("a diverged clone fails at plan, before anything moves", () => {
   assert.match(result.stages.at(-1)?.detail ?? "", /diverged/);
   assert.ok(!git.calls.some((call) => call[0] === "merge"));
   assert.ok(result.recovery.some((line) => line.includes("unchanged")));
+});
+
+test("a stable clone ahead only by main's commits is refused at plan, before any backup (CR186)", () => {
+  // `stable` is behind the clone, as the package lane says of a channel behind
+  // the installed version. A dry run refuses the same way. Keys longest first:
+  // the scripted git answers the first key a command starts with, and the
+  // published-commits count starts with the ahead count's key.
+  for (const dryRun of [false, true]) {
+    const git = scriptGit({
+      "rev-parse --short HEAD": { stdout: "aaaaaaa\n" },
+      "rev-list --count origin/stable..HEAD ^origin/main": { stdout: "0\n" },
+      "rev-list --count origin/stable..HEAD": { stdout: "3\n" },
+      "rev-list --count HEAD..origin/stable": { stdout: "0\n" },
+    });
+    let backups = 0;
+    const result = runUpdate(
+      deps({
+        git: git.runner,
+        upstream: "origin/stable",
+        channel: "stable",
+        dryRun,
+        createBackup: () => {
+          backups += 1;
+          return "/should/not/happen.zip";
+        },
+      }),
+    );
+    const label = dryRun ? "dry run" : "update";
+    assert.equal(result.success, false, label);
+    assert.deepEqual(
+      stageNames(result),
+      ["status gate=pass", "capture=pass", "fetch=pass", "plan=fail"],
+      label,
+    );
+    assert.equal(
+      result.stages.at(-1)?.detail,
+      "'stable' is behind this checkout (3 commit(s), all on origin/main)",
+      label,
+    );
+    assert.equal(backups, 0, `${label}: nothing is archived`);
+    assert.ok(!git.calls.some((call) => call[0] === "merge"), `${label}: nothing moves`);
+    assert.ok(
+      result.recovery.some(
+        (line) => line === "Follow the channel that carries aaaaaaa: runtime channel main",
+      ),
+      JSON.stringify(result.recovery),
+    );
+    assert.ok(
+      !result.recovery.some((line) => /\bpush\b|\breset\b/i.test(line)),
+      `${label}: advice a person should not follow: ${JSON.stringify(result.recovery)}`,
+    );
+  }
+});
+
+test("main's commits with one of the clone's own keep today's push-or-reset refusal (CR186)", () => {
+  const git = scriptGit({
+    "rev-parse --short HEAD": { stdout: "aaaaaaa\n" },
+    "rev-list --count origin/stable..HEAD ^origin/main": { stdout: "1\n" },
+    "rev-list --count origin/stable..HEAD": { stdout: "4\n" },
+    "rev-list --count HEAD..origin/stable": { stdout: "0\n" },
+  });
+  const result = runUpdate(deps({ git: git.runner, upstream: "origin/stable", channel: "stable" }));
+  assert.equal(result.success, false);
+  assert.equal(result.stages.at(-1)?.detail, "local commits present");
+  assert.ok(
+    result.recovery.includes("Local branch is ahead of upstream; push or reset before updating."),
+    JSON.stringify(result.recovery),
+  );
 });
 
 test("the recovery block carries the captured value, not a placeholder", () => {

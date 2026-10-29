@@ -13,8 +13,8 @@
 
 import assert from "node:assert/strict";
 import test from "node:test";
-import { GIT_NETWORK_TIMEOUT_MS } from "#runtime/git.ts";
-import { cloneStrategy, type GitRunner } from "#runtime/strategies/clone.ts";
+import { GIT_NETWORK_TIMEOUT_MS, type GitRunner } from "#runtime/git.ts";
+import { cloneStrategy } from "#runtime/strategies/clone.ts";
 
 interface Call {
   args: string[];
@@ -60,6 +60,29 @@ test("every other command of the clone strategy keeps the local default (CR132)"
     assert.ok(commands.includes(local), `the walk reached \`git ${local}\``);
   }
   for (const call of calls) {
+    assert.equal(call.timeoutMs, undefined, `git ${call.args.join(" ")} asked for a budget`);
+  }
+});
+
+test("the count that tells published commits from local ones keeps the local default (CR132, CR186)", () => {
+  // The walk above is never ahead of its channel, so it never reaches this
+  // count: two commits ahead of stable, none behind, both already on main.
+  const calls: Call[] = [];
+  const runner: GitRunner = (args, _cwd, timeoutMs) => {
+    calls.push({ args: [...args], timeoutMs });
+    if (args[0] !== "rev-list") return { code: 0, stdout: "", stderr: "" };
+    const ahead = args.length === 3 && args[2]?.endsWith("..HEAD") === true;
+    return { code: 0, stdout: ahead ? "2" : "0", stderr: "" };
+  };
+  const plan = cloneStrategy("/repo", "origin/stable", runner).plan("abc1");
+  assert.equal(plan.kind, "blocked");
+
+  const counts = calls.filter((call) => call.args[0] === "rev-list");
+  assert.ok(
+    counts.some((call) => call.args.includes("^origin/main")),
+    "the walk reached the published-commits count",
+  );
+  for (const call of counts) {
     assert.equal(call.timeoutMs, undefined, `git ${call.args.join(" ")} asked for a budget`);
   }
 });
