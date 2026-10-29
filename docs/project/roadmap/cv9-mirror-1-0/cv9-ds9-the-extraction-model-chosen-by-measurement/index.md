@@ -122,7 +122,7 @@ migration commit behind a fresh baseline and a green `eval --all`, and a pin's
 reasoning default became the model's. The decision is in the
 [decisions log](../../../decisions.md#the-extraction-pin-moves-to-claude-haiku-55-at-reasoning-none-and-a-pins-reasoning-default-is-the-models).
 Release intent: planned; the release-note section is drafted in
-[US3's package](cv9-ds9-us3-the-extraction-pin-moves-or-stays-on-the-evidence/release-note.md),
+[v0.38.0's release note](../../../releases/v0.38.0.md),
 and CR180 is pulled into the same release so the new model's summaries read as notes.
 Spend for the whole Delivery Story: about $4.50.
 

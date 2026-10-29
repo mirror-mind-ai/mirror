@@ -130,7 +130,7 @@ Decided 2026-10-28 at Plan approval: **move to `anthropic/claude-haiku-5.5` at r
 `none`.** The record, with its evidence and the reasoning-default rule, is in the
 [decisions log](../../../decisions.md#the-extraction-pin-moves-to-claude-haiku-55-at-reasoning-none-and-a-pins-reasoning-default-is-the-models);
 the gate in [evidence/2026-10-28-gate](evidence/2026-10-28-gate/README.md); the
-release-note section in [release-note.md](release-note.md). D2 is
+release-note section in [v0.38.0's release note](../../../../releases/v0.38.0.md). D2 is
 [CR181](../../../refinement/rs010-cv22-oracle-and-port-hygiene/cr181-the-ledger-cannot-say-which-reasoning-effort-a-call-carried.md);
 D3 is retired by the move for the default pin.
 

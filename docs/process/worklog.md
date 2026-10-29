@@ -12,6 +12,18 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-10-29 — v0.38.0: The Model Behind the Memories, Chosen by Measurement
+
+Minor release closing CV9.DS9, with CR180. The extraction pin is Claude Haiku 5.5 at
+reasoning off, chosen on the suite with reasoning on and off (TS1) and on 24 of the
+owner's own conversations ranked blind (TS2), decided at US3's plan approval. Every
+extraction-pin call can carry a reasoning effort and a pin carries its own default.
+CR180 made the summary open with its subject, gave every lifecycle prompt the owner's
+name for the first time, and added one guarded regeneration for a framed opening. The
+release gate on the final code: `eval --all` 9 of 9 modules, 70 of 70 probes, the first
+fully clean run on record. Release note:
+[v0.38.0](../releases/v0.38.0.md).
+
 ### 2026-10-28 — CV9.DS9.US3: The extraction pin moves to Claude Haiku 5.5 at reasoning `none`
 
 The decision DS9 was opened to make. The Navigator decided at Plan approval, on the
