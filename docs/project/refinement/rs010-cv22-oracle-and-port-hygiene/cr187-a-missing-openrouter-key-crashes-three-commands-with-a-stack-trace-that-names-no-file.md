@@ -360,6 +360,67 @@ created by `init probe` and seeded, `MIRROR_USER=probe`, and `OPENROUTER_API_KEY
 - `memories --search "hello"` exited 0 with the degraded note quoted above.
 - Neither `runtime status` nor `runtime diagnose` printed a line about the key.
 
+## Validation (2026-10-29, Navigator)
+
+The Navigator ran the package-lane route: this checkout packed as
+`mirror-mind-0.38.0.tgz`, installed into a scratch prefix, with a scratch home seeded by
+`init probe` and `seed`, and no key anywhere.
+
+1. With `backups/` set aside, `journal "a note about the day"` printed one line: "Error:
+   the journal entry was not saved, because OPENROUTER_API_KEY is not configured. Add
+   OPENROUTER_API_KEY=<your key> to …/.config/mirror/env, then run the same command
+   again." Afterwards `ls` found no `backups/`, so no snapshot was taken.
+2. `week plan` printed one line: "Error: nothing was done, because …".
+3. `consult credits` printed the same line.
+4. `memories --search "day"` printed
+   `⚠ Degraded: lexical-only search (OPENROUTER_API_KEY is not configured: add it to …/.config/mirror/env).`
+5. `runtime status` printed `OpenRouter key: not configured`.
+6. `runtime diagnose` printed the `openrouter_key_missing` finding at attention level,
+   with its recommendation naming the file.
+7. With a wrong key added to the file, `runtime status` printed
+   `OpenRouter key: configured`, and the value was not printed.
+8. `consult credits` then printed "Error: OpenRouter refused OPENROUTER_API_KEY (HTTP
+   401). Check the key where it is set: the environment, the clone's .env, or
+   …/.config/mirror/env."
+
+No step printed the key. The Navigator's shell does not show exit codes. Exit 2 is
+asserted by the front-door test and by the package smoke. Accepted.
+
+## Review (debt and proportionality)
+
+No debt that blocks closure. These known limits are recorded in the exclusions:
+
+- Transport failures other than a refused key (network down, timeouts, rate limits,
+  server errors) still reach Node as stack traces in these commands.
+- With a wrong key, `descriptor generate` still prints "skipped (empty response)" for
+  each persona. That line is golden-graded.
+- `consolidate apply` is not checked up front, because only a `merge` embeds. A keyless
+  `merge` still takes its pre-write snapshot before the one-line answer.
+- Search's note relies on `config` meaning a missing key inside `memories --search`. The
+  reliance is documented at the site.
+
+The change is proportionate: about 280 lines of product code across 11 files, much of it
+comments, and 28 tests. A single helper serves the six call sites, each of which used to
+end in a stack trace.
+
+Follow-ups outside this CR:
+
+- the transport failures above, if wanted, as a CR of their own;
+- CR178, extraction at session end with no key, which is unchanged.
+
 ## Outcome
 
-Pending: in progress since 2026-10-29.
+Done 2026-10-29. Driver @viniciusteles, delivery `main`:
+
+- `a92c5a6e`: the sentences, the predicate, the helpers, the wrapper that keeps a
+  refused key's kind, and the front-door handler;
+- `19fe8238`: the six up-front checks;
+- `3fd7f13f`: the degraded-search notes;
+- `8f881435`: the status line and the diagnose finding;
+- `89a6df93`: the docs and the package smoke;
+- `adec4afd`: the record.
+
+A missing key is now one line that says what was not done and where the key goes,
+before anything is touched; a refused key is one line too. Status, diagnose, and search
+all say it. No journal entry is lost to a missing key any more, and no output prints a
+key.

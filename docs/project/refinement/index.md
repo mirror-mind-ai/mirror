@@ -9,7 +9,7 @@ If a linked document and this index disagree, this index wins.
 ## Current Focus
 
 - Refinement Story: RS010
-- Change Request: CR187
+- Change Request: none
 
 Selecting a focus is an explicit project decision. Reading this file never selects or
 executes work.
@@ -111,7 +111,7 @@ Open work is ordered intentionally. Terminal history follows open work.
 | 77 | [CR183](rs001-ariad-runtime-trust/cr183-the-active-checkpoint-card-lists-a-record-that-does-not-exist-and-repeats-a-label.md) | RS001 | The active checkpoint card lists a record that does not exist, and repeats a label | captured | — | — |
 | 78 | [CR184](rs010-cv22-oracle-and-port-hygiene/cr184-the-extraction-eval-s-prompt-hash-excludes-the-summary-prompt-its-probe-sends.md) | RS010 | The extraction eval's prompt hash excludes the summary prompt its probe sends | captured | — | — |
 | 80 | [CR186](rs010-cv22-oracle-and-port-hygiene/cr186-runtime-update-reads-main-s-commits-as-local-work.md) | RS010 | `runtime update` reads a clone's commits from `origin/main` as local work, and tells the person to push or reset | captured | — | — |
-| 81 | [CR187](rs010-cv22-oracle-and-port-hygiene/cr187-a-missing-openrouter-key-crashes-three-commands-with-a-stack-trace-that-names-no-file.md) | RS010 | A missing `OPENROUTER_API_KEY` crashes `consult`, `journal`, and `week plan` with a stack trace that names no file, and the journal entry is lost | in_progress | @viniciusteles | `main` |
+| — | [CR187](rs010-cv22-oracle-and-port-hygiene/cr187-a-missing-openrouter-key-crashes-three-commands-with-a-stack-trace-that-names-no-file.md) | RS010 | A missing `OPENROUTER_API_KEY` crashes `consult`, `journal`, and `week plan` with a stack trace that names no file, and the journal entry is lost | done | @viniciusteles | `main` |
 | — | [CR185](rs010-cv22-oracle-and-port-hygiene/cr185-a-package-with-no-home-configured-does-not-say-where-it-looks.md) | RS010 | A package with no Mirror home configured does not say where it looks, and the route Getting Started gives refuses an existing home | done | @viniciusteles | `main` |
 | — | [CR180](rs010-cv22-oracle-and-port-hygiene/cr180-the-summary-prompt-s-opening-rule-invites-the-framing-its-standalone-rule-forbids.md) | RS010 | The summary prompt's opening rule invites the framing its standalone rule forbids | done | @viniciusteles | `main` |
 | — | [CR165](rs010-cv22-oracle-and-port-hygiene/cr165-pi-puts-no-mirror-context-before-the-model.md) | RS010 | Pi puts no Mirror context before the model, so Pi is L3 where the plugin runtimes are L4: one doorman on every runtime | promoted | — | `CV9.DS8` |
