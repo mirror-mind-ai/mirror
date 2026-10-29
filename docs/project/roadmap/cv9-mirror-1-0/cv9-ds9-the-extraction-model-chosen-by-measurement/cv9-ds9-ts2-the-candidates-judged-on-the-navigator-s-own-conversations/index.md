@@ -122,7 +122,7 @@ Validated by the Navigator on 2026-10-28.
 ## Carried From TS1
 
 Decided by the Navigator on 2026-10-26, when
-[TS1](../cv9-ds9-ts1-extraction-calls-carry-a-reasoning-setting-and-the-candidates-are-re-measured-wi/index.md)
+[TS1](../cv9-ds9-ts1-reasoning-setting/index.md)
 was validated:
 
 - **Both candidates run at `MEMORY_EXTRACTION_REASONING=none`.** With it, neither

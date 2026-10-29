@@ -12,7 +12,7 @@ arm=$1 model=$2 reasoning=$3
 kit=$(cd "$(dirname "$0")" && pwd)
 repo=$(git -C "$kit" rev-parse --show-toplevel)
 scratch=${TS2_SCRATCH:-$HOME/mirror-ts2-replay}
-shim="$kit/../../../cv9-ds9-ts1-extraction-calls-carry-a-reasoning-setting-and-the-candidates-are-re-measured-wi/evidence/2026-10-26-reasoning-off/shim.mjs"
+shim="$kit/../../../cv9-ds9-ts1-reasoning-setting/evidence/2026-10-26-reasoning-off/shim.mjs"
 mkdir -p "$scratch/traces" && chmod 700 "$scratch" "$scratch/traces"
 if [ "$reasoning" = "-" ]; then set_reasoning=(-u MEMORY_EXTRACTION_REASONING); else set_reasoning=(MEMORY_EXTRACTION_REASONING="$reasoning"); fi
 cd "$repo" || exit 1

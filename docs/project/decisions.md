@@ -4911,8 +4911,8 @@ and agy's compaction has no hook to re-deliver the folder
 
 ### Extraction calls carry an opt-in reasoning effort, and a value that is not one is ignored
 
-**Date:** 2026-10-26 · **Context:** [CV9.DS9.TS1](roadmap/cv9-mirror-1-0/cv9-ds9-the-extraction-model-chosen-by-measurement/cv9-ds9-ts1-extraction-calls-carry-a-reasoning-setting-and-the-candidates-are-re-measured-wi/index.md),
-measured in its [evidence](roadmap/cv9-mirror-1-0/cv9-ds9-the-extraction-model-chosen-by-measurement/cv9-ds9-ts1-extraction-calls-carry-a-reasoning-setting-and-the-candidates-are-re-measured-wi/evidence/2026-10-26-reasoning-off/README.md).
+**Date:** 2026-10-26 · **Context:** [CV9.DS9.TS1](roadmap/cv9-mirror-1-0/cv9-ds9-the-extraction-model-chosen-by-measurement/cv9-ds9-ts1-reasoning-setting/index.md),
+measured in its [evidence](roadmap/cv9-mirror-1-0/cv9-ds9-the-extraction-model-chosen-by-measurement/cv9-ds9-ts1-reasoning-setting/evidence/2026-10-26-reasoning-off/README.md).
 
 The transport sent `model`, `messages`, `temperature`, and `max_tokens`, and nothing
 about reasoning. Gemini 2.5 Flash Lite does not reason unless asked; GPT-6 Luna and
@@ -4947,7 +4947,7 @@ conversations, where both candidates run at `none`.
 **Date:** 2026-10-28 · **Context:** [CV9.DS9.US3](roadmap/cv9-mirror-1-0/cv9-ds9-the-extraction-model-chosen-by-measurement/cv9-ds9-us3-the-extraction-pin-moves-or-stays-on-the-evidence/index.md),
 the decision CV9.DS9 was opened to make, on the evidence its three stories produced:
 the [baseline](roadmap/cv9-mirror-1-0/cv9-ds9-the-extraction-model-chosen-by-measurement/evidence/2026-10-26-baseline/README.md),
-[TS1's re-measurement at reasoning off](roadmap/cv9-mirror-1-0/cv9-ds9-the-extraction-model-chosen-by-measurement/cv9-ds9-ts1-extraction-calls-carry-a-reasoning-setting-and-the-candidates-are-re-measured-wi/evidence/2026-10-26-reasoning-off/README.md),
+[TS1's re-measurement at reasoning off](roadmap/cv9-mirror-1-0/cv9-ds9-the-extraction-model-chosen-by-measurement/cv9-ds9-ts1-reasoning-setting/evidence/2026-10-26-reasoning-off/README.md),
 [TS2's replay of the Navigator's own conversations](roadmap/cv9-mirror-1-0/cv9-ds9-the-extraction-model-chosen-by-measurement/cv9-ds9-ts2-the-candidates-judged-on-the-navigator-s-own-conversations/evidence/2026-10-26-replay/README.md),
 and [US3's release gate](roadmap/cv9-mirror-1-0/cv9-ds9-the-extraction-model-chosen-by-measurement/cv9-ds9-us3-the-extraction-pin-moves-or-stays-on-the-evidence/evidence/2026-10-28-gate/README.md).
 

@@ -200,7 +200,7 @@ rule's own word, tolerated as a weak frame.
   [evidence](../../roadmap/cv9-mirror-1-0/cv9-ds9-the-extraction-model-chosen-by-measurement/cv9-ds9-ts2-the-candidates-judged-on-the-navigator-s-own-conversations/evidence/2026-10-26-replay/README.md):
   `not_standalone` flags and standalone scores per model, in `results.md`.
 - CV9.DS9.TS1's
-  [evidence](../../roadmap/cv9-mirror-1-0/cv9-ds9-the-extraction-model-chosen-by-measurement/cv9-ds9-ts1-extraction-calls-carry-a-reasoning-setting-and-the-candidates-are-re-measured-wi/evidence/2026-10-26-reasoning-off/README.md):
+  [evidence](../../roadmap/cv9-mirror-1-0/cv9-ds9-the-extraction-model-chosen-by-measurement/cv9-ds9-ts1-reasoning-setting/evidence/2026-10-26-reasoning-off/README.md):
   `extraction/conversation-summary` per model, with reasoning on and off.
 
 ## Validation (2026-10-28, Navigator)

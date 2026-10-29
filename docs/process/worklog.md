@@ -123,7 +123,7 @@ The Navigator validated it from the clone's own entry point, after the first att
 reached the released package that `mirror` resolves to in an interactive shell; the
 development guide now says so. The Debt Review deferred the kit and the control
 threshold to TS2's Plan, and the ledger and Flash Lite's rate limits to US3's. Package:
-[CV9.DS9.TS1](../project/roadmap/cv9-mirror-1-0/cv9-ds9-the-extraction-model-chosen-by-measurement/cv9-ds9-ts1-extraction-calls-carry-a-reasoning-setting-and-the-candidates-are-re-measured-wi/index.md).
+[CV9.DS9.TS1](../project/roadmap/cv9-mirror-1-0/cv9-ds9-the-extraction-model-chosen-by-measurement/cv9-ds9-ts1-reasoning-setting/index.md).
 
 ### 2026-10-25 — v0.37.0 released: The Mirror Stays in the Conversation
 
