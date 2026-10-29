@@ -12,6 +12,34 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-10-29 — CR186: a `stable` clone that took `main`'s commits early is told `stable` is behind it; PR #42 answered
+
+[CR186](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr186-runtime-update-reads-main-s-commits-as-local-work.md)
+is done. It was the second bump in Leandro's report on PR #42. `runtime update` counted
+every commit past `origin/stable` as local work and said "push or reset". A clone that had
+pulled `main`, as the v0.33.3 notes once said to, was refused with advice that did not
+apply. Now:
+
+- A clone ahead of `stable` only by commits `origin/main` already has is refused the way
+  the package lane refuses a channel behind the installed version, and in its words:
+  `'stable' is behind this checkout`, with `runtime channel main` or the next release as
+  the ways out.
+- Neither push nor reset is suggested. `main`'s code can migrate the database when it
+  opens it, and `stable`'s core refuses a database newer than itself.
+- Real local work, alone or on top of `main`'s commits, keeps the push-or-reset refusal.
+  A missing or stale `origin/main` falls back to it.
+- One function now reads where a clone stands, for both the update plan and the welcome
+  card's inspection. They used to count two different ways.
+
+The plan was reviewed through four lenses. The reviews turned it from reporting the clone
+as current to refusing it in the package lane's words, and dropped the reset. The
+Navigator validated it in a scratch clone ahead of `stable`. The agent's own first run of
+that route never reached the plan: a `node_modules` symlink made the scratch tree dirty,
+and the status gate refused. CI on the push (`e18b0c2e`) was green on all four jobs. It
+ships in the next release. The reply on
+[PR #42](https://github.com/mirror-mind-ai/mirror/pull/42#issuecomment-6511137619)
+tells Leandro that both of his bumps are fixed: this one, and CR185's.
+
 ### 2026-10-29 — CR185 and CR187: a missing home or key is one line that says what to run; PR #42 answered
 
 Leandro's last comment on PR #42 (2026-10-17) was answered, late and with an apology,
