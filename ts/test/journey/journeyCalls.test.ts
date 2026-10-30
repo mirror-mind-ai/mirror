@@ -494,7 +494,7 @@ function terminalJourney(
   }
 }
 
-test("Journeys the terminal made are ordered as journey mutate ordered them", () => {
+test("Journeys the terminal made are ordered as Python's administration ordered them", () => {
   const dbPath = home();
   add(dbPath, "writing");
   terminalJourney(dbPath, "aaa-unpositioned", null);

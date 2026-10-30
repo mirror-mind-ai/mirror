@@ -5,8 +5,9 @@
 // tree as `readJourneyTree` reads it:
 //
 //   - `addJourney`, `setJourneyProjectPath`, `moveJourney`, `deleteJourney`:
-//     ports of Python 0.31.14's `journey mutate`, which Mirror Desktop 0.2 sent
-//     and this core retired, so the same requests mean the same thing;
+//     ports of Python 0.31.14's Journey administration, which Mirror Desktop 0.2
+//     sent and CV22.DS10.TS4 retired as `journey-admin-verbs`, so the same
+//     requests mean the same thing ("the administration" below);
 //   - `updateJourney`: a Journey's name, description and status, which no
 //     released Mirror could change from a host.
 //
@@ -50,7 +51,7 @@ export type JourneyCallRejection =
   | "journey_changed"
   | "journey_not_empty";
 
-/** A call's refusal, named with `journey mutate`'s codes where it had one. Nothing was written. */
+/** A call's refusal, named with the administration's codes where it had one. Nothing was written. */
 export class JourneyCallRejectedError extends Error {
   readonly reason: JourneyCallRejection;
   /** For `journey_not_empty`: the association classes that hold records. */
@@ -142,7 +143,7 @@ function metadataOf(raw: unknown): Metadata {
   }
 }
 
-/** Every Journey row, keyed, with its metadata parsed as `journey mutate` read it. */
+/** Every Journey row, keyed, with its metadata parsed as the administration read it. */
 interface JourneyRows {
   rows: Map<string, { content: string; updatedAt: string; version: string; raw: string | null }>;
   metas: Map<string, Metadata>;
@@ -169,7 +170,7 @@ function journeyRows(db: WritableDatabase): JourneyRows {
   return { rows, metas };
 }
 
-/** The parent `journey mutate` honoured: a metadata parent that exists, else none. */
+/** The parent the administration honoured: a metadata parent that exists, else none. */
 function effectiveParent(metas: Map<string, Metadata>, key: string): string | null {
   const parent = metas.get(key)?.parent_journey;
   return typeof parent === "string" && metas.has(parent) ? parent : null;
@@ -180,7 +181,7 @@ function siblingPosition(meta: Metadata | undefined): number {
   return typeof value === "number" && Number.isInteger(value) ? value : UNPOSITIONED;
 }
 
-/** `journey mutate`'s `ordered`: one sibling set, by position, then by key. */
+/** The administration's `ordered`: one sibling set, by position, then by key. */
 function ordered(metas: Map<string, Metadata>, parent: string | null): string[] {
   return [...metas.keys()]
     .filter((key) => effectiveParent(metas, key) === parent)
@@ -199,7 +200,7 @@ function renumber(metas: Map<string, Metadata>, ids: readonly string[]): void {
   });
 }
 
-/** `journey mutate`'s `position_group`: put `moving` at `at` in `parent`'s set and renumber it. */
+/** The administration's `position_group`: put `moving` at `at` in `parent`'s set and renumber it. */
 function placeInGroup(
   metas: Map<string, Metadata>,
   parent: string | null,
@@ -268,7 +269,7 @@ function requireJourney(rows: JourneyRows, value: unknown): string {
   return journeyId;
 }
 
-/** Python's template for a Journey made by `journey mutate`, byte for byte. */
+/** Python's template for a Journey the administration made, byte for byte. */
 export function newJourneyContent(name: string, description: string): string {
   return (
     `# ${name}\n**Status:** active\n**Stage:** Starting\n\n## Description\n\n${description}` +
@@ -276,7 +277,7 @@ export function newJourneyContent(name: string, description: string): string {
   );
 }
 
-/** Create a Journey: `journey mutate`'s `create_journey`. */
+/** Create a Journey: the administration's `create_journey`. */
 export function addJourney(
   dbPath: string,
   request: {
