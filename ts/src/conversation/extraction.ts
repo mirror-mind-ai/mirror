@@ -178,7 +178,7 @@ export async function runConversationExtraction(
   return { memoryIds, taskIds, extracted: memoryIds.length };
 }
 
-async function persistExtractedTasks(
+export async function persistExtractedTasks(
   db: WritableDatabase,
   llm: LlmProvider,
   messages: readonly ExtractionMessage[],
@@ -273,7 +273,7 @@ function getMessages(db: WritableDatabase, conversationId: string): ExtractionMe
     .map((row) => ({ role: requireString(row, "role"), content: requireString(row, "content") }));
 }
 
-function resolveUserName(db: WritableDatabase): string {
+export function resolveUserName(db: WritableDatabase): string {
   const row = db
     .prepare("SELECT content FROM identity WHERE layer = ? AND key = ? LIMIT 1")
     .get("user", "identity");
@@ -305,7 +305,7 @@ function logEmbeddingAttempt(
   return embeddingLedgerHook(db, { conversationId, now });
 }
 
-function insertMemory(
+export function insertMemory(
   db: WritableDatabase,
   id: string,
   conversationId: string,
