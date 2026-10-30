@@ -2,7 +2,7 @@
 
 # CV24 — Embeddable Core for Mirror Desktop
 
-**Status:** 🟢 In Progress — DS1 to DS5 built on `desktop/library-seam-1a`, not released
+**Status:** 🟢 In Progress — DS1 to DS6 built on `desktop/library-seam-1a`, not released
 **Opened:** 2026-10-28, at the Navigator's word, from the `mirror-desktop` Journey.
 
 ## Goal
@@ -41,6 +41,7 @@ and the consumer's plan is its CV-010.DS-005, phase 1.
 | [CV24.DS3](cv24-ds3-journey-reads/index.md) | Journey Reads | The Journey tree, a Journey's Conversations, and one Conversation by id, read-only, honouring the stored sibling order | 🟠 Implemented — on branch, not released |
 | [CV24.DS4](cv24-ds4-create-a-home/index.md) | Create a Home | One call creates a complete, seeded home at an explicit path, all or nothing, writing nothing outside it | 🟠 Implemented — on branch, not released |
 | [CV24.DS5](cv24-ds5-migrate-on-request/index.md) | Migrate on Request | Apply exactly the pending migrations the person was shown, behind a verified, retained backup | 🟠 Implemented — on branch, not released |
+| [CV24.DS6](cv24-ds6-mirror-context-as-a-call/index.md) | Mirror's Context as a Call | The doorman for a host's turn, with the key as an argument and Mirror Mode from the first turn, recorded as `mirror doorman` records it | 🟠 Implemented — on branch, not released |
 
 ## Owed at Release
 

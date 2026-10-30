@@ -71,9 +71,12 @@ describe("mirror-mind/desktop from node_modules", () => {
       "DESKTOP_API_VERSION",
       "DatabaseNotCurrentError",
       "MigrateHomeRejectedError",
+      "MirrorContextRejectedError",
       "appendConversationMessages",
       "createHome",
+      "deliverMirrorContext",
       "ensureConversation",
+      "forgetMirrorContext",
       "inspectConversation",
       "inspectMigrationState",
       "listJourneyConversations",
@@ -84,6 +87,33 @@ describe("mirror-mind/desktop from node_modules", () => {
     ]);
     assert.equal(out.state, "current");
     assert.deepEqual(out.pending, []);
+  });
+
+  test("Mirror's context answers from node_modules with no environment, and asks for its key", () => {
+    // CV24.DS6: a turn that delivers nothing needs no key; one that delivers is
+    // refused without one, even with none anywhere else to find.
+    const root = project();
+    const dbPath = join(root, "tmp-home", "memory.db");
+    mkdirSync(join(root, "tmp-home"));
+    bootstrapDatabase(dbPath).close();
+    const probe = `
+const desktop = await import("mirror-mind/desktop");
+const request = (prompt) => ({ sessionId: "s-1", prompt, journeyId: null });
+const nothing = await desktop.deliverMirrorContext(process.argv[1], request("/mm-journeys"));
+let refused = null;
+try {
+  await desktop.deliverMirrorContext(process.argv[1], request("Hello"));
+} catch (error) {
+  refused = { name: error.constructor.name, reason: error.reason };
+}
+console.log(JSON.stringify({ nothing, refused }));
+`;
+    const result = run(root, probe, dbPath);
+    assert.equal(result.status, 0, result.stderr);
+    assert.deepEqual(JSON.parse(result.stdout), {
+      nothing: { kind: "nothing", block: "", persona: null, journey: null },
+      refused: { name: "MirrorContextRejectedError", reason: "no_key" },
+    });
   });
 
   test("leaves the host's warning listeners alone", () => {
