@@ -331,9 +331,14 @@ function scriptNpm(answers: Record<string, { code?: number; stdout?: string; std
   return { runner, calls, cwds };
 }
 
-test("a package update runs npm in the install's root, never the cwd (CR135)", () => {
+test("a package update runs npm in the install's own tree, never the cwd (CR135); the apply from the parent of node_modules", () => {
   // npm reads the project config of the directory it runs in, so a project's
-  // `.npmrc` could name the registry the install comes from.
+  // `.npmrc` could name the registry the install comes from: the read runs
+  // in the install's root. The apply runs one level up, in the parent of
+  // node_modules -- still the install's own tree -- because npm renames the
+  // package directory aside before installing the new version, and on Windows
+  // a process whose cwd is inside that directory holds it against the rename
+  // (EBUSY on every update, 4 of 4 runs 0.33.4 -> 0.35.0).
   const npm = scriptNpm({
     "view mirror-core dist-tags": { stdout: JSON.stringify({ stable: "1.3.0" }) },
     "install -g": { stdout: "added 1 package\n" },
@@ -344,7 +349,7 @@ test("a package update runs npm in the install's root, never the cwd (CR135)", (
     npm.calls.map((call) => call[0]),
     ["view", "install"],
   );
-  assert.deepEqual(npm.cwds, [PACKAGE.root, PACKAGE.root]);
+  assert.deepEqual(npm.cwds, [PACKAGE.root, "/usr/local/lib"]);
 });
 
 test("a package install resolves the dist-tag and installs an EXACT version", () => {
