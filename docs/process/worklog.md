@@ -27,6 +27,18 @@ from Leandro's report on PR #42, and CR187 from CR185's review:
 No migration. No model or prompt changed, so the model-behavior gate does not apply.
 Release note: [v0.38.1](../releases/v0.38.1.md).
 
+After the release commit:
+
+- CI was green on all four jobs and the link check before the tag existed.
+- `release:promote` pushed the tag and `stable`.
+- The Navigator approved the `release` environment and the trusted-publisher stage.
+  `latest` and `stable` are at 0.38.1, with provenance.
+- The GitHub Release is published and marked latest.
+- The Navigator updated the production install with `MIRROR_USER` unset (the v0.37.0
+  lesson). It reports 0.38.1, the production home, 18/18 migrations, and status ready.
+  The production home holds dated backups from 01:07 and 04:12 on 2026-10-30, and the
+  development home none newer than the day before.
+
 ### 2026-10-29 — CR186: a `stable` clone that took `main`'s commits early is told `stable` is behind it; PR #42 answered
 
 [CR186](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr186-runtime-update-reads-main-s-commits-as-local-work.md)
