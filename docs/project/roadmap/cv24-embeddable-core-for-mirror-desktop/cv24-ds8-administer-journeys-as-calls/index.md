@@ -2,7 +2,7 @@
 
 # CV24.DS8 — Administer Journeys as Calls
 
-**Status:** 🟡 Planned — on branch `desktop/library-seam-1a`, not released
+**Status:** 🟠 Implemented — on branch `desktop/library-seam-1a`, not released
 **Consumer:** Mirror Desktop's CV-010.DS-005, phase 4, slice 4b.
 
 ## Outcome

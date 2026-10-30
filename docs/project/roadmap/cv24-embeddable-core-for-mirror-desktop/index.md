@@ -2,7 +2,7 @@
 
 # CV24 — Embeddable Core for Mirror Desktop
 
-**Status:** 🟢 In Progress — DS1 to DS7 built, DS8 planned on `desktop/library-seam-1a`, not released
+**Status:** 🟢 In Progress — DS1 to DS8 built on `desktop/library-seam-1a`, not released
 **Opened:** 2026-10-28, at the Navigator's word, from the `mirror-desktop` Journey.
 
 ## Goal
@@ -43,7 +43,7 @@ and the consumer's plan is its CV-010.DS-005, phase 1.
 | [CV24.DS5](cv24-ds5-migrate-on-request/index.md) | Migrate on Request | Apply exactly the pending migrations the person was shown, behind a verified, retained backup | 🟠 Implemented — on branch, not released |
 | [CV24.DS6](cv24-ds6-mirror-context-as-a-call/index.md) | Mirror's Context as a Call | The doorman for a host's turn, with the key as an argument and Mirror Mode from the first turn, recorded as `mirror doorman` records it | 🟠 Implemented — on branch, not released |
 | [CV24.DS7](cv24-ds7-learn-from-a-conversations-newest-stretch/index.md) | Learn From a Conversation's Newest Stretch | A host's idle Conversations become memories while they stay open: the stretch since a watermark, in bounded pieces, within a budget, with the key as an argument | 🟠 Implemented — on branch, not released |
-| [CV24.DS8](cv24-ds8-administer-journeys-as-calls/index.md) | Administer Journeys as Calls | A host creates, edits, moves and deletes Journeys through five calls answering with the tree, including the name, description and status edit no released Mirror had | 🟡 Planned |
+| [CV24.DS8](cv24-ds8-administer-journeys-as-calls/index.md) | Administer Journeys as Calls | A host creates, edits, moves and deletes Journeys through five calls answering with the tree, including the name, description and status edit no released Mirror had | 🟠 Implemented — on branch, not released |
 
 ## Owed at Release
 

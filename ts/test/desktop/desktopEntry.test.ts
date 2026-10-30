@@ -70,11 +70,14 @@ describe("mirror-mind/desktop from node_modules", () => {
       "CreateHomeRejectedError",
       "DESKTOP_API_VERSION",
       "DatabaseNotCurrentError",
+      "JourneyCallRejectedError",
       "LearningRejectedError",
       "MigrateHomeRejectedError",
       "MirrorContextRejectedError",
+      "addJourney",
       "appendConversationMessages",
       "createHome",
+      "deleteJourney",
       "deliverMirrorContext",
       "ensureConversation",
       "forgetMirrorContext",
@@ -83,9 +86,12 @@ describe("mirror-mind/desktop from node_modules", () => {
       "learnFromConversations",
       "listJourneyConversations",
       "migrateHome",
+      "moveJourney",
       "readJourneyTree",
       "rebindConversationJourney",
       "renameConversation",
+      "setJourneyProjectPath",
+      "updateJourney",
     ]);
     assert.equal(out.state, "current");
     assert.deepEqual(out.pending, []);
