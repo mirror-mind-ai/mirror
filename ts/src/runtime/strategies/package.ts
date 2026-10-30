@@ -24,7 +24,8 @@ import { compareSemver, isPlainSemver } from "#util/semver.ts";
  * `package.json` -- so a command started in the person's project takes its
  * `registry=` and `prefix=` from whatever that project ships. Every call the
  * product makes names its directory: the install's own root for the package's
- * commands, the release's repository for `publish`.
+ * commands, except the install that replaces the package, which runs from the
+ * parent of `node_modules` (`applyCwd`); the release's repository for `publish`.
  */
 export interface NpmCall {
   cwd?: string;
@@ -202,7 +203,7 @@ export type ChannelDirection =
 export interface PackageInstall {
   name: string;
   version: string;
-  /** Where the package lives; its npm commands run here. */
+  /** Where the package lives; its npm commands run here, except the apply (`applyCwd`). */
   root: string;
 }
 
@@ -349,9 +350,9 @@ export function installGlobal(
  * `npm pack <name>@<version>` into `destination`: the exact tarball `runtime
  * update` would install, fetched -- never unpacked here -- so `release-notes
  * pending` can read what that version brings (CR134). It runs in the install's
- * own root, as every npm call does (CR135). `--ignore-scripts`: a registry
- * tarball runs no scripts when packed, and at a trust boundary that is said
- * rather than assumed.
+ * own root, as every npm call but the apply does (CR135). `--ignore-scripts`:
+ * a registry tarball runs no scripts when packed, and at a trust boundary that
+ * is said rather than assumed.
  */
 export function packTarball(
   name: string,

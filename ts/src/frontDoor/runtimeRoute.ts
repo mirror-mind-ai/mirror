@@ -523,7 +523,8 @@ function runRuntimeUpdate(
   //
   // npm runs in the tree the front door runs from -- for a package, the
   // install's own root -- and never in the cwd, whose `.npmrc` could name
-  // another registry or prefix (CR135). The strategy's own calls do the same.
+  // another registry or prefix (CR135). The strategy's own calls stay out of
+  // the cwd too; its apply runs from the parent of `node_modules` (`applyCwd`).
   //
   // Git runs in the clone's own checkout and nowhere else: the gate's report
   // and `--check` name no cwd (CR138), whose `.git/config` could name a

@@ -371,7 +371,8 @@ else
 TAGS
   # CR135: the shim also records the directory each call ran in. npm reads the
   # project config of that directory, so every call must run in the install's
-  # own root, never in the person's project.
+  # own tree -- its root, or for the apply the parent of node_modules -- never
+  # in the person's project.
   cat > "$WORK/npmshim/npm" <<SHIM
 #!/bin/sh
 echo "\$*" >> "$WORK/npm-calls.log"

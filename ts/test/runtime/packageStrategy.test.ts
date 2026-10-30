@@ -147,7 +147,8 @@ test("apply runs npm from the parent of node_modules, never inside the package i
 test("every npm call runs where it is told, so a project's .npmrc cannot answer it (CR135)", () => {
   // npm reads the project config of the directory it runs in. The person's
   // project can carry an `.npmrc` that names another registry or prefix, so
-  // the package's own calls run in the install's root.
+  // the package's own calls run in the install's own tree: its root, or for
+  // the apply the parent of node_modules (the test above).
   const view = recording(JSON.stringify({ stable: "0.32.0" }));
   checkPackageUpdateAvailability(INSTALL, STABLE, view.runner);
   assert.deepEqual(view.calls, [

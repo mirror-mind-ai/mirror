@@ -428,9 +428,12 @@ itself lives — never from configuration. A `clone` (a git checkout) fast-forwa
 channel's dist-tag resolves to. Anything else is `unknown` and is refused with the reason
 printed, rather than updated on a guess. A project-local `node_modules` is deliberately
 *not* a package install: `npm install -g` would update a different tree from the one
-running. Every npm command the updater runs (`root -g`, `view`, `install -g`) runs in the
-install's own directory, never the one the command was typed in: npm reads the `.npmrc`
-of the directory it runs in, and a project's could name another registry or prefix.
+running. No npm command the updater runs (`root -g`, `view`, `install -g`) runs in the
+directory the command was typed in: npm reads the `.npmrc` of the directory it runs in,
+and a project's could name another registry or prefix. `root -g` and `view` run in the
+install's own directory. `install -g` runs from the parent of `node_modules`, still the
+install's own tree: npm renames the package's directory aside before laying down the new
+version, and Windows refuses to rename a directory a process is running in.
 The user's own `~/.npmrc` and `npm_config_*` variables still apply.
 
 1. **status gate** — normally requires status to be ready. If the only remaining blocker is core migration drift that the target version may resolve, the updater proceeds through the backup-gated path and still requires post-update status to be ready. If the gate *crashes*, the repair lane runs automatically — an updater that cannot evaluate its own status is exactly what that lane is for.
