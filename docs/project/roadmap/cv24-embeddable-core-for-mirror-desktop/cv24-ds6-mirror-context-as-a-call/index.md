@@ -49,21 +49,30 @@ Both refuse a home that is not `current` (`DatabaseNotCurrentError`) and a reque
    then says the turn went without Mirror's context, instead of sending half of it. A turn that
    delivers nothing needs no key and takes no snapshot.
 
+4. **One attempt per provider call, 10 s each** (`hostProviderEnv`, `hostProviders`). The turn
+   waits on this call. The command's providers retry twice with backoff, with reception bounded at
+   10 s and embeddings at 15 s: on a hanging network, over a minute before the turn starts. Measured
+   with counting providers, a full turn makes one reception call (and one embedding when the home
+   has attachments) and a delta one embedding, so a host's turn waits at most about 20 s. A failed
+   call degrades as it does on the terminal.
+
 The write is `mirror doorman`'s: `openLiveWriteDatabase`, behind the pre-write snapshot in the
 home's own `backups/`.
 
 ## Validation
 
-- `ts/test/mirror/deliverContext.test.ts` (10), on a home `createHome` made: the first turn is full
+- `ts/test/mirror/deliverContext.test.ts` (12), on a home `createHome` made: the first turn is full
   with its Journey and enters Mirror Mode; the host's Journey wins; the next turn is a delta, and
   after `forgetMirrorContext` the one after is full; a command turn gets nothing and writes nothing;
   no key refuses and writes nothing, with a key in the environment; unreadable requests; a `pending`
   home is refused and left byte-identical; forgetting an unknown session writes nothing; nothing is
-  written outside the home; the decision table.
+  written outside the home; the decision table; the providers' environment; and, through the
+  providers' client seam, that the built providers send the key with one attempt and a 10 s bound.
 - `ts/test/desktop/desktopEntry.test.ts`: the three names are exported, and from `node_modules`, with
   no environment, a command turn answers `nothing` and a delivering turn is refused with `no_key`.
-- Mutations: 13, all caught. One equivalent condition was removed; one test proved nothing (the
-  seeded home has one Journey) and was rewritten with a second Journey.
+- Mutations: 15, all caught. One equivalent condition was removed; one test proved nothing (the
+  seeded home has one Journey) and was rewritten with a second Journey; the providers' environment
+  went unobserved until the client seam test was added.
 
 ## Exclusions
 

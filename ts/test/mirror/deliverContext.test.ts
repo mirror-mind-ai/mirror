@@ -18,9 +18,16 @@ import {
   decideHostTurn,
   deliverMirrorContext,
   forgetMirrorContext,
+  hostProviderEnv,
+  hostProviders,
   MirrorContextRejectedError,
 } from "#mirror/deliverContext.ts";
 import { DELIVERED_LINE_PREFIX } from "#mirror/doorman.ts";
+import {
+  resolveLlmMaxRetries,
+  resolveLlmTimeoutMs,
+  resolveProviderConfig,
+} from "#providers/config.ts";
 import type { EmbeddingProvider, EmbeddingResult } from "#providers/embedding.ts";
 import type { LlmProvider, LlmRequest, LlmResponse } from "#providers/llm.ts";
 
@@ -258,4 +265,44 @@ test("a host's decision: Mirror Mode from the first turn, the doorman's after", 
     kind: "nothing",
   });
   assert.equal(decideHostTurn({ prompt: "a draft", state: on, personas }).kind, "delta");
+});
+
+test("a host's providers get the key, one attempt and a 10 s bound each, and nothing else", () => {
+  const env = hostProviderEnv("sk-or-test");
+  assert.equal(resolveProviderConfig("openrouter", { env }).apiKey, "sk-or-test");
+  assert.equal(resolveLlmMaxRetries({ env }), 0);
+  assert.equal(resolveLlmTimeoutMs("reception", { env }), 10_000);
+  assert.equal(resolveLlmTimeoutMs("embedding", { env }), 10_000);
+  assert.deepEqual(Object.keys(env).sort(), [
+    "MEMORY_LLM_MAX_RETRIES",
+    "MEMORY_LLM_TIMEOUT_EMBEDDING",
+    "MEMORY_LLM_TIMEOUT_RECEPTION",
+    "OPENROUTER_API_KEY",
+  ]);
+});
+
+test("the providers a key builds send it, once per call, within 10 s", async () => {
+  const sent: { apiKey: string; path: string; timeoutMs: number; maxRetries?: number }[] = [];
+  const { llm, embedding } = hostProviders("sk-or-built", (config) => ({
+    async postJson(path, _body, options) {
+      sent.push({
+        apiKey: config.apiKey,
+        path,
+        timeoutMs: options.timeoutMs,
+        maxRetries: options.maxRetries,
+      });
+      return path === "/embeddings"
+        ? { data: [{ embedding: [0.1, 0.2] }], usage: { prompt_tokens: 1 } }
+        : { choices: [{ message: { content: "{}" } }], usage: {} };
+    },
+    async getJson() {
+      throw new Error("not used");
+    },
+  }));
+  await llm.complete({ role: "reception", prompt: "hello" });
+  await embedding.embed("hello");
+  assert.deepEqual(sent, [
+    { apiKey: "sk-or-built", path: "/chat/completions", timeoutMs: 10_000, maxRetries: 0 },
+    { apiKey: "sk-or-built", path: "/embeddings", timeoutMs: 10_000, maxRetries: 0 },
+  ]);
 });
