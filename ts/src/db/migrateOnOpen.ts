@@ -108,13 +108,17 @@ function declined(reason: string): MigrateOnOpenResult {
   return { verdict: "declined", migrated: false, appliedIds: [], declinedReason: reason };
 }
 
+// The three readers below are exported for one other caller, the migration
+// report (`migrationReport.ts`, CV24.DS1), so that what it says is pending is
+// by construction what an open would apply.
+
 /**
  * Read the applied migration ids. Returns `null` when the database has no
  * `_migrations` table — i.e. it is not a bootstrapped Mirror database. That is
  * `assertSchemaState`'s error to raise, not ours: migrate-on-open simply
  * declines rather than trying to bootstrap an unknown file.
  */
-function appliedMigrationIds(dbPath: string, options: OpenOptions): Set<string> | null {
+export function appliedMigrationIds(dbPath: string, options: OpenOptions = {}): Set<string> | null {
   const db = openDatabaseReadOnly(dbPath, options);
   try {
     const rows = db.prepare("SELECT id FROM _migrations").all() as { id: string }[];
@@ -135,12 +139,12 @@ function appliedMigrationIds(dbPath: string, options: OpenOptions): Set<string> 
  * carries all of them and is the only engine left, so every pending known
  * migration is simply pending.
  */
-function pendingMigrations(applied: Set<string>): string[] {
+export function pendingMigrations(applied: Set<string>): string[] {
   return KNOWN_MIGRATION_IDS.filter((id) => !applied.has(id));
 }
 
 /** Migrations the database carries that this core does not know about. */
-function unknownMigrations(applied: Set<string>): string[] {
+export function unknownMigrations(applied: Set<string>): string[] {
   const known = new Set(KNOWN_MIGRATION_IDS);
   return [...applied].filter((id) => !known.has(id)).sort();
 }

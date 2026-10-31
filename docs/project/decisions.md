@@ -11,6 +11,141 @@ resolved.
 
 ## Completed Decisions
 
+### A host migrates a home only behind a verified, retained backup
+
+**Date:** 2026-10-28
+**Reference:** [CV24.DS5](roadmap/cv24-embeddable-core-for-mirror-desktop/cv24-ds5-migrate-on-request/index.md)
+**Participants:** Alisson Vale (Navigator, from the `mirror-desktop` Journey)
+
+`migrateHome` is the call Mirror Desktop's last 0.3 phase will run against
+the Navigator's production home. The backup `ensureMigratedOnOpen` takes has
+two gaps that matter there:
+
+- **It is overwritten.** It always writes one fixed name,
+  `frontdoor-pre-migration-backup.db`, and removes the previous file first, so
+  the next migration of the same home destroys the last pre-image.
+- **It is never verified.** Nobody checks it, records its hash, or prepares
+  it to restore. `prepareArchiveSnapshot` (CR061) does exactly that for
+  `runtime backup --verify`, but the migration path never calls it.
+
+**`migrateHome` takes its own backup, and nothing migrates until the backup
+is verified.** Under the bootstrap lock, it:
+
+1. snapshots the database to
+   `backups/pre-migration-<last applied id>-<UTC stamp>-<random>.db`, mode
+   0600, a name never reused;
+2. runs `prepareArchiveSnapshot`, which converts it to WAL and runs
+   `quick_check`, and requires `ok`;
+3. records its SHA-256 and size;
+4. requires the migration report of the backup to name the same pending list
+   as the live database, so the backup is a true pre-image.
+
+Only then does it migrate. Any failure removes the backup file and changes
+nothing in the home.
+
+**The core never deletes these backups.** They are kept until the person or
+the host removes them.
+
+**`ensureMigratedOnOpen` and the CLI's backup are unchanged.** Giving the
+front door the same custody is a separate decision.
+
+### A host creates a home beside its target and renames it into place, writing nothing outside it
+
+**Date:** 2026-10-28
+**Reference:** [CV24.DS4](roadmap/cv24-embeddable-core-for-mirror-desktop/cv24-ds4-create-a-home/index.md)
+**Participants:** Alisson Vale (Navigator, from the `mirror-desktop` Journey)
+
+Mirror Desktop 0.3's first-run assistant creates a person's first home through
+`createHome`. That home has to be seeded, and seeding writes the `identity`
+table, which neither narrowed host handle may write. The CLI's `seed` writes
+through `openLiveWriteDatabase`. On a database created a moment earlier, that
+snapshot is an undo of nothing, and the CLI has no all-or-nothing property:
+an interrupted `init` plus `seed` leaves half a home that the next `init`
+refuses.
+
+**`createHome` builds the whole home in a staging directory beside the
+target.** The directory is named `.<name>.creating-<pid>-<random>` and created
+0700. In it, `createHome`:
+
+1. copies the templates;
+2. bootstraps the database through `bootstrapDatabase`;
+3. seeds it through the bootstrap handle;
+4. confirms that the migration report reads `current` and that the seed
+   recorded no errors.
+
+Only then does it rename the directory to the target. On any failure it
+removes the staging directory. Until the rename, no other process knows the
+path, so there is no prior state to protect. This is the reason
+`openDatabaseForBootstrap` may write a file it is creating.
+
+**It writes nothing outside the target.** In particular, it never writes
+`~/.config/mirror/env`. The CLI's `init` writes `MIRROR_USER` there when no
+user is configured, and every `mirror` and `mirror-hook` process on the
+machine reads that file, including the runtime hooks of Pi, Claude Code and
+Codex. A host creating its own home must not redirect the person's terminal
+Mirror. The host keeps the path itself and passes it explicitly, as every
+CV24 call requires.
+
+**It grants no write to an existing home.** Anything at the target, even an
+empty directory, is refused. Re-seeding an existing home (`seed --force`)
+overwrites a person's edited identity, so it is a separate decision.
+
+One race is accepted and named. On POSIX, `rename` replaces an *empty*
+directory created at the target between the final check and the rename. The
+window is one system call, and what it could replace is empty.
+
+### A host's Conversation writes are narrowed, not snapshotted
+
+**Date:** 2026-10-28
+**Reference:** [CV24.DS2](roadmap/cv24-embeddable-core-for-mirror-desktop/cv24-ds2-conversations-as-calls/index.md)
+**Participants:** Alisson Vale (Navigator, from the `mirror-desktop` Journey)
+
+Mirror Desktop 0.3 hosts this core in a long-lived process and records every
+turn of every Conversation through it. The core's live-write seam,
+`openLiveWriteDatabase`, takes a `VACUUM INTO` snapshot before each write.
+That shape was built for a CLI invocation, which snapshots, writes and exits.
+On the Navigator's 108 MB home the snapshot measured 920, 900 and 913 ms, on a
+copy made through SQLite's backup API in a scratch directory. A host that
+writes on every turn would pay about 0.9 s and a full-database write each
+time, and each snapshot would overwrite the front door's last-write undo with
+a chat message.
+
+[The MCP server's write](#the-mcp-servers-one-write-is-narrowed-instead-of-backup-gated)
+met the same mismatch and was narrowed instead of gated, and it said that any
+further narrowed writer is a new decision. This is that decision.
+
+**`openDatabaseForConversationWrites` is the second narrowed writer.** It
+returns a handle whose `prepare` accepts only:
+
+- a single `SELECT`;
+- `INSERT INTO` `conversations`, `messages` or `runtime_sessions` with a
+  `VALUES` list;
+- `UPDATE conversations SET` any of `title`, `journey`, `interface` and
+  `metadata`, `WHERE id = ?`.
+
+Its `exec` accepts only `BEGIN IMMEDIATE`, `COMMIT` and `ROLLBACK`.
+Everything else is refused before it reaches the driver: any `DELETE`, any
+DDL, an update to any other column, a write to any other table, `INSERT OR
+REPLACE`, and multi-statement text.
+
+Unlike the MCP handle, it is shaped as a `WritableDatabase`, because the
+ported Conversation functions it serves (`getOrCreateSessionConversation`,
+`appendConversationMessages`, `writeTitle`, `updateConversation`) take one
+and run their own transactions. The narrowing is enforced in the handle at
+run time, not by its type, so it holds wherever the handle travels.
+
+**Two further conditions:**
+
+- **The handle opens only a `current` database.** The library's calls check
+  the migration report (CV24.DS1) first, and refuse anything else without
+  opening it for writing. They never migrate.
+- **Whole-home protection is unchanged.** `runtime backup` and the migration
+  snapshot remain the ways to recover a home. What this decision gives up is
+  the per-write undo, for writes that cannot destroy anything.
+
+This handle is for Conversation writes only. Wider host writes, such as
+deletion, Journey administration or identity, are each a new decision.
+
 ### An obeyed injection probe fails the release gate at any score, and is never waived by re-running the suite
 
 **Date:** 2026-09-22 · **Context:** CV22.DS10.TS3 moved the model-behavior

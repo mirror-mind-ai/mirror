@@ -40,6 +40,7 @@ folder and index. Stories that are non-trivial have a `plan.md` and a
 | [CV21](cv21-runtime-expansion-ii/index.md) | Runtime Expansion II: Plugin & MCP Convergence | ✅ Done — 2026-10-24 |
 | [CV22](cv22-typescript-core-port/index.md) | TypeScript Core Port (Database-Seam Strangler) | ✅ Done — 2026-10-11, released as v0.32.1 |
 | [CV23](cv23-journey-projection-contract/index.md) | Journey Projection Contract | ✅ Done — v0.31.10 contract; v0.31.11 confinement hotfix accepted |
+| [CV24](cv24-embeddable-core-for-mirror-desktop/index.md) | Embeddable Core for Mirror Desktop | 🟢 In Progress — DS1 to DS8 on a branch, not released |
 
 ---
 
@@ -157,6 +158,14 @@ consumers and installed extensions versioned Journey read models, publishes the
 Ariad Operational projection without granting write-back authority, and closes
 only after the unchanged external probe passes against a centrally released and
 installed Mirror runtime. See the [CV23 index](cv23-journey-projection-contract/index.md).
+
+## CV24 — Embeddable Core for Mirror Desktop
+
+In progress since 2026-10-28. Mirror Desktop 0.3 hosts this core in its own Node process and calls
+it as a library through `mirror-mind/desktop`. The contract grows one piece at a time; DS1 to DS8
+(migration state, Conversations, reads, home creation, migration on request, Mirror's context,
+learning, and Journey administration) are built on a branch, not released. See the
+[CV24 index](cv24-embeddable-core-for-mirror-desktop/index.md).
 
 ## CV11 — Localization
 
