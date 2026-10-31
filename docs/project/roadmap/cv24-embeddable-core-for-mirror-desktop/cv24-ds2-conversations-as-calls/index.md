@@ -2,7 +2,7 @@
 
 # CV24.DS2 — Conversations as Calls
 
-**Status:** 🟠 Implemented (2026-10-28) on branch `desktop/library-seam-1a`. Not merged, not released.
+**Status:** ✅ Done — merged in PR #52, released in [v0.39.0](../../../../releases/v0.39.0.md)
 The Navigator chose **option B** for write custody, and it is recorded as the decision
 [A host's Conversation writes are narrowed, not snapshotted](../../../decisions.md#a-hosts-conversation-writes-are-narrowed-not-snapshotted).
 

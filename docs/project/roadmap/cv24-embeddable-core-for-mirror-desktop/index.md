@@ -2,7 +2,7 @@
 
 # CV24 — Embeddable Core for Mirror Desktop
 
-**Status:** 🟢 In Progress — DS1 to DS8 built on `desktop/library-seam-1a`, not released
+**Status:** 🟢 In Progress — DS1 to DS8 released in [v0.39.0](../../../releases/v0.39.0.md) (PR #52); the contract stays open for further pieces
 **Opened:** 2026-10-28, at the Navigator's word, from the `mirror-desktop` Journey.
 
 ## Goal
@@ -36,16 +36,16 @@ and the consumer's plan is its CV-010.DS-005, phase 1.
 
 | Code | Delivery Story | Outcome | Status |
 |------|----------------|---------|--------|
-| [CV24.DS1](cv24-ds1-inspect-a-home-without-migrating/index.md) | Inspect a Home Without Migrating | `mirror-mind/desktop` exists, importable from `node_modules`, and reports a database's migration state without changing it | 🟠 Implemented — on branch, not released |
-| [CV24.DS2](cv24-ds2-conversations-as-calls/index.md) | Conversations as Calls | Create or ensure a Conversation, append explicitly, rename, and rebind its Journey | 🟠 Implemented — on branch, not released |
-| [CV24.DS3](cv24-ds3-journey-reads/index.md) | Journey Reads | The Journey tree, a Journey's Conversations, and one Conversation by id, read-only, honouring the stored sibling order | 🟠 Implemented — on branch, not released |
-| [CV24.DS4](cv24-ds4-create-a-home/index.md) | Create a Home | One call creates a complete, seeded home at an explicit path, all or nothing, writing nothing outside it | 🟠 Implemented — on branch, not released |
-| [CV24.DS5](cv24-ds5-migrate-on-request/index.md) | Migrate on Request | Apply exactly the pending migrations the person was shown, behind a verified, retained backup | 🟠 Implemented — on branch, not released |
-| [CV24.DS6](cv24-ds6-mirror-context-as-a-call/index.md) | Mirror's Context as a Call | The doorman for a host's turn, with the key as an argument and Mirror Mode from the first turn, recorded as `mirror doorman` records it | 🟠 Implemented — on branch, not released |
-| [CV24.DS7](cv24-ds7-learn-from-a-conversations-newest-stretch/index.md) | Learn From a Conversation's Newest Stretch | A host's idle Conversations become memories while they stay open: the stretch since a watermark, in bounded pieces, within a budget, with the key as an argument | 🟠 Implemented — on branch, not released |
-| [CV24.DS8](cv24-ds8-administer-journeys-as-calls/index.md) | Administer Journeys as Calls | A host creates, edits, moves and deletes Journeys through five calls answering with the tree, including the name, description and status edit no released Mirror had | 🟠 Implemented — on branch, not released |
+| [CV24.DS1](cv24-ds1-inspect-a-home-without-migrating/index.md) | Inspect a Home Without Migrating | `mirror-mind/desktop` exists, importable from `node_modules`, and reports a database's migration state without changing it | ✅ Done — released in v0.39.0 |
+| [CV24.DS2](cv24-ds2-conversations-as-calls/index.md) | Conversations as Calls | Create or ensure a Conversation, append explicitly, rename, and rebind its Journey | ✅ Done — released in v0.39.0 |
+| [CV24.DS3](cv24-ds3-journey-reads/index.md) | Journey Reads | The Journey tree, a Journey's Conversations, and one Conversation by id, read-only, honouring the stored sibling order | ✅ Done — released in v0.39.0 |
+| [CV24.DS4](cv24-ds4-create-a-home/index.md) | Create a Home | One call creates a complete, seeded home at an explicit path, all or nothing, writing nothing outside it | ✅ Done — released in v0.39.0 |
+| [CV24.DS5](cv24-ds5-migrate-on-request/index.md) | Migrate on Request | Apply exactly the pending migrations the person was shown, behind a verified, retained backup | ✅ Done — released in v0.39.0 |
+| [CV24.DS6](cv24-ds6-mirror-context-as-a-call/index.md) | Mirror's Context as a Call | The doorman for a host's turn, with the key as an argument and Mirror Mode from the first turn, recorded as `mirror doorman` records it | ✅ Done — released in v0.39.0 |
+| [CV24.DS7](cv24-ds7-learn-from-a-conversations-newest-stretch/index.md) | Learn From a Conversation's Newest Stretch | A host's idle Conversations become memories while they stay open: the stretch since a watermark, in bounded pieces, within a budget, with the key as an argument | ✅ Done — released in v0.39.0 |
+| [CV24.DS8](cv24-ds8-administer-journeys-as-calls/index.md) | Administer Journeys as Calls | A host creates, edits, moves and deletes Journeys through five calls answering with the tree, including the name, description and status edit no released Mirror had | ✅ Done — released in v0.39.0 |
 
-## Owed at Release
+## Released
 
-A release note for the version that first ships `mirror-mind/desktop`, naming the entry, the
+[v0.39.0](../../../releases/v0.39.0.md) first ships `mirror-mind/desktop`. Its note names the entry, the
 `exports` field (which closes every other deep import of the package) and `lib/` in the tarball.

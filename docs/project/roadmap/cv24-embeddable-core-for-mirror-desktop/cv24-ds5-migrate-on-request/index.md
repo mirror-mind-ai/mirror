@@ -2,7 +2,7 @@
 
 # CV24.DS5 — Migrate on Request
 
-**Status:** 🟠 Implemented (2026-10-28) on branch `desktop/library-seam-1a`. Not merged, not released.
+**Status:** ✅ Done — merged in PR #52, released in [v0.39.0](../../../../releases/v0.39.0.md)
 The Navigator chose the verified, retained backup, recorded as the decision
 [A host migrates a home only behind a verified, retained backup](../../../decisions.md#a-host-migrates-a-home-only-behind-a-verified-retained-backup).
 

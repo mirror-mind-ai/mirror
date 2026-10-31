@@ -2,7 +2,7 @@
 
 # CV24.DS6 — Mirror's Context as a Call
 
-**Status:** 🟠 Implemented (2026-10-30) on branch `desktop/library-seam-1a`. Not merged, not released.
+**Status:** ✅ Done — merged in PR #52, released in [v0.39.0](../../../../releases/v0.39.0.md)
 Planned by Mirror Desktop's CV-010.DS-005 (phase 3, slice 3d), whose decision 5 put the doorman in
 this branch, at the Navigator's word.
 

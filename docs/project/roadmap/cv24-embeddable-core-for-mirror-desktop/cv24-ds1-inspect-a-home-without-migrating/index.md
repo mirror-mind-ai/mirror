@@ -2,8 +2,7 @@
 
 # CV24.DS1 — Inspect a Home Without Migrating
 
-**Status:** 🟠 Implemented — branch `desktop/library-seam-1a`, from `main` at `dd5bed9b` (v0.37.0).
-Not merged, not released.
+**Status:** ✅ Done — merged in PR #52, released in [v0.39.0](../../../../releases/v0.39.0.md)
 
 ## Outcome
 

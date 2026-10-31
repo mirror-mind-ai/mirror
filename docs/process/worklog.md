@@ -12,6 +12,16 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-10-31 — v0.39.0: The Core as a Library
+
+Minor release of CV24.DS1 to DS8, merged from `desktop/library-seam-1a` as PR #52 after a
+maintainer review (two fixes: the smoke script's executable bit, and the roadmap row that still
+said DS1 to DS6). `mirror-mind/desktop` is the library entry Mirror Desktop 0.3 embeds; the new
+`exports` field closes every other deep import of the package.
+
+No migration. No model or prompt changed, so the model-behavior gate does not apply.
+Release note: [v0.39.0](../releases/v0.39.0.md).
+
 ### 2026-10-30 — v0.38.1: The Refusal Names the Way Out
 
 Patch release of three Change Requests, cut the night the last of them closed. Two come

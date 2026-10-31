@@ -2,7 +2,7 @@
 
 # CV24.DS4 — Create a Home
 
-**Status:** 🟠 Implemented (2026-10-28) on branch `desktop/library-seam-1a`. Not merged, not released.
+**Status:** ✅ Done — merged in PR #52, released in [v0.39.0](../../../../releases/v0.39.0.md)
 The Navigator chose both recommendations, recorded as the decision
 [A host creates a home beside its target and renames it into place, writing nothing outside it](../../../decisions.md#a-host-creates-a-home-beside-its-target-and-renames-it-into-place-writing-nothing-outside-it).
 

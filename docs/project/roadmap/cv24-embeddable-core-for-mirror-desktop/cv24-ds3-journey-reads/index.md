@@ -2,7 +2,7 @@
 
 # CV24.DS3 — Journey Reads
 
-**Status:** 🟠 Implemented (2026-10-28) on branch `desktop/library-seam-1a`. Not merged, not released.
+**Status:** ✅ Done — merged in PR #52, released in [v0.39.0](../../../../releases/v0.39.0.md)
 
 ## Outcome
 
