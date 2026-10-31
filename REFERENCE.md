@@ -590,15 +590,18 @@ itself lives — never from configuration. A `clone` (a git checkout) fast-forwa
 channel's dist-tag resolves to. Anything else is `unknown` and is refused with the reason
 printed, rather than updated on a guess. A project-local `node_modules` is deliberately
 *not* a package install: `npm install -g` would update a different tree from the one
-running. Every npm command the updater runs (`root -g`, `view`, `install -g`) runs in the
-install's own directory, never the one the command was typed in: npm reads the `.npmrc`
-of the directory it runs in, and a project's could name another registry or prefix.
+running. No npm command the updater runs (`root -g`, `view`, `install -g`) runs in the
+directory the command was typed in: npm reads the `.npmrc` of the directory it runs in,
+and a project's could name another registry or prefix. `root -g` and `view` run in the
+install's own directory. `install -g` runs from the parent of `node_modules`, still the
+install's own tree: npm renames the package's directory aside before laying down the new
+version, and Windows refuses to rename a directory a process is running in.
 The user's own `~/.npmrc` and `npm_config_*` variables still apply.
 
 1. **status gate** — normally requires status to be ready. If the only remaining blocker is core migration drift that the target version may resolve, the updater proceeds through the backup-gated path and still requires post-update status to be ready. If the gate *crashes*, the repair lane runs automatically — an updater that cannot evaluate its own status is exactly what that lane is for.
 2. **capture** — records where to go back to, before anything moves: the current commit for a clone, the installed version for a package. The recovery block prints the pasteable route with that value in it.
 3. **fetch** — mutates only remote-tracking refs, with git's 120-second network timeout in both lanes. Skipped with `--no-fetch`.
-4. **plan** — accepts already-up-to-date and pull. Blocks ahead, diverged, and other unsafe states. Plan and fetch are read-only and run *before* the backup, so an update with nothing to do never archives the database.
+4. **plan** — accepts already-up-to-date and pull. Blocks ahead, diverged, and other unsafe states. A clone ahead of its channel only by commits the other channel already has, such as a `stable` clone fast-forwarded to `origin/main`, is blocked the way a package is blocked on a channel behind the installed version: the plan says `'stable' is behind this checkout`, and the recovery offers `runtime channel main` or staying until the next release, never a push or a reset. Commits on no remote keep the push-or-reset advice. Plan and fetch are read-only and run *before* the backup, so an update with nothing to do never archives the database.
 5. **backup** — writes the dated archive.
 6. **verify backup** — extracts `memory.db` and runs `PRAGMA quick_check` against it. Verifying entry names alone would accept an archive that cannot be opened.
 7. **apply** — `git merge --ff-only` for a clone, `npm install -g <name>@<resolved version>` for a package. Never a merge, a rebase, or a bare dist-tag.
@@ -783,7 +786,11 @@ files, and the first file to set a variable keeps it.
    when no other source configured a user, readable by you only (`0600` in a
    `0700` directory; `runtime diagnose` grades the mode), and tells you to add
    `OPENROUTER_API_KEY` to it by hand. The key is never read from the command
-   line.
+   line. It does so for a new home and for one that already exists under
+   `~/.mirror-minds`, which `init` uses as it is, changing nothing in it
+   (CR185). With no home configured, every command that needs one stops with
+   one line naming the homes it finds there and the `mirror init <name>` that
+   selects one.
 
 A second mirror on the same machine runs with `MIRROR_USER=<other>` set in the
 shell, as before. The per-install update channel lives beside the configuration
@@ -863,7 +870,7 @@ is permanent supported behavior. To stop the warning, run
 
 | Variable | Role |
 |----------|------|
-| `OPENROUTER_API_KEY` | Embeddings (`openai/text-embedding-3-small` via OpenRouter), extraction (Gemini Flash), and the multi-LLM `consult` command. |
+| `OPENROUTER_API_KEY` | Embeddings and every model call through OpenRouter: extraction and the other calls on the extraction model (see [Model Pins](#model-pins)), and the multi-LLM `consult` command. Without it, the commands that cannot work refuse in one line before touching the database, naming the file to add it to; search degrades and says so; `runtime status` and `runtime diagnose` report it. A key OpenRouter refuses is named in one line too. |
 
 ### Intelligence Flags
 
@@ -877,6 +884,20 @@ conversation. Their 1.0 posture and full reasoning are recorded in
 | `MEMORY_TWO_PASS` | unset (off) | Second-pass curation that dedups and refines new memories against history at write time: a query embedding per candidate plus one curation call. Set `1` to enable — fewer near-duplicate memories, at added per-conversation cost (not yet in the `llm_calls` ledger, debt D-003) and a risk of over-merging distinct memories. Off for 1.0; revisit when embedding spend is measurable. |
 | `MEMORY_SUMMARIZE` | unset (off) | LLM-written conversation summary instead of the free mechanical one. Set `1` to enable — marginal summary-quality gain for one call per conversation. |
 | `MEMORY_LOG_LLM_CALLS` | `metadata` | `off`, `metadata`, or `full`. `metadata` records role/model/tokens/latency/estimated-cost with no bodies; `full` adds prompt/response bodies; `off` disables logging. Legacy `1` maps to `full`. |
+
+### Model Pins
+
+The models Mirror calls, and how the extraction model reasons. They are read like
+every setting in this section: the real environment, the clone's `.env`, then
+`~/.config/mirror/env`. A variable exported in one shell reaches only the runtimes
+started from that shell, so put a lasting value in a file. `mirror runtime status`
+prints the values in force.
+
+| Variable | Default | Role |
+|----------|---------|------|
+| `MEMORY_EXTRACTION_MODEL` | `anthropic/claude-haiku-5.5` | The OpenRouter model behind every model call except `consult`: memory and task extraction, curation, conversation titles, tags, and summaries, reception, journal classification, week plans, persona descriptors, shadow, and consolidation. Setting it repoints an install without a release, and unsetting it returns to the pin. The pin moved from `google/gemini-2.5-flash-lite` to Claude Haiku 5.5 on 2026-10-28, chosen by measurement (CV9.DS9); to roll back, put `MEMORY_EXTRACTION_MODEL=google/gemini-2.5-flash-lite` in `${XDG_CONFIG_HOME:-~/.config}/mirror/env` (a clone may use its `.env`), and confirm with `mirror runtime status`, whose models line then names Flash Lite with no reasoning clause: the request Flash Lite was measured with. Rolling back restores Flash Lite's upstream rate limits (HTTP 429), which the move retired. A model change is a migration: see the development guide's model upgrade playbook. |
+| `MEMORY_EMBEDDING_MODEL` | `openai/text-embedding-3-small` | The embedding model for memory and attachment search. |
+| `MEMORY_EXTRACTION_REASONING` | unset: the model's own default | The reasoning effort those calls ask for, sent as OpenRouter's `reasoning.effort`: `none` (reasoning off), `minimal`, `low`, `medium`, `high`, `xhigh`, or `max`. Unset, each model sends the effort it was measured with: Claude Haiku 5.5, the pin, sends `none`, because it reasons by default and spends a short call's token budget before it answers; Gemini 2.5 Flash Lite and any other model send no reasoning field and reason as their provider defaults (Flash Lite not at all; on Flash Lite, any effort but `none` turns its thinking on). Set, the value wins on any model. A value that is not an effort reads as unset rather than failing the calls: `runtime status` shows it beside the effort actually sent, `reasoning=none (model default, invalid setting: <value>)`, and `runtime diagnose` reports it. `consult` never carries it. |
 
 ### Environment Selection
 

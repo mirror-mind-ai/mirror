@@ -1,5 +1,6 @@
 import type { WritableDatabase } from "#db/database.ts";
 import { requireString } from "#db/rowDecode.ts";
+import { keyFileTarget } from "#providers/config.ts";
 import type { EmbeddingProvider } from "#providers/embedding.ts";
 import { resolveFamilyProviders } from "#providers/familyProviders.ts";
 import { SEARCH_TRANSPORT } from "#providers/transport.ts";
@@ -13,6 +14,32 @@ import { tagsText } from "./render/memories.ts";
 // including under a degraded search with zero results.
 const DEGRADED_NOTE =
   "⚠ Degraded: lexical-only search (embedding unavailable — offline or no API key).";
+
+/**
+ * The degraded note for the cause the search reported (CR187). The general
+ * note guesses "offline or no API key"; for the two causes the person can fix
+ * themselves, the note says which one, and where.
+ *
+ * `config` means a missing key here: the search's embedding provider is the
+ * live one, and nothing else in its path raises `ProviderConfigError`. `auth`
+ * is a key OpenRouter refused, kept through the embedding wrapper.
+ */
+export function degradedNoteFor(
+  kind: string | undefined,
+  env: Record<string, string | undefined> = process.env,
+  home?: string,
+): string {
+  if (kind === "config") {
+    return (
+      "⚠ Degraded: lexical-only search (OPENROUTER_API_KEY is not configured: " +
+      `add it to ${keyFileTarget(env, home)}).`
+    );
+  }
+  if (kind === "auth") {
+    return "⚠ Degraded: lexical-only search (OpenRouter refused OPENROUTER_API_KEY: check the key where it is set).";
+  }
+  return DEGRADED_NOTE;
+}
 
 export interface SearchMemoryRow {
   id: string;
@@ -87,7 +114,7 @@ export async function runMemorySearchRoute(
     db,
     results.map((result) => result.id),
   );
-  return formatSearchResults(query, results, rows, degraded);
+  return formatSearchResults(query, results, rows, degraded, degradedNoteFor(degradedKind));
 }
 
 /**
@@ -101,13 +128,14 @@ export function formatSearchResults(
   results: readonly FreshSearchResult[],
   rows: ReadonlyMap<string, SearchMemoryRow>,
   degraded: boolean,
+  note: string = DEGRADED_NOTE,
 ): string {
   if (results.length === 0) {
-    return degraded ? `${DEGRADED_NOTE}\n` : "No memories found.\n";
+    return degraded ? `${note}\n` : "No memories found.\n";
   }
   const lines: string[] = [];
   if (degraded) {
-    lines.push(`${DEGRADED_NOTE} Ranked by keyword match.`, "");
+    lines.push(`${note} Ranked by keyword match.`, "");
   }
   lines.push(`🔍 Search: "${query}" (${results.length} results)`, "");
   for (const result of results) {

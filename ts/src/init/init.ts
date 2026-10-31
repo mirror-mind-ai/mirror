@@ -15,6 +15,7 @@
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { userHomePath } from "#frontDoor/mirrorHomes.ts";
 import { runningTreeRoot } from "#runtime/treeRoot.ts";
 
 /** Port of Python's uncaught `FileNotFoundError` for a missing templates root. */
@@ -51,7 +52,7 @@ export function templatesIdentityRoot(treeRoot: string = runningTreeRoot()): str
  * make every later command print the legacy-path warning (D14).
  */
 export function defaultUserHome(user: string, home: string = homedir()): string {
-  return join(home, ".mirror-minds", user);
+  return userHomePath(user, home);
 }
 
 /** Every `.yaml` file under `root`, recursively (mirrors `Path.rglob("*.yaml")`). */

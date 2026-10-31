@@ -350,8 +350,10 @@ function classifyDegradedCause(error: unknown): string {
   if (error instanceof ProviderConfigError) return "config";
   if (error instanceof LlmTransportError) return error.kind;
   if (error instanceof EmbeddingError) {
-    // generateEmbeddingSafely wraps a provider exception; the inner kind is
-    // gone by then, so the honest answer is the layer that failed.
+    // generateEmbeddingSafely wraps a provider exception. Since CR187 the
+    // wrapper keeps a transport failure's kind, so a refused key reads `auth`;
+    // anything else is still answered by the layer that failed.
+    if (error.transport !== null) return error.transport.kind;
     return error.permanent ? "embedding_permanent" : "embedding_exhausted";
   }
   return "unknown";

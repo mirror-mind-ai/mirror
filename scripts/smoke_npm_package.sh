@@ -115,7 +115,7 @@ check "the marketplace names mirror-mind, one local plugin" "$MP_PLUGIN" "mirror
 # --- from here on: no checkout, no real HOME, interpreters shadowed ---------
 export PATH="$WORK/stubs:$WORK/prefix/bin:$WORK/bin:/usr/bin:/bin"
 export HOME="$WORK/home"
-unset MIRROR_HOME MIRROR_USER MEMORY_DIR DB_PATH MEMORY_ENV NODE_OPTIONS XDG_CONFIG_HOME
+unset MIRROR_HOME MIRROR_USER MEMORY_DIR DB_PATH MEMORY_ENV NODE_OPTIONS XDG_CONFIG_HOME OPENROUTER_API_KEY
 cd "$WORK/home"
 
 say "2. mirror is on the PATH, from the install, with nothing else set"
@@ -203,6 +203,59 @@ check "release-notes pending exits 1 when it could not check" "$PENDING_CODE" "1
 mirror --help 2>"$WORK/pipe.err" | true
 check "mirror --help | true exits 0 (the reader asked us to stop)" "${PIPESTATUS[0]}" "0"
 check "and writes nothing to stderr (no EPIPE, no stack trace)" "$(wc -c <"$WORK/pipe.err" | tr -d ' ')" "0"
+
+say "5b. a home on disk and no configuration: the move from a clone to the package (CR185)"
+# Leandro's path on PR #42: the home stayed, the configuration lived in the
+# clone's .env, which a package does not read. The error names the command,
+# and the command adopts the home without touching it.
+identity_sums() { (cd "$HOME/.mirror-minds/smokeuser" && find identity -type f -exec cksum {} + | sort); }
+IDENTITY_BEFORE="$(identity_sums)"
+rm "$CONFIG"
+set +e
+MOVED_OUT="$(mirror runtime migrate 2>&1)"; MOVED_CODE=$?
+ADOPT_OUT="$(mirror init smokeuser 2>"$WORK/adopt.err")"; ADOPT_CODE=$?
+set -e
+check "with no configuration, runtime migrate exits 1" "$MOVED_CODE" "1"
+contains "and names the home and the command that finishes the job" "$MOVED_OUT" \
+  "To use the home at $HOME/.mirror-minds/smokeuser, run: mirror init smokeuser (it writes MIRROR_USER=smokeuser to $CONFIG)."
+check "init on the existing home exits 0" "$ADOPT_CODE" "0"
+check "its first line says what it found" "$(printf '%s\n' "$ADOPT_OUT" | head -1)" \
+  "Found user home: $HOME/.mirror-minds/smokeuser (nothing in it was changed)"
+check "the configuration is back" "$(cat "$CONFIG")" "MIRROR_USER=smokeuser"
+check "the config file is 0600 again" "$(mode_of "$CONFIG")" "600"
+check "nothing under identity/ changed" "$(identity_sums)" "$IDENTITY_BEFORE"
+[[ "$ADOPT_OUT" != *"mirror seed"* ]] && ok "no seed step for a home that has its database" || bad "init asked to seed a seeded home"
+check "init writes nothing to stderr" "$(wc -c <"$WORK/adopt.err" | tr -d ' ')" "0"
+# The package reads the file back: nothing else selects the home now. A clone
+# cannot show this, because its own .env is read before the config file.
+ADOPTED_STATUS="$(mirror runtime status 2>&1 || true)"
+contains "runtime status finds the home through the config file" "$ADOPTED_STATUS" "Mirror home: $HOME/.mirror-minds/smokeuser"
+set +e
+AGAIN_OUT="$(mirror init smokeuser 2>&1)"; AGAIN_CODE=$?
+set -e
+check "init again exits 0" "$AGAIN_CODE" "0"
+contains "and says the home is already selected" "$AGAIN_OUT" "Configuration: already selects this home"
+check "and writes nothing" "$(cat "$CONFIG")" "MIRROR_USER=smokeuser"
+
+say "5c. no OpenRouter key: a command that needs one refuses before it touches anything (CR187)"
+# Every package install starts here: init writes MIRROR_USER and leaves the key to
+# the person. Before, journal printed a stack trace, copied the database into its
+# pre-write snapshot, and lost the entry.
+BACKUPS="$HOME/.mirror-minds/smokeuser/backups"
+mv "$BACKUPS" "$BACKUPS.before-5c"
+set +e
+JOURNAL_ERR="$(mirror journal "a note about the day" 2>&1 >/dev/null)"; JOURNAL_CODE=$?
+set -e
+check "journal with no key exits 2" "$JOURNAL_CODE" "2"
+check "in one line" "$(printf '%s\n' "$JOURNAL_ERR" | wc -l | tr -d ' ')" "1"
+check "that says the entry was not saved, and where the key goes" "$JOURNAL_ERR" \
+  "Error: the journal entry was not saved, because OPENROUTER_API_KEY is not configured. Add OPENROUTER_API_KEY=<your key> to $CONFIG, then run the same command again."
+[ ! -e "$BACKUPS" ] && ok "and took no pre-write snapshot" || bad "journal opened the database before refusing"
+mv "$BACKUPS.before-5c" "$BACKUPS"
+KEY_STATUS="$(mirror runtime status 2>&1 || true)"
+contains "runtime status says the key is missing" "$KEY_STATUS" "OpenRouter key: not configured"
+KEY_DIAGNOSE="$(mirror runtime diagnose 2>&1 || true)"
+contains "runtime diagnose reports it, naming the file" "$KEY_DIAGNOSE" "Recommendation: add OPENROUTER_API_KEY=<your key> to $CONFIG"
 
 say "6. a database that needs migration 017, opened through the installed package"
 if [ -z "$REAL_SQLITE" ]; then

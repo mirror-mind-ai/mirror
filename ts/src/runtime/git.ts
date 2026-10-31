@@ -84,6 +84,17 @@ export interface UpdateAvailability {
   target_release: null;
 }
 
+/**
+ * How a caller asks git for something. `runGit` is one; the update pipeline
+ * injects others, so its decisions can be driven in tests without a remote.
+ * Without a timeout, a command gets `runGit`'s local budget.
+ */
+export type GitRunner = (
+  args: readonly string[],
+  cwd: string,
+  timeoutMs?: number,
+) => { code: number; stdout: string; stderr: string };
+
 /** `(exit code, trimmed stdout, trimmed stderr)`, tolerant like the oracle's. */
 export function runGit(
   args: readonly string[],
@@ -217,6 +228,16 @@ export function upstreamFor(channel: MarkerValue): string {
   return `origin/${channel.value}`;
 }
 
+/** `origin/main` -> `["origin", "main"]`; anything else is refused. */
+export function splitUpstream(upstream: string): [string, string] | null {
+  const index = upstream.indexOf("/");
+  if (index <= 0 || index === upstream.length - 1) return null;
+  const remote = upstream.slice(0, index);
+  const branch = upstream.slice(index + 1);
+  if (remote.startsWith("-") || branch.startsWith("-")) return null;
+  return [remote, branch];
+}
+
 // Lives in `runtime/version.ts` now -- the MCP server needs it and should not
 // import this module to get it. Re-exported so runtime call sites do not move.
 export { packageVersion } from "./version.ts";
@@ -339,6 +360,117 @@ export function checkUpdateAvailability(
 }
 
 /**
+ * Where a checkout stands against the channel branch it follows: one reading
+ * for both the update plan (`strategies/clone.ts`) and `inspectGitUpdatePlan`,
+ * so the two cannot disagree (CR186). `ahead` counts the checkout's commits
+ * that the upstream lacks; `behind`, the upstream's commits that the checkout lacks.
+ */
+export type ChannelPosition =
+  /** The two could not be compared; `reason` is git's, when it gave one. */
+  | { kind: "unreadable"; reason: string }
+  | { kind: "current" }
+  /** The channel has commits to take, and the checkout has none of its own. */
+  | { kind: "pull"; behind: number }
+  /**
+   * Every commit past the channel is already on the other channel's branch:
+   * the channel is behind the checkout, and nothing here is the person's own.
+   * Release promotion only fast-forwards `stable` to `main`, so this is a
+   * `stable` clone that took `main`'s commits before their release.
+   */
+  | {
+      kind: "channel_behind";
+      ahead: number;
+      channel: string;
+      carriedBy: string;
+      carriedByRef: string;
+    }
+  /** At least one commit past the channel is on no channel's branch. */
+  | { kind: "local_commits"; ahead: number }
+  | { kind: "diverged"; ahead: number; behind: number };
+
+type CommitCount = { value: number } | { reason: string };
+
+function countCommits(
+  repository: string,
+  revisions: readonly string[],
+  git: GitRunner,
+): CommitCount {
+  const result = git(["rev-list", "--count", ...revisions], repository);
+  const value = Number.parseInt(result.stdout.trim(), 10);
+  if (result.code !== 0 || Number.isNaN(value)) {
+    return { reason: result.stderr.trim() || "cannot compare upstream" };
+  }
+  return { value };
+}
+
+/**
+ * The other channel whose branch already has every commit past `upstream`, if
+ * one does. Its ref is read as last fetched. A stale or missing ref can only
+ * make published commits look local, which is the refusal a clone always had;
+ * it can never make local work look published.
+ */
+function channelBehind(
+  repository: string,
+  upstream: string,
+  ahead: number,
+  git: GitRunner,
+): ChannelPosition | null {
+  const split = splitUpstream(upstream);
+  if (split === null) return null;
+  const [remote, channel] = split;
+  if (!KNOWN_UPDATE_CHANNELS.has(channel)) return null;
+  for (const other of KNOWN_UPDATE_CHANNELS) {
+    if (other === channel) continue;
+    const ref = `${remote}/${other}`;
+    const unpublished = countCommits(repository, [`${upstream}..HEAD`, `^${ref}`], git);
+    if ("value" in unpublished && unpublished.value === 0) {
+      return { kind: "channel_behind", ahead, channel, carriedBy: other, carriedByRef: ref };
+    }
+  }
+  return null;
+}
+
+/** Read from the local object database only: the plan, not the remote check. */
+export function readChannelPosition(
+  repository: string,
+  upstream: string,
+  git: GitRunner = runGit,
+): ChannelPosition {
+  const ahead = countCommits(repository, [`${upstream}..HEAD`], git);
+  if ("reason" in ahead) return { kind: "unreadable", reason: ahead.reason };
+  const behind = countCommits(repository, [`HEAD..${upstream}`], git);
+  if ("reason" in behind) return { kind: "unreadable", reason: behind.reason };
+  if (ahead.value === 0) {
+    return behind.value === 0 ? { kind: "current" } : { kind: "pull", behind: behind.value };
+  }
+  if (behind.value > 0) return { kind: "diverged", ahead: ahead.value, behind: behind.value };
+  return (
+    channelBehind(repository, upstream, ahead.value, git) ?? {
+      kind: "local_commits",
+      ahead: ahead.value,
+    }
+  );
+}
+
+/** The words both readers give a position: the plan's detail, the inspection's note. */
+export function describeChannelPosition(position: ChannelPosition): string {
+  switch (position.kind) {
+    case "unreadable":
+      return position.reason;
+    case "current":
+      return "already up to date";
+    case "pull":
+      return `pull ${position.behind} remote commit(s)`;
+    case "channel_behind":
+      return `'${position.channel}' is behind this checkout (${position.ahead} commit(s), all on ${position.carriedByRef})`;
+    case "local_commits":
+      return "local commits present";
+    case "diverged":
+      return "branch diverged";
+  }
+}
+
+/**
  * Port of `inspect_git_update_plan`: how far HEAD is from the channel's
  * upstream, and whether a fast-forward is the honest move.
  *
@@ -381,49 +513,28 @@ export function inspectGitUpdatePlan(
     }
   }
 
-  const counted = runGit(
-    ["rev-list", "--left-right", "--count", `HEAD...${upstream}`],
-    git.repository,
-  );
-  if (counted.code !== 0 || !counted.stdout) {
-    return blocked(upstream, counted.stderr || "cannot compare upstream");
+  const position = readChannelPosition(git.repository, upstream);
+  const note = describeChannelPosition(position);
+  switch (position.kind) {
+    case "unreadable":
+      return blocked(upstream, note);
+    case "current":
+      return { upstream, ahead: 0, behind: 0, ready: true, action: "none", note };
+    case "pull":
+      return { upstream, ahead: 0, behind: position.behind, ready: true, action: "pull", note };
+    case "diverged":
+      return {
+        upstream,
+        ahead: position.ahead,
+        behind: position.behind,
+        ready: false,
+        action: "blocked",
+        note,
+      };
+    case "channel_behind":
+    case "local_commits":
+      return { upstream, ahead: position.ahead, behind: 0, ready: false, action: "blocked", note };
   }
-  const [aheadText, behindText] = counted.stdout.split(/\s+/);
-  const ahead = Number(aheadText);
-  const behind = Number(behindText);
-  if (
-    aheadText === undefined ||
-    behindText === undefined ||
-    !Number.isInteger(ahead) ||
-    !Number.isInteger(behind)
-  ) {
-    return blocked(upstream, `unexpected git count: ${counted.stdout}`);
-  }
-
-  if (ahead === 0 && behind === 0) {
-    return { upstream, ahead, behind, ready: true, action: "none", note: "already up to date" };
-  }
-  if (ahead === 0 && behind > 0) {
-    return {
-      upstream,
-      ahead,
-      behind,
-      ready: true,
-      action: "pull",
-      note: `pull ${behind} remote commit(s)`,
-    };
-  }
-  if (ahead > 0 && behind === 0) {
-    return {
-      upstream,
-      ahead,
-      behind,
-      ready: false,
-      action: "blocked",
-      note: "local commits present",
-    };
-  }
-  return { upstream, ahead, behind, ready: false, action: "blocked", note: "branch diverged" };
 }
 
 /** A package's git facts: it has none, and none is not an error. */

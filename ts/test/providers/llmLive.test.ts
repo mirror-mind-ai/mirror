@@ -3,7 +3,7 @@ import { test } from "node:test";
 
 import { stubOpenRouterClient } from "#helpers/openRouterStub.ts";
 import { ProviderConfigError } from "#providers/config.ts";
-import { LiveLlmProvider } from "#providers/llm.ts";
+import { CARRIES_EXTRACTION_REASONING, LiveLlmProvider, LLM_ROLES } from "#providers/llm.ts";
 import { LlmTransportError, type ProviderRequestOptions } from "#providers/openrouter.ts";
 
 const LIVE_ENV = { OPENROUTER_API_KEY: "sk-or-v1-live-chat-test" };
@@ -69,7 +69,7 @@ test("the request posts to /chat/completions with Python's defaults", async () =
   await provider.complete({ role: "extraction", prompt: "p" });
 
   assert.equal(calls[0]?.path, "/chat/completions");
-  assert.equal(calls[0]?.body.model, "google/gemini-2.5-flash-lite");
+  assert.equal(calls[0]?.body.model, "anthropic/claude-haiku-5.5");
   assert.equal(calls[0]?.body.temperature, 0.7);
   assert.equal(calls[0]?.body.max_tokens, 4096);
 });
@@ -103,8 +103,13 @@ test("temperature 0 is honored, not treated as absent", async () => {
 test("no streaming, no tools, no system message for a single-prompt role", async () => {
   // `consult` is the one caller that sends a system message, and it says so
   // explicitly through `messages` (below). Every prompt-assembling role sends
-  // exactly what Python sends: one user turn.
-  const { provider, calls } = liveProvider(() => chatReply("ok"));
+  // exactly what Python sends: one user turn. Since CV9.DS9.US3 the default pin
+  // adds one field, its model default effort; a model outside the table (here
+  // the rollback pin) sends the body as it was.
+  const { provider, calls } = liveProvider(() => chatReply("ok"), {
+    ...LIVE_ENV,
+    MEMORY_EXTRACTION_MODEL: "google/gemini-2.5-flash-lite",
+  });
 
   await provider.complete({ role: "extraction", prompt: "p" });
 
@@ -112,6 +117,144 @@ test("no streaming, no tools, no system message for a single-prompt role", async
   assert.equal(body.stream, undefined);
   assert.equal(body.tools, undefined);
   assert.deepEqual(Object.keys(body).sort(), ["max_tokens", "messages", "model", "temperature"]);
+});
+
+// CV9.DS9.TS1: MEMORY_EXTRACTION_REASONING. Unset, the body is the key-set test's
+// above, unchanged. Set, one field is added for the roles on the extraction pin.
+
+test("an extraction-family call carries the reasoning effort when it is set (CV9.DS9.TS1)", async () => {
+  const { provider, calls } = liveProvider(() => chatReply("ok"), {
+    ...LIVE_ENV,
+    MEMORY_EXTRACTION_REASONING: "none",
+  });
+
+  await provider.complete({ role: "extraction", prompt: "p" });
+  await provider.complete({ role: "reception", prompt: "p" });
+
+  for (const call of calls) {
+    assert.deepEqual(call.body.reasoning, { effort: "none" });
+    assert.deepEqual(Object.keys(call.body).sort(), [
+      "max_tokens",
+      "messages",
+      "model",
+      "reasoning",
+      "temperature",
+    ]);
+  }
+});
+
+test("consult never carries the extraction reasoning effort: it picks its own model (CV9.DS9.TS1)", async () => {
+  const { provider, calls } = liveProvider(() => chatReply("ok"), {
+    ...LIVE_ENV,
+    MEMORY_EXTRACTION_REASONING: "none",
+  });
+
+  await provider.complete({
+    role: "consult",
+    prompt: "p",
+    model: "vendor/other",
+    messages: [
+      { role: "system", content: "s" },
+      { role: "user", content: "u" },
+    ],
+  });
+
+  assert.equal(calls[0]?.body.reasoning, undefined);
+});
+
+test("an invalid reasoning value sends the model default and fails no call (CV9.DS9.TS1, US3)", async () => {
+  // A throw here would become an extraction attempt; three of those quarantine a
+  // conversation for good (CR178). Invalid reads as unset, so the default pin
+  // still gets `none` (US3); a model outside the table still gets no field.
+  const { provider, calls } = liveProvider(() => chatReply("ok"), {
+    ...LIVE_ENV,
+    MEMORY_EXTRACTION_REASONING: "off",
+  });
+
+  const response = await provider.complete({ role: "conversation_title", prompt: "p" });
+
+  assert.equal(response.content, "ok");
+  assert.deepEqual(calls[0]?.body.reasoning, { effort: "none" });
+
+  const rollback = liveProvider(() => chatReply("ok"), {
+    ...LIVE_ENV,
+    MEMORY_EXTRACTION_MODEL: "google/gemini-2.5-flash-lite",
+    MEMORY_EXTRACTION_REASONING: "off",
+  });
+  await rollback.provider.complete({ role: "conversation_title", prompt: "p" });
+  assert.equal(rollback.calls[0]?.body.reasoning, undefined);
+});
+
+// CV9.DS9.US3: the pin is Haiku, and the reasoning default is the model's.
+
+test("the default pin sends its model default effort on every extraction-family call (CV9.DS9.US3)", async () => {
+  const { provider, calls } = liveProvider(() => chatReply("ok"));
+
+  await provider.complete({ role: "extraction", prompt: "p" });
+  await provider.complete({ role: "conversation_title", prompt: "p" });
+  await provider.complete({ role: "reception", prompt: "p" });
+
+  for (const call of calls) {
+    assert.equal(call.body.model, "anthropic/claude-haiku-5.5");
+    assert.deepEqual(call.body.reasoning, { effort: "none" });
+    assert.deepEqual(Object.keys(call.body).sort(), [
+      "max_tokens",
+      "messages",
+      "model",
+      "reasoning",
+      "temperature",
+    ]);
+  }
+});
+
+test("naming the default pin explicitly sends the same request as leaving it unset (CV9.DS9.US3)", async () => {
+  const { provider, calls } = liveProvider(() => chatReply("ok"), {
+    ...LIVE_ENV,
+    MEMORY_EXTRACTION_MODEL: "anthropic/claude-haiku-5.5",
+  });
+
+  await provider.complete({ role: "extraction", prompt: "p" });
+
+  assert.equal(calls[0]?.body.model, "anthropic/claude-haiku-5.5");
+  assert.deepEqual(calls[0]?.body.reasoning, { effort: "none" });
+});
+
+test("the rollback pin sends the request it was measured with: no reasoning field (CV9.DS9.US3)", async () => {
+  const { provider, calls } = liveProvider(() => chatReply("ok"), {
+    ...LIVE_ENV,
+    MEMORY_EXTRACTION_MODEL: "google/gemini-2.5-flash-lite",
+  });
+
+  await provider.complete({ role: "extraction", prompt: "p" });
+  await provider.complete({ role: "reception", prompt: "p" });
+
+  for (const call of calls) {
+    assert.equal(call.body.model, "google/gemini-2.5-flash-lite");
+    assert.equal(call.body.reasoning, undefined);
+  }
+});
+
+test("consult carries no effort even on the default pin's model default (CV9.DS9.US3)", async () => {
+  const { provider, calls } = liveProvider(() => chatReply("ok"));
+
+  await provider.complete({
+    role: "consult",
+    prompt: "p",
+    model: "vendor/other",
+    messages: [
+      { role: "system", content: "s" },
+      { role: "user", content: "u" },
+    ],
+  });
+
+  assert.equal(calls[0]?.body.reasoning, undefined);
+});
+
+test("every role declares whether it carries the extraction reasoning effort (CV9.DS9.TS1)", () => {
+  // The Record type makes the compiler ask for each new role; this pins the answers.
+  assert.deepEqual(Object.keys(CARRIES_EXTRACTION_REASONING).sort(), [...LLM_ROLES].sort());
+  const ownModel = LLM_ROLES.filter((role) => !CARRIES_EXTRACTION_REASONING[role]);
+  assert.deepEqual(ownModel, ["consult"]);
 });
 
 test("content is trimmed, matching Python's .strip()", async () => {
@@ -165,7 +308,7 @@ test("the response model echoes the requested model, which is what Python logs",
 
   const response = await provider.complete({ role: "extraction", prompt: "p" });
 
-  assert.equal(response.model, "google/gemini-2.5-flash-lite");
+  assert.equal(response.model, "anthropic/claude-haiku-5.5");
 });
 
 test("empty choices is malformed_output -- Python's IndexError", async () => {

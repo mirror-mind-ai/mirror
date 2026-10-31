@@ -34,6 +34,12 @@ import {
   readExtensionPlugin,
 } from "#extensions/extensionPlugin.ts";
 import { identityKeyBreaksGrammar, SLUG_KEYED_LAYERS } from "#identity/identityKey.ts";
+import {
+  hasOpenRouterKey,
+  keyFileInstruction,
+  REASONING_EFFORTS,
+  resolveExtractionReasoning,
+} from "#providers/config.ts";
 import { pyRepr, sortByCodePoint } from "#util/pythonText.ts";
 import { configFilePath } from "./config.ts";
 import { extensionPluginStates } from "./extensionPluginWiring.ts";
@@ -769,6 +775,59 @@ export function staleRevertGateFindings(env: NodeJS.ProcessEnv): DriftFinding[] 
       repair_route: "edit .env",
     },
   ];
+}
+
+/**
+ * No OpenRouter key (CR187), read by the predicate every refusal uses, so
+ * diagnose and the refusals cannot disagree about what "configured" means.
+ * Presence only: the value is never read into a finding. Attention, not a
+ * blocker -- a keyless install still runs and updates; it just remembers
+ * nothing new and answers no `consult`. The recommendation names the file the
+ * key goes in, and says to make it owner-only when it does not exist yet.
+ */
+export function openRouterKeyFindings(env: NodeJS.ProcessEnv, home?: string): DriftFinding[] {
+  if (hasOpenRouterKey(env)) return [];
+  return [
+    {
+      code: "openrouter_key_missing",
+      severity: "attention",
+      subject: "OPENROUTER_API_KEY",
+      detail: "not set, so embeddings, memory extraction, and consult are off",
+      recommendation: `add ${keyFileInstruction(env, home)}`,
+      repair_route: "configuration",
+    },
+  ];
+}
+
+/**
+ * A `MEMORY_EXTRACTION_REASONING` that is not a reasoning effort (CV9.DS9.TS1).
+ *
+ * The transport reads it as unset rather than fail the call -- a failed call is
+ * an extraction attempt, and three quarantine a conversation for good (CR178) --
+ * so the setting is silently not in force: the calls send the model's own default
+ * effort (CV9.DS9.US3), or no reasoning field for a model without one. Diagnose
+ * says which, with the values that would be in force.
+ */
+export function extractionReasoningFindings(env: NodeJS.ProcessEnv): DriftFinding[] {
+  const { model, effort, invalid } = resolveExtractionReasoning({ env });
+  if (invalid === null) return [];
+  const sent = effort === null ? "no reasoning setting" : `${model}'s own default, ${effort}`;
+  return [
+    {
+      code: "extraction_reasoning_invalid",
+      severity: "attention",
+      subject: "MEMORY_EXTRACTION_REASONING",
+      detail: `"${invalid}" is not a reasoning effort, so extraction calls send ${sent}`,
+      recommendation:
+        `set it to ${formatEffortList()}, or unset it, where it is set: ` +
+        "the environment, the clone's .env, or ~/.config/mirror/env",
+      repair_route: "edit the setting",
+    },
+  ];
+}
+
+function formatEffortList(): string {
+  return `${REASONING_EFFORTS.slice(0, -1).join(", ")}, or ${REASONING_EFFORTS.at(-1)}`;
 }
 
 /**

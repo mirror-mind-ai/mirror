@@ -24,7 +24,8 @@ import { compareSemver, isPlainSemver } from "#util/semver.ts";
  * `package.json` -- so a command started in the person's project takes its
  * `registry=` and `prefix=` from whatever that project ships. Every call the
  * product makes names its directory: the install's own root for the package's
- * commands, the release's repository for `publish`.
+ * commands, except the install that replaces the package, which runs from the
+ * parent of `node_modules` (`applyCwd`); the release's repository for `publish`.
  */
 export interface NpmCall {
   cwd?: string;
@@ -202,7 +203,7 @@ export type ChannelDirection =
 export interface PackageInstall {
   name: string;
   version: string;
-  /** Where the package lives; its npm commands run here. */
+  /** Where the package lives; its npm commands run here, except the apply (`applyCwd`). */
   root: string;
 }
 
@@ -314,7 +315,25 @@ export function renderPackageUpdateAvailability(report: PackageUpdateAvailabilit
   return `${lines.join("\n")}\n`;
 }
 
-/** Install one exact version globally, from the install's own root. Never a bare tag. */
+/**
+ * Where `npm install -g` runs when it replaces this very package.
+ *
+ * npm renames the installed package directory aside (`.mirror-mind-xxxx`)
+ * before it lays down the new version. On Windows a process holds its
+ * current directory against rename, so an npm started inside the package --
+ * the install's root, where every other call of the product runs (CR135) --
+ * fails with EBUSY on every update, and a Windows npm install could never
+ * update itself (4 of 4 runs, 0.33.4 -> 0.35.0; the same npm from the parent
+ * directory succeeds, with a Mirror process holding the package open).
+ *
+ * The parent of `node_modules` is still the install's own tree, never the
+ * person's project, so CR135 holds: no project `.npmrc` can answer this call.
+ */
+export function applyCwd(root: string): string {
+  return dirname(dirname(root));
+}
+
+/** Install one exact version globally, from the directory `applyCwd` names. Never a bare tag. */
 export function installGlobal(
   name: string,
   version: string,
@@ -331,9 +350,9 @@ export function installGlobal(
  * `npm pack <name>@<version>` into `destination`: the exact tarball `runtime
  * update` would install, fetched -- never unpacked here -- so `release-notes
  * pending` can read what that version brings (CR134). It runs in the install's
- * own root, as every npm call does (CR135). `--ignore-scripts`: a registry
- * tarball runs no scripts when packed, and at a trust boundary that is said
- * rather than assumed.
+ * own root, as every npm call but the apply does (CR135). `--ignore-scripts`:
+ * a registry tarball runs no scripts when packed, and at a trust boundary that
+ * is said rather than assumed.
  */
 export function packTarball(
   name: string,
@@ -433,7 +452,7 @@ export function packageStrategy(
     },
 
     apply: (_previousRef, target) => {
-      const applied = installGlobal(install.name, target, install.root, npm);
+      const applied = installGlobal(install.name, target, applyCwd(install.root), npm);
       return applied.ok
         ? { ok: true, newRef: target, detail: applied.detail, changes: [] }
         : {

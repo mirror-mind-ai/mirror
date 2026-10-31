@@ -29,6 +29,7 @@ import {
   evalPassed,
   evalScore,
 } from "#evals/harness/types.ts";
+import { resolveExtractionReasoning } from "#providers/config.ts";
 
 const EVALS_DIR = dirname(dirname(fileURLToPath(import.meta.url)));
 const DEFAULT_THRESHOLD = 0.8;
@@ -55,6 +56,8 @@ export interface RunnerIo {
   now?: () => Date;
   newSuiteRunId?: () => string;
   write?: (line: string) => void;
+  /** The reasoning effort extraction calls send (CV9.DS9.TS1, US3), or null for none. */
+  reasoning?: () => string | null;
 }
 
 export interface RunOptions {
@@ -81,6 +84,8 @@ function resolved(io: RunnerIo = {}): Required<RunnerIo> {
     now: io.now ?? (() => new Date()),
     newSuiteRunId: io.newSuiteRunId ?? (() => crypto.randomUUID()),
     write: io.write ?? ((line: string) => console.log(line)),
+    // The effort the calls send: the setting, else the model's default (US3).
+    reasoning: io.reasoning ?? (() => resolveExtractionReasoning().effort),
   };
 }
 
@@ -207,8 +212,10 @@ function persistRun(
       notes: r.notes,
       blocking: r.blocking,
     })),
-    schema_version: 3,
+    schema_version: 4,
     suite_run_id: suiteRunId,
+    // Recorded here, not exported by each module, so no module can forget it.
+    reasoning: module.EVAL_MODEL ? io.reasoning() : null,
   };
   // Defense in depth: a persistence error must never surface as an eval
   // failure, even if appendRun's own fail-soft contract were violated.
@@ -290,7 +297,8 @@ export function printHistory(evalName: string, limit: number, io: RunnerIo = {})
     const icon = record.passed ? PASS : FAIL;
     write(
       `  ${icon}  ${record.started_at}  score=${record.score.toFixed(2)}/${record.threshold.toFixed(2)}` +
-        `  model=${record.model ?? "—"}  prompt_hash=${record.prompt_hash ?? "—"}  v${record.schema_version}`,
+        `  model=${record.model ?? "—"}  reasoning=${record.reasoning ?? "—"}` +
+        `  prompt_hash=${record.prompt_hash ?? "—"}  v${record.schema_version}`,
     );
     const blocked = record.probes.filter((p) => p.blocking && !p.passed).map((p) => p.id);
     if (blocked.length > 0) write(`      ⛔ blocked by ${blocked.join(", ")}`);
@@ -298,14 +306,27 @@ export function printHistory(evalName: string, limit: number, io: RunnerIo = {})
     const older = records[index + 1];
     if (!older) return;
     const olderStatus = new Map(older.probes.map((p) => [p.id, p.passed]));
+    const label = configurationChange(older, record);
     for (const probe of record.probes) {
       const prior = olderStatus.get(probe.id);
       if (prior === undefined || prior === probe.passed) continue;
       const direction = prior && !probe.passed ? "regressed" : "recovered";
-      write(`      ⚠ probe '${probe.id}' ${direction} vs previous run`);
+      write(`      ⚠ probe '${probe.id}' ${direction} vs previous run${label}`);
     }
   });
   write("");
+}
+
+/**
+ * What changed between two runs besides the model's own variance (CV9.DS9.TS1):
+ * a flip across a model or reasoning change is attributable to it, not noise.
+ * A record from before schema 4 sent no reasoning field, which is what null says.
+ */
+function configurationChange(older: EvalRunRecord, newer: EvalRunRecord): string {
+  const changed: string[] = [];
+  if (older.model !== newer.model) changed.push("model");
+  if ((older.reasoning ?? null) !== (newer.reasoning ?? null)) changed.push("reasoning");
+  return changed.length === 0 ? "" : ` (${changed.join(" and ")} changed)`;
 }
 
 /** Entry point for `npm run eval -- <name|--all> [--history [N]]`. */

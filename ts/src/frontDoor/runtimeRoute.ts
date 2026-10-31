@@ -15,6 +15,7 @@ import { join } from "node:path";
 import { createZipBackup } from "#backup/zipBackup.ts";
 import { dbNameForEnv, resolveMirrorHome } from "#frontDoor/dbPath.ts";
 import { frontDoorLogPath, logFrontDoor } from "#frontDoor/frontDoorLog.ts";
+import { homesRoot } from "#frontDoor/mirrorHomes.ts";
 import { renderUnknownSubcommand } from "#frontDoor/usage.ts";
 import {
   renderBackupVerification,
@@ -25,8 +26,10 @@ import { channelFor, channelForReport, renderChannel, setChannel } from "#runtim
 import {
   diagnoseRuntime,
   extensionPluginFindings,
+  extractionReasoningFindings,
   hookFailureFindings,
   hookNodeFindings,
+  openRouterKeyFindings,
   pluginWiringFindings,
   probeModelPins,
   renderRuntimeDiagnosis,
@@ -318,12 +321,18 @@ export async function runRuntimeReadRoute(
           : null;
     const findings = [
       ...diagnoseRuntime(report, inspectGitWorktree(report.git.repository)),
-      ...rootStateFindings(homesRoot(env)),
+      ...rootStateFindings(ambientHomesRoot(env)),
       // CV22.DS10.TS5: the transition's own leftovers. A stale MIRROR_TS_*
       // gate is inert and silently so; an unresolvable Node makes every hook
       // skip; and hooks.log holds what the hooks met in their own context.
       // All three are invisible without being asked for.
       ...staleRevertGateFindings(env),
+      // CV9.DS9.TS1: a reasoning setting the transport ignores rather than fail
+      // on (CR178) is silently not in force unless diagnose says so.
+      ...extractionReasoningFindings(env),
+      // CR187: with no key, memory extraction, embeddings, and consult are off,
+      // and nothing else on this report would say so.
+      ...openRouterKeyFindings(env),
       ...hookFailureFindings(report),
       ...hookNodeFindings(env, (path) => {
         try {
@@ -534,7 +543,8 @@ function runRuntimeUpdate(
   //
   // npm runs in the tree the front door runs from -- for a package, the
   // install's own root -- and never in the cwd, whose `.npmrc` could name
-  // another registry or prefix (CR135). The strategy's own calls do the same.
+  // another registry or prefix (CR135). The strategy's own calls stay out of
+  // the cwd too; its apply runs from the parent of `node_modules` (`applyCwd`).
   //
   // Git runs in the clone's own checkout and nowhere else: the gate's report
   // and `--check` name no cwd (CR138), whose `.git/config` could name a
@@ -774,8 +784,7 @@ function firstPositional(args: readonly string[]): string | null {
   return null;
 }
 
-/** Python's ambient `DEFAULT_USER_HOMES_DIR`: `<home>/.mirror-minds`. */
-function homesRoot(env: NodeJS.ProcessEnv): string {
-  const home = env.HOME ?? env.USERPROFILE ?? "";
-  return join(home, ".mirror-minds");
+/** Python's ambient `DEFAULT_USER_HOMES_DIR`: the homes root under the environment's home. */
+function ambientHomesRoot(env: NodeJS.ProcessEnv): string {
+  return homesRoot(env.HOME ?? env.USERPROFILE ?? "");
 }

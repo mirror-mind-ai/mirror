@@ -12,6 +12,234 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-10-30 — v0.38.1: The Refusal Names the Way Out
+
+Patch release of three Change Requests, cut the night the last of them closed. Two come
+from Leandro's report on PR #42, and CR187 from CR185's review:
+
+- CR185: a package with no home configured names the homes it finds and the
+  `mirror init <name>` that selects one, and `init` adopts a home that already exists.
+- CR187: a missing or refused OpenRouter key is one line that names the file, before
+  anything is touched.
+- CR186: a `stable` clone ahead only by `main`'s commits is told that `stable` is behind
+  it, not to push or reset.
+
+No migration. No model or prompt changed, so the model-behavior gate does not apply.
+Release note: [v0.38.1](../releases/v0.38.1.md).
+
+After the release commit:
+
+- CI was green on all four jobs and the link check before the tag existed.
+- `release:promote` pushed the tag and `stable`.
+- The Navigator approved the `release` environment and the trusted-publisher stage.
+  `latest` and `stable` are at 0.38.1, with provenance.
+- The GitHub Release is published and marked latest.
+- The Navigator updated the production install with `MIRROR_USER` unset (the v0.37.0
+  lesson). It reports 0.38.1, the production home, 18/18 migrations, and status ready.
+  The production home holds dated backups from 01:07 and 04:12 on 2026-10-30, and the
+  development home none newer than the day before.
+
+### 2026-10-29 — CR186: a `stable` clone that took `main`'s commits early is told `stable` is behind it; PR #42 answered
+
+[CR186](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr186-runtime-update-reads-main-s-commits-as-local-work.md)
+is done. It was the second bump in Leandro's report on PR #42. `runtime update` counted
+every commit past `origin/stable` as local work and said "push or reset". A clone that had
+pulled `main`, as the v0.33.3 notes once said to, was refused with advice that did not
+apply. Now:
+
+- A clone ahead of `stable` only by commits `origin/main` already has is refused the way
+  the package lane refuses a channel behind the installed version, and in its words:
+  `'stable' is behind this checkout`, with `runtime channel main` or the next release as
+  the ways out.
+- Neither push nor reset is suggested. `main`'s code can migrate the database when it
+  opens it, and `stable`'s core refuses a database newer than itself.
+- Real local work, alone or on top of `main`'s commits, keeps the push-or-reset refusal.
+  A missing or stale `origin/main` falls back to it.
+- One function now reads where a clone stands, for both the update plan and the welcome
+  card's inspection. They used to count two different ways.
+
+The plan was reviewed through four lenses. The reviews turned it from reporting the clone
+as current to refusing it in the package lane's words, and dropped the reset. The
+Navigator validated it in a scratch clone ahead of `stable`. The agent's own first run of
+that route never reached the plan: a `node_modules` symlink made the scratch tree dirty,
+and the status gate refused. CI on the push (`e18b0c2e`) was green on all four jobs. It
+ships in the next release. The reply on
+[PR #42](https://github.com/mirror-mind-ai/mirror/pull/42#issuecomment-6511137619)
+tells Leandro that both of his bumps are fixed: this one, and CR185's.
+
+### 2026-10-29 — CR185 and CR187: a missing home or key is one line that says what to run; PR #42 answered
+
+Leandro's last comment on PR #42 (2026-10-17) was answered, late and with an apology,
+and turned into captures and a correction.
+[CR186](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr186-runtime-update-reads-main-s-commits-as-local-work.md)
+is captured and open: `runtime update` reads a clone's commits from `origin/main` as
+local work. The v0.33.3 manual step for a clone, `git pull --ff-only`, was wrong for the
+default channel, because on `main` it pulls past the release. The release notes, the
+published GitHub Release, and the release comment on the PR now give
+`git fetch origin` and `git merge --ff-only origin/stable`, each with a dated correction.
+
+[CR185](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr185-a-package-with-no-home-configured-does-not-say-where-it-looks.md)
+is done:
+
+- With no home configured, every surface prints one sentence. It names the homes found
+  under `~/.mirror-minds` and the `mirror init <name>` that selects one, or says how to
+  create a home, and it names the file that command writes.
+- `init <name>` adopts an existing home instead of refusing it. Nothing in the home
+  changes, the configuration is written owner-only, and only the steps left are printed.
+- The bare `mirror` names the home too.
+- A new home no longer tells the person to select a user who is already selected.
+
+The plan was reviewed through five lenses, and the Navigator validated it as a package
+user, the lane Leandro was on. The first push failed one test on CI, which runs the suite
+under `MEMORY_ENV=test`. The test, not the product, had assumed `memory.db`. The suite is
+now also run that way before a push. A note on PR #45 tells the Windows installer that
+its skip of `init` is now optional.
+
+[CR187](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr187-a-missing-openrouter-key-crashes-three-commands-with-a-stack-trace-that-names-no-file.md)
+is done. A missing `OPENROUTER_API_KEY` used to crash `consult`, `journal`, and
+`week plan` with a stack trace, and `journal` lost the entry after copying the database
+into its snapshot. Now:
+
+- The six commands that cannot work without the key refuse before they touch anything,
+  in one line that says what was not done and where the key goes.
+- A key OpenRouter refuses is one line too, whether it was met by a chat call or an
+  embedding call.
+- Search's degraded note, `runtime status`, and `runtime diagnose` say the same.
+- `consolidate apply` is checked lazily, because only a merge embeds.
+
+The plan was reviewed through four lenses and validated by the Navigator on the package
+lane.
+
+Both ship in the next release. Still open from the session: CR186, and transport
+failures other than a refused key, which still crash: captured as
+[CR188](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr188-a-provider-outage-crashes-the-commands-that-call-a-model-with-a-stack-trace.md).
+At the wrap-up the agent ran `mirror mirror log --help`, which wrote `--help` into
+the session's conversation: CR109's defect again, and its evidence now says so.
+
+### 2026-10-29 — v0.38.0: The Model Behind the Memories, Chosen by Measurement
+
+Minor release closing CV9.DS9, with CR180. The extraction pin is Claude Haiku 5.5 at
+reasoning off, chosen on the suite with reasoning on and off (TS1) and on 24 of the
+owner's own conversations ranked blind (TS2), decided at US3's plan approval. Every
+extraction-pin call can carry a reasoning effort and a pin carries its own default.
+CR180 made the summary open with its subject, gave every lifecycle prompt the owner's
+name for the first time, and added one guarded regeneration for a framed opening. The
+release gate on the final code: `eval --all` 9 of 9 modules, 70 of 70 probes, the first
+fully clean run on record. Release note:
+[v0.38.0](../releases/v0.38.0.md).
+
+After the release commit: tag and `stable` pushed by `release:promote`; the
+trusted-publisher stage approved; `latest` and `stable` at 0.38.0; GitHub Release
+published, marked latest. CI on the release commit was green on the two test jobs and
+the smoke and red on the Windows checkout, for a path in TS1's evidence folder that had
+exceeded Windows' limit since the 26th and broke that job on every push of the day; the
+folder was shortened two commits later and a dispatched run on `main` is green on all
+four jobs. Four roadmap links written at the wrong depth were fixed in between. Both
+commits are docs; the tag's code is `main`'s. The production install is updated through
+`runtime update` next, with `MIRROR_USER` unset so the backup names the production
+home (the v0.37.0 lesson); no migration this time.
+
+### 2026-10-28 — CV9.DS9.US3: The extraction pin moves to Claude Haiku 5.5 at reasoning `none`
+
+The decision DS9 was opened to make. The Navigator decided at Plan approval, on the
+evidence in the order it weighed: his own blind rankings on his conversations (Haiku
+first on 16 of 26 surfaces, ahead of Flash Lite 17–9 and of Luna 20–6), the suite at
+`none` (three of Flash Lite's four standing failures fixed, no call cut off), Flash
+Lite's rate limits (429 on 31% of attempts; Haiku none), and fewer invented facts.
+Accepted against it: about 40% more cost at this volume, half a second more on
+reception, and summaries that still open with the framing CR180 traces to the prompt.
+
+The plan went through four persona reviews before approval (AI engineer, devops, QA,
+product designer), and all eight findings were folded. Two of them changed the design:
+the reasoning default became a property of the model (`MODEL_DEFAULT_REASONING`, looked
+up by the effective model, so naming Haiku explicitly sends the same request as leaving
+it unset and the rollback reproduces exactly the request Flash Lite was measured with),
+and the release-note section stayed in the story package because `release-notes latest`
+picks the highest semver filename under `docs/releases/`.
+
+One migration commit changed the pin, its reasoning default, and `MODEL_PRICES` (Haiku
+at $0.10/M in, $0.50/M out, read from OpenRouter's catalogue that day; Flash Lite kept
+for rolled-back installs), `runtime status`, `REFERENCE.md`'s operable rollback, the
+playbook, and the tests and goldens that name the pin, 27 `runtime-status` renders among
+them. The gate ran as the playbook orders: a fresh `eval --all` on Flash Lite before
+the change (9/9, no 429), then on Haiku after it (9/9, one expected probe failure,
+`conversation-summary`, module at 10/11), every module's `prompt_hash` equal, and
+`--history` labelling the flip `(model and reasoning changed)`. The plan's claim that
+reception had 3 probes was wrong (it has 12) and was corrected in the package.
+
+TS1's D2 is captured as
+[CR181](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr181-the-ledger-cannot-say-which-reasoning-effort-a-call-carried.md)
+rather than built; D3 is retired by the move. The decision is in the
+[decisions log](../project/decisions.md#the-extraction-pin-moves-to-claude-haiku-55-at-reasoning-none-and-a-pins-reasoning-default-is-the-models).
+Package:
+[CV9.DS9.US3](../project/roadmap/cv9-mirror-1-0/cv9-ds9-the-extraction-model-chosen-by-measurement/cv9-ds9-us3-the-extraction-pin-moves-or-stays-on-the-evidence/index.md).
+
+### 2026-10-28 — CV9.DS9.TS2: The candidates judged on the Navigator's own conversations
+
+24 ended conversations from the production home, drawn by a recorded seed, were
+replayed through the product's own functions. Flash Lite ran as it ships, and Luna and
+Haiku at reasoning `none`, one process per model, because the product reads the model
+from two places.
+
+Kimi K3.1 Pro, a fourth-family model, ranked every surface blind:
+
+- its prompt was piloted, tightened, and frozen by hash;
+- requests carried `data_collection: "deny"`;
+- it agreed with itself 0.83.
+
+The Navigator calibrated it on 26 surfaces, blind and before any result: 0.55, under
+the plan's 0.60. So the judge does not stand and TS2 makes no recommendation from it.
+What holds: the judge's arithmetic and the Navigator's own rankings both put Haiku
+ahead of Luna and of Flash Lite, while disagreeing item by item. The Navigator favors
+coverage where the rubric favors restraint. The Navigator accepted it as measured, and
+US3 decides with his rankings as its main evidence.
+
+The checks:
+
+- every one of 335 traced calls was on its own model;
+- no row was written to either home;
+- every committed file passed a content check, and the transcripts and outputs never
+  left the Navigator's machine.
+
+Spend was $3.90. The Debt Review captured
+[CR180](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr180-the-summary-prompt-s-opening-rule-invites-the-framing-its-standalone-rule-forbids.md):
+the summary prompt's opening rule invites the framing its standalone rule forbids. The
+model upgrade playbook now says to calibrate a judge before the full run. Package:
+[CV9.DS9.TS2](../project/roadmap/cv9-mirror-1-0/cv9-ds9-the-extraction-model-chosen-by-measurement/cv9-ds9-ts2-the-candidates-judged-on-the-navigator-s-own-conversations/index.md).
+
+### 2026-10-26 — CV9.DS9.TS1: Extraction calls carry a reasoning setting, and the candidates are re-measured with reasoning off
+
+CV9.DS9 opened to choose the extraction model by measurement. A baseline of seven
+`eval --all` runs per model found GPT-6 Luna and Claude Haiku 5.5 fixing most of the four
+probes Gemini 2.5 Flash Lite has always failed. It also found them reasoning by default,
+which spent the title call's 40-token budget.
+
+TS1 gives the transport `MEMORY_EXTRACTION_REASONING`, OpenRouter's `reasoning.effort`
+on every call on the extraction pin:
+
+- unset, the request is unchanged;
+- `consult` never carries it, by a per-role table the compiler checks;
+- a value that is not an effort, such as `off`, is ignored and shown by
+  `runtime status` and `runtime diagnose`, because a failed call would quarantine
+  conversations
+  ([CR178](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr178-a-configuration-error-counts-as-an-extraction-attempt-and-nothing-releases-a-quarantine.md),
+  captured);
+- eval records carry the setting at schema 4, and `--history` labels a flip across a
+  model or reasoning change.
+
+Re-measured at `4a74f098`, two sets of seven runs per model ($0.25). With reasoning
+off, both candidates pass all six blocking probes 14/14 with real answers, and none of
+their 1,428 calls is cut off. Luna keeps every fix and improves two. Haiku loses
+`conversation-summary` (6/7 → 4/14), accepted as measured. The control's
+`tags-exclude-noise` drift was accepted, and Flash Lite drew HTTP 429 on 31% of its
+attempts.
+
+The Navigator validated it from the clone's own entry point, after the first attempt
+reached the released package that `mirror` resolves to in an interactive shell; the
+development guide now says so. The Debt Review deferred the kit and the control
+threshold to TS2's Plan, and the ledger and Flash Lite's rate limits to US3's. Package:
+[CV9.DS9.TS1](../project/roadmap/cv9-mirror-1-0/cv9-ds9-the-extraction-model-chosen-by-measurement/cv9-ds9-ts1-reasoning-setting/index.md).
+
 ### 2026-10-25 — v0.37.0 released: The Mirror Stays in the Conversation
 
 Minor release closing CV9.DS8, One Doorman, and with CV21.DS11, CV21, Runtime Expansion II.

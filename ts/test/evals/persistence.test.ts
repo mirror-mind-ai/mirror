@@ -25,8 +25,9 @@ function record(overrides: Partial<EvalRunRecord> = {}): EvalRunRecord {
     threshold: 0.8,
     passed: true,
     probes: [{ id: "p1", passed: true, notes: "ok", blocking: false }],
-    schema_version: 3,
+    schema_version: 4,
     suite_run_id: null,
+    reasoning: null,
     ...overrides,
   };
 }
@@ -74,6 +75,7 @@ test("the persisted record keeps Python's snake_case wire shape", () => {
       "passed",
       "probes",
       "prompt_hash",
+      "reasoning",
       "schema_version",
       "score",
       "started_at",
@@ -87,15 +89,29 @@ test("the persisted record keeps Python's snake_case wire shape", () => {
 });
 
 // database-architect, Plan review: `passed` changed meaning, so the record
-// version changes with it. Python's reader builds EvalRunRecord(**line) from
-// the same top-level field set, so a v3 line still parses while Python exists.
-test("records are written at schema_version 3", () => {
+// version changed with it (3). CV9.DS9.TS1 adds `reasoning`, so it changes again (4).
+test("records are written at schema_version 4", () => {
   const home = tempHome();
   try {
     const env = { MIRROR_HOME: home };
-    appendRun(record({ schema_version: 3 }), env);
+    appendRun(record({ schema_version: 4, reasoning: "none" }), env);
     const written = JSON.parse(readFileSync(historyPath("sample", env), "utf8").trim());
-    assert.equal(written.schema_version, 3);
+    assert.equal(written.schema_version, 4);
+    assert.equal(written.reasoning, "none");
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test("a v3 line, written before the reasoning setting existed, still parses with its reasoning unknown", () => {
+  const home = tempHome();
+  try {
+    const env = { MIRROR_HOME: home };
+    const { reasoning: _absent, ...v3 } = record({ schema_version: 3 });
+    appendRun(v3 as EvalRunRecord, env);
+    const [parsed] = readHistory("sample", 10, env);
+    assert.equal(parsed?.schema_version, 3);
+    assert.equal(parsed?.reasoning, undefined);
   } finally {
     rmSync(home, { recursive: true, force: true });
   }

@@ -133,6 +133,8 @@ This is WIP discipline: new work discovered during a story is not absorbed autom
 
 The Driver creates or updates `test-guide.md`. It must include copy-paste-runnable commands and expected results. The Driver runs automated tests. For runtime behavior, the Driver runs an isolated smoke test that cannot touch the production database.
 
+A route that exercises a clone's code calls the clone's own entry point, `node bin/mirror.js` from the clone's root, or starts by confirming which install answers (`runtime version` prints it). In a person's shell a bare `mirror` may resolve to an installed package that predates the change, and a route that runs it validates the wrong program (CV9.DS9.TS1).
+
 Then the Driver prepares a manual validation route for the Navigator. The route should include, when relevant:
 
 - commands to run,
@@ -469,17 +471,37 @@ changing `EXTRACTION_MODEL` or `EMBEDDING_MODEL`:
    against stale runs.
 2. **Swap the pin** in `ts/src/providers/config.ts` (or via the
    `MEMORY_EXTRACTION_MODEL` / `MEMORY_EMBEDDING_MODEL` env overrides for a dry
-   run).
+   run). A model that reasons by default can spend a short call's token budget
+   before it answers; `MEMORY_EXTRACTION_REASONING` sets the effort it is asked for
+   (`none` turns reasoning off), and is part of the configuration under test. A
+   pin carries its own default effort in `MODEL_DEFAULT_REASONING`, beside the
+   pins: the effort the model was measured and chosen with, sent whenever the
+   setting is unset. A new pin gets its entry in the same commit, or none if it
+   was measured with no reasoning field.
+   Run a dry run's evals in a scratch `MIRROR_HOME`, so the candidate's records
+   stay out of the production history.
 3. **Re-run** `eval --all` on the new pin.
 4. **Diff per probe, not just score.** `eval <name> --history` surfaces any
-   probe that flipped. For a pure model swap the `prompt_hash` is unchanged and
-   only `model` differs, so **`prompt_hash` equal + `model` changed + a flipped
-   probe = a model-attributable regression** — distinct from a prompt-change
-   regression.
+   probe that flipped, and labels a flip across a model or reasoning change. For a
+   pure model swap the `prompt_hash` is unchanged and only `model` or `reasoning`
+   differs, so **`prompt_hash` equal + `model` or `reasoning` changed + a flipped
+   probe = a configuration-attributable regression** — distinct from a
+   prompt-change regression.
 5. **Confirm a flip is real, not noise.** Evals are non-deterministic. A single
    `--all` run is a release *smoke*; before calling a flipped probe a genuine
    regression, re-run that eval **n≥5** times.
 6. **Only then commit.** Investigate every real regression first.
+
+**Beyond the suite: real conversations.** The suite says whether a candidate
+regresses, not whether it writes better for the person who uses it. CV9.DS9.TS2
+replayed real conversations through the product's own functions, one process per
+model, and had a model from a fourth family judge the outputs blind.
+
+Calibrate such a judge with the person *before* the full run. Both rank four to six
+conversations blind, and the full run goes ahead only if they agree on clearly more
+than half of the pairwise orderings. A judge can agree with itself (TS2: 0.83) and
+still not with the person (0.55). Learning that after the full run cost six times what
+learning it first would have.
 
 If a swap ships and misbehaves, the rollback is to revert the pin commit; an
 installed user can roll back immediately via the `MEMORY_EXTRACTION_MODEL` env
@@ -488,9 +510,9 @@ override without waiting for a release.
 Example of the regression signal in `--history`:
 
 ```text
-✓  2026-07-20T…  score=1.00/0.80  model=google/gemini-2.5-flash-lite  prompt_hash=a1b2c3
-✗  2026-07-20T…  score=0.83/0.80  model=google/gemini-3.0-flash       prompt_hash=a1b2c3
-      ⚠ probe 'grounded-no-fabrication' regressed vs previous run
+✗  2026-10-28T…  score=0.83/0.80  model=anthropic/claude-haiku-5.5  reasoning=none  prompt_hash=a1b2c3  v4
+      ⚠ probe 'grounded-no-fabrication' regressed vs previous run (model and reasoning changed)
+✓  2026-10-28T…  score=1.00/0.80  model=google/gemini-2.5-flash-lite  reasoning=—  prompt_hash=a1b2c3  v4
 ```
 
 ---

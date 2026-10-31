@@ -262,9 +262,10 @@ test("every git invocation in the module is a read", () => {
   // release machinery are DS10's, and nothing here may grow a write path. The
   // check reads the verbs actually passed to `runGit`, not tokens anywhere in
   // the file — `branch --show-current` is a read and must not trip it, while a
-  // future `["branch", name]` must.
+  // future `["branch", name]` must. A command made through an injected runner,
+  // named `git` by convention (CR186), is graded the same way.
   const source = readFileSync(new URL("../../src/runtime/git.ts", import.meta.url), "utf8");
-  const invocations = [...source.matchAll(/runGit\(\s*\[([^\]]*)\]/g)].map((match) =>
+  const invocations = [...source.matchAll(/\b(?:runGit|git)\(\s*\[([^\]]*)\]/g)].map((match) =>
     (match[1] as string)
       .split(",")
       .map((token) => token.trim().replace(/^["'`]|["'`]$/g, ""))

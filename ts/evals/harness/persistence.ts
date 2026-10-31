@@ -43,11 +43,12 @@ export interface EvalProbeRecord {
  * `suite_run_id` correlates the per-eval records written by one `--all`
  * invocation; null for a standalone run.
  *
- * `schema_version` is **3** for records written under blocking semantics
- * (CV22.DS10.TS3). Versions 2 and 3 share a top-level field set and differ in
- * what `passed` means: at 2 it was `score >= threshold`; at 3 it also accounts
- * for failed blocking probes. Python's reader builds `EvalRunRecord(**line)`
- * from the same fields, so it keeps parsing v3 lines for as long as it exists.
+ * `schema_version` is **4** for records that carry `reasoning` (CV9.DS9.TS1).
+ * Versions 2 and 3 share a top-level field set and differ in what `passed`
+ * means: at 2 it was `score >= threshold`; at 3 (CV22.DS10.TS3) it also
+ * accounts for failed blocking probes. Version 4 keeps 3's `passed` and adds
+ * `reasoning`; a line written before it has no such field, and reads as
+ * unknown, which is also what it meant: no reasoning field was ever sent.
  */
 export interface EvalRunRecord {
   eval_name: string;
@@ -61,6 +62,12 @@ export interface EvalRunRecord {
   probes: EvalProbeRecord[];
   schema_version: number;
   suite_run_id: string | null;
+  /**
+   * The `MEMORY_EXTRACTION_REASONING` effort a model-backed eval ran with, or
+   * null when none was sent or the eval is prompt-free. Absent before schema 4.
+   * With `model` and `prompt_hash`, it says what a probe flip is attributable to.
+   */
+  reasoning?: string | null;
 }
 
 /**

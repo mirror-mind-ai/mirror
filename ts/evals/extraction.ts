@@ -139,8 +139,11 @@ export const PROBES: EvalProbe[] = [
       const isReasonableLength = summary.length > 20 && summary.length < 600;
       const lowered = summary.toLowerCase();
       const isOnTopic = ["pric", "usage", "seat", "model"].some((w) => lowered.includes(w));
+      // CR180: the prompt forbids "the discussion" too, so the probe holds it to that.
       const isStandalone =
-        !lowered.includes("we discussed") && !lowered.includes("the conversation");
+        !lowered.includes("we discussed") &&
+        !lowered.includes("the conversation") &&
+        !lowered.includes("the discussion");
       return {
         passed: isNonEmpty && isReasonableLength && isOnTopic && isStandalone,
         notes: `${summary.length} chars: ${summary.slice(0, 120)}...`,

@@ -22,11 +22,12 @@
 // variable. The write goes behind the front door's snapshot, once per call.
 
 import { metadataDict } from "#conversation/closeTail.ts";
-import { insertMemory, persistExtractedTasks, resolveUserName } from "#conversation/extraction.ts";
+import { insertMemory, persistExtractedTasks } from "#conversation/extraction.ts";
 import { DEFAULT_MAINTENANCE_MAX_EXTRACTIONS } from "#conversation/extractionDriver.ts";
 import { DEFAULT_EXTRACTION_MAX_ATTEMPTS } from "#conversation/extractionRun.ts";
 import { DatabaseNotCurrentError } from "#conversation/hostCalls.ts";
 import { STALE_ORPHAN_THRESHOLD_MINUTES } from "#conversation/sessionComposites.ts";
+import { resolveUserName } from "#conversation/userName.ts";
 import {
   type Database,
   openDatabaseReadOnly,
