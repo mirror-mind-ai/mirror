@@ -12,6 +12,16 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-10-31 — CR189 done: v0.39.0's note names PR #46 and the Windows update step
+
+v0.39.0 shipped PR #46 without a word about it. A dated addition to its note now says it: a
+highlight, a paragraph under What Changed, and an Upgrading section. The Upgrading section gives
+the one manual install a Windows package install of an earlier version needs, because its own
+`runtime update` fails at apply. The GitHub Release carries the same text. The note inside the
+published 0.39.0 tarball cannot change. With the step published,
+[CR189](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr189-a-windows-package-install-cannot-update-itself.md)
+is done.
+
 ### 2026-10-31 — v0.39.0: The Core as a Library
 
 Minor release of CV24.DS1 to DS8, merged from `desktop/library-seam-1a` as PR #52 after a

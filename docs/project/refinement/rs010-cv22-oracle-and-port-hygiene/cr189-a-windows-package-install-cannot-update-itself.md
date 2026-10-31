@@ -165,4 +165,11 @@ merge. Its release note does not mention the fix, and its What Changed says "Exi
 code changed only where the entry needed it." So the Windows manual step from the draft
 above is not yet anywhere a person would read it.
 
-Open: that step, published where a Windows package user would read it. `done` once it is.
+**Done 2026-10-31.** The step is published as a dated addition to v0.39.0's note
+([v0.39.0](../../../releases/v0.39.0.md): a highlight, a paragraph under What Changed, and an
+Upgrading section) and to its GitHub Release. The note inside the published 0.39.0 tarball
+cannot change, so `mirror runtime release-notes` from a package install shows the original.
+
+Review: no debt action. Two notes stay with the author on PR #46, both optional: `applyCwd`
+under a scoped name, and one place for the 4-of-4 evidence. The Windows CI gap stays the known
+risk named above.
