@@ -22,6 +22,16 @@ said DS1 to DS6). `mirror-mind/desktop` is the library entry Mirror Desktop 0.3 
 No migration. No model or prompt changed, so the model-behavior gate does not apply.
 Release note: [v0.39.0](../releases/v0.39.0.md).
 
+After the release commit:
+
+- CI was green on all four jobs and the docs check before the tag existed.
+- `release:promote` (dry run, then `--push`) tagged `v0.39.0` and moved `stable` to `ca7295a4`.
+- The `release` environment had one required reviewer, Vinicius; the Navigator added himself as a
+  second and approved the stage. He approved the npm stage and moved `latest` with 2FA.
+  `latest` and `stable` are at 0.39.0, `gitHead` `ca7295a4`.
+- The GitHub Release is published and marked latest.
+- No production install was updated by this release.
+
 ### 2026-10-30 — v0.38.1: The Refusal Names the Way Out
 
 Patch release of three Change Requests, cut the night the last of them closed. Two come
