@@ -24,6 +24,7 @@ import {
   logAssistantMessage,
   logUserMessage,
   setMute,
+  switchConversation,
 } from "#conversation/logger.ts";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
 import { createRuntimeTables } from "#helpers/runtimeSchema.ts";
@@ -56,6 +57,21 @@ function rows(db: WritableDatabase): { role: string; content: string; metadata: 
   return db
     .prepare("SELECT role, content, metadata FROM messages ORDER BY created_at, rowid")
     .all() as { role: string; content: string; metadata: string | null }[];
+}
+
+function conversationOf(db: WritableDatabase, sessionId: string): string {
+  const row = db
+    .prepare("SELECT conversation_id FROM runtime_sessions WHERE session_id = ?")
+    .get(sessionId);
+  return String(row?.conversation_id);
+}
+
+function contentsOf(db: WritableDatabase, conversationId: string): string[] {
+  return (
+    db
+      .prepare("SELECT content FROM messages WHERE conversation_id = ? ORDER BY created_at, rowid")
+      .all(conversationId) as { content: string }[]
+  ).map((row) => row.content);
 }
 
 function sessionInterface(db: WritableDatabase, sessionId: string): string | null {
@@ -300,6 +316,154 @@ test("only a reply whose turn was never seen is reported as lost", () => {
     { action: "skipped", reason: "nothing_waiting" },
     "a first turn lost to the race",
   );
+  db.close();
+});
+
+// --- a prompt queued while a turn runs ------------------------------------------
+//
+// Claude Code fires UserPromptSubmit when a prompt typed during a running turn
+// enters its queue, and the payload carries the running turn's `prompt_id`. The
+// queued prompt then runs as a turn of its own, under a `prompt_id` no prompt
+// hook ever sent. Tagged with the running turn, the queued prompt took that
+// turn's reply, and its own reply was reported as lost (`nothing_waiting`).
+
+test("a second prompt under a turn still owed its reply is logged as queued, not as that turn's prompt", () => {
+  const { db, home } = fixture();
+  prompt(db, home, { session_id: "s1", prompt: "first question", prompt_id: "p1" });
+  prompt(db, home, { session_id: "s1", prompt: "typed while p1 runs", prompt_id: "p1" });
+  assert.deepEqual(rows(db), [
+    { role: "user", content: "first question", metadata: '{"turn_id": "p1"}' },
+    { role: "user", content: "typed while p1 runs", metadata: '{"queued_in_turn": "p1"}' },
+  ]);
+  db.close();
+});
+
+test("the running turn's reply stays with its own prompt, and the queued turn's reply takes the queued prompt", () => {
+  const { db, home } = fixture();
+  prompt(db, home, { session_id: "s1", prompt: "first question", prompt_id: "p1" });
+  prompt(db, home, { session_id: "s1", prompt: "typed while p1 runs", prompt_id: "p1" });
+  const first = stop(db, home, {
+    session_id: "s1",
+    last_assistant_message: "answer to the first",
+    prompt_id: "p1",
+  });
+  assert.deepEqual(first, { action: "logged", sessionId: "s1", pairedBy: "turn_id" });
+  const queued = stop(db, home, {
+    session_id: "s1",
+    last_assistant_message: "answer to the queued",
+    prompt_id: "p2",
+  });
+  assert.deepEqual(queued, { action: "logged", sessionId: "s1", pairedBy: "queued_prompt" });
+  assert.deepEqual(rows(db), [
+    { role: "user", content: "first question", metadata: '{"turn_id": "p1"}' },
+    {
+      role: "user",
+      content: "typed while p1 runs",
+      metadata: '{"queued_in_turn": "p1", "turn_id": "p2"}',
+    },
+    { role: "assistant", content: "answer to the first", metadata: '{"turn_id": "p1"}' },
+    { role: "assistant", content: "answer to the queued", metadata: '{"turn_id": "p2"}' },
+  ]);
+  const again = stop(db, home, {
+    session_id: "s1",
+    last_assistant_message: "answer to the queued",
+    prompt_id: "p2",
+  });
+  assert.deepEqual(again, { action: "skipped", reason: "already_answered" });
+  db.close();
+});
+
+test("two queued prompts are taken in the order they were typed, one per turn", () => {
+  const { db, home } = fixture();
+  prompt(db, home, { session_id: "s1", prompt: "first", prompt_id: "p1" });
+  prompt(db, home, { session_id: "s1", prompt: "queued a", prompt_id: "p1" });
+  prompt(db, home, { session_id: "s1", prompt: "queued b", prompt_id: "p1" });
+  stop(db, home, { session_id: "s1", last_assistant_message: "r1", prompt_id: "p1" });
+  stop(db, home, { session_id: "s1", last_assistant_message: "ra", prompt_id: "p2" });
+  stop(db, home, { session_id: "s1", last_assistant_message: "rb", prompt_id: "p3" });
+  const turnOf = (content: string) =>
+    JSON.parse(rows(db).find((row) => row.content === content)?.metadata ?? "{}").turn_id;
+  assert.equal(turnOf("queued a"), "p2");
+  assert.equal(turnOf("queued b"), "p3");
+  db.close();
+});
+
+test("a turn id never seen, with no queued prompt waiting, is still reported as lost", () => {
+  const { db, home } = fixture();
+  prompt(db, home, { session_id: "s1", prompt: "first", prompt_id: "p1" });
+  prompt(db, home, { session_id: "s1", prompt: "queued", prompt_id: "p1" });
+  stop(db, home, { session_id: "s1", last_assistant_message: "r1", prompt_id: "p1" });
+  stop(db, home, { session_id: "s1", last_assistant_message: "r2", prompt_id: "p2" });
+  const lost = stop(db, home, { session_id: "s1", last_assistant_message: "r3", prompt_id: "p3" });
+  assert.deepEqual(lost, { action: "skipped", reason: "nothing_waiting" });
+  db.close();
+});
+
+test("a queued prompt folded into the running turn is retired by the next ordinary prompt", () => {
+  // Claude Code can also hand a queued prompt to the running turn between tool
+  // calls; then no turn of its own follows and nothing claims it. A Stop much
+  // later must not take it.
+  const { db, home } = fixture();
+  prompt(db, home, { session_id: "s1", prompt: "first", prompt_id: "p1" });
+  prompt(db, home, { session_id: "s1", prompt: "folded in", prompt_id: "p1" });
+  stop(db, home, { session_id: "s1", last_assistant_message: "r1", prompt_id: "p1" });
+  prompt(db, home, { session_id: "s1", prompt: "next", prompt_id: "p2" });
+  stop(db, home, { session_id: "s1", last_assistant_message: "r2", prompt_id: "p2" });
+  const lost = stop(db, home, { session_id: "s1", last_assistant_message: "r9", prompt_id: "p9" });
+  assert.deepEqual(lost, { action: "skipped", reason: "nothing_waiting" });
+  db.close();
+});
+
+test("a command turn's reply never claims a queued prompt", () => {
+  const { db, home } = fixture();
+  prompt(db, home, { session_id: "s1", prompt: "first", prompt_id: "p1" });
+  prompt(db, home, { session_id: "s1", prompt: "folded in", prompt_id: "p1" });
+  stop(db, home, { session_id: "s1", last_assistant_message: "r1", prompt_id: "p1" });
+  prompt(db, home, { session_id: "s1", prompt: "/mm-journeys", prompt_id: "p2" });
+  const reply = stop(db, home, {
+    session_id: "s1",
+    last_assistant_message: "the list",
+    prompt_id: "p2",
+  });
+  assert.deepEqual(reply, { action: "skipped", reason: "command_turn" });
+  assert.equal(rows(db).length, 3);
+  db.close();
+});
+
+test("a prompt repeated after its turn was answered is that turn's prompt, not a queued one", () => {
+  // The queued rule applies only while the turn's reply is still owed.
+  const { db, home } = fixture();
+  prompt(db, home, { session_id: "s1", prompt: "question", prompt_id: "p1" });
+  stop(db, home, { session_id: "s1", last_assistant_message: "answer", prompt_id: "p1" });
+  prompt(db, home, { session_id: "s1", prompt: "same id again", prompt_id: "p1" });
+  assert.equal(rows(db)[2]?.metadata, '{"turn_id": "p1"}');
+  db.close();
+});
+
+// --- a prompt that opens a journey ---------------------------------------------
+//
+// "I want to enter journey X" is logged as a prompt; the Builder load the model
+// then runs switches the session to a new conversation. The Stop found the new
+// conversation empty and reported the reply as lost, leaving the prompt alone
+// in the closed conversation.
+
+test("the prompt that switched the conversation moves with it, and its reply is paired there", async () => {
+  const { db, home } = fixture();
+  prompt(db, home, { session_id: "s1", prompt: "earlier question", prompt_id: "p0" });
+  stop(db, home, { session_id: "s1", last_assistant_message: "earlier answer", prompt_id: "p0" });
+  prompt(db, home, { session_id: "s1", prompt: "enter journey x", prompt_id: "p1" });
+  const oldId = conversationOf(db, "s1");
+
+  const newId = await switchConversation(db, "s1", { journey: "x" }, deps);
+  const outcome = stop(db, home, {
+    session_id: "s1",
+    last_assistant_message: "journey x loaded",
+    prompt_id: "p1",
+  });
+
+  assert.deepEqual(outcome, { action: "logged", sessionId: "s1", pairedBy: "turn_id" });
+  assert.deepEqual(contentsOf(db, oldId), ["earlier question", "earlier answer"]);
+  assert.deepEqual(contentsOf(db, String(newId)), ["enter journey x", "journey x loaded"]);
   db.close();
 });
 
