@@ -8,12 +8,14 @@ installer reads from the core, so that a change on either side is a known
 event rather than a surprise. It is extracted from `install.ps1` and the two
 launchers; `tests/contract.ps1` asserts every line of it.
 
-**Tested with:** `mirror-mind@0.33.4`, Pi 1.3.0, Node 24.22.0, Git 2.56.0.2.
+**Tested with:** `mirror-mind@0.39.0` (2026-10-31, 35/35 with `-ThenUpdateToLatest`), Pi 1.4.0, Node 24.22.1 on the host (the build ships its own), Git 2.56.0.2.
 **Contract still held by:** `mirror-mind@0.35.0` (2026-10-19), `mirror-mind@0.36.0`
-(2026-10-21), `mirror-mind@0.36.2` (2026-10-22), `mirror-mind@0.37.0` (2026-10-26; migration 018 applies on first open), `mirror-mind@0.38.0` (2026-10-29; npm package carries no `docs/`, so the tag's 271-char path does not reach it), `mirror-mind@0.38.1` (2026-10-30; CR185/CR186/CR187 released), and `main` at `7f716189` packed locally (2026-10-29; CR185: `init` reuses an existing home and exits 0; CR187: keyless commands refuse in one line, none of them in the installer's path) — 21/21, run on the host. The release build stays pinned at
-0.33.4 until a core release carries the Windows `runtime update` fix
-(mirror-mind-ai/mirror#46); without it the installed Mirror cannot update
-itself.
+(2026-10-21), `mirror-mind@0.36.2` (2026-10-22), `mirror-mind@0.37.0` (2026-10-26; migration 018 applies on first open), `mirror-mind@0.38.0` (2026-10-29; npm package carries no `docs/`, so the tag's 271-char path does not reach it), `mirror-mind@0.38.1` (2026-10-30; CR185/CR186/CR187 released), and `main` at `7f716189` packed locally (2026-10-29; CR185: `init` reuses an existing home and exits 0; CR187: keyless commands refuse in one line, none of them in the installer's path) — 21/21, run on the host. The release build is pinned at
+0.39.0, the first core release that carries the Windows `runtime update` fix
+(mirror-mind-ai/mirror#46, CR189). Before it the pin stayed at 0.33.4: an
+installed 0.33.4–0.38.1 cannot update itself on Windows (npm EBUSY). The
+apply itself is exercised end to end at the next release, when `latest`
+moves past the pin; until then `-ThenUpdateToLatest` reads "already current".
 
 **Pi install model:** the installer puts Pi in through `npm install -g
 @earendil-works/pi-coding-agent`. Since Pi 1.4.0, `pi update` on such an
