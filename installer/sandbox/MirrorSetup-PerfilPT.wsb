@@ -1,0 +1,25 @@
+<Configuration>
+  <!-- Mirror Mind installer: a clean Windows, the .exe read-only, the setup log
+       written back to the host. Simulated Brazilian profile (C:SERSJOÃ£O Ã‡Ã£Ãÿ SILVA), PORTUGUESE WIZARD. -->
+  <Networking>Enable</Networking>
+  <MappedFolders>
+    <MappedFolder>
+      <HostFolder>C:\VSCode\mirror-installer\dist</HostFolder>
+      <SandboxFolder>C:\Setup</SandboxFolder>
+      <ReadOnly>true</ReadOnly>
+    </MappedFolder>
+    <MappedFolder>
+      <HostFolder>C:\VSCode\mirror-installer\installer\sandbox</HostFolder>
+      <SandboxFolder>C:\SandboxTools</SandboxFolder>
+      <ReadOnly>true</ReadOnly>
+    </MappedFolder>
+    <MappedFolder>
+      <HostFolder>C:\VSCode\mirror-installer\.local\sandbox-out</HostFolder>
+      <SandboxFolder>C:\Out</SandboxFolder>
+      <ReadOnly>false</ReadOnly>
+    </MappedFolder>
+  </MappedFolders>
+  <LogonCommand>
+    <Command>cmd.exe /c start "Mirror Mind setup" powershell.exe -NoExit -ExecutionPolicy Bypass -File C:\SandboxTools\run-setup.ps1 -PerfilPT</Command>
+  </LogonCommand>
+</Configuration>
