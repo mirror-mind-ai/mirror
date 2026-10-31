@@ -32,6 +32,34 @@ After the release commit:
 - The GitHub Release is published and marked latest.
 - No production install was updated by this release.
 
+### 2026-10-30 — PR #46 merged: a Windows package install can update itself (CR189)
+
+[CR189](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr189-a-windows-package-install-cannot-update-itself.md)
+is validated, carried by PR #46 (@rodrigoimmaginario). On Windows, `runtime update` on a
+package failed at apply with `EBUSY` every time. npm renames the package's directory
+aside before it installs the new version, and the apply ran npm inside that directory,
+which Windows holds against rename while a process runs in it. The apply now runs from
+the parent of `node_modules`, still the install's own tree, and the dist-tags read stays
+in the install's root. Nothing changes on macOS or Linux.
+
+- The PR was reviewed through four lenses (engineer, QA, DevOps, security). CR135 holds
+  by construction: npm skips the project config in global mode, so no project's
+  `.npmrc` answers `install -g`, whatever directory it runs in.
+- Seven places still said every npm call runs in the install's root, REFERENCE.md among
+  them. One maintainer commit on the PR branch (`ef7c5d6f`) corrected them.
+- Verified on a merge with current `main`: the suite under both environments,
+  typecheck, lint, the repository checks, and the updater smoke (104). With the apply
+  line reverted, the two tests that pin it fail. CI was green on the PR head and on
+  `main` after the merge (`e2525228`).
+- Validated by the author's run on Windows (0.34.99 to 0.35.0, `Update result:
+  success`), accepted by the Navigator. No CI job reproduces npm's rename on Windows;
+  that stays a known risk.
+
+It shipped the next day in v0.39.0, cut from `main` after the merge, but that release's
+note does not mention it. So the one-time manual step Windows package installs need is
+not yet anywhere a person would read it: the updater they have fails at apply and cannot
+bring them this fix. The step is drafted in the CR.
+
 ### 2026-10-30 — v0.38.1: The Refusal Names the Way Out
 
 Patch release of three Change Requests, cut the night the last of them closed. Two come
