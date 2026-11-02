@@ -298,6 +298,53 @@ amendments folded. Driver `@viniciusteles`, Delivery `main`.
   `HOOK_NODE_CANDIDATES`; `ts/test/pi/mirrorLoggerExtension.test.ts`'s `fakePi().exec`
   ignores `_command`.
 
+### Implementation and validation, 2026-11-02
+
+- Commits on `main`: `08d609b2` (extension and tests), `854d6a3b` (docs), after
+  `297e47fe` (capture) and `d0108c1b` (plan). Both PR #47 tests were replaced by ten:
+  `ts/test/pi/mirrorLoggerExtension.test.ts`, the CR191 block.
+- Checks run locally before the commits: `tsc --noEmit` clean; `biome check` with the one
+  warning that predates this work; `bash scripts/test_leaves_nothing.sh`: 3,735 tests, 0
+  failures, nothing left behind; `checkDocLinks`, `checkTestTempHomes`,
+  `checkRetiredSurfaces`, `checkSkillCommandParity` clean.
+- Navigator validation, 2026-11-02 23:28–23:32, Pi 1.5.0 run as
+  `/opt/homebrew/bin/node <release>/node_modules/.bin/pi --no-extensions --no-skills -e
+  <checkout>/.pi/extensions/mirror-logger.ts` under `env -i HOME=$HOME PATH=/usr/bin:/bin`
+  (Node 26.12.1; the checkout at `854d6a3b`; the Homebrew package untouched). Three
+  screenshots and the logs:
+  1. Nothing configured, the 2026-10-16 configuration: the welcome card, status
+     `◇ vinicius-dev · ◌ Mirror Mode · ✓ · ext 6`, no node notice; the session ran on
+     `/opt/homebrew/bin/node`, found as a candidate.
+  2. `MIRROR_NODE=/nonexistent/node`: the same session; `mirror-logger.log`
+     `22:30:45 [WARN] MIRROR_NODE=/nonexistent/node is missing; searching the PATH and
+     the usual places instead`.
+  3. Nothing anywhere (`MEMORY_ENV=test MIRROR_TEST_NODE_SEARCH_ROOT=$(mktemp -d)`): Pi
+     up, the notice on screen, no welcome card, status `◇ Mirror · ? · ext 6`;
+     `hooks.log` `22:32:27.328Z pi:session-start: node not found on PATH or in the usual
+     places; Mirror is off for this session. Set MIRROR_NODE.`; `mirror runtime diagnose`
+     `[warning] hook_failures_recorded: 1 hook failure(s) in the last 7 days, latest
+     2026-11-02T22:32:27.328Z, pi:session-start`. The staged line was removed from the
+     real home's `hooks.log` afterwards.
+  The Driver's non-interactive dry runs (`-p`) of the same three, 22:25–22:26, agree.
+- Validation accepted by the Navigator, 2026-11-02.
+
+### Debt review
+
+- The `'error'` listener on the detached spawn has no integration test: the resolver
+  verifies the file first, so `ENOENT` cannot be staged. Accepted at approval (decision 3).
+- The parity pin lives in `mirrorLoggerExtension.test.ts`, importing
+  `HOOK_NODE_CANDIDATES` from the core, rather than in `hooks.test.ts` as the plan said,
+  so `hooks.test.ts` does not load the extension module. Same pin, other file.
+- `MIRROR_TEST_NODE_SEARCH_ROOT` is a test-only seam in product code, honored under
+  `MEMORY_ENV=test` only, beside `MIRROR_TEST_FRONT_DOOR_DELAY_MS`, which set the precedent.
+- The hook wrappers and the MCP locator still accept a relative `MIRROR_NODE`; the
+  extension refuses one. Out of scope by the plan; a decision for the family, recorded
+  here and not captured as a CR unless the Navigator asks.
+- No new duplication beyond the candidate list, which is pinned.
+
 ## Outcome
 
-Pending: planned, approved 2026-11-02; implementation on `main`.
+Done, 2026-11-02. A Pi opened without `node` on its PATH finds it where the hook
+wrappers would, with nothing configured on a machine with a global install; when no
+Node resolves, Pi stays up, says so once with the fix, and `runtime diagnose` can see it.
+Shipped on `main` at `854d6a3b`; the release note draft above is for the next release.
