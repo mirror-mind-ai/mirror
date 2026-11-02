@@ -108,26 +108,163 @@ daily.
 ## Plan Or Decision
 
 Captured, unassigned, 2026-11-02, at the Navigator's direction, after PR #47 was merged
-as the first part of the fix.
+as the first part of the fix. Selected as Current Focus the same day. Plan written
+2026-11-02, reviewed and approved the same day (see Decisions Taken At Approval).
 
-Not planned. Decisions for Plan:
+### Scope
 
-- **Search order and parity test.** Whether the extension duplicates the candidate list
-  (it is a thin dispatcher and imports no core module, as it duplicates the homes-root
-  names today) with a test that pins it to `HOOK_NODE_CANDIDATES`, or the core exposes
-  the list another way.
-- **The notice.** Once per session at `session_start`, as the `mirror`-not-on-PATH
-  notice; and whether a failure later in the session (a `MIRROR_NODE` that moved) also
-  speaks or only logs.
-- **The `hooks.log` line.** Its hook label (`pi:session-start`, `pi:<label>`), written by
-  the extension, in the format `hookFailureFindings` parses.
-- **A Node too old.** The wrappers report a non-zero exit with the Node's version and
-  "Mirror needs Node 24 or later". Whether the extension does the same from the detached
-  child's `exit` event and the awaited exec's exit code.
-- **Relative `MIRROR_NODE`.** Whether the extension requires an absolute path (a secure
-  default the wrappers do not share) or the family does, as a separate CR.
-- **Tests.** Replace the fixed waits with a poll on the log; capture the fake exec's
-  command; add the directory, the missing path, and the search-order cases.
+One behavior, in one file and its test, with the docs that describe it: the Pi
+extension resolves Node the way the hook wrappers do, and when it cannot, it says so
+where a person and `runtime diagnose` will see it.
+
+1. **Resolution, in the wrappers' order.** A module-level `resolveNode()` replaces
+   `nodeCommand()`. It returns the first *executable file* among: `MIRROR_NODE`; `node`
+   on each directory of `process.env.PATH` (as `_mirrorOnPath` walks it for `mirror`);
+   the Node beside the tree the extension ships in (`TREE_ROOT/../../../bin/node`, which
+   is `<prefix>/bin/node` for a global install and nothing for a checkout); then
+   `~/.nvm/current/bin/node`, `/opt/homebrew/bin/node`, `/usr/local/bin/node`. On
+   Windows, only the first two apply (`node.exe`), as today. The POSIX list is
+   duplicated in the extension, which imports no core module (as it duplicates the
+   homes-root names), and exported as a named constant so a test pins it to
+   `HOOK_NODE_CANDIDATES`.
+2. **Nothing found: no spawn, one notice, one `hooks.log` line.** When `resolveNode()`
+   returns null, `runMirror` and `runMirrorBackground` do not spawn; they log and return
+   empty, as a failed exec does today. At `session_start`, before the composite exec,
+   the extension says so once, the way it says `mirror` is not on the PATH:
+   `` Mirror: `node` is not on the PATH Pi inherited, nor in the usual places — set MIRROR_NODE=/path/to/node (Node 24 or later) where Pi is launched. Mirror will not log this session. ``
+   The same text goes to `mirror-logger.log` as a WARN and, as one line, to
+   `<mirror home>/hooks.log` in the wrappers' format
+   (`<ISO stamp> pi:session-start: node not found on PATH or in the usual places; Mirror is off for this session. Set MIRROR_NODE.`),
+   written to the same directory as `mirror-logger.log` with mode `0o600`, as
+   `noteHookFailure` writes it. `hookFailureFindings` then reports it for seven days.
+   The notice and the `hooks.log` line are once per `session_start`; a later call that
+   finds nothing (a `MIRROR_NODE` that moved mid-session) logs only.
+3. **A `MIRROR_NODE` that is not an executable file** is reported once per process as a
+   WARN in `mirror-logger.log` (`MIRROR_NODE=<value> is not an executable file; searching
+   the PATH and the usual places`) and the search continues, as the wrappers continue.
+   A relative value is treated the same way: the extension requires an absolute path,
+   because a relative one resolves against whatever project Pi was opened in. The
+   wrappers and the MCP locator keep accepting a relative path; that is a decision for
+   the family, out of this CR's scope.
+4. **The log tells one story.** `runMirrorBackground` logs `started in detached
+   background process <pid>` only when `child.pid` is defined; the `'error'` listener
+   from PR #47 stays, as the record of a file that vanished between the check and the
+   spawn, and of any other start failure. A detached child that exits non-zero is
+   logged once (`<label> exited <code>`), so a Node too old for the core leaves a line
+   beside the loader's own stderr, which already goes to the log file.
+5. **Docs.** `REFERENCE.md`'s `MIRROR_NODE` row and `docs/reference/configuration.md`
+   name the Pi extension among the readers and its search order;
+   `docs/process/troubleshooting.md`'s GUI-launch section gains the Pi notice and the
+   `pi:session-start` line beside the hooks' lines; the runtime-interface spec's "Node
+   resolution for hook runtimes" names the extension as the fifth resolver. The
+   extension's header comment names the notice.
+
+### Affected files
+
+- `.pi/extensions/mirror-logger.ts` — the resolver, the notice, the `hooks.log` line,
+  the log changes.
+- `ts/test/pi/mirrorLoggerExtension.test.ts` — the tests below; the fake `pi.exec`
+  keeps its `command` argument.
+- `ts/test/hooks/hooks.test.ts` — the parity pin of the extension's list against
+  `HOOK_NODE_CANDIDATES`, beside the wrappers' pin.
+- `REFERENCE.md`, `docs/reference/configuration.md`, `docs/process/troubleshooting.md`,
+  `docs/product/specs/runtime-interface/index.md`.
+- `docs/releases/` — the release note draft below.
+
+### Acceptance
+
+1. With `MIRROR_NODE` unset and no `node` on the PATH, a session on a machine with a
+   global install opens through the prefix's Node, with no configuration: welcome card,
+   status line, logging.
+2. With no Node anywhere, Pi stays up, shows the one notice, writes the one
+   `hooks.log` line, logs no `started` line, and `mirror runtime diagnose` run afterwards
+   reports `hook_failures_recorded` naming `pi:session-start`.
+3. `MIRROR_NODE` naming an executable file wins over a `node` on the PATH, for the
+   awaited execs and the detached children alike.
+4. `MIRROR_NODE` naming a directory, a missing path, a non-executable file, or a
+   relative path is warned once and ignored; the session opens through the PATH.
+5. The extension's candidate list equals `HOOK_NODE_CANDIDATES`; the test fails if either
+   side changes alone.
+6. A session where everything resolves behaves exactly as before: the same execs, the
+   same log lines, no notice.
+
+### Validation
+
+Automated, in `mirrorLoggerExtension.test.ts`, driven through `session_start` with
+`PATH` set to a bare directory and `HOME` to a scratch one, as the existing tests do:
+
+- `MIRROR_NODE` = `process.execPath` wins; the fake exec's `command` and the detached
+  child's `started` line both show it.
+- Each invalid `MIRROR_NODE` shape (directory, missing, non-executable, relative): one
+  WARN, then the session opens through the PATH.
+- Nothing anywhere: no uncaught exception, no `started` line, the notice in
+  `ctx.ui.notices`, the `hooks.log` line in the scratch home, and `hookFailureFindings`
+  on that home returns the finding. The absolute candidates make this case
+  non-hermetic on a developer machine (`/opt/homebrew/bin/node` exists here, and CI's
+  Ubuntu has `/usr/local/bin/node`): under `MEMORY_ENV=test` only, the extension honors
+  `MIRROR_TEST_NODE_SEARCH_ROOT` and prefixes the absolute candidates and the prefix
+  candidate with it, the same test-only seam `MIRROR_TEST_FRONT_DOOR_DELAY_MS` already
+  is. A production session never reads it.
+- The pure resolver, through the named export, with a fake `isExecutable`: the full
+  order, hermetically.
+- `hooks.test.ts`: the extension's list equals `HOOK_NODE_CANDIDATES`.
+
+By the Navigator, before `validated`, with the installed package and this machine's
+Pi (record version, binary, and date): `env -i HOME=$HOME PATH=/usr/bin:/bin pi` from a
+project directory — the session opens through `/opt/homebrew/bin/node` with no notice;
+then the same with `MIRROR_TEST_NODE_SEARCH_ROOT` unset and `MIRROR_NODE=/nonexistent`
+— one WARN in the log and the session still opens; then, if a machine without a global
+Node is available, the notice itself. `mirror runtime diagnose` after each.
+
+### Exclusions
+
+- The wrappers' and the MCP locator's acceptance of a relative `MIRROR_NODE`.
+- A "Node too old" message with the version, as the wrappers print: the exit code and
+  the loader's stderr are in the log; interpreting them is more than this CR needs.
+- Any change to `runtime diagnose`'s own search: its candidates already match the
+  extension's after this CR.
+- Windows candidates beyond `MIRROR_NODE` and the PATH.
+
+### Authority boundaries
+
+The extension stays a thin dispatcher: it imports nothing from `ts/src`, and the
+candidate list is a duplicate pinned by a test, not a shared module. The notice is the
+extension's, in the words of the existing `mirror`-not-on-PATH notice; the `hooks.log`
+line is in the format `hookFailureFindings` parses and `noteHookFailure` writes, and
+neither changes.
+
+### Decisions Taken At Approval
+
+Reviewed through four lenses on 2026-11-02 (engineer, quality assurance, DevOps
+engineer, security engineer) and approved by the Navigator the same day with the
+amendments folded. Driver `@viniciusteles`, Delivery `main`.
+
+1. **Engineer.** An "executable file" is one that `statSync().isFile()` and
+   `accessSync(X_OK)` both accept: a directory passes `X_OK` alone (probed 2026-11-01).
+2. **Quality assurance.** Acceptance 1, the prefix's Node with no configuration, is
+   tested through `MIRROR_TEST_NODE_SEARCH_ROOT` by planting `<root>/<prefix>/bin/node`
+   under the scratch root.
+3. **Quality assurance.** Once the resolver verifies the file first, PR #47's "spawn
+   fails with `ENOENT`" test can no longer be triggered deterministically. It is
+   rewritten as "nothing anywhere: no spawn attempted". The `'error'` listener keeps no
+   integration test; a known, accepted gap.
+4. **DevOps engineer.** The WARN for a `MIRROR_NODE` the extension will not use names
+   the reason: missing, a directory, not executable, or relative.
+5. **Security engineer.** No findings beyond what the plan takes: an absolute path
+   required in the extension; the prefix candidate derived from the extension's own
+   location, never from input; the knob honored only under `MEMORY_ENV=test`; nothing
+   secret in either log.
+
+### Release note draft
+
+> **A Pi opened without `node` on its PATH now finds it, or says so** (CR191, after
+> PR #47 by @rodrigoimmaginario). The Pi extension resolves Node the way the hook
+> wrappers do: `MIRROR_NODE`, the PATH, the Node that installed the package, then nvm,
+> Homebrew, and `/usr/local`. A GUI-launched Pi, or one from a window older than your
+> Node install, used to exit with `spawn node ENOENT`; since PR #47 it stayed up with
+> Mirror silently absent. Now it works without configuration on any machine with a
+> global install, and when no Node can be found it tells you once at session start and
+> records the failure in `hooks.log`, where `mirror runtime diagnose` reports it.
 
 ## Evidence
 
@@ -163,4 +300,4 @@ Not planned. Decisions for Plan:
 
 ## Outcome
 
-Pending: captured, not planned.
+Pending: planned, approved 2026-11-02; implementation on `main`.
