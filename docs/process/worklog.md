@@ -26,6 +26,16 @@ Navigator the same day against Pi 1.5.0 with a bare PATH.
 No migration. No model or prompt changed, so the model-behavior gate does not apply.
 Release note: [v0.39.1](../releases/v0.39.1.md).
 
+After the release commit:
+
+- CI was green on all four jobs and the docs check before the tag existed.
+- `release:promote` (dry run, then `--push`) tagged `v0.39.1` and moved `stable` to `27018088`.
+- The GitHub Release is published and marked latest.
+- The Navigator approved the `release` environment and the npm stage, and moved `latest`
+  with 2FA. `latest` and `stable` are at 0.39.1, `gitHead` `27018088`.
+- The Navigator's own Homebrew package was updated to 0.39.1 with `mirror runtime update`:
+  the Pi he runs daily carries the fix.
+
 ### 2026-10-31 — CR189 done: v0.39.0's note names PR #46 and the Windows update step
 
 v0.39.0 shipped PR #46 without a word about it. A dated addition to its note now says it: a
