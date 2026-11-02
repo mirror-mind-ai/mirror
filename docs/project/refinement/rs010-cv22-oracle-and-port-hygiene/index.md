@@ -126,3 +126,4 @@ evidence stays honest as both cores move.
 - [CR188 — A timeout, an outage, a rate limit, or a server error crashes the commands that call a model with a stack trace, and `journal` loses the entry](cr188-a-provider-outage-crashes-the-commands-that-call-a-model-with-a-stack-trace.md)
 - [CR189 — A Windows package install cannot update itself: the apply runs npm inside the directory npm must rename](cr189-a-windows-package-install-cannot-update-itself.md)
 - [CR191 — The Pi extension cannot find Node where the hook wrappers can, and says nothing when it cannot](cr191-the-pi-extension-cannot-find-node-where-the-hook-wrappers-can.md)
+- [CR192 — The hook wrappers and the MCP locator accept a relative `MIRROR_NODE`, and say nothing about one they will not use](cr192-the-hook-wrappers-and-the-mcp-locator-accept-a-relative-mirror-node.md)
