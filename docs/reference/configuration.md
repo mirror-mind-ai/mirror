@@ -21,8 +21,8 @@ first; then a clone's own `.env`, located from the running front door's tree;
 then the OS user's `~/.config/mirror/env` (`$XDG_CONFIG_HOME/mirror/env`).
 A package install ships no `.env` and reads none. One command writes one
 value: `mirror init <user>` records `MIRROR_USER` in the user's file when no
-other source configured a user, creating the file `0600` in a `0700`
-directory; `mirror runtime channel` writes the update channel beside it. Secrets
+other source configured a user, for a new home or one that already exists,
+creating the file `0600` in a `0700` directory; `mirror runtime channel` writes the update channel beside it. Secrets
 are read from the environment and these files only, never accepted as a
 command-line argument, never logged, and never included in an error message.
 
@@ -36,7 +36,7 @@ command-line argument, never logged, and never included in an error message.
 
 **Active in code:** yes. Resolution happens in `ts/src/frontDoor/dbPath.ts`; the MCP server resolves the same chain in `ts/src/mcp/main.ts`.
 
-**Effects:** changing the active home changes which local database, extensions, and backups the runtime sees. Conflicting `MIRROR_HOME` and `MIRROR_USER` values fail hard when the basename does not match.
+**Effects:** changing the active home changes which local database, extensions, and backups the runtime sees. Conflicting `MIRROR_HOME` and `MIRROR_USER` values fail hard when the basename does not match. With neither set, a command that needs a home stops with one line: the homes it finds under `~/.mirror-minds` and the `mirror init <name>` that selects one, or how to create one, with the file that command writes (CR185).
 
 ## Database
 
@@ -140,11 +140,18 @@ command-line argument, never logged, and never included in an error message.
 
 **Used by:** embeddings, memory extraction, conversation summary and title generation, reception routing, `/mm-consult`, and every other LLM-backed feature.
 
-**How to change it:** set `OPENROUTER_API_KEY` in `.env` or the shell.
+**How to change it:** add `OPENROUTER_API_KEY=<your key>` to `~/.config/mirror/env` (`$XDG_CONFIG_HOME/mirror/env`), the file `mirror init` creates readable only by you. If you create it yourself, `chmod 600` it: it holds a secret. A clone can keep the key in its own `.env` instead, and a value set in the shell wins over both files. [Getting Started](../getting-started.md) says how to get a key. Never pass the key as a command-line argument, and do not `echo` it into the file, which leaves it in your shell history.
 
-**Active in code:** yes. `ts/src/providers/config.ts` reads it for every chat and embedding call.
+**Active in code:** yes. `ts/src/providers/config.ts` reads it for every chat and embedding call, and decides, in one place, what counts as configured (a value that is not blank).
 
-**Effects:** when missing, LLM-backed actions fail safely or return no generated result depending on the caller; memory search degrades to lexical-only and says so.
+**Effects:** when it is missing (CR187):
+
+- The commands that cannot work without it refuse in one line, exit 2, before they open the database: `consult`, `journal`, `week plan`, `descriptor generate`, `consolidate scan`, and `shadow scan`. The line says what was not done ("the journal entry was not saved", "nothing was done") and names the file to add the key to.
+- Any other command that reaches a model call answers the same way, in one line.
+- Memory search degrades to lexical-only, and its note names the file.
+- `runtime status` reports `OpenRouter key: not configured`, and `runtime diagnose` reports `openrouter_key_missing`.
+
+A key OpenRouter refuses (HTTP 401 or 403) is one line too: `OpenRouter refused OPENROUTER_API_KEY`, with where a key can be set. No output ever prints the key's value.
 
 ## MEMORY_LOG_LLM_CALLS
 

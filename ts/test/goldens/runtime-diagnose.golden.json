@@ -401,7 +401,7 @@
       "findings": [
         {
           "code": "mirror_home_missing",
-          "detail": "Mirror home is not configured. Set MIRROR_HOME or MIRROR_USER.",
+          "detail": "Mirror home is not configured. To create one, run: mirror init <your-name> (it writes MIRROR_USER=<your-name> to <root>/os-home/.config/mirror/env). If yours lives elsewhere, add MIRROR_HOME=<path> to <root>/os-home/.config/mirror/env.",
           "recommendation": "configure MIRROR_HOME or MIRROR_USER before update planning",
           "repair_route": "configuration",
           "severity": "blocker",
@@ -416,7 +416,7 @@
           "subject": "database _migrations"
         }
       ],
-      "render": "Mirror runtime drift diagnosis\n\nFindings: 2 attention needed\n\n[blocker] mirror_home_missing: Mirror home is not configured. Set MIRROR_HOME or MIRROR_USER.\nSubject: mirror home\nRecommendation: configure MIRROR_HOME or MIRROR_USER before update planning\nRepair route: configuration\n\n[blocker] core_migration_unreadable: database path unknown\nSubject: database _migrations\nRecommendation: restore readable migration tracking before update planning\nRepair route: database repair\n\nStatus: attention needed\n"
+      "render": "Mirror runtime drift diagnosis\n\nFindings: 2 attention needed\n\n[blocker] mirror_home_missing: Mirror home is not configured. To create one, run: mirror init <your-name> (it writes MIRROR_USER=<your-name> to <root>/os-home/.config/mirror/env). If yours lives elsewhere, add MIRROR_HOME=<path> to <root>/os-home/.config/mirror/env.\nSubject: mirror home\nRecommendation: configure MIRROR_HOME or MIRROR_USER before update planning\nRepair route: configuration\n\n[blocker] core_migration_unreadable: database path unknown\nSubject: database _migrations\nRecommendation: restore readable migration tracking before update planning\nRepair route: database repair\n\nStatus: attention needed\n"
     },
     "root_state": {
       "exit_code": 1,

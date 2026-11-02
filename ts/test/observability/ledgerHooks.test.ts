@@ -53,8 +53,8 @@ test("a chat row is priced from the static table, as Python's logger prices it",
     const [row] = ledgerRows(db);
     assert.equal(row?.role, "consolidation");
     assert.equal(row?.model, DEFAULT_EXTRACTION_MODEL);
-    // 1000/1k * 0.0001 + 500/1k * 0.0004
-    assert.equal(row?.cost_usd, 0.0001 + 0.0002);
+    // The pin's price (CV9.DS9.US3): 1000/1k * 0.0001 + 500/1k * 0.0005
+    assert.equal(row?.cost_usd, 0.0001 + 0.00025);
   });
 });
 

@@ -40,6 +40,7 @@ folder and index. Stories that are non-trivial have a `plan.md` and a
 | [CV21](cv21-runtime-expansion-ii/index.md) | Runtime Expansion II: Plugin & MCP Convergence | ✅ Done — 2026-10-24 |
 | [CV22](cv22-typescript-core-port/index.md) | TypeScript Core Port (Database-Seam Strangler) | ✅ Done — 2026-10-11, released as v0.32.1 |
 | [CV23](cv23-journey-projection-contract/index.md) | Journey Projection Contract | ✅ Done — v0.31.10 contract; v0.31.11 confinement hotfix accepted |
+| [CV24](cv24-embeddable-core-for-mirror-desktop/index.md) | Embeddable Core for Mirror Desktop | 🟢 In Progress — DS1 to DS8 released in v0.39.0 |
 
 ---
 
@@ -61,7 +62,10 @@ artifacts. Conversation
 metadata lifecycle was delivered as CV9.DS7, done on 2026-09-26 and since ported
 to TypeScript by CV22.DS7.US10. The one doorman was delivered as CV9.DS8, done on
 2026-10-25: on Pi, Claude Code, Codex, and Antigravity the runtime puts Mirror's
-context before the model, and Pi reached L4.
+context before the model, and Pi reached L4. CV9.DS9, done on 2026-10-28, chose
+the extraction model by measurement: Flash Lite against GPT-6 Luna and Claude
+Haiku 5.5, on the eval suite and on the Navigator's own conversations, and the pin
+moved to Claude Haiku 5.5 at reasoning off.
 Boundary Hardening and the remaining stabilization stories are still open before
 the full CV9 done condition is met.
 
@@ -154,6 +158,15 @@ consumers and installed extensions versioned Journey read models, publishes the
 Ariad Operational projection without granting write-back authority, and closes
 only after the unchanged external probe passes against a centrally released and
 installed Mirror runtime. See the [CV23 index](cv23-journey-projection-contract/index.md).
+
+## CV24 — Embeddable Core for Mirror Desktop
+
+In progress since 2026-10-28. Mirror Desktop 0.3 hosts this core in its own Node process and calls
+it as a library through `mirror-mind/desktop`. The contract grows one piece at a time; DS1 to DS8
+(migration state, Conversations, reads, home creation, migration on request, Mirror's context,
+learning, and Journey administration) are released in
+[v0.39.0](../../releases/v0.39.0.md). See the
+[CV24 index](cv24-embeddable-core-for-mirror-desktop/index.md).
 
 ## CV11 — Localization
 

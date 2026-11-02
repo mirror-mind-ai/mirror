@@ -299,3 +299,76 @@ test("looksLikeArtifact rejects digits, hashes and CSS sizes", () => {
   assert.ok(!looksLikeArtifact("ariad"));
   assert.ok(!looksLikeArtifact("metadata lifecycle"));
 });
+
+// CR180: the close tail's title, summary, and tags prompts carry the owner's name,
+// resolved from `user/identity` the way the extraction path resolves it. Before,
+// `createCloseHooks` was built without a name and every transcript these prompts
+// saw labelled the speaker `**User:**`, so a summary told to call the person by the
+// transcript's name wrote "the user".
+
+class PromptCapture implements LlmProvider {
+  readonly prompts: Record<string, string> = {};
+  async complete(request: LlmRequest): Promise<LlmResponse> {
+    this.prompts[request.role] = request.prompt;
+    return { content: request.role === "conversation_title" ? "A real title" : "x", model: "m" };
+  }
+}
+
+function seedIdentity(db: WritableDatabase, content: string): void {
+  db.prepare(
+    "CREATE TABLE IF NOT EXISTS identity (id TEXT PRIMARY KEY, layer TEXT NOT NULL, key TEXT NOT NULL, content TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)",
+  ).run();
+  db.prepare(
+    "INSERT INTO identity (id, layer, key, content, created_at, updated_at) VALUES (?, 'user', 'identity', ?, ?, ?)",
+  ).run("user-identity", content, NOW, NOW);
+}
+
+test("the close tail labels the transcript with the owner's name from user/identity (CR180)", async () => {
+  const scenario = golden.scenarios[0] as Scenario;
+  const { db, conversationId } = fixture({
+    ...scenario,
+    label: "owner-name",
+    seed: { ...scenario.seed, message_count: 6 },
+  });
+  seedIdentity(
+    db,
+    "# About The User\n\nYou are speaking with Vinícius Manhães Teles. Address him by his first name.",
+  );
+  const llm = new PromptCapture();
+
+  await endConversation(
+    db,
+    conversationId,
+    { extract: false },
+    { newId: () => "unused", nowIso: () => NOW },
+    createCloseHooks({ llm }),
+  );
+
+  for (const role of ["conversation_title", "conversation_summary", "conversation_tags"]) {
+    const prompt = llm.prompts[role];
+    assert.ok(prompt, `${role} was not called`);
+    assert.match(prompt, /\*\*Vinícius:\*\* user line 0/, `${role} transcript names the owner`);
+    assert.doesNotMatch(prompt, /\*\*User:\*\*/, `${role} transcript still says User`);
+  }
+});
+
+test("an explicit userName in the close tail deps still wins (CR180)", async () => {
+  const scenario = golden.scenarios[0] as Scenario;
+  const { db, conversationId } = fixture({
+    ...scenario,
+    label: "explicit-name",
+    seed: { ...scenario.seed, message_count: 6 },
+  });
+  seedIdentity(db, "You are speaking with Vinícius.");
+  const llm = new PromptCapture();
+
+  await endConversation(
+    db,
+    conversationId,
+    { extract: false },
+    { newId: () => "unused", nowIso: () => NOW },
+    createCloseHooks({ llm, userName: "Ana" }),
+  );
+
+  assert.match(llm.prompts.conversation_summary ?? "", /\*\*Ana:\*\*/);
+});

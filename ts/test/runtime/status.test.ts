@@ -471,7 +471,7 @@ test("D1: the malformed-manifest note matches the oracle up to the parser's own 
   }
 });
 
-test("an unconfigured mirror home reports the oracle's sentence", () => {
+test("an unconfigured mirror home reports the not-configured sentence (CR185)", () => {
   const f = fixture();
   try {
     const report = buildRuntimeStatus({
@@ -480,6 +480,9 @@ test("an unconfigured mirror home reports the oracle's sentence", () => {
       version: golden.meta.fixture_version,
       nodeVersion: "<node-version>",
       install: { kind: "clone", repository: f.repo },
+      // The sentence names what is found under the OS home: an empty one here,
+      // never the developer's own homes.
+      osHome: join(f.root, "os-home"),
     });
     const render = renderRuntimeStatus(report, ENV).replaceAll(f.root, "<root>");
     assert.equal(render, (golden.scenarios.home_not_configured as Scenario).render);
@@ -625,4 +628,85 @@ test("CV21.DS5.US2: status names the home's extensions plugin only when the home
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
+});
+
+test("CV9.DS9.TS1/US3: the models line shows the effort the calls send, and where it came from", () => {
+  const root = mkdtempSync(join(tmpdir(), "status-reasoning-"));
+  try {
+    const home = join(root, "ana");
+    mkdirSync(home, { recursive: true });
+    const report = buildRuntimeStatus({
+      start: root,
+      mirrorHome: home,
+      env: {} as NodeJS.ProcessEnv,
+      version: "0.0.0",
+      nodeVersion: "<node-version>",
+      install: { kind: "clone", repository: root },
+    });
+    const modelsLine = (env: Record<string, string>) =>
+      renderRuntimeStatus(report, env as NodeJS.ProcessEnv)
+        .split("\n")
+        .find((line) => line.startsWith("Models: "));
+
+    // Unset: the default pin and its model default (US3); byte for byte the line
+    // every frozen status scenario records.
+    assert.equal(
+      modelsLine({}),
+      "Models: extraction=anthropic/claude-haiku-5.5, reasoning=none (model default), embedding=openai/text-embedding-3-small",
+    );
+    assert.equal(
+      modelsLine({ MEMORY_EXTRACTION_REASONING: "low" }),
+      "Models: extraction=anthropic/claude-haiku-5.5, reasoning=low, embedding=openai/text-embedding-3-small",
+    );
+    // Invalid: shown, not thrown. The calls send the model default meanwhile.
+    assert.equal(
+      modelsLine({ MEMORY_EXTRACTION_REASONING: "off" }),
+      "Models: extraction=anthropic/claude-haiku-5.5, reasoning=none (model default, invalid setting: off), embedding=openai/text-embedding-3-small",
+    );
+    // The rollback pin: the request it was measured with, so no clause (TS1's line).
+    assert.equal(
+      modelsLine({ MEMORY_EXTRACTION_MODEL: "google/gemini-2.5-flash-lite" }),
+      "Models: extraction=google/gemini-2.5-flash-lite, embedding=openai/text-embedding-3-small",
+    );
+    assert.equal(
+      modelsLine({
+        MEMORY_EXTRACTION_MODEL: "google/gemini-2.5-flash-lite",
+        MEMORY_EXTRACTION_REASONING: "off",
+      }),
+      "Models: extraction=google/gemini-2.5-flash-lite, reasoning=invalid (off), embedding=openai/text-embedding-3-small",
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("CR187: status says whether a key is configured, right after the models it would call, never the key", () => {
+  const root = tempDir("status-openrouter-key-");
+  const home = join(root, "ana");
+  mkdirSync(home, { recursive: true });
+  const report = buildRuntimeStatus({
+    start: root,
+    mirrorHome: home,
+    env: {} as NodeJS.ProcessEnv,
+    version: "0.0.0",
+    nodeVersion: "<node-version>",
+    install: { kind: "clone", repository: root },
+  });
+  const render = (env: Record<string, string>) =>
+    renderRuntimeStatus(report, env as NodeJS.ProcessEnv).split("\n");
+  const keyLine = (env: Record<string, string>) => {
+    const lines = render(env);
+    const at = lines.findIndex((line) => line.startsWith("OpenRouter key: "));
+    assert.ok(lines[at - 1]?.startsWith("Models: "), "after the models line");
+    return lines[at];
+  };
+
+  assert.equal(keyLine({}), "OpenRouter key: not configured");
+  // Spaces only is no key, as the provider and the refusals read it.
+  assert.equal(keyLine({ OPENROUTER_API_KEY: "   " }), "OpenRouter key: not configured");
+  assert.equal(keyLine({ OPENROUTER_API_KEY: "sk-or-canary-7f3a" }), "OpenRouter key: configured");
+  assert.ok(!render({ OPENROUTER_API_KEY: "sk-or-canary-7f3a" }).join("\n").includes("canary"));
+  // The verdict does not move: the update gate reads it, and a keyless install
+  // must still be able to update.
+  assert.equal(render({}).at(-2), render({ OPENROUTER_API_KEY: "sk-or-canary-7f3a" }).at(-2));
 });

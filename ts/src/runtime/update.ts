@@ -28,6 +28,7 @@
 import { spawnSync } from "node:child_process";
 import { join } from "node:path";
 import { verifyBackupArchive } from "#runtime/backup.ts";
+import type { GitRunner } from "#runtime/git.ts";
 import type { InstallKind } from "#runtime/installKind.ts";
 import {
   agyPluginCopyState,
@@ -35,7 +36,7 @@ import {
   grokPluginCopyState,
   installedPluginVersion,
 } from "#runtime/pluginWiring.ts";
-import { cloneStrategy, defaultGitRunner, type GitRunner } from "#runtime/strategies/clone.ts";
+import { cloneStrategy, defaultGitRunner } from "#runtime/strategies/clone.ts";
 import { defaultNpmRunner, type NpmRunner, packageStrategy } from "#runtime/strategies/package.ts";
 import type { statusAllowsUpdatePreflight } from "#runtime/updateGate.ts";
 import {

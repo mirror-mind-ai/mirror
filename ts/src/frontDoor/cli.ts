@@ -44,12 +44,11 @@ import { type Database, openDatabaseReadOnly, type WritableDatabase } from "#db/
 import { ensureDatabaseReady } from "#db/readyOnOpen.ts";
 import { assertSchemaState, SchemaStateError } from "#db/schemaState.ts";
 import { allDescriptors, descriptorsByLayer } from "#descriptor/descriptorRead.ts";
-import { newIdentityKeyProblem, newUserNameProblem } from "#identity/identityKey.ts";
+import { newIdentityKeyProblem } from "#identity/identityKey.ts";
 import { identityRowExists, listIdentityByLayer } from "#identity/identityRead.ts";
 import { listJourneysForListCommand } from "#identity/journeyListing.ts";
 import { listPersonas } from "#identity/personaListing.ts";
 import { setIdentity } from "#identity/setIdentity.ts";
-import { IdentityRootExistsError, initUserHome, TemplatesNotFoundError } from "#init/init.ts";
 import { JOURNEY_PATH_LAYER } from "#journey/journeyStatus.ts";
 import { JourneyNotFoundError } from "#journey/journeyWrite.ts";
 import { environmentSessionId } from "#mirror/runtimeSession.ts";
@@ -61,9 +60,14 @@ import {
 import { chatLedgerHook } from "#observability/ledgerHooks.ts";
 import { runWeekSave } from "#planning/weekSave.ts";
 import type { EmbeddingProvider } from "#providers/embedding.ts";
-import { resolveFamilyProviders } from "#providers/familyProviders.ts";
+import {
+  requireFamilyProviders,
+  requireKeyForFamily,
+  resolveFamilyProviders,
+} from "#providers/familyProviders.ts";
 import type { LlmProvider } from "#providers/llm.ts";
 import {
+  CONSULT_ASK_TRANSPORT,
   CULTIVATION_APPLY_TRANSPORT,
   CULTIVATION_SCAN_TRANSPORT,
   DESCRIPTOR_TRANSPORT,
@@ -72,18 +76,10 @@ import {
 } from "#providers/transport.ts";
 import { verifyBackupArchive } from "#runtime/backup.ts";
 import { exitQuietlyOnBrokenPipe } from "#runtime/brokenPipe.ts";
-import {
-  configFilePath,
-  loadConfiguration,
-  silenceExperimentalWarnings,
-  writeConfigValue,
-} from "#runtime/config.ts";
-import { runningTreeRoot } from "#runtime/treeRoot.ts";
-import { detectRuntimes, runtimeWiringLines } from "#runtime/wiring.ts";
+import { configFilePath, loadConfiguration, silenceExperimentalWarnings } from "#runtime/config.ts";
 import { runSeed } from "#seed/seed.ts";
 import { getTasksForWeek, listTasks } from "#tasks/taskStore.ts";
 import { computeWeekRange } from "#tasks/weekView.ts";
-import { isExecutable } from "#util/paths.ts";
 import { PROGRAM } from "#util/program.ts";
 import { newId, nowIso } from "#util/pyGenerators.ts";
 import { hasOption, optionValue, stripOptionWithValue } from "./args.ts";
@@ -105,7 +101,7 @@ import {
   runReject,
   runShadowApply as runShadowApplyRoute,
 } from "./cultivationRoute.ts";
-import { MirrorHomeNotConfiguredError, resolveDbPath } from "./dbPath.ts";
+import { initCommandFor, MirrorHomeNotConfiguredError, resolveDbPath } from "./dbPath.ts";
 import { runBackupRoute, runRepairEncodingRoute } from "./dbSafetyToolsRoute.ts";
 import { defaultExploreRouteDeps, runExploreRoute } from "./exploreRoute.ts";
 import { frontDoorLogPath, logFrontDoor } from "./frontDoorLog.ts";
@@ -114,8 +110,10 @@ import {
   isImportedConversationsCommand,
   runImportedConversationsRoute,
 } from "./importedConversationsRoute.ts";
+import { runInit } from "./initRoute.ts";
 import { applyJourneySetPath } from "./journeyWriteRoute.ts";
 import { openLiveWriteDatabase } from "./liveBackup.ts";
+import { findMirrorHomes, homesRoot } from "./mirrorHomes.ts";
 import {
   isMirrorDoorman,
   isMirrorWrite,
@@ -454,7 +452,10 @@ function runWeekSaveWrite(argv: readonly string[]): number {
  * in depth.
  */
 async function runJournalContentRoute(argv: readonly string[]): Promise<number> {
-  const family = await resolveFamilyProviders(process.env, JOURNAL_TRANSPORT);
+  // CR187: refused before the database opens, saying what was not kept.
+  const family = await requireFamilyProviders(process.env, JOURNAL_TRANSPORT, {
+    consequence: "the journal entry was not saved",
+  });
   if (!family?.llm || !family.embedding) {
     throw new Error("journal requires an LLM and an embedding provider");
   }
@@ -467,14 +468,15 @@ async function runJournalContentRoute(argv: readonly string[]): Promise<number> 
 }
 
 async function runWeekPlanContentRoute(argv: readonly string[]): Promise<number> {
-  const family = await resolveFamilyProviders(process.env, WEEK_PLAN_TRANSPORT);
+  const family = await requireFamilyProviders(process.env, WEEK_PLAN_TRANSPORT);
   if (!family?.llm) throw new Error("week plan requires an LLM provider");
   const llm = family.llm;
   return withLiveWriteDbAsync(argv, (db) => runWeekPlanRoute(db, argv.slice(2), llm));
 }
 
 async function runDescriptorContentRoute(argv: readonly string[]): Promise<number> {
-  const family = await resolveFamilyProviders(process.env, DESCRIPTOR_TRANSPORT);
+  // CR187: without the key every persona would read "skipped (empty response)".
+  const family = await requireFamilyProviders(process.env, DESCRIPTOR_TRANSPORT);
   if (!family?.llm) throw new Error("descriptor generate requires an LLM provider");
   const llm = family.llm;
   const reporter = outcomeReporter(argv, "descriptor");
@@ -882,90 +884,6 @@ function isConsult(argv: readonly string[]): boolean {
 
 function isInit(argv: readonly string[]): boolean {
   return argv[0] === "init";
-}
-
-/**
- * Serve `init <user>` (DS7.US1 Slice B). Filesystem-only — no database is
- * opened. Python's argparse defines only the `user` positional (no
- * --mirror-home/--db-path), so none are stripped here.
- *
- * Deliberate divergence: an already-populated identity root or a missing
- * templates root are uncaught exceptions in Python (a raw traceback, exit 1) --
- * not a designed message. This preserves the contract (exit 1, a stderr
- * message naming the failure) without fabricating a fake traceback.
- *
- * CV22.DS10.US3 (D3): when no source configured a user, `init` writes
- * `MIRROR_USER=<user>` into `~/.config/mirror/env` (0600 in 0700) and says
- * where to add `OPENROUTER_API_KEY` by hand. The key is never read from argv.
- * When a user IS configured -- the checkout's `.env`, or a shell running a
- * second mirror -- the file is left alone and the person is told how to
- * select the new home.
- *
- * Plateau 3: it ends with the wiring step for each runtime found on the PATH
- * (`#runtime/wiring.ts`), with this tree's path in it, so the person is handed
- * the next line rather than a page. Printing is not automating.
- */
-function runInit(argv: readonly string[], env: NodeJS.ProcessEnv = process.env): number {
-  const user = argv[1];
-  // A word that starts with `-` is a flag this command does not have, not a
-  // user: `init --help` once created a home named `--help`.
-  if (!user || user.startsWith("-")) {
-    console.error("Usage: init <user>");
-    return 2;
-  }
-  // And any other word is a key: the home's directory name and the value of
-  // MIRROR_USER in the wiring commands printed below. CR104's rule for slugs
-  // and persona ids, asked before anything is created (CR141).
-  const problem = newUserNameProblem(user);
-  if (problem !== null) {
-    console.error(`Error: ${problem}`);
-    return 2;
-  }
-  try {
-    const identityRoot = initUserHome(user);
-    const mirrorHome = dirname(identityRoot);
-    const configured = Boolean(env.MIRROR_USER || env.MIRROR_HOME);
-    const configuration = configured
-      ? [
-          `  1. This machine already selects a user; to use this one, run with MIRROR_USER=${user}`,
-          `     or set it in ${configFilePath(env)}`,
-        ]
-      : [
-          `Configuration: ${writeConfigValue("MIRROR_USER", user, { env })} (MIRROR_USER=${user})`,
-          "",
-          "Next steps:",
-          "  1. Add OPENROUTER_API_KEY=<your key> to that file (it is created readable by you only)",
-        ];
-    const prints = [
-      `Created user home: ${mirrorHome}`,
-      `Identity ready at: ${identityRoot}`,
-      ...(configured ? ["", "Next steps:"] : []),
-      ...configuration,
-      `  2. Run: ${PROGRAM} seed`,
-      "\nYour identity is ready to use. Deepen it over time with:",
-      `  ${PROGRAM} identity edit user identity`,
-      ...runtimeWiringSection(env),
-    ];
-    process.stdout.write(prints.map((line) => `${line}\n`).join(""));
-    return 0;
-  } catch (error) {
-    if (error instanceof IdentityRootExistsError || error instanceof TemplatesNotFoundError) {
-      console.error(error.message);
-      return 1;
-    }
-    throw error;
-  }
-}
-
-/** The "Wire your runtime" tail of `init`, empty when no runtime is on the PATH. */
-function runtimeWiringSection(env: NodeJS.ProcessEnv): string[] {
-  const detected = detectRuntimes(env, isExecutable);
-  if (detected.length === 0) return [];
-  const root = runningTreeRoot();
-  return [
-    "\nWire your runtime to this install (each step is one you run and can read first):",
-    ...detected.flatMap((runtime) => ["", ...runtimeWiringLines(runtime, root)]),
-  ];
 }
 
 function isSeed(argv: readonly string[]): boolean {
@@ -1408,7 +1326,7 @@ async function runConsolidateScanWrite(argv: readonly string[]): Promise<number>
   const limit = limitRaw !== null ? Number(limitRaw) : DEFAULT_CONSOLIDATE_SCAN_LIMIT;
   const thresholdRaw = optionValue(args, "--threshold");
   const threshold = thresholdRaw !== null ? Number(thresholdRaw) : DEFAULT_CLUSTER_THRESHOLD;
-  const family = await resolveFamilyProviders(process.env, CULTIVATION_SCAN_TRANSPORT);
+  const family = await requireFamilyProviders(process.env, CULTIVATION_SCAN_TRANSPORT);
   if (!family?.llm) throw new Error("consolidate scan requires an LLM provider");
   const provider = family.llm;
   const reporter = outcomeReporter(argv, "consolidation");
@@ -1435,7 +1353,7 @@ async function runShadowScanWrite(argv: readonly string[]): Promise<number> {
   const args = argv.slice(2);
   const limitRaw = optionValue(args, "--limit");
   const limit = limitRaw !== null ? Number(limitRaw) : DEFAULT_SHADOW_SCAN_LIMIT;
-  const family = await resolveFamilyProviders(process.env, CULTIVATION_SCAN_TRANSPORT);
+  const family = await requireFamilyProviders(process.env, CULTIVATION_SCAN_TRANSPORT);
   if (!family?.llm) throw new Error("shadow scan requires an LLM provider");
   const provider = family.llm;
   const reporter = outcomeReporter(argv, "shadow_scan");
@@ -1663,6 +1581,9 @@ function resolveLogPath(argv: readonly string[]): string | null {
  * itself, extended to db resolution.
  */
 async function runConsultAskWithDb(argv: readonly string[]): Promise<number> {
+  // CR187: before the ledger database opens, because that open takes the
+  // pre-write snapshot; the route checks again, for `consult credits`.
+  requireKeyForFamily(process.env, CONSULT_ASK_TRANSPORT);
   const db = tryOpenDbForConsultLogging(argv);
   try {
     process.stdout.write(await runConsultRoute(db, argv.slice(1)));
@@ -1904,9 +1825,17 @@ export async function main(rawArgv = process.argv.slice(2)): Promise<number> {
   // name is whatever the caller typed, and it stays out of the log.
   if (decision.engine === "usage") {
     const env = process.env;
+    const userConfigured = Boolean(
+      env.MIRROR_USER || env.MIRROR_HOME || env.MEMORY_DIR || env.DB_PATH,
+    );
     const answer = answerUsage(decision.request, {
-      userConfigured: Boolean(env.MIRROR_USER || env.MIRROR_HOME || env.MEMORY_DIR || env.DB_PATH),
+      userConfigured,
       configFile: configFilePath(env),
+      // CR185: a home on disk that nothing selects is named, read only when no
+      // user is configured -- the one case the orientation is rendered.
+      useHome: userConfigured
+        ? null
+        : (initCommandFor(findMirrorHomes(), homesRoot())?.sentence ?? null),
     });
     (answer.stream === "stdout" ? process.stdout : process.stderr).write(answer.text);
     logFrontDoor(logPath, {

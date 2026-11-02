@@ -27,9 +27,11 @@ import {
   type DriftFinding,
   deferredCloseTailFindings,
   diagnoseRuntime,
+  extractionReasoningFindings,
   frontDoorErrorFindings,
   identityKeyFindings,
   loosePermissionFindings,
+  openRouterKeyFindings,
   probeModelPins,
   ReplayModelCatalogProvider,
   renderRuntimeDiagnosis,
@@ -265,6 +267,9 @@ function reportFor(f: Fixture, home: string | null): RuntimeStatusReport {
     version: golden.meta.fixture_version,
     nodeVersion: "<node-version>",
     install: { kind: "clone", repository: f.repo },
+    // CR185: the not-configured sentence names what is found under the OS home,
+    // so the unconfigured scenario reads an empty one, never the developer's.
+    osHome: join(f.root, "os-home"),
   });
 }
 
@@ -562,4 +567,58 @@ test("deferred close tails younger than a day, or none, are not a finding", () =
   } finally {
     home.cleanup();
   }
+});
+
+test("CV9.DS9.TS1: an invalid MEMORY_EXTRACTION_REASONING is reported, a valid or absent one is not", () => {
+  assert.deepEqual(extractionReasoningFindings({} as NodeJS.ProcessEnv), []);
+  assert.deepEqual(
+    extractionReasoningFindings({ MEMORY_EXTRACTION_REASONING: "none" } as NodeJS.ProcessEnv),
+    [],
+  );
+  const findings = extractionReasoningFindings({
+    MEMORY_EXTRACTION_REASONING: "off",
+  } as NodeJS.ProcessEnv);
+  assert.equal(findings.length, 1);
+  assert.equal(findings[0]?.code, "extraction_reasoning_invalid");
+  assert.equal(findings[0]?.severity, "attention");
+  assert.equal(findings[0]?.subject, "MEMORY_EXTRACTION_REASONING");
+  assert.match(findings[0]?.detail ?? "", /"off" is not a reasoning effort/);
+  // US3: on the pin the calls send the model's default, and the finding says so.
+  assert.match(findings[0]?.detail ?? "", /anthropic\/claude-haiku-5\.5's own default, none/);
+  const rollback = extractionReasoningFindings({
+    MEMORY_EXTRACTION_MODEL: "google/gemini-2.5-flash-lite",
+    MEMORY_EXTRACTION_REASONING: "off",
+  } as NodeJS.ProcessEnv);
+  assert.match(rollback[0]?.detail ?? "", /no reasoning setting/);
+  assert.match(
+    findings[0]?.recommendation ?? "",
+    /none, minimal, low, medium, high, xhigh, or max/,
+  );
+  assert.match(findings[0]?.recommendation ?? "", /~\/\.config\/mirror\/env/);
+});
+
+// --- CR187: a missing OpenRouter key is a finding, named by where the key goes ---
+
+test("CR187: no key is an attention finding that names the file the key goes in", () => {
+  const home = tempDir("diagnose-openrouter-key-");
+  const config = join(home, ".config", "mirror", "env");
+  for (const env of [{}, { OPENROUTER_API_KEY: "" }, { OPENROUTER_API_KEY: "   " }]) {
+    assert.deepEqual(openRouterKeyFindings(env as NodeJS.ProcessEnv, home), [
+      {
+        code: "openrouter_key_missing",
+        severity: "attention",
+        subject: "OPENROUTER_API_KEY",
+        detail: "not set, so embeddings, memory extraction, and consult are off",
+        recommendation:
+          `add OPENROUTER_API_KEY=<your key> to ${config} ` +
+          `(a new file; make it readable only by you: chmod 600 ${config})`,
+        repair_route: "configuration",
+      },
+    ]);
+  }
+});
+
+test("CR187: a configured key is no finding, and its value is printed nowhere", () => {
+  const env = { OPENROUTER_API_KEY: "sk-or-canary-7f3a" } as NodeJS.ProcessEnv;
+  assert.deepEqual(openRouterKeyFindings(env), []);
 });

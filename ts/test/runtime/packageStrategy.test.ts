@@ -10,12 +10,14 @@ import { join } from "node:path";
 import test from "node:test";
 import { assertNamesNoInterpreter } from "#helpers/noInterpreter.ts";
 import {
+  applyCwd,
   checkPackageUpdateAvailability,
   installGlobal,
   type NpmCall,
   type NpmRunner,
   npmInvocation,
   npmRootGlobal,
+  packageStrategy,
   readDistTags,
   renderPackageUpdateAvailability,
 } from "#runtime/strategies/package.ts";
@@ -127,10 +129,26 @@ function recording(stdout: string): {
   };
 }
 
+test("apply runs npm from the parent of node_modules, never inside the package it replaces", () => {
+  // npm renames the package directory aside before installing the new version;
+  // on Windows a process whose cwd is inside that directory holds it against
+  // the rename (EBUSY, every time). The parent of node_modules is still the
+  // install's own tree, so CR135's rule -- never the person's project -- holds.
+  assert.equal(applyCwd("/usr/local/lib/node_modules/mirror-mind"), "/usr/local/lib");
+  const npm = recording("changed 2 packages\n");
+  const applied = packageStrategy(INSTALL, "stable", npm.runner).apply("0.31.14", "0.35.0");
+  assert.equal(applied.ok, true);
+  assert.deepEqual(npm.calls, [
+    { args: ["install", "-g", "mirror-mind@0.35.0"], call: { cwd: "/usr/local/lib" } },
+  ]);
+  assert.equal(npm.calls[0]?.call.cwd?.startsWith(INSTALL.root), false);
+});
+
 test("every npm call runs where it is told, so a project's .npmrc cannot answer it (CR135)", () => {
   // npm reads the project config of the directory it runs in. The person's
   // project can carry an `.npmrc` that names another registry or prefix, so
-  // the package's own calls run in the install's root.
+  // the package's own calls run in the install's own tree: its root, or for
+  // the apply the parent of node_modules (the test above).
   const view = recording(JSON.stringify({ stable: "0.32.0" }));
   checkPackageUpdateAvailability(INSTALL, STABLE, view.runner);
   assert.deepEqual(view.calls, [

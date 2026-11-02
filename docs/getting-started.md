@@ -115,6 +115,12 @@ This does three things:
   this install — the same steps as [section 6](#6-wire-your-runtime) below,
   with the install's path already filled in.
 
+If `~/.mirror-minds/your-name/` already exists — a home from a clone, or from an
+earlier install — `init` uses it as it is. It changes nothing in the home, writes
+the configuration if no user is selected yet, and prints only the steps still
+left. A Mirror command that finds no home configured says the same: it names the
+homes under `~/.mirror-minds` and the `mirror init` line that selects one.
+
 Your identity starts generic and sharpens through use. When something feels off,
 refine it at your own pace:
 

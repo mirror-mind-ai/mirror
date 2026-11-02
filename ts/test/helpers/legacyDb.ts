@@ -19,3 +19,17 @@ export function regressToPre017(dbPath: string): void {
     db.close();
   }
 }
+
+/**
+ * Regress an already-bootstrapped `dbPath` to the ledger every Python-era home
+ * carries: through `016`, with `017` and `018` pending (CV24).
+ */
+export function regressTo016(dbPath: string): void {
+  regressToPre017(dbPath);
+  const db = openDatabaseForBootstrap(dbPath);
+  try {
+    db.prepare("DELETE FROM _migrations WHERE id = ?").run("018_drop_hook_injected");
+  } finally {
+    db.close();
+  }
+}

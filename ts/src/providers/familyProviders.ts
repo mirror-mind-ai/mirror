@@ -15,6 +15,7 @@
  * are required to replay" and "these are the providers this family uses".
  */
 
+import { requireOpenRouterKey } from "#providers/config.ts";
 import {
   type CreditProvider,
   LiveCreditProvider,
@@ -108,6 +109,48 @@ export async function resolveFamilyProviders(
   return decision.mode === "replay"
     ? replayProviders(decision, overrides)
     : liveProviders(env, owner, decision, overrides);
+}
+
+/**
+ * `resolveFamilyProviders` for a command that cannot do its job without the
+ * key (CR187): `consult`, `journal`, `week plan`, `descriptor generate`,
+ * `consolidate scan` and `apply`, and `shadow scan`.
+ *
+ * The contract is the call site's: it is the route's first statement, before
+ * the database is opened or anything is read, so the refusal's "nothing was
+ * done" -- or the `consequence` a route names instead -- is true. Live mode only:
+ * a replay fixture needs no key. The family returned is the one
+ * `resolveFamilyProviders` builds.
+ *
+ * A command that can still answer without the key (search, `build load`,
+ * `mirror load`) keeps calling `resolveFamilyProviders`, and degrades.
+ */
+export async function requireFamilyProviders(
+  env: ProviderTransportEnv,
+  spec: FamilyTransport,
+  options: { consequence?: string; overrides?: FamilyProviderOverrides } = {},
+): Promise<FamilyProviders> {
+  requireKeyForFamily(env, spec, options);
+  return resolveFamilyProviders(env, spec, options.overrides);
+}
+
+/**
+ * The key check alone, from the transport decision, with no provider built. For
+ * a route that must refuse before a step that comes ahead of its providers:
+ * `consult` ask opens its ledger database first, and that open takes the
+ * pre-write snapshot. Half a replay fixture is left to `resolveFamilyProviders`,
+ * which refuses it by name.
+ */
+export function requireKeyForFamily(
+  env: ProviderTransportEnv,
+  spec: FamilyTransport,
+  options: { consequence?: string } = {},
+): void {
+  const decision = isComposed(spec)
+    ? resolveComposedProviderTransport(env, spec)
+    : resolveProviderTransport(env, spec);
+  if (decision.mode !== "live") return;
+  requireOpenRouterKey(env, options.consequence === undefined ? {} : options);
 }
 
 async function replayProviders(

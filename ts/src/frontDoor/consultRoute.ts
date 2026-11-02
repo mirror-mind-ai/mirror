@@ -1,7 +1,7 @@
 import { parseConsultArgs } from "#consult/args.ts";
 import { runConsult } from "#consult/core.ts";
 import type { WritableDatabase } from "#db/database.ts";
-import { resolveFamilyProviders } from "#providers/familyProviders.ts";
+import { requireFamilyProviders } from "#providers/familyProviders.ts";
 import { CONSULT_ASK_TRANSPORT, CONSULT_CREDITS_TRANSPORT } from "#providers/transport.ts";
 
 /**
@@ -17,7 +17,9 @@ export async function runConsultRoute(
   // Per leaf, from the same specs `routing.ts` decided with: `credits` needs
   // only a credit provider, `ask` needs a chat provider too (CV22.DS8.US3).
   const spec = command.command === "credits" ? CONSULT_CREDITS_TRANSPORT : CONSULT_ASK_TRANSPORT;
-  const family = await resolveFamilyProviders(process.env, spec);
+  // CR187: no provider call without the key; `ask` checked before its ledger
+  // database opened, `credits` has none to open.
+  const family = await requireFamilyProviders(process.env, spec);
   if (!family?.credits) {
     // `routing.ts` sends a reverted or half-configured family to Python before
     // the route is reached, so this is defense in depth.
