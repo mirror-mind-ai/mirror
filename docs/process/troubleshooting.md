@@ -720,7 +720,7 @@ stops growing. Writes lost before the fix are not replayed automatically.
 
 **Date:** 2026-09-24
 **Status:** mitigated by design; diagnosable
-**Affected component:** every hook wrapper under `.claude/hooks/`, `plugins/mirror-mind/hooks/`, and `plugins/mirror-mind/agy/`
+**Affected component:** every hook wrapper under `.claude/hooks/`, `plugins/mirror-mind/hooks/`, and `plugins/mirror-mind/agy/`; since CR191, the Pi extension (`.pi/extensions/mirror-logger.ts`) the same way
 **Severity:** silent loss of logging, context injection, and the close tail, if nobody reads the log
 
 ### Symptom
@@ -737,6 +737,18 @@ not injected, and conversations never get titles or memories.
 
 The second line is a Node that was found but is too old to run the hook: an
 older install earlier on the runtime's `PATH` than the one your terminal uses.
+
+On Pi the symptom is louder: the session opens with one warning,
+`` Mirror: `node` is not on the PATH Pi inherited, nor in the usual places — set MIRROR_NODE=/path/to/node (Node 24 or later) where Pi is launched. Mirror will not log this session. ``,
+no welcome card, and `hooks.log` holds the extension's own line:
+
+```text
+2026-11-02T22:10:41.318Z pi:session-start: node not found on PATH or in the usual places; Mirror is off for this session. Set MIRROR_NODE.
+```
+
+Through v0.39.0 the same Pi exited at startup instead, with
+`pi exiting due to uncaughtException: Error: spawn node ENOENT`; PR #47 kept it
+up, and CR191 made it search, speak, and record.
 
 ### Root cause
 
@@ -792,9 +804,12 @@ environment names, honored as given.
 
 The turns a skipped hook never saw are not in the database, and Mirror has no
 backfill for Claude Code or Codex transcripts: fix the Node resolution and
-logging resumes from the next session. Pi does not go through these wrappers:
-the extension spawns `node` from the terminal it was started in, which normally
-has it on its `PATH`.
+logging resumes from the next session. Pi does not go through these wrappers,
+but its extension resolves Node in the same order (CR191): `MIRROR_NODE`, the
+`PATH`, the `bin/` of the prefix the package is installed under, then the three
+directories above. A Pi session it could not log is not in the database
+either, and maintenance reads no Pi session file (CR154): as for the hooks, fix
+the resolution and logging resumes from the next session.
 
 ---
 
