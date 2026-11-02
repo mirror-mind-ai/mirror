@@ -14,11 +14,13 @@
 // discipline): a failing test must not print a prompt.
 
 import assert from "node:assert/strict";
-import { readFileSync, rmSync, symlinkSync } from "node:fs";
-import { delimiter, join } from "node:path";
+import { existsSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { delimiter, dirname, isAbsolute, join, resolve } from "node:path";
 import test from "node:test";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { tempDir } from "#helpers/tempDir.ts";
+import { HOOK_NODE_CANDIDATES, hookFailureFindings } from "#runtime/diagnose.ts";
+import type { RuntimeStatusReport } from "#runtime/status.ts";
 
 const EXTENSION_PATH = new URL("../../../.pi/extensions/mirror-logger.ts", import.meta.url)
   .pathname;
@@ -81,6 +83,7 @@ test.after(() => rmSync(LINKED_BIN_DIR, { recursive: true, force: true }));
 // --- the fake pi -----------------------------------------------------------
 
 interface Deferred {
+  command: string;
   args: string[];
   /** Set by the test to let the exec "exit". */
   resolve: (stdout: string) => void;
@@ -111,9 +114,10 @@ function fakePi(): FakePi {
       handlers.set(event, [...(handlers.get(event) ?? []), handler]);
       return () => {};
     },
-    exec(_command, args) {
+    exec(command, args) {
       return new Promise((resolve, reject) => {
         const deferred: Deferred = {
+          command,
           args,
           settled: false,
           resolve: (stdout) => {
@@ -180,13 +184,27 @@ interface Harness {
   cleanup(): void;
 }
 
-let extensionModule: { default: (pi: unknown) => void } | null = null;
+/** What `resolveNode` says of a path it probed (CR191). */
+type PathKind = "executable" | "directory" | "not executable" | "missing";
 
-async function loadExtension(): Promise<{ default: (pi: unknown) => void }> {
+interface ExtensionModule {
+  default: (pi: unknown) => void;
+  /** The absolute candidates after the PATH and the prefix, `$HOME` literal (CR191). */
+  NODE_CANDIDATES: readonly string[];
+  /** The Node the extension runs on, or null, and the MIRROR_NODE it refused (CR191). */
+  resolveNode: (
+    env: Record<string, string | undefined>,
+    treeRoot: string,
+    kindOf?: (path: string) => PathKind,
+    platform?: NodeJS.Platform,
+  ) => { node: string | null; rejected: { value: string; reason: string } | null };
+}
+
+let extensionModule: ExtensionModule | null = null;
+
+async function loadExtension(): Promise<ExtensionModule> {
   if (!extensionModule) {
-    extensionModule = (await import(pathToFileURL(EXTENSION_PATH).href)) as {
-      default: (pi: unknown) => void;
-    };
+    extensionModule = (await import(pathToFileURL(EXTENSION_PATH).href)) as ExtensionModule;
   }
   return extensionModule;
 }
@@ -392,64 +410,316 @@ test("session_start without `mirror` on the PATH warns before the card, naming t
   }
 });
 
-test("a detached child that cannot start is logged, and Pi stays up", async () => {
-  // No `node` on the PATH and no MIRROR_NODE: the maintenance spawn fails with
-  // ENOENT, which arrives as the child's 'error' event. Unhandled, that event
-  // was an uncaught exception and took Pi down (seen on 2026-10-16:
-  // "pi exiting due to uncaughtException: Error: spawn node ENOENT").
-  const emptyDir = tempDir("mirror-logger-ext-empty-");
+// --- CR191: Node, resolved as the hook wrappers resolve it, or said so -------------
+//
+// The extension runs every Mirror command on a `node` it must find itself: a
+// GUI-launched Pi, or one from a window older than the Node install, has no
+// `node` on its PATH. The wrappers search MIRROR_NODE, the PATH, the Node that
+// installed the package, nvm, Homebrew, and /usr/local, and record a failure in
+// hooks.log; before CR191 the extension knew MIRROR_NODE and the PATH, and a
+// failure reached no one (PR #47 had just made it non-fatal: "pi exiting due to
+// uncaughtException: Error: spawn node ENOENT", 2026-10-16).
+//
+// The absolute candidates make "nothing anywhere" a fact about the host, not the
+// test (`/opt/homebrew/bin/node` here, `/usr/local/bin/node` on CI's Ubuntu). So
+// under MEMORY_ENV=test the extension re-roots them under
+// MIRROR_TEST_NODE_SEARCH_ROOT, and each test below owns an empty root, or
+// plants in it exactly the Node it is about.
+
+/** The directory the extension's tree is in, as it computes it from its own path. */
+const TREE_ROOT = fileURLToPath(new URL("../../../", import.meta.url)).replace(/\/$/, "");
+/** The prefix's Node, as a global install has it: three up from the tree, into bin/. */
+const PREFIX_NODE = resolve(TREE_ROOT, "..", "..", "..", "bin", "node");
+
+/** A bare PATH and an empty search root: no Node anywhere, unless the test plants one. */
+function nowhere(extra: Record<string, string> = {}): {
+  env: Record<string, string>;
+  root: string;
+  restore: () => void;
+} {
+  const root = tempDir("mirror-logger-ext-node-root-");
+  const bare = tempDir("mirror-logger-ext-bare-");
   const savedPath = process.env.PATH;
   const savedNode = process.env.MIRROR_NODE;
-  const uncaught: unknown[] = [];
-  const onUncaught = (error: unknown) => uncaught.push(error);
-  process.on("uncaughtException", onUncaught);
-  process.env.PATH = emptyDir;
+  process.env.PATH = bare;
   delete process.env.MIRROR_NODE;
-  const h = await harness();
+  return {
+    env: { MEMORY_ENV: "test", MIRROR_TEST_NODE_SEARCH_ROOT: root, ...extra },
+    root,
+    restore: () => {
+      process.env.PATH = savedPath;
+      if (savedNode === undefined) delete process.env.MIRROR_NODE;
+      else process.env.MIRROR_NODE = savedNode;
+      rmSync(root, { recursive: true, force: true });
+      rmSync(bare, { recursive: true, force: true });
+    },
+  };
+}
+
+/** Open a session and let the detached spawn report (its `started` line is synchronous). */
+async function openSession(h: Harness, ctx: FakeCtx): Promise<void> {
+  const done = h.fireNoWait("session_start", { type: "session_start", reason: "startup" }, ctx);
+  for (const d of h.pi.execs) if (!d.settled) d.resolve(ENVELOPE);
+  await done;
+  await tick();
+}
+
+const started = (h: Harness) =>
+  h.logLines().find((l) => /started in detached background process \d+/.test(l));
+const warnings = (h: Harness) => h.logLines().filter((l) => l.includes("[WARN] MIRROR_NODE="));
+
+test("the extension's candidate list is the one runtime diagnose searches", async () => {
+  const mod = await loadExtension();
+  assert.deepEqual([...mod.NODE_CANDIDATES], [...HOOK_NODE_CANDIDATES]);
+});
+
+test("resolveNode: MIRROR_NODE, then the PATH, then the prefix, then the candidates, in order", async () => {
+  const { resolveNode } = await loadExtension();
+  const env: Record<string, string | undefined> = {
+    MIRROR_NODE: "/x/node",
+    PATH: "/p1:/p2",
+    HOME: "/h",
+  };
+  const kindOf =
+    (ok: Set<string>) =>
+    (path: string): PathKind =>
+      ok.has(path) ? "executable" : "missing";
+  const prefix = resolve("/t/lib/node_modules/mirror-mind", "..", "..", "..", "bin", "node");
+  const all = new Set([
+    "/x/node",
+    "/p1/node",
+    "/p2/node",
+    prefix,
+    "/h/.nvm/current/bin/node",
+    "/opt/homebrew/bin/node",
+    "/usr/local/bin/node",
+  ]);
+  const order: string[] = [];
+  for (const expected of [
+    "/x/node",
+    "/p1/node",
+    "/p2/node",
+    prefix,
+    "/h/.nvm/current/bin/node",
+    "/opt/homebrew/bin/node",
+    "/usr/local/bin/node",
+  ]) {
+    const found = resolveNode(env, "/t/lib/node_modules/mirror-mind", kindOf(all), "linux");
+    order.push(found.node ?? "(none)");
+    assert.equal(found.node, expected);
+    assert.equal(found.rejected, null);
+    all.delete(expected);
+    delete env.MIRROR_NODE; // its file is gone from here on: unset, not rejected
+  }
+  assert.equal(
+    resolveNode(env, "/t/lib/node_modules/mirror-mind", kindOf(all), "linux").node,
+    null,
+  );
+  assert.equal(order.length, 7);
+});
+
+test("resolveNode: a MIRROR_NODE it will not use is named with its reason, and the search goes on", async () => {
+  const { resolveNode } = await loadExtension();
+  const onPath = (path: string): PathKind => (path === "/p/node" ? "executable" : "missing");
+  for (const [value, reason, kind] of [
+    ["/gone/node", "missing", "missing"],
+    ["/opt", "a directory", "directory"],
+    ["/etc/hosts", "not executable", "not executable"],
+    ["node", "relative", "executable"],
+    ["./node", "relative", "executable"],
+  ] as const) {
+    const kindOf = (path: string) => (path === value ? kind : onPath(path));
+    const found = resolveNode({ MIRROR_NODE: value, PATH: "/p" }, "/t", kindOf, "linux");
+    assert.equal(found.node, "/p/node", value);
+    assert.deepEqual(found.rejected, { value, reason });
+  }
+  const blank = resolveNode({ MIRROR_NODE: "  ", PATH: "/p" }, "/t", onPath, "linux");
+  assert.equal(blank.node, "/p/node");
+  assert.equal(blank.rejected, null, "an empty MIRROR_NODE is unset, not rejected");
+});
+
+test("resolveNode: on Windows, MIRROR_NODE and node.exe on the PATH, nothing else", async () => {
+  const { resolveNode } = await loadExtension();
+  const seen: string[] = [];
+  const kindOf = (path: string) => {
+    seen.push(path);
+    return "missing" as const;
+  };
+  const found = resolveNode({ PATH: "C:\\a;C:\\b", HOME: "C:\\h" }, "C:\\t", kindOf, "win32");
+  assert.equal(found.node, null);
+  assert.deepEqual(seen, ["C:\\a\\node.exe", "C:\\b\\node.exe"]);
+});
+
+test("resolveNode: the search root re-roots the absolute candidates only under MEMORY_ENV=test", async () => {
+  const { resolveNode } = await loadExtension();
+  const seen: string[] = [];
+  const kindOf = (path: string) => {
+    seen.push(path);
+    return "missing" as const;
+  };
+  resolveNode(
+    { PATH: "", HOME: "/h", MEMORY_ENV: "test", MIRROR_TEST_NODE_SEARCH_ROOT: "/root" },
+    "/t",
+    kindOf,
+    "linux",
+  );
+  assert.ok(
+    seen.every((path) => path.startsWith("/root/")),
+    seen.join(" "),
+  );
+  seen.length = 0;
+  resolveNode(
+    { PATH: "", HOME: "/h", MIRROR_TEST_NODE_SEARCH_ROOT: "/root" },
+    "/t",
+    kindOf,
+    "linux",
+  );
+  assert.ok(
+    seen.every((path) => !path.startsWith("/root/")),
+    seen.join(" "),
+  );
+});
+
+test("MIRROR_NODE runs the awaited execs and the detached children, with no node on the PATH", async () => {
+  const where = nowhere({ MIRROR_NODE: process.execPath });
+  const h = await harness(where.env);
   try {
     const ctx = fakeCtx("/sessions/a.jsonl");
-    const done = h.fireNoWait("session_start", { type: "session_start", reason: "startup" }, ctx);
-    h.pi.execs[0]?.resolve(ENVELOPE);
-    await done;
-    await new Promise((resolve) => setTimeout(resolve, 200));
-    assert.deepEqual(uncaught, [], "the failed spawn did not escape as an uncaught exception");
+    await openSession(h, ctx);
+    assert.equal(h.pi.execs[0]?.command, process.execPath, "the composite exec ran on MIRROR_NODE");
+    assert.ok(started(h), h.logLines().join("\n"));
+    assert.equal(warnings(h).length, 0);
     assert.ok(
-      h.logLines().some((l) => l.includes("[ERROR] session-maintenance failed to start")),
-      h.logLines().join("\n"),
+      !ctx.ui.notices.some((n) => n.includes("MIRROR_NODE")),
+      "no notice: a Node was found",
     );
   } finally {
-    process.off("uncaughtException", onUncaught);
-    process.env.PATH = savedPath;
-    if (savedNode === undefined) delete process.env.MIRROR_NODE;
-    else process.env.MIRROR_NODE = savedNode;
     h.cleanup();
+    where.restore();
   }
 });
 
-test("MIRROR_NODE runs the detached children when `node` is not on the PATH", async () => {
-  // The repair route `runtime diagnose` names for hook_node_unresolvable, and
-  // what the hook wrappers honor; the extension ignored it.
-  const emptyDir = tempDir("mirror-logger-ext-empty-");
-  const savedPath = process.env.PATH;
-  const savedNode = process.env.MIRROR_NODE;
-  process.env.PATH = emptyDir;
-  process.env.MIRROR_NODE = process.execPath;
+test("with no node on the PATH, the Node that installed the package runs the session, unconfigured", async () => {
+  const where = nowhere();
+  const planted = join(where.root, PREFIX_NODE);
+  mkdirSync(dirname(planted), { recursive: true });
+  symlinkSync(process.execPath, planted);
+  const h = await harness(where.env);
+  try {
+    const ctx = fakeCtx("/sessions/a.jsonl");
+    await openSession(h, ctx);
+    assert.equal(
+      h.pi.execs[0]?.command,
+      planted,
+      "the prefix's Node, found from the tree's own path",
+    );
+    assert.ok(started(h), h.logLines().join("\n"));
+    assert.ok(
+      !ctx.ui.notices.some((n) => n.includes("MIRROR_NODE")),
+      "no notice: a Node was found",
+    );
+  } finally {
+    h.cleanup();
+    where.restore();
+  }
+});
+
+test("a MIRROR_NODE the extension will not use is warned once, with its reason, and the PATH's node runs", async () => {
+  const notExecutable = join(tempDir("mirror-logger-ext-plain-"), "node");
+  writeFileSync(notExecutable, "not a program\n", { mode: 0o644 });
+  for (const [value, reason] of [
+    [join(LOG_DIR, "no-such-node"), "missing"],
+    [LOG_DIR, "a directory"],
+    [notExecutable, "not executable"],
+    ["node", "relative"],
+  ] as const) {
+    const savedNode = process.env.MIRROR_NODE;
+    process.env.MIRROR_NODE = value;
+    const h = await harness();
+    try {
+      await openSession(h, fakeCtx("/sessions/a.jsonl"));
+      await openSession(h, fakeCtx("/sessions/b.jsonl"));
+      const warned = warnings(h);
+      assert.equal(warned.length, 1, `one warning for ${reason}:\n${h.logLines().join("\n")}`);
+      assert.ok(warned[0]?.includes(reason), warned[0]);
+      assert.ok(warned[0]?.includes(value), warned[0]);
+      assert.ok(isAbsolute(h.pi.execs[0]?.command ?? ""), "the PATH's node, by its path");
+      assert.ok(started(h), h.logLines().join("\n"));
+    } finally {
+      h.cleanup();
+      if (savedNode === undefined) delete process.env.MIRROR_NODE;
+      else process.env.MIRROR_NODE = savedNode;
+    }
+  }
+  rmSync(dirname(notExecutable), { recursive: true, force: true });
+});
+
+test("with no Node anywhere, Pi stays up, is told once, and hooks.log tells runtime diagnose", async () => {
+  const where = nowhere();
+  const uncaught: unknown[] = [];
+  const onUncaught = (error: unknown) => uncaught.push(error);
+  process.on("uncaughtException", onUncaught);
+  const hooksLog = join(LOG_DIR, "hooks.log");
+  const hooksMark = existsSync(hooksLog) ? readFileSync(hooksLog, "utf8").length : 0;
+  const h = await harness(where.env);
+  try {
+    const ctx = fakeCtx("/sessions/a.jsonl");
+    await openSession(h, ctx);
+    assert.deepEqual(uncaught, []);
+    assert.equal(h.pi.execs.length, 0, "nothing was spawned: there is nothing to spawn it on");
+    assert.equal(started(h), undefined, "no child was started, so none is logged as started");
+    assert.ok(
+      h.logLines().some((l) => l.includes("[ERROR] session-maintenance skipped: no node")),
+      h.logLines().join("\n"),
+    );
+    const notices = ctx.ui.notices.filter((n) => n.startsWith("Mirror: `node` is not on the PATH"));
+    assert.equal(notices.length, 1, ctx.ui.notices.join("\n"));
+    assert.match(notices[0] ?? "", /MIRROR_NODE=\/path\/to\/node/);
+    assert.match(notices[0] ?? "", /Node 24 or later/);
+    assert.ok(
+      h.logLines().some((l) => l.includes(`[WARN] ${notices[0]}`)),
+      "the notice is in the log too",
+    );
+
+    const lines = readFileSync(hooksLog, "utf8").slice(hooksMark).split("\n").filter(Boolean);
+    assert.equal(lines.length, 1, lines.join("\n"));
+    assert.match(
+      lines[0] ?? "",
+      /^\d{4}-\d{2}-\d{2}T\S+ pi:session-start: node not found on PATH or in the usual places; .*Set MIRROR_NODE\.$/,
+    );
+    const findings = hookFailureFindings({
+      db_path: join(LOG_DIR, "memory.db"),
+    } as RuntimeStatusReport);
+    assert.equal(findings[0]?.code, "hook_failures_recorded", JSON.stringify(findings));
+    assert.match(findings[0]?.detail ?? "", /pi:session-start/);
+
+    // A later turn finds nothing either: logged, not announced again.
+    await h.fire("before_agent_start", promptEvent("hello"), ctx);
+    assert.equal(h.pi.execs.length, 0, "the doorman was not spawned either");
+    assert.equal(ctx.ui.notices.filter((n) => n.startsWith("Mirror: `node` is not")).length, 1);
+    assert.equal(
+      readFileSync(hooksLog, "utf8").slice(hooksMark).split("\n").filter(Boolean).length,
+      1,
+      "one hooks.log line per session",
+    );
+  } finally {
+    process.off("uncaughtException", onUncaught);
+    h.cleanup();
+    where.restore();
+  }
+});
+
+test("a session where everything resolves is as it was: no notice, no warning, the same execs", async () => {
   const h = await harness();
   try {
     const ctx = fakeCtx("/sessions/a.jsonl");
-    const done = h.fireNoWait("session_start", { type: "session_start", reason: "startup" }, ctx);
-    h.pi.execs[0]?.resolve(ENVELOPE);
-    await done;
-    await new Promise((resolve) => setTimeout(resolve, 200));
-    assert.ok(
-      h.logLines().some((l) => l.includes("session-maintenance started")),
-      h.logLines().join("\n"),
-    );
-    assert.ok(!h.logLines().some((l) => l.includes("failed to start")), h.logLines().join("\n"));
+    await openSession(h, ctx);
+    assert.equal(h.pi.execs.length, 1);
+    assert.ok(isAbsolute(h.pi.execs[0]?.command ?? ""), "the PATH's node, by its path");
+    assert.ok(started(h));
+    assert.equal(warnings(h).length, 0);
+    assert.ok(!ctx.ui.notices.some((n) => n.includes("MIRROR_NODE")));
   } finally {
-    process.env.PATH = savedPath;
-    if (savedNode === undefined) delete process.env.MIRROR_NODE;
-    else process.env.MIRROR_NODE = savedNode;
     h.cleanup();
   }
 });

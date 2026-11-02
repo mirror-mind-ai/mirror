@@ -43,6 +43,14 @@
  * it supplies the Operating Instructions (`AGENTS.md`) itself (D13), and says
  * so once when `mirror` is not on the PATH.
  *
+ * The `node` it runs the core on is resolved as the hook wrappers resolve
+ * theirs (CR191): `MIRROR_NODE`, the PATH, the Node that installed the
+ * package, then nvm, Homebrew, and `/usr/local`. A GUI-launched Pi, or one from
+ * a window older than the Node install, has none on its PATH. When nothing
+ * resolves the session says so once, names the fix, and writes one line to
+ * `<mirror home>/hooks.log`, where `runtime diagnose` reads it; it spawns
+ * nothing, and Pi stays up.
+ *
  * External skill prep note:
  * Pi reads installed external skills from
  *   ~/.mirror-minds/<user>/runtime/skills/pi/extensions.json
@@ -52,7 +60,7 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { accessSync, appendFileSync, closeSync, constants, existsSync, mkdirSync, openSync, readdirSync, readFileSync, realpathSync, statSync } from "node:fs";
 import { homedir } from "node:os";
-import { delimiter, dirname, join } from "node:path";
+import { delimiter, dirname, join, posix, win32 } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
@@ -180,6 +188,95 @@ function _mirrorOnPath(): string | null {
 	return null;
 }
 
+/**
+ * Where a hook wrapper looks for Node after `MIRROR_NODE`, the PATH, and the
+ * Node beside the entry it runs (CR191). The same list as the core's
+ * `HOOK_NODE_CANDIDATES` (`ts/src/runtime/diagnose.ts`), which this file
+ * cannot import: it is a thin dispatcher and duplicates the contracts it
+ * needs, as it does the homes-root names above. `mirrorLoggerExtension.test.ts`
+ * fails if the two lists differ, as `hooks.test.ts` does for the wrappers.
+ */
+export const NODE_CANDIDATES: readonly string[] = [
+	"$HOME/.nvm/current/bin/node",
+	"/opt/homebrew/bin/node",
+	"/usr/local/bin/node",
+];
+
+/** What `resolveNode` found at a path it probed. */
+export type PathKind = "executable" | "directory" | "not executable" | "missing";
+
+/** An executable FILE: a directory passes `X_OK` on its own. */
+function pathKind(path: string): PathKind {
+	try {
+		if (statSync(path).isDirectory()) return "directory";
+	} catch {
+		return "missing";
+	}
+	try {
+		accessSync(path, constants.X_OK);
+		return "executable";
+	} catch {
+		return "not executable";
+	}
+}
+
+export interface NodeResolution {
+	/** The Node to run the core on, by its path; null when none resolves. */
+	node: string | null;
+	/** A `MIRROR_NODE` the search would not use, and why: the caller says so once. */
+	rejected: { value: string; reason: string } | null;
+}
+
+/**
+ * The Node the core runs on, in the hook wrappers' order (CR191): `MIRROR_NODE`
+ * when it is an absolute path to an executable file; `node` on the PATH; the
+ * Node beside the tree this file ships in, which for a global install is the
+ * `<prefix>/bin/node` that installed the package (and nothing for a checkout);
+ * then `NODE_CANDIDATES`. Not `process.execPath`: Pi may run on a Node older
+ * than the core needs. On Windows the PATH is the last place looked.
+ *
+ * A relative `MIRROR_NODE` is refused here, though the wrappers accept one: it
+ * would resolve against whatever project Pi was opened in.
+ *
+ * The absolute candidates make "nothing anywhere" a fact about the host, so
+ * under `MEMORY_ENV=test` only, `MIRROR_TEST_NODE_SEARCH_ROOT` re-roots them
+ * and the prefix candidate. A production session never reads it.
+ */
+export function resolveNode(
+	env: Record<string, string | undefined>,
+	treeRoot: string,
+	kindOf: (path: string) => PathKind = pathKind,
+	platform: NodeJS.Platform = process.platform,
+): NodeResolution {
+	const paths = platform === "win32" ? win32 : posix;
+	let rejected: NodeResolution["rejected"] = null;
+	const explicit = (env.MIRROR_NODE ?? "").trim();
+	if (explicit !== "") {
+		if (!paths.isAbsolute(explicit)) rejected = { value: explicit, reason: "relative" };
+		else {
+			const kind = kindOf(explicit);
+			if (kind === "executable") return { node: explicit, rejected: null };
+			rejected = { value: explicit, reason: kind === "directory" ? "a directory" : kind };
+		}
+	}
+	const name = platform === "win32" ? "node.exe" : "node";
+	for (const dir of (env.PATH ?? "").split(paths.delimiter).filter(Boolean)) {
+		const candidate = paths.join(dir, name);
+		if (kindOf(candidate) === "executable") return { node: candidate, rejected };
+	}
+	if (platform === "win32") return { node: null, rejected };
+	const searchRoot = env.MEMORY_ENV === "test" ? (env.MIRROR_TEST_NODE_SEARCH_ROOT ?? "") : "";
+	const home = env.HOME ?? homedir();
+	const candidates = [
+		paths.resolve(treeRoot, "..", "..", "..", "bin", "node"),
+		...NODE_CANDIDATES.map((candidate) => candidate.replace("$HOME", home)),
+	].map((candidate) => (searchRoot ? paths.join(searchRoot, candidate) : candidate));
+	for (const candidate of candidates) {
+		if (kindOf(candidate) === "executable") return { node: candidate, rejected };
+	}
+	return { node: null, rejected };
+}
+
 /** True when `path` is the same file as this tree's AGENTS.md (symlinks resolved). */
 function _isOurAgentsFile(path: string): boolean {
 	try {
@@ -278,14 +375,38 @@ export default function (pi: ExtensionAPI) {
 	const FRONT_DOOR_ARGV = [MIRROR_BIN];
 
 	/**
-	 * The Node the front-door children run on: MIRROR_NODE when it names a file
-	 * -- the repair route `runtime diagnose` gives for `hook_node_unresolvable`,
-	 * and what the hook wrappers already honor -- else `node` from the PATH.
-	 * Not `process.execPath`: Pi may run on a Node older than the core needs.
+	 * The Node every front-door process runs on (CR191), or null when none
+	 * resolves: the caller spawns nothing and logs why. A `MIRROR_NODE` the search
+	 * refused is said once per registration, with the reason, so the log is
+	 * enough to fix it; the search went on without it, as the wrappers' does.
 	 */
-	function nodeCommand(): string {
-		const explicit = process.env.MIRROR_NODE ?? "";
-		return explicit !== "" && existsSync(explicit) ? explicit : "node";
+	let mirrorNodeWarned = false;
+	function nodeFor(): string | null {
+		const found = resolveNode(process.env, TREE_ROOT);
+		if (found.rejected && !mirrorNodeWarned) {
+			mirrorNodeWarned = true;
+			log("WARN", `MIRROR_NODE=${found.rejected.value} is ${found.rejected.reason}; searching the PATH and the usual places instead`);
+		}
+		return found.node;
+	}
+
+	/** The line said once at session start when no Node resolves; also the log's and, in short, hooks.log's. */
+	const NO_NODE_NOTICE =
+		"Mirror: `node` is not on the PATH Pi inherited, nor in the usual places — set MIRROR_NODE=/path/to/node (Node 24 or later) where Pi is launched. Mirror will not log this session.";
+
+	/**
+	 * One line in `<mirror home>/hooks.log`, in the format the wrappers write and
+	 * `hookFailureFindings` parses (`<stamp> <runtime>:<hook>: <reason>`), so
+	 * `runtime diagnose` reports it for seven days. Same directory as this log,
+	 * mode 0600 as `noteHookFailure` writes it.
+	 */
+	function noteHookFailure(hook: string, reason: string): void {
+		try {
+			mkdirSync(MIRROR_DIR, { recursive: true });
+			appendFileSync(join(MIRROR_DIR, "hooks.log"), `${new Date().toISOString()} pi:${hook}: ${reason}\n`, { mode: 0o600 });
+		} catch {
+			// A hook cannot report that it could not report.
+		}
 	}
 
 	function log(level: string, msg: string): void {
@@ -299,11 +420,16 @@ export default function (pi: ExtensionAPI) {
 	}
 
 	function runMirrorBackground(args: string[], label: string): void {
+		const node = nodeFor();
+		if (node === null) {
+			log("ERROR", `${label} skipped: no node (see the session's notice)`);
+			return;
+		}
 		let logFd: number | undefined;
 		try {
 			mkdirSync(MIRROR_DIR, { recursive: true });
 			logFd = openSync(LOG_FILE, "a");
-			const child = spawn(nodeCommand(), [...FRONT_DOOR_ARGV, ...args], {
+			const child = spawn(node, [...FRONT_DOOR_ARGV, ...args], {
 				cwd: process.cwd(),
 				stdio: ["ignore", logFd, logFd],
 				// Windows: a detached console child materializes as a visible
@@ -314,17 +440,24 @@ export default function (pi: ExtensionAPI) {
 				detached: process.platform !== "win32",
 				windowsHide: true,
 			});
-			// A child that cannot start -- no `node` on the PATH a GUI-launched Pi
-			// inherited, a MIRROR_NODE that moved -- reports through 'error', not by
-			// throwing, so the catch below never sees it. Without a listener the event
-			// is an uncaught exception and Pi exits ("pi exiting due to
-			// uncaughtException: Error: spawn node ENOENT"). A logging failure must
-			// never break anything: log it and move on.
+			// A child that cannot start reports through 'error', not by throwing,
+			// so the catch below never sees it; without a listener the event is an
+			// uncaught exception and Pi exits ("pi exiting due to uncaughtException:
+			// Error: spawn node ENOENT", PR #47). The path was an executable file a
+			// moment ago (`resolveNode`), so this is the record of one that vanished
+			// in between, or of any other start failure. A logging failure must never
+			// break anything: log it and move on.
 			child.on("error", (error) => {
 				log("ERROR", `${label} failed to start: ${error.message.slice(0, 500)}`);
 			});
+			// Its stdout and stderr are in this log already; the exit code says
+			// whether to read them (a Node too old for the core exits before it runs).
+			child.on("exit", (code, signal) => {
+				if (code !== 0) log("ERROR", `${label} exited ${code ?? `on ${signal}`}`);
+			});
 			child.unref();
-			log("INFO", `${label} started in detached background process ${child.pid ?? "(unknown pid)"}`);
+			// No pid, no process: the 'error' above is on its way.
+			if (child.pid !== undefined) log("INFO", `${label} started in detached background process ${child.pid}`);
 		} catch (err: unknown) {
 			const message = err instanceof Error ? err.message : String(err);
 			log("ERROR", `${label} failed: ${message.slice(0, 500)}`);
@@ -351,10 +484,15 @@ export default function (pi: ExtensionAPI) {
 	}
 
 	async function runMirror(args: string[]): Promise<string> {
+		const node = nodeFor();
+		if (node === null) {
+			log("ERROR", `runMirror skipped [${args.slice(0, 2).join(" ")}]: no node (see the session's notice)`);
+			return "";
+		}
 		try {
 			const delay = testFrontDoorDelayMs();
 			if (delay > 0) await new Promise((resolve) => setTimeout(resolve, delay));
-			const result = await pi.exec(nodeCommand(), [...FRONT_DOOR_ARGV, ...args], {
+			const result = await pi.exec(node, [...FRONT_DOOR_ARGV, ...args], {
 				timeout: 30_000,
 			});
 			const stderr = (result?.stderr ?? "").trim();
@@ -701,6 +839,14 @@ export default function (pi: ExtensionAPI) {
 			const line = `Mirror: \`mirror\` is not on the PATH — ${fix}. Skills will fail until it is.`;
 			log("WARN", line);
 			if (ctx.hasUI) ctx.ui.notify(line, "warning");
+		}
+		// Likewise when no Node resolves (CR191): once, visibly, naming the fix,
+		// and one line where `runtime diagnose` reads. The calls below then skip
+		// themselves; a later one that finds nothing logs only.
+		if (nodeFor() === null) {
+			log("WARN", NO_NODE_NOTICE);
+			if (ctx.hasUI) ctx.ui.notify(NO_NODE_NOTICE, "warning");
+			noteHookFailure("session-start", "node not found on PATH or in the usual places; Mirror is off for this session. Set MIRROR_NODE.");
 		}
 		const sessionId = ctx.sessionManager.getSessionFile() ?? null;
 		const openArgs = ["conversation-logger", "session-start", "--fast", "--welcome", "--format", "json"];
