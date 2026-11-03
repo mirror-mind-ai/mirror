@@ -9,28 +9,18 @@
 // decisions can be driven in tests without a remote, and so this module can be
 // read as "what we ask git for" rather than "how we spawn it".
 
-import { GIT_NETWORK_TIMEOUT_MS, runGit } from "#runtime/git.ts";
-import type { ApplyStrategy } from "#runtime/updatePipeline.ts";
-
-/** Without a timeout, a command gets `runGit`'s local budget. */
-export type GitRunner = (
-  args: readonly string[],
-  cwd: string,
-  timeoutMs?: number,
-) => { code: number; stdout: string; stderr: string };
+import {
+  describeChannelPosition,
+  GIT_NETWORK_TIMEOUT_MS,
+  type GitRunner,
+  readChannelPosition,
+  runGit,
+  splitUpstream,
+} from "#runtime/git.ts";
+import type { ApplyStrategy, PlanOutcome } from "#runtime/updatePipeline.ts";
 
 export const defaultGitRunner: GitRunner = (args, cwd, timeoutMs) =>
   runGit([...args], cwd, timeoutMs);
-
-/** `origin/main` -> `["origin", "main"]`; anything else is refused. */
-export function splitUpstream(upstream: string): [string, string] | null {
-  const index = upstream.indexOf("/");
-  if (index <= 0 || index === upstream.length - 1) return null;
-  const remote = upstream.slice(0, index);
-  const branch = upstream.slice(index + 1);
-  if (remote.startsWith("-") || branch.startsWith("-")) return null;
-  return [remote, branch];
-}
 
 /** The commit this install is on, read BEFORE anything moves. */
 export function captureCommit(repository: string, git: GitRunner): string | null {
@@ -95,11 +85,72 @@ export function cloneRecoveryCommand(previous: string | null): string {
   return previous === null ? "git reset --hard <previous commit>" : `git reset --hard ${previous}`;
 }
 
-function countCommits(repository: string, range: string, git: GitRunner): number | null {
-  const result = git(["rev-list", "--count", range], repository);
-  if (result.code !== 0) return null;
-  const value = Number.parseInt(result.stdout.trim(), 10);
-  return Number.isNaN(value) ? null : value;
+/**
+ * Where the checkout stands against `upstream`, as the update plan answers it.
+ * The position is the one `inspectGitUpdatePlan` reads, in the same words
+ * (CR186); what is added here is the way out of each refusal.
+ */
+function planFrom(
+  repository: string,
+  upstream: string,
+  previousRef: string,
+  git: GitRunner,
+): PlanOutcome {
+  const position = readChannelPosition(repository, upstream, git);
+  const detail = describeChannelPosition(position);
+  const unchanged = "The working tree and the database are unchanged.";
+  switch (position.kind) {
+    case "unreadable":
+      return {
+        kind: "blocked",
+        detail: `cannot compare against ${upstream}`,
+        recovery: [`Resolve upstream tracking for ${upstream}, then retry runtime update.`],
+      };
+    case "current":
+      return { kind: "current", detail };
+    case "pull":
+      return {
+        kind: "ahead",
+        target: upstream,
+        detail,
+        dryRun: `would pull ${position.behind} commit(s) from ${upstream}`,
+      };
+    case "channel_behind":
+      // The package lane's refusal of a channel behind the installed version,
+      // in its words: the same state, whichever way Mirror was installed. No
+      // reset to the channel: the commits past it may already have migrated
+      // the database, and the channel's code refuses a database newer than it.
+      return {
+        kind: "blocked",
+        detail,
+        recovery: [
+          "A downgrade is refused: migrations do not run backwards.",
+          `Follow the channel that carries ${previousRef}: runtime channel ${position.carriedBy}`,
+          `Or stay on ${previousRef} until '${position.channel}' reaches it: the next release contains these commits.`,
+          unchanged,
+        ],
+      };
+    case "local_commits":
+      return {
+        kind: "blocked",
+        detail,
+        recovery: [
+          "Local branch is ahead of upstream; push or reset before updating.",
+          unchanged,
+          `Current commit: ${previousRef}`,
+        ],
+      };
+    case "diverged":
+      return {
+        kind: "blocked",
+        detail,
+        recovery: [
+          "Branch diverged; reconcile local and upstream commits manually.",
+          unchanged,
+          `Current commit: ${previousRef}`,
+        ],
+      };
+  }
 }
 
 /**
@@ -151,37 +202,7 @@ export function cloneStrategy(repository: string, upstream: string, git: GitRunn
           };
     },
 
-    plan: (previousRef) => {
-      const ahead = countCommits(repository, `${upstream}..HEAD`, git);
-      const behind = countCommits(repository, `HEAD..${upstream}`, git);
-      if (ahead === null || behind === null) {
-        return {
-          kind: "blocked",
-          detail: `cannot compare against ${upstream}`,
-          recovery: [`Resolve upstream tracking for ${upstream}, then retry runtime update.`],
-        };
-      }
-      if (ahead === 0 && behind === 0) return { kind: "current", detail: "already up to date" };
-      if (ahead > 0) {
-        return {
-          kind: "blocked",
-          detail: behind > 0 ? "branch diverged" : "local commits present",
-          recovery: [
-            behind > 0
-              ? "Branch diverged; reconcile local and upstream commits manually."
-              : "Local branch is ahead of upstream; push or reset before updating.",
-            "The working tree and the database are unchanged.",
-            `Current commit: ${previousRef}`,
-          ],
-        };
-      }
-      return {
-        kind: "ahead",
-        target: upstream,
-        detail: `pull ${behind} remote commit(s)`,
-        dryRun: `would pull ${behind} commit(s) from ${upstream}`,
-      };
-    },
+    plan: (previousRef) => planFrom(repository, upstream, previousRef, git),
 
     apply: (previousRef, target) => {
       const applied = fastForward(repository, target, git);

@@ -10,12 +10,12 @@
 
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { mkdtempSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
 import golden from "#goldens/soul-prompt.golden.json" with { type: "json" };
 import { createIdentityTable } from "#helpers/identitySchema.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 import {
   composeSoulBeautyVoicePrompt,
   composeSoulSelfVoicePrompt,
@@ -49,7 +49,7 @@ const fixture = golden as {
 const sha256 = (text: string) => createHash("sha256").update(text, "utf8").digest("hex");
 
 function freshDb(name: string, identity: string | null): WritableDatabase {
-  const dir = mkdtempSync(`/tmp/soul-prompt-${name}-`);
+  const dir = tempDir(`soul-prompt-${name}-`);
   const db = openDatabaseCopyForWrite(join(dir, "copy.db"));
   createIdentityTable(db);
   if (identity !== null) {

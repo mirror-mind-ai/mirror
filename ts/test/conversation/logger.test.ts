@@ -9,7 +9,7 @@
 // truncation) follow Python exactly.
 
 import assert from "node:assert/strict";
-import { existsSync, mkdtempSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import {
@@ -23,11 +23,12 @@ import {
 } from "#conversation/logger.ts";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
 import { createRuntimeTables } from "#helpers/runtimeSchema.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 
 const NOW = "2026-09-02T12:00:00.000000Z";
 
 function fixture(): { db: WritableDatabase; dir: string } {
-  const dir = mkdtempSync("/tmp/conversation-logger-");
+  const dir = tempDir("conversation-logger-");
   const db = openDatabaseCopyForWrite(join(dir, "copy.db"));
   createRuntimeTables(db);
   return { db, dir };
@@ -122,7 +123,6 @@ test("getOrCreateSessionConversation creates conversation and binds session atom
   assert.equal(session.interface, "pi");
   assert.equal(session.active, 1);
   assert.equal(session.mirror_active, 0);
-  assert.equal(session.hook_injected, 0);
   assert.equal(session.closed_at, null);
   assert.equal(session.started_at, NOW);
   db.close();
@@ -165,6 +165,34 @@ test("logUserMessage on a fresh session creates conversation, provisional title,
   assert.equal(messages[0].content, "hello world\nmore detail");
   assert.equal(messages[0].token_count, null);
   assert.equal(messages[0].metadata, null);
+  db.close();
+});
+
+test("logUserMessage's first prompt keeps the persona and journey the doorman already wrote (CV9.DS8.US5)", () => {
+  // On Pi the doorman runs before the prompt logger, and an explicit turn's
+  // full load writes the routed persona and journey to the session's row before
+  // the logger binds its conversation. The bind must not erase them.
+  const { db } = fixture();
+  db.prepare(
+    `INSERT INTO runtime_sessions (session_id, interface, mirror_active, persona, journey, active, started_at, updated_at)
+     VALUES ('sess-1', 'pi', 1, 'therapist', 'mirror', 1, ?, ?)`,
+  ).run(NOW, NOW);
+  logUserMessage(
+    db,
+    "sess-1",
+    "/skill:mm-mirror como lido com a ansiedade",
+    { interface: "pi" },
+    deps,
+  );
+  const row = db
+    .prepare(
+      "SELECT mirror_active, persona, journey, conversation_id FROM runtime_sessions WHERE session_id = 'sess-1'",
+    )
+    .get();
+  assert.equal(row?.mirror_active, 1);
+  assert.equal(row?.persona, "therapist");
+  assert.equal(row?.journey, "mirror");
+  assert.ok(row?.conversation_id, "the conversation is bound");
   db.close();
 });
 
@@ -240,7 +268,7 @@ test("logAssistantMessage is a complete no-op while the discard marker is active
 // --- mute flag parity ---
 
 test("setMute and isMuted use the mute flag file under the mirror home", () => {
-  const home = mkdtempSync("/tmp/logger-mute-");
+  const home = tempDir("logger-mute-");
   assert.equal(isMuted(home), false);
   setMute(true, home);
   assert.equal(isMuted(home), true);

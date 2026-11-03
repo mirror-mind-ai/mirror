@@ -347,6 +347,21 @@ test("mirror load --query is live, and MEMORY_RECEPTION=0 drops the chat half", 
   );
 });
 
+test("mirror doorman routes as load --query does: the same providers, the same replay rule (CV9.DS8.TS2)", () => {
+  assert.equal(routeMemoryCommand(["mirror", "doorman", "--prompt", "hello"]).engine, "ts");
+  const halfConfigured = routeMemoryCommand(["mirror", "doorman", "--prompt", "hello"], {
+    MIRROR_TS_MIRROR_EMBEDDING_REPLAY: "/tmp/embedding.json",
+  });
+  assert.match(halfConfigured.reason, /incomplete replay fixture/);
+  assert.equal(
+    routeMemoryCommand(["mirror", "doorman", "--prompt", "hello"], {
+      MIRROR_TS_MIRROR_EMBEDDING_REPLAY: "/tmp/embedding.json",
+      MEMORY_RECEPTION: "0",
+    }).engine,
+    "ts",
+  );
+});
+
 test("no command at all is the front door's top-level usage answer", () => {
   assert.deepEqual(routeMemoryCommand([]), {
     command: null,
@@ -491,6 +506,32 @@ test("conversations append routes on its own entry, never by inheritance", () =>
 test("conversations listing still routes to TS", () => {
   assert.equal(routeMemoryCommand(["conversations"], {}).engine, "ts");
   assert.equal(routeMemoryCommand(["conversations", "--limit", "5"], {}).engine, "ts");
+});
+
+test("conversations imported routes on its own entry, its apply named apart (CR154)", () => {
+  // The `append` lesson, applied before the fact: a subcommand of a claimed
+  // family resolves through its own entry, or the listing answers it.
+  const listing = routeMemoryCommand(["conversations"], {});
+  const imported = routeMemoryCommand(["conversations", "imported"], {});
+  assert.equal(imported.engine, "ts");
+  assert.equal(imported.reason, "CR154 conversations imported");
+  assert.notEqual(imported.reason, listing.reason);
+  const dryRun = routeMemoryCommand(["conversations", "imported", "remove", "--all"], {});
+  assert.equal(dryRun.reason, "CR154 conversations imported");
+  const apply = routeMemoryCommand(["conversations", "imported", "remove", "--all", "--apply"], {});
+  assert.equal(apply.engine, "ts");
+  assert.equal(apply.reason, "CR154 conversations imported remove --apply");
+});
+
+test("conversations skill-turns routes on its own entry, its apply named apart (CR160)", () => {
+  const listing = routeMemoryCommand(["conversations"], {});
+  const look = routeMemoryCommand(["conversations", "skill-turns"], {});
+  assert.equal(look.engine, "ts");
+  assert.equal(look.reason, "CR160 conversations skill-turns");
+  assert.notEqual(look.reason, listing.reason);
+  const apply = routeMemoryCommand(["conversations", "skill-turns", "--apply"], {});
+  assert.equal(apply.engine, "ts");
+  assert.equal(apply.reason, "CR160 conversations skill-turns --apply");
 });
 
 // --- CV22.DS7.TS3: the daily-visible tail ---------------------------------

@@ -9,20 +9,13 @@
 
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
-import {
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  realpathSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs";
+import { existsSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import { bootstrapDatabase } from "#db/bootstrap.ts";
 import { openDatabaseForBootstrap } from "#db/database.ts";
 import { assertNamesNoInterpreter } from "#helpers/noInterpreter.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 import { packageVersion } from "#runtime/version.ts";
 import { stageMirrorPackage } from "../support/mirrorTree.ts";
 
@@ -49,7 +42,7 @@ interface Fixture {
 }
 
 function fixture(): Fixture {
-  const root = realpathSync(mkdtempSync("/tmp/runtime-tail-cli-"));
+  const root = tempDir("runtime-tail-cli-");
   const home = join(root, "mirror-home");
   mkdirSync(home, { recursive: true });
   bootstrapDatabase(join(home, "memory.db")).close();

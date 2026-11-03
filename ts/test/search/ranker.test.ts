@@ -198,3 +198,56 @@ test("rankMemories applies lexical score and MMR deduplication", () => {
     ["a", "b"],
   );
 });
+
+// --- the semantic component, reported (CV9.DS8.US5) --------------------------
+//
+// The doorman's memory threshold is on the cosine, not the hybrid score: half
+// of the hybrid is recency, reinforcement, relevance, and lexical, so a fresh,
+// reinforced memory floors near 0.35 with no semantic match at all. The ranker
+// reports the component beside the score; the ORDER is the hybrid's, as before.
+
+test("rankMemories reports each result's semantic score beside the hybrid score, order unchanged", () => {
+  const memory = (
+    id: string,
+    embedding: readonly number[],
+    relevance: number,
+    lexical: number,
+  ) => ({
+    id,
+    created_at: "2026-06-23T12:00:00Z",
+    last_accessed_at: null,
+    use_count: 0,
+    relevance_score: relevance,
+    access_count: 0,
+    lexical_score: lexical,
+    embedding_b64: b64(embedding),
+  });
+  const ranked = rankMemories(
+    [
+      // Fresh, relevant, an FTS hit on a common word, orthogonal to the query:
+      // the hybrid with no semantic match at all.
+      memory("fresh-unrelated", [0, 1], 1, 1),
+      // Exactly 0.4 cosine with [1, 0]: |[2, 4, 2, 1]| = 5, dot = 2 -- integers only,
+      // so the Float32 storage and the division are exact at the boundary.
+      memory("at-threshold", [2, 4, 2, 1], 0, 0),
+      memory("aligned", [1, 0], 0, 0),
+    ],
+    {
+      queryEmbedding: [1, 0, 0, 0],
+      frozenNowMs,
+      limit: 3,
+      ...DEFAULT_SEARCH_RANKER_CONFIG,
+    },
+  );
+  assert.deepEqual(
+    ranked.map((r) => [r.id, r.semantic]),
+    [
+      ["aligned", 1],
+      ["fresh-unrelated", 0],
+      ["at-threshold", 0.4],
+    ],
+  );
+  // The hybrid still ranks the unrelated-but-relevant memory above the 0.4 one:
+  // which is the point of thresholding on `semantic`, not on `score`.
+  assert.ok((ranked[1]?.score ?? 0) > (ranked[2]?.score ?? 0));
+});

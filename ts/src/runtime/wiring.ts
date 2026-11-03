@@ -83,6 +83,19 @@ function grokPluginInstallCommand(root: string): string {
   return `grok plugin install "${pluginDirectory(root)}" --trust`;
 }
 
+/**
+ * The one agy install command (CV21.DS7.US1), which is also its level-up
+ * (CV21.DS11.TS4). agy stages a copy of the plugin under
+ * `~/.gemini/config/plugins/mirror-mind/` (agy 1.4.7), an update leaves that
+ * copy as it was, and installing again replaces it (by name, from any path). A
+ * function of the root, so the line `init` prints, the recommendation
+ * `diagnose` prints, and the hint `update` prints cannot disagree (the CR071
+ * lesson at the string level).
+ */
+export function agyPluginInstallCommand(root: string): string {
+  return `agy plugin install "${pluginDirectory(root)}"`;
+}
+
 export interface RuntimeWiring {
   /** The runtime, as a person names it. */
   readonly title: string;
@@ -121,7 +134,7 @@ export const RUNTIME_WIRING: Readonly<Record<RuntimeName, RuntimeWiring>> = {
       // the Claude surfaces and overwrites the layer's hooks file). Per-turn
       // injection and logging land with DS7's TS2/TS3; this line promises
       // the install, nothing more.
-      (root) => [`agy plugin install "${root}/plugins/mirror-mind"`],
+      (root) => [agyPluginInstallCommand(root)],
     ],
   },
   grok: {

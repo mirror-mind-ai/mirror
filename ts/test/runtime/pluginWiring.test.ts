@@ -32,6 +32,7 @@ import {
   pluginLinkState,
 } from "#runtime/pluginWiring.ts";
 import {
+  agyPluginInstallCommand,
   CODEX_PLUGIN_ADD_COMMAND,
   grokPluginReinstallCommand,
   RUNTIME_WIRING,
@@ -545,4 +546,83 @@ test("agy stages a plugin under .gemini/config/plugins/<name>/, and the reader r
   // A staged tree with no readable manifest claims nothing.
   rmSync(join(staged, ".claude-plugin", "plugin.json"));
   assert.equal(agyPluginCopyState(gemini, "0.1.2", "mirror-ext-ana").state, "absent");
+});
+
+// --- the canonical plugin's agy copy (CV21.DS11.TS4) ------------------------------
+//
+// agy stages the canonical plugin the way it stages the extensions plugin. Measured
+// on agy 1.4.7, 2026-10-24, in DS11's scratch HOME: `agy plugin install` of the
+// v0.36.2 plugin staged `.gemini/config/plugins/mirror-mind/`, whose own
+// `.claude-plugin/plugin.json` read 0.36.2. An npm update leaves that copy as it
+// was; the finding names the install command that brings it level. DS5.US2's
+// Debt Review deferred this finding to DS11.
+
+/** A HOME whose agy staged the canonical plugin at `version`; `null` leaves no manifest. */
+function homeWithAgyCopyAt(version: string | null, pluginName = "mirror-mind"): string {
+  const home = join(scratch(), "home");
+  const staged = join(home, ".gemini", "config", "plugins", pluginName);
+  mkdirSync(join(staged, ".claude-plugin"), { recursive: true });
+  if (version !== null) {
+    writeFileSync(
+      join(staged, ".claude-plugin", "plugin.json"),
+      JSON.stringify({ name: pluginName, version }),
+    );
+  }
+  return home;
+}
+
+const agyFindings = (findings: readonly { code: string }[]) =>
+  findings.filter((entry) => entry.code.startsWith("agy_"));
+
+test("a stale agy copy of the canonical plugin is a warning naming both versions and the install command with the printed path", () => {
+  const install = installRootAt("0.36.3");
+  const findings = pluginWiringFindings(install, { HOME: homeWithAgyCopyAt("0.36.2") });
+  const finding = findings.find((entry) => entry.code === "agy_plugin_copy_behind");
+  assert.ok(finding, "the finding fires");
+  assert.equal(finding.severity, "warning");
+  assert.match(finding.subject, /\.gemini\/config\/plugins\/mirror-mind$/);
+  assert.match(finding.detail, /0\.36\.2/);
+  assert.match(finding.detail, /0\.36\.3/);
+  assert.equal(finding.repair_route, agyPluginInstallCommand(install));
+  assert.ok(finding.recommendation.includes(agyPluginInstallCommand(install)));
+});
+
+test("a current, ahead, manifest-less, or absent agy copy is silence, and so is no install root", () => {
+  const install = installRootAt("0.36.3");
+  assert.deepEqual(
+    agyFindings(pluginWiringFindings(install, { HOME: homeWithAgyCopyAt("0.36.3") })),
+    [],
+  );
+  // Ahead: the deliberate downgrade gets no agy advice from the older tree.
+  assert.deepEqual(
+    agyFindings(pluginWiringFindings(install, { HOME: homeWithAgyCopyAt("0.37.0") })),
+    [],
+  );
+  assert.deepEqual(
+    agyFindings(pluginWiringFindings(install, { HOME: homeWithAgyCopyAt(null) })),
+    [],
+  );
+  assert.deepEqual(pluginWiringFindings(install, { HOME: join(scratch(), "no-agy-home") }), []);
+  // No HOME: no .gemini to read. No install root: no version authority.
+  assert.deepEqual(pluginWiringFindings(install, {}), []);
+  assert.deepEqual(
+    agyFindings(pluginWiringFindings(null, { HOME: homeWithAgyCopyAt("0.1.0") })),
+    [],
+  );
+});
+
+test("the extensions plugin's agy copy is not the canonical plugin's", () => {
+  // A home's mirror-ext-<user> staged at an old version is extensionPluginFindings'
+  // to report (ext_plugin_agy_copy_stale), never this finding.
+  const home = homeWithAgyCopyAt("0.0.1", "mirror-ext-ana");
+  assert.deepEqual(agyFindings(pluginWiringFindings(installRootAt("0.36.3"), { HOME: home })), []);
+});
+
+test("agy's install command is one function of the install root: init, diagnose, and update cannot spell it differently", () => {
+  const wiringLines = RUNTIME_WIRING.antigravity.steps.flatMap((step) => step("/any/root"));
+  assert.ok(wiringLines.includes(agyPluginInstallCommand("/any/root")));
+  assert.equal(
+    agyPluginInstallCommand("/any/root"),
+    'agy plugin install "/any/root/plugins/mirror-mind"',
+  );
 });

@@ -6,7 +6,10 @@ user-invocable: true
 
 # Help
 
-Show the user the available commands:
+Show the user the available commands, starting with this line:
+
+> In Pi, type `/mm-` and pick a command from the menu, which lists each one as
+> `skill:mm-<name>`.
 
 ## Operating Modes
 

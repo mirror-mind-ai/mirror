@@ -7,12 +7,13 @@
 
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import test from "node:test";
 import { MirrorHomeNotConfiguredError } from "#frontDoor/dbPath.ts";
 import { runBackupRoute, type SafetyToolsIo } from "#frontDoor/dbSafetyToolsRoute.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 
 process.env.TZ = "UTC";
 
@@ -53,7 +54,7 @@ function backup(argv: readonly string[], resolveDbPath: SafetyToolsIo["resolveDb
 }
 
 function home(name: string, database: "none" | "real" | "corrupt" = "none"): string {
-  const dir = mkdtempSync(`/tmp/backup-route-${name}-`);
+  const dir = tempDir(`backup-route-${name}-`);
   if (database === "real") {
     const db = new DatabaseSync(join(dir, "memory.db"));
     db.exec("PRAGMA journal_mode=WAL; CREATE TABLE t (n INTEGER); INSERT INTO t VALUES (1)");

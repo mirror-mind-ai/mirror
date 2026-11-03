@@ -346,7 +346,7 @@ none is left undecided.
 
 | Finding | Disposition |
 |---|---|
-| A guessed Builder stamp can bind through a named session once a runtime names its session | Deferred with an enforced trigger (decision C): `namedSessionPrecondition.test.ts` fails on that day, and option B is the fix |
+| A guessed Builder stamp can bind through a named session once a runtime names its session | Deferred with an enforced trigger (decision C): `namedSessionPrecondition.test.ts` fails on that day, and option B is the fix. **The day came 2026-10-25, [CV9.DS8.US5](../../roadmap/cv9-mirror-1-0/cv9-ds8-one-doorman-mirror-s-context-before-the-model-on-every-runtime/cv9-ds8-us5-pi-through-the-one-doorman-at-l4/index.md): the Pi extension sets `MIRROR_SESSION_ID`, the tripwire fired, and option B landed with it — `build load` writes `named_session: true` on a stamp written under the session's name, and `namedSessionBuilderJourney` binds only from such a stamp. The tripwire test is retired; `commands.test.ts` holds the guessed-stamp refusal.** |
 | The session resolver guesses among three kinds of `runtime_sessions` row | Captured: [CR100](../rs010-cv22-oracle-and-port-hygiene/cr100-the-session-resolver-guesses-from-a-table-of-three-row-kinds.md) |
 | Explorer and Soul activation stamp a guessed session | Captured: [CR101](../rs010-cv22-oracle-and-port-hygiene/cr101-explorer-and-soul-activation-stamp-a-guessed-session.md), moved to RS010 |
 | Claude Code's `mm-build` skill has no Builder or Ariad sections, so this CR's skill change never reached it | Captured: [CR102](../rs010-cv22-oracle-and-port-hygiene/cr102-the-claude-code-mm-build-skill-lacks-the-builder-and-ariad-sections.md) |

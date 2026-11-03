@@ -10,10 +10,11 @@
 // code-point preview capping.
 
 import assert from "node:assert/strict";
-import { mkdtempSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import { openDatabaseCopyForWrite, type SqlValue, type WritableDatabase } from "#db/database.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 import {
   applyRepairs,
   hasRepairableMojibake,
@@ -48,7 +49,7 @@ interface Golden {
 const golden: Golden = JSON.parse(readFileSync(GOLDEN_PATH, "utf8"));
 
 function fixture(): WritableDatabase {
-  const dir = mkdtempSync("/tmp/repair-encoding-");
+  const dir = tempDir("repair-encoding-");
   const db = openDatabaseCopyForWrite(join(dir, "copy.db"));
   for (const ddl of golden.fixture.ddl) db.exec(ddl);
   for (const row of golden.fixture.rows) {

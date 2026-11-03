@@ -33,6 +33,53 @@ arguments, and their effects are the same, answered by the TypeScript core.
 
 ---
 
+## Parity Matrix
+
+What each runtime gets from Mirror, and how well. This table is the single
+authority for runtime parity
+([decision](../../../project/decisions.md#the-contracts-parity-matrix-is-the-single-authority-for-runtime-parity)):
+every row is a measurement, taken on the version and binary it names, on the date it
+names, and held in the record it links. A newer version of a runtime is not
+re-measured until a story does it, and a cell changes only with a new measurement.
+README, Getting Started, and REFERENCE link here rather than keep levels of their
+own; the [architecture](../../architecture.md#6-runtime-model) repeats the levels,
+and `ts/test/scripts/runtimeParityDocs.test.ts` holds the five docs to this table.
+
+| Runtime | Level | Skills | Instructions at start | Mirror context before the model answers | Logging | MCP | Version | Binary | Measured | Record |
+|---------|-------|--------|-----------------------|-----------------------------------------|---------|-----|---------|--------|----------|--------|
+| Pi | **L4** | `/skill:mm-<skill>`, picked from the menu as `/mm-` is typed | the extension adds `AGENTS.md` to Pi's context files (D13; [CV22.DS10.US3](../../../project/roadmap/cv22-typescript-core-port/cv22-ds10-python-retirement-npm-distribution/cv22-ds10-us3-npm-distribution/index.md), 2026-10-06, version not recorded) | the extension's `before_agent_start`, through the one doorman (`mirror doorman`): the full folder on the explicit form, a delta on each ordinary turn while Mirror Mode is on, nothing otherwise — carried into the run as a `mirror-context` message; the session named in the environment for the model's own loads | `pi`: the prompt as typed and its one reply; a skill turn is not recorded | not wired: the extension calls the front door | 1.4.0 | `~/.local/bin/pi` (the managed install's 1.4.0 release) | 2026-10-25 | [DS8.US5](../../../project/roadmap/cv9-mirror-1-0/cv9-ds8-one-doorman-mirror-s-context-before-the-model-on-every-runtime/cv9-ds8-us5-pi-through-the-one-doorman-at-l4/index.md) (the extension's harness test is Pi's automated proof; there is no isolated `smoke_pi.sh`), [CR159](../../../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr159-pi-skills-are-spelled-by-their-bare-name-and-step-7a-lost-two-dashes.md), [CR160](../../../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr160-a-pi-skill-invoked-as-skill-is-logged-as-its-body.md) |
+| Claude Code | **L4** | 25, the plugin (2.1.296, DS12.TS1) | the plugin's `SessionStart` hook (2.1.296, DS12.TS1) | the inject hook on `UserPromptSubmit`, through the one doorman (`mirror doorman`): the full folder on the explicit form, a delta on each ordinary turn while Mirror Mode is on, nothing otherwise — returned as the hook's context; the session named in the environment (`CLAUDE_CODE_SESSION_ID`) for the model's own loads | `claude_code`, replies from `Stop` | 7 tools (2.1.296, DS12.TS1) | 2.1.310 | `~/.local/bin/claude` → `~/.local/share/claude/versions/2.1.310` | 2026-10-25 | [DS8.US4](../../../project/roadmap/cv9-mirror-1-0/cv9-ds8-one-doorman-mirror-s-context-before-the-model-on-every-runtime/cv9-ds8-us4-claude-code-and-codex-through-the-one-doorman/index.md) (the doorman's turns, the logging), [DS12.TS1](../../../project/roadmap/cv21-runtime-expansion-ii/cv21-ds12-runtime-re-baseline/cv21-ds12-ts1-claude-code-re-probe/index.md), [DS2](../../../project/roadmap/cv21-runtime-expansion-ii/cv21-ds2-mirror-plugin-mcp-foundation/index.md) |
+| Codex | **L4** | 25, the plugin from Mirror's marketplace (0.163.0, DS4.US4) | the plugin's `SessionStart` hook, as a developer message (0.163.0, DS4.US4) | the inject hook, through the one doorman, as on Claude Code; the session named in the environment (`CODEX_SESSION_ID`) for the model's own loads | `codex`, replies included; the session closes when Codex reaps its thread, 30 min after `/quit` (0.163.0, DS4.US4) | the tools, reached through `tool_search` (0.163.0, DS4.US4) | 0.164.0 | `/opt/homebrew/bin/codex` → `/opt/homebrew/Caskroom/codex/0.164.0/bin/codex` | 2026-10-25 | [DS8.US4](../../../project/roadmap/cv9-mirror-1-0/cv9-ds8-one-doorman-mirror-s-context-before-the-model-on-every-runtime/cv9-ds8-us4-claude-code-and-codex-through-the-one-doorman/index.md) (the doorman's turns, the logging), [DS4.US4](../../../project/roadmap/cv21-runtime-expansion-ii/cv21-ds4-codex-through-the-canonical-plugin/cv21-ds4-us4-codex-at-l4-through-the-shipped-plugin-measured-live/index.md) |
+| Antigravity | **L4** | 25, `agy plugin install` | the plugin's `rules/AGENTS.md` (its marker quoted on agy 1.4.2, DS7.US4); Mirror Mode turned on at `SessionStart` | `PreInvocation`, through the one doorman (`mirror doorman`), the turn's prompt read from the payload's `lastUserInput`: the full folder on the explicit form and on a new conversation's first turn, a delta on each ordinary turn while Mirror Mode is on, nothing otherwise — one persistent `systemMessage` step; a payload without the prompt (agy before 1.4.7) gets the whole folder each turn as an `ephemeralMessage` | `antigravity`, from the transcript | 7 tools (agy 1.4.2, DS7.US4) | agy 1.4.7 | `~/.local/bin/agy` | 2026-10-25 | [DS8.TS6](../../../project/roadmap/cv9-mirror-1-0/cv9-ds8-one-doorman-mirror-s-context-before-the-model-on-every-runtime/cv9-ds8-ts6-antigravity-through-the-one-doorman/index.md) (the skills, the doorman's turns, the logging), [DS7.US4](../../../project/roadmap/cv21-runtime-expansion-ii/cv21-ds7-antigravity-through-skills-and-a-native-layer/cv21-ds7-us4-antigravity-at-the-bar-measured-live/index.md) |
+| Grok Build | **L3** | 25, the plugin | the home-level rule `~/.grok/rules/mirror-mind.md` | none: Grok discards hook context, and the model loads it through `/mm-mirror` | `grok_build`, replies included | 7 tools, through `search_tool` and `use_tool` | 1.0.62 (1474f9cbdd91) | `~/.grok/bin/grok` → `~/.grok/downloads/grok-1.0.62-macos-aarch64` | 2026-10-18 | [DS10.US3](../../../project/roadmap/cv21-runtime-expansion-ii/cv21-ds10-grok-build-through-the-canonical-plugin/cv21-ds10-us3-grok-at-honest-l3-through-the-shipped-plugin-measured-live/index.md), [DS10.TS2](../../../project/roadmap/cv21-runtime-expansion-ii/cv21-ds10-grok-build-through-the-canonical-plugin/cv21-ds10-ts2-the-mcp-server-attaches-on-grok-or-the-reason-is-recorded/index.md) |
+
+The levels are [CV8's](../../../project/roadmap/cv8-runtime-expansion/index.md#runtime-parity-levels),
+which CV21 reuses:
+
+- **L0, CLI-assisted:** the runtime can call `mirror …`, with no automatic logging or
+  context.
+- **L1, logged:** user and assistant turns are recorded, sessions close cleanly, and
+  backups run.
+- **L2, command surface:** Mirror's commands are reachable through the runtime's own
+  command mechanism.
+- **L3, Mirror Mode:** Mirror Mode works, with session-scoped state: identity and
+  context reach the model, if only through the `/mm-mirror` skill the model runs.
+- **L4, full parity:** logging, the command surface, Mirror Mode, Builder Mode, external
+  skills, and an isolated smoke that proves them — and Mirror's context put before the
+  model by the runtime itself, a hook that injects it, rather than loaded by the model
+  through `/mm-mirror`. CV21 measured that line: Codex and Antigravity reached L4 by it,
+  and Grok Build stayed at L3 for want of it
+  ([decision](../../../project/decisions.md#grok-build-is-at-l3-through-the-canonical-plugin)).
+  Pi, claimed L4 until DS11, had Grok's model and was L3 by the same line
+  ([CR165](../../../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr165-pi-puts-no-mirror-context-before-the-model.md));
+  CV9.DS8.US5 gave its extension the one doorman and measured it at L4.
+
+Gemini CLI was retired in [v0.35.0](../../../releases/v0.35.0.md) (CV21.DS8); Antigravity
+is its successor
+([decision](../../../project/decisions.md#gemini-cli-is-retired-and-antigravity-is-its-successor)).
+
+---
+
 ## Lifecycle Events
 
 Every runtime must handle four events. The table below lists the event, the
@@ -41,8 +88,8 @@ required command, and any arguments the runtime must supply.
 | Event | Required command | Arguments supplied by runtime |
 |-------|------------------|-------------------------------|
 | Session start | `mirror conversation-logger session-start` | none |
-| User prompt | `mirror conversation-logger log-user <session_id> <prompt> --interface <name>` | `session_id`, `prompt text`, `interface name` |
-| Assistant response | see note below | — |
+| User prompt | `mirror conversation-logger user-prompt --interface <name>`, its JSON payload on stdin or as `--payload` | `session_id`, `prompt`, `turn_id` |
+| Assistant response | `mirror conversation-logger stop --interface <name>`, likewise; see the note below | `session_id`, `turn_id`, `last_assistant_message` |
 | Session end | `mirror conversation-logger session-end` or `session-end-pi <id>` | see note below |
 | Backup | `mirror backup --silent` | none |
 
@@ -102,13 +149,21 @@ No arguments. Prints a summary string (may be empty).
 Runs before each model turn. Persists the user message to the database.
 
 ```
-mirror conversation-logger log-user <session_id> <prompt> --interface <name>
+mirror conversation-logger user-prompt --interface <name>   # the payload on stdin, or as --payload <json>
 ```
+
+The payload is a JSON object:
 
 - `session_id` — opaque identifier for the current agent session, supplied by
   the runtime environment
-- `prompt` — full text of the user message; truncate at ~50 KB if needed
-- `--interface` — runtime name used for attribution (e.g. `claude_code`, `pi`)
+- `prompt` — the text the person sent, before the runtime expands anything;
+  truncate at ~50 KB if needed
+- `turn_id` — the runtime's id for the turn (`prompt_id` and `promptId` are read
+  too); a runtime that has none mints one per turn
+
+`--interface` is the runtime name used for attribution (e.g. `claude_code`, `pi`).
+`--payload` carries the payload in argv for a caller that cannot write stdin, Pi's
+`pi.exec` (CR160); a route given it never reads stdin.
 
 Skip a command turn: a prompt that opens with a skill invocation in any
 runtime's sigil (`isCommandTurn`, CV21.DS4.TS3). A prompt opening with `/` is a
@@ -125,29 +180,37 @@ The forms are the inject hook's (see
 skipped turn is recorded by its turn id so the Stop hook skips its reply too:
 what a person says to the mirror is remembered; a skill they invoke is not.
 
-The Claude-family hooks (`conversation-logger user-prompt`, from Claude Code,
-Codex, and Grok) apply both rules themselves, read the runtime's turn id from
-the payload (`prompt_id`, `turn_id`, or `promptId`) into the message's
-metadata, and stamp `runtime_sessions.interface` with the detected runtime on
-every prompt, skipped or not, so a conversation the Mirror Mode path creates
-inherits the right label.
+The `user-prompt` handler applies both rules itself, for the Claude-family
+hooks (Claude Code, Codex, Grok) and, since
+[CR160](../../../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr160-a-pi-skill-invoked-as-skill-is-logged-as-its-body.md), Pi's extension.
+It reads the turn id from the payload into the message's metadata, and stamps
+`runtime_sessions.interface` with the runtime on every prompt, skipped or not, so
+a conversation the Mirror Mode path creates inherits the right label. Pi hands its
+extensions the prompt after expanding a skill into its body, so the extension sends
+the text Pi's `input` event carried, as typed, with a turn id it mints for each run;
+with no typed text kept for a run, it reads Pi's skill wrapper back to the command.
+`log-user` and `log-assistant`, which Pi's extension called before CR160, write what
+they are given and stay for one release, for extensions already loaded in running
+sessions.
 
 ---
 
 ### Assistant Response
 
-Runtimes differ here by design. The difference is structural, not accidental:
-the Claude-schema runtimes hand their Stop hook the turn's final answer; Pi
-logs messages explicitly as they arrive.
+Every runtime reaches the same `stop` handler. They differ in how the answer
+arrives: the Claude-schema runtimes hand their Stop hook the turn's final answer;
+Pi's extension collects it.
 
-**Pi** — logs each assistant turn explicitly at `agent_end`:
+**Pi** — collects the assistant text of every run a prompt takes (`agent_end`) and
+sends it once, when the prompt settles (`agent_settled`), with the prompt's turn id
+(CR160):
 
 ```
-mirror conversation-logger log-assistant <session_id> <content> --interface pi
+mirror conversation-logger stop --interface pi --payload <json>
 ```
 
-Collect all assistant messages from the turn, concatenate, and log once.
-Truncate at ~50 KB.
+One reply row per prompt; truncate at ~50 KB. A reply still unsent is sent before
+the next prompt and at session end, since a Pi before 0.80.4 has no `agent_settled`.
 
 **Claude Code, Codex, Grok** — the Stop hook (`claude:stop`, through
 `log-assistant-reply.sh`) logs the payload's `last_assistant_message`
@@ -173,9 +236,12 @@ The transcript backfill at session end stays as the fallback, and fills only a
 conversation that holds no assistant message, so a Stop-logged reply is not
 recorded twice (CV21.DS2.US8).
 
-**Antigravity** — hook payloads carry no text, so the `Stop` handler reads
-the session's transcript JSONL and logs each turn beside its prompt, keyed on
-a `step_index` high-water mark (CV21.DS7.TS3). (Gemini CLI, retired by
+**Antigravity** — the `Stop` handler reads the session's transcript JSONL and
+logs each turn beside its prompt, keyed on a `step_index` high-water mark
+(CV21.DS7.TS3). It was built when agy's hook payloads carried no text (agy 1.4.2,
+CV21.DS12.TS3 L7); since agy 1.4.7 they carry the turn's prompt as
+`lastUserInput`, which the doorman reads (CV9.DS8.TS6), and the logging still reads
+the transcript. (Gemini CLI, retired by
 CV21.DS8, logged from the `AfterAgent` payload's `prompt_response` field; the
 Node port first read the wrong field and dropped every assistant turn for a
 day — CV22.DS10.TS5 finding F11. The payload shape is the contract, not the
@@ -290,7 +356,37 @@ When no journey context is active, it still shows the default Mirror lens:
 ```
 
 Pi renders this through `ctx.ui.setStatus("mirror", ...)` and refreshes it at
-startup and after agent turns. Other runtimes may ignore this optional surface.
+startup and after agent turns.
+
+**Claude Code** shows it when the user wires it, once, as `statusLine.command` in
+`~/.claude/settings.json`:
+
+```bash
+mirror welcome --status-line --session-id $CLAUDE_CODE_SESSION_ID
+```
+
+It is a user step because a plugin cannot carry a status line: on 2.1.296 a manifest
+`statusLine` is ignored at load time and a plugin-root `settings.json` status line did
+not show (CV21.DS12.TS1, static 3 and L7). Measured on Claude Code 2.1.310
+(`~/.local/share/claude/versions/2.1.310`), 2026-10-24, through
+[CV21.DS11's route](../../../project/roadmap/cv21-runtime-expansion-ii/cv21-ds11-contract-docs-refresh/route.sh)
+with two sessions side by side, one of which ran `mirror build load` from the agent's
+shell (CV21.DS11.US2):
+
+- Claude Code runs the command at the start of a session and when the conversation
+  changes, and gives it `CLAUDE_CODE_SESSION_ID`, equal on every run to the
+  `session_id` in the JSON it writes to the command's stdin and to the session the
+  plugin's hooks registered.
+- With `--session-id`, each footer shows its own session's mode: `■ Builder Mode` in
+  the session that activated it, `◌ Mirror Mode` in the other. Without it, neither
+  footer shows Builder Mode, because the activation is bound to the session; a
+  missing variable degrades to that unscoped line.
+- The journey beside Mirror Mode is the global sticky journey, so a session that chose
+  none shows the last one any session chose.
+- Each run is one `mirror` process, 0.3 to 1.5 s on the Apple M3 Pro measured.
+
+Codex, Antigravity, and Grok Build have no Mirror status line; they may ignore this
+optional surface.
 
 Operating mode lifecycle is explicit and lives in the core as an internal
 surface for Mirror skills and runtime integrations. Session-aware runtimes should
@@ -311,41 +407,89 @@ continuity. Rendering and clearing runtime UI are internal effects.
 
 ## Optional: Mirror Mode Identity Injection
 
-Mirror Mode runtimes inject identity context before the model responds. This
+Mirror Mode runtimes put Mirror's context before the model before it answers, and
+one decision in the core says what that context is: the doorman
+(`ts/src/mirror/doorman.ts`, CV9.DS8). A runtime hands it the turn's prompt and its
+session and passes on whatever it returns; the runtime decides nothing itself. This
 is optional — a runtime that does not support Mirror Mode skips this entirely.
 
 ```
-mirror mirror load --context-only --query "<user prompt>" [--persona <id>] [--journey <id>] [--org] [--session-id <id>]
+mirror mirror doorman --prompt "<the turn's prompt>" [--session-id <id>]
+mirror mirror doorman --forget [--session-id <id>]
 ```
 
-- `--context-only` — loads identity without starting a new database session
-  (the model skill starts the session)
-- `--query` — used for attachment search; pass the user's full prompt
-- `--persona`, `--journey`, `--org` — optional; omit to let auto-detection decide
-- `--session-id` — optional but preferred when the runtime has an explicit session identifier; enables session-scoped mirror state and routing
+Given the prompt and the session's state, the doorman prints one of three answers:
 
-The command prints the identity block. The runtime injects this as a system
-note before the model sees the prompt.
+1. **The full folder**, when the prompt opens with the Mirror skill's explicit form:
+   what `mirror mirror load --query` builds from the question — the identity
+   layers, the persona routed from it, the journey, the shadow patterns, and the
+   memories and attachments relevant to it. The session is marked in Mirror Mode
+   by its id.
+2. **A delta**, on an ordinary turn while Mirror Mode is on: the section of a
+   persona the prompt newly scores above threshold (`detectPersona`, a keyword
+   score, no model call), which becomes the session's persona; up to five memories
+   scoring at least 0.4 on the semantic score that the session has not been given
+   yet; and the attachments scoring above 0.4. The identity layers are not
+   repeated: they are already in the transcript. Without an embedding (no provider,
+   or the call failed) the memories come from the lexical search and the
+   attachments are skipped.
+3. **Nothing**, when Mirror Mode is off, and on a skill invocation other than the
+   Mirror form, which is a command, not a question (CR160's rule, held by the
+   doorman since CV9.DS8.US5).
 
-**Claude Code** runs this synchronously in its inject hook
-(`.claude/hooks/mirror-inject.sh` → `ts/src/hooks/main.ts claude:inject`) on
-`UserPromptSubmit`, triggered when the prompt opens with the Mirror skill's
-explicit form or when Mirror Mode is already active. The form is read by one
-grammar (`ts/src/mirror/mirrorForm.ts`, CV21.DS2.US7) in every runtime's
-spelling: `/mm:mirror`, `/mirror-mind:mm-mirror`, `/mirror-mind:mm:mirror`,
-`$mirror-mind:mm:mirror`, `/mm-mirror`, and `$mm-mirror`, followed by
-whitespace or the end of the prompt. The same hook runs on Codex, which reads
-the context it returns; Grok discards UserPromptSubmit context, so Mirror Mode
-there comes from the skill.
+Mirror Mode is on for a session when its `mirror_active` flag is set **and** its
+operating mode (the session's own, else the global record) is still Mirror Mode
+(CV9.DS8.US4). `mirror mirror deactivate`, which `/mm-new` runs, clears the flag;
+switching to Builder, Explorer, or Soul Mode in the same session changes the mode,
+and the deltas stop. When the runtime compacts the transcript, `--forget` tells the
+doorman the folder has left it: the next ordinary turn in Mirror Mode gets the full
+folder again, and the list of memories already given starts over (CV9.DS8.US5).
 
-**Pi** does not auto-inject. The `/mm-mirror` skill calls `mirror load`
-explicitly at the start of each Mirror Mode response.
+Every block opens with one line the model reads, on every turn Mirror Mode is on,
+even when nothing follows it. It says what was delivered and carries the signature
+rule `AGENTS.md` states, `◇ persona-name`, across the conversation:
 
-**Antigravity** runs this in the `PreInvocation` hook, once per user turn: the
-adapter injects on `invocationNum == 0` and stays quiet on the later model
-calls of the same turn; Mirror Mode is activated for the session at
-`SessionStart`, so the injection fires without an explicit invocation
-(CV21.DS7.TS2, US4).
+```text
+=== mirror context delivered by the runtime for this turn: full — answer as the mirror; sign ◇ cfo ===
+```
+
+The `mm-mirror` skill loads the folder itself only when no such line arrived with
+the turn, so an explicit turn loads once (CV9.DS8.TS3).
+
+The session is the one the runtime names: `--session-id`, else `MIRROR_SESSION_ID`,
+else `CLAUDE_CODE_SESSION_ID`, else `CODEX_SESSION_ID`. The doorman never guesses
+one. On Pi, Claude Code, and Codex, a load the model runs by itself names the same
+session from its shell's environment, so the doorman takes over from the next turn
+(CV9.DS8.TS1). On Antigravity the model's own commands — a load, a mode switch —
+cannot name the session yet
+([CR169](../../../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr169-on-agy-the-model-s-own-mirror-commands-cannot-name-the-session.md)).
+
+The explicit form is read by one grammar (`ts/src/mirror/mirrorForm.ts`,
+CV21.DS2.US7) in every runtime's spelling: `/mm:mirror`, `/mirror-mind:mm-mirror`,
+`/mirror-mind:mm:mirror`, `$mirror-mind:mm:mirror`, `/mm-mirror`, and `$mm-mirror`,
+followed by whitespace or the end of the prompt.
+
+How each runtime reaches the doorman:
+
+- **Claude Code** and **Codex** run it in process from the inject hook on
+  `UserPromptSubmit` (`mirror-inject.sh` → `claude:inject`), with the payload's
+  prompt and `session_id`, and return the block as the hook's context, which both
+  read (CV9.DS8.US4).
+- **Pi** runs the command from the extension's `before_agent_start`, awaited, and
+  carries the block into the run as a `mirror-context` message; on
+  `session_compact` it runs `--forget` (CV9.DS8.US5).
+- **Antigravity** runs it in process from `PreInvocation` at `invocationNum == 0`
+  (once per user turn), with the payload's `lastUserInput` and `conversationId`, and
+  answers the block as one persistent `systemMessage` step. `SessionStart` turns
+  Mirror Mode on and sets the refresh, so a conversation's first turn gets the full
+  folder. A payload without `lastUserInput` (agy before 1.4.7) keeps the earlier
+  injection: the whole folder every turn, from `mirror load --context-only`, as an
+  `ephemeralMessage` (CV9.DS8.TS6).
+- **Grok Build** registers the inject hook, which returns at once: Grok discards
+  `UserPromptSubmit` context (CR143), so Mirror Mode there comes from the skill.
+
+What a turn costs, and where it is counted, is in
+[REFERENCE — The doorman](../../../../REFERENCE.md#the-doorman).
 
 ---
 
@@ -357,7 +501,7 @@ calls of the same turn; Mirror Mode is activated for the session at
 |-------|--------------|------------|---------------------|
 | Session start | `.claude/hooks/session-start.sh` | `claude:session-start` | `SessionStart` |
 | User prompt | `.claude/hooks/log-user-prompt.sh` | `claude:user-prompt` | `UserPromptSubmit` |
-| Mirror inject | `.claude/hooks/mirror-inject.sh` | `claude:inject` | `UserPromptSubmit` |
+| Mirror context, through the one doorman | `.claude/hooks/mirror-inject.sh` | `claude:inject` | `UserPromptSubmit` |
 | Assistant reply | `.claude/hooks/log-assistant-reply.sh` | `claude:stop` | `Stop` |
 | Session end + backup | `.claude/hooks/log-session-end.sh` | `claude:session-end` | `SessionEnd` |
 
@@ -383,9 +527,24 @@ the tree the hook runs from) as `hookSpecificOutput.additionalContext`, unless
 the project the session opened in is that same tree — the checkout, whose
 `CLAUDE.md` imports the file (US3, D13).
 
-Current external-skill surfacing path:
-- keep the installed source/runtime artifacts under `~/.mirror-minds/<user>/...`
-- explicitly project installed Claude external skills into a project-local
+Claude Code reads a project's own `AGENTS.md` by itself only when the project has no
+`CLAUDE.md`. Beside a `CLAUDE.md`, the file reaches the model only if `CLAUDE.md`
+imports it (`@AGENTS.md`). The project's files arrive in the conversation among the
+project instructions ("Contents of …/AGENTS.md (project instructions, checked into
+the codebase)"), and Mirror's Operating Instructions in the system prompt, from the
+plugin's `SessionStart` hook: both reach the model, one copy each, and Mirror claims
+no precedence between them. In this repository's checkout, the import brings the Operating
+Instructions in and the tree's hook withholds its copy, so they arrive once, 3,410
+input tokens on `claude-haiku-5-5`; without the import they would not arrive at all.
+Read from the API request blobs each session's transcript records, on Claude Code
+2.1.310, 2026-10-24 (CV21.DS11.TS3). DS12.TS1 L8 first saw the native read on 2.1.296,
+in a folder with no `CLAUDE.md`.
+
+External skills reach Claude Code at home level through the per-home extensions
+plugin, linked once into `~/.claude/skills/mirror-ext-<user>` and read in place
+([each runtime's path](#how-an-installed-extension-reaches-each-runtime)). A project
+can also carry a copy of its own:
+- project the home's installed Claude external skills into a project-local
   `.claude/skills/` surface with:
 
 ```bash
@@ -411,31 +570,62 @@ This creates project-visible skill directories such as:
 /path/to/project/.claude/skills/extensions.external.json
 ```
 
-Claude no longer relies on a repo-local `mm:review-copy` compatibility skill;
-`review-copy` should now be surfaced as an installed external Claude skill.
+#### Claude Code's login in isolated routes
+
+Claude Code keys its login to the config directory and to `HOME`. A logged-in scratch
+`CLAUDE_CONFIG_DIR` answers under the real `HOME` and "Not logged in" under a scratch
+one, and `/tmp/…` and `/private/tmp/…` are two logins. Measured on claude 2.1.296
+([CV21.DS5.TS1](../../../project/decisions.md#user-extensions-reach-every-runtime-as-a-per-home-plugin));
+CV21.DS5.US3's Claude cell relied on it on 2.1.304. A route that isolates Claude Code
+therefore keeps the real `HOME` with a logged-in scratch config directory, and that
+scratch login leaves a `Claude Code-credentials-<hash>` entry in the login keychain,
+to remove when the route is done.
 
 ### Pi
 
 | Event | Extension file | Pi trigger |
 |-------|---------------|------------|
 | Session start | `.pi/extensions/mirror-logger.ts` | `session_start` |
-| User prompt | `.pi/extensions/mirror-logger.ts` | `before_agent_start` |
-| Assistant response | `.pi/extensions/mirror-logger.ts` | `agent_end` |
+| User prompt | `.pi/extensions/mirror-logger.ts` | `input`, then `before_agent_start` |
+| Assistant response | `.pi/extensions/mirror-logger.ts` | `agent_end`, then `agent_settled` |
 | Session end + backup | `.pi/extensions/mirror-logger.ts` | `session_shutdown` |
-| Mirror load | `.pi/skills/mm-mirror/SKILL.md` | `/mm-mirror` skill invocation |
+| Mirror context, through the one doorman (`mirror doorman`, awaited) | `.pi/extensions/mirror-logger.ts` | `before_agent_start` |
+| The folder left the transcript (`mirror doorman --forget`) | `.pi/extensions/mirror-logger.ts` | `session_compact` |
+
+#### Invoking a skill on Pi
+
+Measured on Pi 1.4.0, 2026-10-22, in a scratch home
+([CR159](../../../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr159-pi-skills-are-spelled-by-their-bare-name-and-step-7a-lost-two-dashes.md)).
+Pi registers each skill as the command `/skill:<name>` and lists it in its command
+menu under that name, matched as the person types `/mm-`. Picking it sends
+`/skill:mm-<skill>`, which Pi expands into the skill's body before the model or the
+extension sees the prompt; the skill runs. A prompt that only names the skill,
+`/mm-<skill>` sent as typed, is not a Pi command: it reaches the model as text, and in
+the one turn measured the model read the skill by its name and ran it. So the docs give
+a person the `/mm-` form, which finds the skill in the menu, and give the model the
+skill's name. Since
+[CR160](../../../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr160-a-pi-skill-invoked-as-skill-is-logged-as-its-body.md)
+the extension logs what was typed, not what Pi expanded: a skill invocation, from the
+menu or typed, is not recorded, and neither is its reply; a Mirror question in either
+form (`/mm-mirror …`, `/skill:mm-mirror …`) is recorded as the question, with one
+reply. CR160's route measured both sides on Pi 1.4.0. `mirror conversations
+skill-turns` repairs what earlier versions stored.
 
 ### Antigravity
 
 | Event | Hook wrapper | Node entry | agy trigger |
 |-------|--------------|------------|-------------|
-| Session start (logging on, Mirror Mode on) | `plugins/mirror-mind/agy/session-start.sh` | `agy:session-start` | `SessionStart` |
-| Mirror inject, once per turn | `plugins/mirror-mind/agy/pre-invocation.sh` | `agy:pre-invocation` | `PreInvocation` (`invocationNum == 0`) |
+| Session start (logging on, Mirror Mode on, the first turn full) | `plugins/mirror-mind/agy/session-start.sh` | `agy:session-start` | `SessionStart` |
+| Mirror context, through the one doorman, once per user turn | `plugins/mirror-mind/agy/pre-invocation.sh` | `agy:pre-invocation` | `PreInvocation` (`invocationNum == 0`) |
 | Turn logging from the transcript | `plugins/mirror-mind/agy/stop.sh` | `agy:stop` | `Stop` |
 
 Hook files are registered in the plugin's `hooks.json`, in agy's schema, and
 staged with the plugin by `agy plugin install`. Payloads are camelCase
-protojson and carry no text: the session id is `conversationId`, and the
-`Stop` handler reads the transcript JSONL for the turn (CV21.DS7.TS3). The
+protojson, and the session id is `conversationId`. Since agy 1.4.7 every payload
+carries the turn's prompt, verbatim, as `lastUserInput` (a skill turn in its slash
+form), and `PreInvocation` hands it to the doorman (CV9.DS8.TS6); on agy 1.4.2 the
+payloads carried no text (CV21.DS12.TS3 L7). The `Stop` handler reads the transcript
+JSONL for the turn (CV21.DS7.TS3). The
 Operating Instructions reach the model as `rules/AGENTS.md`, merged into the
 active rule set. Skills are the plugin's, as `mm:*`, invoked as
 `/mirror-mind:mm:<skill>` (CV21.DS7.US4, agy 1.4.2).
@@ -448,7 +638,7 @@ active rule set. Skills are the plugin's, as `mm:*`, invoked as
 | User prompt | plugin `UserPromptSubmit` hooks | Each prompt |
 | Assistant response | plugin `Stop` hook | Each reply |
 | Session end + backup | plugin `SessionEnd` hook, with the deferred tail and the stale-orphan fallback close | Daemon reaps the idle thread |
-| Mirror load | `SessionStart` context + `$mm-mirror` skill | Explicit invocation |
+| Mirror context, through the one doorman | plugin `UserPromptSubmit` inject hook | Each prompt |
 
 Codex installs the shipped plugin from the package's marketplace
 (`codex plugin marketplace add "<pkg>"`, then
@@ -522,6 +712,14 @@ resolved as the core resolves it: `MIRROR_HOME`, else `MIRROR_USER`, from the
 environment, else from the tree's `.env` when the wrapper is in a tree, else
 from `~/.config/mirror/env`.
 
+The Pi extension is the fifth resolver (CR191): no wrapper runs it, so it
+searches the same places itself, in the same order, with the Node beside the
+tree it ships in (`<prefix>/bin/node` for a global install) in the wrappers'
+"beside the entry" position, and takes `MIRROR_NODE` as an absolute path only.
+When nothing resolves it spawns nothing, warns once in the session with the
+fix, and writes one line to `hooks.log` as `pi:session-start`. A test pins its
+candidate list to `HOOK_NODE_CANDIDATES`, as one pins the wrappers'.
+
 `runtime diagnose` reports when Node is not resolvable from its own
 environment. That environment is a terminal's, not the runtime's, so it also
 reports the failures `hooks.log` recorded in the last seven days
@@ -569,7 +767,7 @@ silent, against the runtime itself from a scratch configuration directory.
 | Pi | 1 | `pi install "<pkg>"` — a local-path package, loaded in place (D6) | the extension appends `<pkg>/AGENTS.md` to the system prompt's context files when Pi did not load it from the cwd |
 | Claude Code | 1 | `mkdir -p ~/.claude/skills && ln -s "<pkg>/plugins/mirror-mind" ~/.claude/skills/mirror-mind` — a skills-directory plugin, loaded every session with its skills, hooks, and MCP server (`claude plugin list`, 2.1.283) | the plugin's `SessionStart` hook, as `additionalContext` |
 | Codex | 2 | `codex plugin marketplace add "<pkg>"` (the package root carries `.agents/plugins/marketplace.json`, one local plugin), then `codex plugin add mirror-mind@mirror-mind`, which copies the plugin into Codex's cache at the plugin's version; Codex asks once to trust its hooks (0.162.1, CV21.DS12.TS2 static 5-7 and L1; CV21.DS4.US1). The pre-plugin wiring (a skills link, an `AGENTS.md` link, and a wrapper script around each session) was removed by DS4.TS5 | the plugin's `SessionStart` hook, delivered as a developer message (TS2 L4) |
-| Antigravity | 1 | `agy plugin install "<pkg>/plugins/mirror-mind"` — agy treats the directory as a native plugin (the root `plugin.json` marker; probed on agy 1.4.2, CV21.DS7.US1) and stages the 25 skills, the agy-schema `hooks.json`, `mcp_config.json`, and `rules/AGENTS.md` under `~/.gemini/config/plugins/`. Per-turn injection and logging from the transcript landed with DS7.TS2/TS3; measured at L4 in DS7.US4 | `rules/AGENTS.md`, merged into the active rule set |
+| Antigravity | 1 | `agy plugin install "<pkg>/plugins/mirror-mind"` — agy treats the directory as a native plugin (the root `plugin.json` marker; probed on agy 1.4.2, CV21.DS7.US1) and stages the 25 skills, the agy-schema `hooks.json`, `mcp_config.json`, and `rules/AGENTS.md` under `~/.gemini/config/plugins/`. Per-turn injection and logging from the transcript landed with DS7.TS2/TS3; measured at L4 in DS7.US4. The staged copy is agy's own: an update leaves it at the version it was installed at, and the same command again replaces it, so a copy behind the install is `agy_plugin_copy_behind` in `runtime diagnose`, and `runtime update` names the command after an update lands (agy 1.4.7, 2026-10-24, CV21.DS11.TS4) | `rules/AGENTS.md`, merged into the active rule set |
 | Grok Build | 2 | `grok plugin install "<pkg>/plugins/mirror-mind" --trust`, then `ln -s "<pkg>/AGENTS.md" ~/.grok/rules/mirror-mind.md` (grok 1.0.62, CV21.DS10.US1). The install copies the plugin to `~/.grok/installed-plugins/<name>-<hash of the path string>/` and writes `[plugins] enabled` to `~/.grok/config.toml`; `--trust` activates its hooks and MCP server with no prompt left. Grok reads the root `plugin.json` marker first and alone, so the marker carries the manifest's `version` and `mcpServers` (without them Grok listed neither). `grok plugin update` is a no-op for a local-path copy, an install over the same path is refused, and a differently spelt path installs a second copy: the level-up is uninstall, then install with the printed path, which `runtime diagnose` and `runtime update` name. Not chosen: the Claude link alone (skills, no hooks, no MCP) and a link in `~/.grok/plugins/` (loads nothing until `[plugins] enabled` is hand-written). The server attaches to the session (CV21.DS10.TS2, headless on 1.0.62): `grok mcp doctor` handshakes with 7 tools, and the model reaches them as `mirror-mind__<tool>` through Grok's `search_tool`/`use_tool` meta-tools — `use_tool mirror-mind__list_journeys` answered. The `init` snapshot and the session-start `mcp_server_count` are taken before the handshake completes (`pending`), which is what DS12.TS4 L6 read as non-attachment | the home-level rule, loaded in every project as `global`, ~2,233 tokens by Grok's count. The plugin's SessionStart hook delivers them as `additionalContext` on Claude Code and Codex; Grok shows a SessionStart `systemMessage` on screen only (DS12.TS4 L2) |
 
 Inside the checkout none of this applies: Pi discovers `.pi/` as project
@@ -593,6 +791,12 @@ Runtime-facing materialization happens separately under:
 ```text
 ~/.mirror-minds/<user>/runtime/skills/<runtime>/
 ```
+
+`mirror extensions install` writes one such root for every key of the manifest's
+`runtimes:` map. Two are read: `pi`, by Pi's extension at session start, and `claude`,
+by the per-home plugin generator, which carries it to Claude Code, Codex, Antigravity,
+and Grok Build ([below](#the-per-home-extensions-plugin-claude-code-codex-antigravity-grok-build)).
+A root for any other key is validated and written, and no runtime reads it.
 
 For prompt-skills, the materialized shape is:
 
@@ -670,17 +874,15 @@ generated plugin per Mirror home**, in the canonical plugin's format
   extension added, changed, or removed) and held when it does not. Codex keys its
   cache by it; `runtime diagnose` compares it, and for this plugin a copy at any
   other version is stale.
-- **Wiring, once per runtime** (printed by the `extensions` verbs for a runtime on the
-  `PATH` that has not taken the plugin; `mirror init` prints none, there is no plugin
-  at init): Claude Code `ln -s "<dir>" ~/.claude/skills/mirror-ext-<user>` (a link,
-  read in place); Codex `codex plugin marketplace add "<home>/runtime/plugin"` then
-  `codex plugin add mirror-ext-<user>@mirror-ext-<user>`; Antigravity `agy plugin
-  install "<dir>"`; Grok Build `grok plugin install "<dir>" --trust` (skills only:
-  nothing for `--trust` to activate).
-- **After a change**, the three runtimes that copy a plugin hold a stale copy until one
-  command each: Codex `codex plugin add …` again, Antigravity `agy plugin install …`
-  again, Grok `grok plugin uninstall mirror-ext-<user> --confirm && grok plugin install
-  …`. The `extensions` verbs print the one a runtime needs; `runtime diagnose` raises
+- **Wiring, once per runtime**: one step for each runtime on the `PATH` that has not
+  taken the plugin, printed by the `extensions` verbs (`mirror init` prints none: there
+  is no plugin at init). Claude Code reads the plugin in place through a link; Grok
+  Build's `--trust` has nothing to activate, since the plugin carries skills only. The
+  steps are in [the table below](#how-an-installed-extension-reaches-each-runtime).
+- **After a change**, the three runtimes that copy a plugin, Codex, Antigravity, and
+  Grok Build, hold a stale copy until their reinstall, one command each
+  ([the table below](#how-an-installed-extension-reaches-each-runtime)). The
+  `extensions` verbs print the one a runtime needs; `runtime diagnose` raises
   `ext_plugin_codex_cache_stale`, `ext_plugin_agy_copy_stale`,
   `ext_plugin_grok_copy_stale`, `ext_plugin_claude_link_dangling`, and
   `ext_plugin_grok_copies_duplicated`, each with the command as its repair route.
@@ -689,6 +891,40 @@ generated plugin per Mirror home**, in the canonical plugin's format
   when the home has one.
 
 Pi keeps its catalog path below; the plugin does not change it.
+
+### How an installed extension reaches each runtime
+
+How each of the five runtimes takes a home's installed extension (CV21.DS5). The
+wiring step is the one `mirror extensions install` prints for a runtime on the `PATH`
+that has not taken the plugin; `<home>` is the Mirror home and `<user>` its user.
+The invocations were measured live by
+[CV21.DS5.US3](../../../project/roadmap/cv21-runtime-expansion-ii/cv21-ds5-user-extensions-on-every-runtime/cv21-ds5-us3-review-copy-runs-on-every-runtime-measured-live/test-guide.md)
+with `review-copy` and a `command-skill`, from the registry's `mirror-mind@0.36.0`.
+
+| Runtime | What reads the extension | Wire once | After a change | You type |
+|---|---|---|---|---|
+| Pi | `runtime/skills/pi/extensions.json`, at session start ([below](#pi-runtime-consumption-prep)) | nothing beyond the package's own `pi install` | nothing: the next session reads the catalog | `/ext-review-copy`, which Pi's menu lists as `skill:ext-review-copy`, as it lists every skill ([on Pi](#invoking-a-skill-on-pi)) |
+| Claude Code | the plugin, through a link read in place | `mkdir -p ~/.claude/skills && ln -s "<home>/runtime/plugin/mirror-ext-<user>" ~/.claude/skills/mirror-ext-<user>` | nothing: read in place | `/ext-review-copy` |
+| Codex | a copy of the plugin, cached by its version | `codex plugin marketplace add "<home>/runtime/plugin"`, then `codex plugin add mirror-ext-<user>@mirror-ext-<user>` | `codex plugin add mirror-ext-<user>@mirror-ext-<user>` again | `$mirror-ext-<user>:ext-review-copy` |
+| Antigravity | a copy, staged under `~/.gemini/config/plugins/mirror-ext-<user>/` | `agy plugin install "<home>/runtime/plugin/mirror-ext-<user>"` | the same command again | `/mirror-ext-<user>:ext-review-copy` |
+| Grok Build | a copy of the plugin | `grok plugin install "<home>/runtime/plugin/mirror-ext-<user>" --trust` | `grok plugin uninstall mirror-ext-<user> --confirm && grok plugin install "<home>/runtime/plugin/mirror-ext-<user>" --trust` | `/ext-review-copy` |
+
+Measured on claude 2.1.304 (`~/.local/share/claude/versions/2.1.304`), codex 0.163.0
+(`/opt/homebrew/Caskroom/codex/0.163.0/bin/codex`), agy 1.4.3 (`~/.local/bin/agy`), and
+grok 1.0.62 (`~/.grok/downloads/grok-1.0.62-macos-aarch64`), on 2026-10-20. A
+`command-skill`'s subcommands are the same `mirror ext <id> <subcommand>` on every
+runtime: the authoring guide's `hello` pinged from each, as `/ext-hello`,
+`$mirror-ext-<user>:ext-hello`, and `/mirror-ext-<user>:ext-hello`. On the four plugin
+runtimes a skill invocation is a command turn, which the logger does not record as a
+conversation (by design, CV21.DS4.TS3). Under `codex exec`, the plugin's hooks log the
+prompt only
+([CR152](../../../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr152-under-codex-exec-the-plugin-s-stop-and-session-end-hooks-never-reach-mirror.md),
+open).
+
+**When a skill is not listed.** A runtime that was never wired is not drift, and
+`runtime diagnose` does not report it: run the step the install printed for that
+runtime, and run the install again to see it again. After a change, `runtime diagnose`
+names the reinstall a copying runtime still needs, and a link whose target is gone.
 
 ### Pi runtime consumption prep
 
@@ -782,11 +1018,15 @@ Every command runs through the front door. From the repository root, with the
 
 ```
 mirror conversation-logger session-start
-mirror conversation-logger log-user <session_id> <prompt> --interface <name>
-mirror conversation-logger log-assistant <session_id> <content> --interface <name>
+mirror conversation-logger user-prompt --interface <name>   # payload on stdin, or --payload <json>
+mirror conversation-logger stop --interface <name>          # likewise
+mirror conversation-logger log-user <session_id> <prompt> --interface <name>        # one more release (CR160)
+mirror conversation-logger log-assistant <session_id> <content> --interface <name>  # one more release (CR160)
 mirror conversation-logger session-end          # reads JSON from stdin
 mirror conversation-logger session-end-pi <id>  # explicit session id, deferred extraction
 mirror mirror load --context-only --query <q> [--persona <p>] [--journey <j>] [--org] [--session-id <id>]
+mirror mirror doorman --prompt <p> [--session-id <id>]   # the one doorman: the block, or nothing
+mirror mirror doorman --forget [--session-id <id>]       # the runtime compacted the transcript
 mirror backup --silent
 ```
 
@@ -872,15 +1112,15 @@ at session end. If yes, `session-end` gives better extraction timing. If no,
 
 | Model | Mechanism | Runtimes | UX |
 |---|---|---|---|
-| Automatic per-turn | `PreInvocation` injection on `invocationNum == 0` | Antigravity | Best UX — no user action; latency cost on every turn |
-| Hook-conditional | `UserPromptSubmit` inject when mirror state active | Claude Code | Zero cost when inactive; requires mirror state check |
-| Explicit invocation | User types `/mm-mirror` or `$mm-mirror` | Pi, Codex | Zero runtime cost; requires user awareness |
-| Explicit invocation, the hook inert | The `UserPromptSubmit` inject hook is registered but returns at once: Grok discards prompt context (`runtimeReadsPromptContext`, CR143) | Grok Build | As Pi's; the Operating Instructions arrive as a home-level rule, not per turn |
+| The one doorman | An event that runs before the model answers hands the turn's prompt and session to the doorman and carries its block: the inject hook on `UserPromptSubmit`, as the hook's context (Claude Code and Codex, CV9.DS8.US4); the extension's `before_agent_start`, as a `mirror-context` message (Pi, US5); `PreInvocation` at `invocationNum == 0`, as a persistent `systemMessage` step (Antigravity, TS6) | Pi, Claude Code, Codex, Antigravity | The full folder on the turn Mirror Mode starts, then the persona and memories each question calls for, with no further action; no model call outside Mirror Mode |
+| Explicit invocation, the hook inert | The `UserPromptSubmit` inject hook is registered but returns at once: Grok discards prompt context (`runtimeReadsPromptContext`, CR143) | Grok Build | No runtime cost; the model loads Mirror's context itself through `/mm-mirror`, and the Operating Instructions arrive as a home-level rule, not per turn |
 
-For new shell-hook runtimes with a `BeforeAgent`-equivalent hook: use the
-automatic per-turn model. Call `mirror load --context-only` and return the
-identity block as the hook's context-injection field. Condition on mirror state
-to avoid the cost when Mirror Mode is not active.
+For a new runtime with an event that runs before the model answers and can carry
+context: hand the doorman the turn's prompt and the runtime's session id
+(`mirror mirror doorman --prompt <p> --session-id <id>`, or in process from a hook
+that runs the core) and give the model whatever it prints. Do not check Mirror Mode
+in the adapter: the doorman reads the session and prints nothing when Mirror Mode is
+off. If the runtime compacts its transcript, run `--forget` when it does.
 
 ---
 
@@ -906,6 +1146,9 @@ Standard smoke test structure:
 3. Simulate each lifecycle hook with a representative payload
 4. Inspect the isolated DB: verify `interface='<runtime>'` rows and message content
 5. Confirm production DB checksum unchanged after the test
+
+Claude Code's login does not follow a scratch `HOME`; see
+[Claude Code's login in isolated routes](#claude-codes-login-in-isolated-routes).
 
 References: `scripts/smoke_claude_plugin.sh`, `scripts/smoke_mirror_mcp.sh`
 

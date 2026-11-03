@@ -1,18 +1,24 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import { openDatabaseCopyForWrite } from "#db/database.ts";
 import { createIdentityTable } from "#helpers/identitySchema.ts";
 import { createRuntimeTables } from "#helpers/runtimeSchema.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 import { deactivateMirrorState, logMirrorResponse, runMirrorLoad } from "#mirror/orchestration.ts";
 
 const golden = JSON.parse(
   readFileSync(new URL("../goldens/mirror-state.golden.json", import.meta.url), "utf8"),
 ) as { sessions: unknown[]; conversations: unknown[]; messages: unknown[] };
 
+// The golden was normalized from the Python core's rows. One deliberate
+// departure since: a Mirror load stamps the NAMED session's own operating-mode
+// metadata as well as the global row (CV9.DS8.US4), so the doorman's
+// session-first mode read sees Mirror Mode again after `build load` stamped the
+// same session Builder. Python never wrote that key on the session.
 test("TS Mirror load/log/deactivate state reproduces the normalized Python oracle", async () => {
-  const dir = mkdtempSync("/tmp/mirror-state-golden-");
+  const dir = tempDir("mirror-state-golden-");
   const db = openDatabaseCopyForWrite(join(dir, "copy.db"));
   createIdentityTable(db);
   createRuntimeTables(db);
@@ -62,7 +68,7 @@ test("TS Mirror load/log/deactivate state reproduces the normalized Python oracl
   const sessionRows = db
     .prepare(
       `SELECT session_id,conversation_id,interface,mirror_active,persona,journey,
-              hook_injected,active,closed_at,metadata
+              active,closed_at,metadata
        FROM runtime_sessions
        WHERE session_id IN ('state-session','__global_operating_mode__','__global_sticky_defaults__')
        ORDER BY session_id`,
@@ -80,7 +86,6 @@ test("TS Mirror load/log/deactivate state reproduces the normalized Python oracl
     mirror_active: row.mirror_active,
     persona: row.persona,
     journey: row.journey,
-    hook_injected: row.hook_injected,
     active: row.active,
     closed_at: row.closed_at,
     metadata: normalizeMetadata(row.metadata),

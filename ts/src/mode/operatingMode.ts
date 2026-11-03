@@ -36,18 +36,36 @@ export function modeLabel(state: OperatingModeState): string {
 export interface OperatingModeState {
   mode: string;
   journey: string | null;
+  /**
+   * Present, and true, only on a session's stamp written under the session's
+   * NAME (`--session-id` or the harness's variable), never on a guessed one
+   * or the global row (CR008 option B, landed by CV9.DS8.US5). A lifecycle
+   * command binds a journey from a named session's Builder stamp only when
+   * this is set: `build load` with no name still stamps a guessed session,
+   * so another window's load can land on this one's row.
+   */
+  namedSession?: true;
 }
 
 export function activateOperatingMode(
   db: WritableDatabase,
-  input: { mode: string; journey?: string | null; sessionId?: string | null },
+  input: { mode: string; journey?: string | null; sessionId?: string | null; named?: boolean },
   nowIso: string,
 ): OperatingModeState {
   const mode = input.mode.trim();
   if (!mode) throw new Error("mode must not be empty");
   const journey = input.journey?.trim() || null;
-  const state = { mode, journey };
-  const payload = { active_mode: mode, active_journey: journey };
+  const named = Boolean(input.sessionId) && input.named === true;
+  const state: OperatingModeState = named
+    ? { mode, journey, namedSession: true }
+    : { mode, journey };
+  // The key only when true: an unnamed stamp's bytes are what they were
+  // (`operating-mode-metadata.golden.json`).
+  const payload = {
+    active_mode: mode,
+    active_journey: journey,
+    ...(named ? { named_session: true } : {}),
+  };
   if (input.sessionId) {
     const session = getRuntimeSession(db, input.sessionId);
     const metadata = decodeMetadata(session?.metadata ?? null);
@@ -133,7 +151,7 @@ function stateFromPayload(payload: unknown): OperatingModeState | null {
     typeof record.active_journey === "string" && record.active_journey.trim()
       ? record.active_journey.trim()
       : null;
-  return { mode, journey };
+  return record.named_session === true ? { mode, journey, namedSession: true } : { mode, journey };
 }
 
 export function renderModeActivation(state: OperatingModeState): string {

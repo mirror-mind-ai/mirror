@@ -36,6 +36,24 @@ function subcommandOf(args: readonly string[]): string {
 const readStdin = takeStdin;
 
 /**
+ * `--payload <json>`: a hook subcommand's payload in argv rather than on stdin
+ * (CR160). Pi's extension reaches the core through `pi.exec`, which cannot write
+ * a child's stdin, and since CR160 it sends Pi's turns to `user-prompt` and
+ * `stop`. Pi's prompt has travelled in argv since CV9, as `log-user`'s argument,
+ * so this is the exposure Pi always had, no wider (`stdinSource.ts`). The option
+ * is taken out of argv before the subcommand sees it, and a route given one
+ * never reads fd 0: a stdin pipe nobody closes cannot hang it.
+ */
+function takePayloadOption(args: readonly string[]): { payload: string | null; rest: string[] } {
+  const index = args.indexOf("--payload");
+  if (index === -1 || index + 1 >= args.length) return { payload: null, rest: [...args] };
+  return {
+    payload: args[index + 1] as string,
+    rest: [...args.slice(0, index), ...args.slice(index + 2)],
+  };
+}
+
+/**
  * Where the route's lines go. The default is the process's own streams; the
  * `session-start --welcome` composite (CV9.E2.S32) captures them instead, so
  * the logger's stdout can travel inside one JSON envelope.
@@ -51,7 +69,7 @@ export async function runConversationLoggerRoute(
   argv: readonly string[],
   io: ConversationLoggerRouteIo = {},
 ): Promise<number> {
-  const args = argv.slice(1);
+  const { payload, rest: args } = takePayloadOption(argv.slice(1));
   const subcommand = subcommandOf(args);
   const runtime = createLoggerRuntime({
     db,
@@ -73,7 +91,7 @@ export async function runConversationLoggerRoute(
       }),
   });
   const result = await runConversationLoggerCommand(db, args, runtime, {
-    stdin: STDIN_SUBCOMMANDS.has(subcommand) ? readStdin() : undefined,
+    stdin: STDIN_SUBCOMMANDS.has(subcommand) ? (payload ?? readStdin()) : undefined,
   });
   const out = io.stdout ?? ((line: string) => process.stdout.write(`${line}\n`));
   const err = io.stderr ?? ((line: string) => process.stderr.write(`${line}\n`));

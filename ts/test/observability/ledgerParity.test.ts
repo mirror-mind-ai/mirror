@@ -22,6 +22,7 @@ import {
 import { createIdentityTable } from "#helpers/identitySchema.ts";
 import { createLlmCallsTable, ledgerRows } from "#helpers/llmCallsSchema.ts";
 import { createRuntimeTables } from "#helpers/runtimeSchema.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 import { upsertIdentity } from "#identity/identityStore.ts";
 import { chatLedgerHook, embeddingLedgerHook } from "#observability/ledgerHooks.ts";
 import { EMBEDDING_DIMENSIONS, type EmbeddingProvider } from "#providers/embedding.ts";
@@ -439,7 +440,7 @@ test("week plan logs its week_plan row", async () => {
         "CREATE TABLE tasks (id TEXT PRIMARY KEY, title TEXT, status TEXT, journey TEXT, " +
         "due_date TEXT, created_at TEXT, updated_at TEXT, metadata TEXT);",
     );
-    const pendingPath = join(mkdtempSync(join(tmpdir(), "mirror-core-week-")), "pending.json");
+    const pendingPath = join(tempDir("mirror-core-week-"), "pending.json");
 
     const { exitCode } = await captured(() =>
       runWeekPlanRoute(

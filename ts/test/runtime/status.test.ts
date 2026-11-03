@@ -22,6 +22,7 @@ import { DatabaseSync } from "node:sqlite";
 import test from "node:test";
 import { KNOWN_MIGRATION_IDS } from "#db/schemaState.ts";
 import { checksum } from "#extensions/migrations.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 import {
   buildRuntimeStatus,
   detectNodeVersion,
@@ -43,7 +44,7 @@ interface Golden {
   meta: {
     fixture_version: string;
     python_migration_ids: string[];
-    ts_authored_migration_id: string;
+    ts_authored_migration_ids: string[];
     checksums: { canonical: string; reformatted: string; bom: string };
   };
   scenarios: Record<string, Scenario>;
@@ -51,12 +52,13 @@ interface Golden {
 
 const golden: Golden = JSON.parse(readFileSync(GOLDEN_PATH, "utf8"));
 const PYTHON_IDS = golden.meta.python_migration_ids;
-const TS_AUTHORED_ID = golden.meta.ts_authored_migration_id;
+const TS_AUTHORED_IDS = golden.meta.ts_authored_migration_ids;
 // A CURRENT database since CV22.DS10.TS5 (F19): every migration this core
 // knows. Until then the "current" fixtures stopped at the oracle's sixteen and
 // the status grader counted only those, to keep matching a recorded Python
-// answer. With one custodian there is one honest denominator.
-const CURRENT_IDS = [...PYTHON_IDS, TS_AUTHORED_ID];
+// answer. With one custodian there is one honest denominator: eighteen since
+// CV9.DS8.US5's 018.
+const CURRENT_IDS = [...PYTHON_IDS, ...TS_AUTHORED_IDS];
 
 const MIGRATION_SQL =
   "CREATE TABLE IF NOT EXISTS ext_demo_widget_notes (id INTEGER PRIMARY KEY);\n";
@@ -180,7 +182,7 @@ interface Fixture {
 function fixture(): Fixture {
   // realpath: on macOS /tmp is a symlink to /private/tmp, and both cores
   // resolve the mirror home, so the placeholder must match the resolved form.
-  const root = realpathSync(mkdtempSync("/tmp/runtime-status-"));
+  const root = tempDir("runtime-status-");
   const homes = new Map<string, string>();
 
   const repo = join(root, "repo");
@@ -206,8 +208,10 @@ function fixture(): Fixture {
   createDatabase(join(current, "memory.db"), PYTHON_IDS);
   homes.set("python_current", current);
 
+  // The oracle's scenario: a database the TypeScript core had migrated past the
+  // oracle's sixteen -- every TS-authored migration applied, 017 at the time.
   current = home("home-ts-migrated");
-  createDatabase(join(current, "memory.db"), [...PYTHON_IDS, TS_AUTHORED_ID]);
+  createDatabase(join(current, "memory.db"), [...PYTHON_IDS, ...TS_AUTHORED_IDS]);
   homes.set("ts_migrated", current);
 
   current = home("home-migrations-missing");
@@ -391,8 +395,9 @@ test("a TS-migrated database is clean here and a false alarm to the oracle", () 
     );
     assert.equal(oracle.status, "attention needed");
 
-    // TypeScript owns the schema since DS6, so 017 is known, not unknown.
-    assert.match(actual.render, /Core migrations: current \(17\/17\)/);
+    // TypeScript owns the schema since DS6, so 017 is known, not unknown --
+    // and the fixture carries every TS-authored migration since.
+    assert.match(actual.render, /Core migrations: current \(18\/18\)/);
     assert.equal(actual.verdict, "ready");
 
     // The divergence must be EXACTLY those two lines. Every other line of the
@@ -401,7 +406,7 @@ test("a TS-migrated database is clean here and a false alarm to the oracle", () 
     const expected = oracle.render
       .replace(
         "Core migrations: attention needed (16/16 applied; unknown 017_journey_parent_column)",
-        "Core migrations: current (17/17)",
+        "Core migrations: current (18/18)",
       )
       .replace("Status: attention needed", "Status: ready");
     assert.equal(actual.render, expected);
@@ -421,7 +426,7 @@ test("F19: a database missing 017 is told so, and names it", () => {
     const actual = renderScenario(f, f.homes.get("python_current") as string);
     assert.match(
       actual.render,
-      /Core migrations: attention needed \(16\/17 applied; missing 017_journey_parent_column\)/,
+      /Core migrations: attention needed \(16\/18 applied; missing 017_journey_parent_column, 018_drop_hook_injected\)/,
     );
     assert.equal(actual.verdict, "attention needed");
   } finally {
@@ -466,7 +471,7 @@ test("D1: the malformed-manifest note matches the oracle up to the parser's own 
   }
 });
 
-test("an unconfigured mirror home reports the oracle's sentence", () => {
+test("an unconfigured mirror home reports the not-configured sentence (CR185)", () => {
   const f = fixture();
   try {
     const report = buildRuntimeStatus({
@@ -475,6 +480,9 @@ test("an unconfigured mirror home reports the oracle's sentence", () => {
       version: golden.meta.fixture_version,
       nodeVersion: "<node-version>",
       install: { kind: "clone", repository: f.repo },
+      // The sentence names what is found under the OS home: an empty one here,
+      // never the developer's own homes.
+      osHome: join(f.root, "os-home"),
     });
     const render = renderRuntimeStatus(report, ENV).replaceAll(f.root, "<root>");
     assert.equal(render, (golden.scenarios.home_not_configured as Scenario).render);
@@ -620,4 +628,85 @@ test("CV21.DS5.US2: status names the home's extensions plugin only when the home
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
+});
+
+test("CV9.DS9.TS1/US3: the models line shows the effort the calls send, and where it came from", () => {
+  const root = mkdtempSync(join(tmpdir(), "status-reasoning-"));
+  try {
+    const home = join(root, "ana");
+    mkdirSync(home, { recursive: true });
+    const report = buildRuntimeStatus({
+      start: root,
+      mirrorHome: home,
+      env: {} as NodeJS.ProcessEnv,
+      version: "0.0.0",
+      nodeVersion: "<node-version>",
+      install: { kind: "clone", repository: root },
+    });
+    const modelsLine = (env: Record<string, string>) =>
+      renderRuntimeStatus(report, env as NodeJS.ProcessEnv)
+        .split("\n")
+        .find((line) => line.startsWith("Models: "));
+
+    // Unset: the default pin and its model default (US3); byte for byte the line
+    // every frozen status scenario records.
+    assert.equal(
+      modelsLine({}),
+      "Models: extraction=anthropic/claude-haiku-5.5, reasoning=none (model default), embedding=openai/text-embedding-3-small",
+    );
+    assert.equal(
+      modelsLine({ MEMORY_EXTRACTION_REASONING: "low" }),
+      "Models: extraction=anthropic/claude-haiku-5.5, reasoning=low, embedding=openai/text-embedding-3-small",
+    );
+    // Invalid: shown, not thrown. The calls send the model default meanwhile.
+    assert.equal(
+      modelsLine({ MEMORY_EXTRACTION_REASONING: "off" }),
+      "Models: extraction=anthropic/claude-haiku-5.5, reasoning=none (model default, invalid setting: off), embedding=openai/text-embedding-3-small",
+    );
+    // The rollback pin: the request it was measured with, so no clause (TS1's line).
+    assert.equal(
+      modelsLine({ MEMORY_EXTRACTION_MODEL: "google/gemini-2.5-flash-lite" }),
+      "Models: extraction=google/gemini-2.5-flash-lite, embedding=openai/text-embedding-3-small",
+    );
+    assert.equal(
+      modelsLine({
+        MEMORY_EXTRACTION_MODEL: "google/gemini-2.5-flash-lite",
+        MEMORY_EXTRACTION_REASONING: "off",
+      }),
+      "Models: extraction=google/gemini-2.5-flash-lite, reasoning=invalid (off), embedding=openai/text-embedding-3-small",
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("CR187: status says whether a key is configured, right after the models it would call, never the key", () => {
+  const root = tempDir("status-openrouter-key-");
+  const home = join(root, "ana");
+  mkdirSync(home, { recursive: true });
+  const report = buildRuntimeStatus({
+    start: root,
+    mirrorHome: home,
+    env: {} as NodeJS.ProcessEnv,
+    version: "0.0.0",
+    nodeVersion: "<node-version>",
+    install: { kind: "clone", repository: root },
+  });
+  const render = (env: Record<string, string>) =>
+    renderRuntimeStatus(report, env as NodeJS.ProcessEnv).split("\n");
+  const keyLine = (env: Record<string, string>) => {
+    const lines = render(env);
+    const at = lines.findIndex((line) => line.startsWith("OpenRouter key: "));
+    assert.ok(lines[at - 1]?.startsWith("Models: "), "after the models line");
+    return lines[at];
+  };
+
+  assert.equal(keyLine({}), "OpenRouter key: not configured");
+  // Spaces only is no key, as the provider and the refusals read it.
+  assert.equal(keyLine({ OPENROUTER_API_KEY: "   " }), "OpenRouter key: not configured");
+  assert.equal(keyLine({ OPENROUTER_API_KEY: "sk-or-canary-7f3a" }), "OpenRouter key: configured");
+  assert.ok(!render({ OPENROUTER_API_KEY: "sk-or-canary-7f3a" }).join("\n").includes("canary"));
+  // The verdict does not move: the update gate reads it, and a keyless install
+  // must still be able to update.
+  assert.equal(render({}).at(-2), render({ OPENROUTER_API_KEY: "sk-or-canary-7f3a" }).at(-2));
 });

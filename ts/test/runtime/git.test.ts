@@ -9,10 +9,11 @@
 
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import { assertNamesNoInterpreter } from "#helpers/noInterpreter.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 import {
   checkUpdateAvailability,
   inspectCloneRole,
@@ -73,7 +74,7 @@ function git(cwd: string, ...args: string[]): string {
 function fixture(): { root: string; clone: string; seed: string; cleanup: () => void } {
   // realpath: on macOS /tmp is a symlink to /private/tmp, and both cores
   // resolve the repository path, so the placeholder must match the resolved form.
-  const root = realpathSync(mkdtempSync("/tmp/runtime-git-"));
+  const root = tempDir("runtime-git-");
   const seed = join(root, "seed");
   const remote = join(root, "remote.git");
   const clone = join(root, "clone");
@@ -261,9 +262,10 @@ test("every git invocation in the module is a read", () => {
   // release machinery are DS10's, and nothing here may grow a write path. The
   // check reads the verbs actually passed to `runGit`, not tokens anywhere in
   // the file — `branch --show-current` is a read and must not trip it, while a
-  // future `["branch", name]` must.
+  // future `["branch", name]` must. A command made through an injected runner,
+  // named `git` by convention (CR186), is graded the same way.
   const source = readFileSync(new URL("../../src/runtime/git.ts", import.meta.url), "utf8");
-  const invocations = [...source.matchAll(/runGit\(\s*\[([^\]]*)\]/g)].map((match) =>
+  const invocations = [...source.matchAll(/\b(?:runGit|git)\(\s*\[([^\]]*)\]/g)].map((match) =>
     (match[1] as string)
       .split(",")
       .map((token) => token.trim().replace(/^["'`]|["'`]$/g, ""))

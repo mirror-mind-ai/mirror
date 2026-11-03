@@ -115,6 +115,12 @@ This does three things:
   this install — the same steps as [section 6](#6-wire-your-runtime) below,
   with the install's path already filled in.
 
+If `~/.mirror-minds/your-name/` already exists — a home from a clone, or from an
+earlier install — `init` uses it as it is. It changes nothing in the home, writes
+the configuration if no user is selected yet, and prints only the steps still
+left. A Mirror command that finds no home configured says the same: it names the
+homes under `~/.mirror-minds` and the `mirror init` line that selects one.
+
 Your identity starts generic and sharpens through use. When something feels off,
 refine it at your own pace:
 
@@ -186,7 +192,7 @@ with `<pkg>` already filled in; `<pkg>` is `$(npm root -g)/mirror-mind`.
 | **Pi** | `pi install "<pkg>"` — Pi loads the package in place, so `npm install -g` upgrades it too |
 | **Claude Code** | `mkdir -p ~/.claude/skills && ln -s "<pkg>/plugins/mirror-mind" ~/.claude/skills/mirror-mind` — the plugin loads every session: its skills, its hooks, and the MCP server |
 | **Codex** | 1. `codex plugin marketplace add "<pkg>"` 2. `codex plugin add mirror-mind@mirror-mind` — the package is a marketplace with one plugin, the same one Claude Code loads; at the next session Codex asks once to trust its hooks, and from then on the plugin loads every session: its skills, its hooks, and the MCP server |
-| **Antigravity** | `agy plugin install "<pkg>/plugins/mirror-mind"` — one command stages the 25 skills and the plugin's agy-native layer (its rules, hooks file, and MCP entry): the skills, the Operating Instructions as rules, Mirror Mode context injected once per user turn, and each turn logged as `antigravity` from the transcript (CV21.DS7). agy has no session-end signal, so a conversation closes when your next session starts, like Codex's |
+| **Antigravity** | `agy plugin install "<pkg>/plugins/mirror-mind"` — one command stages the 25 skills and the plugin's agy-native layer (its rules, hooks file, and MCP entry): the skills, the Operating Instructions as rules, Mirror Mode from the first turn of every conversation (CV9.DS8.TS6), and each turn logged as `antigravity` from the transcript (CV21.DS7). agy has no session-end signal, so a conversation closes when your next session starts, like Codex's |
 | **Grok Build** | 1. `grok plugin install "<pkg>/plugins/mirror-mind" --trust` 2. `ln -s "<pkg>/AGENTS.md" ~/.grok/rules/mirror-mind.md` — the first copies the plugin under `~/.grok/installed-plugins/` and enables it: its skills, its hooks, and the MCP server; `--trust` activates the hooks and the server, and Grok does not ask again. The second loads the Operating Instructions as a rule in every Grok session, in every project, about 2.2k tokens each (Grok shows a session-start hook's context on screen only, so the plugin cannot deliver them the way it does on Claude Code and Codex). Grok keeps a copy, so after an update `mirror runtime diagnose` names the command that brings it level — `grok plugin update` leaves a local copy as it is. If you also wired Claude Code, Grok already read the skills from that link, with no hooks; after step 1 each skill appears twice in Grok's menu, and the hooks run once (measured on grok 1.0.62, CV21.DS10.US1). The MCP server attaches to every session; Grok's model reaches its seven tools through its `search_tool` and `use_tool` meta-tools, as `mirror-mind__list_journeys`, the way Codex's does through `tool_search` (CV21.DS10.TS2) |
 
 Each step was verified against the runtime's own documentation, or the runtime
@@ -222,7 +228,8 @@ Open your runtime **in any directory** — there is no project to be inside of.
 pi
 ```
 
-Then use mirror commands:
+Then use mirror commands. Typing `/mm-` opens Pi's command menu, which lists each one
+as `skill:mm-<name>`: pick it there.
 
 ```text
 /mm-mirror
@@ -234,9 +241,12 @@ Then use mirror commands:
 
 Pi is the preferred harness because it makes Mirror Mind effectively multi-model.
 
-If you used Pi before installing Mirror, your earlier sessions stay where they are:
-Mirror remembers what happens from the moment your home exists, and imports no Pi
-conversation that ended before it.
+Mirror records a Pi session as it happens, in the home that session runs against. It
+never imports Pi sessions afterwards: not your history from before Mirror, not
+sessions you run without it, and not another home's. A skill you invoke, from the
+menu or typed, is not recorded as something you said, and neither is its answer; a
+question you ask with `/mm-mirror` is. An earlier version stored skills picked from
+the menu as your words: `mirror conversations skill-turns` shows them and repairs them.
 
 
 ### Codex
@@ -290,6 +300,12 @@ A plugin's skills carry the plugin's name. Type `/mm` and the menu lists them:
 project resources, the same commands are `/mm:mirror`, `/mm:journeys`, and
 so on.)
 
+If your project has its own `AGENTS.md`, Claude Code reads it only when the project
+has no `CLAUDE.md`; if it has one, add the line `@AGENTS.md` to it. Mirror's
+instructions reach the model beside your project's either way, and nothing needs
+merging. Mirror's status line is an optional step on Claude Code: see
+[Mirror's status line in Claude Code](#mirrors-status-line-in-claude-code).
+
 ### Antigravity
 
 ```bash
@@ -305,9 +321,11 @@ name, as in Claude Code —
 /mirror-mind:mm:journey <slug>
 ```
 
-— the Operating Instructions arrive as the plugin's rules, and Mirror Mode
-context is injected once per turn without an explicit invocation (measured on
-agy 1.4.2, CV21.DS7.US4). Each turn is logged as `antigravity`; agy has no
+— the Operating Instructions arrive as the plugin's rules (measured on agy 1.4.2,
+CV21.DS7.US4), and Mirror Mode is on from the first turn of every conversation,
+with no command: Mirror's context reaches the model before each answer, all of it
+on the first turn, then the persona each question calls for (measured on agy 1.4.7,
+CV9.DS8.TS6). Each turn is logged as `antigravity`; agy has no
 session-end signal, so the conversation closes when your next session starts.
 
 **If you used Gemini CLI before this version.** You did if, at an earlier
@@ -371,6 +389,27 @@ package as `AGENTS.md`, and each runtime receives them its own way: Pi through
 the extension, Claude Code and Codex through the plugin's session-start hook
 (Codex as a developer message), Antigravity as the plugin's rules, Grok Build as
 the rule you linked in step 2. None of this needs a step beyond the wiring above.
+Extensions you install later reach each runtime through a plugin of their own; see
+[Your extensions reach each runtime](#your-extensions-reach-each-runtime).
+
+What each runtime gives you, as measured. On Pi, Claude Code, Codex, and
+Antigravity, Mirror hands the model its context before every answer while Mirror
+Mode is on: all of it on the turn Mirror Mode starts, then the persona each question
+calls for, so the answer comes signed with that persona's name.
+
+| Runtime | What you get | Measured on |
+|---------|--------------|-------------|
+| Pi | the skills from the menu, the Operating Instructions in every session, Mirror Mode from the turn you ask for it (`/mm-mirror`), or from a personal question the model takes to the mirror on its own, your turns and replies remembered | Pi 1.4.0, 2026-10-25 |
+| Claude Code | the skills, the Operating Instructions in every session, Mirror Mode from the turn you ask for it, or from a personal question the model takes to the mirror on its own, your turns and replies remembered, Mirror's tools for the model | Claude Code 2.1.310, 2026-10-25 |
+| Codex | the same as Claude Code; a session is remembered once Codex closes it, about 30 minutes after you quit | Codex 0.164.0, 2026-10-25 |
+| Antigravity | the skills, the Operating Instructions as the plugin's rules, Mirror Mode from the first turn of every conversation, your turns and replies remembered, Mirror's tools | agy 1.4.7, 2026-10-25 |
+| Grok Build | the skills, the Operating Instructions from the rule you linked, Mirror Mode when you ask for it (`/mm-mirror`): the model loads Mirror's context itself, with no automatic context per turn, your turns and replies remembered, Mirror's tools | Grok Build 1.0.62, 2026-10-18 |
+
+Each row names the version Mirror was last measured on; a newer version has not been
+re-measured, and `mirror runtime diagnose` reports wiring that has fallen behind or
+broken. The full [parity matrix](product/specs/runtime-interface/index.md#parity-matrix),
+with levels, binaries, the version behind each part of a row, and the record behind
+it, is in the runtime interface contract.
 
 **If a runtime is launched from your desktop rather than a terminal**, it may not
 inherit the `PATH` that holds `node` and `mirror`, and its hooks will skip
@@ -435,6 +474,45 @@ What to check:
 - **Architecture:** [docs/product/architecture.md](product/architecture.md) — how the system works internally
 - **Extensions:** [docs/product/extensions/](product/extensions/index.md) — Mirror Mind can be
   extended with user-specific capabilities
+
+### Your extensions reach each runtime
+
+An extension you install with `mirror extensions install` reaches Pi through your
+home's catalog, and Claude Code, Codex, Antigravity, and Grok Build through one plugin
+of your own, `mirror-ext-your-name`, which the install regenerates. For each runtime
+that has not taken that plugin yet, the install prints the one step that wires it: run
+it once. Then the reference extension `review-copy` is `/ext-review-copy` on Pi, Claude
+Code, and Grok Build, `$mirror-ext-your-name:ext-review-copy` on Codex, and
+`/mirror-ext-your-name:ext-review-copy` on Antigravity. Not listed? Run the step the
+install printed; running the install again prints it again. Codex, Antigravity, and
+Grok Build keep a copy of the plugin, so after you change an extension, `mirror runtime
+diagnose` names the reinstall each still needs. The
+[extension docs](product/extensions/index.md#reaching-each-runtime) have the rest.
+
+### Mirror's status line in Claude Code
+
+Pi shows Mirror's status line by itself. Claude Code can show it too, but a plugin
+cannot add one, so it is a step you take once, if you want it: add `statusLine` to
+`~/.claude/settings.json`, beside what is already there.
+
+```json
+{
+  "statusLine": {
+    "type": "command",
+    "command": "mirror welcome --status-line --session-id $CLAUDE_CODE_SESSION_ID"
+  }
+}
+```
+
+Each session then shows its own line, such as
+`◇ your-name · Personal Growth on ■ Builder Mode · ✓`: your Mirror home, the journey,
+and the session's own mode. The journey shown beside Mirror Mode is the last one any
+session chose. Claude Code runs the command when the conversation changes, and each
+run starts one `mirror` process: 0.3 to 1.5 seconds on the machine it was measured
+on. If you start Claude Code from your desktop rather than a terminal, it may not find
+`mirror` or `node`; then begin the command with their full paths, as
+`command -v node` and `command -v mirror` print them. Measured on Claude Code 2.1.310,
+2026-10-24.
 
 ## Upgrading from a clone
 

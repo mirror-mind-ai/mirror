@@ -10,7 +10,6 @@ export interface RuntimeSessionRow {
   mirrorActive: boolean;
   persona: string | null;
   journey: string | null;
-  hookInjected: boolean;
   active: boolean;
   startedAt: string;
   updatedAt: string;
@@ -24,7 +23,6 @@ export interface RuntimeSessionPatch {
   mirrorActive?: boolean;
   persona?: string | null;
   journey?: string | null;
-  hookInjected?: boolean;
   active?: boolean;
   closedAt?: string | null;
   metadata?: string | null;
@@ -40,7 +38,6 @@ export function getRuntimeSession(db: Database, sessionId: string): RuntimeSessi
     mirrorActive: Boolean(row.mirror_active),
     persona: nullableString(row.persona),
     journey: nullableString(row.journey),
-    hookInjected: Boolean(row.hook_injected),
     active: Boolean(row.active),
     startedAt: String(row.started_at),
     updatedAt: String(row.updated_at),
@@ -67,7 +64,6 @@ export function upsertRuntimeSession(
     mirrorActive: value("mirrorActive", existing?.mirrorActive ?? false) as boolean,
     persona: value("persona", existing?.persona ?? null) as string | null,
     journey: value("journey", existing?.journey ?? null) as string | null,
-    hookInjected: value("hookInjected", existing?.hookInjected ?? false) as boolean,
     active: value("active", existing?.active ?? true) as boolean,
     startedAt: existing?.startedAt ?? nowIso,
     updatedAt: nowIso,
@@ -77,15 +73,14 @@ export function upsertRuntimeSession(
   db.prepare(
     `INSERT INTO runtime_sessions
        (session_id, conversation_id, interface, mirror_active, persona, journey,
-        hook_injected, active, started_at, updated_at, closed_at, metadata)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        active, started_at, updated_at, closed_at, metadata)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(session_id) DO UPDATE SET
        conversation_id = excluded.conversation_id,
        interface = excluded.interface,
        mirror_active = excluded.mirror_active,
        persona = excluded.persona,
        journey = excluded.journey,
-       hook_injected = excluded.hook_injected,
        active = excluded.active,
        updated_at = excluded.updated_at,
        closed_at = excluded.closed_at,
@@ -97,7 +92,6 @@ export function upsertRuntimeSession(
     Number(row.mirrorActive),
     row.persona,
     row.journey,
-    Number(row.hookInjected),
     Number(row.active),
     row.startedAt,
     row.updatedAt,
@@ -134,6 +128,70 @@ export function compareAndSwapRuntimeSessionMetadata(
     )
     .run(options.metadata, nowIso, sessionId, options.expectedMetadata);
   return Number(result.changes) === 1;
+}
+
+/**
+ * Columns the doorman moves one at a time (CV9.DS8.TS2).
+ *
+ * `upsertRuntimeSession` reads the row, rebuilds it, and writes every column
+ * back, with no transaction around the read and the write. Two writers on the
+ * same turn -- the prompt logger setting `conversation_id`/`active`, the doorman
+ * setting `persona` -- would each overwrite the other's column with the stale
+ * copy it read. A single-column UPDATE touches nothing it was not asked to.
+ */
+export interface RuntimeSessionColumnPatch {
+  persona?: string | null;
+  /** The whole metadata JSON, as the caller re-dumped it after its own read. */
+  metadata?: string | null;
+}
+
+/** Set only the named columns on an existing row; false when there is no row. */
+export function updateRuntimeSessionColumns(
+  db: WritableDatabase,
+  sessionId: string,
+  patch: RuntimeSessionColumnPatch,
+  nowIso: string,
+): boolean {
+  const assignments: string[] = [];
+  const params: (string | number | null)[] = [];
+  if (patch.persona !== undefined) {
+    assignments.push("persona = ?");
+    params.push(patch.persona);
+  }
+  if (patch.metadata !== undefined) {
+    assignments.push("metadata = ?");
+    params.push(patch.metadata);
+  }
+  if (assignments.length === 0) return false;
+  assignments.push("updated_at = ?");
+  params.push(nowIso, sessionId);
+  const result = db
+    .prepare(`UPDATE runtime_sessions SET ${assignments.join(", ")} WHERE session_id = ?`)
+    .run(...params);
+  return Number(result.changes) === 1;
+}
+
+/**
+ * The session the harness named in the environment (CV9.DS8.TS1, measured
+ * 2026-10-24): `MIRROR_SESSION_ID`, which the Pi extension sets at
+ * `session_start`; else `CLAUDE_CODE_SESSION_ID` (Claude Code 2.1.310) or
+ * `CODEX_SESSION_ID` (Codex 0.164.0), both undocumented, both equal to the
+ * session row the runtime's hooks write, both present in the model's own shell
+ * -- so a `mirror mirror load` the model runs by itself names the same session
+ * the hooks do. One reader, as `runtimeDetection` reads Grok's variables.
+ *
+ * Read by the mirror load route and the doorman only (TS2): widening it to the
+ * Builder, Soul, and Explorer routes would bind those sessions on Claude Code
+ * and Codex too, a CR008 question a later story may open.
+ */
+export function environmentSessionId(
+  env: Readonly<Record<string, string | undefined>>,
+): string | null {
+  for (const name of ["MIRROR_SESSION_ID", "CLAUDE_CODE_SESSION_ID", "CODEX_SESSION_ID"]) {
+    const value = env[name]?.trim();
+    if (value) return value;
+  }
+  return null;
 }
 
 /**

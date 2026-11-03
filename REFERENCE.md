@@ -37,8 +37,11 @@ about what anyone is told to type.
 
 ## Commands
 
-Claude Code uses the `/mm:` prefix. Pi and Grok Build use the `/mm-` prefix.
-Codex uses the `$mm-` prefix. All runtimes call the same core. A **plugin**
+What each runtime gets from Mirror, and how well, with the version and date it was
+measured on, is the [parity matrix](docs/product/specs/runtime-interface/index.md#parity-matrix).
+Claude Code uses the `/mm:` prefix, Grok Build and Pi the `/mm-` prefix, and
+Codex the `$mm-` prefix. In Pi, typing `/mm-` opens its command menu, which lists
+each skill as `skill:mm-<skill>`: pick it there. All runtimes call the same core. A **plugin**
 install (the npm package's wiring for Claude Code and Antigravity) prefixes the
 plugin's name: `/mirror-mind:mm:<skill>` in the slash menu,
 `mirror-mind:mm-<skill>` as the skill's own name; Grok's plugin install keeps
@@ -48,6 +51,7 @@ the bare `/mm-<skill>` and qualifies a skill only when two share a name; the
 | Pi | Codex | Claude Code | Purpose | Main Arguments |
 |---------|-------|-------------|---------|----------------|
 | `/mm-mirror` | `$mm-mirror` | `/mm:mirror` | Loads identity, persona, journey, and attachments for Mirror Mode | `load [--persona P] [--journey J] [--query Q] [--org]`, `log "summary"`, `journeys` |
+| `mirror mirror doorman` | — | — | Internal: the one doorman — what a runtime puts before the model on a turn ([The doorman](#the-doorman)) | `--prompt "<text>" [--session-id ID]`, `--forget [--session-id ID]` |
 | `/mm-build` | `$mm-build` | `/mm:build` | Builder Mode for a journey — loads context and project docs | `<slug>` |
 | `/mm-explore` | `$mm-explore` | `/mm:explore` | Explorer Mode for a journey, with explicit deactivation, in-session story surfaces, and Builder handoff artifacts — preserves uncertainty before construction | `<slug>`, `deactivate`, `story show|update|clear|open|thicken|snapshot|attractors|experiment|handoff|promote` |
 | `/mm-soul` | `$mm-soul` | `/mm:soul` | Soul Mode ritual entry and possible-listenings surface for inner-life listening | `[slug]` |
@@ -63,6 +67,8 @@ the bare `/mm-<skill>` and qualifies a skill only when two share a name; the
 | `/mm-recall` | `$mm-recall` | `/mm:recall` | Loads a previous conversation into context | `<conversation_id> [--limit N]` |
 | `/mm-conversations` | `$mm-conversations` | `/mm:conversations` | Lists recent conversations | `--limit N`, `--journey J`, `--persona P` |
 | `mirror conversations append` | — | — | Atomically appends an explicit bounded user/assistant batch to one exact conversation | `--mirror-home PATH --format json`, JSON stdin |
+| `mirror conversations imported` | — | — | Lists the Pi conversations an earlier version imported rather than logged, by folder, and removes the ones you name after a verified backup | `[--project TEXT]`, `remove (ID... \| --all [--project FOLDER]) [--apply]`, `--mirror-home PATH`, `--db-path PATH` |
+| `mirror conversations skill-turns` | — | — | Shows the Pi user turns an earlier version stored as a skill's body, and repairs them after a verified backup | `[--apply]`, `--mirror-home PATH`, `--db-path PATH` |
 | `/mm-backup` | `$mm-backup` | `/mm:backup` | Backs up the memory database | no arguments |
 | `/mm-seed` | `$mm-seed` | `/mm:seed` | Seeds identity files from the active user home into the database | no arguments |
 | `/mm-mute` | `$mm-mute` | `/mm:mute` | Toggles conversation logging | no arguments |
@@ -76,7 +82,9 @@ the bare `/mm-<skill>` and qualifies a skill only when two share a name; the
 | `/mm-help` | `$mm-help` | `/mm:help` | Lists available commands | no arguments |
 | `mirror runtime` | — | — | Inspects Mirror runtime status, version, drift, backups, release notes, release promotion readiness, plans updates, and executes safe updates | `status [--mirror-home PATH] [--channel stable|main]`, `version [--start PATH] [--channel stable|main]`, `diagnose [--mirror-home PATH]`, `backup [--mirror-home PATH]`, `backup --verify PATH`, `release-notes [latest|vX.Y.Z]`, `release-notes pending [--from vX.Y.Z] [--ref REF] [--no-fetch]`, `migrate [--mirror-home PATH]`, `update --dry-run [--mirror-home PATH] [--channel stable|main]`, `update --check [--channel stable|main]`, `update [--no-fetch] [--skip-migrations] [--mirror-home PATH] [--channel stable|main]`, `update --repair-updater [--no-fetch] [--mirror-home PATH] [--channel stable|main]`, `channel [stable|main]` |
 | `mirror conversation-logger` | — | — | Runtime conversation logging and repair utilities | `discard-current [--interface pi] [--session-id ID]`, `repair-journeys [--limit N] [--apply]`, `session-start --fast --welcome --format json [--session-id ID]` (extension-internal, see below) |
-| `ext-review-copy` | — | `ext:review-copy` | External multi-LLM copy review skill; install and expose it before use | skill-driven workflow |
+| `mirror extensions` | — | — | Lists, validates, installs, and removes a home's extensions; `install`, `uninstall`, and `sync` regenerate the home's extensions plugin, `mirror-ext-<user>`, and print the step each runtime on the `PATH` still needs ([each runtime](docs/product/specs/runtime-interface/index.md#how-an-installed-extension-reaches-each-runtime)) | `list`, `validate`, `install <id> [--extensions-root PATH] [--runtime NAME]`, `uninstall <id> [--runtime NAME]`, `sync --runtime NAME --target-root PATH`, `expose-claude --target-root PATH`, `clean-claude --target-root PATH`; each `[--mirror-home PATH]` |
+| `mirror ext` | — | — | Runs an installed extension's subcommands; alone with an id, lists them and the extension's installation settings; binds its Mirror Mode context providers | `list`, `<id> [--help]`, `<id> <subcommand> [args...]`, `<id> bind <capability> (--persona <id> \| --journey <id> \| --global)`, `<id> unbind <capability> (--persona <id> \| --journey <id> \| --global)`, `<id> bindings`, `<id> migrate` |
+| `/ext-review-copy` | `$mirror-ext-<user>:ext-review-copy` | `/ext-review-copy` | The reference extension, a multi-LLM copy review. After `mirror extensions install`, wire each runtime once with the step the install prints; Antigravity types `/mirror-ext-<user>:ext-review-copy`, Grok Build `/ext-review-copy` ([each runtime](docs/product/specs/runtime-interface/index.md#how-an-installed-extension-reaches-each-runtime)) | `<file> <model1> [model2] ...` |
 
 ### Journey slugs and persona ids
 
@@ -166,6 +174,83 @@ only conversation/Journey identity, counts, and validated message IDs with
 `persistence_failure`. Receipts never echo message content, caller metadata,
 private paths, environment values, or raw exceptions.
 
+## Imported Pi Conversations
+
+```bash
+mirror conversations imported [--project TEXT]
+mirror conversations imported remove (ID ... | --all [--project FOLDER]) [--apply]
+```
+
+Until v0.36.1, session maintenance copied Pi session files into the home and
+imported each as a closed conversation; on a machine with more than one home,
+each home took the others' sessions. Since v0.36.1 nothing is imported (CR153).
+This command shows what an earlier version imported, and removes what you name
+(CR154).
+
+An import is a Pi conversation that started at or after its own last message: the
+import stamped `started_at` when it copied the session and `ended_at` from the
+session's last message. Both timestamps must carry a zone; a conversation with a
+zone-less timestamp is never treated as an import.
+
+The listing is read-only. It gives the totals and one line per folder, the
+directory the session file lived in (from the path the home stored, with Pi's
+wrapping dashes removed; no Pi file is read), with how many conversations were
+imported from it and how many Pi sessions this home logged live from it. Imports
+from a folder where the home logged nothing live are most likely another home's;
+in a home made by copying another, the copied rows count as its own and blur that
+number. Imports with no session row are listed as `(unknown)`. `--project TEXT`
+narrows the listing to the folders whose name contains TEXT and lists their
+conversations, newest import first.
+
+`remove` names conversations by id (the full id, or a prefix of at least eight
+characters that matches exactly one conversation), or `--all`, optionally narrowed
+to one folder by `--project FOLDER`, written exactly as the listing prints it. A
+live conversation, an unknown id, an ambiguous or too-short prefix, or a folder
+with no imports refuses the whole command (exit 1), and nothing is removed. Every
+option is declared: an unrecognized one is refused with the usage (exit 2) before
+the database opens.
+
+Without `--apply`, `remove` is a dry run: it prints what it would remove and the
+exact command that applies it, to the same home. With `--apply` it takes the
+dated archive in `<mirror home>/backups/`, verifies it, and refuses if either
+fails; then, in one transaction, it decides the set again (refusing if it changed)
+and removes each import with its messages and its session row. Memories and
+provider-call records that named a removed conversation are kept, unlinked. The
+report names the backups that still hold copies: the dated archives made since the
+earliest removed import (removed after 30 days) and the front door's pre-write
+backup (replaced by the next write). Nothing deletes them but you.
+
+
+## Pi Skill Turns
+
+```bash
+mirror conversations skill-turns [--apply]
+```
+
+Pi expands a skill into its body before Mirror's extension sees the prompt, and until
+CR160 the extension logged that: a skill picked from Pi's menu, or typed as
+`/skill:<name>`, was stored as `<skill name="…" location="…">` and the skill's body,
+as if you had said it. Since CR160 a skill invocation is not recorded, and a Mirror
+question is recorded as the question. This command repairs what an earlier version
+stored.
+
+It finds Pi's whole skill wrapper in the user turns of Pi conversations only, and the
+same wrapper where the old logger cut it at 50,000 characters. It applies the rule
+Mirror logs by: a Mirror question keeps its question; any other skill turn is
+removed, its arguments with it; a conversation left with no user turn is deleted, its
+memories and provider-call records kept, unlinked; a title that came from a block is
+rebuilt from the first remaining user turn that is not a command, provisional.
+Replies, summaries, and embeddings stay.
+
+Without `--apply` it is a dry run: by skill, how many rows keep their question and
+how many go; each conversation it would delete, with its message count; how many
+titles it would rebuild; and the command that applies it. With `--apply` it takes the
+dated archive in `<mirror home>/backups/`, verifies it, and refuses if either fails;
+then, in one transaction, it decides again (refusing if anything changed) and
+repairs. Run it once every Pi session on the home has restarted on a version that
+carries CR160: a session that has not keeps writing skill bodies, and running the
+command again repairs those too. Every option is declared: an unrecognized one is
+refused with the usage (exit 2) before the database opens.
 ## Operating Mode Lifecycle
 
 ```bash
@@ -232,7 +317,19 @@ while preserving sticky journey context. Deactivation clears only the explicit
 active mode state; it does not erase sticky persona/journey defaults or rewrite
 conversation history.
 
-`mirror welcome --status-line [--session-id ID]` includes active mode context when present:
+`mirror welcome --status-line [--session-id ID]` includes active mode context when present.
+Pi renders it through its extension. On Claude Code the user wires it once, since a
+plugin cannot carry a status line: this command, as `statusLine.command` in
+`~/.claude/settings.json`
+([Getting Started](docs/getting-started.md#mirrors-status-line-in-claude-code); Claude
+Code 2.1.310, CV21.DS11.US2):
+
+```bash
+mirror welcome --status-line --session-id $CLAUDE_CODE_SESSION_ID
+```
+
+Without `--session-id` the line shows no Claude Code session's mode, because a mode is
+bound to its session. With a mode active:
 
 ```text
 ◇ alisson-vale · Explorer Mode on ■ Builder Mode · ✓
@@ -250,6 +347,71 @@ When no journey context is active it still shows the default mode:
 ```text
 ◇ alisson-vale · ◌ Mirror Mode · ✓
 ```
+
+## The doorman
+
+```bash
+mirror mirror doorman --prompt "<the turn's prompt>" [--session-id ID]
+mirror mirror doorman --forget [--session-id ID]
+```
+
+One decision in the core (`ts/src/mirror/doorman.ts`, CV9.DS8), called by every
+runtime that can carry context to the model before it answers: in process by Claude
+Code's and Codex's inject hook and by Antigravity's `PreInvocation`, and as this
+command by the Pi extension. Given the prompt and the session's state it prints
+nothing, the full folder, or a delta, by one policy:
+
+1. **The explicit Mirror form** opens the prompt (`/mm-mirror …`, `/mm:mirror …`, and
+   the plugin spellings): the full folder `mirror mirror load --query` builds, under
+   the delivered line; the session is marked active by its id.
+2. **Mirror Mode active, an ordinary turn:** the prompt is scored with
+   `detect-persona`; a persona that newly scores has its section delivered and
+   becomes the session's; up to five memories scoring at least 0.4 on the semantic
+   score, not delivered earlier in the session, and the attachments above 0.4
+   follow. The identity layers are not repeated.
+3. **Mirror Mode not active:** nothing — no provider call, no write, no database
+   snapshot.
+
+Mirror Mode is active for a session when its `mirror_active` flag is set and its
+operating mode (the session's own, else the global one) is Mirror Mode
+(CV9.DS8.US4). `mirror mirror deactivate`, which `/mm-new` runs, clears the flag;
+switching to Builder, Explorer, or Soul Mode changes the mode, so those turns get
+nothing while the flag stays set. A skill invocation other than the Mirror form gets
+nothing even in Mirror Mode: it is a command, not a question (CV9.DS8.US5).
+`--forget`, which the Pi extension runs when Pi compacts the session, makes the next
+ordinary turn in Mirror Mode full again, since the folder in the transcript is now a
+summary, and starts the list of delivered memories over (CV9.DS8.US5). Without an
+embedding (no provider, or the call failed) the memory search falls back to the
+lexical index, with no threshold, and the attachments are skipped.
+
+Every turn Mirror Mode is active opens with one line the model reads, even when
+nothing follows it; it carries the persona and the signature rule across the
+conversation:
+
+```text
+=== mirror context delivered by the runtime for this turn: full — answer as the mirror; sign ◇ cfo ===
+=== mirror context delivered by the runtime for this turn: delta (persona: writer · journey: mirror) — answer as the mirror; sign ◇ writer ===
+```
+
+The session is the one named: `--session-id`, else `MIRROR_SESSION_ID`, else
+`CLAUDE_CODE_SESSION_ID`, else `CODEX_SESSION_ID` — the same reader `mirror mirror
+load` uses, so on Pi, Claude Code, and Codex a load the model runs by itself marks the
+session the runtime's hooks write (CV9.DS8.TS1). On Antigravity the model's own
+commands cannot name the session yet (CR169). The doorman never guesses a session.
+
+What a turn costs, and where it is counted:
+
+| Turn | Doorman | Model calls | `llm_calls` |
+|------|---------|-------------|-------------|
+| Mirror Mode off, ordinary | nothing | none | — |
+| explicit form | full folder | reception (when `MEMORY_RECEPTION` is on) and, when there are attachments to score, the query's embedding, as `mirror load --query` | as `mirror load` writes them |
+| Mirror Mode on, ordinary | delta | one embedding, shared by the memory and attachment searches | one row, `role = embedding` |
+
+The delta's memory search writes no reinforcement (`memory_access_log`): the doorman
+searches on the system's behalf on every turn, and a turn's injection must not raise a
+memory's rank for the next. Every ranked memory's scores go to `front-door.log` as numbers
+(`doorman memory_scores=… memory_semantic=…`), content-free, the ones under the
+threshold included; US5 set the threshold from them.
 
 ## Runtime Self-Update
 
@@ -304,7 +466,7 @@ mirror runtime diagnose [--mirror-home PATH]
 
 Classifies attention-needed drift into stable finding codes (`git_dirty`, `core_migration_pending`, `core_migration_unknown`, `extension_migration_pending`, `extension_migration_unknown`, `extension_migration_checksum_drift`, `extension_manifest_invalid`, `database_missing`, `mirror_home_missing`, `identity_key_outside_grammar`; for the home's extensions plugin, `ext_plugin_codex_cache_stale`, `ext_plugin_agy_copy_stale`, `ext_plugin_grok_copy_stale`, `ext_plugin_claude_link_dangling`, `ext_plugin_grok_copies_duplicated`, each naming the one command that brings the runtime level). Each finding carries severity, subject, recommendation, and a repair route. Read-only. It grades the install's own checkout: run inside another project, it reports none of that project's files.
 
-It also knows the plugin wiring (CV21.DS4.TS6). Codex copies the plugin into a versioned cache (`$CODEX_HOME/plugins/cache/mirror-mind/mirror-mind/<version>`, default `~/.codex`), so an npm update changes the install but not that copy: when the newest cached version is behind the installed one, diagnose reports `codex_plugin_cache_behind` (severity: warning) naming both versions and the level-up command — `codex plugin add mirror-mind@mirror-mind`, the re-add, because Codex 0.163.0 has no plugin-update verb. Claude Code links the plugin in place (`~/.claude/skills/mirror-mind`); a link whose target no longer reads is `claude_plugin_link_dangling` (severity: warning) with a relink route. Grok Build copies the plugin too, under `$GROK_HOME/installed-plugins/` (default `~/.grok`), keyed by the install path's spelling, and `grok plugin update` leaves a local copy as it is (CV21.DS10.US1, grok 1.0.62): a copy behind the installed version is `grok_plugin_copy_behind` (severity: warning), repaired by `grok plugin uninstall mirror-mind --confirm && grok plugin install "<pkg>/plugins/mirror-mind" --trust` with the install's own path; two copies — a plugin installed again from a differently spelt path — are `grok_plugin_copies_duplicated` (severity: warning), uninstalled until one remains and then reinstalled; the rule link `~/.grok/rules/mirror-mind.md` whose target no longer reads is `grok_rules_link_dangling` (severity: warning), relinked or removed. Absence is not drift: a machine with no Codex cache, no Claude link, and no Grok copy or rule reports none of them.
+It also knows the plugin wiring (CV21.DS4.TS6). Codex copies the plugin into a versioned cache (`$CODEX_HOME/plugins/cache/mirror-mind/mirror-mind/<version>`, default `~/.codex`), so an npm update changes the install but not that copy: when the newest cached version is behind the installed one, diagnose reports `codex_plugin_cache_behind` (severity: warning) naming both versions and the level-up command — `codex plugin add mirror-mind@mirror-mind`, the re-add, because Codex 0.163.0 has no plugin-update verb. Claude Code links the plugin in place (`~/.claude/skills/mirror-mind`); a link whose target no longer reads is `claude_plugin_link_dangling` (severity: warning) with a relink route. Grok Build copies the plugin too, under `$GROK_HOME/installed-plugins/` (default `~/.grok`), keyed by the install path's spelling, and `grok plugin update` leaves a local copy as it is (CV21.DS10.US1, grok 1.0.62): a copy behind the installed version is `grok_plugin_copy_behind` (severity: warning), repaired by `grok plugin uninstall mirror-mind --confirm && grok plugin install "<pkg>/plugins/mirror-mind" --trust` with the install's own path; two copies — a plugin installed again from a differently spelt path — are `grok_plugin_copies_duplicated` (severity: warning), uninstalled until one remains and then reinstalled; the rule link `~/.grok/rules/mirror-mind.md` whose target no longer reads is `grok_rules_link_dangling` (severity: warning), relinked or removed. Antigravity stages a copy as well, under `~/.gemini/config/plugins/mirror-mind/`, and an update leaves it as it was (CV21.DS11.TS4, agy 1.4.7): a copy behind the installed version is `agy_plugin_copy_behind` (severity: warning), repaired by `agy plugin install "<pkg>/plugins/mirror-mind"` with the install's own path, the line `mirror init` prints; installing again replaces the copy. Absence is not drift: a machine with no Codex cache, no Claude link, no agy copy, and no Grok copy or rule reports none of them.
 
 ### Backup
 
@@ -428,22 +590,25 @@ itself lives — never from configuration. A `clone` (a git checkout) fast-forwa
 channel's dist-tag resolves to. Anything else is `unknown` and is refused with the reason
 printed, rather than updated on a guess. A project-local `node_modules` is deliberately
 *not* a package install: `npm install -g` would update a different tree from the one
-running. Every npm command the updater runs (`root -g`, `view`, `install -g`) runs in the
-install's own directory, never the one the command was typed in: npm reads the `.npmrc`
-of the directory it runs in, and a project's could name another registry or prefix.
+running. No npm command the updater runs (`root -g`, `view`, `install -g`) runs in the
+directory the command was typed in: npm reads the `.npmrc` of the directory it runs in,
+and a project's could name another registry or prefix. `root -g` and `view` run in the
+install's own directory. `install -g` runs from the parent of `node_modules`, still the
+install's own tree: npm renames the package's directory aside before laying down the new
+version, and Windows refuses to rename a directory a process is running in.
 The user's own `~/.npmrc` and `npm_config_*` variables still apply.
 
 1. **status gate** — normally requires status to be ready. If the only remaining blocker is core migration drift that the target version may resolve, the updater proceeds through the backup-gated path and still requires post-update status to be ready. If the gate *crashes*, the repair lane runs automatically — an updater that cannot evaluate its own status is exactly what that lane is for.
 2. **capture** — records where to go back to, before anything moves: the current commit for a clone, the installed version for a package. The recovery block prints the pasteable route with that value in it.
 3. **fetch** — mutates only remote-tracking refs, with git's 120-second network timeout in both lanes. Skipped with `--no-fetch`.
-4. **plan** — accepts already-up-to-date and pull. Blocks ahead, diverged, and other unsafe states. Plan and fetch are read-only and run *before* the backup, so an update with nothing to do never archives the database.
+4. **plan** — accepts already-up-to-date and pull. Blocks ahead, diverged, and other unsafe states. A clone ahead of its channel only by commits the other channel already has, such as a `stable` clone fast-forwarded to `origin/main`, is blocked the way a package is blocked on a channel behind the installed version: the plan says `'stable' is behind this checkout`, and the recovery offers `runtime channel main` or staying until the next release, never a push or a reset. Commits on no remote keep the push-or-reset advice. Plan and fetch are read-only and run *before* the backup, so an update with nothing to do never archives the database.
 5. **backup** — writes the dated archive.
 6. **verify backup** — extracts `memory.db` and runs `PRAGMA quick_check` against it. Verifying entry names alone would accept an archive that cannot be opened.
 7. **apply** — `git merge --ff-only` for a clone, `npm install -g <name>@<resolved version>` for a package. Never a merge, a rebase, or a bare dist-tag.
 8. **migrate** — spawns `runtime migrate` in a **fresh process**, so the code that migrates is the code that was just installed, and prints the `_migrations` ledger before and after. Skipped with `--skip-migrations`.
 9. **post-update status** — reruns `runtime status` in a fresh process and expects `ready`.
 
-Failures print a recovery block with the backup path and previous commit when relevant. For a package, `plan` also refuses a channel whose version is **lower** than the installed one: migrations do not run backwards, so a downgrade is not an update, and the refusal names the channel that carries the installed version (`runtime channel main`). After a successful clone update, when `mirror` does not resolve on the `PATH`, one last line names `npm link` at the repository root: every skill says `mirror`, and a checkout provides it only after that. After any successful update, when a Codex plugin cache is behind the version just landed, one more line names `codex plugin add mirror-mind@mirror-mind` (CV21.DS4.TS6): Codex runs the copy it cached at install, and the comparison reads the landed version from the updated tree — never this process's own, which is the old version's at exactly that moment. A Grok copy behind the landed version earns the same line with Grok's uninstall-then-install command (CV21.DS10.US1). Successful installs that move to a new commit include an `Installed changes` summary generated from `git log <previous>..<new>`. On the `stable` channel, successful installs also include an `Installed release` block when the new checkout contains narrative release notes. The pipeline does not roll back automatically: recovery is documented manual work. A successful update, outside `--dry-run`, records `up_to_date` in the home's update-awareness cache (`<mirror-home>/runtime/update-check.json`), so the welcome card and the status line stop announcing the version just installed.
+Failures print a recovery block with the backup path and previous commit when relevant. For a package, `plan` also refuses a channel whose version is **lower** than the installed one: migrations do not run backwards, so a downgrade is not an update, and the refusal names the channel that carries the installed version (`runtime channel main`). After a successful clone update, when `mirror` does not resolve on the `PATH`, one last line names `npm link` at the repository root: every skill says `mirror`, and a checkout provides it only after that. After any successful update, when a Codex plugin cache is behind the version just landed, one more line names `codex plugin add mirror-mind@mirror-mind` (CV21.DS4.TS6): Codex runs the copy it cached at install, and the comparison reads the landed version from the updated tree — never this process's own, which is the old version's at exactly that moment. A Grok copy behind the landed version earns the same line with Grok's uninstall-then-install command (CV21.DS10.US1), and an Antigravity copy with agy's install command (CV21.DS11.TS4). Successful installs that move to a new commit include an `Installed changes` summary generated from `git log <previous>..<new>`. On the `stable` channel, successful installs also include an `Installed release` block when the new checkout contains narrative release notes. The pipeline does not roll back automatically: recovery is documented manual work. A successful update, outside `--dry-run`, records `up_to_date` in the home's update-awareness cache (`<mirror-home>/runtime/update-check.json`), so the welcome card and the status line stop announcing the version just installed.
 
 If the status gate crashes before update planning, `runtime update` automatically falls back to updater self-repair. The repair lane uses a minimal safety gate — readable checkout, clean tree, configured upstream, optional fetch — applies a fast-forward-only code update, and skips migrations, which the next ordinary update owns. It then asks the user to rerun `runtime update` with the repaired updater. The same lane can be invoked explicitly with `runtime update --repair-updater`. Older production clones whose updater is blocked before they receive the latest recovery behavior may need this explicit repair lane once.
 
@@ -621,7 +786,11 @@ files, and the first file to set a variable keeps it.
    when no other source configured a user, readable by you only (`0600` in a
    `0700` directory; `runtime diagnose` grades the mode), and tells you to add
    `OPENROUTER_API_KEY` to it by hand. The key is never read from the command
-   line.
+   line. It does so for a new home and for one that already exists under
+   `~/.mirror-minds`, which `init` uses as it is, changing nothing in it
+   (CR185). With no home configured, every command that needs one stops with
+   one line naming the homes it finds there and the `mirror init <name>` that
+   selects one.
 
 A second mirror on the same machine runs with `MIRROR_USER=<other>` set in the
 shell, as before. The per-install update channel lives beside the configuration
@@ -701,7 +870,7 @@ is permanent supported behavior. To stop the warning, run
 
 | Variable | Role |
 |----------|------|
-| `OPENROUTER_API_KEY` | Embeddings (`openai/text-embedding-3-small` via OpenRouter), extraction (Gemini Flash), and the multi-LLM `consult` command. |
+| `OPENROUTER_API_KEY` | Embeddings and every model call through OpenRouter: extraction and the other calls on the extraction model (see [Model Pins](#model-pins)), and the multi-LLM `consult` command. Without it, the commands that cannot work refuse in one line before touching the database, naming the file to add it to; search degrades and says so; `runtime status` and `runtime diagnose` report it. A key OpenRouter refuses is named in one line too. |
 
 ### Intelligence Flags
 
@@ -715,6 +884,20 @@ conversation. Their 1.0 posture and full reasoning are recorded in
 | `MEMORY_TWO_PASS` | unset (off) | Second-pass curation that dedups and refines new memories against history at write time: a query embedding per candidate plus one curation call. Set `1` to enable — fewer near-duplicate memories, at added per-conversation cost (not yet in the `llm_calls` ledger, debt D-003) and a risk of over-merging distinct memories. Off for 1.0; revisit when embedding spend is measurable. |
 | `MEMORY_SUMMARIZE` | unset (off) | LLM-written conversation summary instead of the free mechanical one. Set `1` to enable — marginal summary-quality gain for one call per conversation. |
 | `MEMORY_LOG_LLM_CALLS` | `metadata` | `off`, `metadata`, or `full`. `metadata` records role/model/tokens/latency/estimated-cost with no bodies; `full` adds prompt/response bodies; `off` disables logging. Legacy `1` maps to `full`. |
+
+### Model Pins
+
+The models Mirror calls, and how the extraction model reasons. They are read like
+every setting in this section: the real environment, the clone's `.env`, then
+`~/.config/mirror/env`. A variable exported in one shell reaches only the runtimes
+started from that shell, so put a lasting value in a file. `mirror runtime status`
+prints the values in force.
+
+| Variable | Default | Role |
+|----------|---------|------|
+| `MEMORY_EXTRACTION_MODEL` | `anthropic/claude-haiku-5.5` | The OpenRouter model behind every model call except `consult`: memory and task extraction, curation, conversation titles, tags, and summaries, reception, journal classification, week plans, persona descriptors, shadow, and consolidation. Setting it repoints an install without a release, and unsetting it returns to the pin. The pin moved from `google/gemini-2.5-flash-lite` to Claude Haiku 5.5 on 2026-10-28, chosen by measurement (CV9.DS9); to roll back, put `MEMORY_EXTRACTION_MODEL=google/gemini-2.5-flash-lite` in `${XDG_CONFIG_HOME:-~/.config}/mirror/env` (a clone may use its `.env`), and confirm with `mirror runtime status`, whose models line then names Flash Lite with no reasoning clause: the request Flash Lite was measured with. Rolling back restores Flash Lite's upstream rate limits (HTTP 429), which the move retired. A model change is a migration: see the development guide's model upgrade playbook. |
+| `MEMORY_EMBEDDING_MODEL` | `openai/text-embedding-3-small` | The embedding model for memory and attachment search. |
+| `MEMORY_EXTRACTION_REASONING` | unset: the model's own default | The reasoning effort those calls ask for, sent as OpenRouter's `reasoning.effort`: `none` (reasoning off), `minimal`, `low`, `medium`, `high`, `xhigh`, or `max`. Unset, each model sends the effort it was measured with: Claude Haiku 5.5, the pin, sends `none`, because it reasons by default and spends a short call's token budget before it answers; Gemini 2.5 Flash Lite and any other model send no reasoning field and reason as their provider defaults (Flash Lite not at all; on Flash Lite, any effort but `none` turns its thinking on). Set, the value wins on any model. A value that is not an effort reads as unset rather than failing the calls: `runtime status` shows it beside the effort actually sent, `reasoning=none (model default, invalid setting: <value>)`, and `runtime diagnose` reports it. `consult` never carries it. |
 
 ### Environment Selection
 
@@ -744,12 +927,11 @@ to the homes root (`~/.mirror-minds`).
 
 | Variable | Default | Role |
 |----------|---------|------|
-| `PI_SESSIONS_DIR` | `~/.pi/agent/sessions` | Source directory for the Pi session backfill that session maintenance runs. Only sessions that ended after the home was born are imported (the home's birth is its database's first open); earlier Pi history stays where it is. Override for multi-user setups. |
 | `MIRROR_SESSION_ID` | (unset) | Session id for CLIs called without `--session-id`: the conversation logger's fallback when no hook payload is present, and a named session for Builder lifecycle commands, which otherwise require `--journey` and never guess one. Do not set it in a shared `.env`: every window would then name the same session, and a Builder command without `--journey` would follow whichever window loaded last. Rarely set by humans. |
 | `MIRROR_STALE_ORPHAN_MINUTES` | `30` | How long an open conversation may sit idle before session maintenance closes it as an orphan, with its runtime session deactivated. On Codex 0.163.0, whose sessions outlive the TUI and whose SessionEnd fires only when the daemon reaps the idle thread, this is the fallback close (CV21.DS4.US4). A route sets it to `0` to prove the close now. |
 | `MIRROR_WELCOME` | (unset) | Set to `off`, `0`, `false`, or `no` to suppress the welcome card emitted by `mirror welcome`. See `docs/product/specs/welcome/index.md`. |
 | `MIRROR_TS_MCP_GUARDS` | (unset) | Set to `0` to remove the MCP wallet and abuse guards (rate limit, spend ceiling, argument caps). See [Configuration](docs/reference/configuration.md#mcp-wallet-and-abuse-guards-cv22ds9ts1). |
-| `MIRROR_NODE` | (unset) | The `node` binary the hook wrappers and the plugin's MCP entry run, when the runtime's `PATH` does not hold one (a GUI launch). Searched after it: `PATH`, the directory the Mirror entry was found in, `~/.nvm/current/bin`, `/opt/homebrew/bin`, `/usr/local/bin`. |
+| `MIRROR_NODE` | (unset) | The `node` binary the hook wrappers, the plugin's MCP entry, and the Pi extension run, when the runtime's `PATH` does not hold one (a GUI launch). Searched after it: `PATH`, the directory the Mirror entry was found in (for the Pi extension, the `bin/` of the prefix the package is installed under), `~/.nvm/current/bin`, `/opt/homebrew/bin`, `/usr/local/bin`. The Pi extension takes an absolute path only, and warns once in `mirror-logger.log` about a value it will not use. |
 | `MIRROR_BIN` | (unset) | The directory holding `mirror` and `mirror-hook` (`$(npm prefix -g)/bin`), for the plugin's hook wrappers and MCP entry, which run from a runtime's plugin cache and cannot reach the tree by a relative path. Searched after it: `PATH`, `~/.nvm/current/bin`, `/opt/homebrew/bin`, `/usr/local/bin`. Same trust class as `MIRROR_NODE`: whoever sets it chooses what runs. |
 
 The plugin manifest's MCP entry is `/bin/sh -c <locator>`: it finds the
@@ -766,6 +948,10 @@ reads them, and `runtime diagnose` names any still set.
 ### Set by External Runtimes (do not set manually)
 
 - `CLAUDE_PROJECT_DIR` — injected by Claude Code when it invokes hooks.
+- `CLAUDE_CODE_SESSION_ID` (Claude Code 2.1.310) and `CODEX_SESSION_ID` (Codex 0.164.0)
+  — undocumented, measured 2026-10-24 (CV9.DS8.TS1): the session id, in the model's
+  shell and in the hooks' own. `mirror mirror load` and `mirror mirror doorman` read them
+  when `MIRROR_SESSION_ID` is absent.
 - Claude Code hook payloads carry `session_id` on stdin.
 - Pi's extension passes the session file path to the logger CLI.
 

@@ -77,4 +77,15 @@ Captured without selecting; Current Focus unchanged.
 
 ## Outcome
 
-Pending.
+**Rejected 2026-10-22**, by the Navigator's decision: a duplicate, not declined.
+[CR139](cr139-a-verdict-that-exits-1-is-logged-as-a-front-door-error.md), captured three
+days later at CR138's selection, describes the general case: every verdict that exits 1 is
+logged as an `ERROR`, not only `diagnose`'s. CR139 carries the work. Several parts of this
+CR moved into it:
+
+- the problem points: the loop outliving its cause, the `runtime` line that names no
+  subcommand, and the typo that counts;
+- the expected exit 0 once the real findings are repaired;
+- the three plan options.
+
+This CR's evidence stays here, and CR139 links to it.

@@ -26,12 +26,15 @@ import { buildSchemaInventory, type SchemaInventory } from "../src/db/schemaInve
 // CV22.DS10.TS5 deleted `TS_AUTHORED_MIGRATION_IDS` from the schema module:
 // with one custodian, "which engine authored this migration" is no longer a
 // schema fact. It survives here as a FIXTURE fact -- these cases compare
-// against end-states the Python oracle recorded, and 017 is what TypeScript
-// applies beyond them. (The first draft said it would go with the oracle at
+// against end-states the Python oracle recorded, and 017 and 018 are what
+// TypeScript applies beyond them. (The first draft said it would go with the oracle at
 // plateau 3; it cannot. The end-states are frozen fixtures now, and they still
 // predate 017, so this list stays until a deliberate change re-records them
 // by hand -- see ts/test/goldens/README.md for how.)
-const TS_AUTHORED_MIGRATION_IDS: readonly string[] = ["017_journey_parent_column"];
+const TS_AUTHORED_MIGRATION_IDS: readonly string[] = [
+  "017_journey_parent_column",
+  "018_drop_hook_injected",
+];
 
 import { diffTsInventoryAgainstSnapshot } from "../src/db/schemaTsDivergence.ts";
 

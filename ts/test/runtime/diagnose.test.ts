@@ -10,10 +10,8 @@ import {
   chmodSync,
   closeSync,
   mkdirSync,
-  mkdtempSync,
   openSync,
   readFileSync,
-  realpathSync,
   rmSync,
   statSync,
   writeFileSync,
@@ -24,13 +22,16 @@ import { DatabaseSync } from "node:sqlite";
 import test from "node:test";
 import { KNOWN_MIGRATION_IDS } from "#db/schemaState.ts";
 import { checksum } from "#extensions/migrations.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 import {
   type DriftFinding,
   deferredCloseTailFindings,
   diagnoseRuntime,
+  extractionReasoningFindings,
   frontDoorErrorFindings,
   identityKeyFindings,
   loosePermissionFindings,
+  openRouterKeyFindings,
   probeModelPins,
   ReplayModelCatalogProvider,
   renderRuntimeDiagnosis,
@@ -161,7 +162,7 @@ interface Fixture {
 }
 
 function fixture(now: Date): Fixture {
-  const root = realpathSync(mkdtempSync("/tmp/runtime-diagnose-"));
+  const root = tempDir("runtime-diagnose-");
   const homes = new Map<string, string>();
 
   const repo = join(root, "repo");
@@ -266,6 +267,9 @@ function reportFor(f: Fixture, home: string | null): RuntimeStatusReport {
     version: golden.meta.fixture_version,
     nodeVersion: "<node-version>",
     install: { kind: "clone", repository: f.repo },
+    // CR185: the not-configured sentence names what is found under the OS home,
+    // so the unconfigured scenario reads an empty one, never the developer's.
+    osHome: join(f.root, "os-home"),
   });
 }
 
@@ -420,7 +424,7 @@ function homeWithIdentity(rows: readonly (readonly [string, string])[]): {
   dbPath: string;
   cleanup: () => void;
 } {
-  const root = mkdtempSync(join(realpathSync("/tmp"), "diagnose-identity-keys-"));
+  const root = tempDir("diagnose-identity-keys-");
   const dbPath = join(root, "memory.db");
   const db = new DatabaseSync(dbPath);
   db.exec("CREATE TABLE identity (layer TEXT NOT NULL, key TEXT NOT NULL, UNIQUE(layer, key))");
@@ -486,7 +490,7 @@ test("CR104: a database without such a key, or without an identity table, report
 });
 
 test("US3 D3: a group-readable config file is a loose_permissions finding, an owner-only one is not", () => {
-  const root = mkdtempSync("/tmp/runtime-diagnose-config-");
+  const root = tempDir("runtime-diagnose-config-");
   try {
     const config = join(root, "env");
     writeFileSync(config, "OPENROUTER_API_KEY=x\n");
@@ -515,7 +519,7 @@ function homeWithConversations(rows: readonly (readonly [string, string, string 
   dbPath: string;
   cleanup: () => void;
 } {
-  const root = mkdtempSync(join(realpathSync("/tmp"), "diagnose-deferred-tails-"));
+  const root = tempDir("diagnose-deferred-tails-");
   const dbPath = join(root, "memory.db");
   const db = new DatabaseSync(dbPath);
   db.exec("CREATE TABLE conversations (id TEXT PRIMARY KEY, ended_at TEXT, metadata TEXT)");
@@ -563,4 +567,58 @@ test("deferred close tails younger than a day, or none, are not a finding", () =
   } finally {
     home.cleanup();
   }
+});
+
+test("CV9.DS9.TS1: an invalid MEMORY_EXTRACTION_REASONING is reported, a valid or absent one is not", () => {
+  assert.deepEqual(extractionReasoningFindings({} as NodeJS.ProcessEnv), []);
+  assert.deepEqual(
+    extractionReasoningFindings({ MEMORY_EXTRACTION_REASONING: "none" } as NodeJS.ProcessEnv),
+    [],
+  );
+  const findings = extractionReasoningFindings({
+    MEMORY_EXTRACTION_REASONING: "off",
+  } as NodeJS.ProcessEnv);
+  assert.equal(findings.length, 1);
+  assert.equal(findings[0]?.code, "extraction_reasoning_invalid");
+  assert.equal(findings[0]?.severity, "attention");
+  assert.equal(findings[0]?.subject, "MEMORY_EXTRACTION_REASONING");
+  assert.match(findings[0]?.detail ?? "", /"off" is not a reasoning effort/);
+  // US3: on the pin the calls send the model's default, and the finding says so.
+  assert.match(findings[0]?.detail ?? "", /anthropic\/claude-haiku-5\.5's own default, none/);
+  const rollback = extractionReasoningFindings({
+    MEMORY_EXTRACTION_MODEL: "google/gemini-2.5-flash-lite",
+    MEMORY_EXTRACTION_REASONING: "off",
+  } as NodeJS.ProcessEnv);
+  assert.match(rollback[0]?.detail ?? "", /no reasoning setting/);
+  assert.match(
+    findings[0]?.recommendation ?? "",
+    /none, minimal, low, medium, high, xhigh, or max/,
+  );
+  assert.match(findings[0]?.recommendation ?? "", /~\/\.config\/mirror\/env/);
+});
+
+// --- CR187: a missing OpenRouter key is a finding, named by where the key goes ---
+
+test("CR187: no key is an attention finding that names the file the key goes in", () => {
+  const home = tempDir("diagnose-openrouter-key-");
+  const config = join(home, ".config", "mirror", "env");
+  for (const env of [{}, { OPENROUTER_API_KEY: "" }, { OPENROUTER_API_KEY: "   " }]) {
+    assert.deepEqual(openRouterKeyFindings(env as NodeJS.ProcessEnv, home), [
+      {
+        code: "openrouter_key_missing",
+        severity: "attention",
+        subject: "OPENROUTER_API_KEY",
+        detail: "not set, so embeddings, memory extraction, and consult are off",
+        recommendation:
+          `add OPENROUTER_API_KEY=<your key> to ${config} ` +
+          `(a new file; make it readable only by you: chmod 600 ${config})`,
+        repair_route: "configuration",
+      },
+    ]);
+  }
+});
+
+test("CR187: a configured key is no finding, and its value is printed nowhere", () => {
+  const env = { OPENROUTER_API_KEY: "sk-or-canary-7f3a" } as NodeJS.ProcessEnv;
+  assert.deepEqual(openRouterKeyFindings(env), []);
 });

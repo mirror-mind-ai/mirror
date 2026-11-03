@@ -21,6 +21,11 @@ conversas/
 node_modules/
 
 pi_exports/
+# Pi's project settings are machine-local. Where Pi also loads an installed
+# Mirror package, this file holds the entry that keeps that package's skills
+# and extension out of the checkout's sessions, and that entry names a path on
+# one machine (CR177). Its only shared setting was Pi's default.
+.pi/settings.json
 docs/project/explorations/
 .mirror-clone-role
 .mirror-update-channel

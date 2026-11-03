@@ -16,19 +16,12 @@
 
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import {
-  chmodSync,
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  realpathSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs";
+import { chmodSync, existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import { bootstrapDatabase } from "#db/bootstrap.ts";
 import { runRuntimeReadRoute } from "#frontDoor/runtimeRoute.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 import type { InstallKind } from "#runtime/installKind.ts";
 
 const GIT_ENV = {
@@ -62,7 +55,7 @@ interface World {
 }
 
 function world(): World {
-  const root = realpathSync(mkdtempSync("/tmp/runtime-install-reads-"));
+  const root = tempDir("runtime-install-reads-");
 
   const clone = join(root, "clone");
   mkdirSync(clone);

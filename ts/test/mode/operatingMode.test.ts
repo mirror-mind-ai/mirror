@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
-import { mkdtempSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import { openDatabaseCopyForWrite } from "#db/database.ts";
 import { createRuntimeTables } from "#helpers/runtimeSchema.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 import {
   activateOperatingMode,
   deactivateOperatingMode,
@@ -13,7 +13,7 @@ import {
 } from "#mode/operatingMode.ts";
 
 function fixture() {
-  const dir = mkdtempSync("/tmp/mirror-mode-state-");
+  const dir = tempDir("mirror-mode-state-");
   const db = openDatabaseCopyForWrite(join(dir, "copy.db"));
   createRuntimeTables(db);
   return db;
@@ -69,5 +69,43 @@ test("empty mode is rejected", () => {
     () => activateOperatingMode(db, { mode: "  " }, "2026-01-01T00:00:00.000000Z"),
     /mode must not be empty/,
   );
+  db.close();
+});
+
+// CR008 option B, landed by CV9.DS8.US5 the day a runtime (Pi) started naming
+// its session: a stamp written under the session's NAME says so, and one a
+// `build load` guessed onto the row does not. The key is present only when
+// true, so the bytes of every unnamed stamp are what they were.
+test("a stamp written under the session's name carries provenance; a guessed one does not", () => {
+  const db = fixture();
+  activateOperatingMode(
+    db,
+    { mode: "Builder Mode", journey: "a", sessionId: "named", named: true },
+    "2026-01-01T00:00:00.000000Z",
+  );
+  activateOperatingMode(
+    db,
+    { mode: "Builder Mode", journey: "a", sessionId: "guessed" },
+    "2026-01-01T00:00:00.000000Z",
+  );
+  assert.deepEqual(getActiveOperatingMode(db, "named"), {
+    mode: "Builder Mode",
+    journey: "a",
+    namedSession: true,
+  });
+  assert.deepEqual(getActiveOperatingMode(db, "guessed"), { mode: "Builder Mode", journey: "a" });
+  const metadata = (id: string) =>
+    String(
+      db.prepare("SELECT metadata FROM runtime_sessions WHERE session_id = ?").get(id)?.metadata,
+    );
+  assert.match(metadata("named"), /"named_session": true/);
+  assert.doesNotMatch(metadata("guessed"), /named_session/);
+  // The global row is never "named".
+  activateOperatingMode(
+    db,
+    { mode: "Builder Mode", journey: "a", named: true },
+    "2026-01-01T00:00:00.000000Z",
+  );
+  assert.deepEqual(getActiveOperatingMode(db, null), { mode: "Builder Mode", journey: "a" });
   db.close();
 });

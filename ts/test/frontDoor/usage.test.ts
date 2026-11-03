@@ -89,6 +89,20 @@ test("US3: bare mirror with no user configured is a three-line orientation, not 
   assert.equal(answerUsage({ scope: "top-level", given: "--help" }, unconfigured).text, USAGE);
 });
 
+test("CR185: with a home on disk that nothing selects, the orientation names it in place of init <your-name>", () => {
+  const unconfigured = {
+    userConfigured: false,
+    configFile: "/home/u/.config/mirror/env",
+    useHome: "To use the home at /home/u/.mirror-minds/leandro, run: mirror init leandro",
+  };
+  assert.equal(
+    answerUsage({ scope: "top-level", given: null }, unconfigured).text,
+    "No user configured yet.\n" +
+      "  To use the home at /home/u/.mirror-minds/leandro, run: mirror init leandro\n" +
+      "  Configuration will live at: /home/u/.config/mirror/env\n",
+  );
+});
+
 test("a family: argparse's shape on stderr with exit 2, the family as the program", () => {
   const request = {
     scope: "family",

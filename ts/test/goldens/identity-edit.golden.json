@@ -7,7 +7,7 @@
     "blank": "#!/bin/sh\nprintf '   \\n' > \"$1\"\n",
     "replace": "#!/bin/sh\nprintf 'a whole new behavior\\n' > \"$1\"\n",
     "fail": "#!/bin/sh\nexit 3\n",
-    "echo_back": "#!/bin/sh\nprintf 'seen:' > \"$1\".seen\ncat \"$1\" >> \"$1\".seen\ncat \"$1\".seen > \"$1\"\n"
+    "echo_back": "#!/bin/sh\nprintf 'seen:' > \"$1\".seen\ncat \"$1\" >> \"$1\".seen\ncat \"$1\".seen > \"$1\"\nrm -f \"$1\".seen\n"
   },
   "seed": {
     "layer": "ego",

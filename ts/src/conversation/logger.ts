@@ -13,6 +13,7 @@
 import { closeSync, existsSync, mkdirSync, openSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { isCommandTurn } from "#conversation/commandTurn.ts";
+import { deleteConversation } from "#conversation/conversationDeletion.ts";
 import { markCloseTailPending } from "#conversation/deferredCloseTail.ts";
 import {
   lastAssistantMessageOf,
@@ -172,18 +173,24 @@ export function getOrCreateSessionConversation(
       options.persona ?? null,
       options.journey ?? null,
     );
-    // Mirrors the service's conflict clause exactly: it does NOT touch
-    // mirror_active, hook_injected, started_at, or metadata on update.
+    // Mirrors the service's conflict clause: it does NOT touch mirror_active,
+    // started_at, or metadata on update. Since CV9.DS8.US5 it
+    // does not erase a persona or journey either when the caller names none:
+    // on the first prompt of a session the doorman has already routed the
+    // explicit turn and written both to this row, and the prompt logger, which
+    // runs after it, wrote NULL over them -- the mirror lost its voice until a
+    // later prompt scored a persona again. A caller that names a persona or
+    // journey still sets it.
     db.prepare(
       `INSERT INTO runtime_sessions
          (session_id, conversation_id, interface, mirror_active, persona, journey,
-          hook_injected, active, started_at, updated_at, closed_at, metadata)
-       VALUES (?, ?, ?, 0, ?, ?, 0, 1, ?, ?, NULL, NULL)
+          active, started_at, updated_at, closed_at, metadata)
+       VALUES (?, ?, ?, 0, ?, ?, 1, ?, ?, NULL, NULL)
        ON CONFLICT(session_id) DO UPDATE SET
          conversation_id = excluded.conversation_id,
          interface = excluded.interface,
-         persona = excluded.persona,
-         journey = excluded.journey,
+         persona = COALESCE(excluded.persona, runtime_sessions.persona),
+         journey = COALESCE(excluded.journey, runtime_sessions.journey),
          active = 1,
          closed_at = NULL,
          updated_at = excluded.updated_at`,
@@ -453,25 +460,10 @@ export async function endSession(
 }
 
 /**
- * Python `ConversationService.delete_conversations` for one resolved id:
- * extracted memories survive with a nulled FK rather than cascading away.
+ * Python `discard_current_conversation`: delete and mark the session discarded.
+ * The deletion is `conversationDeletion.ts`'s, shared with CR154's removal of
+ * imported Pi conversations.
  */
-function deleteConversation(db: WritableDatabase, conversationId: string): void {
-  db.prepare("DELETE FROM messages WHERE conversation_id = ?").run(conversationId);
-  db.prepare("DELETE FROM conversation_embeddings WHERE conversation_id = ?").run(conversationId);
-  db.prepare("UPDATE memories SET conversation_id = NULL WHERE conversation_id = ?").run(
-    conversationId,
-  );
-  db.prepare("UPDATE llm_calls SET conversation_id = NULL WHERE conversation_id = ?").run(
-    conversationId,
-  );
-  db.prepare("UPDATE runtime_sessions SET conversation_id = NULL WHERE conversation_id = ?").run(
-    conversationId,
-  );
-  db.prepare("DELETE FROM conversations WHERE id = ?").run(conversationId);
-}
-
-/** Python `discard_current_conversation`: delete and mark the session discarded. */
 export function discardCurrentConversation(
   db: WritableDatabase,
   sessionId: string | null,

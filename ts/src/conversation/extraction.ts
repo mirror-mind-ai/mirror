@@ -1,4 +1,5 @@
 import { metadataDict } from "#conversation/closeTail.ts";
+import { resolveUserName } from "#conversation/userName.ts";
 import type { WritableDatabase } from "#db/database.ts";
 import { embeddingToBytes } from "#db/decode.ts";
 import { optionalString, requireString } from "#db/rowDecode.ts";
@@ -178,7 +179,7 @@ export async function runConversationExtraction(
   return { memoryIds, taskIds, extracted: memoryIds.length };
 }
 
-async function persistExtractedTasks(
+export async function persistExtractedTasks(
   db: WritableDatabase,
   llm: LlmProvider,
   messages: readonly ExtractionMessage[],
@@ -273,17 +274,6 @@ function getMessages(db: WritableDatabase, conversationId: string): ExtractionMe
     .map((row) => ({ role: requireString(row, "role"), content: requireString(row, "content") }));
 }
 
-function resolveUserName(db: WritableDatabase): string {
-  const row = db
-    .prepare("SELECT content FROM identity WHERE layer = ? AND key = ? LIMIT 1")
-    .get("user", "identity");
-  const content = row ? optionalString(row, "content") : null;
-  const match = content?.match(
-    /(?:You are talking to|Você está falando com) ([A-Z][a-zA-Záéíóúãõ]+)/,
-  );
-  return match?.[1] ?? "User";
-}
-
 /**
  * The close tail's two ledger hooks. Roles match Python's `build_llm_logger`
  * roles so the `llm_calls` ledger agrees across engines; the orchestration's
@@ -305,7 +295,7 @@ function logEmbeddingAttempt(
   return embeddingLedgerHook(db, { conversationId, now });
 }
 
-function insertMemory(
+export function insertMemory(
   db: WritableDatabase,
   id: string,
   conversationId: string,

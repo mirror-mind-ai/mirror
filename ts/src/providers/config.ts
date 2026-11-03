@@ -1,3 +1,7 @@
+import { existsSync } from "node:fs";
+import { homedir } from "node:os";
+import { configFilePath } from "#runtime/config.ts";
+
 export type ProviderName = "openrouter";
 
 export interface ProviderConfig {
@@ -9,6 +13,8 @@ export interface ProviderConfig {
 export interface ProviderConfigOptions {
   env?: Record<string, string | undefined>;
   argv?: readonly string[];
+  /** The OS user's home, where the config file is named from (tests only). */
+  home?: string;
 }
 
 const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
@@ -18,7 +24,14 @@ const ARG_SECRET_PATTERN =
 // Model pins (AI-06, CV9.E2.S12): a deprecated pinned model would fail every
 // extraction/embedding call, and those paths fail soft -- so the pins must be
 // env-overridable to repoint a deployed instance without a release.
-export const DEFAULT_EXTRACTION_MODEL = "google/gemini-2.5-flash-lite";
+//
+// The extraction pin moved from `google/gemini-2.5-flash-lite` to Claude Haiku 5.5
+// on 2026-10-28 (CV9.DS9.US3), on DS9's measurement: the Navigator's own blind
+// rankings on his conversations, the suite at reasoning off, and Flash Lite's
+// upstream rate limits. A pin change is a migration: the pin, its entry in
+// MODEL_DEFAULT_REASONING, and MODEL_PRICES (cost.ts) move in one commit, behind
+// a green `eval --all` (the development guide's model upgrade playbook).
+export const DEFAULT_EXTRACTION_MODEL = "anthropic/claude-haiku-5.5";
 export const DEFAULT_EMBEDDING_MODEL = "openai/text-embedding-3-small";
 
 export interface ModelPinOptions {
@@ -51,6 +64,103 @@ export function resolveEmbeddingModel(options: ModelPinOptions = {}): string {
   return env.MEMORY_EMBEDDING_MODEL ?? DEFAULT_EMBEDDING_MODEL;
 }
 
+/**
+ * The reasoning efforts OpenRouter's catalogue lists across its models (checked
+ * 2026-10-26, CV9.DS9.TS1). `none` turns reasoning off. Whether a given model
+ * honours a given effort is the operator's choice; this list is the vocabulary.
+ */
+export const REASONING_EFFORTS = [
+  "none",
+  "minimal",
+  "low",
+  "medium",
+  "high",
+  "xhigh",
+  "max",
+] as const;
+
+export type ReasoningEffort = (typeof REASONING_EFFORTS)[number];
+
+/** What `MEMORY_EXTRACTION_REASONING` says: an effort to send, or a value that is not one. */
+export interface ExtractionReasoning {
+  /** The effort to send as `reasoning.effort`, or null to send no reasoning field. */
+  effort: ReasoningEffort | null;
+  /** The value as written when it is not an effort; null otherwise. */
+  invalid: string | null;
+}
+
+/**
+ * Read `MEMORY_EXTRACTION_REASONING` (CV9.DS9.TS1): the reasoning effort every
+ * extraction-family call sends. Absent or blank sends nothing, which is the request
+ * as it was before the setting existed.
+ *
+ * Unlike the numeric resolvers below, this never throws. They fail loudly, but they
+ * are read inside the session-end hooks, where a throw becomes an extraction attempt
+ * and three attempts quarantine a conversation for good (CR178). So a value that is
+ * not an effort sends nothing too, and comes back as `invalid` for `runtime status`
+ * and `runtime diagnose` to show.
+ */
+export function readExtractionReasoning(options: ModelPinOptions = {}): ExtractionReasoning {
+  const env = options.env ?? process.env;
+  const raw = env.MEMORY_EXTRACTION_REASONING ?? "";
+  const value = raw.trim().toLowerCase();
+  if (value === "") return { effort: null, invalid: null };
+  const effort = REASONING_EFFORTS.find((candidate) => candidate === value);
+  return effort ? { effort, invalid: null } : { effort: null, invalid: raw.trim() };
+}
+
+/**
+ * The reasoning effort a model sends when `MEMORY_EXTRACTION_REASONING` is unset
+ * (CV9.DS9.US3). A property of the model, because what DS9 measured is: Haiku
+ * reasons by default and spent the title call's 40-token budget, so it was
+ * measured and chosen at `none`; Flash Lite was measured with no reasoning field,
+ * and a model absent from this table gets none, which is the request as it was
+ * before the setting existed. So the playbook's rollback, `MEMORY_EXTRACTION_MODEL`
+ * set to the old pin, reproduces exactly the request the old pin was measured with,
+ * and naming the default pin explicitly sends the same request as leaving it unset.
+ */
+export const MODEL_DEFAULT_REASONING: Readonly<Record<string, ReasoningEffort>> = {
+  "anthropic/claude-haiku-5.5": "none",
+};
+
+/** Where the effective effort came from: the setting, the model's default, or nowhere. */
+export type ReasoningSource = "setting" | "model_default";
+
+/** The effective pair every extraction-family call sends: the model and its effort. */
+export interface EffectiveExtractionReasoning {
+  /** The model the call names: `MEMORY_EXTRACTION_MODEL` or the default pin. */
+  model: string;
+  /** The effort to send as `reasoning.effort`, or null to send no reasoning field. */
+  effort: ReasoningEffort | null;
+  /** What decided `effort`; null when no field is sent. */
+  source: ReasoningSource | null;
+  /** `MEMORY_EXTRACTION_REASONING` as written when it is not an effort; null otherwise. */
+  invalid: string | null;
+}
+
+/**
+ * Resolve the model and the reasoning effort an extraction-family call sends
+ * (CV9.DS9.US3): the model first, then the effort: the setting when it names an
+ * effort, else the model's entry in `MODEL_DEFAULT_REASONING`, else no field. An
+ * invalid setting reads as unset, so the default pin still sends its model default;
+ * `invalid` carries the value for `runtime status` and `runtime diagnose`. The
+ * transport, the eval harness, and `runtime status` all read this one resolver.
+ */
+export function resolveExtractionReasoning(
+  options: ModelPinOptions = {},
+): EffectiveExtractionReasoning {
+  const model = resolveExtractionModel(options);
+  const setting = readExtractionReasoning(options);
+  if (setting.effort !== null) {
+    return { model, effort: setting.effort, source: "setting", invalid: null };
+  }
+  const modelDefault = MODEL_DEFAULT_REASONING[model];
+  if (modelDefault !== undefined) {
+    return { model, effort: modelDefault, source: "model_default", invalid: setting.invalid };
+  }
+  return { model, effort: null, source: null, invalid: setting.invalid };
+}
+
 // Observability (AI-09, CV9.E2.S13): mirrors Python's MEMORY_LOG_LLM_CALLS
 // resolution exactly -- off | metadata | full, default metadata (never a
 // silent full -- bodies are opt-in only). Legacy "1" maps to "full" for
@@ -80,9 +190,90 @@ export function resolveProviderConfig(
   const env = options.env ?? process.env;
   const apiKey = env.OPENROUTER_API_KEY?.trim();
   if (!apiKey) {
-    throw new ProviderConfigError("OPENROUTER_API_KEY is not configured.");
+    // Reached lazily, at a command's first model call, so it claims nothing
+    // about what the command did before it (CR187).
+    const where = keyFileInstruction(env, options.home);
+    throw new ProviderConfigError(`OPENROUTER_API_KEY is not configured. Add ${where}.`);
   }
   return { provider, apiKey, baseUrl: OPENROUTER_BASE_URL };
+}
+
+// --- CR187: the key's presence, and the sentences that say where it goes ---
+//
+// A missing key reached Node as a stack trace that named no file, and a key
+// OpenRouter refused did the same. Every sentence about the key is built here,
+// from one predicate, so the refusal, the status line, and the diagnose finding
+// cannot disagree about what "configured" means. None of them carries the key.
+
+/** Whether a key is configured: present and not blank, trimmed as the provider reads it. */
+export function hasOpenRouterKey(env: Record<string, string | undefined>): boolean {
+  return Boolean(env.OPENROUTER_API_KEY?.trim());
+}
+
+/**
+ * "OPENROUTER_API_KEY=<your key> to <config>", naming the file this install
+ * reads (`XDG_CONFIG_HOME` honoured). When that file does not exist yet, the
+ * person is about to create it by hand, where the usual umask makes it 0644 --
+ * the key readable by every account on the machine -- so the instruction says
+ * to make it owner-only. A file `init` created is 0600 already.
+ */
+export function keyFileInstruction(
+  env: Record<string, string | undefined>,
+  home: string = homedir(),
+): string {
+  return `OPENROUTER_API_KEY=<your key> to ${keyFileTarget(env, home)}`;
+}
+
+/** The config file to add the key to, with the owner-only clause when it is new. */
+export function keyFileTarget(
+  env: Record<string, string | undefined>,
+  home: string = homedir(),
+): string {
+  const config = configFilePath({ XDG_CONFIG_HOME: env.XDG_CONFIG_HOME }, home);
+  const created = existsSync(config)
+    ? ""
+    : ` (a new file; make it readable only by you: chmod 600 ${config})`;
+  return `${config}${created}`;
+}
+
+/**
+ * Refuse, before a command does anything, when the key it cannot work without
+ * is missing. The sentence says first what was not done, then how to fix it:
+ * the person's first question is whether their entry, plan, or question went
+ * anywhere.
+ */
+export function requireOpenRouterKey(
+  env: Record<string, string | undefined>,
+  options: { consequence?: string; home?: string } = {},
+): void {
+  if (hasOpenRouterKey(env)) return;
+  const consequence = options.consequence ?? "nothing was done";
+  throw new ProviderConfigError(
+    `${consequence}, because OPENROUTER_API_KEY is not configured. ` +
+      `Add ${keyFileInstruction(env, options.home)}, then run the same command again.`,
+  );
+}
+
+/**
+ * A key OpenRouter refused (HTTP 401 or 403), named by status and by where a
+ * key can be set -- never by value, and never with anything the provider sent
+ * back. The key may come from the shell or a clone's `.env` as well as the
+ * config file, so all three are named, as diagnose does for its own settings.
+ */
+export function keyRefusedMessage(
+  status: number | null,
+  options: { env?: Record<string, string | undefined>; home?: string } = {},
+): string {
+  const env = options.env ?? process.env;
+  const config = configFilePath(
+    { XDG_CONFIG_HOME: env.XDG_CONFIG_HOME },
+    options.home ?? homedir(),
+  );
+  const code = status === null ? "" : ` (HTTP ${status})`;
+  return (
+    `OpenRouter refused OPENROUTER_API_KEY${code}. Check the key where it is set: ` +
+    `the environment, the clone's .env, or ${config}.`
+  );
 }
 
 function rejectArgvSecrets(argv: readonly string[]): void {

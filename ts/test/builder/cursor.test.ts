@@ -19,7 +19,7 @@
 //      absent rather than raising.
 
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync } from "node:fs";
+import { rmSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 
@@ -39,6 +39,7 @@ import {
 import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
 import golden from "#goldens/builder-cursor.golden.json" with { type: "json" };
 import { createRuntimeTables } from "#helpers/runtimeSchema.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 import { upsertRuntimeSession } from "#mirror/runtimeSession.ts";
 
 interface RowDump {
@@ -48,7 +49,6 @@ interface RowDump {
   mirror_active: number;
   persona: string | null;
   journey: string | null;
-  hook_injected: number;
   active: number;
   started_at: string;
   updated_at: string;
@@ -130,7 +130,7 @@ interface Harness {
 }
 
 function harness(): Harness {
-  const directory = mkdtempSync("/tmp/builder-cursor-");
+  const directory = tempDir("builder-cursor-");
   directories.push(directory);
   const db = openDatabaseCopyForWrite(join(directory, "copy.db"));
   createRuntimeTables(db);
@@ -168,7 +168,6 @@ function readRow(db: WritableDatabase): RowDump | null {
     mirror_active: Number(record.mirror_active),
     persona: (record.persona as string | null) ?? null,
     journey: (record.journey as string | null) ?? null,
-    hook_injected: Number(record.hook_injected),
     active: Number(record.active),
     started_at: String(record.started_at),
     updated_at: String(record.updated_at),

@@ -40,7 +40,7 @@ runtimes:
   claude:
     command_name: ext:<id>          # must start with "ext:"
     skill_file: SKILL.md
-  # codex etc. optional
+  # any other key: validated and written, read by no runtime
 
 # Optional: capabilities for Mirror Mode integration
 mirror_context_providers:
@@ -74,7 +74,9 @@ cli:
   CV22.DS10.TS2, so it no longer demands one, but a declared one is still
   validated as before).
 - Each `runtimes.<name>.command_name` follows the runtime's convention
-  (`ext:<...>` for Claude, `ext-<...>` for Pi).
+  (`ext:<...>` for Claude, `ext-<...>` for Pi). Install writes the skill to a
+  directory named after it with `:` replaced by `-`, so `ext:<id>` is `ext-<id>` on
+  disk, the name the runtimes list.
 - Each `mirror_context_providers[].id` is unique within the extension.
 - `provider_runtime.protocol`, when present, is exactly `mirror-context-v1`.
 - `provider_runtime.command` is a non-empty argv array. It is never interpreted by a shell;
@@ -86,6 +88,16 @@ cli:
 
 Manifests that fail validation are rejected at install time and at every
 subsequent load.
+
+### What each `runtimes:` key reaches
+
+`pi` is read by Pi's extension at session start. `claude` reaches Claude Code, Codex,
+Antigravity, and Grok Build: install copies its skill into the home's extensions
+plugin, `runtime/plugin/mirror-ext-<user>/`, which each of those runtimes takes once
+([the runtime interface contract](../specs/runtime-interface/index.md#how-an-installed-extension-reaches-each-runtime)).
+Install writes `runtime/skills/<key>/` for any other key too, and no runtime reads it:
+an extension that should reach Codex, Antigravity, or Grok Build declares a `claude`
+block, not one named after them.
 
 ## 2. Context providers — `mirror-context-v1`
 

@@ -117,6 +117,27 @@ test("CRITICAL: generateEmbeddingSafely treats a provider exception as TERMINAL,
   assert.equal(provider.calls, 1);
 });
 
+test("CR187: a transport failure keeps its kind and status through the wrapper, so a refused key can be named", async () => {
+  // Before, only the message survived ("the inner kind is gone by then"): a
+  // command that only embeds could not tell a refused key from an outage.
+  const refused = new CountingProvider(async () => {
+    throw new LlmTransportError("auth", "provider returned HTTP 401", { status: 401 });
+  });
+  await assert.rejects(
+    () => generateEmbeddingSafely(refused, "hello", { sleep: noSleep }),
+    (error: unknown) => {
+      assert.ok(error instanceof EmbeddingError);
+      assert.deepEqual(error.transport, { kind: "auth", status: 401 });
+      return true;
+    },
+  );
+  // Anything that is not a transport failure keeps no transport.
+  await assert.rejects(
+    () => generateEmbeddingSafely(throwsOnCall(), "hello", { sleep: noSleep }),
+    (error: unknown) => error instanceof EmbeddingError && error.transport === null,
+  );
+});
+
 test("generateEmbeddingSafely calls onAttempt once per real API round-trip, not for the empty-input guard", async () => {
   const attemptsSeen: Array<{ hasVector: boolean }> = [];
   const provider = emptyThenSucceeds(1);

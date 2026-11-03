@@ -8,7 +8,7 @@
 // door could hand it to Python -- left with the fallback at CV22.DS10.TS5.)
 
 import assert from "node:assert/strict";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import { logAssistantMessage, logUserMessage } from "#conversation/logger.ts";
@@ -16,6 +16,7 @@ import { runConversationLoggerCommand } from "#conversation/loggerCli.ts";
 import { createLoggerRuntime, type LoggerRuntimeEnv } from "#conversation/loggerRuntime.ts";
 import { bootstrapDatabase } from "#db/bootstrap.ts";
 import type { WritableDatabase } from "#db/database.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 import { EMBEDDING_DIMENSIONS } from "#providers/embedding.ts";
 import type { LlmProvider, LlmRequest, LlmResponse } from "#providers/llm.ts";
 
@@ -55,7 +56,7 @@ interface Fixture {
 
 /** The real schema: `session-start` runs the extraction pipeline for real. */
 function fixture(): Fixture {
-  const home = mkdtempSync("/tmp/logger-cli-");
+  const home = tempDir("logger-cli-");
   const db = bootstrapDatabase(join(home, "memory.db"));
   const llm = new StubProvider();
   const runtime = (env: LoggerRuntimeEnv = {}) =>
@@ -81,7 +82,6 @@ function fixture(): Fixture {
 const REPLAY_ENV: LoggerRuntimeEnv = {
   MIRROR_TS_CONVERSATION_LLM_REPLAY: "/replay/llm.json",
   MIRROR_TS_CONVERSATION_EMBEDDING_REPLAY: "/replay/embedding.json",
-  PI_SESSIONS_DIR: "/absent/pi-sessions",
 };
 
 function run(f: Fixture, argv: string[], options: { stdin?: string; env?: LoggerRuntimeEnv } = {}) {
@@ -302,7 +302,7 @@ test("discard-current reports the empty case with the released string", async ()
 
 test("--mirror-home overrides the ambient home for the hook's mute gate", async () => {
   const f = fixture();
-  const explicitHome = mkdtempSync("/tmp/logger-cli-explicit-");
+  const explicitHome = tempDir("logger-cli-explicit-");
   // Mute only the explicit home; the ambient one stays active.
   await run(f, ["mute", "--mirror-home", explicitHome]);
 
@@ -317,7 +317,7 @@ test("--mirror-home overrides the ambient home for the hook's mute gate", async 
 
 test("status reads mute state from --mirror-home, not the ambient home", async () => {
   const f = fixture();
-  const explicitHome = mkdtempSync("/tmp/logger-cli-explicit-");
+  const explicitHome = tempDir("logger-cli-explicit-");
   await run(f, ["mute", "--mirror-home", explicitHome]);
 
   assert.deepEqual((await run(f, ["status"])).stdout, ["ACTIVE"]);
@@ -455,7 +455,6 @@ test("session-start and session-maintenance render the report with the injected 
       "Conversation logging ACTIVE.",
       "Conversation maintenance complete.",
       "Closed stale conversations: 0 (0.0s)",
-      "Backfilled Pi sessions: 0 (0.0s)",
       "Retitled pending conversations: 0 (0.0s)",
       "Extracted pending conversations: 0 (0.0s)",
       "Finished deferred close tails: 0 (0.0s)",
@@ -466,7 +465,6 @@ test("session-start and session-maintenance render the report with the injected 
     [
       "Conversation maintenance complete.",
       "Closed stale conversations: 0 (0.0s)",
-      "Backfilled Pi sessions: 0 (0.0s)",
       "Retitled pending conversations: 0 (0.0s)",
       "Extracted pending conversations: 0 (0.0s)",
       "Finished deferred close tails: 0 (0.0s)",
@@ -524,29 +522,73 @@ test("--limit without a value and a non-integer --limit fail with exit 1", async
   f.db.close();
 });
 
-test("session-maintenance backfills Pi sessions from PI_SESSIONS_DIR through the real port", async () => {
-  const f = fixture();
-  const sessionsDir = mkdtempSync("/tmp/logger-cli-pi-");
-  // The home was born a moment ago; a session it imports must end after that
-  // (CR121), so the fixture's conversation happens a minute from now.
+// --- CR153: maintenance imports no Pi session --------------------------------
+//
+// Session maintenance used to walk Pi's session directory and import every
+// file this home did not track -- including every session another home on the
+// machine had logged live. A home's Pi conversations are now the ones the Pi
+// extension logged into it, so maintenance reads no Pi session file: not in
+// the default directory, not under PI_SESSIONS_DIR, and not on the full
+// `session-start` the SessionStart hooks run. Each case is a session newer
+// than the home (CR121's floor would have let it in), untracked here.
+
+/** A session another home logged, ending a minute from now: newer than this home. */
+function writeForeignPiSession(dir: string): void {
+  mkdirSync(dir, { recursive: true });
   const at = (offsetMs: number) => new Date(Date.now() + 60_000 + offsetMs).toISOString();
   writeFileSync(
-    join(sessionsDir, "one.jsonl"),
+    join(dir, "another-home.jsonl"),
     [
-      `{"type":"message","message":{"role":"user","content":"hello from pi","timestamp":"${at(0)}"}}`,
-      `{"type":"message","message":{"role":"assistant","content":"hi","timestamp":"${at(1000)}"}}`,
+      `{"type":"message","message":{"role":"user","content":"a line from another home","timestamp":"${at(0)}"}}`,
+      `{"type":"message","message":{"role":"assistant","content":"its reply","timestamp":"${at(1000)}"}}`,
     ].join("\n"),
   );
-  const result = await run(f, ["session-maintenance"], {
-    env: { ...REPLAY_ENV, PI_SESSIONS_DIR: sessionsDir },
-  });
-  // Imported with a provisional title, then -- same run, next step -- retitled
-  // through the stub, exactly as Python's maintenance order does.
-  assert.ok(result.stdout[0]?.includes("Backfilled Pi sessions: 1 (0.0s)"), result.stdout[0]);
-  assert.ok(result.stdout[0]?.includes("Retitled pending conversations: 1 (0.0s)"));
-  const row = f.db.prepare("SELECT title, metadata FROM conversations").get();
-  assert.equal(row?.title, "A generated title");
-  assert.ok(String(row?.metadata).includes('"title_source": "startup_maintenance"'));
+}
+
+/** What an import would have left: a `pi` conversation and its `pi` runtime session. */
+function piRows(f: Fixture): { conversations: number; sessions: number } {
+  const count = (sql: string) => Number((f.db.prepare(sql).get() as { n: number }).n);
+  return {
+    conversations: count("SELECT COUNT(*) AS n FROM conversations WHERE interface = 'pi'"),
+    sessions: count("SELECT COUNT(*) AS n FROM runtime_sessions WHERE interface = 'pi'"),
+  };
+}
+
+const MAINTENANCE_REPORT = [
+  "Conversation maintenance complete.",
+  "Closed stale conversations: 0 (0.0s)",
+  "Retitled pending conversations: 0 (0.0s)",
+  "Extracted pending conversations: 0 (0.0s)",
+  "Finished deferred close tails: 0 (0.0s)",
+].join("\n");
+
+test("session-maintenance imports no Pi session from the default Pi sessions directory", async () => {
+  const f = fixture();
+  writeForeignPiSession(join(f.home, ".pi", "agent", "sessions", "--elsewhere--"));
+  const result = await run(f, ["session-maintenance"], { env: REPLAY_ENV });
+  assert.deepEqual(result.stdout, [MAINTENANCE_REPORT]);
+  assert.deepEqual(piRows(f), { conversations: 0, sessions: 0 });
+  f.db.close();
+});
+
+test("session-maintenance imports no Pi session from a PI_SESSIONS_DIR either", async () => {
+  const f = fixture();
+  // A variable, not a fresh literal: the environment a person's shell carries,
+  // with a name the runtime no longer declares.
+  const env = { ...REPLAY_ENV, PI_SESSIONS_DIR: tempDir("logger-cli-pi-") };
+  writeForeignPiSession(env.PI_SESSIONS_DIR);
+  const result = await run(f, ["session-maintenance"], { env });
+  assert.deepEqual(result.stdout, [MAINTENANCE_REPORT]);
+  assert.deepEqual(piRows(f), { conversations: 0, sessions: 0 });
+  f.db.close();
+});
+
+test("the full session-start the SessionStart hooks run imports no Pi session", async () => {
+  const f = fixture();
+  writeForeignPiSession(join(f.home, ".pi", "agent", "sessions", "--elsewhere--"));
+  const result = await run(f, ["session-start"], { env: REPLAY_ENV });
+  assert.deepEqual(result.stdout, [`Conversation logging ACTIVE.\n${MAINTENANCE_REPORT}`]);
+  assert.deepEqual(piRows(f), { conversations: 0, sessions: 0 });
   f.db.close();
 });
 
@@ -559,7 +601,7 @@ test("a failing live close tail leaks nothing to stderr (hook -> transcript path
   // just be printed once -- it would be persisted and retrievable. The close
   // tail is fail-soft by design; this pins that it stays that way, with a
   // provider whose error message is deliberately the worst case.
-  const home = mkdtempSync("/tmp/logger-cli-leak-");
+  const home = tempDir("logger-cli-leak-");
   const db = bootstrapDatabase(join(home, "memory.db"));
   const secret = "sk-or-v1-PLANTED-KEY";
   const transcript = "PLANTED-TRANSCRIPT-CONTENT";

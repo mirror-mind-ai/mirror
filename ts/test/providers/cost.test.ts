@@ -4,6 +4,7 @@ import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
+import { DEFAULT_EXTRACTION_MODEL } from "#providers/config.ts";
 import { computeCost, MODEL_PRICES } from "#providers/cost.ts";
 
 interface GoldenCase {
@@ -71,6 +72,18 @@ test("computeCost never confuses an unpriced call with a free one", () => {
   assert.equal(computeCost("model/not-in-table", 1000, 500), null);
   assert.equal(computeCost("google/gemini-2.5-flash-lite", null, 500), null);
   assert.equal(computeCost("google/gemini-2.5-flash-lite", 0, 0), 0);
+});
+
+test("the extraction pin and its rollback are both priced (CV9.DS9.US3)", () => {
+  // The pin moved to Haiku; Flash Lite's entry stays so a rolled-back install
+  // keeps pricing its calls. Prices verified on OpenRouter's catalogue 2026-10-28:
+  // Haiku $0.10/M in, $0.50/M out.
+  assert.deepEqual(MODEL_PRICES[DEFAULT_EXTRACTION_MODEL], {
+    promptPer1k: 0.0001,
+    completionPer1k: 0.0005,
+  });
+  assert.equal(computeCost(DEFAULT_EXTRACTION_MODEL, 1000, 500), 0.00035);
+  assert.equal(computeCost("google/gemini-2.5-flash-lite", 1000, 500), 0.00030000000000000003);
 });
 
 test("computeCost treats undefined usage like Python's None", () => {

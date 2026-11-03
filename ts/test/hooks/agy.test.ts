@@ -1,29 +1,52 @@
-// CV21.DS7.TS2 — the Antigravity hook entries.
+// CV21.DS7.TS2 — the Antigravity hook entries; CV9.DS8.TS6 — PreInvocation
+// through the one doorman.
 //
 // agy speaks camelCase protojson on stdin and expects JSON on stdout
 // (`injectSteps`, nested `systemMessage`); the contracts are committed bytes
-// in US1's evidence (`evidence/agy-1.4.2-hook-contracts.txt`), and the
+// in CV21.DS7.US1's evidence (`evidence/agy-1.4.2-hook-contracts.txt`), and
+// TS6's probe (`evidence/probe-20261025.md`) recorded the 1.4.7 payload. The
 // fixtures here are shaped from them, never invented.
 //
-// The properties under test: the `invocationNum != 0` fast path answers `{}`
-// and reaches nothing; the quiet session — unbound, or bound with Mirror
-// Mode off — answers `{}` (Mirror on agy is invisible until invoked); an
-// active session gets its context injected as ONE `ephemeralMessage` step
-// (the data-minimizing choice: a `systemMessage` would persist identity in
-// agy's stored trajectory); payload fields stay inert through argv; and no
-// payload can fail the turn.
+// The properties under test:
+//
+//   * agy 1.4.7 carries the turn's prompt as `lastUserInput` (1.4.2 did not).
+//     With it, invocation 0 hands the turn to `mirror doorman` and answers its
+//     block as ONE persistent `systemMessage` step: the full folder on the
+//     explicit form (even in a conversation no SessionStart activated), a
+//     delta on an ordinary turn in Mirror Mode, nothing on a skill turn or
+//     outside Mirror Mode. The hook decides nothing and reads no transcript.
+//   * Without it -- agy before 1.4.7 -- today's injection stands, unchanged:
+//     the quiet session answers `{}`, an active one gets ONE `ephemeralMessage`
+//     step (Navigator decision (b), 2026-10-25).
+//   * SessionStart turns Mirror Mode on for the conversation -- the flag, the
+//     session's own mode stamp, and the refresh that makes its first turn full.
+//   * The `invocationNum != 0` fast path reaches nothing; payload fields stay
+//     inert through argv; no payload can fail the turn.
 
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { execFileSync, spawnSync } from "node:child_process";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { after, describe, test } from "node:test";
 import { bootstrapDatabase } from "#db/bootstrap.ts";
+import { openDatabaseForBootstrap } from "#db/database.ts";
+import {
+  type DoormanHome,
+  doormanHome,
+  doormanHookEnv,
+  embeddingRows,
+  sessionMetadata,
+  sessionRow,
+  snapshots,
+} from "#helpers/doormanHome.ts";
+import { DELIVERED_LINE_PREFIX } from "#mirror/doorman.ts";
 import { upsertRuntimeSession } from "#mirror/runtimeSession.ts";
+import { activateOperatingMode } from "#mode/operatingMode.ts";
 
 const REPO_ROOT = resolve(import.meta.dirname, "..", "..", "..");
 const ENTRY = join(REPO_ROOT, "ts", "src", "hooks", "main.ts");
+const HOOK_BIN = join(REPO_ROOT, "bin", "mirror-hook.js");
 const CLI = join(REPO_ROOT, "ts", "src", "frontDoor", "cli.ts");
 
 const roots: string[] = [];
@@ -65,6 +88,7 @@ function runHook(name: string, input: string, home: string): { stdout: string; s
       DB_PATH: join(home, "memory.db"),
       MEMORY_ENV: "production",
       OPENROUTER_API_KEY: "",
+      MIRROR_SESSION_ID: "",
     },
     input,
     timeout: 60_000,
@@ -84,32 +108,214 @@ function activateMirror(home: string, sessionId: string): void {
   }
 }
 
+/** A hook run through `bin/mirror-hook.js`, the entry the wrappers run, in the doorman's world. */
+function agyHook(
+  h: DoormanHome,
+  name: string,
+  payload: Record<string, unknown> | string,
+): { stdout: string; stderr: string; status: number | null } {
+  const result = spawnSync(process.execPath, [HOOK_BIN, name], {
+    encoding: "utf8",
+    env: doormanHookEnv(h),
+    input: typeof payload === "string" ? payload : JSON.stringify(payload),
+    timeout: 60_000,
+  });
+  return { stdout: result.stdout, stderr: result.stderr, status: result.status };
+}
+
+/** The one step's text, asserting it is ONE persistent `systemMessage` step. */
+function systemStep(stdout: string): string {
+  const parsed = JSON.parse(stdout) as { injectSteps?: Record<string, unknown>[] };
+  assert.ok(parsed.injectSteps, `a step was injected, got: ${stdout.slice(0, 160)}`);
+  assert.equal(parsed.injectSteps.length, 1);
+  const step = parsed.injectSteps[0] ?? {};
+  assert.ok(!("ephemeralMessage" in step), "the persistent step, not the ephemeral one");
+  const nested = step.systemMessage as { systemMessage?: unknown } | undefined;
+  assert.ok(nested && typeof nested.systemMessage === "string", "systemMessage nests its text");
+  return nested.systemMessage as string;
+}
+
+function hooksLog(dir: string): string {
+  const path = join(dir, "hooks.log");
+  return existsSync(path) ? readFileSync(path, "utf8") : "";
+}
+
 // Fixtures shaped from the evidence bytes: camelCase, common system fields.
+// The transcript path names no file: the doorman path never reads one.
 const COMMON = {
   conversationId: "ec33ebf9-0cba-4100-8142-c61503f6c587",
   workspacePaths: ["/path/to/workspace"],
   transcriptPath: "/path/to/workspace/.gemini/antigravity/transcript.jsonl",
   modelName: "gemini",
 };
+const CID = COMMON.conversationId;
 
-describe("agy:pre-invocation", () => {
+describe("agy:pre-invocation through the doorman (agy 1.4.7 carries lastUserInput)", () => {
+  function turn(h: DoormanHome, prompt: string, extra: Record<string, unknown> = {}) {
+    // invocationNum 0 is omitted, as protojson omits a zero-valued field.
+    return agyHook(h, "agy:pre-invocation", { ...COMMON, lastUserInput: prompt, ...extra });
+  }
+
+  test("the explicit form, in a conversation no SessionStart activated: ONE systemMessage step opened by the delivered line", () => {
+    const h = doormanHome("agy-doorman-");
+    const out = turn(h, "/mirror-mind:mm:mirror should I take the money?");
+    assert.equal(out.status, 0, out.stderr);
+    const text = systemStep(out.stdout);
+    assert.ok(
+      text.startsWith(`${DELIVERED_LINE_PREFIX}: full — answer as the mirror; sign ◇ cfo ===\n`),
+      `the full folder, opened by the delivered line, got: ${text.slice(0, 120)}`,
+    );
+    assert.match(text, /◌ {2}MIRROR MODE ACTIVE/);
+    assert.match(text, /=== persona\/cfo ===\nCFO context/);
+    assert.deepEqual(sessionRow(h.dbPath, CID), {
+      mirror_active: 1,
+      persona: "cfo",
+      journey: "mirror",
+    });
+    // The payload's transcript path names no file, and nothing was recorded:
+    // the hook read the prompt from the payload, never from a transcript.
+    assert.equal(hooksLog(h.dir), "");
+  });
+
+  test("a new conversation: the first ordinary turn is the full folder; another domain is a delta, signed, one embedding", () => {
+    const h = doormanHome("agy-doorman-");
+    agyHook(h, "agy:session-start", { ...COMMON, lastUserInput: "should I take the money?" });
+
+    const first = systemStep(turn(h, "should I take the money?").stdout);
+    assert.ok(
+      first.startsWith(`${DELIVERED_LINE_PREFIX}: full — answer as the mirror; sign ◇ cfo ===\n`),
+      `SessionStart's refresh makes the first turn full, got: ${first.slice(0, 120)}`,
+    );
+    assert.equal(sessionMetadata(h.dbPath, CID).doorman_refresh, undefined, "and is answered");
+
+    const before = embeddingRows(h.dbPath);
+    const second = systemStep(turn(h, "help me with the article draft").stdout);
+    assert.ok(
+      second.startsWith(
+        `${DELIVERED_LINE_PREFIX}: delta (persona: writer · journey: mirror) — answer as the mirror; sign ◇ writer ===\n`,
+      ),
+      `a delta naming writer, got: ${second.slice(0, 160)}`,
+    );
+    assert.match(second, /=== persona\/writer ===\nWriter context/);
+    assert.doesNotMatch(second, /MIRROR MODE ACTIVE|=== user\/identity ===|=== ego\//);
+    assert.equal(embeddingRows(h.dbPath), before + 1, "one embedding for the turn");
+
+    const third = systemStep(turn(h, "and the next draft?").stdout);
+    assert.ok(third.startsWith(`${DELIVERED_LINE_PREFIX}: delta (persona: writer`));
+    assert.doesNotMatch(third, /=== persona\/|MIRROR MODE ACTIVE/);
+  });
+
+  test("a skill turn in Mirror Mode answers {} and pays no embedding", () => {
+    const h = doormanHome("agy-doorman-");
+    agyHook(h, "agy:session-start", COMMON);
+    turn(h, "should I take the money?");
+    const before = embeddingRows(h.dbPath);
+
+    const out = turn(h, "/mirror-mind:mm:build mirror");
+    assert.equal(out.status, 0, out.stderr);
+    assert.equal(out.stdout.trim(), "{}");
+    assert.equal(embeddingRows(h.dbPath), before);
+  });
+
+  test("outside Mirror Mode an ordinary turn answers {}: nothing written, no snapshot taken", () => {
+    const h = doormanHome("agy-doorman-");
+    const out = turn(h, "how do I split this module");
+    assert.equal(out.status, 0, out.stderr);
+    assert.equal(out.stdout.trim(), "{}");
+    assert.equal(sessionRow(h.dbPath, CID), undefined, "no row was created");
+    assert.deepEqual(snapshots(h.dir), [], "no live-write snapshot");
+  });
+
+  test("a conversation switched to Builder Mode gets nothing on an ordinary turn", () => {
+    const h = doormanHome("agy-doorman-");
+    agyHook(h, "agy:session-start", COMMON);
+    turn(h, "should I take the money?");
+    const db = openDatabaseForBootstrap(h.dbPath);
+    activateOperatingMode(db, { mode: "Builder Mode", journey: "mirror", sessionId: CID }, "t9");
+    db.close();
+    const before = embeddingRows(h.dbPath);
+
+    const out = turn(h, "help me with the article draft");
+    assert.equal(out.stdout.trim(), "{}", "a Builder turn gets no delta");
+    assert.equal(embeddingRows(h.dbPath), before, "and pays no embedding");
+  });
+
+  test("a global Builder stamp does not silence a new conversation: SessionStart stamps the session's own mode", () => {
+    const h = doormanHome("agy-doorman-");
+    // The last mode written anywhere on this home was Builder, with no session
+    // named: the global row. The doorman reads the session's own stamp first.
+    const db = openDatabaseForBootstrap(h.dbPath);
+    activateOperatingMode(db, { mode: "Builder Mode", journey: "mirror" }, "t0");
+    db.close();
+
+    agyHook(h, "agy:session-start", COMMON);
+    const text = systemStep(turn(h, "should I take the money?").stdout);
+    assert.ok(text.startsWith(`${DELIVERED_LINE_PREFIX}: full`), text.slice(0, 120));
+  });
+
+  test("payload fields stay inert: flag- and shell-shaped prompts and ids cannot forge argv or fail the turn", () => {
+    const h = doormanHome("agy-doorman-");
+    agyHook(h, "agy:session-start", COMMON);
+    turn(h, "should I take the money?");
+
+    // A prompt that is exactly a flag is read as the prompt: `--session-id`
+    // goes first in the argv, and the route reads a flag's first occurrence.
+    // Read as the flag instead, the doorman would name a session no one
+    // started and answer {}; read as the prompt, it is this session's delta.
+    const flag = systemStep(turn(h, "--session-id").stdout);
+    assert.ok(flag.startsWith(`${DELIVERED_LINE_PREFIX}: delta`), flag.slice(0, 120));
+
+    for (const prompt of ["$(whoami)", 'x"; rm -rf /tmp/x; echo "', "a\nb", "--forget"]) {
+      const out = turn(h, prompt);
+      assert.equal(out.status, 0, out.stderr);
+      JSON.parse(out.stdout); // a step or {}, never a broken answer
+    }
+    for (const hostile of ["--prompt", 'x"; rm -rf /tmp/x; echo "', "$(whoami)", "a\nb"]) {
+      const out = agyHook(h, "agy:pre-invocation", {
+        ...COMMON,
+        conversationId: hostile,
+        lastUserInput: "/mirror-mind:mm:mirror should I take the money?",
+      });
+      assert.equal(out.status, 0, out.stderr);
+      JSON.parse(out.stdout);
+    }
+    const log = hooksLog(h.dir);
+    assert.ok(!/whoami|rm -rf|money/.test(log), log);
+  });
+
+  test("a doorman that cannot run answers {} and records the fact, never the prompt", () => {
+    const h = doormanHome("agy-doorman-");
+    writeFileSync(h.dbPath, "this is not a database");
+    const out = turn(h, "/mirror-mind:mm:mirror should I take the money?");
+    assert.equal(out.status, 0, out.stderr);
+    assert.equal(out.stdout.trim(), "{}");
+    const lines = hooksLog(h.dir).split("\n").filter(Boolean);
+    assert.equal(lines.length, 1, lines.join("\n"));
+    assert.match(lines[0] ?? "", /agy:pre-invocation/);
+    assert.doesNotMatch(lines[0] ?? "", /money|mirror-mind:mm:mirror/);
+  });
+});
+
+describe("agy:pre-invocation, the gate and the pre-1.4.7 path (no lastUserInput)", () => {
   test("invocationNum != 0 answers {} without touching the database", () => {
     const home = initializedHome();
-    // init creates no database; the fast path must not either.
-    const { stdout } = runHook(
-      "agy:pre-invocation",
-      JSON.stringify({ ...COMMON, invocationNum: 3, initialNumSteps: 10 }),
-      home,
-    );
-    assert.equal(stdout.trim(), "{}");
-    assert.throws(() => readFileSync(join(home, "memory.db")), /ENOENT/);
+    // init creates no database; the fast path must not either — with the
+    // prompt in the payload or without it: the gate comes first.
+    for (const payload of [
+      { ...COMMON, invocationNum: 3, initialNumSteps: 10 },
+      { ...COMMON, invocationNum: 3, initialNumSteps: 10, lastUserInput: "/mm-mirror hi" },
+    ]) {
+      const { stdout } = runHook("agy:pre-invocation", JSON.stringify(payload), home);
+      assert.equal(stdout.trim(), "{}");
+      assert.throws(() => readFileSync(join(home, "memory.db")), /ENOENT/);
+    }
   });
 
   test("the quiet session answers {} — unbound, and bound with Mirror Mode off", () => {
     const home = initializedHome();
-    // Unbound: no runtime session row for the conversation (every session
-    // until TS3 lands). invocationNum 0 may also arrive ABSENT: protojson
-    // omits zero-valued fields, so absence passes the gate as 0 does.
+    // Unbound: no runtime session row for the conversation. invocationNum 0
+    // may also arrive ABSENT: protojson omits zero-valued fields, so absence
+    // passes the gate as 0 does.
     for (const payload of [
       { ...COMMON, invocationNum: 0 },
       { ...COMMON }, // invocationNum omitted at 0
@@ -132,7 +338,8 @@ describe("agy:pre-invocation", () => {
     assert.equal(parsed.injectSteps.length, 1);
     const step = parsed.injectSteps[0] ?? {};
     assert.ok(typeof step.ephemeralMessage === "string" && step.ephemeralMessage.length > 0);
-    // The ephemeral step, not the persistent one: the data-minimizing choice.
+    // The pre-1.4.7 path keeps its step: the ephemeral one, re-injected whole
+    // each turn, as before TS6.
     assert.ok(!("systemMessage" in step));
   });
 
@@ -289,11 +496,32 @@ describe("agy:stop", () => {
 });
 
 describe("agy:session-start", () => {
-  test("activates Mirror Mode for the session, so per-turn injection fires (US4 scope change)", () => {
-    // agy's PreInvocation carries no prompt (L7) and the skill-command cannot
-    // bind the agy session id, so SessionStart — which carries the
-    // conversationId — is the one reliable activation point. It sets
-    // mirror_active, matching Gemini CLI's always-on per-turn injection.
+  test("turns Mirror Mode on for the conversation: the flag, its own mode stamp, and the refresh", () => {
+    // SessionStart is agy's one activation point (CV21.DS7.US4's scope
+    // change): the doorman reads a session as in Mirror Mode only while its
+    // operating mode says so -- its own stamp, else the global one -- so the
+    // flag alone would leave a new conversation at the mercy of whatever mode
+    // was last stamped globally. The refresh makes its first turn the full
+    // folder, routed from that turn's prompt (CV9.DS8.TS6).
+    const h = doormanHome("agy-session-start-");
+    for (const round of ["fresh", "returning"]) {
+      const out = agyHook(h, "agy:session-start", COMMON);
+      assert.equal(out.stdout.trim(), "{}", round);
+      assert.equal(sessionRow(h.dbPath, CID)?.mirror_active, 1, round);
+      const metadata = sessionMetadata(h.dbPath, CID);
+      assert.equal(
+        (metadata.operating_mode as { active_mode?: string } | undefined)?.active_mode,
+        "Mirror Mode",
+        round,
+      );
+      assert.equal(metadata.doorman_refresh, true, round);
+      // The full turn answers the refresh, so the returning round sees it set again.
+      agyHook(h, "agy:pre-invocation", { ...COMMON, lastUserInput: "should I take the money?" });
+      assert.equal(sessionMetadata(h.dbPath, CID).doorman_refresh, undefined, round);
+    }
+  });
+
+  test("without lastUserInput, a following pre-invocation injects today's ephemeral context", () => {
     const home = initializedHome();
     bootstrapDatabase(join(home, "memory.db")).close();
     runHook("agy:session-start", JSON.stringify(COMMON), home);

@@ -205,11 +205,12 @@ function rejectUnknownMethod(method: string): CommandResult | null {
  *
  * Decision C (CR008): when no session is named, `build load` still stamps a
  * GUESSED session, so each window's footer shows its own mode. A named session's
- * stamp may therefore have been written by another window's load. That cannot
- * bind today, because no runtime names its session. Before one does, stamps must
- * record whether they were written under the name, and this function must bind
- * only those (option B). `namedSessionPrecondition.test.ts` fails the day a
- * runtime starts naming its session.
+ * stamp may therefore have been written by another window's load. Since
+ * CV9.DS8.US5 runtimes name their sessions (Pi sets `MIRROR_SESSION_ID`; the
+ * Claude-family readers came with US4), so option B holds here: a stamp binds
+ * only when it records that it was written under the name
+ * (`OperatingModeState.namedSession`). A guessed stamp on a named session is
+ * the footer's business, not a journey.
  */
 function namedSessionBuilderJourney(
   context: BuilderCommandContext,
@@ -218,7 +219,9 @@ function namedSessionBuilderJourney(
   const named = resolveNamedRuntimeSessionId(sessionId, context.environmentSessionId ?? null);
   if (!named || !getRuntimeSession(context.db, named)?.active) return null;
   const state = getSessionOperatingMode(context.db, named);
-  return state?.mode === "Builder Mode" && state.journey ? state.journey : null;
+  return state?.mode === "Builder Mode" && state.journey && state.namedSession === true
+    ? state.journey
+    : null;
 }
 
 /**

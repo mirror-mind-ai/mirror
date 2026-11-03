@@ -5,11 +5,31 @@
  *
  * Events handled:
  * - session_start      → unmute + welcome card + status line, in ONE front-door
- *                        process (CV9.E2.S32); maintenance detached
- * - before_agent_start → log user prompt, NOT awaited: queued on a per-session
- *                        chain so the turn starts at once (CV9.E2.S32)
- * - agent_end          → log assistant response, after the chain settles
- * - session_shutdown   → close conversation (after the chain settles) + backup
+ *                        process (CV9.E2.S32); maintenance detached; the session
+ *                        named in the environment (`MIRROR_SESSION_ID`, CV9.DS8.US5)
+ * - input              → what the person typed, kept for the run it starts (CR160)
+ * - before_agent_start → the turn to the one doorman (`mirror doorman`), AWAITED:
+ *                        its block, when there is one, is the run's message, so
+ *                        Mirror's context is before the model on this turn
+ *                        (CV9.DS8.US5); then the turn to the core's prompt rule
+ *                        (`user-prompt`), with a turn id minted for it, NOT
+ *                        awaited: queued on the per-session chain behind the
+ *                        doorman, so the turn starts at once (CV9.E2.S32)
+ * - agent_end          → the run's assistant text, kept for the prompt's reply
+ * - agent_settled      → the prompt's whole reply to `stop`, after the chain settles
+ * - session_compact    → the folder left the transcript: `mirror doorman --forget`,
+ *                        so the next ordinary turn is delivered whole (CV9.DS8.US5)
+ * - session_shutdown   → close conversation (after the chain settles) + backup;
+ *                        the session's name cleared from the environment
+ *
+ * The session's name (CV9.DS8.US5, from TS1's P2 measurement on Pi 1.4.0): at
+ * `session_start` this extension sets `MIRROR_SESSION_ID` in Pi's OWN process
+ * environment, which every later `pi.exec` and every bash command the model runs
+ * inherits. So a `mirror mirror load` the model runs by itself on an unprompted
+ * personal question, and a `mirror build load` on a mode switch, name THIS
+ * session's row instead of guessing one -- and the doorman, which reads that row,
+ * takes the next turn. Named-session behaviors that were dormant on Pi while no
+ * session was named wake with it (`mirror log`, journey binding, the mode stamps).
  *
  * All heavy logic lives in the TypeScript core, reached through the `mirror`
  * bin that ships beside this file (`bin/mirror.js`). This extension is a thin
@@ -23,6 +43,14 @@
  * it supplies the Operating Instructions (`AGENTS.md`) itself (D13), and says
  * so once when `mirror` is not on the PATH.
  *
+ * The `node` it runs the core on is resolved as the hook wrappers resolve
+ * theirs (CR191): `MIRROR_NODE`, the PATH, the Node that installed the
+ * package, then nvm, Homebrew, and `/usr/local`. A GUI-launched Pi, or one from
+ * a window older than the Node install, has none on its PATH. When nothing
+ * resolves the session says so once, names the fix, and writes one line to
+ * `<mirror home>/hooks.log`, where `runtime diagnose` reads it; it spawns
+ * nothing, and Pi stays up.
+ *
  * External skill prep note:
  * Pi reads installed external skills from
  *   ~/.mirror-minds/<user>/runtime/skills/pi/extensions.json
@@ -32,9 +60,10 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { accessSync, appendFileSync, closeSync, constants, existsSync, mkdirSync, openSync, readdirSync, readFileSync, realpathSync, statSync } from "node:fs";
 import { homedir } from "node:os";
-import { delimiter, dirname, join } from "node:path";
+import { delimiter, dirname, join, posix, win32 } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
+import { randomUUID } from "node:crypto";
 
 /** The tree this extension ships in: `.pi/extensions/` sits two below the root. */
 const TREE_ROOT = fileURLToPath(new URL("../../", import.meta.url)).replace(/\/$/, "");
@@ -159,6 +188,95 @@ function _mirrorOnPath(): string | null {
 	return null;
 }
 
+/**
+ * Where a hook wrapper looks for Node after `MIRROR_NODE`, the PATH, and the
+ * Node beside the entry it runs (CR191). The same list as the core's
+ * `HOOK_NODE_CANDIDATES` (`ts/src/runtime/diagnose.ts`), which this file
+ * cannot import: it is a thin dispatcher and duplicates the contracts it
+ * needs, as it does the homes-root names above. `mirrorLoggerExtension.test.ts`
+ * fails if the two lists differ, as `hooks.test.ts` does for the wrappers.
+ */
+export const NODE_CANDIDATES: readonly string[] = [
+	"$HOME/.nvm/current/bin/node",
+	"/opt/homebrew/bin/node",
+	"/usr/local/bin/node",
+];
+
+/** What `resolveNode` found at a path it probed. */
+export type PathKind = "executable" | "directory" | "not executable" | "missing";
+
+/** An executable FILE: a directory passes `X_OK` on its own. */
+function pathKind(path: string): PathKind {
+	try {
+		if (statSync(path).isDirectory()) return "directory";
+	} catch {
+		return "missing";
+	}
+	try {
+		accessSync(path, constants.X_OK);
+		return "executable";
+	} catch {
+		return "not executable";
+	}
+}
+
+export interface NodeResolution {
+	/** The Node to run the core on, by its path; null when none resolves. */
+	node: string | null;
+	/** A `MIRROR_NODE` the search would not use, and why: the caller says so once. */
+	rejected: { value: string; reason: string } | null;
+}
+
+/**
+ * The Node the core runs on, in the hook wrappers' order (CR191): `MIRROR_NODE`
+ * when it is an absolute path to an executable file; `node` on the PATH; the
+ * Node beside the tree this file ships in, which for a global install is the
+ * `<prefix>/bin/node` that installed the package (and nothing for a checkout);
+ * then `NODE_CANDIDATES`. Not `process.execPath`: Pi may run on a Node older
+ * than the core needs. On Windows the PATH is the last place looked.
+ *
+ * A relative `MIRROR_NODE` is refused here, though the wrappers accept one: it
+ * would resolve against whatever project Pi was opened in.
+ *
+ * The absolute candidates make "nothing anywhere" a fact about the host, so
+ * under `MEMORY_ENV=test` only, `MIRROR_TEST_NODE_SEARCH_ROOT` re-roots them
+ * and the prefix candidate. A production session never reads it.
+ */
+export function resolveNode(
+	env: Record<string, string | undefined>,
+	treeRoot: string,
+	kindOf: (path: string) => PathKind = pathKind,
+	platform: NodeJS.Platform = process.platform,
+): NodeResolution {
+	const paths = platform === "win32" ? win32 : posix;
+	let rejected: NodeResolution["rejected"] = null;
+	const explicit = (env.MIRROR_NODE ?? "").trim();
+	if (explicit !== "") {
+		if (!paths.isAbsolute(explicit)) rejected = { value: explicit, reason: "relative" };
+		else {
+			const kind = kindOf(explicit);
+			if (kind === "executable") return { node: explicit, rejected: null };
+			rejected = { value: explicit, reason: kind === "directory" ? "a directory" : kind };
+		}
+	}
+	const name = platform === "win32" ? "node.exe" : "node";
+	for (const dir of (env.PATH ?? "").split(paths.delimiter).filter(Boolean)) {
+		const candidate = paths.join(dir, name);
+		if (kindOf(candidate) === "executable") return { node: candidate, rejected };
+	}
+	if (platform === "win32") return { node: null, rejected };
+	const searchRoot = env.MEMORY_ENV === "test" ? (env.MIRROR_TEST_NODE_SEARCH_ROOT ?? "") : "";
+	const home = env.HOME ?? homedir();
+	const candidates = [
+		paths.resolve(treeRoot, "..", "..", "..", "bin", "node"),
+		...NODE_CANDIDATES.map((candidate) => candidate.replace("$HOME", home)),
+	].map((candidate) => (searchRoot ? paths.join(searchRoot, candidate) : candidate));
+	for (const candidate of candidates) {
+		if (kindOf(candidate) === "executable") return { node: candidate, rejected };
+	}
+	return { node: null, rejected };
+}
+
 /** True when `path` is the same file as this tree's AGENTS.md (symlinks resolved). */
 function _isOurAgentsFile(path: string): boolean {
 	try {
@@ -199,26 +317,48 @@ type MirrorStatusContext = {
 };
 
 /**
- * One registration per Pi process. Pi can reach this file twice -- as the
- * project's `.pi/extensions/` inside the checkout and as a personal package
- * installed from `npm root -g`, which `npm link` makes the same file under
- * two paths -- and two registrations would log every turn twice. The guard is
- * process-scoped, not module-scoped, because two paths are two module
- * instances (CV22.DS10.US3 plateau 2, the quality-assurance finding).
+ * One extension, reached twice. Pi can reach this file as the project's
+ * `.pi/extensions/` inside the checkout AND as a personal package installed
+ * from `npm root -g`, which `npm link` makes the same file under two paths:
+ * two module instances in one process (CV22.DS10.US3 plateau 2). Which of
+ * them Pi keeps is Pi's: 1.4.0 dedupes the two by their real path and keeps
+ * the one it loaded second; an older Pi kept both. A "register once per
+ * process" guard chose the first -- and on 1.4.0 that was the instance Pi
+ * dropped, so the checkout's Pi had no handlers at all (found by CV9.DS8.US5's
+ * live walk). So every instance registers, and the guard is on the EVENT: the
+ * handled set is process-scoped, and the first instance to see an event
+ * object handles it, the other returns. Pi hands every registration the same
+ * event object (its documented in-place mutation of `systemPromptOptions`
+ * depends on it), which is what makes the set a guard.
  */
-const LOADED_KEY = "__mirrorLoggerRegistered";
+const HANDLED_KEY = "__mirrorLoggerHandledEvents";
 
 export default function (pi: ExtensionAPI) {
 	const globals = globalThis as Record<string, unknown>;
-	if (globals[LOADED_KEY]) {
-		try {
-			appendFileSync(LOG_FILE, `${new Date().toISOString()} [INFO] second registration skipped: ${import.meta.url}\n`);
-		} catch {
-			// never block Pi
+	const handled = (globals[HANDLED_KEY] ??= new Map<string, WeakSet<object>>()) as Map<
+		string,
+		WeakSet<object>
+	>;
+	/**
+	 * The handler, run by the first registration an event reaches. `slot` names
+	 * the handler, not the event: this file registers two handlers on
+	 * `before_agent_start`, and each must see the event once.
+	 */
+	function once<E, C, R>(slot: string, handler: (event: E, ctx: C) => R): (event: E, ctx: C) => R | undefined {
+		let seen = handled.get(slot);
+		if (!seen) {
+			seen = new WeakSet<object>();
+			handled.set(slot, seen);
 		}
-		return;
+		const set = seen;
+		return (event, ctx) => {
+			if (event !== null && typeof event === "object") {
+				if (set.has(event)) return undefined;
+				set.add(event);
+			}
+			return handler(event, ctx);
+		};
 	}
-	globals[LOADED_KEY] = import.meta.url;
 
 	// --- Helpers ---
 
@@ -234,6 +374,41 @@ export default function (pi: ExtensionAPI) {
 	 */
 	const FRONT_DOOR_ARGV = [MIRROR_BIN];
 
+	/**
+	 * The Node every front-door process runs on (CR191), or null when none
+	 * resolves: the caller spawns nothing and logs why. A `MIRROR_NODE` the search
+	 * refused is said once per registration, with the reason, so the log is
+	 * enough to fix it; the search went on without it, as the wrappers' does.
+	 */
+	let mirrorNodeWarned = false;
+	function nodeFor(): string | null {
+		const found = resolveNode(process.env, TREE_ROOT);
+		if (found.rejected && !mirrorNodeWarned) {
+			mirrorNodeWarned = true;
+			log("WARN", `MIRROR_NODE=${found.rejected.value} is ${found.rejected.reason}; searching the PATH and the usual places instead`);
+		}
+		return found.node;
+	}
+
+	/** The line said once at session start when no Node resolves; also the log's and, in short, hooks.log's. */
+	const NO_NODE_NOTICE =
+		"Mirror: `node` is not on the PATH Pi inherited, nor in the usual places — set MIRROR_NODE=/path/to/node (Node 24 or later) where Pi is launched. Mirror will not log this session.";
+
+	/**
+	 * One line in `<mirror home>/hooks.log`, in the format the wrappers write and
+	 * `hookFailureFindings` parses (`<stamp> <runtime>:<hook>: <reason>`), so
+	 * `runtime diagnose` reports it for seven days. Same directory as this log,
+	 * mode 0600 as `noteHookFailure` writes it.
+	 */
+	function noteHookFailure(hook: string, reason: string): void {
+		try {
+			mkdirSync(MIRROR_DIR, { recursive: true });
+			appendFileSync(join(MIRROR_DIR, "hooks.log"), `${new Date().toISOString()} pi:${hook}: ${reason}\n`, { mode: 0o600 });
+		} catch {
+			// A hook cannot report that it could not report.
+		}
+	}
+
 	function log(level: string, msg: string): void {
 		try {
 			const ts = new Date().toISOString();
@@ -245,11 +420,16 @@ export default function (pi: ExtensionAPI) {
 	}
 
 	function runMirrorBackground(args: string[], label: string): void {
+		const node = nodeFor();
+		if (node === null) {
+			log("ERROR", `${label} skipped: no node (see the session's notice)`);
+			return;
+		}
 		let logFd: number | undefined;
 		try {
 			mkdirSync(MIRROR_DIR, { recursive: true });
 			logFd = openSync(LOG_FILE, "a");
-			const child = spawn("node", [...FRONT_DOOR_ARGV, ...args], {
+			const child = spawn(node, [...FRONT_DOOR_ARGV, ...args], {
 				cwd: process.cwd(),
 				stdio: ["ignore", logFd, logFd],
 				// Windows: a detached console child materializes as a visible
@@ -260,8 +440,24 @@ export default function (pi: ExtensionAPI) {
 				detached: process.platform !== "win32",
 				windowsHide: true,
 			});
+			// A child that cannot start reports through 'error', not by throwing,
+			// so the catch below never sees it; without a listener the event is an
+			// uncaught exception and Pi exits ("pi exiting due to uncaughtException:
+			// Error: spawn node ENOENT", PR #47). The path was an executable file a
+			// moment ago (`resolveNode`), so this is the record of one that vanished
+			// in between, or of any other start failure. A logging failure must never
+			// break anything: log it and move on.
+			child.on("error", (error) => {
+				log("ERROR", `${label} failed to start: ${error.message.slice(0, 500)}`);
+			});
+			// Its stdout and stderr are in this log already; the exit code says
+			// whether to read them (a Node too old for the core exits before it runs).
+			child.on("exit", (code, signal) => {
+				if (code !== 0) log("ERROR", `${label} exited ${code ?? `on ${signal}`}`);
+			});
 			child.unref();
-			log("INFO", `${label} started in detached background process ${child.pid ?? "(unknown pid)"}`);
+			// No pid, no process: the 'error' above is on its way.
+			if (child.pid !== undefined) log("INFO", `${label} started in detached background process ${child.pid}`);
 		} catch (err: unknown) {
 			const message = err instanceof Error ? err.message : String(err);
 			log("ERROR", `${label} failed: ${message.slice(0, 500)}`);
@@ -288,10 +484,15 @@ export default function (pi: ExtensionAPI) {
 	}
 
 	async function runMirror(args: string[]): Promise<string> {
+		const node = nodeFor();
+		if (node === null) {
+			log("ERROR", `runMirror skipped [${args.slice(0, 2).join(" ")}]: no node (see the session's notice)`);
+			return "";
+		}
 		try {
 			const delay = testFrontDoorDelayMs();
 			if (delay > 0) await new Promise((resolve) => setTimeout(resolve, delay));
-			const result = await pi.exec("node", [...FRONT_DOOR_ARGV, ...args], {
+			const result = await pi.exec(node, [...FRONT_DOOR_ARGV, ...args], {
 				timeout: 30_000,
 			});
 			const stderr = (result?.stderr ?? "").trim();
@@ -347,17 +548,116 @@ export default function (pi: ExtensionAPI) {
 	 */
 	const pendingUserLog = new Map<string, Promise<void>>();
 
-	function enqueueUserLog(sessionId: string, args: string[]): void {
+	/**
+	 * One front-door process on the session's chain: spawned when the link
+	 * before it has exited, its stdout returned to the caller. A failure settles
+	 * the chain all the same and reads as empty stdout (`runMirror` swallows).
+	 */
+	function runOnChain(sessionId: string, args: string[]): Promise<string> {
 		const prior = pendingUserLog.get(sessionId) ?? Promise.resolve();
-		const next = prior.then(() => runMirror(args)).then(
-			() => undefined,
-			() => undefined,
+		const stdout = prior.then(() => runMirror(args));
+		pendingUserLog.set(
+			sessionId,
+			stdout.then(
+				() => undefined,
+				() => undefined,
+			),
 		);
-		pendingUserLog.set(sessionId, next);
+		return stdout.then(
+			(out) => out,
+			() => "",
+		);
+	}
+
+	function enqueueUserLog(sessionId: string, args: string[]): void {
+		void runOnChain(sessionId, args);
+	}
+
+	/**
+	 * CV9.DS8.US5: the turn through the one doorman. `mirror doorman` decides
+	 * nothing, the full folder, or a delta from the prompt and the session's
+	 * state (`ts/src/mirror/doorman.ts`, DS8's policy); this extension decides
+	 * nothing itself and carries the answer. Awaited: the turn cannot start
+	 * before the block exists. Outside Mirror Mode the doorman reads and exits
+	 * with nothing -- one process, no snapshot, no embedding, no context (0.21 s
+	 * on a 61 MB home, measured 2026-10-25).
+	 *
+	 * On the chain AHEAD of the `user-prompt` logger: the logger's first-turn
+	 * upsert rebuilds the whole `runtime_sessions` row from what it read, and
+	 * overlapping the doorman's full load it would write back `mirror_active = 0`
+	 * and a null persona. The doorman's process has exited before the logger's is
+	 * spawned, so it does not race. The prompt is truncated as the payload is:
+	 * the explicit form is at its start, routing and the embedding do not need
+	 * the tail, and an untruncated paste would fail the exec on ARG_MAX --
+	 * silently, and the skill would load twice.
+	 */
+	function deliverMirrorContext(sessionId: string, prompt: string): Promise<string> {
+		return runOnChain(sessionId, [
+			"mirror",
+			"doorman",
+			"--prompt",
+			truncate(prompt),
+			"--session-id",
+			sessionId,
+		]);
 	}
 
 	async function settleUserLog(sessionId: string): Promise<void> {
 		await (pendingUserLog.get(sessionId) ?? Promise.resolve());
+	}
+
+	/**
+	 * CR160: Pi's turns reach the core's prompt rule, the one the hooks use
+	 * (`user-prompt`, `stop`): a skill invocation and its reply are not
+	 * conversation, a Mirror question is (`commandTurn.ts`, `mirrorForm.ts`).
+	 *
+	 * The rule needs what the person typed, and Pi hands `before_agent_start` the
+	 * prompt after it expanded a skill into its body. Its documented `input` event
+	 * carries the text as sent, so that text is kept here for the run it starts --
+	 * only when it starts one: a message queued while Pi streams joins a run
+	 * already going. The payload travels as `--payload`: `pi.exec` cannot write
+	 * stdin (`conversationLoggerRoute.ts`).
+	 */
+	const typedInput = new Map<string, string>();
+
+	/** The prompt in flight and the assistant text its runs have produced so far. */
+	interface PendingReply {
+		turnId: string;
+		texts: string[];
+	}
+	const pendingReply = new Map<string, PendingReply>();
+
+	/**
+	 * Pi's expansion of `/skill:<name> args`: `<skill name="<name>" location="…">`,
+	 * `References are relative to ….`, the body, `</skill>`, then the arguments.
+	 * With no typed text kept for a run, the wrapper is read back to the command
+	 * it came from, so the rule still sees a command (CR160, A3).
+	 */
+	const PI_SKILL_WRAPPER =
+		/^<skill name="([^"]+)" location="[^"]*">\nReferences are relative to [^\n]*\n\n[\s\S]*?\n<\/skill>(?:\n\n([\s\S]*))?$/;
+
+	function typedFormOf(prompt: string): string {
+		const match = PI_SKILL_WRAPPER.exec(prompt);
+		if (!match) return prompt;
+		const args = (match[2] ?? "").trim();
+		return args ? `/skill:${match[1]} ${args}` : `/skill:${match[1]}`;
+	}
+
+	/** The `stop` argv for a prompt's reply, or null when it produced no text. */
+	function takeStopArgs(sessionId: string): string[] | null {
+		const reply = pendingReply.get(sessionId);
+		pendingReply.delete(sessionId);
+		if (!reply || reply.texts.length === 0) return null;
+		const content = truncate(reply.texts.join("\n\n---\n\n"));
+		log("INFO", `stop (turn ${reply.turnId}): ${reply.texts.length} block(s), ${content.length} chars`);
+		return [
+			"conversation-logger",
+			"stop",
+			"--interface",
+			"pi",
+			"--payload",
+			JSON.stringify({ session_id: sessionId, turn_id: reply.turnId, last_assistant_message: content }),
+		];
 	}
 
 	/** Extract readable text from a content blocks array or plain string. */
@@ -478,13 +778,16 @@ export default function (pi: ExtensionAPI) {
 
 	// --- dynamic resources → installed external Pi skills ---
 
-	pi.on("resources_discover", async () => {
-		const skillPaths = getInstalledPiSkillPaths();
-		if (skillPaths.length > 0) {
-			log("INFO", `resources_discover: loaded ${skillPaths.length} installed Pi external skill(s)`);
-		}
-		return { skillPaths };
-	});
+	pi.on(
+		"resources_discover",
+		once("resources_discover", async () => {
+			const skillPaths = getInstalledPiSkillPaths();
+			if (skillPaths.length > 0) {
+				log("INFO", `resources_discover: loaded ${skillPaths.length} installed Pi external skill(s)`);
+			}
+			return { skillPaths };
+		}),
+	);
 
 	// --- 0. the Operating Instructions, for a session Pi did not open in the tree ---
 	//
@@ -495,7 +798,7 @@ export default function (pi: ExtensionAPI) {
 	// a Mirror session (CV22.DS10.US3 D13). So the extension appends the file
 	// it ships with, unless Pi already loaded that very file.
 
-	pi.on("before_agent_start", async (event) => {
+	pi.on("before_agent_start", once("operating_instructions", async (event) => {
 		const files = event.systemPromptOptions.contextFiles;
 		if (files.some((file) => _isOurAgentsFile(file.path))) return;
 		let content: string;
@@ -508,7 +811,7 @@ export default function (pi: ExtensionAPI) {
 		if (files.some((file) => file.content === content)) return;
 		files.push({ path: AGENTS_FILE, content });
 		log("INFO", `operating instructions appended from ${AGENTS_FILE}`);
-	});
+	}));
 
 	// --- 1. session_start → unmute + welcome + status line in one process ---
 	//
@@ -517,8 +820,14 @@ export default function (pi: ExtensionAPI) {
 	// the composite runs them in one process, write first. Maintenance stays
 	// detached. Fires on startup, reload, new, resume, and fork alike.
 
-	pi.on("session_start", async (_event, ctx) => {
+	pi.on("session_start", once("session_start", async (_event, ctx) => {
 		log("INFO", "session_start fired");
+		// The session's name, for the model's own `mirror` commands (CV9.DS8.US5;
+		// see the header). Fires again on `/new`, `/resume`, and `/fork`, with the
+		// new file; the shutdown before it cleared the old one.
+		const namedSession = ctx.sessionManager.getSessionFile();
+		if (namedSession) process.env.MIRROR_SESSION_ID = namedSession;
+		else delete process.env.MIRROR_SESSION_ID;
 		if (ctx.hasUI) {
 			ctx.ui.setStatus("mirror", "◇ Mirror · starting… maintenance will continue in background");
 		}
@@ -530,6 +839,14 @@ export default function (pi: ExtensionAPI) {
 			const line = `Mirror: \`mirror\` is not on the PATH — ${fix}. Skills will fail until it is.`;
 			log("WARN", line);
 			if (ctx.hasUI) ctx.ui.notify(line, "warning");
+		}
+		// Likewise when no Node resolves (CR191): once, visibly, naming the fix,
+		// and one line where `runtime diagnose` reads. The calls below then skip
+		// themselves; a later one that finds nothing logs only.
+		if (nodeFor() === null) {
+			log("WARN", NO_NODE_NOTICE);
+			if (ctx.hasUI) ctx.ui.notify(NO_NODE_NOTICE, "warning");
+			noteHookFailure("session-start", "node not found on PATH or in the usual places; Mirror is off for this session. Set MIRROR_NODE.");
 		}
 		const sessionId = ctx.sessionManager.getSessionFile() ?? null;
 		const openArgs = ["conversation-logger", "session-start", "--fast", "--welcome", "--format", "json"];
@@ -556,37 +873,76 @@ export default function (pi: ExtensionAPI) {
 			setMirrorStatus(ctx, (envelope?.statusLine ?? "").trim());
 		}
 		runMirrorBackground(["conversation-logger", "session-maintenance"], "session-maintenance");
-	});
+	}));
 
-	// --- 2. before_agent_start → log user prompt with explicit session id ---
+	// --- 2. input → what the person typed, for the run it starts (CR160) ---
 
-	pi.on("before_agent_start", async (event, ctx) => {
+	pi.on("input", once("input", async (event, ctx) => {
 		const sessionId = ctx.sessionManager.getSessionFile() ?? null;
 		if (!sessionId) return;
+		// The fields are Pi's (`InputEvent`); the types this directory pins predate one.
+		const { text, streamingBehavior } = event as { text: string; streamingBehavior?: string };
+		// Queued while Pi streams: it joins a run already going and starts none.
+		if (streamingBehavior) return;
+		typedInput.set(sessionId, text);
+	}));
 
-		const prompt = event.prompt ?? "";
-		if (!prompt || prompt.startsWith("/")) return;
+	// --- 3. before_agent_start → the turn to the core's prompt rule ---
 
-		log("INFO", `log-user: ${prompt.slice(0, 80)}...`);
-		// Not awaited (CV9.E2.S32): the turn starts now; `agent_end` and
+	pi.on("before_agent_start", once("prompt", async (event, ctx) => {
+		const sessionId = ctx.sessionManager.getSessionFile() ?? null;
+		if (!sessionId) return;
+		// A run a custom message started answers no prompt of the person's. Pi's
+		// field (`messageType`); the types this directory pins predate it.
+		const { messageType } = event as { messageType?: string };
+		if (messageType !== undefined && messageType !== "user") return;
+
+		const typed = typedInput.get(sessionId);
+		typedInput.delete(sessionId);
+		const prompt = typed ?? typedFormOf(event.prompt ?? "");
+
+		// A reply still unsent belongs to the prompt before this one: a Pi without
+		// `agent_settled` (before 0.80.4) never sent it. It goes first, on the chain.
+		const earlier = takeStopArgs(sessionId);
+		if (earlier) enqueueUserLog(sessionId, earlier);
+
+		const turnId = randomUUID();
+		pendingReply.set(sessionId, { turnId, texts: [] });
+		if (!prompt) return;
+
+		// The doorman first, awaited (CV9.DS8.US5): Mirror's context before the
+		// model, on the turn that asks for it.
+		const block = await deliverMirrorContext(sessionId, prompt);
+
+		log("INFO", `user-prompt (turn ${turnId}): ${prompt.slice(0, 80)}...`);
+		// Not awaited (CV9.E2.S32): the turn starts now; `agent_settled` and
 		// `session_shutdown` settle the chain before anything that must follow.
 		enqueueUserLog(sessionId, [
 			"conversation-logger",
-			"log-user",
-			sessionId,
-			truncate(prompt),
+			"user-prompt",
 			"--interface",
 			"pi",
+			"--payload",
+			JSON.stringify({ session_id: sessionId, prompt: truncate(prompt), turn_id: turnId }),
 		]);
-	});
 
-	// --- 3. agent_end → log assistant response ---
+		if (!block) return;
+		log("INFO", `mirror-context (turn ${turnId}): ${block.length} chars delivered`);
+		// Pi adds it to this run after the user message and hands it to the model
+		// as a user-role message; its first line says the runtime, not the person,
+		// is speaking, and the `mm-mirror` skill reads that line as delivery (TS3).
+		// Not displayed: the person sees the mirror's reply, not the plumbing.
+		return { message: { customType: "mirror-context", content: block, display: false } };
+	}));
+
+	// --- 4. agent_end → the run's assistant text, kept for the prompt's reply ---
 	//
-	// agent_end fires once per user prompt, with ALL messages in the cycle
-	// (assistant + tool calls + tool results). Extract only assistant text
-	// and log as a single consolidated message.
+	// agent_end fires once per run, with ALL messages in it (assistant + tool
+	// calls + tool results), and a prompt can take more than one run. The
+	// assistant text is kept until the prompt settles: the hooks' `stop` takes
+	// one answer per turn (CR160, A2).
 
-	pi.on("agent_end", async (event, ctx) => {
+	pi.on("agent_end", once("agent_end", async (event, ctx) => {
 		const sessionId = ctx.sessionManager.getSessionFile() ?? null;
 		if (!sessionId) return;
 
@@ -610,30 +966,69 @@ export default function (pi: ExtensionAPI) {
 
 		if (assistantTexts.length === 0) return;
 
-		log("INFO", `log-assistant: ${assistantTexts.length} block(s), ${assistantTexts.join("").length} chars`);
-
-		const combined = assistantTexts.join("\n\n---\n\n");
-		const content = truncate(combined);
-
-		// The user message's process has exited before this one is spawned.
-		await settleUserLog(sessionId);
-		runMirrorBackground(
-			["conversation-logger", "log-assistant", sessionId, content, "--interface", "pi"],
-			"log-assistant",
-		);
+		// No prompt in flight: a run a custom message started, after the last
+		// prompt settled. It answers nothing the person asked, and `stop` would
+		// find nothing waiting, as on the other runtimes.
+		pendingReply.get(sessionId)?.texts.push(...assistantTexts);
 		await refreshMirrorStatus(ctx);
-	});
+	}));
 
-	// --- 4. session_shutdown → close conversation + backup ---
+	// --- 5. agent_settled → the prompt's whole reply to `stop` ---
+
+	// `agent_settled` arrived in Pi 0.80.4, after the Pi types this directory pins
+	// (`.pi/package.json`), so it is registered by its name alone.
+	const onEvent = pi.on.bind(pi) as unknown as (
+		event: string,
+		handler: (
+			event: unknown,
+			ctx: { sessionManager: { getSessionFile(): string | undefined } },
+		) => Promise<void> | undefined,
+	) => void;
+
+	onEvent("agent_settled", once("agent_settled", async (_event, ctx) => {
+		const sessionId = ctx.sessionManager.getSessionFile() ?? null;
+		if (!sessionId) return;
+		const args = takeStopArgs(sessionId);
+		if (!args) return;
+		// The prompt's process has exited before this one is spawned; detached, so
+		// the write survives Pi exiting right after the answer.
+		await settleUserLog(sessionId);
+		runMirrorBackground(args, "stop");
+	}));
+
+	// --- 5b. session_compact → the folder left the transcript (CV9.DS8.US5) ---
+	//
+	// A delta's premise is that the identity layers sit in the transcript. Pi
+	// compacts on its own (threshold, overflow) and on `/compact`; after that
+	// the folder is a summary. The core is told, on the chain and not awaited;
+	// the next ordinary turn in Mirror Mode is full again, routed from its prompt.
+
+	pi.on(
+		"session_compact",
+		once("session_compact", async (_event, ctx) => {
+			const sessionId = ctx.sessionManager.getSessionFile() ?? null;
+			if (!sessionId) return;
+			log("INFO", "session_compact: the doorman forgets what the transcript held");
+			enqueueUserLog(sessionId, ["mirror", "doorman", "--forget", "--session-id", sessionId]);
+		}),
+	);
+
+	// --- 6. session_shutdown → close conversation + backup ---
 	//
 	// Uses extract=False because extraction calls the LLM and can take 30s+.
 	// Extraction happens at the next session_start via extract_pending.
 
-	pi.on("session_shutdown", async (_event, ctx) => {
+	pi.on("session_shutdown", once("session_shutdown", async (_event, ctx) => {
 		const sessionId = ctx.sessionManager.getSessionFile() ?? null;
+		// Nothing inherits a stale name between sessions (CV9.DS8.US5).
+		delete process.env.MIRROR_SESSION_ID;
 
 		if (sessionId) {
-			// A prompt still in flight must land before the conversation closes.
+			// A reply still unsent (a Pi without `agent_settled`) lands before the
+			// conversation closes, after its prompt; so does a prompt in flight.
+			const reply = takeStopArgs(sessionId);
+			if (reply) enqueueUserLog(sessionId, reply);
+			typedInput.delete(sessionId);
 			await settleUserLog(sessionId);
 			pendingUserLog.delete(sessionId);
 			await runMirror(["conversation-logger", "session-end-pi", sessionId]);
@@ -642,5 +1037,5 @@ export default function (pi: ExtensionAPI) {
 
 		// The dated zip backup answers from TypeScript (CV22.DS7.TS1).
 		await runMirror(["backup", "--silent"]);
-	});
+	}));
 }

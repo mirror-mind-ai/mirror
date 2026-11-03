@@ -25,6 +25,7 @@ import {
 import { join } from "node:path";
 import test from "node:test";
 import { runWelcomeRoute } from "#frontDoor/runtimeRoute.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 import type { InstallKind } from "#runtime/installKind.ts";
 import type { NpmRunner } from "#runtime/strategies/package.ts";
 import { composeWelcome, WELCOME_REMOTE_BUDGET_MS } from "#welcome/card.ts";
@@ -77,7 +78,7 @@ interface World {
 
 function world(): World {
   // realpath: on macOS /tmp is a symlink to /private/tmp.
-  const root = realpathSync(mkdtempSync("/tmp/cr135-"));
+  const root = tempDir("cr135-");
   const outside = join(root, "outside");
   const osHome = join(root, "os-home");
   mkdirSync(outside);

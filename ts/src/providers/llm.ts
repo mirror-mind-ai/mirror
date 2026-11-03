@@ -4,6 +4,7 @@ import {
   type LlmTimeoutRole,
   type ProviderConfig,
   resolveExtractionModel,
+  resolveExtractionReasoning,
   resolveLlmMaxRetries,
   resolveLlmTimeoutMs,
   resolveProviderConfig,
@@ -74,6 +75,33 @@ const LLM_TIMEOUT_TIER: Readonly<Record<LlmRole, LlmTimeoutRole>> = {
   journal_classification: "extraction",
   week_plan: "extraction",
   descriptor: "extraction",
+};
+
+/**
+ * Which roles carry `MEMORY_EXTRACTION_REASONING` (CV9.DS9.TS1): every role that
+ * runs on the extraction pin. `consult` picks its own model on every call, so a
+ * setting meant for the extraction pin must not reach it.
+ *
+ * A full `Record<LlmRole, boolean>` for the reason `LLM_TIMEOUT_TIER` is one: a
+ * role added to `LLM_ROLES` cannot compile without declaring it. A check against
+ * `"consult"` would let the next role that names its own model inherit the
+ * setting silently.
+ */
+export const CARRIES_EXTRACTION_REASONING: Readonly<Record<LlmRole, boolean>> = {
+  extraction: true,
+  task_extraction: true,
+  summary: true,
+  curation: true,
+  consult: false,
+  reception: true,
+  consolidation: true,
+  shadow_scan: true,
+  conversation_title: true,
+  conversation_tags: true,
+  conversation_summary: true,
+  journal_classification: true,
+  week_plan: true,
+  descriptor: true,
 };
 
 /**
@@ -273,6 +301,16 @@ export class LiveLlmProvider implements LlmProvider {
   async complete(request: LlmRequest): Promise<LlmResponse> {
     const client = this.resolveClient();
     const model = request.model ?? resolveExtractionModel({ env: this.env });
+    // CV9.DS9.TS1: the one added field; US3: the setting, else the model's own
+    // default (Haiku sends `none`; a model outside the table sends nothing). An
+    // invalid value reads as unset, so it fails nothing (a failed call would
+    // become an extraction attempt, CR178); `runtime status` and `diagnose`
+    // report it.
+    const { effort } = resolveExtractionReasoning({ env: this.env });
+    const reasoning =
+      effort !== null && CARRIES_EXTRACTION_REASONING[request.role]
+        ? { reasoning: { effort } }
+        : {};
     const startedAt = Date.now();
     const body = await client.postJson(
       "/chat/completions",
@@ -286,6 +324,8 @@ export class LiveLlmProvider implements LlmProvider {
           : [{ role: "user", content: request.prompt }],
         temperature: request.temperature ?? DEFAULT_TEMPERATURE,
         max_tokens: request.maxTokens ?? DEFAULT_MAX_TOKENS,
+        // Unset, this adds nothing: the body is the one it was before the setting.
+        ...reasoning,
       },
       {
         timeoutMs: resolveLlmTimeoutMs(LLM_TIMEOUT_TIER[request.role], { env: this.env }),

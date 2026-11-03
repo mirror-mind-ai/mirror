@@ -33,7 +33,7 @@ import { getIdentityContent } from "#identity/identityRead.ts";
 import { getProjectPath } from "#journey/journeyStatus.ts";
 import { loadMirrorContext } from "#mirror/context.ts";
 import { persistStickyDefaults } from "#mirror/orchestration.ts";
-import { resolveRuntimeSessionId } from "#mirror/runtimeSession.ts";
+import { resolveNamedRuntimeSessionId, resolveRuntimeSessionId } from "#mirror/runtimeSession.ts";
 import { activateOperatingMode } from "#mode/operatingMode.ts";
 import { ProviderConfigError } from "#providers/config.ts";
 import type { EmbeddingProvider } from "#providers/embedding.ts";
@@ -286,6 +286,13 @@ export async function runBuildLoad(
   }
 
   persistStickyDefaults(db, "engineer", slug, deps.nowIso());
+  // A named session's stamp records that it was (CR008 option B, CV9.DS8.US5):
+  // with no name, the guess still lands on some window's row so its footer
+  // shows the mode, and a lifecycle command must not bind from that.
+  const namedSessionId = resolveNamedRuntimeSessionId(
+    options.sessionId ?? null,
+    options.environmentSessionId ?? null,
+  );
   const resolvedSessionId = resolveRuntimeSessionId(
     db,
     options.sessionId ?? null,
@@ -293,7 +300,12 @@ export async function runBuildLoad(
   );
   activateOperatingMode(
     db,
-    { mode: "Builder Mode", journey: slug, sessionId: resolvedSessionId },
+    {
+      mode: "Builder Mode",
+      journey: slug,
+      sessionId: resolvedSessionId,
+      named: namedSessionId !== null && namedSessionId === resolvedSessionId,
+    },
     deps.nowIso(),
   );
   await deps.switchConversation?.(slug, resolvedSessionId);

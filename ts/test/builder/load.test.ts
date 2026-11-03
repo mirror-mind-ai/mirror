@@ -228,6 +228,9 @@ function llmCalls(db: WritableDatabase): Record<string, unknown>[] {
     .all() as Record<string, unknown>[];
 }
 
+// The runtime rows' `operating_mode` carries `named_session: true` since
+// CV9.DS8.US5 (CR008 option B): every recorded load names its session, and the
+// golden moved by that one key, the rest of the bytes as Python wrote them.
 test("every recorded load matches Python on all four faces", async () => {
   assert.ok(invocations.length >= 5, "expected the recorded load matrix");
   assert.ok(

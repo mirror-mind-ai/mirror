@@ -10,12 +10,12 @@
 // flipped, and Soul shares the same object, so the assertion is the raw string.
 
 import assert from "node:assert/strict";
-import { mkdtempSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
 import golden from "#goldens/operating-mode-metadata.golden.json" with { type: "json" };
 import { createRuntimeTables } from "#helpers/runtimeSchema.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 import { GLOBAL_OPERATING_MODE_SESSION_ID, upsertRuntimeSession } from "#mirror/runtimeSession.ts";
 import { activateOperatingMode, deactivateOperatingMode } from "#mode/operatingMode.ts";
 
@@ -31,7 +31,7 @@ const SESSION = "operating-mode-session";
 const NOW = "2026-09-08T12:00:00.000000Z";
 
 function freshDb(name: string): WritableDatabase {
-  const dir = mkdtempSync(`/tmp/operating-mode-${name}-`);
+  const dir = tempDir(`operating-mode-${name}-`);
   const db = openDatabaseCopyForWrite(join(dir, "copy.db"));
   createRuntimeTables(db);
   return db;

@@ -2,10 +2,10 @@
 //
 // Everything the `conversation-logger` subcommands need beyond the database
 // is assembled here, once per invocation, from an EXPLICIT environment: the
-// clock and id generator, the transcript/session resolution inputs, the Pi
-// sessions directory, the pre-write backup, and -- only for the subcommands
-// that cross the LLM close tail -- the replay providers and the maintenance
-// dependencies built on them.
+// clock and id generator, the transcript/session resolution inputs, the
+// pre-write backup, and -- only for the subcommands that cross the LLM close
+// tail -- the replay providers and the maintenance dependencies built on them.
+// (No Pi sessions directory: maintenance reads no Pi session file, CR153.)
 //
 // The providers are loaded lazily. `diagnose-journeys`
 // or `session-start --fast` must never fail because a replay fixture is not
@@ -17,7 +17,6 @@
 // Nothing here reads `process.env` or `os.homedir()`; the front door passes
 // them in, which is what keeps every test of this module hermetic.
 
-import { backfillPiSessions, homeBornAt, resolvePiSessionsDir } from "#conversation/backfill.ts";
 import { createCloseHooks, maybeGenerateTitle } from "#conversation/closeTail.ts";
 import { runConversationExtraction } from "#conversation/extraction.ts";
 import { runExtractionWithAccounting } from "#conversation/extractionRun.ts";
@@ -47,7 +46,6 @@ import {
 export type LoggerRuntimeEnv = {
   MIRROR_SESSION_ID?: string;
   CLAUDE_PROJECT_DIR?: string;
-  PI_SESSIONS_DIR?: string;
   MIRROR_TS_CONVERSATION_LLM_REPLAY?: string;
   MIRROR_TS_CONVERSATION_EMBEDDING_REPLAY?: string;
   /** Read by the live providers when the close tail runs against a real model. */
@@ -100,12 +98,11 @@ export interface LoggerRuntime {
   readonly homeDir: string;
   readonly claudeProjectDir: string | null;
   readonly environmentSessionId: string | null;
-  readonly piSessionsDir: string;
   /** Which transport answers the close tail here: replay, incomplete replay, or live. */
   readonly transportMode: ProviderTransportMode;
   /** The close hooks (extraction + finalization) behind the replay transport. */
   closeHooks(): Promise<CloseHooks>;
-  /** The full maintenance wiring, including the real Pi backfill. */
+  /** The full maintenance wiring. */
   maintenanceDeps(): Promise<MaintenanceDeps>;
   /** The dated zip backup for the mutating journey repair; see `LoggerRuntimeOptions.backup`. */
   readonly backup: ((stdout: (line: string) => void) => string | null) | null;
@@ -135,7 +132,6 @@ function liveTailOverrides(
 
 export function createLoggerRuntime(options: LoggerRuntimeOptions): LoggerRuntime {
   const { db, env, deps } = options;
-  const piSessionsDir = resolvePiSessionsDir(null, env, options.homeDir);
 
   // One precedence, shared with the router so the two cannot disagree about
   // which transport is live: replay -> incomplete -> live. The pair rule that
@@ -225,7 +221,6 @@ export function createLoggerRuntime(options: LoggerRuntimeOptions): LoggerRuntim
     homeDir: options.homeDir,
     claudeProjectDir: env.CLAUDE_PROJECT_DIR || null,
     environmentSessionId: env.MIRROR_SESSION_ID?.trim() || null,
-    piSessionsDir,
     transportMode: transport.mode,
     backup: options.backup ?? null,
     closeHooks,
@@ -246,14 +241,6 @@ export function createLoggerRuntime(options: LoggerRuntimeOptions): LoggerRuntim
         // CV21.DS4.TS2: the finalization a bounded runtime's SessionEnd deferred.
         finalizeCloseTail: (database, conversationId) =>
           hooks.finalizeMetadata(database, conversationId),
-        // CR121: only the sessions newer than this home; its birth is read from
-        // the ledger once per maintenance run, and an unknown birth is an error.
-        backfillPiSessions: (database) =>
-          backfillPiSessions(
-            database,
-            { sessionsDir: piSessionsDir, notBefore: homeBornAt(database) },
-            deps,
-          ),
         extractionLimit: resolveMaintenanceMaxExtractions({ env }),
         staleOrphanMinutes: resolveStaleOrphanMinutes({ env }),
         monotonic: options.monotonic,

@@ -16,6 +16,7 @@ import {
   sealArtifact,
   writeBuilderArtifact,
 } from "#builder/artifacts/artifactWriter.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 
 const roots: string[] = [];
 test.after(() => {
@@ -23,7 +24,7 @@ test.after(() => {
 });
 
 function project(): string {
-  const root = mkdtempSync("/tmp/artifact-writer-");
+  const root = tempDir("artifact-writer-");
   roots.push(root);
   return root;
 }

@@ -1,0 +1,147 @@
+{
+ "criteria": {
+  "blocking": true,
+  "no_cutoffs": true,
+  "losses": [
+   "haiku extraction/conversation-summary"
+  ],
+  "control_steady": false
+ },
+ "standing": {
+  "flash-lite extraction/two-pass-dedup": {
+   "base": [
+    0,
+    6
+   ],
+   "now": [
+    0,
+    5
+   ]
+  },
+  "luna extraction/two-pass-dedup": {
+   "base": [
+    2,
+    7
+   ],
+   "now": [
+    3,
+    7
+   ]
+  },
+  "haiku extraction/two-pass-dedup": {
+   "base": [
+    7,
+    7
+   ],
+   "now": [
+    7,
+    7
+   ]
+  },
+  "flash-lite extraction/conversation-summary": {
+   "base": [
+    0,
+    6
+   ],
+   "now": [
+    0,
+    5
+   ]
+  },
+  "luna extraction/conversation-summary": {
+   "base": [
+    7,
+    7
+   ],
+   "now": [
+    7,
+    7
+   ]
+  },
+  "haiku extraction/conversation-summary": {
+   "base": [
+    6,
+    7
+   ],
+   "now": [
+    1,
+    7
+   ]
+  },
+  "flash-lite reception/open-existential-no-persona": {
+   "base": [
+    0,
+    6
+   ],
+   "now": [
+    0,
+    4
+   ]
+  },
+  "luna reception/open-existential-no-persona": {
+   "base": [
+    5,
+    7
+   ],
+   "now": [
+    7,
+    7
+   ]
+  },
+  "haiku reception/open-existential-no-persona": {
+   "base": [
+    6,
+    7
+   ],
+   "now": [
+    5,
+    7
+   ]
+  },
+  "flash-lite title_tags/title-trivial-empty": {
+   "base": [
+    0,
+    7
+   ],
+   "now": [
+    0,
+    7
+   ]
+  },
+  "luna title_tags/title-trivial-empty": {
+   "base": [
+    2,
+    2
+   ],
+   "now": [
+    7,
+    7
+   ]
+  },
+  "haiku title_tags/title-trivial-empty": {
+   "base": [
+    2,
+    2
+   ],
+   "now": [
+    7,
+    7
+   ]
+  }
+ },
+ "control_moves": [
+  "title_tags/tags-exclude-noise"
+ ],
+ "other_moves": {
+  "luna": [],
+  "haiku": [
+   "extraction/descriptor-quality",
+   "shadow/dedup-existing-shadow"
+  ]
+ },
+ "projection_30d": {
+  "flash-lite": 0.6059896000000001,
+  "luna": 0.5782198263322414,
+  "haiku": 0.9143377789438332
+ }
+}
