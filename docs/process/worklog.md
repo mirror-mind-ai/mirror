@@ -32,6 +32,19 @@ package lane with a bare exit 1 and passed on re-run.
 No migration. No model or prompt changed, so the model-behavior gate does not apply.
 Release note: [v0.39.3](../releases/v0.39.3.md).
 
+After the release commit:
+
+- Docs and the four Tests jobs were green before the tag existed; the macOS job needed a
+  re-run, GitHub having failed to acquire an arm64 runner ("not acquired by Runner of type
+  hosted even after multiple attempts"), capacity and not code.
+- `release:promote` (dry run, then `--push`) tagged `v0.39.3` and moved `stable` to `ba0d9412`.
+- The GitHub Release is published and marked latest.
+- The Navigator approved the `release` environment and the npm stage, and moved `latest`
+  with 2FA. `latest` and `stable` are at 0.39.3, `gitHead` `ba0d9412`.
+- The Navigator's own Homebrew package was updated to 0.39.3 with `mirror runtime update`.
+- Rodrigo Immaginario was told on PR #53 that this is the version the Windows installer
+  should pin.
+
 ### 2026-11-03 — v0.39.2: Input, Read the Platform's Way
 
 Patch release of PR #49 and PR #48 (@rodrigoimmaginario),
