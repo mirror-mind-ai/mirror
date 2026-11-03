@@ -43,7 +43,42 @@ way, and the fix is a second commit after the one the tag names.
 Captured, unassigned, 2026-11-02, at the Navigator's direction, as the follow-up PR #48's
 merge named.
 
-Not planned. One check in the doctor, its test, and one sentence of process doc.
+Selected as Current Focus and planned 2026-11-02; approved by the Navigator the same day.
+Driver `@viniciusteles`, Delivery `main`.
+
+### Scope
+
+1. `ts/scripts/releaseDoctor.ts`: after `package version`, a `lockfile` check. It reads
+   `package-lock.json` and compares its top-level `name` and `version`, and
+   `packages[""]`'s, with `package.json`'s: the four comparisons
+   `ts/test/scripts/packageLock.test.ts` makes, so the doctor and the test agree on what
+   "level" means. A mismatch is `fail`, with the drift and the fix in the detail:
+   `` run `npm install --package-lock-only --ignore-scripts` and commit package-lock.json ``.
+   A missing or unparsable lock is `fail` with the same fix. Read-only, as the doctor is.
+2. `ts/test/runtime/release.test.ts`: the fixture gains a level lock, so "a release-ready
+   repository passes every check" holds; "each defect the doctor exists to catch" gains
+   the lock at the old version and the lock missing; promotion with a bad lock creates
+   no tag, through the existing "refuses when the doctor fails" path.
+3. `docs/process/versioning.md`: one paragraph naming what a release commit changes --
+   `package.json`, the two plugin manifests, `package-lock.json` regenerated, the note,
+   the index, the worklog -- and that the doctor fails on a lock left behind.
+
+### Acceptance
+
+- `npm run release:doctor -- --target v0.39.1` on `main` passes the `lockfile` check.
+- With the lock's root edited back to `mirror-core 0.0.0`, it fails naming the command.
+- Promotion with that lock creates no tag.
+
+### Exclusions
+
+- Regenerating the lock for the maintainer: the doctor edits no file, by rule.
+- Dependency drift inside the lock: `npm ci` is the check for that.
+
+### Decisions Taken At Approval
+
+Reviewed through the lenses on 2026-11-02 with no amendments: engineer, the four
+comparisons shared with the test; quality assurance, promotion covered through the
+existing doctor-failure path; DevOps and security, nothing new reaches a remote or a file.
 
 ## Evidence
 
