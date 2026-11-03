@@ -28,6 +28,15 @@ gate was approved and all four jobs passed.
 No schema change, no migration. No model or prompt changed, so the model-behavior gate
 does not apply. Release note: [v0.39.4](../releases/v0.39.4.md).
 
+After the release commit:
+
+- Docs and the four Tests jobs were green before the tag existed.
+- `release:promote` (dry run, then `--push`) tagged `v0.39.4` and moved `stable` to `cd3a5f80`.
+- The GitHub Release is published and marked latest.
+- The Navigator approved the `release` environment and the npm stage, and moved `latest`
+  with 2FA. `latest` and `stable` are at 0.39.4, `gitHead` `cd3a5f80`.
+- The Navigator's own Homebrew package was updated to 0.39.4 with `mirror runtime update`.
+
 ### 2026-11-03 — v0.39.3: Windows Gets Its Hooks
 
 Patch release of PR #53, PR #50, and PR #54 (@rodrigoimmaginario). On a Windows package
