@@ -712,6 +712,14 @@ resolved as the core resolves it: `MIRROR_HOME`, else `MIRROR_USER`, from the
 environment, else from the tree's `.env` when the wrapper is in a tree, else
 from `~/.config/mirror/env`.
 
+The Pi extension is the fifth resolver (CR191): no wrapper runs it, so it
+searches the same places itself, in the same order, with the Node beside the
+tree it ships in (`<prefix>/bin/node` for a global install) in the wrappers'
+"beside the entry" position, and takes `MIRROR_NODE` as an absolute path only.
+When nothing resolves it spawns nothing, warns once in the session with the
+fix, and writes one line to `hooks.log` as `pi:session-start`. A test pins its
+candidate list to `HOOK_NODE_CANDIDATES`, as one pins the wrappers'.
+
 `runtime diagnose` reports when Node is not resolvable from its own
 environment. That environment is a terminal's, not the runtime's, so it also
 reports the failures `hooks.log` recorded in the last seven days

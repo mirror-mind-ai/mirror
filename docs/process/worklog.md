@@ -12,6 +12,30 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-11-02 — v0.39.1: Pi Finds Its Node, or Says So
+
+Patch release of PR #47 (@rodrigoimmaginario) and
+[CR191](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr191-the-pi-extension-cannot-find-node-where-the-hook-wrappers-can.md).
+A Pi opened where `node` is not on the PATH exited with `spawn node ENOENT`; PR #47 keeps
+it up, and CR191 makes the extension resolve Node where the hook wrappers look, say so once
+when nothing resolves, and write the `hooks.log` line `runtime diagnose` reads. PR #47 was
+reviewed through four lenses on 2026-11-01 and merged as it was on 2026-11-02 after CI on
+the branch updated to `main`; CR191 was captured, planned, implemented, and validated by the
+Navigator the same day against Pi 1.5.0 with a bare PATH.
+
+No migration. No model or prompt changed, so the model-behavior gate does not apply.
+Release note: [v0.39.1](../releases/v0.39.1.md).
+
+After the release commit:
+
+- CI was green on all four jobs and the docs check before the tag existed.
+- `release:promote` (dry run, then `--push`) tagged `v0.39.1` and moved `stable` to `27018088`.
+- The GitHub Release is published and marked latest.
+- The Navigator approved the `release` environment and the npm stage, and moved `latest`
+  with 2FA. `latest` and `stable` are at 0.39.1, `gitHead` `27018088`.
+- The Navigator's own Homebrew package was updated to 0.39.1 with `mirror runtime update`:
+  the Pi he runs daily carries the fix.
+
 ### 2026-10-31 — CR189 done: v0.39.0's note names PR #46 and the Windows update step
 
 v0.39.0 shipped PR #46 without a word about it. A dated addition to its note now says it: a
