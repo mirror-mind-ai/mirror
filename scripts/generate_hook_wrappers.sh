@@ -180,6 +180,14 @@ for candidate in "$HOME/.nvm/current/bin" /opt/homebrew/bin /usr/local/bin; do
   [ -n "$ENTRY" ] && break
   [ -x "$candidate/mirror-hook" ] && ENTRY="$candidate/mirror-hook"
 done
+# On Windows npm writes no symlink: the `mirror-hook` in its global prefix is
+# a POSIX shell shim, and `node_modules/` sits beside it. Node cannot run the
+# shim ("node exited 1" in hooks.log on every hook); the entry it wraps is the
+# package's own bin, so that is the entry when it is there. A POSIX prefix
+# keeps node_modules under lib/ and its bin is already the .js: no change.
+shim_entry=""
+[ -n "$ENTRY" ] && shim_entry="$(dirname "$ENTRY")/node_modules/mirror-mind/bin/mirror-hook.js"
+[ -n "$shim_entry" ] && [ -f "$shim_entry" ] && ENTRY="$shim_entry"
 
 if [ -z "$ENTRY" ]; then
   note "mirror-hook not found on PATH; hook skipped. Install mirror-mind (npm install -g mirror-mind) or set MIRROR_BIN to its bin directory."

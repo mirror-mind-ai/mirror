@@ -73,6 +73,30 @@ as its duplicate. CR127's options come with it. They are not exclusive:
 
 Still captured and unassigned. Current Focus unchanged.
 
+2026-11-03: delivered by [PR #50](https://github.com/mirror-mind-ai/mirror/pull/50)
+(@rodrigoimmaginario, opened 2026-10-21), which implements the first option above as
+written, independently: a front-door log entry can say its non-zero exit is a verdict;
+`runtime diagnose`'s exit 1 is logged at `INFO` with `verdict=attention`; the exit code
+and `frontDoorErrorFindings` are unchanged. Assigned at merge: Driver
+`@rodrigoimmaginario`, Delivery PR #50. CR176, captured 2026-10-25 for the same loop, is
+closed as this CR's duplicate, as CR127 was.
+
+Reviewed through four lenses on 2026-11-03: engineer, quality assurance, DevOps engineer,
+security engineer. Two amendments, one maintainer commit on the branch (`fd734529`):
+
+1. **Engineer.** The rule "diagnose's exit 1 is an answer" lives beside the command whose
+   contract it is: `isRuntimeVerdict` in `runtimeRoute.ts`, which `dispatchTs` asks,
+   instead of an `argv[1]` match on the way out.
+2. **Quality assurance.** The end-to-end test relied on a bare PATH producing
+   `hook_node_unresolvable`, which CR191's search no longer guarantees (on the
+   maintainer's host the finding that fired was `loose_permissions`, by the umask). It
+   now makes that finding sure with `chmod` and says so.
+
+Not taken, by the Navigator's decision at merge: the `route=usage` lines (`(none) usage
+exit=1`, `week usage exit=2`), which still count as front-door errors. On the maintainer's
+home every such line comes from the test suite, which writes into the real home's log on
+each run: that is CR195's problem, not a verdict's.
+
 ## Evidence
 
 ```text
@@ -133,4 +157,8 @@ return findings.length === 0 ? 0 : 1;
 
 ## Outcome
 
-Pending.
+Done, 2026-11-03, merged as `09316ab8`. `runtime diagnose` with findings writes
+`INFO runtime ts exit=1 verdict=attention`; a real failure of the same command stays
+`ERROR`; a second diagnose reports no `front_door_errors` for the first. Validated by the
+PR's end-to-end test on a scratch home and by the review's run of the suite on the merge
+(793 front-door and runtime tests). For the next release.

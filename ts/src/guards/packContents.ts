@@ -20,6 +20,8 @@ import { PACKAGE_NAME } from "#runtime/packageIdentity.ts";
 /** Directory prefixes (with trailing slash) and exact files the tarball may contain. */
 export const ALLOWED_PREFIXES: readonly string[] = [
   "bin/",
+  // CV24.DS1: the library entry Mirror Desktop imports, `mirror-mind/desktop`.
+  "lib/",
   "ts/src/",
   "templates/",
   "docs/releases/",
@@ -49,6 +51,7 @@ export const REQUIRED_FILES: readonly string[] = [
   "bin/loader.js",
   "bin/mirror.js",
   "bin/mirror-hook.js",
+  "lib/desktop.js",
   "ts/src/frontDoor/cli.ts",
   "ts/src/hooks/main.ts",
   "ts/src/mcp/main.ts",

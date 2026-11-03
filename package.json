@@ -1,6 +1,6 @@
 {
   "name": "mirror-mind",
-  "version": "0.38.1",
+  "version": "0.39.3",
   "description": "Mirror Mind: a local-first memory and identity framework for agentic AI runtimes (Pi, Claude Code, Codex, Antigravity)",
   "license": "MIT",
   "repository": {
@@ -27,8 +27,13 @@
     "mirror": "bin/mirror.js",
     "mirror-hook": "bin/mirror-hook.js"
   },
+  "exports": {
+    "./desktop": "./lib/desktop.js",
+    "./package.json": "./package.json"
+  },
   "files": [
     "bin",
+    "lib",
     "ts/src",
     "templates",
     "docs/releases",

@@ -12,6 +12,150 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-11-03 — v0.39.3: Windows Gets Its Hooks
+
+Patch release of PR #53, PR #50, and PR #54 (@rodrigoimmaginario). On a Windows package
+install npm's global `mirror-hook` and `mirror` are shell shims, and the plugin's wrappers
+and MCP locator handed them to Node: no Claude Code conversation was ever logged there.
+They now run the package's own bin (one rule in the two generators, the copies
+regenerated). `runtime diagnose`'s exit 1 is logged as a verdict, so `front_door_errors`
+stops feeding itself; this delivers
+[CR139](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr139-a-verdict-that-exits-1-is-logged-as-a-front-door-error.md),
+with CR127 and CR176 closed as its duplicates. The docs point a Windows reader to
+mirror-mind-ai/mirror-installer.
+
+Each PR reviewed through four lenses; #50 and #53 took one maintainer commit each (the
+verdict rule beside its command and a sure test finding; the locator's run-as-written
+shim case). #54 merged as written. One macOS CI run on #54 failed in the updater smoke's
+package lane with a bare exit 1 and passed on re-run.
+
+No migration. No model or prompt changed, so the model-behavior gate does not apply.
+Release note: [v0.39.3](../releases/v0.39.3.md).
+
+After the release commit:
+
+- Docs and the four Tests jobs were green before the tag existed; the macOS job needed a
+  re-run, GitHub having failed to acquire an arm64 runner ("not acquired by Runner of type
+  hosted even after multiple attempts"), capacity and not code.
+- `release:promote` (dry run, then `--push`) tagged `v0.39.3` and moved `stable` to `ba0d9412`.
+- The GitHub Release is published and marked latest.
+- The Navigator approved the `release` environment and the npm stage, and moved `latest`
+  with 2FA. `latest` and `stable` are at 0.39.3, `gitHead` `ba0d9412`.
+- The Navigator's own Homebrew package was updated to 0.39.3 with `mirror runtime update`.
+- Rodrigo Immaginario was told on PR #53 that this is the version the Windows installer
+  should pin.
+
+### 2026-11-03 — v0.39.2: Input, Read the Platform's Way
+
+Patch release of PR #49 and PR #48 (@rodrigoimmaginario),
+[CR194](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr194-powershell-stdin-reaches-identity-set-as-utf-16-or-ascii.md),
+and [CR193](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr193-the-release-doctor-does-not-check-the-lockfile.md).
+`runtime diagnose` looked for `node` on a `:`-split PATH and warned every Windows install;
+a PowerShell byte-order mark was stored as identity content; the lockfile's root had said
+`mirror-core 0.0.0` through nine releases. PR #49's review found the two PowerShell 5.1
+hazards beside the BOM, UTF-16 from `>` and ASCII from the pipe, and CR194 answered them
+with one decoder and `--file`. CR193 put the lock check in the release doctor, and this is
+the first release it checked: the release commit regenerates `package-lock.json`.
+
+Both PRs were reviewed through four lenses and merged as written, each with one
+maintainer commit on the branch. Rodrigo was asked on PR #49 to measure PowerShell 5.1
+itself once this release is out.
+
+No migration. No model or prompt changed, so the model-behavior gate does not apply.
+Release note: [v0.39.2](../releases/v0.39.2.md).
+
+After the release commit:
+
+- CI was green on all four jobs and the docs check before the tag existed; the release
+  doctor's `lockfile` check passed on its first release.
+- `release:promote` (dry run, then `--push`) tagged `v0.39.2` and moved `stable` to `e7185c3d`.
+- The GitHub Release is published and marked latest.
+- The Navigator approved the `release` environment and the npm stage, and moved `latest`
+  with 2FA. `latest` and `stable` are at 0.39.2, `gitHead` `e7185c3d`.
+- The Navigator's own Homebrew package was updated to 0.39.2 with `mirror runtime update`.
+
+### 2026-11-02 — v0.39.1: Pi Finds Its Node, or Says So
+
+Patch release of PR #47 (@rodrigoimmaginario) and
+[CR191](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr191-the-pi-extension-cannot-find-node-where-the-hook-wrappers-can.md).
+A Pi opened where `node` is not on the PATH exited with `spawn node ENOENT`; PR #47 keeps
+it up, and CR191 makes the extension resolve Node where the hook wrappers look, say so once
+when nothing resolves, and write the `hooks.log` line `runtime diagnose` reads. PR #47 was
+reviewed through four lenses on 2026-11-01 and merged as it was on 2026-11-02 after CI on
+the branch updated to `main`; CR191 was captured, planned, implemented, and validated by the
+Navigator the same day against Pi 1.5.0 with a bare PATH.
+
+No migration. No model or prompt changed, so the model-behavior gate does not apply.
+Release note: [v0.39.1](../releases/v0.39.1.md).
+
+After the release commit:
+
+- CI was green on all four jobs and the docs check before the tag existed.
+- `release:promote` (dry run, then `--push`) tagged `v0.39.1` and moved `stable` to `27018088`.
+- The GitHub Release is published and marked latest.
+- The Navigator approved the `release` environment and the npm stage, and moved `latest`
+  with 2FA. `latest` and `stable` are at 0.39.1, `gitHead` `27018088`.
+- The Navigator's own Homebrew package was updated to 0.39.1 with `mirror runtime update`:
+  the Pi he runs daily carries the fix.
+
+### 2026-10-31 — CR189 done: v0.39.0's note names PR #46 and the Windows update step
+
+v0.39.0 shipped PR #46 without a word about it. A dated addition to its note now says it: a
+highlight, a paragraph under What Changed, and an Upgrading section. The Upgrading section gives
+the one manual install a Windows package install of an earlier version needs, because its own
+`runtime update` fails at apply. The GitHub Release carries the same text. The note inside the
+published 0.39.0 tarball cannot change. With the step published,
+[CR189](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr189-a-windows-package-install-cannot-update-itself.md)
+is done.
+
+### 2026-10-31 — v0.39.0: The Core as a Library
+
+Minor release of CV24.DS1 to DS8, merged from `desktop/library-seam-1a` as PR #52 after a
+maintainer review (two fixes: the smoke script's executable bit, and the roadmap row that still
+said DS1 to DS6). `mirror-mind/desktop` is the library entry Mirror Desktop 0.3 embeds; the new
+`exports` field closes every other deep import of the package.
+
+No migration. No model or prompt changed, so the model-behavior gate does not apply.
+Release note: [v0.39.0](../releases/v0.39.0.md).
+
+After the release commit:
+
+- CI was green on all four jobs and the docs check before the tag existed.
+- `release:promote` (dry run, then `--push`) tagged `v0.39.0` and moved `stable` to `ca7295a4`.
+- The `release` environment had one required reviewer, Vinicius; the Navigator added himself as a
+  second and approved the stage. He approved the npm stage and moved `latest` with 2FA.
+  `latest` and `stable` are at 0.39.0, `gitHead` `ca7295a4`.
+- The GitHub Release is published and marked latest.
+- No production install was updated by this release.
+
+### 2026-10-30 — PR #46 merged: a Windows package install can update itself (CR189)
+
+[CR189](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr189-a-windows-package-install-cannot-update-itself.md)
+is validated, carried by PR #46 (@rodrigoimmaginario). On Windows, `runtime update` on a
+package failed at apply with `EBUSY` every time. npm renames the package's directory
+aside before it installs the new version, and the apply ran npm inside that directory,
+which Windows holds against rename while a process runs in it. The apply now runs from
+the parent of `node_modules`, still the install's own tree, and the dist-tags read stays
+in the install's root. Nothing changes on macOS or Linux.
+
+- The PR was reviewed through four lenses (engineer, QA, DevOps, security). CR135 holds
+  by construction: npm skips the project config in global mode, so no project's
+  `.npmrc` answers `install -g`, whatever directory it runs in.
+- Seven places still said every npm call runs in the install's root, REFERENCE.md among
+  them. One maintainer commit on the PR branch (`ef7c5d6f`) corrected them.
+- Verified on a merge with current `main`: the suite under both environments,
+  typecheck, lint, the repository checks, and the updater smoke (104). With the apply
+  line reverted, the two tests that pin it fail. CI was green on the PR head and on
+  `main` after the merge (`e2525228`).
+- Validated by the author's run on Windows (0.34.99 to 0.35.0, `Update result:
+  success`), accepted by the Navigator. No CI job reproduces npm's rename on Windows;
+  that stays a known risk.
+
+It shipped the next day in v0.39.0, cut from `main` after the merge, but that release's
+note does not mention it. So the one-time manual step Windows package installs need is
+not yet anywhere a person would read it: the updater they have fails at apply and cannot
+bring them this fix. The step is drafted in the CR.
+
 ### 2026-10-30 — v0.38.1: The Refusal Names the Way Out
 
 Patch release of three Change Requests, cut the night the last of them closed. Two come

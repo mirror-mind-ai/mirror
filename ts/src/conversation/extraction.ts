@@ -179,7 +179,7 @@ export async function runConversationExtraction(
   return { memoryIds, taskIds, extracted: memoryIds.length };
 }
 
-async function persistExtractedTasks(
+export async function persistExtractedTasks(
   db: WritableDatabase,
   llm: LlmProvider,
   messages: readonly ExtractionMessage[],
@@ -295,7 +295,7 @@ function logEmbeddingAttempt(
   return embeddingLedgerHook(db, { conversationId, now });
 }
 
-function insertMemory(
+export function insertMemory(
   db: WritableDatabase,
   id: string,
   conversationId: string,
