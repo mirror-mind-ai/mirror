@@ -170,7 +170,7 @@ import {
 } from "./render/tasksImportSync.ts";
 import { renderWeekView } from "./render/week.ts";
 import { retiredRefusal, routeMemoryCommand } from "./routing.ts";
-import { runRuntimeReadRoute, runWelcomeRoute } from "./runtimeRoute.ts";
+import { isRuntimeVerdict, runRuntimeReadRoute, runWelcomeRoute } from "./runtimeRoute.ts";
 import { runMemorySearchRoute } from "./searchRoute.ts";
 import { resolveSeedPaths } from "./seedPaths.ts";
 import { isSessionStartWelcome, runSessionStartWelcomeRoute } from "./sessionStartWelcomeRoute.ts";
@@ -1711,6 +1711,8 @@ interface DispatchOutcome {
   exitCode: number;
   /** Content-free route metadata for the durable front-door log. */
   detail?: string;
+  /** The non-zero exit is the command's answer, not a failure (`frontDoorLog.ts`). */
+  verdict?: boolean;
 }
 
 async function dispatch(argv: readonly string[]): Promise<DispatchOutcome> {
@@ -1819,7 +1821,13 @@ async function dispatchTs(argv: readonly string[]): Promise<number | DispatchOut
   // database, when at all, through a read-only handle -- no bootstrap, no
   // migrate-on-open, and for `welcome --status-line` no subprocess whatsoever.
   if (argv[0] === "welcome") return runWelcomeRoute(argv);
-  if (argv[0] === "runtime") return runRuntimeReadRoute(argv);
+  if (argv[0] === "runtime") {
+    const exitCode = await runRuntimeReadRoute(argv);
+    // A verdict, not a failure: `isRuntimeVerdict` says which (CR139).
+    return isRuntimeVerdict(argv, exitCode)
+      ? { exitCode, detail: "verdict=attention", verdict: true }
+      : exitCode;
+  }
   if (argv[0] === "mcp") return runMcpServer();
   if (isMemorySearch(argv)) return runMemorySearch(argv);
   if (isConsult(argv)) {
@@ -1895,6 +1903,7 @@ export async function main(rawArgv = process.argv.slice(2)): Promise<number> {
       route: decision.engine,
       exitCode: outcome.exitCode,
       ...(outcome.detail ? { detail: outcome.detail } : {}),
+      ...(outcome.verdict ? { verdict: true } : {}),
     });
     return outcome.exitCode;
   } catch (error) {
