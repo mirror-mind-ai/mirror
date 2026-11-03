@@ -12,6 +12,25 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-11-03 — v0.39.2: Input, Read the Platform's Way
+
+Patch release of PR #49 and PR #48 (@rodrigoimmaginario),
+[CR194](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr194-powershell-stdin-reaches-identity-set-as-utf-16-or-ascii.md),
+and [CR193](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr193-the-release-doctor-does-not-check-the-lockfile.md).
+`runtime diagnose` looked for `node` on a `:`-split PATH and warned every Windows install;
+a PowerShell byte-order mark was stored as identity content; the lockfile's root had said
+`mirror-core 0.0.0` through nine releases. PR #49's review found the two PowerShell 5.1
+hazards beside the BOM, UTF-16 from `>` and ASCII from the pipe, and CR194 answered them
+with one decoder and `--file`. CR193 put the lock check in the release doctor, and this is
+the first release it checked: the release commit regenerates `package-lock.json`.
+
+Both PRs were reviewed through four lenses and merged as written, each with one
+maintainer commit on the branch. Rodrigo was asked on PR #49 to measure PowerShell 5.1
+itself once this release is out.
+
+No migration. No model or prompt changed, so the model-behavior gate does not apply.
+Release note: [v0.39.2](../releases/v0.39.2.md).
+
 ### 2026-11-02 — v0.39.1: Pi Finds Its Node, or Says So
 
 Patch release of PR #47 (@rodrigoimmaginario) and
