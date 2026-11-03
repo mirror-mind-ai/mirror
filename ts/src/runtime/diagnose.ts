@@ -25,7 +25,7 @@
 // inconclusive without a key; the live fetch belongs to DS8.
 
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
-import { basename, delimiter, dirname, join } from "node:path";
+import { basename, dirname, join, posix, win32 } from "node:path";
 import { openDatabaseReadOnly } from "#db/database.ts";
 import {
   type ExtensionPluginReport,
@@ -913,20 +913,24 @@ export function hookFailureFindings(
 export function hookNodeFindings(
   env: NodeJS.ProcessEnv,
   isExecutable: (path: string) => boolean,
+  platform: NodeJS.Platform = process.platform,
 ): DriftFinding[] {
   const explicit = env.MIRROR_NODE ?? "";
   if (explicit && isExecutable(explicit)) return [];
   const candidates = HOOK_NODE_CANDIDATES.map((candidate) =>
     candidate.replace("$HOME", env.HOME ?? ""),
   );
-  // The platform's PATH separator and its executable names: `;` and `node.exe`
+  // The platform's PATH separator and its executable name: `;` and `node.exe`
   // on Windows, where splitting on `:` cut `C:\Program Files\nodejs` into `C`
-  // and a path and the finding fired on every install that had Node.
-  const names = process.platform === "win32" ? ["node.exe", "node"] : ["node"];
+  // and a path and the finding fired on every install that had Node (PR #49).
+  // `platform` is a parameter so the test runs both branches on every host:
+  // CI's Windows job runs two files and this one is not among them.
+  const paths = platform === "win32" ? win32 : posix;
+  const name = platform === "win32" ? "node.exe" : "node";
   const onPath = (env.PATH ?? "")
-    .split(delimiter)
+    .split(paths.delimiter)
     .filter(Boolean)
-    .some((entry) => names.some((name) => isExecutable(join(entry, name))));
+    .some((entry) => isExecutable(paths.join(entry, name)));
   if (onPath || candidates.some((candidate) => isExecutable(candidate))) return [];
   return [
     {

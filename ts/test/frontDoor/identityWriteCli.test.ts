@@ -65,6 +65,20 @@ test("a byte-order mark at the head of stdin is not stored as content", () => {
       .get("ego", "probe") as { content: string } | undefined;
     db.close();
     assert.equal(row?.content, "# From PowerShell\n");
+
+    // A stdin that is nothing but the mark is empty content, and refused as such.
+    const bare = spawnFrontDoor(
+      ["identity", "set", "ego", "bare", "--db-path", dbPath],
+      {},
+      "\uFEFF",
+    );
+    assert.notEqual(bare.status, 0, "a bare BOM is not content");
+    const again = openDatabaseReadOnly(dbPath);
+    const none = again
+      .prepare("SELECT 1 FROM identity WHERE layer = ? AND key = ?")
+      .get("ego", "bare");
+    again.close();
+    assert.equal(none, undefined, "nothing was written");
   } finally {
     cleanup();
   }
