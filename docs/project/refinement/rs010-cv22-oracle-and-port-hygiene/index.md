@@ -128,3 +128,4 @@ evidence stays honest as both cores move.
 - [CR191 — The Pi extension cannot find Node where the hook wrappers can, and says nothing when it cannot](cr191-the-pi-extension-cannot-find-node-where-the-hook-wrappers-can.md)
 - [CR192 — The hook wrappers and the MCP locator accept a relative `MIRROR_NODE`, and say nothing about one they will not use](cr192-the-hook-wrappers-and-the-mcp-locator-accept-a-relative-mirror-node.md)
 - [CR193 — The release doctor checks the package version and not the lockfile's, so a release commit that forgets `package-lock.json` passes it](cr193-the-release-doctor-does-not-check-the-lockfile.md)
+- [CR194 — Text piped from Windows PowerShell reaches `identity set` and `journey update -` as UTF-16 or as ASCII, and is stored as it arrives](cr194-powershell-stdin-reaches-identity-set-as-utf-16-or-ascii.md)
