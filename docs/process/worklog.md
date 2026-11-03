@@ -12,6 +12,679 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-11-03 — v0.39.2: Input, Read the Platform's Way
+
+Patch release of PR #49 and PR #48 (@rodrigoimmaginario),
+[CR194](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr194-powershell-stdin-reaches-identity-set-as-utf-16-or-ascii.md),
+and [CR193](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr193-the-release-doctor-does-not-check-the-lockfile.md).
+`runtime diagnose` looked for `node` on a `:`-split PATH and warned every Windows install;
+a PowerShell byte-order mark was stored as identity content; the lockfile's root had said
+`mirror-core 0.0.0` through nine releases. PR #49's review found the two PowerShell 5.1
+hazards beside the BOM, UTF-16 from `>` and ASCII from the pipe, and CR194 answered them
+with one decoder and `--file`. CR193 put the lock check in the release doctor, and this is
+the first release it checked: the release commit regenerates `package-lock.json`.
+
+Both PRs were reviewed through four lenses and merged as written, each with one
+maintainer commit on the branch. Rodrigo was asked on PR #49 to measure PowerShell 5.1
+itself once this release is out.
+
+No migration. No model or prompt changed, so the model-behavior gate does not apply.
+Release note: [v0.39.2](../releases/v0.39.2.md).
+
+After the release commit:
+
+- CI was green on all four jobs and the docs check before the tag existed; the release
+  doctor's `lockfile` check passed on its first release.
+- `release:promote` (dry run, then `--push`) tagged `v0.39.2` and moved `stable` to `e7185c3d`.
+- The GitHub Release is published and marked latest.
+- The Navigator approved the `release` environment and the npm stage, and moved `latest`
+  with 2FA. `latest` and `stable` are at 0.39.2, `gitHead` `e7185c3d`.
+- The Navigator's own Homebrew package was updated to 0.39.2 with `mirror runtime update`.
+
+### 2026-11-02 — v0.39.1: Pi Finds Its Node, or Says So
+
+Patch release of PR #47 (@rodrigoimmaginario) and
+[CR191](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr191-the-pi-extension-cannot-find-node-where-the-hook-wrappers-can.md).
+A Pi opened where `node` is not on the PATH exited with `spawn node ENOENT`; PR #47 keeps
+it up, and CR191 makes the extension resolve Node where the hook wrappers look, say so once
+when nothing resolves, and write the `hooks.log` line `runtime diagnose` reads. PR #47 was
+reviewed through four lenses on 2026-11-01 and merged as it was on 2026-11-02 after CI on
+the branch updated to `main`; CR191 was captured, planned, implemented, and validated by the
+Navigator the same day against Pi 1.5.0 with a bare PATH.
+
+No migration. No model or prompt changed, so the model-behavior gate does not apply.
+Release note: [v0.39.1](../releases/v0.39.1.md).
+
+After the release commit:
+
+- CI was green on all four jobs and the docs check before the tag existed.
+- `release:promote` (dry run, then `--push`) tagged `v0.39.1` and moved `stable` to `27018088`.
+- The GitHub Release is published and marked latest.
+- The Navigator approved the `release` environment and the npm stage, and moved `latest`
+  with 2FA. `latest` and `stable` are at 0.39.1, `gitHead` `27018088`.
+- The Navigator's own Homebrew package was updated to 0.39.1 with `mirror runtime update`:
+  the Pi he runs daily carries the fix.
+
+### 2026-10-31 — CR189 done: v0.39.0's note names PR #46 and the Windows update step
+
+v0.39.0 shipped PR #46 without a word about it. A dated addition to its note now says it: a
+highlight, a paragraph under What Changed, and an Upgrading section. The Upgrading section gives
+the one manual install a Windows package install of an earlier version needs, because its own
+`runtime update` fails at apply. The GitHub Release carries the same text. The note inside the
+published 0.39.0 tarball cannot change. With the step published,
+[CR189](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr189-a-windows-package-install-cannot-update-itself.md)
+is done.
+
+### 2026-10-31 — v0.39.0: The Core as a Library
+
+Minor release of CV24.DS1 to DS8, merged from `desktop/library-seam-1a` as PR #52 after a
+maintainer review (two fixes: the smoke script's executable bit, and the roadmap row that still
+said DS1 to DS6). `mirror-mind/desktop` is the library entry Mirror Desktop 0.3 embeds; the new
+`exports` field closes every other deep import of the package.
+
+No migration. No model or prompt changed, so the model-behavior gate does not apply.
+Release note: [v0.39.0](../releases/v0.39.0.md).
+
+After the release commit:
+
+- CI was green on all four jobs and the docs check before the tag existed.
+- `release:promote` (dry run, then `--push`) tagged `v0.39.0` and moved `stable` to `ca7295a4`.
+- The `release` environment had one required reviewer, Vinicius; the Navigator added himself as a
+  second and approved the stage. He approved the npm stage and moved `latest` with 2FA.
+  `latest` and `stable` are at 0.39.0, `gitHead` `ca7295a4`.
+- The GitHub Release is published and marked latest.
+- No production install was updated by this release.
+
+### 2026-10-30 — PR #46 merged: a Windows package install can update itself (CR189)
+
+[CR189](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr189-a-windows-package-install-cannot-update-itself.md)
+is validated, carried by PR #46 (@rodrigoimmaginario). On Windows, `runtime update` on a
+package failed at apply with `EBUSY` every time. npm renames the package's directory
+aside before it installs the new version, and the apply ran npm inside that directory,
+which Windows holds against rename while a process runs in it. The apply now runs from
+the parent of `node_modules`, still the install's own tree, and the dist-tags read stays
+in the install's root. Nothing changes on macOS or Linux.
+
+- The PR was reviewed through four lenses (engineer, QA, DevOps, security). CR135 holds
+  by construction: npm skips the project config in global mode, so no project's
+  `.npmrc` answers `install -g`, whatever directory it runs in.
+- Seven places still said every npm call runs in the install's root, REFERENCE.md among
+  them. One maintainer commit on the PR branch (`ef7c5d6f`) corrected them.
+- Verified on a merge with current `main`: the suite under both environments,
+  typecheck, lint, the repository checks, and the updater smoke (104). With the apply
+  line reverted, the two tests that pin it fail. CI was green on the PR head and on
+  `main` after the merge (`e2525228`).
+- Validated by the author's run on Windows (0.34.99 to 0.35.0, `Update result:
+  success`), accepted by the Navigator. No CI job reproduces npm's rename on Windows;
+  that stays a known risk.
+
+It shipped the next day in v0.39.0, cut from `main` after the merge, but that release's
+note does not mention it. So the one-time manual step Windows package installs need is
+not yet anywhere a person would read it: the updater they have fails at apply and cannot
+bring them this fix. The step is drafted in the CR.
+
+### 2026-10-30 — v0.38.1: The Refusal Names the Way Out
+
+Patch release of three Change Requests, cut the night the last of them closed. Two come
+from Leandro's report on PR #42, and CR187 from CR185's review:
+
+- CR185: a package with no home configured names the homes it finds and the
+  `mirror init <name>` that selects one, and `init` adopts a home that already exists.
+- CR187: a missing or refused OpenRouter key is one line that names the file, before
+  anything is touched.
+- CR186: a `stable` clone ahead only by `main`'s commits is told that `stable` is behind
+  it, not to push or reset.
+
+No migration. No model or prompt changed, so the model-behavior gate does not apply.
+Release note: [v0.38.1](../releases/v0.38.1.md).
+
+After the release commit:
+
+- CI was green on all four jobs and the link check before the tag existed.
+- `release:promote` pushed the tag and `stable`.
+- The Navigator approved the `release` environment and the trusted-publisher stage.
+  `latest` and `stable` are at 0.38.1, with provenance.
+- The GitHub Release is published and marked latest.
+- The Navigator updated the production install with `MIRROR_USER` unset (the v0.37.0
+  lesson). It reports 0.38.1, the production home, 18/18 migrations, and status ready.
+  The production home holds dated backups from 01:07 and 04:12 on 2026-10-30, and the
+  development home none newer than the day before.
+
+### 2026-10-29 — CR186: a `stable` clone that took `main`'s commits early is told `stable` is behind it; PR #42 answered
+
+[CR186](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr186-runtime-update-reads-main-s-commits-as-local-work.md)
+is done. It was the second bump in Leandro's report on PR #42. `runtime update` counted
+every commit past `origin/stable` as local work and said "push or reset". A clone that had
+pulled `main`, as the v0.33.3 notes once said to, was refused with advice that did not
+apply. Now:
+
+- A clone ahead of `stable` only by commits `origin/main` already has is refused the way
+  the package lane refuses a channel behind the installed version, and in its words:
+  `'stable' is behind this checkout`, with `runtime channel main` or the next release as
+  the ways out.
+- Neither push nor reset is suggested. `main`'s code can migrate the database when it
+  opens it, and `stable`'s core refuses a database newer than itself.
+- Real local work, alone or on top of `main`'s commits, keeps the push-or-reset refusal.
+  A missing or stale `origin/main` falls back to it.
+- One function now reads where a clone stands, for both the update plan and the welcome
+  card's inspection. They used to count two different ways.
+
+The plan was reviewed through four lenses. The reviews turned it from reporting the clone
+as current to refusing it in the package lane's words, and dropped the reset. The
+Navigator validated it in a scratch clone ahead of `stable`. The agent's own first run of
+that route never reached the plan: a `node_modules` symlink made the scratch tree dirty,
+and the status gate refused. CI on the push (`e18b0c2e`) was green on all four jobs. It
+ships in the next release. The reply on
+[PR #42](https://github.com/mirror-mind-ai/mirror/pull/42#issuecomment-6511137619)
+tells Leandro that both of his bumps are fixed: this one, and CR185's.
+
+### 2026-10-29 — CR185 and CR187: a missing home or key is one line that says what to run; PR #42 answered
+
+Leandro's last comment on PR #42 (2026-10-17) was answered, late and with an apology,
+and turned into captures and a correction.
+[CR186](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr186-runtime-update-reads-main-s-commits-as-local-work.md)
+is captured and open: `runtime update` reads a clone's commits from `origin/main` as
+local work. The v0.33.3 manual step for a clone, `git pull --ff-only`, was wrong for the
+default channel, because on `main` it pulls past the release. The release notes, the
+published GitHub Release, and the release comment on the PR now give
+`git fetch origin` and `git merge --ff-only origin/stable`, each with a dated correction.
+
+[CR185](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr185-a-package-with-no-home-configured-does-not-say-where-it-looks.md)
+is done:
+
+- With no home configured, every surface prints one sentence. It names the homes found
+  under `~/.mirror-minds` and the `mirror init <name>` that selects one, or says how to
+  create a home, and it names the file that command writes.
+- `init <name>` adopts an existing home instead of refusing it. Nothing in the home
+  changes, the configuration is written owner-only, and only the steps left are printed.
+- The bare `mirror` names the home too.
+- A new home no longer tells the person to select a user who is already selected.
+
+The plan was reviewed through five lenses, and the Navigator validated it as a package
+user, the lane Leandro was on. The first push failed one test on CI, which runs the suite
+under `MEMORY_ENV=test`. The test, not the product, had assumed `memory.db`. The suite is
+now also run that way before a push. A note on PR #45 tells the Windows installer that
+its skip of `init` is now optional.
+
+[CR187](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr187-a-missing-openrouter-key-crashes-three-commands-with-a-stack-trace-that-names-no-file.md)
+is done. A missing `OPENROUTER_API_KEY` used to crash `consult`, `journal`, and
+`week plan` with a stack trace, and `journal` lost the entry after copying the database
+into its snapshot. Now:
+
+- The six commands that cannot work without the key refuse before they touch anything,
+  in one line that says what was not done and where the key goes.
+- A key OpenRouter refuses is one line too, whether it was met by a chat call or an
+  embedding call.
+- Search's degraded note, `runtime status`, and `runtime diagnose` say the same.
+- `consolidate apply` is checked lazily, because only a merge embeds.
+
+The plan was reviewed through four lenses and validated by the Navigator on the package
+lane.
+
+Both ship in the next release. Still open from the session: CR186, and transport
+failures other than a refused key, which still crash: captured as
+[CR188](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr188-a-provider-outage-crashes-the-commands-that-call-a-model-with-a-stack-trace.md).
+At the wrap-up the agent ran `mirror mirror log --help`, which wrote `--help` into
+the session's conversation: CR109's defect again, and its evidence now says so.
+
+### 2026-10-29 — v0.38.0: The Model Behind the Memories, Chosen by Measurement
+
+Minor release closing CV9.DS9, with CR180. The extraction pin is Claude Haiku 5.5 at
+reasoning off, chosen on the suite with reasoning on and off (TS1) and on 24 of the
+owner's own conversations ranked blind (TS2), decided at US3's plan approval. Every
+extraction-pin call can carry a reasoning effort and a pin carries its own default.
+CR180 made the summary open with its subject, gave every lifecycle prompt the owner's
+name for the first time, and added one guarded regeneration for a framed opening. The
+release gate on the final code: `eval --all` 9 of 9 modules, 70 of 70 probes, the first
+fully clean run on record. Release note:
+[v0.38.0](../releases/v0.38.0.md).
+
+After the release commit: tag and `stable` pushed by `release:promote`; the
+trusted-publisher stage approved; `latest` and `stable` at 0.38.0; GitHub Release
+published, marked latest. CI on the release commit was green on the two test jobs and
+the smoke and red on the Windows checkout, for a path in TS1's evidence folder that had
+exceeded Windows' limit since the 26th and broke that job on every push of the day; the
+folder was shortened two commits later and a dispatched run on `main` is green on all
+four jobs. Four roadmap links written at the wrong depth were fixed in between. Both
+commits are docs; the tag's code is `main`'s. The production install is updated through
+`runtime update` next, with `MIRROR_USER` unset so the backup names the production
+home (the v0.37.0 lesson); no migration this time.
+
+### 2026-10-28 — CV9.DS9.US3: The extraction pin moves to Claude Haiku 5.5 at reasoning `none`
+
+The decision DS9 was opened to make. The Navigator decided at Plan approval, on the
+evidence in the order it weighed: his own blind rankings on his conversations (Haiku
+first on 16 of 26 surfaces, ahead of Flash Lite 17–9 and of Luna 20–6), the suite at
+`none` (three of Flash Lite's four standing failures fixed, no call cut off), Flash
+Lite's rate limits (429 on 31% of attempts; Haiku none), and fewer invented facts.
+Accepted against it: about 40% more cost at this volume, half a second more on
+reception, and summaries that still open with the framing CR180 traces to the prompt.
+
+The plan went through four persona reviews before approval (AI engineer, devops, QA,
+product designer), and all eight findings were folded. Two of them changed the design:
+the reasoning default became a property of the model (`MODEL_DEFAULT_REASONING`, looked
+up by the effective model, so naming Haiku explicitly sends the same request as leaving
+it unset and the rollback reproduces exactly the request Flash Lite was measured with),
+and the release-note section stayed in the story package because `release-notes latest`
+picks the highest semver filename under `docs/releases/`.
+
+One migration commit changed the pin, its reasoning default, and `MODEL_PRICES` (Haiku
+at $0.10/M in, $0.50/M out, read from OpenRouter's catalogue that day; Flash Lite kept
+for rolled-back installs), `runtime status`, `REFERENCE.md`'s operable rollback, the
+playbook, and the tests and goldens that name the pin, 27 `runtime-status` renders among
+them. The gate ran as the playbook orders: a fresh `eval --all` on Flash Lite before
+the change (9/9, no 429), then on Haiku after it (9/9, one expected probe failure,
+`conversation-summary`, module at 10/11), every module's `prompt_hash` equal, and
+`--history` labelling the flip `(model and reasoning changed)`. The plan's claim that
+reception had 3 probes was wrong (it has 12) and was corrected in the package.
+
+TS1's D2 is captured as
+[CR181](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr181-the-ledger-cannot-say-which-reasoning-effort-a-call-carried.md)
+rather than built; D3 is retired by the move. The decision is in the
+[decisions log](../project/decisions.md#the-extraction-pin-moves-to-claude-haiku-55-at-reasoning-none-and-a-pins-reasoning-default-is-the-models).
+Package:
+[CV9.DS9.US3](../project/roadmap/cv9-mirror-1-0/cv9-ds9-the-extraction-model-chosen-by-measurement/cv9-ds9-us3-the-extraction-pin-moves-or-stays-on-the-evidence/index.md).
+
+### 2026-10-28 — CV9.DS9.TS2: The candidates judged on the Navigator's own conversations
+
+24 ended conversations from the production home, drawn by a recorded seed, were
+replayed through the product's own functions. Flash Lite ran as it ships, and Luna and
+Haiku at reasoning `none`, one process per model, because the product reads the model
+from two places.
+
+Kimi K3.1 Pro, a fourth-family model, ranked every surface blind:
+
+- its prompt was piloted, tightened, and frozen by hash;
+- requests carried `data_collection: "deny"`;
+- it agreed with itself 0.83.
+
+The Navigator calibrated it on 26 surfaces, blind and before any result: 0.55, under
+the plan's 0.60. So the judge does not stand and TS2 makes no recommendation from it.
+What holds: the judge's arithmetic and the Navigator's own rankings both put Haiku
+ahead of Luna and of Flash Lite, while disagreeing item by item. The Navigator favors
+coverage where the rubric favors restraint. The Navigator accepted it as measured, and
+US3 decides with his rankings as its main evidence.
+
+The checks:
+
+- every one of 335 traced calls was on its own model;
+- no row was written to either home;
+- every committed file passed a content check, and the transcripts and outputs never
+  left the Navigator's machine.
+
+Spend was $3.90. The Debt Review captured
+[CR180](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr180-the-summary-prompt-s-opening-rule-invites-the-framing-its-standalone-rule-forbids.md):
+the summary prompt's opening rule invites the framing its standalone rule forbids. The
+model upgrade playbook now says to calibrate a judge before the full run. Package:
+[CV9.DS9.TS2](../project/roadmap/cv9-mirror-1-0/cv9-ds9-the-extraction-model-chosen-by-measurement/cv9-ds9-ts2-the-candidates-judged-on-the-navigator-s-own-conversations/index.md).
+
+### 2026-10-26 — CV9.DS9.TS1: Extraction calls carry a reasoning setting, and the candidates are re-measured with reasoning off
+
+CV9.DS9 opened to choose the extraction model by measurement. A baseline of seven
+`eval --all` runs per model found GPT-6 Luna and Claude Haiku 5.5 fixing most of the four
+probes Gemini 2.5 Flash Lite has always failed. It also found them reasoning by default,
+which spent the title call's 40-token budget.
+
+TS1 gives the transport `MEMORY_EXTRACTION_REASONING`, OpenRouter's `reasoning.effort`
+on every call on the extraction pin:
+
+- unset, the request is unchanged;
+- `consult` never carries it, by a per-role table the compiler checks;
+- a value that is not an effort, such as `off`, is ignored and shown by
+  `runtime status` and `runtime diagnose`, because a failed call would quarantine
+  conversations
+  ([CR178](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr178-a-configuration-error-counts-as-an-extraction-attempt-and-nothing-releases-a-quarantine.md),
+  captured);
+- eval records carry the setting at schema 4, and `--history` labels a flip across a
+  model or reasoning change.
+
+Re-measured at `4a74f098`, two sets of seven runs per model ($0.25). With reasoning
+off, both candidates pass all six blocking probes 14/14 with real answers, and none of
+their 1,428 calls is cut off. Luna keeps every fix and improves two. Haiku loses
+`conversation-summary` (6/7 → 4/14), accepted as measured. The control's
+`tags-exclude-noise` drift was accepted, and Flash Lite drew HTTP 429 on 31% of its
+attempts.
+
+The Navigator validated it from the clone's own entry point, after the first attempt
+reached the released package that `mirror` resolves to in an interactive shell; the
+development guide now says so. The Debt Review deferred the kit and the control
+threshold to TS2's Plan, and the ledger and Flash Lite's rate limits to US3's. Package:
+[CV9.DS9.TS1](../project/roadmap/cv9-mirror-1-0/cv9-ds9-the-extraction-model-chosen-by-measurement/cv9-ds9-ts1-reasoning-setting/index.md).
+
+### 2026-10-25 — v0.37.0 released: The Mirror Stays in the Conversation
+
+Minor release closing CV9.DS8, One Doorman, and with CV21.DS11, CV21, Runtime Expansion II.
+On Pi, Claude Code, Codex, and Antigravity, Mirror's context reaches the model before it
+answers through one doorman; an explicit turn loads once; one signature rule; Pi at L4,
+measured live. The runtime interface contract holds one parity matrix, sourced and held by
+a test. Migration 018 drops `runtime_sessions.hook_injected`, applied on each home's next
+open. Codex, Antigravity, and Grok Build keep a plugin copy that `runtime diagnose` names
+the command to bring level. Release note: [v0.37.0](../releases/v0.37.0.md). CI green on
+the release commit; tag and `stable` pushed by `release:promote`; the trusted-publisher
+stage approved; `latest` and `stable` at 0.37.0; GitHub Release published, marked latest.
+The production install updated through `runtime update`, from a shell that exported
+`MIRROR_USER=vinicius-dev`: the update's backup and migrate step ran against the
+development home, not the production one, which the printed backup path showed. The
+production home was then backed up and verified, and migrated with `runtime migrate
+--mirror-home` and the variable unset: 018 applied, 18/18, status ready. `runtime
+diagnose` names Codex's cached plugin as behind.
+
+### 2026-10-25 — CV9.DS8 closed: One Doorman
+
+CV9.DS8 is Done. On Pi, Claude Code, Codex, and Antigravity, Mirror's context reaches the
+model before it answers through one decision in the core, the doorman: the full folder on
+the turn Mirror Mode starts, then on each ordinary turn the persona the question calls
+for and the memories relevant to it, with the `◇ persona-name` signature held across
+the conversation. Pi, the recommended harness, moved from L3 to L4, measured. Seven
+stories, worked story by story: TS1 measured how a session learns a load the model ran
+itself; TS2 built the doorman; TS3 taught the skill to trust delivered context; US4, US5,
+and TS6 put Claude Code and Codex, Pi, and Antigravity through it, each walked live; TS7
+wrote it where a user reads it. Each bullet of the Done Condition is met by the story
+that owns it, and CR165, the measurement that started it, reads promoted. Closed in the
+roadmap and here, as story-by-story Delivery Stories are; CR169 to CR174 carry what the
+stories' Debt Reviews deferred. Package:
+[CV9.DS8](../project/roadmap/cv9-mirror-1-0/cv9-ds8-one-doorman-mirror-s-context-before-the-model-on-every-runtime/index.md).
+
+### 2026-10-25 — CV9.DS8.TS7: Written where a user reads it
+
+The pages a person reads now describe the one doorman as DS8 built and measured it,
+not the three policies it retired. The runtime interface contract's injection section
+opens with what the doorman is, then its command, its three answers and the policy
+that chooses them, the delivered line, and how each runtime reaches it; the
+injection-models table has one doorman model for Pi, Claude Code, Codex, and
+Antigravity, beside Grok Build's inert hook; the CLI Reference lists
+`mirror mirror doorman`, and Pi's reference table no longer points at the skill. The
+parity matrix's Claude Code and Codex rows move to US4's accepted walk (2.1.310 and
+0.164.0, 2026-10-25), and the cells that walk did not re-measure keep their own
+version and story inline, the convention TS6 set on the Antigravity row. Getting
+Started says in one plain sentence what Mirror Mode does on the four doorman
+runtimes, claiming only what all four walks measured — memories stay out of it,
+since TS6's agy walk did not record them — and its note says the parity matrix names
+the version behind each part of a row. The architecture drops `hook_injected`
+(migration 018) and names `metadata`; the decisions log records what a turn costs,
+each figure dated to its story, and that no price was measured; REFERENCE's doorman
+section matches the code after US4, US5, and TS6. Docs only. Before approval the plan
+was reviewed through the writer, engineer, and quality-assurance lenses, and five
+amendments were folded in. Story package under
+[CV9.DS8](../project/roadmap/cv9-mirror-1-0/cv9-ds8-one-doorman-mirror-s-context-before-the-model-on-every-runtime/index.md).
+
+### 2026-10-25 — CV9.DS8.TS6: Antigravity through the one doorman
+
+Antigravity's `PreInvocation` hook is the fifth caller of the one doorman. The plan read
+the turn's prompt from the transcript, since agy 1.4.2's payloads carried none (DS12.TS3
+L7); the probe that was to time that read found agy 1.4.7 carrying the prompt in every
+hook payload, as `lastUserInput`, verbatim — a skill turn in its slash form — so the hook
+reads no transcript at all. At invocation 0 it hands the turn to `mirror doorman` in
+process, as Claude's inject hook does, and answers its block as one persistent
+`systemMessage` step: the full folder on the explicit form, even in a conversation no
+`SessionStart` activated; a delta on an ordinary turn in Mirror Mode; nothing on a skill
+turn or outside it. The step type is revised from DS7's `ephemeralMessage`: the probe
+measured again that agy stores an ephemeral step at rest anyway, and only the persistent
+one stays before the model on later turns, which every delta stands on. `SessionStart`
+now also stamps the session's own operating mode Mirror Mode — the doorman reads the
+mode, the old hook never did, and a global Builder stamp would have silenced a new
+conversation — and sets the doorman's refresh, so a conversation's first turn is the
+full folder; a resumed conversation fires no `SessionStart` and keeps its folder. A
+payload without the prompt (agy before 1.4.7) keeps the pre-TS6 injection, unchanged
+(Navigator decision). Measured live on agy 1.4.7 with real providers, headless and
+interactive: every verdict passed, the model signed every delta turn, and the hook took
+0.23–1.02 s against agy's 15 s budget; the parity matrix's Antigravity row now reads
+agy 1.4.7. Story package under
+[CV9.DS8](../project/roadmap/cv9-mirror-1-0/cv9-ds8-one-doorman-mirror-s-context-before-the-model-on-every-runtime/index.md).
+
+### 2026-10-25 — CV9.DS8.US5: Pi through the one doorman, at L4
+
+The Pi extension (`.pi/extensions/mirror-logger.ts`) is the fourth caller of the one
+doorman. On every run a person starts, `before_agent_start` runs `mirror doorman
+--prompt … --session-id <session file>`, awaits it, and returns the block as a
+`mirror-context` custom message — a user-role message after the prompt, opened by the
+delivered line the `mm-mirror` skill reads as delivery (TS3) — or nothing: outside
+Mirror Mode the doorman reads and exits in 0.21 s with no snapshot, no embedding, no
+context. The doorman runs on the per-session chain ahead of the `user-prompt` logger,
+so the logger's whole-row upsert cannot overwrite the full load's session state. At
+`session_start` the extension sets `MIRROR_SESSION_ID` to the session file (TS1's P2,
+cleared at shutdown), so the model's own `mirror mirror load` on an unprompted question
+and `mirror build load` on a mode switch name this session instead of guessing one.
+The memory threshold DS8's policy names is on the **semantic** score, which the ranker
+now reports beside the hybrid one: a fresh, reinforced memory floors at 0.35 on the
+hybrid with no semantic match at all, so a composite threshold would have been a
+recency gate; 0.4 is the rule the attachments already obey, and the front-door log
+carries both numbers per ranked memory. Pi's parity row moves to L4 (the extension's
+harness test is its automated proof; no isolated `smoke_pi.sh`). Live measurement on
+the installed Pi is the story's validation; story package under
+[CV9.DS8](../project/roadmap/cv9-mirror-1-0/cv9-ds8-one-doorman-mirror-s-context-before-the-model-on-every-runtime/index.md).
+
+### 2026-10-24 — CV9.DS8.US4: Claude Code and Codex through the one doorman
+
+The Claude-family inject hook (`mirror-inject.sh` → `claudeInject`) no longer carries a
+policy of its own. It keeps CR143's runtime check and CR100's missing-session warning,
+then hands the turn to `mirror doorman --prompt … --session-id …` in-process and writes
+back what it delivers: the full folder on the explicit form, opened by the delivered
+line the `mm-mirror` skill trusts (TS3), so the turn loads once; a delta — the newly
+routed persona, the memories and attachments for the prompt, one embedding — on each
+ordinary turn while the session is in Mirror Mode; nothing otherwise. The hook's two
+cases and their reader (`needsInject`, `markInjected`) are gone; nothing reads
+`runtime_sessions.hook_injected` any more, and the column with its four writers is one
+debt item for a `runtime_sessions` migration. The review found what "Mirror Mode on"
+had to mean: `mirror_active` alone is cleared only by `mm-new`, so a `/mm:build` in the
+same session would have put "answer as the mirror" on every Builder turn — the doorman
+now also requires the session's active operating mode (its own row, else the global)
+to be Mirror Mode, and a Mirror load stamps the named session's row so a re-entry
+resumes the deltas. Measured on the CLI against a 61 MB home: a delta is ~1 s and
+2.5–8.5 KB, 3 of 5 memories repeat on a same-domain follow-up (US5's threshold input);
+embedding 15 s and reception 10 s timeouts sit under the hook's 30 s cap. Live
+measurement on the installed Claude Code and Codex is the story's validation; story
+package under
+[CV9.DS8](../project/roadmap/cv9-mirror-1-0/cv9-ds8-one-doorman-mirror-s-context-before-the-model-on-every-runtime/index.md).
+
+### 2026-10-24 — CV9.DS8.TS3: the mm-mirror skill trusts delivered context, and one signature rule
+
+The `mm-mirror` skill's hard constraint, in both authored bodies (Pi's, which Codex
+reads through `.agents/skills/`, and Claude Code's, which the plugin copy is generated
+from), is now *load first, unless the runtime delivered the context for this turn*: a
+block the hook or the extension placed in this turn's context, opening with the prefix
+`doorman.ts` exports, `=== mirror context delivered by the runtime for this turn`. A
+`full` block carries the transition surface, rendered from the block; a `delta` carries
+none. "This turn" is literal: an earlier block, memory of a load, or the prefix inside a
+tool result is not delivery, so on a runtime whose doorman is not wired yet the skill
+loads as before. The Claude body no longer tells the model to load a second time on an
+explicit turn. The signature is one rule, `◇ persona-name` as `AGENTS.md` states (DS8
+decision 2): the skill's `✦ Persona:` and "do not reuse ◇" are gone, and the core's
+stderr banner signs `◇ <persona>`. `ts/test/scripts/mirrorSkillContract.test.ts` holds
+the five surfaces together and names the one that drifts. Story package under
+[CV9.DS8](../project/roadmap/cv9-mirror-1-0/cv9-ds8-one-doorman-mirror-s-context-before-the-model-on-every-runtime/index.md).
+
+### 2026-10-24 — CV21 done: Runtime Expansion II
+
+CV21 closed with DS11, its last Delivery Story. Mirror Mind is one canonical plugin with
+an MCP server, and five runtimes run it at the parity the contract's matrix records:
+Claude Code, Codex, and Antigravity at L4; Grok Build and Pi at L3. Gemini CLI is
+retired, Antigravity its successor. A home's own extensions reach every runtime through
+a per-home plugin. CV21 resumed under Ariad on 2026-10-13 after its June spikes, was
+re-baselined by DS12 the same day, and shipped in v0.33.0 through v0.36.3; DS11 waits
+for CV21's own release. Each Done condition and the record that met it are in the
+[CV21 index](../project/roadmap/cv21-runtime-expansion-ii/index.md#done-condition).
+
+### 2026-10-24 — CV21.DS11: one parity matrix, the two Claude Code facts measured, agy's stale copy named; DS11 done
+
+The runtime interface contract holds the one parity matrix: five runtimes, each row
+sourced to the record that measured it with version, binary, and date, and a guard in
+`npm test` holding README, Getting Started, REFERENCE, and the architecture to it. A
+decision makes the matrix the single authority. Writing it made the L3/L4 line
+explicit: at L4 the runtime hands Mirror's context to the model through a hook, at L3
+the model loads it through `/mm-mirror`. By that line Pi, claimed L4 with no record
+behind it, is L3, the Navigator's decision, and CR165 is the way back. Gemini CLI is
+named retired beside the matrix. Measured on Claude Code 2.1.310 through a scratch
+route: the status line is a step a user adds,
+`mirror welcome --status-line --session-id $CLAUDE_CODE_SESSION_ID`, and each session
+shows its own mode; a project's `AGENTS.md` is read by itself only without a
+`CLAUDE.md`, and this checkout's import is the only carrier of the Operating
+Instructions. `runtime diagnose` and `runtime update` name an agy copy of the plugin an
+update left behind, DS5.US2's deferred debt. Reviewed through five lenses before
+approval and validated by the Navigator; three debts deferred with triggers. Found on
+the way and captured: CR166 (a plain-language journey switch strands its turn), CR167
+(the status line shows another session's journey), CR168 (Pull invents a placeholder
+story for a package-less Delivery Story). DS11 was CV21's last Delivery Story; CV21's
+closure and its release boundary are next. Not yet released.
+
+### 2026-10-24 — CR163: the suite leaves nothing behind, and CI notices if it does
+
+A full `npm test` run left 448 temp directories and a file behind, under `/tmp` and the
+system temp folder, and nothing noticed: 47,774 had piled up on the maintainer's machine
+since 9 September, removed by hand the night v0.36.3 shipped. Now one helper, `tempDir`,
+makes every temp home the suite needs under `os.tmpdir()` and removes it when the test
+file's process exits, after every hook. It hands back a `tmp/` directory, because the
+product's copy-only guard (CR030) refuses a database write whose path has no `tmp`
+segment, which is why the suite had hardcoded `/tmp`. The 40 leaking sources moved to
+it, and 21 of the 22 files that already cleaned up; `storyWorld` folded in.
+`mirrorLoggerExtension`'s leftover was detached front-door processes outliving the file;
+it now waits for them. A repository guard, `checkTestTempHomes`, keeps a literal `/tmp`
+out of `ts/test`, and CI's first suite run goes through
+`scripts/test_leaves_nothing.sh`, which gives it an empty `TMPDIR` and fails if anything
+is left there: red on the unchanged tree, 78 entries, and green after, on ubuntu and
+macOS. `builderWorld` keeps its `/tmp` root, because `pathsWalk` sees a leaked absolute
+path only under a short root: captured as CR164. Reviewed through five lenses before
+approval; validated by the Navigator; done, its review finding nothing disproportionate
+and no debt but CR164's. No release: tests, CI, and docs only.
+
+### 2026-10-23 — v0.36.3 released: A Skill You Invoke Is Not Something You Said
+
+Patch release of one Change Request, CR160, cut the day it closed, with CR159's docs:
+on Pi, a skill picked from the menu or typed is no longer stored as the person's
+words, and neither is its reply; a question asked with `/mm-mirror` is stored as the
+question; Pi's turns go through the rule the other runtimes have. `mirror
+conversations skill-turns` repairs what earlier versions stored, a dry run until
+`--apply`, which verifies a backup first. No migration. The two real homes on the
+maintainer's machine are repaired once the production install carries it and every Pi
+session on each has restarted. Tag and `stable` pushed; CI green on the promoted
+commit; the trusted-publisher stage approved; `latest` and `stable` at 0.36.3; GitHub
+Release published; the production install updated through `runtime update` (backup
+verified, nothing to migrate, status ready). Both real homes repaired with it the same
+night, once the two Pi sessions still running the old extension were closed: 205 skill
+turns removed from the production home and 165 from the development home, 20 Mirror
+questions kept in each, 31 and 24 conversations left with no user turn deleted, 13
+titles rebuilt; each second dry run found nothing; nothing else moved.
+
+### 2026-10-23 — CR160: a Pi skill invocation is not recorded as the person's words; the repair for what was
+
+Pi expands a skill picked from its menu, or typed as `/skill:<name>`, into the skill's
+whole body before its extensions see the prompt, and Mirror's Pi extension logged that:
+225 user turns in the production home and 185 in the development home were skill
+bodies stored as things the person said, titling conversations and feeding
+extraction. Now the extension sends what was typed, read from Pi's `input` event, with
+a turn id it mints, to the same `user-prompt` and `stop` handlers every other runtime
+uses: a skill invocation and its reply are not recorded, a Mirror question is recorded
+as the question, and a prompt has one reply row. `mirror conversations skill-turns`
+repairs what earlier versions stored, a dry run until `--apply`, after a verified
+backup and in one transaction: Mirror questions kept, other skill turns removed,
+conversations left with no user turn deleted (31 and 24 on copies of the two homes),
+block-born titles rebuilt. A route committed with the CR measured both sides on Pi
+1.4.0. Reviewed through five lenses before approval; validated by the Navigator on a
+scratch home and on copies of both real homes. Captured from its review: CR161 and
+CR162. Not yet released; the real homes are repaired after the release.
+
+### 2026-10-22 — CR159: how Pi invokes a skill, measured and written down; CR160 captured
+
+The docs called Pi's skill commands `/mm-<skill>`, as if Pi registered them. Measured on Pi
+1.4.0 in a scratch home: Pi registers each skill as `/skill:<name>`, and typing `/mm-`
+opens its menu, which lists the skill under that name; a bare `/mm-<skill>` reaches the
+model as text, which loaded the skill in the one turn measured. REFERENCE, Getting
+Started, and `mm-help` now say to pick the skill from the menu; the contract records the
+measurement; the model keeps the skill's name. The authoring guide's step 7a has its two
+dashes back. Planning found the bigger defect, captured as CR160: a skill picked from
+Pi's menu reaches the Mirror logger expanded, and is stored as the skill's body, as if
+the person had said it: 225 such turns in the production home and 185 in the development
+home. Reviewed through five lenses before approval; validated by the Navigator through
+the menu pick. Not yet released.
+
+### 2026-10-22 — CV21.DS5.TS4: how extensions reach each runtime, where a user reads it; DS5 done
+
+The runtime interface contract holds one table for a home's installed extension on the
+five runtimes: what reads it, the wiring step exactly as `mirror extensions install`
+prints it, the reinstall a copying runtime needs after a change, and the spelling US3
+measured, with version, binary, and date. The extension docs, `review-copy`'s
+`SKILL.md`, Getting Started, REFERENCE, and README each carry their part and link it,
+and wherever invocations are listed one line says what to run when a skill is not
+listed. Corrected on the way: `ext:review-copy` shown as a typed Claude Code command,
+`expose-claude` called the Claude Code path, the contract's Claude Code step without
+the `mkdir -p` the install prints, and a manifest comment that read as if a `codex:`
+block reached Codex. Reviewed through five lenses before approval and validated by the
+Navigator cell by cell; the contract's repeated commands paid in a Refactor, a test
+tying the docs' commands to the code deferred. US3's `route.sh static` now holds the
+authoring guide's listings to its fixture. Found on the way and captured as CR159: the
+docs spell Pi's skills by their bare name where Pi 1.3.0 registers `/skill:<name>`, and
+the authoring guide's step 7a lost two dashes. DS5 is done; DS11 is CV21's last
+Delivery Story, then its release boundary. Not yet released.
+
+### 2026-10-21 — v0.36.2 released: Clearing Out What Another Home Copied
+
+Patch release of one Change Request, CR154, cut the day it closed so the clean-up
+v0.36.1 left to a SQL query is a command: `mirror conversations imported` lists the Pi
+conversations an earlier version imported, by folder and beside how many sessions the
+home logged live there, and `remove` deletes the ones named, a dry run until
+`--apply`, which verifies a backup first. `discard-current` no longer fails on a
+conversation a Soul Mode integration names. No migration. The two real homes on the
+maintainer's machine are cleaned with it once the production install carries it.
+Tag and `stable` pushed; CI green on the promoted commit; the trusted-publisher
+stage approved; `latest` and `stable` at 0.36.2; GitHub Release published; the
+production install updated through `runtime update` (backup verified, nothing to
+migrate, status ready). Both real homes cleaned with it the same hour: 140
+conversations from the production home and 434 from the development home, each a copy
+of the other home's live conversation, a test fixture, or a duplicate kept in the home
+its folder belongs to; nothing else moved. Then the leftovers by the same rule — one
+copy of each session, in the home whose folder it is — 32 more and 24 more, leaving 27
+and 57 imports that are each the only copy of their session.
+
+### 2026-10-21 — CR154: a home lists and removes the Pi conversations it imported
+
+`mirror conversations imported` shows what an earlier version imported rather than
+logged, one line per folder the session came from, beside how many Pi sessions the
+home logged live there — the number that tells another home's work from this home's
+own gaps. `remove` takes ids or one exact folder; it is a dry run until `--apply`,
+which takes and verifies a dated backup, then removes in one transaction that decides
+the set again. Reviewed through five personas before approval; the blocker they found
+is fixed with it: the deletion `discard-current` used missed `identity_integrations`,
+so it failed on any conversation a Soul Mode integration named, and one module now
+decides all six referencing tables, with a schema test for a seventh. Strict parsing,
+shared with `backup` and `repair-encoding`, keeps a typo from widening a removal.
+Validated by the Navigator on a scratch copy of the development home: 418
+conversations from the production workspace's folder removed, and nothing else moved.
+Not yet released; the clean-up of the real homes is the Navigator's to run.
+
+### 2026-10-21 — v0.36.1 released: A Home Keeps Only Its Own Pi Sessions
+
+Patch release of one Change Request, CR153, cut the day it closed, as its review
+recommended: the defect shipped in 0.36.0, any machine with two homes had it, and the
+only protection was an advanced setting. Session maintenance imports no Pi session; a
+home's Pi conversations are the ones the Pi extension logged into it, and
+`PI_SESSIONS_DIR` is inert. The note shows how to list what an earlier version
+imported, says the backups hold the same rows, and asks everyone with more than one
+home to update every install. No migration. On the maintainer's machine the
+production home runs the published package, so it is protected from the day this
+release is installed there.
+Tag and `stable` pushed; CI green on the promoted commit; the trusted-publisher
+stage approved; `latest` and `stable` at 0.36.1; GitHub Release published. The
+production install updated the same hour through `runtime update` (backup verified,
+nothing to migrate, status ready), and the installed package, run against a scratch
+home beside another home's session, imported nothing.
+
+### 2026-10-21 — CR153: session maintenance imports no Pi session
+
+The Pi backfill walked Pi's session directory and imported every file a home did not
+track. Measured read-only on the maintainer's two homes before planning: 543
+conversations each had taken from the other since July, each titled again through the
+provider, while the gap the walk existed to fill came up once in three months. The
+Navigator chose to retire it over a claim table or a mark in Pi's files, after a
+review through six personas, every finding folded in. A home's Pi conversations are
+now the ones the Pi extension logged into it; the backfill, its import seam, and
+CR121's birth floor are deleted, `PI_SESSIONS_DIR` is inert, and a retired-surfaces
+row keeps them gone. Test first: three cases red on the old code, green after. The
+Navigator's route put the published 0.36.0 beside the checkout on the same synthetic
+session and on the real Pi history, and ran a live Pi session against a scratch home.
+Captured from the review: CR154, CR155, CR156. The production home on this machine
+runs the published package, so it is protected only once a release carries the
+change.
+
 ### 2026-10-20 — CV21.DS5.US3: `review-copy` on every runtime, measured live
 
 The per-home plugin proven on the thing it was chosen for, from the registry's

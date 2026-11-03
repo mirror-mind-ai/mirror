@@ -59,9 +59,15 @@ Update identity content directly in the database.
 
 ```bash
 mirror identity set <layer> <key> --content "..." [--mirror-home PATH]
+mirror identity set <layer> <key> --file <path>  [--mirror-home PATH]
 ```
 
-If `--content` is omitted, content is read from stdin.
+If neither `--content` nor `--file` is given, content is read from stdin.
+
+For anything longer than a line, write the text to a file and pass `--file`:
+Mirror reads it as bytes, so the shell never splits, substitutes, or re-encodes
+it. On Windows PowerShell 5.1 it is the only safe route: the pipe is ASCII by
+default and turns every accented letter into `?`. The pipe stays for one-liners.
 
 A new `journey` or `persona` key must be kebab-case: lowercase letters, digits,
 and single hyphens, up to 80 characters, such as `product-launch`. Agents put
@@ -70,7 +76,8 @@ one that would work. A key created before this rule keeps working.
 
 **Examples:**
 - `mirror identity set ego behavior --content "Be direct."`
-- `cat new-soul.md | mirror identity set self soul`
+- `mirror identity set self soul --file new-soul.md`
+- `echo "Be direct." | mirror identity set ego behavior` (a one-liner; not on PowerShell 5.1)
 
 ---
 

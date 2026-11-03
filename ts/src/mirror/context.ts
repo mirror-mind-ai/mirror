@@ -116,15 +116,19 @@ export async function relevantAttachments(
   journey: string | null,
   provider?: EmbeddingProvider,
   embeddingLedger?: (info: EmbeddingAttemptInfo) => void,
+  /**
+   * The query's embedding, already generated (CV9.DS8.TS2): the doorman embeds
+   * a turn once and shares the vector with the memory search. When given, the
+   * provider is not called and no ledger row is written here.
+   */
+  precomputedEmbedding?: readonly number[],
 ): Promise<{ row: AttachmentRow; score: number }[]> {
   const rows = attachmentRows(db, journey);
   // No attachments, no embedding: the early return is why a query against a database
   // without attachments records no spend -- there is none.
   if (rows.length === 0) return [];
-  if (!provider) throw new Error("attachment embedding replay provider is required");
-  const queryEmbedding = await generateEmbeddingSafely(provider, query, {
-    ...(embeddingLedger ? { onAttempt: embeddingLedger } : {}),
-  });
+  const queryEmbedding =
+    precomputedEmbedding ?? (await embedQuery(query, provider, embeddingLedger));
   const queryTokens = (query.match(/[\p{L}\p{N}_]+/gu) ?? [])
     .filter((token) => [...token].length >= 2 || /^\p{N}+$/u.test(token))
     .map((token) => stripAccents(token.toLowerCase()));
@@ -144,6 +148,17 @@ export async function relevantAttachments(
   });
   scored.sort((a, b) => b.score - a.score);
   return scored.slice(0, journey ? 5 : 8).filter((item) => item.score > 0.4);
+}
+
+async function embedQuery(
+  query: string,
+  provider: EmbeddingProvider | undefined,
+  embeddingLedger: ((info: EmbeddingAttemptInfo) => void) | undefined,
+): Promise<readonly number[]> {
+  if (!provider) throw new Error("attachment embedding replay provider is required");
+  return generateEmbeddingSafely(provider, query, {
+    ...(embeddingLedger ? { onAttempt: embeddingLedger } : {}),
+  });
 }
 
 function attachmentRows(db: Database, journey: string | null): AttachmentRow[] {

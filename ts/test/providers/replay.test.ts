@@ -1,13 +1,12 @@
 import assert from "node:assert/strict";
-import { mkdtemp, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import test from "node:test";
-
+import { tempDir } from "#helpers/tempDir.ts";
 import { loadReplayFixture } from "#providers/replay.ts";
 
 test("loadReplayFixture returns deterministic scrubbed fixture data without network", async () => {
-  const dir = await mkdtemp(join(tmpdir(), "mirror-provider-replay-"));
+  const dir = tempDir("mirror-provider-replay-");
   const path = join(dir, "embedding.fixture.json");
   await writeFile(
     path,
@@ -28,7 +27,7 @@ test("loadReplayFixture returns deterministic scrubbed fixture data without netw
 });
 
 test("loadReplayFixture rejects unsafe recorded provider data", async () => {
-  const dir = await mkdtemp(join(tmpdir(), "mirror-provider-replay-"));
+  const dir = tempDir("mirror-provider-replay-");
   const path = join(dir, "unsafe.fixture.json");
   await writeFile(
     path,

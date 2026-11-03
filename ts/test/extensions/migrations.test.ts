@@ -5,7 +5,7 @@
 // status scenario cannot reach cleanly.
 
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import test from "node:test";
@@ -19,9 +19,10 @@ import {
   rawChecksum,
   tablePrefixFor,
 } from "#extensions/migrations.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 
 function workspace(): { root: string; cleanup: () => void } {
-  const root = mkdtempSync("/tmp/ext-migrations-");
+  const root = tempDir("ext-migrations-");
   return { root, cleanup: () => rmSync(root, { recursive: true, force: true }) };
 }
 

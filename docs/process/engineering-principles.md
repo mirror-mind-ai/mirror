@@ -241,7 +241,14 @@ four, not two:
 - **[`ts/test/`](../../ts/test/)** — the `node:test` suite. Units against
   replay fixtures and real SQLite files in temporary directories
   (`MEMORY_ENV=test`); never a live model call. CI must pass without
-  `OPENROUTER_API_KEY` — and asserts that it is absent.
+  `OPENROUTER_API_KEY` — and asserts that it is absent. A test makes its
+  temporary directory with
+  [`tempDir`](../../ts/test/helpers/tempDir.ts), which hands back a `tmp/`
+  home under `os.tmpdir()`, the shape the copy-only guard requires, and
+  removes it when the test file's process exits. CI runs the suite through
+  [`test_leaves_nothing.sh`](../../scripts/test_leaves_nothing.sh), with an
+  empty `TMPDIR` of its own, and fails a run that leaves anything there
+  (CR163).
 - **[`ts/smoke/`](../../ts/smoke/)** — whole sequences through the real
   front-door process on a synthetic demo database, plus the migration
   custody proofs. CI runs the keyless ones; the `live_*` smokes spend real
@@ -253,8 +260,10 @@ four, not two:
   code's behavior:
   [`checkRetiredSurfaces.ts`](../../ts/scripts/checkRetiredSurfaces.ts),
   [`checkSkillCommandParity.ts`](../../ts/scripts/checkSkillCommandParity.ts),
-  [`checkDocLinks.ts`](../../ts/scripts/checkDocLinks.ts). Each promoted a
-  review-only rule to a machine gate once it had actually been violated.
+  [`checkDocLinks.ts`](../../ts/scripts/checkDocLinks.ts),
+  [`checkTestTempHomes.ts`](../../ts/scripts/checkTestTempHomes.ts). Each
+  promoted a review-only rule to a machine gate once it had actually been
+  violated.
 
 **Smoke tests use an isolated environment.** End-to-end validation uses a
 temporary `HOME` and explicit `MEMORY_DIR`/`DB_PATH`, with environment

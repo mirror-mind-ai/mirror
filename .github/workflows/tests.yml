@@ -55,8 +55,13 @@ jobs:
           fi
           echo "no provider key present — live routes cannot be reached"
 
-      - name: Run tests (node:test)
-        run: npm test
+      # CR163: this run is also the proof that the suite leaves nothing behind.
+      # The script gives npm test an empty TMPDIR of its own and, once the suite
+      # has passed, fails if anything is left there, listed by prefix so the log
+      # names the test. The interpreter-shadow run below is the suite's second;
+      # it keeps the runner's default temp folder and proves only what it says.
+      - name: Run tests (node:test), leaving nothing behind
+        run: bash scripts/test_leaves_nothing.sh
         env:
           MEMORY_ENV: test
 
@@ -75,6 +80,8 @@ jobs:
       # exactly what the second catches. The log, not a `ps` sample: a
       # short-lived spawn between two samples is invisible, a stub that
       # appends a line is not.
+      # Its suite run keeps the default temp folder: the leaving-nothing proof
+      # is the first run's (CR163).
       - name: Interpreter shadow (nothing may spawn python, python3, or uv)
         run: |
           SHADOW="$(mktemp -d)"
@@ -113,6 +120,12 @@ jobs:
       # deletion it proves, and one written in the language it forbids cannot.
       - name: Retired-surface tripwire (DS10 deletions must stay deleted)
         run: node ts/scripts/checkRetiredSurfaces.ts
+
+      # CR163: no test makes a temp home under a literal /tmp. The run-level
+      # check (scripts/test_leaves_nothing.sh) sees every home only because
+      # all of them are made under os.tmpdir(); this keeps it that way.
+      - name: Temp homes under os.tmpdir() (CR163)
+        run: node ts/scripts/checkTestTempHomes.ts
 
       # CV22.DS10.US3: the artifact half of DS10's Zero Python gate. `files`
       # is a whitelist and this proves it: `npm pack --dry-run` must list the

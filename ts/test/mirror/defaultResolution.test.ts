@@ -1,16 +1,16 @@
 import assert from "node:assert/strict";
-import { mkdtempSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import { openDatabaseCopyForWrite } from "#db/database.ts";
 import { createIdentityTable } from "#helpers/identitySchema.ts";
 import { createRuntimeTables } from "#helpers/runtimeSchema.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 import { resolveMirrorDefaults } from "#mirror/defaultResolution.ts";
 import { GLOBAL_STICKY_DEFAULTS_SESSION_ID } from "#mirror/runtimeSession.ts";
 import { ReplayLlmProvider } from "#providers/llm.ts";
 
 function fixture() {
-  const dir = mkdtempSync("/tmp/mirror-defaults-");
+  const dir = tempDir("mirror-defaults-");
   const db = openDatabaseCopyForWrite(join(dir, "copy.db"));
   createIdentityTable(db);
   createRuntimeTables(db);

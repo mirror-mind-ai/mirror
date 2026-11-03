@@ -13,7 +13,7 @@
 // so what is pinned is the absence of that failure.
 
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync } from "node:fs";
+import { rmSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 
@@ -39,6 +39,7 @@ import { readBuilderResumeState } from "#builder/resumeState.ts";
 import { openDatabaseCopyForWrite } from "#db/database.ts";
 import golden from "#goldens/builder-resume-state.golden.json" with { type: "json" };
 import { createRuntimeTables } from "#helpers/runtimeSchema.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 
 interface StateDump {
   journey: string;
@@ -101,7 +102,7 @@ const WORKBENCH_DDL = `
 `;
 
 function harness(options: { workbenchTables?: boolean } = {}) {
-  const directory = mkdtempSync("/tmp/builder-resume-state-");
+  const directory = tempDir("builder-resume-state-");
   directories.push(directory);
   const db = openDatabaseCopyForWrite(join(directory, "copy.db"));
   createRuntimeTables(db);

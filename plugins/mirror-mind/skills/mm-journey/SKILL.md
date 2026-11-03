@@ -30,7 +30,15 @@ If the journey path appears outdated relative to recent conversations and memori
 mirror journey update JOURNEY "UPDATED_CONTENT"
 ```
 
-For long content, use stdin:
+For anything longer than a line, write it to a file and pass `--file`: Mirror
+reads it as bytes, untouched by the shell (on Windows PowerShell 5.1 the pipe
+is ASCII by default, and this is the only safe route):
+
+```bash
+mirror journey update JOURNEY --file PATH
+```
+
+A one-liner can go through stdin:
 
 ```bash
 echo "CONTENT" | mirror journey update JOURNEY -

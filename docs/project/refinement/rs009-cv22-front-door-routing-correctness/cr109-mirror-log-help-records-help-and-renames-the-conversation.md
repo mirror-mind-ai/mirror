@@ -71,6 +71,14 @@ message was deleted by hand at the Navigator's direction. The handoff that
 followed had to carry "never probe a write command with `--help`" as a rule,
 the workaround this CR exists to retire.
 
+Recurred on 2026-10-29, the same way, at the wrap-up of the CR185 and CR187 session. The
+agent ran `mirror mirror log --help` to read the usage before logging the session,
+which is exactly the probe that rule forbids. It printed `Response recorded.`, wrote
+`--help` as an assistant message in that session's conversation (`e41a1b24`), and made
+it the title. The development home also still holds an unrecorded `--help` assistant
+message from 2026-10-24, in conversation `c7e3e0ef`. A rule written into a handoff
+did not hold across sessions: the refusal belongs in the command.
+
 ## Outcome
 
 Open.

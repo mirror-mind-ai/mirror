@@ -46,9 +46,9 @@ test("assertSchemaState refuses a database with no _migrations table", () => {
 test("assertSchemaState names pending migrations when the DB is older than the TS core", () => {
   const ws = tmpDb();
   try {
-    // Drop the last Python migration (016) and the TS-only 017: only the Python
-    // one is *required*, so the guard refuses and names it.
-    seedMigrations(ws.db, KNOWN_MIGRATION_IDS.slice(0, -2));
+    // Drop the last Python migration (016) and the TS-only tail (017, 018): the
+    // guard refuses and names the first one missing.
+    seedMigrations(ws.db, KNOWN_MIGRATION_IDS.slice(0, -3));
     assert.throws(
       () => assertSchemaState(ws.db),
       /older than this TS core.*016_builder_workbench_display_codes/,
@@ -73,7 +73,7 @@ test("assertSchemaState refuses a DB missing ANY known migration, 017 included",
     // (bootstrap, then migrate-on-open) runs BEFORE this assertion on every
     // serving path, front door and MCP alike: a user never reaches this error
     // for a migration the engine could have applied.
-    seedMigrations(ws.db, KNOWN_MIGRATION_IDS.slice(0, -1));
+    seedMigrations(ws.db, KNOWN_MIGRATION_IDS.slice(0, -2));
     assert.throws(
       () => assertSchemaState(ws.db),
       /older than this TS core.*017_journey_parent_column/,

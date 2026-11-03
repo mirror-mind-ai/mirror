@@ -27,6 +27,7 @@ import {
   metadataProfileAction,
   titleNeedsImprovement,
 } from "#conversation/metadataLifecycle.ts";
+import { resolveUserName } from "#conversation/userName.ts";
 import type { WritableDatabase } from "#db/database.ts";
 import type { ExtractionMessage } from "#extraction/conversation.ts";
 import {
@@ -163,7 +164,7 @@ export async function applyGeneratedMetadataLifecycle(
     ]),
   );
 
-  const suggest = buildSuggesters(conversation, messages, options);
+  const suggest = buildSuggesters(db, conversation, messages, options);
 
   let generatedTitle: string | null = null;
   let generatedSummary: string | null = null;
@@ -315,7 +316,7 @@ export async function maybeGenerateTitle(
 
   try {
     const suggestion = await generateConversationTitle(deps.llm, messages, {
-      userName: deps.userName ?? "User",
+      userName: deps.userName ?? resolveUserName(db),
       onLlmCall: (response, prompt) =>
         deps.onLlmCall?.("conversation_title", response, conversation.id, prompt),
     });
@@ -375,11 +376,14 @@ export function createCloseHooks(
 }
 
 function buildSuggesters(
+  db: WritableDatabase,
   conversation: ConversationRow,
   messages: ExtractionMessage[],
   deps: CloseTailDeps,
 ) {
-  const userName = deps.userName ?? "User";
+  // CR180: the owner's name from the database unless the caller passed one, so the
+  // transcript these prompts see is labelled as the extraction path labels it.
+  const userName = deps.userName ?? resolveUserName(db);
   const record = (role: string) => (response: LlmResponse, prompt: string) =>
     deps.onLlmCall?.(role, response, conversation.id, prompt);
 

@@ -253,6 +253,69 @@ Portuguese such as `Âncora` unchanged.
 
 ---
 
+## Text piped from PowerShell loses its accents, or arrives as UTF-16
+
+**Date:** 2026-11-02
+**Status:** fixed for the marks (PR #49, CR194); the ASCII pipe is routed around, not detected
+**Affected component:** `identity set` without `--content`, `journey update <slug> -`
+**Severity:** an identity entry or journey path stored with every accent replaced, or with a stray character at its head
+
+### Symptom
+
+After `Get-Content perfil.md | mirror identity set ego perfil` in Windows PowerShell
+5.1, `mirror identity get ego perfil` shows `N?o h? transi??o` where the file said
+`Não há transição`. Or the entry starts with an invisible character (U+FEFF) that
+shows up as `ï»¿` in some viewers. Or, from `cmd.exe` with `< file`, the entry is two
+replacement characters followed by the text with a NUL between every letter.
+
+### Root cause
+
+Three things Windows PowerShell 5.1 does to text, none of them Mirror's:
+
+- what it pipes to a native command goes through `$OutputEncoding`, whose default
+  is ASCII: every character outside ASCII becomes `?`, and nothing marks the loss;
+- what it pipes may begin with a UTF-8 byte-order mark, which is a signature, not
+  content;
+- what `>` writes to a file is UTF-16LE, with its own mark.
+
+Mirror read stdin as UTF-8 and stored what arrived. PowerShell 7 does none of
+these: its pipe and its `>` are UTF-8 without a mark.
+
+### Diagnosis
+
+```bash
+mirror identity get <layer> <key>
+```
+
+`?` where a letter should be is the ASCII pipe; a leading `ï»¿` is the UTF-8 mark;
+NULs between letters are UTF-16 read as UTF-8. The database holds exactly what
+arrived, so the repair is to set the entry again, correctly, through one of the
+routes below.
+
+### Fix
+
+Since CR194 Mirror decodes the marks itself: a UTF-8 or UTF-16 mark on stdin or in
+a file chooses the decoding and is dropped. The ASCII pipe is not detectable (`?`
+is a character), so the fix is a route that never meets the pipe:
+
+```powershell
+mirror identity set ego perfil --file perfil.md
+mirror journey update <slug> --file caminho.md
+```
+
+`--file` reads the file as bytes, whatever wrote it. It is the route for anything
+longer than a line on every platform; on PowerShell 5.1 it is the only safe one.
+
+To use the pipe anyway, make it UTF-8 for the session, or in `$PROFILE`:
+
+```powershell
+$OutputEncoding = [Console]::OutputEncoding = [Text.UTF8Encoding]::new()
+```
+
+Or use PowerShell 7, where none of this happens.
+
+---
+
 ## Pi Builder conversations appear without journeys
 
 **Date:** 2026-05-25
@@ -720,7 +783,7 @@ stops growing. Writes lost before the fix are not replayed automatically.
 
 **Date:** 2026-09-24
 **Status:** mitigated by design; diagnosable
-**Affected component:** every hook wrapper under `.claude/hooks/`, `plugins/mirror-mind/hooks/`, and `plugins/mirror-mind/agy/`
+**Affected component:** every hook wrapper under `.claude/hooks/`, `plugins/mirror-mind/hooks/`, and `plugins/mirror-mind/agy/`; since CR191, the Pi extension (`.pi/extensions/mirror-logger.ts`) the same way
 **Severity:** silent loss of logging, context injection, and the close tail, if nobody reads the log
 
 ### Symptom
@@ -737,6 +800,18 @@ not injected, and conversations never get titles or memories.
 
 The second line is a Node that was found but is too old to run the hook: an
 older install earlier on the runtime's `PATH` than the one your terminal uses.
+
+On Pi the symptom is louder: the session opens with one warning,
+`` Mirror: `node` is not on the PATH Pi inherited, nor in the usual places — set MIRROR_NODE=/path/to/node (Node 24 or later) where Pi is launched. Mirror will not log this session. ``,
+no welcome card, and `hooks.log` holds the extension's own line:
+
+```text
+2026-11-02T22:10:41.318Z pi:session-start: node not found on PATH or in the usual places; Mirror is off for this session. Set MIRROR_NODE.
+```
+
+Through v0.39.0 the same Pi exited at startup instead, with
+`pi exiting due to uncaughtException: Error: spawn node ENOENT`; PR #47 kept it
+up, and CR191 made it search, speak, and record.
 
 ### Root cause
 
@@ -792,9 +867,12 @@ environment names, honored as given.
 
 The turns a skipped hook never saw are not in the database, and Mirror has no
 backfill for Claude Code or Codex transcripts: fix the Node resolution and
-logging resumes from the next session. Pi does not go through these wrappers:
-the extension spawns `node` from the terminal it was started in, which normally
-has it on its `PATH`.
+logging resumes from the next session. Pi does not go through these wrappers,
+but its extension resolves Node in the same order (CR191): `MIRROR_NODE`, the
+`PATH`, the `bin/` of the prefix the package is installed under, then the three
+directories above. A Pi session it could not log is not in the database
+either, and maintenance reads no Pi session file (CR154): as for the hooks, fix
+the resolution and logging resumes from the next session.
 
 ---
 

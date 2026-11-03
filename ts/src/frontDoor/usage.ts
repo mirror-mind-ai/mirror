@@ -131,6 +131,11 @@ export function renderUnknownSubcommand(
 export interface UsageContext {
   readonly userConfigured: boolean;
   readonly configFile: string;
+  /**
+   * "To use the home at <path>, run: mirror init <name>" when a home `init` can
+   * name is on disk and nothing selects it (CR185), else absent.
+   */
+  readonly useHome?: string | null;
 }
 
 /**
@@ -139,11 +144,16 @@ export interface UsageContext {
  * usage dump -- three lines that say what is missing, what to run, and where
  * the configuration will live. With a user configured, bare `mirror` is the
  * usage block, as before.
+ *
+ * CR185: when a home is on disk that nothing selects -- a move from a clone to
+ * the package -- what to run is the command that uses it, the sentence the
+ * not-configured error gives.
  */
-export function renderOrientation(configFile: string): string {
+export function renderOrientation(configFile: string, useHome: string | null = null): string {
+  const create = `  Run: ${PROGRAM} init <your-name>`;
   return [
     "No user configured yet.",
-    `  Run: ${PROGRAM} init <your-name>`,
+    useHome === null ? create : `  ${useHome}`,
     `  Configuration will live at: ${configFile}`,
     "",
   ].join("\n");
@@ -156,7 +166,11 @@ export function answerUsage(request: UsageRequest, context?: UsageContext): Usag
       return { stream: "stdout", exitCode: 0, text: USAGE };
     }
     if (request.given === null && context !== undefined && !context.userConfigured) {
-      return { stream: "stdout", exitCode: 1, text: renderOrientation(context.configFile) };
+      return {
+        stream: "stdout",
+        exitCode: 1,
+        text: renderOrientation(context.configFile, context.useHome ?? null),
+      };
     }
     const unknown = request.given === null ? "" : `Unknown command: ${request.given}\n\n`;
     return { stream: "stdout", exitCode: 1, text: `${unknown}${USAGE}` };

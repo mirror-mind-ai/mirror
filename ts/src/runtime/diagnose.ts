@@ -25,7 +25,7 @@
 // inconclusive without a key; the live fetch belongs to DS8.
 
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
-import { basename, dirname, join } from "node:path";
+import { basename, dirname, join, posix, win32 } from "node:path";
 import { openDatabaseReadOnly } from "#db/database.ts";
 import {
   type ExtensionPluginReport,
@@ -34,11 +34,18 @@ import {
   readExtensionPlugin,
 } from "#extensions/extensionPlugin.ts";
 import { identityKeyBreaksGrammar, SLUG_KEYED_LAYERS } from "#identity/identityKey.ts";
+import {
+  hasOpenRouterKey,
+  keyFileInstruction,
+  REASONING_EFFORTS,
+  resolveExtractionReasoning,
+} from "#providers/config.ts";
 import { pyRepr, sortByCodePoint } from "#util/pythonText.ts";
 import { configFilePath } from "./config.ts";
 import { extensionPluginStates } from "./extensionPluginWiring.ts";
 import type { GitWorktreeEntry } from "./git.ts";
 import {
+  agyPluginCopyState,
   codexPluginCacheState,
   grokPluginCopyState,
   installedPluginVersion,
@@ -46,7 +53,11 @@ import {
 } from "./pluginWiring.ts";
 
 import type { RuntimeStatusReport } from "./status.ts";
-import { CODEX_PLUGIN_ADD_COMMAND, grokPluginReinstallCommand } from "./wiring.ts";
+import {
+  agyPluginInstallCommand,
+  CODEX_PLUGIN_ADD_COMMAND,
+  grokPluginReinstallCommand,
+} from "./wiring.ts";
 
 export interface DriftFinding {
   code: string;
@@ -514,18 +525,19 @@ export function diagnoseRuntime(
 
 /**
  * The plugin wiring findings (CV21.DS4.TS6; the debt US1 carried; Grok in
- * CV21.DS10.US1). Codex and Grok copy the plugin, so an npm update leaves
- * the copy behind; Claude Code links it in place, so its failure mode is a
- * dangling link, and Grok's rules link fails the same way. Grok adds one
+ * CV21.DS10.US1; agy in CV21.DS11.TS4). Codex, agy, and Grok copy the plugin,
+ * so an npm update leaves the copy behind; Claude Code links it in place, so
+ * its failure mode is a dangling link, and Grok's rules link fails the same
+ * way. Grok adds one
  * failure of its own: a respelt install path keys a SECOND copy, and Grok
  * loads one of the two without saying which. Absence is not drift: no
  * cache, no registry, and no link fire nothing, so an unwired machine stays
  * green.
  *
  * The defaulting happens HERE, from the env the caller hands in — CODEX_HOME
- * else ~/.codex, GROK_HOME else ~/.grok, and ~/.claude — never inside the
- * readers, so every reader test is hermetic on a maintainer's machine with
- * real wiring (CR123/128/137/142).
+ * else ~/.codex, GROK_HOME else ~/.grok, ~/.claude, and ~/.gemini — never
+ * inside the readers, so every reader test is hermetic on a maintainer's
+ * machine with real wiring (CR123/128/137/142).
  */
 export function pluginWiringFindings(
   installRoot: string | null,
@@ -546,6 +558,25 @@ export function pluginWiringFindings(
         detail: `cached ${cache.newestCached} < installed ${installedVersion}; Codex runs the copy it cached at install`,
         recommendation: `run \`${CODEX_PLUGIN_ADD_COMMAND}\` to bring the cached plugin level (Codex has no plugin-update verb; re-adding refreshes the cache)`,
         repair_route: CODEX_PLUGIN_ADD_COMMAND,
+      });
+    }
+  }
+
+  // agy stages a copy under ~/.gemini/config/plugins/mirror-mind/ (agy 1.4.7,
+  // DS11.TS4's route), read the way the extensions plugin's copy is read: the
+  // `.gemini` home from HOME, with no Mirror variable to override it.
+  const geminiHome = home ? join(home, ".gemini") : null;
+  if (geminiHome && installedVersion && installRoot) {
+    const copy = agyPluginCopyState(geminiHome, installedVersion, "mirror-mind");
+    if (copy.state === "behind") {
+      const install = agyPluginInstallCommand(installRoot);
+      findings.push({
+        code: "agy_plugin_copy_behind",
+        severity: "warning",
+        subject: copy.copyPath,
+        detail: `copied ${copy.copiedVersion} < installed ${installedVersion}; agy runs the copy it staged at install`,
+        recommendation: `run \`${install}\` to bring the copy level (an update leaves agy's copy as it was, and installing again replaces it)`,
+        repair_route: install,
       });
     }
   }
@@ -747,6 +778,59 @@ export function staleRevertGateFindings(env: NodeJS.ProcessEnv): DriftFinding[] 
 }
 
 /**
+ * No OpenRouter key (CR187), read by the predicate every refusal uses, so
+ * diagnose and the refusals cannot disagree about what "configured" means.
+ * Presence only: the value is never read into a finding. Attention, not a
+ * blocker -- a keyless install still runs and updates; it just remembers
+ * nothing new and answers no `consult`. The recommendation names the file the
+ * key goes in, and says to make it owner-only when it does not exist yet.
+ */
+export function openRouterKeyFindings(env: NodeJS.ProcessEnv, home?: string): DriftFinding[] {
+  if (hasOpenRouterKey(env)) return [];
+  return [
+    {
+      code: "openrouter_key_missing",
+      severity: "attention",
+      subject: "OPENROUTER_API_KEY",
+      detail: "not set, so embeddings, memory extraction, and consult are off",
+      recommendation: `add ${keyFileInstruction(env, home)}`,
+      repair_route: "configuration",
+    },
+  ];
+}
+
+/**
+ * A `MEMORY_EXTRACTION_REASONING` that is not a reasoning effort (CV9.DS9.TS1).
+ *
+ * The transport reads it as unset rather than fail the call -- a failed call is
+ * an extraction attempt, and three quarantine a conversation for good (CR178) --
+ * so the setting is silently not in force: the calls send the model's own default
+ * effort (CV9.DS9.US3), or no reasoning field for a model without one. Diagnose
+ * says which, with the values that would be in force.
+ */
+export function extractionReasoningFindings(env: NodeJS.ProcessEnv): DriftFinding[] {
+  const { model, effort, invalid } = resolveExtractionReasoning({ env });
+  if (invalid === null) return [];
+  const sent = effort === null ? "no reasoning setting" : `${model}'s own default, ${effort}`;
+  return [
+    {
+      code: "extraction_reasoning_invalid",
+      severity: "attention",
+      subject: "MEMORY_EXTRACTION_REASONING",
+      detail: `"${invalid}" is not a reasoning effort, so extraction calls send ${sent}`,
+      recommendation:
+        `set it to ${formatEffortList()}, or unset it, where it is set: ` +
+        "the environment, the clone's .env, or ~/.config/mirror/env",
+      repair_route: "edit the setting",
+    },
+  ];
+}
+
+function formatEffortList(): string {
+  return `${REASONING_EFFORTS.slice(0, -1).join(", ")}, or ${REASONING_EFFORTS.at(-1)}`;
+}
+
+/**
  * Where a hook wrapper looks for Node after `MIRROR_NODE` and `PATH`, in order.
  * The generated wrappers carry the same list (`for candidate in ...`), and
  * `hooks.test.ts` fails if the two differ: they had, by `/usr/bin/node`, which
@@ -829,16 +913,24 @@ export function hookFailureFindings(
 export function hookNodeFindings(
   env: NodeJS.ProcessEnv,
   isExecutable: (path: string) => boolean,
+  platform: NodeJS.Platform = process.platform,
 ): DriftFinding[] {
   const explicit = env.MIRROR_NODE ?? "";
   if (explicit && isExecutable(explicit)) return [];
   const candidates = HOOK_NODE_CANDIDATES.map((candidate) =>
     candidate.replace("$HOME", env.HOME ?? ""),
   );
+  // The platform's PATH separator and its executable name: `;` and `node.exe`
+  // on Windows, where splitting on `:` cut `C:\Program Files\nodejs` into `C`
+  // and a path and the finding fired on every install that had Node (PR #49).
+  // `platform` is a parameter so the test runs both branches on every host:
+  // CI's Windows job runs two files and this one is not among them.
+  const paths = platform === "win32" ? win32 : posix;
+  const name = platform === "win32" ? "node.exe" : "node";
   const onPath = (env.PATH ?? "")
-    .split(":")
+    .split(paths.delimiter)
     .filter(Boolean)
-    .some((entry) => isExecutable(`${entry}/node`));
+    .some((entry) => isExecutable(paths.join(entry, name)));
   if (onPath || candidates.some((candidate) => isExecutable(candidate))) return [];
   return [
     {

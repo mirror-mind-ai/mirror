@@ -1,4 +1,8 @@
-// Mirror Mode state for one runtime session, as the inject hook needs it.
+// Mirror Mode state for one runtime session, as Antigravity's PreInvocation
+// hook needs it on agy before 1.4.7, whose payload carries no prompt. The
+// Claude-family inject hook stopped reading it in CV9.DS8.US4, and agy's hook
+// stopped on 1.4.7 in CV9.DS8.TS6: both hand the turn to `mirror doorman`,
+// which reads for itself.
 //
 // The TypeScript replacement for the Python hook module `mirror_state` (144
 // lines, deleted with the core at CV22.DS10.TS5), which
@@ -11,24 +15,21 @@
 // adding two commands whose sole consumer is a hook would widen the command
 // surface this story exists to shrink.
 //
-// One Python behavior is deliberately kept, because it is a real safeguard:
-// a missing session id FAILS LOUD on stderr rather than silently answering
-// "nothing to do". A hook integration that forgets to pass one would otherwise
-// look like a user who simply has Mirror Mode off.
+// `needs_inject` and `mark_injected` -- the once-injection the inject hook
+// used to owe a Mirror Mode session -- left with US4, and the `hook_injected`
+// column they read left with US5 (migration 018).
 
-import { openDatabaseReadOnly, type WritableDatabase } from "#db/database.ts";
-import { getRuntimeSession, upsertRuntimeSession } from "#mirror/runtimeSession.ts";
+import { openDatabaseReadOnly } from "#db/database.ts";
+import { getRuntimeSession } from "#mirror/runtimeSession.ts";
 
 export interface MirrorHookState {
   readonly active: boolean;
-  readonly hookInjected: boolean;
   readonly persona: string;
   readonly journey: string;
 }
 
 const NO_STATE: MirrorHookState = {
   active: false,
-  hookInjected: false,
   persona: "",
   journey: "",
 };
@@ -47,7 +48,6 @@ export function readMirrorState(dbPath: string, sessionId: string): MirrorHookSt
     if (!session) return NO_STATE;
     return {
       active: session.mirrorActive,
-      hookInjected: session.hookInjected,
       persona: session.persona ?? "",
       journey: session.journey ?? "",
     };
@@ -56,16 +56,4 @@ export function readMirrorState(dbPath: string, sessionId: string): MirrorHookSt
   } finally {
     db.close();
   }
-}
-
-/** Python `needs_inject`: Mirror Mode is on and context has not been injected. */
-export function needsInject(state: MirrorHookState): boolean {
-  return state.active && !state.hookInjected;
-}
-
-/** Python `mark_injected`, over an already-open writable connection. */
-export function markInjected(db: WritableDatabase, sessionId: string, nowIso: string): void {
-  if (!sessionId) return;
-  if (!getRuntimeSession(db, sessionId)) return;
-  upsertRuntimeSession(db, sessionId, { hookInjected: true }, nowIso);
 }

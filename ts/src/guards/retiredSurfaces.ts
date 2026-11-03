@@ -280,9 +280,9 @@ export const RETIRED: readonly RetiredSurface[] = [
     absentPaths: [],
     forbiddenPatterns: [
       // The flags and the two service methods. NOT the bare word `backfill`:
-      // `conversation-logger backfill-pi-sessions` and
-      // `ts/src/conversation/backfill.ts` are the TRANSCRIPT backfills, a
-      // different feature that is ported and staying.
+      // the transcript backfill (`ts/src/conversation/transcriptBackfill.ts`)
+      // is a different feature, ported and staying. (The Pi session backfill
+      // that stood beside it is retired by its own row, `pi-session-backfill`.)
       "--metadata-backfill-",
       "metadata_backfill",
       "preview_metadata_backfill",
@@ -492,8 +492,6 @@ export const RETIRED: readonly RetiredSurface[] = [
     exemptions: {
       "docs/getting-started.md":
         "the un-wiring guidance: a user who started codex through the retired wrapper needs its name to undo that wiring",
-      "ts/src/conversation/backfill.ts":
-        "the header names the retired importer to say where it went, beside the Pi importer that stays",
     },
   },
   {
@@ -544,6 +542,45 @@ export const RETIRED: readonly RetiredSurface[] = [
       "gemini skills link",
     ],
     exemptions: {},
+  },
+  {
+    surfaceId: "pi-session-backfill",
+    story: "CR153",
+    // Session maintenance's Pi backfill: a walk of Pi's session directory that
+    // imported every file this home's `runtime_sessions` did not track. That
+    // held while a machine had one home. With two, each imported the other's
+    // sessions -- 543 conversations on the maintainer's machine, both ways,
+    // each titled again through the provider -- and both imported the sessions
+    // of scratch homes and of Pi run without Mirror, while the gap it existed
+    // to fill, a session the home's own extension never logged, came up once
+    // in three months. A home's Pi conversations are the ones the Pi extension
+    // logged into it, and nothing reads a Pi session file. `importClosedConversation`
+    // went with it: the Codex importer that also wrote through it retired with
+    // DS4.TS5. `PI_SESSIONS_DIR` is inert, and only the records that say so,
+    // and the test that proves it, may name it.
+    absentPaths: [
+      "ts/src/conversation/backfill.ts",
+      "ts/src/conversation/sessionImport.ts",
+      "ts/test/conversation/backfill.test.ts",
+      "ts/test/db/homeBornAt.test.ts",
+      "ts/test/fixtures/backfill/pi-sessions/",
+    ],
+    forbiddenPatterns: [
+      "backfillPiSessions",
+      "resolvePiSessionsDir",
+      "homeBornAt",
+      "importClosedConversation",
+      "PI_SESSIONS_DIR",
+      "Backfilled Pi sessions",
+    ],
+    exemptions: {
+      "docs/reference/configuration.md":
+        "the inert-values record: a `.env` may still carry PI_SESSIONS_DIR, and the reference says nothing reads it",
+      ".env.example.advanced":
+        "marks PI_SESSIONS_DIR inert, so a leftover line is recognized rather than trusted",
+      "ts/test/conversation/loggerCli.test.ts":
+        "sets PI_SESSIONS_DIR to a directory holding a fresh session and proves maintenance imports nothing from it",
+    },
   },
 ];
 

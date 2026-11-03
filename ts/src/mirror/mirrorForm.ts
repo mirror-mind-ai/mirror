@@ -13,11 +13,14 @@
 //     $mirror-mind:mm:mirror …     the Codex plugin (TS2 L10)
 //     /mm-mirror …                 Grok (TS4 L5)
 //     $mm-mirror …                 Codex's own skill form
+//     /skill:mm-mirror …           Pi's command, which its menu sends (CR160)
 //
 // Three choices, each made by the runtime, not the person: the sigil (`/` or
 // `$`), whether the plugin's name prefixes the skill, and whether the skill's
 // `name: "mm:mirror"` or its directory `mm-mirror` is used. The grammar is
 // their product, so a runtime that combines them differently is covered too.
+// Pi is the exception: it registers every skill as the command `skill:<name>`
+// (CR159 measured it on Pi 1.4.0), so its one form is spelled out whole.
 //
 // The form must open the prompt and end at whitespace or the end of it: a
 // longer skill name (`/mm-mirrors`) is another skill, and a form quoted in the
@@ -32,7 +35,7 @@ export interface MirrorForm {
   readonly query: string;
 }
 
-const FORM = /^([/$])(mirror-mind:)?mm[:-]mirror(?=\s|$)/;
+const FORM = /^(?:\/skill:mm-mirror|[/$](?:mirror-mind:)?mm[:-]mirror)(?=\s|$)/;
 
 /** The explicit Mirror Mode form at the start of a prompt, or null. */
 export function mirrorForm(prompt: string): MirrorForm | null {

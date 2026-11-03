@@ -41,6 +41,7 @@ function harness(modules: Record<string, EvalModule>, overrides: Partial<RunnerI
     },
     now: () => new Date("2026-09-22T10:00:00Z"),
     newSuiteRunId: () => "suite-fixed",
+    reasoning: () => null,
     write: (line) => {
       lines.push(line);
     },
@@ -160,7 +161,7 @@ test("runEval persists exactly one record matching the report", async () => {
   assert.equal(record.threshold, 0.8);
   assert.equal(record.passed, false);
   assert.equal(record.model, "openai/gpt-5-mini");
-  assert.equal(record.schema_version, 3);
+  assert.equal(record.schema_version, 4);
   assert.deepEqual(
     record.probes.map((p) => p.id),
     report.results.map((r) => r.probeId),
@@ -172,6 +173,25 @@ test("a prompt-free module records null model and null prompt_hash", async () =>
   await runEval("deterministic", { io });
   assert.equal(records[0]?.model, null);
   assert.equal(records[0]?.prompt_hash, null);
+});
+
+test("a model-backed record carries the reasoning effort in force, from the runner's io (CV9.DS9.TS1)", async () => {
+  const { io, records } = harness(
+    { sample: { PROBES: [probe("a", true)], EVAL_MODEL: "anthropic/claude-haiku-5.5" } },
+    { reasoning: () => "none" },
+  );
+  await runEval("sample", { io });
+  assert.equal(records[0]?.reasoning, "none");
+  assert.equal(records[0]?.schema_version, 4);
+});
+
+test("a prompt-free record carries null reasoning, whatever is set (CV9.DS9.TS1)", async () => {
+  const { io, records } = harness(
+    { deterministic: { PROBES: [probe("a", true)] } },
+    { reasoning: () => "none" },
+  );
+  await runEval("deterministic", { io });
+  assert.equal(records[0]?.reasoning, null);
 });
 
 test("prompt_hash is stable for the same prompts and changes when a prompt changes", async () => {
@@ -385,6 +405,83 @@ test("--history renders each record and flags a probe that regressed", async () 
   assert.match(output, /2026-09-22T10:00:00/);
   assert.match(output, /2026-09-21T10:00:00/);
   assert.match(output, /probe 'p' regressed/);
+});
+
+function historyRecord(overrides: Partial<EvalRunRecord>): EvalRunRecord {
+  return {
+    eval_name: "a",
+    started_at: "2026-09-22T10:00:00+00:00",
+    ended_at: "2026-09-22T10:00:01+00:00",
+    model: "m",
+    prompt_hash: "h",
+    score: 1,
+    threshold: 0.8,
+    passed: true,
+    probes: [{ id: "p", passed: true, notes: "", blocking: false }],
+    schema_version: 4,
+    suite_run_id: null,
+    reasoning: null,
+    ...overrides,
+  };
+}
+
+const FAILED_P = [{ id: "p", passed: false, notes: "", blocking: false }];
+
+test("--history prints each record's reasoning, and a dash where none was sent (CV9.DS9.TS1)", async () => {
+  const { io, lines } = harness({ a: { PROBES: [probe("p", true)] } });
+  io.readHistory = () => [
+    historyRecord({ reasoning: "none" }),
+    historyRecord({ started_at: "2026-09-21T10:00:00+00:00", reasoning: null }),
+  ];
+  await main(["a", "--history"], { io });
+  const output = lines.join("\n");
+  assert.match(output, /model=m {2}reasoning=none {2}prompt_hash=h/);
+  assert.match(output, /model=m {2}reasoning=— {2}prompt_hash=h/);
+});
+
+test("--history labels a flip across a reasoning change, so it is not read as noise (CV9.DS9.TS1)", async () => {
+  const { io, lines } = harness({ a: { PROBES: [probe("p", true)] } });
+  io.readHistory = () => [
+    historyRecord({ reasoning: "none", passed: false, probes: FAILED_P }),
+    // A v3 line predates the setting: it sent no reasoning field, like null.
+    {
+      ...historyRecord({ started_at: "2026-09-21T10:00:00+00:00", schema_version: 3 }),
+      reasoning: undefined,
+    },
+  ];
+  await main(["a", "--history"], { io });
+  assert.match(lines.join("\n"), /probe 'p' regressed vs previous run \(reasoning changed\)/);
+});
+
+test("--history labels a flip across a model change, and both when both changed (CV9.DS9.TS1)", async () => {
+  const { io, lines } = harness({ a: { PROBES: [probe("p", true)] } });
+  io.readHistory = () => [
+    historyRecord({ model: "x", passed: false, probes: FAILED_P }),
+    historyRecord({ started_at: "2026-09-21T10:00:00+00:00" }),
+    historyRecord({
+      started_at: "2026-09-20T10:00:00+00:00",
+      model: "y",
+      reasoning: "none",
+      passed: false,
+      probes: FAILED_P,
+    }),
+  ];
+  await main(["a", "--history"], { io });
+  const output = lines.join("\n");
+  assert.match(output, /probe 'p' regressed vs previous run \(model changed\)/);
+  assert.match(output, /probe 'p' recovered vs previous run \(model and reasoning changed\)/);
+});
+
+test("--history adds no label when the configuration did not change (CV9.DS9.TS1)", async () => {
+  const { io, lines } = harness({ a: { PROBES: [probe("p", true)] } });
+  io.readHistory = () => [
+    historyRecord({ passed: false, probes: FAILED_P }),
+    historyRecord({ started_at: "2026-09-21T10:00:00+00:00" }),
+  ];
+  await main(["a", "--history"], { io });
+  const output = lines.join("\n");
+  assert.match(output, /probe 'p' regressed vs previous run$/m);
+  assert.doesNotMatch(output, /changed\)/);
 });
 
 test("--history marks a blocked run distinctly from a low-score failure", async () => {

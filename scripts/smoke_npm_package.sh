@@ -115,7 +115,7 @@ check "the marketplace names mirror-mind, one local plugin" "$MP_PLUGIN" "mirror
 # --- from here on: no checkout, no real HOME, interpreters shadowed ---------
 export PATH="$WORK/stubs:$WORK/prefix/bin:$WORK/bin:/usr/bin:/bin"
 export HOME="$WORK/home"
-unset MIRROR_HOME MIRROR_USER MEMORY_DIR DB_PATH MEMORY_ENV NODE_OPTIONS XDG_CONFIG_HOME
+unset MIRROR_HOME MIRROR_USER MEMORY_DIR DB_PATH MEMORY_ENV NODE_OPTIONS XDG_CONFIG_HOME OPENROUTER_API_KEY
 cd "$WORK/home"
 
 say "2. mirror is on the PATH, from the install, with nothing else set"
@@ -204,6 +204,59 @@ mirror --help 2>"$WORK/pipe.err" | true
 check "mirror --help | true exits 0 (the reader asked us to stop)" "${PIPESTATUS[0]}" "0"
 check "and writes nothing to stderr (no EPIPE, no stack trace)" "$(wc -c <"$WORK/pipe.err" | tr -d ' ')" "0"
 
+say "5b. a home on disk and no configuration: the move from a clone to the package (CR185)"
+# Leandro's path on PR #42: the home stayed, the configuration lived in the
+# clone's .env, which a package does not read. The error names the command,
+# and the command adopts the home without touching it.
+identity_sums() { (cd "$HOME/.mirror-minds/smokeuser" && find identity -type f -exec cksum {} + | sort); }
+IDENTITY_BEFORE="$(identity_sums)"
+rm "$CONFIG"
+set +e
+MOVED_OUT="$(mirror runtime migrate 2>&1)"; MOVED_CODE=$?
+ADOPT_OUT="$(mirror init smokeuser 2>"$WORK/adopt.err")"; ADOPT_CODE=$?
+set -e
+check "with no configuration, runtime migrate exits 1" "$MOVED_CODE" "1"
+contains "and names the home and the command that finishes the job" "$MOVED_OUT" \
+  "To use the home at $HOME/.mirror-minds/smokeuser, run: mirror init smokeuser (it writes MIRROR_USER=smokeuser to $CONFIG)."
+check "init on the existing home exits 0" "$ADOPT_CODE" "0"
+check "its first line says what it found" "$(printf '%s\n' "$ADOPT_OUT" | head -1)" \
+  "Found user home: $HOME/.mirror-minds/smokeuser (nothing in it was changed)"
+check "the configuration is back" "$(cat "$CONFIG")" "MIRROR_USER=smokeuser"
+check "the config file is 0600 again" "$(mode_of "$CONFIG")" "600"
+check "nothing under identity/ changed" "$(identity_sums)" "$IDENTITY_BEFORE"
+[[ "$ADOPT_OUT" != *"mirror seed"* ]] && ok "no seed step for a home that has its database" || bad "init asked to seed a seeded home"
+check "init writes nothing to stderr" "$(wc -c <"$WORK/adopt.err" | tr -d ' ')" "0"
+# The package reads the file back: nothing else selects the home now. A clone
+# cannot show this, because its own .env is read before the config file.
+ADOPTED_STATUS="$(mirror runtime status 2>&1 || true)"
+contains "runtime status finds the home through the config file" "$ADOPTED_STATUS" "Mirror home: $HOME/.mirror-minds/smokeuser"
+set +e
+AGAIN_OUT="$(mirror init smokeuser 2>&1)"; AGAIN_CODE=$?
+set -e
+check "init again exits 0" "$AGAIN_CODE" "0"
+contains "and says the home is already selected" "$AGAIN_OUT" "Configuration: already selects this home"
+check "and writes nothing" "$(cat "$CONFIG")" "MIRROR_USER=smokeuser"
+
+say "5c. no OpenRouter key: a command that needs one refuses before it touches anything (CR187)"
+# Every package install starts here: init writes MIRROR_USER and leaves the key to
+# the person. Before, journal printed a stack trace, copied the database into its
+# pre-write snapshot, and lost the entry.
+BACKUPS="$HOME/.mirror-minds/smokeuser/backups"
+mv "$BACKUPS" "$BACKUPS.before-5c"
+set +e
+JOURNAL_ERR="$(mirror journal "a note about the day" 2>&1 >/dev/null)"; JOURNAL_CODE=$?
+set -e
+check "journal with no key exits 2" "$JOURNAL_CODE" "2"
+check "in one line" "$(printf '%s\n' "$JOURNAL_ERR" | wc -l | tr -d ' ')" "1"
+check "that says the entry was not saved, and where the key goes" "$JOURNAL_ERR" \
+  "Error: the journal entry was not saved, because OPENROUTER_API_KEY is not configured. Add OPENROUTER_API_KEY=<your key> to $CONFIG, then run the same command again."
+[ ! -e "$BACKUPS" ] && ok "and took no pre-write snapshot" || bad "journal opened the database before refusing"
+mv "$BACKUPS.before-5c" "$BACKUPS"
+KEY_STATUS="$(mirror runtime status 2>&1 || true)"
+contains "runtime status says the key is missing" "$KEY_STATUS" "OpenRouter key: not configured"
+KEY_DIAGNOSE="$(mirror runtime diagnose 2>&1 || true)"
+contains "runtime diagnose reports it, naming the file" "$KEY_DIAGNOSE" "Recommendation: add OPENROUTER_API_KEY=<your key> to $CONFIG"
+
 say "6. a database that needs migration 017, opened through the installed package"
 if [ -z "$REAL_SQLITE" ]; then
   printf '  \033[33m-\033[0m sqlite3 unavailable; the migrating open is skipped\n'
@@ -220,6 +273,92 @@ else
   check "017 applied on open" "$(sqlite3 "$HOME/.mirror-minds/legacy/memory.db" "SELECT count(*) FROM _migrations WHERE id='017_journey_parent_column'")" "1"
   [ -f "$HOME/.mirror-minds/legacy/backups/frontdoor-pre-migration-backup.db" ] && ok "pre-migration snapshot landed in the mirror home" || bad "no pre-migration snapshot"
   grep -q migrate_on_open "$HOME/.mirror-minds/legacy/front-door.log" 2>/dev/null && ok "front-door log records migrate_on_open" || bad "front-door log lacks migrate_on_open"
+fi
+
+# CV24.DS1: Mirror Desktop imports the core as a library, by package name,
+# from its own node_modules -- where Node refuses to strip types unless the
+# entry registers the loader's hook. The host project links the INSTALLED
+# package, so its real path stays under node_modules, as Desktop's will.
+say "7. mirror-mind/desktop, imported by a host project from the installed package"
+HOST="$WORK/desktop-host"
+mkdir -p "$HOST/node_modules"
+ln -s "$PKG" "$HOST/node_modules/mirror-mind"
+LIB_PROBE='const desktop = await import("mirror-mind/desktop");
+const r = desktop.inspectMigrationState(process.argv[1]);
+console.log([desktop.DESKTOP_API_VERSION, r.state, r.pending.join(",")].join("|"));'
+check "a current home reads as current" \
+  "$(cd "$HOST" && node --input-type=module -e "$LIB_PROBE" "$HOME/.mirror-minds/smokeuser/memory.db" 2>"$WORK/lib.err")" "1|current|"
+check "and the import writes nothing to stderr" "$(grep -v ExperimentalWarning "$WORK/lib.err" | grep -cv 'node --trace-warnings' | tr -d ' ')" "0"
+if [ -n "$REAL_SQLITE" ]; then
+  mkdir -p "$WORK/lib-016"
+  cp "$HOME/.mirror-minds/smokeuser/memory.db" "$WORK/lib-016/memory.db"
+  sqlite3 "$WORK/lib-016/memory.db" "DELETE FROM _migrations WHERE id IN ('017_journey_parent_column','018_drop_hook_injected');"
+  LIB_HASH="$(cksum <"$WORK/lib-016/memory.db")"
+  check "a home at 016 reports 017 and 018 pending" \
+    "$(cd "$HOST" && node --input-type=module -e "$LIB_PROBE" "$WORK/lib-016/memory.db" 2>/dev/null)" "1|pending|017_journey_parent_column,018_drop_hook_injected"
+  check "and the report left its bytes alone" "$(cksum <"$WORK/lib-016/memory.db")" "$LIB_HASH"
+  [ ! -e "$WORK/lib-016/backups" ] && ok "and took no backup" || bad "the report took a backup"
+  # CV24.DS2: the four Conversation calls, on a scratch copy of a current home.
+  mkdir -p "$WORK/lib-calls"
+  sqlite3 "$HOME/.mirror-minds/smokeuser/memory.db" ".backup '$WORK/lib-calls/memory.db'"
+  CALLS_PROBE='const d = await import("mirror-mind/desktop");
+const db = process.argv[1];
+const c = d.ensureConversation(db, { sessionId: "smoke-session", journeyId: "smoke-journey", title: "Smoke", interface: "smoke" });
+const a = d.appendConversationMessages(db, { schemaVersion: "1.0.0", conversationId: c.conversationId, journeyId: "smoke-journey", sourceInterface: "smoke", messages: [{ id: "smoke-msg-1", role: "user", content: "hi", createdAt: "2026-10-28T12:00:00Z" }] });
+const r = d.renameConversation(db, { conversationId: c.conversationId, journeyId: "smoke-journey", title: "Renamed" });
+const b = d.rebindConversationJourney(db, { conversationId: c.conversationId, journeyId: "other-journey" });
+let refused = "no";
+try { d.ensureConversation(process.argv[2], { sessionId: "s", journeyId: "j", title: "t", interface: "smoke" }); } catch (e) { refused = e instanceof d.DatabaseNotCurrentError ? e.state : "wrong"; }
+console.log([a.status, a.insertedCount, r.title, b.rebound, refused].join("|"));'
+  check "the four Conversation calls run from the installed package, and a home at 016 is refused" \
+    "$(cd "$HOST" && node --input-type=module -e "$CALLS_PROBE" "$WORK/lib-calls/memory.db" "$WORK/lib-016/memory.db" 2>/dev/null)" "accepted|1|Renamed|true|pending"
+  check "and they landed in that home" \
+    "$(sqlite3 "$WORK/lib-calls/memory.db" "SELECT title || '|' || journey FROM conversations WHERE id IN (SELECT conversation_id FROM messages WHERE id='smoke-msg-1')")" "Renamed|other-journey"
+  [ ! -e "$WORK/lib-calls/backups" ] && ok "and took no snapshot" || bad "a Conversation call took a snapshot"
+  check "and the refused home kept its bytes" "$(cksum <"$WORK/lib-016/memory.db")" "$LIB_HASH"
+  # CV24.DS3: the three reads a sidebar is built from, on the same home.
+  READS_PROBE='const d = await import("mirror-mind/desktop");
+const db = process.argv[1];
+const tree = d.readJourneyTree(db);
+const list = d.listJourneyConversations(db, { journeyId: "other-journey", limit: 10 });
+const one = d.inspectConversation(db, { conversationId: list[0].conversationId });
+console.log([Array.isArray(tree.roots), tree.findings.length, list.length, one.title, one.journeyId, one.messageCount].join("|"));'
+  READS_HASH="$(cksum <"$WORK/lib-calls/memory.db")"
+  check "the three reads run from the installed package" \
+    "$(cd "$HOST" && node --input-type=module -e "$READS_PROBE" "$WORK/lib-calls/memory.db" 2>/dev/null)" "true|0|1|Renamed|other-journey|1"
+  check "and left that home's bytes alone" "$(cksum <"$WORK/lib-calls/memory.db")" "$READS_HASH"
+fi
+# CV24.DS4: a host creates a home from the installed package, then records a
+# Conversation in it. The machine-wide config must be exactly what it was.
+CONFIG_BEFORE="$(cksum <"$HOME/.config/mirror/env")"
+mkdir -p "$WORK/lib-created"
+CREATE_PROBE='const d = await import("mirror-mind/desktop");
+const home = d.createHome({ homePath: process.argv[1], userName: "hostuser" });
+const state = d.inspectMigrationState(home.dbPath).state;
+const c = d.ensureConversation(home.dbPath, { sessionId: "s", journeyId: "j", title: "First", interface: "smoke" });
+let again = "no";
+try { d.createHome({ homePath: process.argv[1], userName: "hostuser" }); } catch (e) { again = e instanceof d.CreateHomeRejectedError ? e.reason : "wrong"; }
+console.log([state, home.seeded.created >= 20, typeof c.conversationId, again].join("|"));'
+check "createHome makes a current, seeded home from the installed package, and refuses to make it twice" \
+  "$(cd "$HOST" && node --input-type=module -e "$CREATE_PROBE" "$WORK/lib-created/hostuser" 2>/dev/null)" "current|true|string|home_exists"
+check "and left the machine-wide config alone" "$(cksum <"$HOME/.config/mirror/env")" "$CONFIG_BEFORE"
+check "and left nothing beside the home" "$(ls -A "$WORK/lib-created")" "hostuser"
+# CV24.DS5: a home at 016 is reported, migrated on request, then used.
+if [ -n "$REAL_SQLITE" ]; then
+  mkdir -p "$WORK/lib-migrate"
+  cp "$WORK/lib-016/memory.db" "$WORK/lib-migrate/memory.db"
+  MIGRATE_PROBE='const d = await import("mirror-mind/desktop");
+const db = process.argv[1];
+const shown = d.inspectMigrationState(db);
+const r = d.migrateHome(db, { expectedPending: shown.pending });
+const c = d.ensureConversation(db, { sessionId: "m", journeyId: "j", title: "After", interface: "smoke" });
+let again = "no";
+try { d.migrateHome(db, { expectedPending: shown.pending }); } catch (e) { again = e instanceof d.MigrateHomeRejectedError ? e.reason : "wrong"; }
+console.log([shown.state, r.appliedIds.join(","), r.after.state, r.backup.sha256.length, typeof c.conversationId, again].join("|"));'
+  check "migrateHome migrates a home at 016 on request from the installed package, then refuses a second time" \
+    "$(cd "$HOST" && node --input-type=module -e "$MIGRATE_PROBE" "$WORK/lib-migrate/memory.db" 2>/dev/null)" "pending|017_journey_parent_column,018_drop_hook_injected|current|64|string|nothing_pending"
+  check "and its backup reads as the 016 home it was" \
+    "$(sqlite3 "$(ls "$WORK"/lib-migrate/backups/pre-migration-016_*.db)" "SELECT count(*) FROM _migrations WHERE id LIKE '017%' OR id LIKE '018%'")" "0"
 fi
 
 # --- the runtimes, against the installed package ------------------------------

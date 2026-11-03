@@ -7,6 +7,7 @@ import {
   readFileSync,
   rmSync,
   statSync,
+  symlinkSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -90,14 +91,223 @@ test("`init` with a user already configured leaves the config file alone", () =>
   }
 });
 
-test("front door `init` on an already-populated home exits 1 without a fabricated traceback", () => {
+// --- CR185: `init <name>` uses a home that already exists, and changes nothing in it ---
+//
+// Leandro moved from a clone to the package (PR #42): his home was on disk, his
+// configuration in the clone's `.env`, which a package does not read. Getting
+// Started told him `mirror init <your-name>` would write his user and find the
+// home; it refused the home instead. Now it adopts it.
+
+/** Every file under `dir`, by relative path, with its bytes. */
+function tree(dir: string): Map<string, string> {
+  const files = new Map<string, string>();
+  for (const entry of readdirSync(dir, { recursive: true, withFileTypes: true })) {
+    if (!entry.isFile()) continue;
+    const path = join(entry.parentPath, entry.name);
+    files.set(path.slice(dir.length), readFileSync(path, "base64"));
+  }
+  return files;
+}
+
+/** A home `init` made, with its configuration gone: the move from a clone to the package. */
+function existingHome(home: string, user = "probeuser"): string {
+  const made = spawnFrontDoor(["init", user], { HOME: home, ...NO_USER });
+  assert.equal(made.status, 0, made.stderr);
+  rmSync(join(home, ".config"), { recursive: true, force: true });
+  return join(home, ".mirror-minds", user);
+}
+
+test("`init <name>` on an existing home configures it and changes nothing in it", () => {
   const { home, cleanup } = fakeHome();
   try {
-    const first = spawnFrontDoor(["init", "probeuser"], { HOME: home, ...NO_USER });
-    assert.equal(first.status, 0);
-    const second = spawnFrontDoor(["init", "probeuser"], { HOME: home, ...NO_USER });
-    assert.equal(second.status, 1);
-    assert.match(second.stderr, /Identity root already exists and is not empty/);
+    const userHome = existingHome(home);
+    const before = tree(userHome);
+    const result = spawnFrontDoor(["init", "probeuser"], {
+      HOME: home,
+      ...NO_USER,
+      OPENROUTER_API_KEY: "",
+    });
+    assert.equal(result.status, 0, result.stderr);
+    const config = join(home, ".config", "mirror", "env");
+    const lines = result.stdout.split("\n");
+    // The installer's contract (PR #45): the first stdout line is a one-line summary.
+    assert.equal(lines[0], `Found user home: ${userHome} (nothing in it was changed)`);
+    assert.ok(lines.includes(`Configuration: ${config} (MIRROR_USER=probeuser)`), result.stdout);
+    assert.equal(readFileSync(config, "utf8"), "MIRROR_USER=probeuser\n");
+    assert.equal(statSync(config).mode & 0o777, 0o600);
+    assert.equal(statSync(join(home, ".config", "mirror")).mode & 0o777, 0o700);
+    assert.deepEqual(tree(userHome), before);
+    // Only what is left to do: the key, and the seed this home never had.
+    assert.match(
+      result.stdout,
+      new RegExp(
+        `  1\\. Add OPENROUTER_API_KEY=<your key> to ${config.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`,
+      ),
+    );
+    assert.match(result.stdout, /\n {2}2\. Run: mirror seed\n/);
+    assert.doesNotMatch(
+      result.stdout,
+      /Created user home|Identity ready at|Your identity is ready/,
+    );
+  } finally {
+    cleanup();
+  }
+});
+
+test("`init <name>` again on the home already selected says so, writes nothing, and wires again", () => {
+  // Getting Started, section 6: "re-run `mirror init your-name` any time to see
+  // it again". The selection comes from the environment here: through this
+  // checkout's entry, its own `.env` is read before the config file.
+  const { home, cleanup } = fakeHome();
+  try {
+    spawnFrontDoor(["init", "probeuser"], { HOME: home, ...NO_USER });
+    const config = join(home, ".config", "mirror", "env");
+    const written = readFileSync(config, "utf8");
+    const bin = join(home, "bin");
+    mkdirSync(bin);
+    writeFileSync(join(bin, "claude"), "#!/bin/sh\nexit 0\n", { mode: 0o755 });
+    const result = spawnFrontDoor(["init", "probeuser"], {
+      HOME: home,
+      PATH: `${bin}:/usr/bin:/bin`,
+      ...NO_USER,
+      MIRROR_USER: "probeuser",
+      OPENROUTER_API_KEY: "sk-test",
+    });
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /^Found user home: .* \(nothing in it was changed\)\n/);
+    assert.match(result.stdout, /\nConfiguration: already selects this home\n/);
+    assert.equal(readFileSync(config, "utf8"), written);
+    assert.doesNotMatch(result.stdout, /OPENROUTER_API_KEY|This machine already selects/);
+    assert.match(result.stdout, /Wire your runtime/);
+    assert.match(result.stdout, /Claude Code:/);
+  } finally {
+    cleanup();
+  }
+});
+
+test("`init <name>` on an existing home while another is selected writes nothing", () => {
+  const { home, cleanup } = fakeHome();
+  try {
+    existingHome(home, "second");
+    const result = spawnFrontDoor(["init", "second"], {
+      HOME: home,
+      MIRROR_USER: "first",
+      MIRROR_HOME: "",
+      XDG_CONFIG_HOME: "",
+    });
+    assert.equal(result.status, 0, result.stderr);
+    assert.ok(!existsSync(join(home, ".config", "mirror", "env")));
+    assert.match(
+      result.stdout,
+      / {2}1\. This machine already selects a user; to use this one, run with MIRROR_USER=second\n/,
+    );
+  } finally {
+    cleanup();
+  }
+});
+
+test("an existing home with a key set and a database prints no step it does not need", () => {
+  const { home, cleanup } = fakeHome();
+  try {
+    const userHome = existingHome(home);
+    writeFileSync(join(userHome, "memory.db"), "");
+    const result = spawnFrontDoor(["init", "probeuser"], {
+      HOME: home,
+      PATH: "/usr/bin:/bin",
+      ...NO_USER,
+      OPENROUTER_API_KEY: "sk-test",
+      // The environment names the database a home must hold: CI runs the suite
+      // with MEMORY_ENV=test, whose database is memory_test.db, not this one.
+      MEMORY_ENV: "",
+    });
+    assert.equal(result.status, 0, result.stderr);
+    assert.doesNotMatch(result.stdout, /Next steps|OPENROUTER_API_KEY|mirror seed/);
+  } finally {
+    cleanup();
+  }
+});
+
+test("a home whose identity lives only in its database is adopted, and no template is copied in", () => {
+  const { home, cleanup } = fakeHome();
+  try {
+    const userHome = join(home, ".mirror-minds", "probeuser");
+    mkdirSync(userHome, { recursive: true });
+    writeFileSync(join(userHome, "memory.db"), "");
+    const result = spawnFrontDoor(["init", "probeuser"], { HOME: home, ...NO_USER });
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /^Found user home: /);
+    assert.deepEqual(readdirSync(userHome), ["memory.db"]);
+  } finally {
+    cleanup();
+  }
+});
+
+test("adopting keeps the config file's other lines, and twice in a row writes MIRROR_USER once", () => {
+  const { home, cleanup } = fakeHome();
+  try {
+    existingHome(home);
+    const dir = join(home, ".config", "mirror");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "env"), "OPENROUTER_API_KEY=sk-kept\n");
+    for (let run = 0; run < 2; run += 1) {
+      const result = spawnFrontDoor(["init", "probeuser"], { HOME: home, ...NO_USER });
+      assert.equal(result.status, 0, result.stderr);
+    }
+    assert.equal(
+      readFileSync(join(dir, "env"), "utf8"),
+      "OPENROUTER_API_KEY=sk-kept\nMIRROR_USER=probeuser\n",
+    );
+  } finally {
+    cleanup();
+  }
+});
+
+test("a home reached through a symlink is adopted where it lives, untouched", () => {
+  const { home, cleanup } = fakeHome();
+  try {
+    const target = join(home, "synced", "probeuser");
+    mkdirSync(join(target, "identity"), { recursive: true });
+    writeFileSync(join(target, "identity", "soul.yaml"), "mine\n");
+    mkdirSync(join(home, ".mirror-minds"));
+    symlinkSync(target, join(home, ".mirror-minds", "probeuser"));
+    const result = spawnFrontDoor(["init", "probeuser"], { HOME: home, ...NO_USER });
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /^Found user home: /);
+    assert.deepEqual(readdirSync(join(target, "identity")), ["soul.yaml"]);
+    assert.equal(readFileSync(join(target, "identity", "soul.yaml"), "utf8"), "mine\n");
+  } finally {
+    cleanup();
+  }
+});
+
+test("a name init refuses is refused before any home is looked at, even with one present", () => {
+  const { home, cleanup } = fakeHome();
+  try {
+    existingHome(home, "x");
+    const result = spawnFrontDoor(["init", "../x"], { HOME: home, ...NO_USER });
+    assert.equal(result.status, 2);
+    assert.match(result.stderr, /is not a user name/);
+    assert.ok(!existsSync(join(home, ".config")));
+  } finally {
+    cleanup();
+  }
+});
+
+test("a new home whose user is already selected says so, with no instruction to select it", () => {
+  // The Windows installer (PR #45) writes the config file first, then runs init.
+  const { home, cleanup } = fakeHome();
+  try {
+    const result = spawnFrontDoor(["init", "probeuser"], {
+      HOME: home,
+      MIRROR_USER: "probeuser",
+      MIRROR_HOME: "",
+      XDG_CONFIG_HOME: "",
+    });
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /^Created user home: /);
+    assert.match(result.stdout, /\nConfiguration: already selects this home\n/);
+    assert.match(result.stdout, /\n {2}1\. Run: mirror seed\n/);
+    assert.doesNotMatch(result.stdout, /This machine already selects a user/);
   } finally {
     cleanup();
   }

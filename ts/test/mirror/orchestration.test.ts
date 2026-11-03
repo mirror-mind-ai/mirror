@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
-import { mkdtempSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import { openDatabaseCopyForWrite } from "#db/database.ts";
 import { createIdentityTable } from "#helpers/identitySchema.ts";
 import { createRuntimeTables } from "#helpers/runtimeSchema.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 import {
   deactivateMirrorState,
   listActiveMirrorJourneys,
@@ -12,10 +12,11 @@ import {
   runMirrorLoad,
   titleFromSummary,
 } from "#mirror/orchestration.ts";
+import { getSessionOperatingMode } from "#mode/operatingMode.ts";
 import { ReplayLlmProvider } from "#providers/llm.ts";
 
 function fixture() {
-  const dir = mkdtempSync("/tmp/mirror-orchestration-");
+  const dir = tempDir("mirror-orchestration-");
   const db = openDatabaseCopyForWrite(join(dir, "copy.db"));
   createIdentityTable(db);
   createRuntimeTables(db);
@@ -75,10 +76,9 @@ test("mirror load composes context and persists mode, mirror, sticky, and conver
   assert.match(result.stdout, /=== persona\/engineer ===\nEngineer context/);
   assert.match(result.stdout, /=== journey\/mirror-ts-core ===/);
   assert.match(result.stderr, /⏺ Mirror Mode active/);
-  assert.match(result.stderr, /✦ Persona: engineer/);
+  assert.match(result.stderr, /◇ engineer/);
   const session = db.prepare("SELECT * FROM runtime_sessions WHERE session_id = 's1'").get();
   assert.equal(session?.mirror_active, 1);
-  assert.equal(session?.hook_injected, 0);
   assert.equal(session?.persona, "engineer");
   assert.equal(session?.journey, "mirror-ts-core");
   assert.ok(session?.conversation_id);
@@ -94,6 +94,13 @@ test("mirror load composes context and persists mode, mirror, sticky, and conver
       .get()?.active,
     1,
   );
+  // CV9.DS8.US4: the named session's own row is stamped too, so the doorman's
+  // mode check (session first, global as fallback) sees Mirror Mode on a
+  // re-entry after `build load` stamped the same session Builder.
+  assert.deepEqual(getSessionOperatingMode(db, "s1"), {
+    mode: "Mirror Mode",
+    journey: "mirror-ts-core",
+  });
   db.close();
 });
 
@@ -131,14 +138,12 @@ test("reception replay is logged metadata-only", async () => {
 
 test("mirror deactivate changes only session mirror state", () => {
   const db = fixture();
-  db.prepare(
-    "UPDATE runtime_sessions SET mirror_active = 1, hook_injected = 0 WHERE session_id = 's1'",
-  ).run();
+  db.prepare("UPDATE runtime_sessions SET mirror_active = 1 WHERE session_id = 's1'").run();
   deactivateMirrorState(db, "s1", "t1");
   const row = db
-    .prepare("SELECT mirror_active, hook_injected FROM runtime_sessions WHERE session_id = 's1'")
+    .prepare("SELECT mirror_active FROM runtime_sessions WHERE session_id = 's1'")
     .get();
-  assert.deepEqual(row, { mirror_active: 0, hook_injected: 1 });
+  assert.deepEqual(row, { mirror_active: 0 });
   db.close();
 });
 
@@ -199,4 +204,44 @@ test("title truncation follows first-sentence and 60-character contract", () => 
     titleFromSummary(`${"word ".repeat(20)}. ignored`),
     "word word word word word word word word word word word word...",
   );
+});
+
+test("mirror load marks the session the harness named in the environment when no --session-id is passed (CV9.DS8.TS2)", async () => {
+  const db = fixture();
+  const newId = ids();
+  const nowIso = times();
+  db.prepare(
+    `INSERT INTO runtime_sessions (session_id, interface, started_at, updated_at)
+     VALUES ('claude-env', 'claude_code', 't0', 't0')`,
+  ).run();
+  await runMirrorLoad(db, {
+    identity: "mirror-dev",
+    persona: "engineer",
+    journey: "mirror-ts-core",
+    environmentSessionId: "claude-env",
+    receptionEnabled: false,
+    newId,
+    nowIso,
+  });
+  const row = db
+    .prepare("SELECT mirror_active, persona FROM runtime_sessions WHERE session_id = 'claude-env'")
+    .get();
+  assert.deepEqual(row, { mirror_active: 1, persona: "engineer" });
+  // The explicit id still wins over the environment's.
+  await runMirrorLoad(db, {
+    identity: "mirror-dev",
+    persona: "engineer",
+    journey: "mirror-ts-core",
+    sessionId: "s1",
+    environmentSessionId: "claude-env",
+    receptionEnabled: false,
+    newId,
+    nowIso,
+  });
+  assert.equal(
+    db.prepare("SELECT mirror_active FROM runtime_sessions WHERE session_id = 's1'").get()
+      ?.mirror_active,
+    1,
+  );
+  db.close();
 });

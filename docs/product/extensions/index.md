@@ -77,6 +77,8 @@ See the [API Reference](api-reference.md) for the full contract.
 ~/.mirror-minds/<user>/extensions/<id>/      # installed (runtime copy)
 ~/.mirror-minds/<user>/extensions/<id>.env   # installation settings, optional (yours; install never touches it)
 ~/.mirror-minds/<user>/memory.db             # shared database with ext_<id>_* tables
+~/.mirror-minds/<user>/runtime/skills/<runtime>/          # each declared runtime's skills and catalog (pi and claude are read)
+~/.mirror-minds/<user>/runtime/plugin/mirror-ext-<user>/  # the home's extensions plugin: every claude skill, for Claude Code, Codex, Antigravity, Grok Build
 ```
 
 `<extensions-root>` is any directory the user chooses to host their
@@ -102,6 +104,23 @@ see the [runtime interface contract](../specs/runtime-interface/index.md#the-per
 at any point. Install warns about capabilities that declare no runtime and still succeeds,
 so an extension can migrate one capability at a time. Mirror dispatches declared
 `mirror-cli-v1` commands and `mirror-context-v1` providers through the TS core.
+
+## Reaching each runtime
+
+The reference extension `review-copy`, once installed and each runtime wired, is typed:
+
+- Pi: `/ext-review-copy`
+- Claude Code: `/ext-review-copy`
+- Codex: `$mirror-ext-<user>:ext-review-copy`
+- Antigravity: `/mirror-ext-<user>:ext-review-copy`
+- Grok Build: `/ext-review-copy`
+
+The four plugin runtimes were measured live with it on 2026-10-20 (CV21.DS5.US3). Not
+listed? Run the step the install printed for that runtime; running the install again
+prints it again. After you change an extension, `mirror runtime diagnose` names the
+reinstall a runtime that keeps a copy still needs. What reads the extension on each
+runtime, every step, and the versions measured are in the
+[runtime interface contract](../specs/runtime-interface/index.md#how-an-installed-extension-reaches-each-runtime).
 
 ## Reading order
 

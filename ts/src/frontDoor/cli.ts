@@ -22,6 +22,7 @@
 import { accessSync, constants, existsSync, readFileSync } from "node:fs";
 import { basename, dirname } from "node:path";
 import { pathToFileURL } from "node:url";
+import { createZipBackup } from "#backup/zipBackup.ts";
 import {
   AppendRejectedError,
   type AppendRejectionReason,
@@ -43,14 +44,14 @@ import { type Database, openDatabaseReadOnly, type WritableDatabase } from "#db/
 import { ensureDatabaseReady } from "#db/readyOnOpen.ts";
 import { assertSchemaState, SchemaStateError } from "#db/schemaState.ts";
 import { allDescriptors, descriptorsByLayer } from "#descriptor/descriptorRead.ts";
-import { newIdentityKeyProblem, newUserNameProblem } from "#identity/identityKey.ts";
+import { newIdentityKeyProblem } from "#identity/identityKey.ts";
 import { identityRowExists, listIdentityByLayer } from "#identity/identityRead.ts";
 import { listJourneysForListCommand } from "#identity/journeyListing.ts";
 import { listPersonas } from "#identity/personaListing.ts";
 import { setIdentity } from "#identity/setIdentity.ts";
-import { IdentityRootExistsError, initUserHome, TemplatesNotFoundError } from "#init/init.ts";
 import { JOURNEY_PATH_LAYER } from "#journey/journeyStatus.ts";
 import { JourneyNotFoundError } from "#journey/journeyWrite.ts";
+import { environmentSessionId } from "#mirror/runtimeSession.ts";
 import {
   CallOutcomeTally,
   formatCallOutcome,
@@ -59,28 +60,27 @@ import {
 import { chatLedgerHook } from "#observability/ledgerHooks.ts";
 import { runWeekSave } from "#planning/weekSave.ts";
 import type { EmbeddingProvider } from "#providers/embedding.ts";
-import { resolveFamilyProviders } from "#providers/familyProviders.ts";
+import {
+  requireFamilyProviders,
+  requireKeyForFamily,
+  resolveFamilyProviders,
+} from "#providers/familyProviders.ts";
 import type { LlmProvider } from "#providers/llm.ts";
 import {
+  CONSULT_ASK_TRANSPORT,
   CULTIVATION_APPLY_TRANSPORT,
   CULTIVATION_SCAN_TRANSPORT,
   DESCRIPTOR_TRANSPORT,
   JOURNAL_TRANSPORT,
   WEEK_PLAN_TRANSPORT,
 } from "#providers/transport.ts";
+import { verifyBackupArchive } from "#runtime/backup.ts";
 import { exitQuietlyOnBrokenPipe } from "#runtime/brokenPipe.ts";
-import {
-  configFilePath,
-  loadConfiguration,
-  silenceExperimentalWarnings,
-  writeConfigValue,
-} from "#runtime/config.ts";
-import { runningTreeRoot } from "#runtime/treeRoot.ts";
-import { detectRuntimes, runtimeWiringLines } from "#runtime/wiring.ts";
+import { configFilePath, loadConfiguration, silenceExperimentalWarnings } from "#runtime/config.ts";
 import { runSeed } from "#seed/seed.ts";
 import { getTasksForWeek, listTasks } from "#tasks/taskStore.ts";
 import { computeWeekRange } from "#tasks/weekView.ts";
-import { isExecutable } from "#util/paths.ts";
+import { expandHome } from "#util/paths.ts";
 import { PROGRAM } from "#util/program.ts";
 import { newId, nowIso } from "#util/pyGenerators.ts";
 import { hasOption, optionValue, stripOptionWithValue } from "./args.ts";
@@ -102,17 +102,25 @@ import {
   runReject,
   runShadowApply as runShadowApplyRoute,
 } from "./cultivationRoute.ts";
-import { MirrorHomeNotConfiguredError, resolveDbPath } from "./dbPath.ts";
+import { initCommandFor, MirrorHomeNotConfiguredError, resolveDbPath } from "./dbPath.ts";
 import { runBackupRoute, runRepairEncodingRoute } from "./dbSafetyToolsRoute.ts";
 import { defaultExploreRouteDeps, runExploreRoute } from "./exploreRoute.ts";
 import { frontDoorLogPath, logFrontDoor } from "./frontDoorLog.ts";
 import { applyIdentitySet } from "./identityWrite.ts";
+import {
+  isImportedConversationsCommand,
+  runImportedConversationsRoute,
+} from "./importedConversationsRoute.ts";
+import { runInit } from "./initRoute.ts";
 import { applyJourneySetPath } from "./journeyWriteRoute.ts";
 import { openLiveWriteDatabase } from "./liveBackup.ts";
+import { findMirrorHomes, homesRoot } from "./mirrorHomes.ts";
 import {
+  isMirrorDoorman,
   isMirrorWrite,
   isModeWrite,
   mirrorDeactivateMissingSession,
+  runMirrorDoormanRoute,
   runMirrorRead,
   runMirrorWriteRoute,
   runModeRead,
@@ -166,6 +174,7 @@ import { runRuntimeReadRoute, runWelcomeRoute } from "./runtimeRoute.ts";
 import { runMemorySearchRoute } from "./searchRoute.ts";
 import { resolveSeedPaths } from "./seedPaths.ts";
 import { isSessionStartWelcome, runSessionStartWelcomeRoute } from "./sessionStartWelcomeRoute.ts";
+import { isSkillTurnsCommand, runSkillTurnsRoute } from "./skillTurnsRoute.ts";
 import { runSoulRoute } from "./soulRoute.ts";
 import {
   applyTasksImport,
@@ -179,6 +188,7 @@ import {
   applyTasksStatusChange,
   type TaskStatusTarget,
 } from "./tasksWriteRoute.ts";
+import { readStdinText, readTextFile } from "./textInput.ts";
 import { answerUsage } from "./usage.ts";
 
 /**
@@ -444,7 +454,10 @@ function runWeekSaveWrite(argv: readonly string[]): number {
  * in depth.
  */
 async function runJournalContentRoute(argv: readonly string[]): Promise<number> {
-  const family = await resolveFamilyProviders(process.env, JOURNAL_TRANSPORT);
+  // CR187: refused before the database opens, saying what was not kept.
+  const family = await requireFamilyProviders(process.env, JOURNAL_TRANSPORT, {
+    consequence: "the journal entry was not saved",
+  });
   if (!family?.llm || !family.embedding) {
     throw new Error("journal requires an LLM and an embedding provider");
   }
@@ -457,14 +470,15 @@ async function runJournalContentRoute(argv: readonly string[]): Promise<number> 
 }
 
 async function runWeekPlanContentRoute(argv: readonly string[]): Promise<number> {
-  const family = await resolveFamilyProviders(process.env, WEEK_PLAN_TRANSPORT);
+  const family = await requireFamilyProviders(process.env, WEEK_PLAN_TRANSPORT);
   if (!family?.llm) throw new Error("week plan requires an LLM provider");
   const llm = family.llm;
   return withLiveWriteDbAsync(argv, (db) => runWeekPlanRoute(db, argv.slice(2), llm));
 }
 
 async function runDescriptorContentRoute(argv: readonly string[]): Promise<number> {
-  const family = await resolveFamilyProviders(process.env, DESCRIPTOR_TRANSPORT);
+  // CR187: without the key every persona would read "skipped (empty response)".
+  const family = await requireFamilyProviders(process.env, DESCRIPTOR_TRANSPORT);
   if (!family?.llm) throw new Error("descriptor generate requires an LLM provider");
   const llm = family.llm;
   const reporter = outcomeReporter(argv, "descriptor");
@@ -510,12 +524,19 @@ function runShadowRead(db: Database, args: readonly string[]): number {
   return 0;
 }
 
+/** Stdin as human text, decoded by its mark (PR #49, CR194: `textInput.ts`). */
 function readStdinContent(): string {
-  try {
-    return readFileSync(0, "utf8");
-  } catch {
-    return "";
-  }
+  return readStdinText();
+}
+
+/**
+ * CR194: `--file <path>`, the text read by Mirror as bytes, so the shell's pipe
+ * never touches it (PowerShell 5.1's pipe is ASCII by default, and its `>` is
+ * UTF-16LE). `~` expands as it does for `--mirror-home`; a relative path is
+ * the cwd's. The refusal names the path and nothing from the error.
+ */
+function readFileContent(path: string): { text: string } | { error: string } {
+  return readTextFile(expandHome(path));
 }
 
 /** `conversations append` (CV22.DS7.US10 slice B′). */
@@ -828,7 +849,10 @@ function refusedNewIdentityKey(args: readonly string[], layer: string, key: stri
 function runIdentityWrite(argv: readonly string[]): number {
   const args = argv.slice(2);
   const positionals = stripOptionWithValue(
-    stripOptionWithValue(stripOptionWithValue(args, "--content"), "--db-path"),
+    stripOptionWithValue(
+      stripOptionWithValue(stripOptionWithValue(args, "--content"), "--file"),
+      "--db-path",
+    ),
     "--mirror-home",
   );
   const layer = positionals[0];
@@ -842,7 +866,23 @@ function runIdentityWrite(argv: readonly string[]): number {
     console.error(`Error: ${refused}`);
     return 1;
   }
-  const content = optionValue(args, "--content") ?? readStdinContent();
+  const inlineContent = optionValue(args, "--content");
+  const filePath = optionValue(args, "--file");
+  if (inlineContent !== null && filePath !== null) {
+    console.error("Error: --file and --content name two sources for one content; pass one.");
+    return 1;
+  }
+  let content: string;
+  if (filePath !== null) {
+    const read = readFileContent(filePath);
+    if ("error" in read) {
+      console.error(`Error: ${read.error}`);
+      return 1;
+    }
+    content = read.text;
+  } else {
+    content = inlineContent ?? readStdinContent();
+  }
   if (!content.trim()) {
     console.error("Error: content is empty.");
     return 1;
@@ -872,90 +912,6 @@ function isConsult(argv: readonly string[]): boolean {
 
 function isInit(argv: readonly string[]): boolean {
   return argv[0] === "init";
-}
-
-/**
- * Serve `init <user>` (DS7.US1 Slice B). Filesystem-only — no database is
- * opened. Python's argparse defines only the `user` positional (no
- * --mirror-home/--db-path), so none are stripped here.
- *
- * Deliberate divergence: an already-populated identity root or a missing
- * templates root are uncaught exceptions in Python (a raw traceback, exit 1) --
- * not a designed message. This preserves the contract (exit 1, a stderr
- * message naming the failure) without fabricating a fake traceback.
- *
- * CV22.DS10.US3 (D3): when no source configured a user, `init` writes
- * `MIRROR_USER=<user>` into `~/.config/mirror/env` (0600 in 0700) and says
- * where to add `OPENROUTER_API_KEY` by hand. The key is never read from argv.
- * When a user IS configured -- the checkout's `.env`, or a shell running a
- * second mirror -- the file is left alone and the person is told how to
- * select the new home.
- *
- * Plateau 3: it ends with the wiring step for each runtime found on the PATH
- * (`#runtime/wiring.ts`), with this tree's path in it, so the person is handed
- * the next line rather than a page. Printing is not automating.
- */
-function runInit(argv: readonly string[], env: NodeJS.ProcessEnv = process.env): number {
-  const user = argv[1];
-  // A word that starts with `-` is a flag this command does not have, not a
-  // user: `init --help` once created a home named `--help`.
-  if (!user || user.startsWith("-")) {
-    console.error("Usage: init <user>");
-    return 2;
-  }
-  // And any other word is a key: the home's directory name and the value of
-  // MIRROR_USER in the wiring commands printed below. CR104's rule for slugs
-  // and persona ids, asked before anything is created (CR141).
-  const problem = newUserNameProblem(user);
-  if (problem !== null) {
-    console.error(`Error: ${problem}`);
-    return 2;
-  }
-  try {
-    const identityRoot = initUserHome(user);
-    const mirrorHome = dirname(identityRoot);
-    const configured = Boolean(env.MIRROR_USER || env.MIRROR_HOME);
-    const configuration = configured
-      ? [
-          `  1. This machine already selects a user; to use this one, run with MIRROR_USER=${user}`,
-          `     or set it in ${configFilePath(env)}`,
-        ]
-      : [
-          `Configuration: ${writeConfigValue("MIRROR_USER", user, { env })} (MIRROR_USER=${user})`,
-          "",
-          "Next steps:",
-          "  1. Add OPENROUTER_API_KEY=<your key> to that file (it is created readable by you only)",
-        ];
-    const prints = [
-      `Created user home: ${mirrorHome}`,
-      `Identity ready at: ${identityRoot}`,
-      ...(configured ? ["", "Next steps:"] : []),
-      ...configuration,
-      `  2. Run: ${PROGRAM} seed`,
-      "\nYour identity is ready to use. Deepen it over time with:",
-      `  ${PROGRAM} identity edit user identity`,
-      ...runtimeWiringSection(env),
-    ];
-    process.stdout.write(prints.map((line) => `${line}\n`).join(""));
-    return 0;
-  } catch (error) {
-    if (error instanceof IdentityRootExistsError || error instanceof TemplatesNotFoundError) {
-      console.error(error.message);
-      return 1;
-    }
-    throw error;
-  }
-}
-
-/** The "Wire your runtime" tail of `init`, empty when no runtime is on the PATH. */
-function runtimeWiringSection(env: NodeJS.ProcessEnv): string[] {
-  const detected = detectRuntimes(env, isExecutable);
-  if (detected.length === 0) return [];
-  const root = runningTreeRoot();
-  return [
-    "\nWire your runtime to this install (each step is one you run and can read first):",
-    ...detected.flatMap((runtime) => ["", ...runtimeWiringLines(runtime, root)]),
-  ];
 }
 
 function isSeed(argv: readonly string[]): boolean {
@@ -1079,22 +1035,36 @@ function runJourneyWrite(argv: readonly string[]): number {
  */
 const JOURNEY_UPDATE_USAGE =
   `Usage: ${PROGRAM} journey update <slug> <content>\n` +
-  "       Pass '-' as <content> to read it from stdin.";
+  "       Pass '-' as <content> to read it from stdin, or --file <path> to read a file.";
 const FLAG_SHAPED_CONTENT = /^--?[A-Za-z]/;
 
 function runJourneyUpdateWrite(argv: readonly string[]): number {
   const args = argv.slice(2);
   const positionals = stripOptionWithValue(
-    stripOptionWithValue(args, "--db-path"),
+    stripOptionWithValue(stripOptionWithValue(args, "--file"), "--db-path"),
     "--mirror-home",
   );
   const slug = positionals[0];
   let content = positionals[1];
-  if (!slug || content === undefined) {
+  const filePath = optionValue(args, "--file");
+  if (!slug || (content === undefined && filePath === null)) {
     console.error(JOURNEY_UPDATE_USAGE);
     return 1;
   }
-  if (content === "-") {
+  if (filePath !== null) {
+    if (content !== undefined) {
+      console.error(
+        `Error: --file and ${content === "-" ? "'-'" : "<content>"} name two sources for one content; pass one.`,
+      );
+      return 1;
+    }
+    const read = readFileContent(filePath);
+    if ("error" in read) {
+      console.error(`Error: ${read.error}`);
+      return 1;
+    }
+    content = read.text;
+  } else if (content === "-") {
     content = readStdinContent();
   } else if (FLAG_SHAPED_CONTENT.test(content)) {
     console.error(
@@ -1398,7 +1368,7 @@ async function runConsolidateScanWrite(argv: readonly string[]): Promise<number>
   const limit = limitRaw !== null ? Number(limitRaw) : DEFAULT_CONSOLIDATE_SCAN_LIMIT;
   const thresholdRaw = optionValue(args, "--threshold");
   const threshold = thresholdRaw !== null ? Number(thresholdRaw) : DEFAULT_CLUSTER_THRESHOLD;
-  const family = await resolveFamilyProviders(process.env, CULTIVATION_SCAN_TRANSPORT);
+  const family = await requireFamilyProviders(process.env, CULTIVATION_SCAN_TRANSPORT);
   if (!family?.llm) throw new Error("consolidate scan requires an LLM provider");
   const provider = family.llm;
   const reporter = outcomeReporter(argv, "consolidation");
@@ -1425,7 +1395,7 @@ async function runShadowScanWrite(argv: readonly string[]): Promise<number> {
   const args = argv.slice(2);
   const limitRaw = optionValue(args, "--limit");
   const limit = limitRaw !== null ? Number(limitRaw) : DEFAULT_SHADOW_SCAN_LIMIT;
-  const family = await resolveFamilyProviders(process.env, CULTIVATION_SCAN_TRANSPORT);
+  const family = await requireFamilyProviders(process.env, CULTIVATION_SCAN_TRANSPORT);
   if (!family?.llm) throw new Error("shadow scan requires an LLM provider");
   const provider = family.llm;
   const reporter = outcomeReporter(argv, "shadow_scan");
@@ -1470,7 +1440,10 @@ function runShadowWrite(argv: readonly string[]): number | Promise<number> {
   return runShadowScanWrite(argv); // "scan"
 }
 
-function withMirrorReadDb(argv: readonly string[], read: (db: Database) => number): number {
+function withMirrorReadDb<T = number>(
+  argv: readonly string[],
+  read: (db: Database) => T,
+): T | number {
   const dbPath = resolveDbPathForCli(argv.slice(1));
   if (dbPath === null) return 2;
   ensureDatabaseReadyForCli(dbPath, argv[0] ?? null);
@@ -1530,6 +1503,35 @@ function runMirrorWrite(argv: readonly string[]): Promise<number> | number {
 
 function runModeWrite(argv: readonly string[]): Promise<number> {
   return withMirrorWriteDb(argv, (db) => runModeWriteRoute(db, argv));
+}
+
+/**
+ * `mirror doorman` (CV9.DS8.TS2): decide on a read-only handle, write behind
+ * the pre-write snapshot only for a turn that delivers. The memory scores a
+ * delta turn ranks go to the front-door log as numbers -- content-free -- the
+ * hybrid and the semantic the threshold reads (US5), every ranked memory's,
+ * so the threshold is read against measurement.
+ */
+function runMirrorDoorman(argv: readonly string[]): Promise<number> {
+  const reporter = outcomeReporter(argv, "reception");
+  const logPath = resolveLogPath(argv);
+  return runMirrorDoormanRoute(argv, {
+    withReadOnlyDatabase: (read) => withMirrorReadDb(argv, read),
+    withLiveWriteDatabase: (write) => withMirrorWriteDb(argv, write),
+    onReceptionOutcome: reporter.onOutcome,
+    onMemoryScores: (scores) =>
+      logFrontDoor(logPath, {
+        command: "mirror",
+        route: "ts",
+        exitCode: 0,
+        detail:
+          `doorman memory_scores=${scores.map((s) => s.score.toFixed(3)).join(",")}` +
+          ` memory_semantic=${scores.map((s) => s.semantic.toFixed(3)).join(",")}`,
+      }),
+  }).then((exitCode) => {
+    if (reporter.calls > 0) reporter.logSummary();
+    return exitCode;
+  });
 }
 
 function runSoulWrite(argv: readonly string[]): Promise<number> {
@@ -1621,6 +1623,9 @@ function resolveLogPath(argv: readonly string[]): string | null {
  * itself, extended to db resolution.
  */
 async function runConsultAskWithDb(argv: readonly string[]): Promise<number> {
+  // CR187: before the ledger database opens, because that open takes the
+  // pre-write snapshot; the route checks again, for `consult credits`.
+  requireKeyForFamily(process.env, CONSULT_ASK_TRANSPORT);
   const db = tryOpenDbForConsultLogging(argv);
   try {
     process.stdout.write(await runConsultRoute(db, argv.slice(1)));
@@ -1734,7 +1739,11 @@ async function dispatchTs(argv: readonly string[]): Promise<number | DispatchOut
       createLoadRuntime: (db, dbPath, ignoreProductionRole) =>
         createBuildLoadRuntime({ db, dbPath, ignoreProductionRole }),
       nowIso,
-      environmentSessionId: process.env.MIRROR_SESSION_ID ?? null,
+      // The session the harness named -- MIRROR_SESSION_ID, else Claude Code's or
+      // Codex's own -- the same reader the mirror route uses (CV9.DS8.US4: read
+      // MIRROR_SESSION_ID alone, a Builder switch on Claude Code stamped a guessed
+      // session and the doorman never saw it).
+      environmentSessionId: environmentSessionId(process.env),
     });
   }
   if (isInit(argv)) return runInit(argv);
@@ -1754,6 +1763,7 @@ async function dispatchTs(argv: readonly string[]): Promise<number | DispatchOut
   if (argv[0] === "descriptor" && argv[1] === "generate") return runDescriptorContentRoute(argv);
   if (isConsolidateSubcommandWrite(argv)) return runConsolidateWrite(argv);
   if (isShadowSubcommandWrite(argv)) return runShadowWrite(argv);
+  if (isMirrorDoorman(argv)) return runMirrorDoorman(argv);
   if (isMirrorWrite(argv)) return runMirrorWrite(argv);
   if (isModeWrite(argv)) return runModeWrite(argv);
   // CV22.DS7.US6: the Soul ritual; `routing.ts` allowlists its subcommands by
@@ -1761,6 +1771,37 @@ async function dispatchTs(argv: readonly string[]): Promise<number | DispatchOut
   if (argv[0] === "soul") return runSoulWrite(argv);
   if (argv[0] === "explore") return runExploreWrite(argv);
   if (isConversationsAppend(argv)) return runConversationsAppend(argv);
+  // CR154: allowlisted by name, like `append`, so the listing never answers it.
+  // The listing and the dry run read; `--apply` writes behind the pre-write
+  // backup, after its own dated, verified archive.
+  if (isImportedConversationsCommand(argv)) {
+    return runImportedConversationsRoute(argv, {
+      withReadOnlyDatabase: (read) => withMirrorReadDb(argv, read),
+      withLiveWriteDatabase: (write) => {
+        const dbPath = resolveDbPathForCli(argv.slice(1));
+        if (dbPath === null) return 2;
+        return withLiveWriteDbAt(dbPath, "conversations", (db) => write(db, dbPath));
+      },
+      backup: (dbPath) =>
+        createZipBackup({ dbPath, mirrorHome: dirname(dbPath), backupDir: null, silent: true }),
+      verifyBackup: (archive) => verifyBackupArchive(archive),
+    });
+  }
+  // CR160: the same shape -- the dry run reads; `--apply` writes behind the
+  // pre-write backup, after its own dated, verified archive.
+  if (isSkillTurnsCommand(argv)) {
+    return runSkillTurnsRoute(argv, {
+      withReadOnlyDatabase: (read) => withMirrorReadDb(argv, read),
+      withLiveWriteDatabase: (write) => {
+        const dbPath = resolveDbPathForCli(argv.slice(1));
+        if (dbPath === null) return 2;
+        return withLiveWriteDbAt(dbPath, "conversations", (db) => write(db, dbPath));
+      },
+      backup: (dbPath) =>
+        createZipBackup({ dbPath, mirrorHome: dirname(dbPath), backupDir: null, silent: true }),
+      verifyBackup: (archive) => verifyBackupArchive(archive),
+    });
+  }
   // CV22.DS7.TS1: the DB safety tools. `backup` never opens or bootstraps the
   // database; `repair-encoding --apply` rides the live-write seam.
   if (argv[0] === "backup") {
@@ -1837,9 +1878,17 @@ export async function main(rawArgv = process.argv.slice(2)): Promise<number> {
   // name is whatever the caller typed, and it stays out of the log.
   if (decision.engine === "usage") {
     const env = process.env;
+    const userConfigured = Boolean(
+      env.MIRROR_USER || env.MIRROR_HOME || env.MEMORY_DIR || env.DB_PATH,
+    );
     const answer = answerUsage(decision.request, {
-      userConfigured: Boolean(env.MIRROR_USER || env.MIRROR_HOME || env.MEMORY_DIR || env.DB_PATH),
+      userConfigured,
       configFile: configFilePath(env),
+      // CR185: a home on disk that nothing selects is named, read only when no
+      // user is configured -- the one case the orientation is rendered.
+      useHome: userConfigured
+        ? null
+        : (initCommandFor(findMirrorHomes(), homesRoot())?.sentence ?? null),
     });
     (answer.stream === "stdout" ? process.stdout : process.stderr).write(answer.text);
     logFrontDoor(logPath, {

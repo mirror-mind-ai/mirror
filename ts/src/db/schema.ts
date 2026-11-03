@@ -84,7 +84,6 @@ CREATE TABLE IF NOT EXISTS runtime_sessions (
     mirror_active INTEGER NOT NULL DEFAULT 0,
     persona TEXT,
     journey TEXT,
-    hook_injected INTEGER NOT NULL DEFAULT 0,
     active INTEGER NOT NULL DEFAULT 1,
     started_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,

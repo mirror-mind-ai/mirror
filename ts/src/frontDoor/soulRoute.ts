@@ -15,7 +15,7 @@
 import type { Database, WritableDatabase } from "#db/database.ts";
 import { getIdentityContent } from "#identity/identityRead.ts";
 import { persistStickyDefaults } from "#mirror/orchestration.ts";
-import { resolveRuntimeSessionId } from "#mirror/runtimeSession.ts";
+import { environmentSessionId, resolveRuntimeSessionId } from "#mirror/runtimeSession.ts";
 import { activateOperatingMode } from "#mode/operatingMode.ts";
 import { embeddingLedgerHook } from "#observability/ledgerHooks.ts";
 import { generateEmbeddingSafely } from "#providers/embedding.ts";
@@ -310,7 +310,7 @@ function runLoad(
   const resolvedSessionId = resolveRuntimeSessionId(
     db,
     sessionId,
-    process.env.MIRROR_SESSION_ID ?? null,
+    environmentSessionId(process.env),
   );
   activateOperatingMode(
     db,
@@ -355,7 +355,7 @@ function runFruit(
   sessionId: string | null,
   deps: SoulRouteDeps,
 ): number {
-  const resolved = resolveCliSoulSessionId(db, sessionId, process.env.MIRROR_SESSION_ID ?? null);
+  const resolved = resolveCliSoulSessionId(db, sessionId, environmentSessionId(process.env));
   if (action === "set") {
     if (fruit === null) return usageError("soul fruit set requires a fruit");
     const state = setFruitInMaturation(db, fruit, resolved, deps.nowIso());
@@ -384,7 +384,7 @@ async function runHarvest(
   const resolved = resolveCliSoulSessionId(
     db,
     option("--session-id"),
-    process.env.MIRROR_SESSION_ID ?? null,
+    environmentSessionId(process.env),
   );
   if (action === "set") {
     const state = harvestFruit(db, { fruit, sessionId: resolved }, deps.nowIso());

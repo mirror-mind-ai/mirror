@@ -7,7 +7,6 @@
 // and always exits 0. Slash-prefixed prompts are never logged.
 
 import assert from "node:assert/strict";
-import { mkdtempSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import {
@@ -26,6 +25,7 @@ import {
   TRANSCRIPT_PATH,
 } from "#helpers/backfillFixture.ts";
 import { createRuntimeTables } from "#helpers/runtimeSchema.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 
 const NOW = "2026-09-02T12:00:00.000000Z";
 
@@ -39,7 +39,7 @@ const deps = {
 };
 
 function fixture(): { db: WritableDatabase; home: string } {
-  const home = mkdtempSync("/tmp/logger-hooks-");
+  const home = tempDir("logger-hooks-");
   const db = openDatabaseCopyForWrite(join(home, "copy.db"));
   createRuntimeTables(db);
   return { db, home };

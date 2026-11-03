@@ -37,9 +37,10 @@ folder and index. Stories that are non-trivial have a `plan.md` and a
 | [CV18](cv18-soul-mode-more-voices/index.md) | Soul Mode More Voices | ✅ Done |
 | [CV19](cv19-soul-mode-integration/index.md) | Soul Mode Integration | ✅ Done |
 | [CV20](cv20-builder-mode-evolution/index.md) | Builder Mode Evolution | 🟢 In Progress |
-| [CV21](cv21-runtime-expansion-ii/index.md) | Runtime Expansion II: Plugin & MCP Convergence | 🟢 In Progress |
+| [CV21](cv21-runtime-expansion-ii/index.md) | Runtime Expansion II: Plugin & MCP Convergence | ✅ Done — 2026-10-24 |
 | [CV22](cv22-typescript-core-port/index.md) | TypeScript Core Port (Database-Seam Strangler) | ✅ Done — 2026-10-11, released as v0.32.1 |
 | [CV23](cv23-journey-projection-contract/index.md) | Journey Projection Contract | ✅ Done — v0.31.10 contract; v0.31.11 confinement hotfix accepted |
+| [CV24](cv24-embeddable-core-for-mirror-desktop/index.md) | Embeddable Core for Mirror Desktop | 🟢 In Progress — DS1 to DS8 released in v0.39.0 |
 
 ---
 
@@ -59,7 +60,12 @@ home for every environment, unconfigured resolution fails loudly instead of
 writing to the homes root, and `runtime diagnose` reports legacy root
 artifacts. Conversation
 metadata lifecycle was delivered as CV9.DS7, done on 2026-09-26 and since ported
-to TypeScript by CV22.DS7.US10.
+to TypeScript by CV22.DS7.US10. The one doorman was delivered as CV9.DS8, done on
+2026-10-25: on Pi, Claude Code, Codex, and Antigravity the runtime puts Mirror's
+context before the model, and Pi reached L4. CV9.DS9, done on 2026-10-28, chose
+the extraction model by measurement: Flash Lite against GPT-6 Luna and Claude
+Haiku 5.5, on the eval suite and on the Navigator's own conversations, and the pin
+moved to Claude Haiku 5.5 at reasoning off.
 Boundary Hardening and the remaining stabilization stories are still open before
 the full CV9 done condition is met.
 
@@ -101,7 +107,7 @@ In progress. CV20 evolves Builder Mode from a context-loading skill into a disci
 
 ## CV21 — Runtime Expansion II: Plugin & MCP Convergence
 
-In progress, governed by Ariad on the `mirror` journey since 2026-10-13. CV21 is the successor to CV8, driven by one force: the coding-agent ecosystem (Claude, Codex, Antigravity, Grok Build, Gemini) has converged on the same primitives — plugins, hooks, skills, and MCP — and on the same plugin shape, with Claude Code's `.claude-plugin/plugin.json` emerging as the de-facto cross-runtime interchange format (`agy plugin import claude`, `grok plugin import`, Codex marketplaces). Rather than maintain N bespoke adapters, CV21 packages Mirror Mind **once** as a canonical plugin plus an MCP server and propagates it by import/install. Claude is the anchor: already L4, but shipped through the standalone `.claude/` tier when it should be a plugin — converting it produces the canonical package the others consume. Codex is upgraded L3→L4 (0.139.0 now has Claude-style hooks); Antigravity migrates the Gemini lineage (Gemini Code Assist's individual backend is deprecated 2026-06-18); Grok Build is added. External extensions ride the same package. CV21 stopped after DS2.US2 on 2026-06-23 while CV22 ported the core to TypeScript. It resumed on 2026-10-13 with its epics mapped one-to-one to Delivery Stories. Gemini CLI is [retired](../decisions.md#gemini-cli-is-retired-and-antigravity-is-its-successor), and Antigravity succeeds it. DS12 (Runtime Re-Baseline, done 2026-10-13) re-measured the June evidence on the installed runtimes. Its [decision](../decisions.md#cv21-converges-on-the-canonical-plugin-with-a-native-layer-for-antigravity-and-shared-hooks-that-know-their-runtime): the canonical plugin stays the one package, and Claude Code, Codex, and Grok take it as it is. Antigravity takes its skills and gets a thin native layer. Parity: Claude Code L4, Codex and Antigravity L4 reachable, Grok L3. Next is DS2, the plugin made ready for every runtime that takes it. See the [CV21 index](cv21-runtime-expansion-ii/index.md).
+Done on 2026-10-24, governed by Ariad on the `mirror` journey from 2026-10-13. CV21 is the successor to CV8, driven by one force: the coding-agent ecosystem (Claude, Codex, Antigravity, Grok Build, Gemini) has converged on the same primitives — plugins, hooks, skills, and MCP — and on the same plugin shape, with Claude Code's `.claude-plugin/plugin.json` emerging as the de-facto cross-runtime interchange format (`agy plugin import claude`, `grok plugin import`, Codex marketplaces). Rather than maintain N bespoke adapters, CV21 packages Mirror Mind **once** as a canonical plugin plus an MCP server and propagates it by import/install. Claude is the anchor: already L4, but shipped through the standalone `.claude/` tier when it should be a plugin — converting it produces the canonical package the others consume. Codex is upgraded L3→L4 (0.139.0 now has Claude-style hooks); Antigravity migrates the Gemini lineage (Gemini Code Assist's individual backend is deprecated 2026-06-18); Grok Build is added. External extensions ride the same package. CV21 stopped after DS2.US2 on 2026-06-23 while CV22 ported the core to TypeScript. It resumed on 2026-10-13 with its epics mapped one-to-one to Delivery Stories. Gemini CLI is [retired](../decisions.md#gemini-cli-is-retired-and-antigravity-is-its-successor), and Antigravity succeeds it. DS12 (Runtime Re-Baseline, done 2026-10-13) re-measured the June evidence on the installed runtimes. Its [decision](../decisions.md#cv21-converges-on-the-canonical-plugin-with-a-native-layer-for-antigravity-and-shared-hooks-that-know-their-runtime): the canonical plugin stays the one package, and Claude Code, Codex, and Grok take it as it is. Antigravity takes its skills and gets a thin native layer. Then DS2 made the plugin ready for every runtime that takes it, and DS4, DS7, DS8, DS10, DS5, and DS11 followed. Parity as measured, held in the runtime interface contract's [parity matrix](../../product/specs/runtime-interface/index.md#parity-matrix): Claude Code, Codex, and Antigravity L4; Grok Build and Pi L3. The work shipped in v0.33.0 through v0.36.3, and DS11's in [v0.37.0](../../releases/v0.37.0.md). See the [CV21 index](cv21-runtime-expansion-ii/index.md).
 
 ## CV22 — TypeScript Core Port (Database-Seam Strangler)
 
@@ -152,6 +158,15 @@ consumers and installed extensions versioned Journey read models, publishes the
 Ariad Operational projection without granting write-back authority, and closes
 only after the unchanged external probe passes against a centrally released and
 installed Mirror runtime. See the [CV23 index](cv23-journey-projection-contract/index.md).
+
+## CV24 — Embeddable Core for Mirror Desktop
+
+In progress since 2026-10-28. Mirror Desktop 0.3 hosts this core in its own Node process and calls
+it as a library through `mirror-mind/desktop`. The contract grows one piece at a time; DS1 to DS8
+(migration state, Conversations, reads, home creation, migration on request, Mirror's context,
+learning, and Journey administration) are released in
+[v0.39.0](../../releases/v0.39.0.md). See the
+[CV24 index](cv24-embeddable-core-for-mirror-desktop/index.md).
 
 ## CV11 — Localization
 

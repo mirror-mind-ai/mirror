@@ -31,6 +31,7 @@ import {
   snapshotEntry,
 } from "#backup/zipBackup.ts";
 import { readZipEntry } from "#backup/zipReader.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 import { inspectZip } from "#helpers/zipInspect.ts";
 
 // zipfile stores LOCAL time; the golden was generated under TZ=UTC.
@@ -92,7 +93,7 @@ function liveDatabase(dbPath: string, committed: number, inWal: number): Databas
  * and `memory.db-wal` means a writer is still holding rows in its WAL.
  */
 function makeHome(name: string, files: string[] = []): string {
-  const home = mkdtempSync(`/tmp/backup-${name}-`);
+  const home = tempDir(`backup-${name}-`);
   if (files.includes("memory.db")) {
     const live = files.includes("memory.db-wal");
     const writer = liveDatabase(join(home, "memory.db"), COMMITTED_ROWS, live ? WAL_ROWS : 0);
@@ -231,7 +232,7 @@ test("silent: nothing printed, archive still created", () => {
 test("explicit --backup-dir wins over <home>/backups", () => {
   const s = golden.scenarios.explicit_backup_dir as Scenario;
   const home = makeHome("explicit", s.fixture_files);
-  const dest = join(mkdtempSync("/tmp/backup-dest-"), "archives");
+  const dest = join(tempDir("backup-dest-"), "archives");
 
   const result = run(home, { backupDir: dest });
   assert.equal(normalize(result.stdout, home, dest), s.stdout);
@@ -256,7 +257,7 @@ test("missing database: reported on stdout, no archive, null result (exit semant
 test("deprecated BACKUP_DIR env warns on stderr and is ignored; silent when --backup-dir is explicit", () => {
   const s = golden.scenarios.deprecated_backup_dir_env as Scenario;
   const home = makeHome("deprecated", s.fixture_files);
-  const ignored = join(mkdtempSync("/tmp/backup-ignored-"), "ignored-by-design");
+  const ignored = join(tempDir("backup-ignored-"), "ignored-by-design");
 
   const result = run(home, { env: { BACKUP_DIR: ignored } });
   assert.equal(result.stderr, s.stderr);
@@ -265,7 +266,7 @@ test("deprecated BACKUP_DIR env warns on stderr and is ignored; silent when --ba
 
   const explicit = golden.scenarios.deprecated_env_with_explicit_dir as Scenario;
   const home2 = makeHome("deprecated-explicit", explicit.fixture_files);
-  const dest = join(mkdtempSync("/tmp/backup-dest2-"), "explicit-wins");
+  const dest = join(tempDir("backup-dest2-"), "explicit-wins");
   const result2 = run(home2, { backupDir: dest, env: { BACKUP_DIR: ignored } });
   assert.equal(result2.stderr, explicit.stderr);
   assert.deepEqual(listing(dest), explicit.dest_after);
@@ -274,7 +275,7 @@ test("deprecated BACKUP_DIR env warns on stderr and is ignored; silent when --ba
 test("a failure after staging removes the .partial and the snapshot, and propagates the error", () => {
   const s = golden.scenarios.db_only as Scenario;
   const home = makeHome("failure", s.fixture_files);
-  const temp = mkdtempSync(join(tmpdir(), "backup-temp-"));
+  const temp = tempDir("backup-temp-");
   // A directory squatting on the archive name makes the final rename fail
   // after the snapshot was taken and the staging file fully written.
   mkdirSync(join(home, "backups", "memory_20260907_140305.zip"), { recursive: true });
@@ -300,7 +301,7 @@ test("KB token rounds half to even like Python's .0f", () => {
 // --- CR061: the archive is the database as committed, not a copy of its files ---
 
 test("CR061: rows a live writer holds in the WAL are in the archive's memory.db, its only member", () => {
-  const home = mkdtempSync("/tmp/backup-live-wal-");
+  const home = tempDir("backup-live-wal-");
   const writer = liveDatabase(join(home, "memory.db"), 100, 50);
   try {
     const result = run(home, { silent: true });
@@ -321,7 +322,7 @@ test("CR061: rows a live writer holds in the WAL are in the archive's memory.db,
 
 test("CR061: the snapshot is taken privately, never in the backups directory, and none is left", () => {
   const home = makeHome("private", ["memory.db", "memory.db-wal"]);
-  const temp = mkdtempSync(join(tmpdir(), "backup-temp-"));
+  const temp = tempDir("backup-temp-");
   const past = Date.now() / 1000 - 3600;
   utimesSync(temp, past, past);
 
@@ -348,7 +349,7 @@ test("CR061: two backups with the same timestamp both complete", () => {
 test("CR061: stranded staging is swept only when its writer is gone and it is old", () => {
   const home = makeHome("sweep", ["memory.db"]);
   const backups = join(home, "backups");
-  const temp = mkdtempSync(join(tmpdir(), "backup-temp-"));
+  const temp = tempDir("backup-temp-");
   mkdirSync(backups, { recursive: true });
   const deadPid = spawnSync(process.execPath, ["-e", ""]).pid as number;
   const old = Date.now() / 1000 - 20 * 60;
@@ -379,8 +380,8 @@ test("CR061: stranded staging is swept only when its writer is gone and it is ol
 });
 
 test("CR061: a database that cannot be snapshotted publishes nothing and keeps the older archives", () => {
-  const home = mkdtempSync("/tmp/backup-corrupt-");
-  const temp = mkdtempSync(join(tmpdir(), "backup-temp-"));
+  const home = tempDir("backup-corrupt-");
+  const temp = tempDir("backup-temp-");
   writeFileSync(
     join(home, "memory.db"),
     Buffer.concat([Buffer.from("SQLite format 3\0"), Buffer.alloc(4080)]),
@@ -425,7 +426,7 @@ test(
   posixOnly,
   () => {
     const home = makeHome("modes-existing", ["memory.db"]);
-    const dest = join(mkdtempSync("/tmp/backup-chosen-"), "chosen");
+    const dest = join(tempDir("backup-chosen-"), "chosen");
     mkdirSync(dest, { mode: 0o755 });
     const older = join(dest, "memory_20260906_120000.zip");
     const notMirrors = join(dest, "other.zip");
@@ -448,7 +449,7 @@ test(
   posixOnly,
   () => {
     const home = makeHome("modes-snapshot", ["memory.db"]);
-    const temp = mkdtempSync(join(tmpdir(), "backup-temp-"));
+    const temp = tempDir("backup-temp-");
 
     const member = underUmask022(() => snapshotEntry(join(home, "memory.db"), temp, frozenNow));
 
@@ -460,7 +461,7 @@ test(
   "CR062: an archive is owner-only the moment it is published, before any tightening",
   posixOnly,
   () => {
-    const dir = mkdtempSync(join(tmpdir(), "backup-publish-"));
+    const dir = tempDir("backup-publish-");
     const archive = join(dir, "memory_20260907_140305.zip");
 
     underUmask022(() => publishArchive(archive, Buffer.from("archive bytes")));

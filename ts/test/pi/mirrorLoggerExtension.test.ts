@@ -14,24 +14,57 @@
 // discipline): a failing test must not print a prompt.
 
 import assert from "node:assert/strict";
-import { mkdtempSync, readFileSync, rmSync, symlinkSync } from "node:fs";
-import { delimiter, join } from "node:path";
+import { existsSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { delimiter, dirname, isAbsolute, join, resolve } from "node:path";
 import test from "node:test";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { tempDir } from "#helpers/tempDir.ts";
+import { HOOK_NODE_CANDIDATES, hookFailureFindings } from "#runtime/diagnose.ts";
+import type { RuntimeStatusReport } from "#runtime/status.ts";
 
 const EXTENSION_PATH = new URL("../../../.pi/extensions/mirror-logger.ts", import.meta.url)
   .pathname;
-const LOADED_KEY = "__mirrorLoggerRegistered";
 
 // The extension resolves where `mirror-logger.log` goes ONCE, at module load,
 // from `MEMORY_DIR`. Point it at a directory of this file's own before the
 // first import; every harness below reads only the tail written since it
 // started. `node --test` runs each file in its own process, so this env write
 // reaches nothing else.
-const LOG_DIR = mkdtempSync("/tmp/mirror-logger-ext-");
+const LOG_DIR = tempDir("mirror-logger-ext-");
 process.env.MEMORY_DIR = LOG_DIR;
 const LOG_PATH = join(LOG_DIR, "mirror-logger.log");
-test.after(() => rmSync(LOG_DIR, { recursive: true, force: true }));
+
+// The extension runs its maintenance and close work in detached front-door
+// processes, on purpose: they must survive Pi exiting. Here they would survive
+// this file, and write into LOG_DIR after it was removed (CR163). So the file
+// waits for every one its log says it started, then removes the directory.
+const DETACHED = /started in detached background process (\d+)/g;
+const DETACHED_WAIT_MS = 60_000;
+
+function isRunning(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+test.after(async () => {
+  let log = "";
+  try {
+    log = readFileSync(LOG_PATH, "utf8");
+  } catch {
+    // No log, so nothing was started.
+  }
+  const deadline = Date.now() + DETACHED_WAIT_MS;
+  for (const [, pid] of log.matchAll(DETACHED)) {
+    while (isRunning(Number(pid)) && Date.now() < deadline) {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+  }
+  rmSync(LOG_DIR, { recursive: true, force: true });
+});
 
 // The extension warns at session_start when `mirror` does not resolve on the
 // PATH (CV22.DS10.US3). Whether it does is a fact about the host, not about
@@ -39,7 +72,7 @@ test.after(() => rmSync(LOG_DIR, { recursive: true, force: true }));
 // the harness supplies its own, the way `npm link` does -- `mirror` pointing
 // at this tree's bin -- first on the PATH for every test; the one test about
 // the warning takes it away.
-const LINKED_BIN_DIR = mkdtempSync("/tmp/mirror-logger-ext-bin-");
+const LINKED_BIN_DIR = tempDir("mirror-logger-ext-bin-");
 symlinkSync(
   fileURLToPath(new URL("../../../bin/mirror.js", import.meta.url)),
   join(LINKED_BIN_DIR, "mirror"),
@@ -50,6 +83,7 @@ test.after(() => rmSync(LINKED_BIN_DIR, { recursive: true, force: true }));
 // --- the fake pi -----------------------------------------------------------
 
 interface Deferred {
+  command: string;
   args: string[];
   /** Set by the test to let the exec "exit". */
   resolve: (stdout: string) => void;
@@ -80,9 +114,10 @@ function fakePi(): FakePi {
       handlers.set(event, [...(handlers.get(event) ?? []), handler]);
       return () => {};
     },
-    exec(_command, args) {
+    exec(command, args) {
       return new Promise((resolve, reject) => {
         const deferred: Deferred = {
+          command,
           args,
           settled: false,
           resolve: (stdout) => {
@@ -134,6 +169,8 @@ interface Harness {
   fire(event: string, payload: unknown, ctx: unknown): Promise<void>;
   /** Fire and return without waiting for the handlers to settle. */
   fireNoWait(event: string, payload: unknown, ctx: unknown): Promise<void>;
+  /** Fire and return what every handler returned, in registration order (CV9.DS8.US5). */
+  fireResults(event: string, payload: unknown, ctx: unknown): Promise<unknown[]>;
   /** The argv of every exec so far, bin path stripped: `["conversation-logger", ...]`. */
   commands(): string[][];
   /** The detached spawns are not `pi.exec`; they leave a line in the log instead. */
@@ -147,13 +184,27 @@ interface Harness {
   cleanup(): void;
 }
 
-let extensionModule: { default: (pi: unknown) => void } | null = null;
+/** What `resolveNode` says of a path it probed (CR191). */
+type PathKind = "executable" | "directory" | "not executable" | "missing";
 
-async function loadExtension(): Promise<{ default: (pi: unknown) => void }> {
+interface ExtensionModule {
+  default: (pi: unknown) => void;
+  /** The absolute candidates after the PATH and the prefix, `$HOME` literal (CR191). */
+  NODE_CANDIDATES: readonly string[];
+  /** The Node the extension runs on, or null, and the MIRROR_NODE it refused (CR191). */
+  resolveNode: (
+    env: Record<string, string | undefined>,
+    treeRoot: string,
+    kindOf?: (path: string) => PathKind,
+    platform?: NodeJS.Platform,
+  ) => { node: string | null; rejected: { value: string; reason: string } | null };
+}
+
+let extensionModule: ExtensionModule | null = null;
+
+async function loadExtension(): Promise<ExtensionModule> {
   if (!extensionModule) {
-    extensionModule = (await import(pathToFileURL(EXTENSION_PATH).href)) as {
-      default: (pi: unknown) => void;
-    };
+    extensionModule = (await import(pathToFileURL(EXTENSION_PATH).href)) as ExtensionModule;
   }
   return extensionModule;
 }
@@ -161,8 +212,6 @@ async function loadExtension(): Promise<{ default: (pi: unknown) => void }> {
 async function harness(env: Record<string, string> = {}): Promise<Harness> {
   for (const [key, value] of Object.entries(env)) process.env[key] = value;
   const mod = await loadExtension();
-  // The extension registers once per process; each harness is a fresh registration.
-  (globalThis as Record<string, unknown>)[LOADED_KEY] = undefined;
   const pi = fakePi();
   mod.default(pi);
   const logMark = (() => {
@@ -188,6 +237,10 @@ async function harness(env: Record<string, string> = {}): Promise<Harness> {
       // Let the handlers reach their first await.
       return new Promise((resolve) => setImmediate(() => resolve(all)));
     },
+    fireResults: (event, payload, ctx) =>
+      Promise.all(
+        (pi.handlers.get(event) ?? []).map((handler) => Promise.resolve(handler(payload, ctx))),
+      ),
     commands: () => pi.execs.map((d) => d.args.slice(1)),
     drain: async (until) => {
       let done = false;
@@ -330,7 +383,7 @@ test("session_start without `mirror` on the PATH warns before the card, naming t
   // A PATH that still finds `node`, which the detached maintenance spawn
   // needs, and finds no `mirror`. `node`'s own directory will not do: on a
   // Homebrew host it holds the global package's `mirror` too.
-  const bareBinDir = mkdtempSync("/tmp/mirror-logger-ext-bare-");
+  const bareBinDir = tempDir("mirror-logger-ext-bare-");
   symlinkSync(process.execPath, join(bareBinDir, "node"));
   const savedPath = process.env.PATH;
   process.env.PATH = bareBinDir;
@@ -357,113 +410,737 @@ test("session_start without `mirror` on the PATH warns before the card, naming t
   }
 });
 
-// --- before_agent_start ------------------------------------------------------
+// --- CR191: Node, resolved as the hook wrappers resolve it, or said so -------------
+//
+// The extension runs every Mirror command on a `node` it must find itself: a
+// GUI-launched Pi, or one from a window older than the Node install, has no
+// `node` on its PATH. The wrappers search MIRROR_NODE, the PATH, the Node that
+// installed the package, nvm, Homebrew, and /usr/local, and record a failure in
+// hooks.log; before CR191 the extension knew MIRROR_NODE and the PATH, and a
+// failure reached no one (PR #47 had just made it non-fatal: "pi exiting due to
+// uncaughtException: Error: spawn node ENOENT", 2026-10-16).
+//
+// The absolute candidates make "nothing anywhere" a fact about the host, not the
+// test (`/opt/homebrew/bin/node` here, `/usr/local/bin/node` on CI's Ubuntu). So
+// under MEMORY_ENV=test the extension re-roots them under
+// MIRROR_TEST_NODE_SEARCH_ROOT, and each test below owns an empty root, or
+// plants in it exactly the Node it is about.
 
-test("before_agent_start returns while log-user is still running", async () => {
-  const h = await harness();
+/** The directory the extension's tree is in, as it computes it from its own path. */
+const TREE_ROOT = fileURLToPath(new URL("../../../", import.meta.url)).replace(/\/$/, "");
+/** The prefix's Node, as a global install has it: three up from the tree, into bin/. */
+const PREFIX_NODE = resolve(TREE_ROOT, "..", "..", "..", "bin", "node");
+
+/** A bare PATH and an empty search root: no Node anywhere, unless the test plants one. */
+function nowhere(extra: Record<string, string> = {}): {
+  env: Record<string, string>;
+  root: string;
+  restore: () => void;
+} {
+  const root = tempDir("mirror-logger-ext-node-root-");
+  const bare = tempDir("mirror-logger-ext-bare-");
+  const savedPath = process.env.PATH;
+  const savedNode = process.env.MIRROR_NODE;
+  process.env.PATH = bare;
+  delete process.env.MIRROR_NODE;
+  return {
+    env: { MEMORY_ENV: "test", MIRROR_TEST_NODE_SEARCH_ROOT: root, ...extra },
+    root,
+    restore: () => {
+      process.env.PATH = savedPath;
+      if (savedNode === undefined) delete process.env.MIRROR_NODE;
+      else process.env.MIRROR_NODE = savedNode;
+      rmSync(root, { recursive: true, force: true });
+      rmSync(bare, { recursive: true, force: true });
+    },
+  };
+}
+
+/** Open a session and let the detached spawn report (its `started` line is synchronous). */
+async function openSession(h: Harness, ctx: FakeCtx): Promise<void> {
+  const done = h.fireNoWait("session_start", { type: "session_start", reason: "startup" }, ctx);
+  for (const d of h.pi.execs) if (!d.settled) d.resolve(ENVELOPE);
+  await done;
+  await tick();
+}
+
+const started = (h: Harness) =>
+  h.logLines().find((l) => /started in detached background process \d+/.test(l));
+const warnings = (h: Harness) => h.logLines().filter((l) => l.includes("[WARN] MIRROR_NODE="));
+
+test("the extension's candidate list is the one runtime diagnose searches", async () => {
+  const mod = await loadExtension();
+  assert.deepEqual([...mod.NODE_CANDIDATES], [...HOOK_NODE_CANDIDATES]);
+});
+
+test("resolveNode: MIRROR_NODE, then the PATH, then the prefix, then the candidates, in order", async () => {
+  const { resolveNode } = await loadExtension();
+  const env: Record<string, string | undefined> = {
+    MIRROR_NODE: "/x/node",
+    PATH: "/p1:/p2",
+    HOME: "/h",
+  };
+  const kindOf =
+    (ok: Set<string>) =>
+    (path: string): PathKind =>
+      ok.has(path) ? "executable" : "missing";
+  const prefix = resolve("/t/lib/node_modules/mirror-mind", "..", "..", "..", "bin", "node");
+  const all = new Set([
+    "/x/node",
+    "/p1/node",
+    "/p2/node",
+    prefix,
+    "/h/.nvm/current/bin/node",
+    "/opt/homebrew/bin/node",
+    "/usr/local/bin/node",
+  ]);
+  const order: string[] = [];
+  for (const expected of [
+    "/x/node",
+    "/p1/node",
+    "/p2/node",
+    prefix,
+    "/h/.nvm/current/bin/node",
+    "/opt/homebrew/bin/node",
+    "/usr/local/bin/node",
+  ]) {
+    const found = resolveNode(env, "/t/lib/node_modules/mirror-mind", kindOf(all), "linux");
+    order.push(found.node ?? "(none)");
+    assert.equal(found.node, expected);
+    assert.equal(found.rejected, null);
+    all.delete(expected);
+    delete env.MIRROR_NODE; // its file is gone from here on: unset, not rejected
+  }
+  assert.equal(
+    resolveNode(env, "/t/lib/node_modules/mirror-mind", kindOf(all), "linux").node,
+    null,
+  );
+  assert.equal(order.length, 7);
+});
+
+test("resolveNode: a MIRROR_NODE it will not use is named with its reason, and the search goes on", async () => {
+  const { resolveNode } = await loadExtension();
+  const onPath = (path: string): PathKind => (path === "/p/node" ? "executable" : "missing");
+  for (const [value, reason, kind] of [
+    ["/gone/node", "missing", "missing"],
+    ["/opt", "a directory", "directory"],
+    ["/etc/hosts", "not executable", "not executable"],
+    ["node", "relative", "executable"],
+    ["./node", "relative", "executable"],
+  ] as const) {
+    const kindOf = (path: string) => (path === value ? kind : onPath(path));
+    const found = resolveNode({ MIRROR_NODE: value, PATH: "/p" }, "/t", kindOf, "linux");
+    assert.equal(found.node, "/p/node", value);
+    assert.deepEqual(found.rejected, { value, reason });
+  }
+  const blank = resolveNode({ MIRROR_NODE: "  ", PATH: "/p" }, "/t", onPath, "linux");
+  assert.equal(blank.node, "/p/node");
+  assert.equal(blank.rejected, null, "an empty MIRROR_NODE is unset, not rejected");
+});
+
+test("resolveNode: on Windows, MIRROR_NODE and node.exe on the PATH, nothing else", async () => {
+  const { resolveNode } = await loadExtension();
+  const seen: string[] = [];
+  const kindOf = (path: string) => {
+    seen.push(path);
+    return "missing" as const;
+  };
+  const found = resolveNode({ PATH: "C:\\a;C:\\b", HOME: "C:\\h" }, "C:\\t", kindOf, "win32");
+  assert.equal(found.node, null);
+  assert.deepEqual(seen, ["C:\\a\\node.exe", "C:\\b\\node.exe"]);
+});
+
+test("resolveNode: the search root re-roots the absolute candidates only under MEMORY_ENV=test", async () => {
+  const { resolveNode } = await loadExtension();
+  const seen: string[] = [];
+  const kindOf = (path: string) => {
+    seen.push(path);
+    return "missing" as const;
+  };
+  resolveNode(
+    { PATH: "", HOME: "/h", MEMORY_ENV: "test", MIRROR_TEST_NODE_SEARCH_ROOT: "/root" },
+    "/t",
+    kindOf,
+    "linux",
+  );
+  assert.ok(
+    seen.every((path) => path.startsWith("/root/")),
+    seen.join(" "),
+  );
+  seen.length = 0;
+  resolveNode(
+    { PATH: "", HOME: "/h", MIRROR_TEST_NODE_SEARCH_ROOT: "/root" },
+    "/t",
+    kindOf,
+    "linux",
+  );
+  assert.ok(
+    seen.every((path) => !path.startsWith("/root/")),
+    seen.join(" "),
+  );
+});
+
+test("MIRROR_NODE runs the awaited execs and the detached children, with no node on the PATH", async () => {
+  const where = nowhere({ MIRROR_NODE: process.execPath });
+  const h = await harness(where.env);
   try {
     const ctx = fakeCtx("/sessions/a.jsonl");
+    await openSession(h, ctx);
+    assert.equal(h.pi.execs[0]?.command, process.execPath, "the composite exec ran on MIRROR_NODE");
+    assert.ok(started(h), h.logLines().join("\n"));
+    assert.equal(warnings(h).length, 0);
+    assert.ok(
+      !ctx.ui.notices.some((n) => n.includes("MIRROR_NODE")),
+      "no notice: a Node was found",
+    );
+  } finally {
+    h.cleanup();
+    where.restore();
+  }
+});
+
+test("with no node on the PATH, the Node that installed the package runs the session, unconfigured", async () => {
+  const where = nowhere();
+  const planted = join(where.root, PREFIX_NODE);
+  mkdirSync(dirname(planted), { recursive: true });
+  symlinkSync(process.execPath, planted);
+  const h = await harness(where.env);
+  try {
+    const ctx = fakeCtx("/sessions/a.jsonl");
+    await openSession(h, ctx);
+    assert.equal(
+      h.pi.execs[0]?.command,
+      planted,
+      "the prefix's Node, found from the tree's own path",
+    );
+    assert.ok(started(h), h.logLines().join("\n"));
+    assert.ok(
+      !ctx.ui.notices.some((n) => n.includes("MIRROR_NODE")),
+      "no notice: a Node was found",
+    );
+  } finally {
+    h.cleanup();
+    where.restore();
+  }
+});
+
+test("a MIRROR_NODE the extension will not use is warned once, with its reason, and the PATH's node runs", async () => {
+  const notExecutable = join(tempDir("mirror-logger-ext-plain-"), "node");
+  writeFileSync(notExecutable, "not a program\n", { mode: 0o644 });
+  for (const [value, reason] of [
+    [join(LOG_DIR, "no-such-node"), "missing"],
+    [LOG_DIR, "a directory"],
+    [notExecutable, "not executable"],
+    ["node", "relative"],
+  ] as const) {
+    const savedNode = process.env.MIRROR_NODE;
+    process.env.MIRROR_NODE = value;
+    const h = await harness();
+    try {
+      await openSession(h, fakeCtx("/sessions/a.jsonl"));
+      await openSession(h, fakeCtx("/sessions/b.jsonl"));
+      const warned = warnings(h);
+      assert.equal(warned.length, 1, `one warning for ${reason}:\n${h.logLines().join("\n")}`);
+      assert.ok(warned[0]?.includes(reason), warned[0]);
+      assert.ok(warned[0]?.includes(value), warned[0]);
+      assert.ok(isAbsolute(h.pi.execs[0]?.command ?? ""), "the PATH's node, by its path");
+      assert.ok(started(h), h.logLines().join("\n"));
+    } finally {
+      h.cleanup();
+      if (savedNode === undefined) delete process.env.MIRROR_NODE;
+      else process.env.MIRROR_NODE = savedNode;
+    }
+  }
+  rmSync(dirname(notExecutable), { recursive: true, force: true });
+});
+
+test("with no Node anywhere, Pi stays up, is told once, and hooks.log tells runtime diagnose", async () => {
+  const where = nowhere();
+  const uncaught: unknown[] = [];
+  const onUncaught = (error: unknown) => uncaught.push(error);
+  process.on("uncaughtException", onUncaught);
+  const hooksLog = join(LOG_DIR, "hooks.log");
+  const hooksMark = existsSync(hooksLog) ? readFileSync(hooksLog, "utf8").length : 0;
+  const h = await harness(where.env);
+  try {
+    const ctx = fakeCtx("/sessions/a.jsonl");
+    await openSession(h, ctx);
+    assert.deepEqual(uncaught, []);
+    assert.equal(h.pi.execs.length, 0, "nothing was spawned: there is nothing to spawn it on");
+    assert.equal(started(h), undefined, "no child was started, so none is logged as started");
+    assert.ok(
+      h.logLines().some((l) => l.includes("[ERROR] session-maintenance skipped: no node")),
+      h.logLines().join("\n"),
+    );
+    const notices = ctx.ui.notices.filter((n) => n.startsWith("Mirror: `node` is not on the PATH"));
+    assert.equal(notices.length, 1, ctx.ui.notices.join("\n"));
+    assert.match(notices[0] ?? "", /MIRROR_NODE=\/path\/to\/node/);
+    assert.match(notices[0] ?? "", /Node 24 or later/);
+    assert.ok(
+      h.logLines().some((l) => l.includes(`[WARN] ${notices[0]}`)),
+      "the notice is in the log too",
+    );
+
+    const lines = readFileSync(hooksLog, "utf8").slice(hooksMark).split("\n").filter(Boolean);
+    assert.equal(lines.length, 1, lines.join("\n"));
+    assert.match(
+      lines[0] ?? "",
+      /^\d{4}-\d{2}-\d{2}T\S+ pi:session-start: node not found on PATH or in the usual places; .*Set MIRROR_NODE\.$/,
+    );
+    const findings = hookFailureFindings({
+      db_path: join(LOG_DIR, "memory.db"),
+    } as RuntimeStatusReport);
+    assert.equal(findings[0]?.code, "hook_failures_recorded", JSON.stringify(findings));
+    assert.match(findings[0]?.detail ?? "", /pi:session-start/);
+
+    // A later turn finds nothing either: logged, not announced again.
     await h.fire("before_agent_start", promptEvent("hello"), ctx);
-    assert.equal(h.pi.execs.length, 1);
-    assert.deepEqual(h.commands()[0]?.slice(0, 2), ["conversation-logger", "log-user"]);
-    assert.equal(h.pi.execs[0]?.settled, false, "the handler settled before the process did");
+    assert.equal(h.pi.execs.length, 0, "the doorman was not spawned either");
+    assert.equal(ctx.ui.notices.filter((n) => n.startsWith("Mirror: `node` is not")).length, 1);
+    assert.equal(
+      readFileSync(hooksLog, "utf8").slice(hooksMark).split("\n").filter(Boolean).length,
+      1,
+      "one hooks.log line per session",
+    );
   } finally {
+    process.off("uncaughtException", onUncaught);
     h.cleanup();
+    where.restore();
   }
 });
 
-test("two prompts in a row serialize: the second log-user starts only after the first exits", async () => {
+test("a session where everything resolves is as it was: no notice, no warning, the same execs", async () => {
   const h = await harness();
   try {
     const ctx = fakeCtx("/sessions/a.jsonl");
-    await h.fire("before_agent_start", promptEvent("one"), ctx);
-    await h.fire("before_agent_start", promptEvent("two"), ctx);
-    await tick();
-    assert.equal(h.pi.execs.length, 1, "the second is queued, not spawned");
-    h.pi.execs[0]?.resolve("");
-    await tick();
-    assert.equal(h.pi.execs.length, 2, "the second spawned after the first exited");
+    await openSession(h, ctx);
+    assert.equal(h.pi.execs.length, 1);
+    assert.ok(isAbsolute(h.pi.execs[0]?.command ?? ""), "the PATH's node, by its path");
+    assert.ok(started(h));
+    assert.equal(warnings(h).length, 0);
+    assert.ok(!ctx.ui.notices.some((n) => n.includes("MIRROR_NODE")));
   } finally {
     h.cleanup();
   }
 });
 
-test("slash-command prompts are not logged", async () => {
+// --- before_agent_start: the turn, as typed, to the core's prompt rule (CR160) ------
+
+/** The JSON a `user-prompt` or `stop` command carries after `--payload`. */
+function payloadOf(command: string[] | undefined): Record<string, unknown> {
+  const index = command?.indexOf("--payload") ?? -1;
+  assert.ok(command && index !== -1, "the command carries --payload");
+  return JSON.parse(command[index + 1] as string) as Record<string, unknown>;
+}
+
+/** The front-door commands the logger ran, without the status refreshes. */
+const loggerCommands = (h: Harness): string[][] =>
+  h.commands().filter((command) => command[0] === "conversation-logger");
+
+const inputEvent = (text: string, streamingBehavior?: "steer" | "followUp") => ({
+  type: "input",
+  text,
+  source: "interactive",
+  ...(streamingBehavior ? { streamingBehavior } : {}),
+});
+
+/** What Pi hands `before_agent_start` for `/skill:<name> args`: the skill, expanded. */
+const expandedSkill = (name: string, args = ""): string =>
+  `<skill name="${name}" location="/tree/.pi/skills/${name}/SKILL.md">\n` +
+  `References are relative to /tree/.pi/skills/${name}.\n\n# Body\n\nRun the thing.\n</skill>` +
+  (args ? `\n\n${args}` : "");
+
+/** A fresh object per fire: Pi makes a new event per dispatch, and the extension's guard is on the object. */
+const settledEvent = () => ({ type: "agent_settled", aborted: false });
+
+/** The `mirror doorman` execs so far, settled or not (CV9.DS8.US5). */
+const doormanExecs = (h: Harness): Deferred[] =>
+  h.pi.execs.filter((d) => d.args[1] === "mirror" && d.args[2] === "doorman");
+
+/** The user-prompt execs so far: the doorman's answer comes first, the logger follows. */
+const userPromptExecs = (h: Harness): Deferred[] =>
+  h.pi.execs.filter((d) => d.args[1] === "conversation-logger" && d.args[2] === "user-prompt");
+
+/**
+ * A person's prompt through `before_agent_start`. The handler asks the doorman
+ * and AWAITS it (US5) -- the turn cannot start before the block exists -- so
+ * the test answers that exec with `block` and then collects what the handlers
+ * returned. The user-prompt logger is spawned after the doorman exits, and is
+ * left running, as the handler leaves it.
+ */
+async function userPrompt(
+  h: Harness,
+  event: unknown,
+  ctx: unknown,
+  block = "",
+): Promise<{ message?: Record<string, unknown> } | undefined> {
+  const results = h.fireResults("before_agent_start", event, ctx);
+  await tick();
+  const doorman = doormanExecs(h).find((d) => !d.settled);
+  assert.ok(doorman, "the doorman was asked");
+  doorman.resolve(block);
+  const all = await results;
+  return all.find((r): r is { message?: Record<string, unknown> } => !!r && typeof r === "object");
+}
+
+test("before_agent_start asks the doorman for the turn, awaits it, then returns while user-prompt is still running", async () => {
   const h = await harness();
   try {
-    await h.fire("before_agent_start", promptEvent("/mm-help"), fakeCtx("/sessions/a.jsonl"));
+    const ctx = fakeCtx("/sessions/a.jsonl");
+    const results = h.fireResults("before_agent_start", promptEvent("hello"), ctx);
+    await tick();
+    assert.equal(h.pi.execs.length, 1, "the doorman alone: the logger waits for it");
+    assert.deepEqual(h.commands()[0], [
+      "mirror",
+      "doorman",
+      "--prompt",
+      "hello",
+      "--session-id",
+      "/sessions/a.jsonl",
+    ]);
+    let settled = false;
+    void results.then(() => (settled = true));
+    await tick();
+    assert.equal(settled, false, "the handler waits for the doorman");
+    h.pi.execs[0]?.resolve("");
+    const returned = await results;
+    assert.ok(
+      returned.every((r) => r === undefined),
+      "nothing delivered: the handler returns no message",
+    );
+    assert.equal(h.pi.execs.length, 2, "the user-prompt spawned once the doorman exited");
+    const command = h.commands()[1];
+    assert.deepEqual(command?.slice(0, 4), [
+      "conversation-logger",
+      "user-prompt",
+      "--interface",
+      "pi",
+    ]);
+    const payload = payloadOf(command);
+    assert.equal(payload.session_id, "/sessions/a.jsonl");
+    assert.equal(payload.prompt, "hello");
+    assert.equal(typeof payload.turn_id, "string");
+    assert.ok((payload.turn_id as string).length > 0, "a turn id is minted");
+    assert.equal(h.pi.execs[1]?.settled, false, "the handler settled before the logger did");
+  } finally {
+    h.cleanup();
+  }
+});
+
+test("a block from the doorman is returned as the run's mirror-context message, hidden from the TUI", async () => {
+  const h = await harness();
+  try {
+    const block =
+      "=== mirror context delivered by the runtime for this turn: full — answer as the mirror ===\nfolder\n";
+    const result = await userPrompt(
+      h,
+      promptEvent("/skill:mm-mirror hello"),
+      fakeCtx("/sessions/a.jsonl"),
+      block,
+    );
+    // `runMirror` trims stdout: the block's trailing newline is not content.
+    assert.deepEqual(result?.message, {
+      customType: "mirror-context",
+      content: block.trimEnd(),
+      display: false,
+    });
+  } finally {
+    h.cleanup();
+  }
+});
+
+test("a doorman that fails leaves the turn to start without a message, and says so in the log", async () => {
+  // `runMirror` swallows the rejection to "" (a characterization, not new code).
+  const h = await harness();
+  try {
+    const ctx = fakeCtx("/sessions/a.jsonl");
+    const results = h.fireResults("before_agent_start", promptEvent("hello"), ctx);
+    await tick();
+    h.pi.execs[0]?.reject(new Error("timeout after 30000ms"));
+    const returned = await results;
+    assert.ok(returned.every((r) => r === undefined));
+    assert.ok(h.logLines().some((l) => l.includes("[ERROR] runMirror failed [mirror doorman]")));
+    assert.equal(userPromptExecs(h).length, 1, "the prompt is still logged");
+  } finally {
+    h.cleanup();
+  }
+});
+
+test("a prompt over the argument limit reaches the doorman truncated, its opening intact", async () => {
+  const h = await harness();
+  try {
+    const long = `/skill:mm-mirror ${"x".repeat(60_000)}`;
+    const results = h.fireResults(
+      "before_agent_start",
+      promptEvent(long),
+      fakeCtx("/sessions/a.jsonl"),
+    );
+    await tick();
+    const sent = h.commands()[0]?.[3] ?? "";
+    assert.ok(sent.startsWith("/skill:mm-mirror xxx"), "the form at the start");
+    assert.ok(sent.length < long.length && sent.length <= 50_100, "truncated for ARG_MAX");
+    h.pi.execs[0]?.resolve("");
+    await results;
+  } finally {
+    h.cleanup();
+  }
+});
+
+test("two prompts in a row serialize: the second user-prompt starts only after the first exits", async () => {
+  const h = await harness();
+  try {
+    const ctx = fakeCtx("/sessions/a.jsonl");
+    await userPrompt(h, promptEvent("one"), ctx);
+    const second = h.fireResults("before_agent_start", promptEvent("two"), ctx);
+    await tick();
+    assert.equal(doormanExecs(h).length, 1, "the second doorman is queued behind the first logger");
+    assert.equal(userPromptExecs(h).length, 1);
+    userPromptExecs(h)[0]?.resolve("");
+    await tick();
+    assert.equal(
+      doormanExecs(h).length,
+      2,
+      "the second doorman spawned after the first logger exited",
+    );
+    doormanExecs(h)[1]?.resolve("");
+    await second;
+    assert.equal(userPromptExecs(h).length, 2, "the second logger after its doorman");
+    assert.notEqual(
+      payloadOf(loggerCommands(h)[0]).turn_id,
+      payloadOf(loggerCommands(h)[1]).turn_id,
+      "each prompt has its own turn",
+    );
+  } finally {
+    h.cleanup();
+  }
+});
+
+test("what reaches the core is what the person typed, not Pi's expansion of it", async () => {
+  // Picking a skill from Pi's menu sends `/skill:<name>`, and Pi hands
+  // `before_agent_start` the skill's whole body (CR159 measured it). The `input`
+  // event carried the text as typed; that is what the rule reads.
+  const h = await harness();
+  try {
+    const ctx = fakeCtx("/sessions/a.jsonl");
+    await h.fire("input", inputEvent("/skill:mm-journeys"), ctx);
+    await userPrompt(h, promptEvent(expandedSkill("mm-journeys")), ctx);
+    assert.equal(
+      h.commands()[0]?.[3],
+      "/skill:mm-journeys",
+      "the doorman reads the typed text too",
+    );
+    assert.equal(payloadOf(loggerCommands(h)[0]).prompt, "/skill:mm-journeys");
+  } finally {
+    h.cleanup();
+  }
+});
+
+test("a slash command goes to the core's rule as typed, which decides it is one", async () => {
+  // Before CR160 the extension skipped it here and still logged its reply.
+  const h = await harness();
+  try {
+    const ctx = fakeCtx("/sessions/a.jsonl");
+    await h.fire("input", inputEvent("/mm-help"), ctx);
+    await userPrompt(h, promptEvent("/mm-help"), ctx);
+    assert.equal(loggerCommands(h).length, 1);
+    assert.equal(loggerCommands(h)[0]?.[1], "user-prompt");
+    assert.equal(payloadOf(loggerCommands(h)[0]).prompt, "/mm-help");
+  } finally {
+    h.cleanup();
+  }
+});
+
+test("input queued while Pi streams is not taken for the next run", async () => {
+  const h = await harness();
+  try {
+    const ctx = fakeCtx("/sessions/a.jsonl");
+    await h.fire("input", inputEvent("/skill:mm-journeys", "followUp"), ctx);
+    await userPrompt(h, promptEvent("what changed today?"), ctx);
+    assert.equal(payloadOf(loggerCommands(h)[0]).prompt, "what changed today?");
+  } finally {
+    h.cleanup();
+  }
+});
+
+test("with nothing typed kept for a run, Pi's skill wrapper is read back to its command", async () => {
+  const h = await harness();
+  try {
+    const ctx = fakeCtx("/sessions/a.jsonl");
+    await userPrompt(h, promptEvent(expandedSkill("mm-mirror", "should I raise my price?")), ctx);
+    userPromptExecs(h)[0]?.resolve("");
+    await tick();
+    await userPrompt(h, promptEvent(expandedSkill("mm-journeys")), ctx);
+    await tick();
+    const prompts = loggerCommands(h).map((command) => payloadOf(command).prompt);
+    assert.deepEqual(prompts, ["/skill:mm-mirror should I raise my price?", "/skill:mm-journeys"]);
+    // The doorman, which reads the explicit form, got the command, not the body.
+    assert.deepEqual(
+      doormanExecs(h).map((d) => d.args[4]),
+      ["/skill:mm-mirror should I raise my price?", "/skill:mm-journeys"],
+    );
+  } finally {
+    h.cleanup();
+  }
+});
+
+test("a run a custom message started sends nothing, and asks no doorman", async () => {
+  const h = await harness();
+  try {
+    await h.fire(
+      "before_agent_start",
+      { ...promptEvent(""), messageType: "custom", prompt: undefined },
+      fakeCtx("/sessions/a.jsonl"),
+    );
     assert.equal(h.pi.execs.length, 0);
   } finally {
     h.cleanup();
   }
 });
 
-// --- agent_end ---------------------------------------------------------------
+test("a session without a file asks no doorman", async () => {
+  const h = await harness();
+  try {
+    await h.fire("before_agent_start", promptEvent("hello"), fakeCtx(undefined));
+    assert.equal(h.pi.execs.length, 0);
+  } finally {
+    h.cleanup();
+  }
+});
 
-test("agent_end spawns log-assistant only after the pending log-user has exited", async () => {
+// --- the session named for the model's own commands (CV9.DS8.US5, TS1's P2) ---------
+
+test("session_start names the session in the environment, a later one re-names it, and shutdown clears it", async () => {
+  const h = await harness();
+  const saved = process.env.MIRROR_SESSION_ID;
+  try {
+    delete process.env.MIRROR_SESSION_ID;
+    await h.drain(
+      h.fireNoWait(
+        "session_start",
+        { type: "session_start", reason: "startup" },
+        fakeCtx("/sessions/a.jsonl"),
+      ),
+    );
+    assert.equal(process.env.MIRROR_SESSION_ID, "/sessions/a.jsonl");
+    await h.drain(
+      h.fireNoWait(
+        "session_start",
+        { type: "session_start", reason: "new" },
+        fakeCtx("/sessions/b.jsonl"),
+      ),
+    );
+    assert.equal(process.env.MIRROR_SESSION_ID, "/sessions/b.jsonl");
+    await h.drain(
+      h.fireNoWait("session_shutdown", { type: "session_shutdown" }, fakeCtx("/sessions/b.jsonl")),
+    );
+    assert.equal(process.env.MIRROR_SESSION_ID, undefined, "nothing inherits a stale file");
+  } finally {
+    if (saved === undefined) delete process.env.MIRROR_SESSION_ID;
+    else process.env.MIRROR_SESSION_ID = saved;
+    h.cleanup();
+  }
+});
+
+// --- agent_end and agent_settled: one reply per prompt (CR160) -----------------------
+
+test("agent_settled sends one stop for the prompt, with every run's text, under its turn", async () => {
   const h = await harness();
   try {
     const ctx = fakeCtx("/sessions/a.jsonl");
-    await h.fire("before_agent_start", promptEvent("hello"), ctx);
+    await userPrompt(h, promptEvent("hello"), ctx);
+    const turnId = payloadOf(loggerCommands(h)[0]).turn_id as string;
+    userPromptExecs(h)[0]?.resolve("");
+    await h.drain(h.fireNoWait("agent_end", agentEndEvent("first run"), ctx));
+    await h.drain(h.fireNoWait("agent_end", agentEndEvent("second run"), ctx));
+    assert.ok(!h.logLines().some((l) => l.includes("stop started")), "nothing sent per run");
+    await h.fire("agent_settled", settledEvent(), ctx);
+    const started = h.logLines().filter((l) => l.includes("stop started in detached background"));
+    assert.equal(started.length, 1, "one stop for the prompt");
+    assert.ok(
+      h.logLines().some((l) => l.includes(`stop (turn ${turnId}): 2 block(s)`)),
+      "the reply carries both runs, under the prompt's turn",
+    );
+  } finally {
+    h.cleanup();
+  }
+});
+
+test("agent_settled spawns stop only after the pending user-prompt has exited", async () => {
+  const h = await harness();
+  try {
+    const ctx = fakeCtx("/sessions/a.jsonl");
+    await userPrompt(h, promptEvent("hello"), ctx);
     const end = h.fireNoWait("agent_end", agentEndEvent("answer"), ctx);
+    const settled = h.fireNoWait("agent_settled", settledEvent(), ctx);
     await tick();
     assert.ok(
-      !h.logLines().some((l) => l.includes("log-assistant started")),
-      "not yet: log-user still running",
+      !h.logLines().some((l) => l.includes("stop started")),
+      "not yet: user-prompt still running",
     );
-    h.pi.execs[0]?.resolve("");
-    await h.drain(end);
-    assert.ok(h.logLines().some((l) => l.includes("log-assistant started in detached background")));
+    userPromptExecs(h)[0]?.resolve("");
+    await h.drain(Promise.all([end, settled]).then(() => undefined));
+    assert.ok(h.logLines().some((l) => l.includes("stop started in detached background")));
   } finally {
     h.cleanup();
   }
 });
 
-test("agent_end still spawns log-assistant when log-user failed", async () => {
-  const h = await harness();
-  try {
-    const ctx = fakeCtx("/sessions/a.jsonl");
-    await h.fire("before_agent_start", promptEvent("hello"), ctx);
-    const end = h.fireNoWait("agent_end", agentEndEvent("answer"), ctx);
-    h.pi.execs[0]?.reject(new Error("exit 1"));
-    await h.drain(end);
-    assert.ok(h.logLines().some((l) => l.includes("log-assistant started in detached background")));
-  } finally {
-    h.cleanup();
+test("agent_settled still sends stop when user-prompt failed or timed out", async () => {
+  for (const failure of ["exit 1", "timeout after 30000ms"]) {
+    const h = await harness();
+    try {
+      const ctx = fakeCtx("/sessions/a.jsonl");
+      await userPrompt(h, promptEvent("hello"), ctx);
+      const end = h.fireNoWait("agent_end", agentEndEvent("answer"), ctx);
+      const settled = h.fireNoWait("agent_settled", settledEvent(), ctx);
+      userPromptExecs(h)[0]?.reject(new Error(failure));
+      await h.drain(Promise.all([end, settled]).then(() => undefined));
+      assert.ok(h.logLines().some((l) => l.includes("stop started in detached background")));
+    } finally {
+      h.cleanup();
+    }
   }
 });
 
-test("agent_end after a timed-out log-user spawns log-assistant after it, never before", async () => {
+test("a prompt with no assistant text sends no stop, and the chain stays intact", async () => {
   const h = await harness();
   try {
     const ctx = fakeCtx("/sessions/a.jsonl");
-    await h.fire("before_agent_start", promptEvent("hello"), ctx);
-    const end = h.fireNoWait("agent_end", agentEndEvent("answer"), ctx);
-    await tick();
-    assert.ok(!h.logLines().some((l) => l.includes("log-assistant started")));
-    // `pi.exec` rejects on timeout; the chain settles and the assistant follows.
-    h.pi.execs[0]?.reject(new Error("timeout after 30000ms"));
-    await h.drain(end);
-    assert.ok(h.logLines().some((l) => l.includes("log-assistant started")));
-  } finally {
-    h.cleanup();
-  }
-});
-
-test("agent_end with no assistant text returns early and leaves the chain intact", async () => {
-  const h = await harness();
-  try {
-    const ctx = fakeCtx("/sessions/a.jsonl");
-    await h.fire("before_agent_start", promptEvent("hello"), ctx);
+    await userPrompt(h, promptEvent("hello"), ctx);
     await h.fire("agent_end", { type: "agent_end", messages: [] }, ctx);
-    assert.equal(h.pi.execs[0]?.settled, false, "the aborted turn did not wait on the chain");
-    // The next event still honors the chain.
-    const end = h.fireNoWait("agent_end", agentEndEvent("later"), ctx);
-    await tick();
-    assert.ok(!h.logLines().some((l) => l.includes("log-assistant started")));
-    h.pi.execs[0]?.resolve("");
-    await h.drain(end);
-    assert.ok(h.logLines().some((l) => l.includes("log-assistant started")));
+    await h.fire("agent_settled", { type: "agent_settled", aborted: true }, ctx);
+    assert.ok(!h.logLines().some((l) => l.includes("stop started")));
+    assert.equal(
+      userPromptExecs(h)[0]?.settled,
+      false,
+      "the aborted prompt did not wait on the chain",
+    );
+  } finally {
+    h.cleanup();
+  }
+});
+
+test("a Pi without agent_settled: the reply goes out before the next prompt, on the chain", async () => {
+  // `agent_settled` arrived in Pi 0.80.4; before it, nothing marks a prompt's end
+  // but the next prompt, or the session's.
+  const h = await harness();
+  try {
+    const ctx = fakeCtx("/sessions/a.jsonl");
+    await userPrompt(h, promptEvent("one"), ctx);
+    const firstTurn = payloadOf(loggerCommands(h)[0]).turn_id;
+    userPromptExecs(h)[0]?.resolve("");
+    await h.drain(h.fireNoWait("agent_end", agentEndEvent("answer one"), ctx));
+    await h.drain(h.fireNoWait("before_agent_start", promptEvent("two"), ctx));
+    await h.drain(tick());
+    const commands = loggerCommands(h);
+    assert.deepEqual(
+      commands.map((command) => command[1]),
+      ["user-prompt", "stop", "user-prompt"],
+      "the reply between its prompt and the next",
+    );
+    assert.equal(payloadOf(commands[1]).turn_id, firstTurn);
+    assert.equal(payloadOf(commands[1]).last_assistant_message, "answer one");
+    assert.equal(payloadOf(commands[2]).prompt, "two");
   } finally {
     h.cleanup();
   }
@@ -471,27 +1148,44 @@ test("agent_end with no assistant text returns early and leaves the chain intact
 
 // --- session_shutdown --------------------------------------------------------
 
-test("session_shutdown runs session-end-pi only after the pending log-user has exited", async () => {
+test("session_shutdown runs session-end-pi only after the pending user-prompt has exited", async () => {
   const h = await harness();
   try {
     const ctx = fakeCtx("/sessions/a.jsonl");
-    await h.fire("before_agent_start", promptEvent("hello"), ctx);
+    await userPrompt(h, promptEvent("hello"), ctx);
     const shutdown = h.fireNoWait("session_shutdown", { type: "session_shutdown" }, ctx);
     await tick();
-    assert.equal(h.pi.execs.length, 1, "session-end-pi not spawned while log-user runs");
-    h.pi.execs[0]?.resolve("");
+    assert.equal(h.pi.execs.length, 2, "session-end-pi not spawned while user-prompt runs");
+    userPromptExecs(h)[0]?.resolve("");
     await tick();
-    assert.equal(h.pi.execs.length, 2);
-    assert.deepEqual(h.commands()[1], [
+    assert.equal(h.pi.execs.length, 3);
+    assert.deepEqual(h.commands()[2], [
       "conversation-logger",
       "session-end-pi",
       "/sessions/a.jsonl",
     ]);
-    h.pi.execs[1]?.resolve("");
-    await tick();
-    assert.deepEqual(h.commands()[2], ["backup", "--silent"]);
     h.pi.execs[2]?.resolve("");
+    await tick();
+    assert.deepEqual(h.commands()[3], ["backup", "--silent"]);
+    h.pi.execs[3]?.resolve("");
     await shutdown;
+  } finally {
+    h.cleanup();
+  }
+});
+
+test("session_shutdown sends a reply still unsent before it closes the conversation", async () => {
+  const h = await harness();
+  try {
+    const ctx = fakeCtx("/sessions/a.jsonl");
+    await userPrompt(h, promptEvent("hello"), ctx);
+    userPromptExecs(h)[0]?.resolve("");
+    await h.drain(h.fireNoWait("agent_end", agentEndEvent("answer"), ctx));
+    await h.drain(h.fireNoWait("session_shutdown", { type: "session_shutdown" }, ctx));
+    assert.deepEqual(
+      loggerCommands(h).map((command) => command[1]),
+      ["user-prompt", "stop", "session-end-pi"],
+    );
   } finally {
     h.cleanup();
   }
@@ -502,22 +1196,26 @@ test("a session switch does not gate the new session on the old one's chain", as
   try {
     const ctxA = fakeCtx("/sessions/a.jsonl");
     const ctxB = fakeCtx("/sessions/b.jsonl");
-    await h.fire("before_agent_start", promptEvent("on A"), ctxA);
+    await userPrompt(h, promptEvent("on A"), ctxA);
     const start = h.fireNoWait(
       "session_start",
       { type: "session_start", reason: "new", previousSessionFile: "/sessions/a.jsonl" },
       ctxB,
     );
-    assert.equal(h.pi.execs.length, 2, "B's session open spawned while A's log-user still runs");
-    h.pi.execs[1]?.resolve(ENVELOPE);
+    assert.equal(h.pi.execs.length, 3, "B's session open spawned while A's user-prompt still runs");
+    h.pi.execs[2]?.resolve(ENVELOPE);
     await start;
-    const end = h.fireNoWait("agent_end", agentEndEvent("on B"), ctxB);
+    await userPrompt(h, promptEvent("on B"), ctxB);
+    assert.equal(h.pi.execs.length, 5, "B's doorman and user-prompt did not wait for A's");
+    userPromptExecs(h)[1]?.resolve("");
+    const end = h.fireNoWait("agent_end", agentEndEvent("answer on B"), ctxB);
     await tick();
+    await h.fire("agent_settled", settledEvent(), ctxB);
     assert.ok(
-      h.logLines().some((l) => l.includes("log-assistant started")),
-      "B's assistant did not wait for A",
+      h.logLines().some((l) => l.includes("stop started")),
+      "B's reply did not wait for A",
     );
-    assert.equal(h.pi.execs[0]?.settled, false, "A's write is still in flight, untouched");
+    assert.equal(userPromptExecs(h)[0]?.settled, false, "A's write is still in flight, untouched");
     await h.drain(end);
   } finally {
     h.cleanup();
@@ -530,10 +1228,13 @@ test("MIRROR_TEST_FRONT_DOOR_DELAY_MS delays the exec only under MEMORY_ENV=test
   const h = await harness({ MEMORY_ENV: "test", MIRROR_TEST_FRONT_DOOR_DELAY_MS: "40" });
   try {
     const ctx = fakeCtx("/sessions/a.jsonl");
-    await h.fire("before_agent_start", promptEvent("hello"), ctx);
+    const results = h.fireResults("before_agent_start", promptEvent("hello"), ctx);
+    await tick();
     assert.equal(h.pi.execs.length, 0, "not spawned yet: the knob is sleeping");
     await new Promise((resolve) => setTimeout(resolve, 60));
     assert.equal(h.pi.execs.length, 1, "spawned after the delay");
+    h.pi.execs[0]?.resolve("");
+    await results;
   } finally {
     h.cleanup();
   }
@@ -543,9 +1244,89 @@ test("the knob is inert outside MEMORY_ENV=test", async () => {
   const h = await harness({ MEMORY_ENV: "", MIRROR_TEST_FRONT_DOOR_DELAY_MS: "5000" });
   try {
     const ctx = fakeCtx("/sessions/a.jsonl");
-    await h.fire("before_agent_start", promptEvent("hello"), ctx);
+    const results = h.fireResults("before_agent_start", promptEvent("hello"), ctx);
     await tick();
     assert.equal(h.pi.execs.length, 1, "spawned at once");
+    h.pi.execs[0]?.resolve("");
+    await results;
+  } finally {
+    h.cleanup();
+  }
+});
+
+// --- one extension, reached twice (CV22.DS10.US3 plateau 2; CV9.DS8.US5) ------------
+//
+// In a checkout Pi reaches this file twice: the project's `.pi/extensions/`
+// and the package installed from `npm root -g`, which `npm link` makes the
+// same file under two paths. Pi 1.4.0 dedupes the two itself and keeps ONE of
+// them -- the one it loaded second -- so a process-scoped "register once"
+// guard made the kept instance a no-op and the checkout's Pi logged nothing
+// (found by US5's live walk). An older Pi kept both and would log every turn
+// twice. The guard is on the EVENT, not on the registration: every instance
+// registers, and the first to see an event object handles it.
+
+test("two registrations handle each event once, whichever of them Pi keeps", async () => {
+  const mod = await loadExtension();
+  const first = fakePi();
+  const second = fakePi();
+  mod.default(first);
+  mod.default(second);
+  const fire = (pi: FakePi, event: string, payload: unknown, ctx: unknown) =>
+    Promise.all((pi.handlers.get(event) ?? []).map((h) => Promise.resolve(h(payload, ctx))));
+
+  // Pi keeps both: the same event object reaches both, one process spawns.
+  const ctx = fakeCtx("/sessions/a.jsonl");
+  const start = { type: "session_start", reason: "startup" };
+  const both = Promise.all([
+    fire(first, "session_start", start, ctx),
+    fire(second, "session_start", start, ctx),
+  ]);
+  await tick();
+  assert.equal(first.execs.length + second.execs.length, 1, "one session open, not two");
+  for (const d of [...first.execs, ...second.execs]) d.resolve(ENVELOPE);
+  await both;
+
+  // Pi kept only the second: it still handles.
+  const prompt = promptEvent("hello");
+  const run = fire(second, "before_agent_start", prompt, ctx);
+  await tick();
+  assert.equal(
+    second.execs.filter((d) => d.args[1] === "mirror").length,
+    1,
+    "the doorman was asked",
+  );
+  for (const d of second.execs) if (!d.settled) d.resolve("");
+  await run;
+});
+
+// --- session_compact: the folder left the transcript (CV9.DS8.US5) ----------------
+
+test("session_compact tells the doorman to forget, on the chain, so the next turn is full", async () => {
+  const h = await harness();
+  try {
+    const ctx = fakeCtx("/sessions/a.jsonl");
+    const compact = h.fireNoWait(
+      "session_compact",
+      { type: "session_compact", reason: "threshold", fromExtension: false, willRetry: false },
+      ctx,
+    );
+    await tick();
+    assert.deepEqual(h.commands()[0], [
+      "mirror",
+      "doorman",
+      "--forget",
+      "--session-id",
+      "/sessions/a.jsonl",
+    ]);
+    h.pi.execs[0]?.resolve("");
+    await compact;
+    // Without a session file there is nothing to mark.
+    await h.fire(
+      "session_compact",
+      { type: "session_compact", reason: "manual" },
+      fakeCtx(undefined),
+    );
+    assert.equal(h.pi.execs.length, 1);
   } finally {
     h.cleanup();
   }

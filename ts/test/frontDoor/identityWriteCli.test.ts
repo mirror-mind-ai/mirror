@@ -48,6 +48,165 @@ test("front door `identity set` writes to the live DB via TS (create, then updat
   }
 });
 
+test("a byte-order mark at the head of stdin is not stored as content", () => {
+  // PowerShell writes one at the head of what it pipes or redirects; stored, it
+  // became the first character of an identity entry.
+  const { dbPath, cleanup } = identityDbCopy();
+  try {
+    const result = spawnFrontDoor(
+      ["identity", "set", "ego", "probe", "--db-path", dbPath],
+      {},
+      "\uFEFF# From PowerShell\n",
+    );
+    assert.equal(result.status, 0, result.stderr);
+    const db = openDatabaseReadOnly(dbPath);
+    const row = db
+      .prepare("SELECT content FROM identity WHERE layer = ? AND key = ?")
+      .get("ego", "probe") as { content: string } | undefined;
+    db.close();
+    assert.equal(row?.content, "# From PowerShell\n");
+
+    // A stdin that is nothing but the mark is empty content, and refused as such.
+    const bare = spawnFrontDoor(
+      ["identity", "set", "ego", "bare", "--db-path", dbPath],
+      {},
+      "\uFEFF",
+    );
+    assert.notEqual(bare.status, 0, "a bare BOM is not content");
+    const again = openDatabaseReadOnly(dbPath);
+    const none = again
+      .prepare("SELECT 1 FROM identity WHERE layer = ? AND key = ?")
+      .get("ego", "bare");
+    again.close();
+    assert.equal(none, undefined, "nothing was written");
+  } finally {
+    cleanup();
+  }
+});
+
+// CR194: what PowerShell 5.1 and an editor on Windows put on stdin or in a file.
+const ACCENTED = "# Perfil\n\nNão há transição sem ação.\n";
+
+function readIdentity(dbPath: string, key: string): string | undefined {
+  const db = openDatabaseReadOnly(dbPath);
+  const row = db
+    .prepare("SELECT content FROM identity WHERE layer = ? AND key = ?")
+    .get("ego", key) as { content: string } | undefined;
+  db.close();
+  return row?.content;
+}
+
+test("UTF-16LE with a mark on stdin is stored as the text, accents intact, no mark", () => {
+  const { dbPath, cleanup } = identityDbCopy();
+  try {
+    const bytes = Buffer.concat([Buffer.from([0xff, 0xfe]), Buffer.from(ACCENTED, "utf16le")]);
+    const result = spawnFrontDoor(
+      ["identity", "set", "ego", "utf16", "--db-path", dbPath],
+      {},
+      bytes,
+    );
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(readIdentity(dbPath, "utf16"), ACCENTED);
+  } finally {
+    cleanup();
+  }
+});
+
+test("`identity set --file` reads the file as bytes, so the shell's pipe encoding never touches it", () => {
+  const { dbPath, cleanup } = identityDbCopy();
+  const dir = mkdtempSync(join(tmpdir(), "mirror-core-identity-file-"));
+  try {
+    const utf8 = join(dir, "perfil.md");
+    writeFileSync(utf8, ACCENTED, "utf8");
+    let result = spawnFrontDoor([
+      "identity",
+      "set",
+      "ego",
+      "from-file",
+      "--file",
+      utf8,
+      "--db-path",
+      dbPath,
+    ]);
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(readIdentity(dbPath, "from-file"), ACCENTED);
+
+    // The same file as PowerShell 5.1's `>` would have written it.
+    const utf16 = join(dir, "perfil-ps.md");
+    writeFileSync(
+      utf16,
+      Buffer.concat([Buffer.from([0xff, 0xfe]), Buffer.from(ACCENTED, "utf16le")]),
+    );
+    result = spawnFrontDoor([
+      "identity",
+      "set",
+      "ego",
+      "from-ps-file",
+      "--file",
+      utf16,
+      "--db-path",
+      dbPath,
+    ]);
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(readIdentity(dbPath, "from-ps-file"), ACCENTED);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+    cleanup();
+  }
+});
+
+test("`identity set --file` refuses a missing file, a directory, and --content beside it, writing nothing", () => {
+  const { dbPath, cleanup } = identityDbCopy();
+  const dir = mkdtempSync(join(tmpdir(), "mirror-core-identity-file-"));
+  try {
+    const missing = join(dir, "no-such.md");
+    let result = spawnFrontDoor([
+      "identity",
+      "set",
+      "ego",
+      "r1",
+      "--file",
+      missing,
+      "--db-path",
+      dbPath,
+    ]);
+    assert.equal(result.status, 1);
+    assert.match(
+      result.stderr,
+      new RegExp(`cannot read ${missing.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`),
+    );
+    assert.doesNotMatch(result.stderr, /ENOENT|errno/);
+
+    result = spawnFrontDoor(["identity", "set", "ego", "r2", "--file", dir, "--db-path", dbPath]);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /cannot read /);
+    assert.doesNotMatch(result.stderr, /EISDIR|errno/);
+
+    const file = join(dir, "x.md");
+    writeFileSync(file, "x\n");
+    result = spawnFrontDoor([
+      "identity",
+      "set",
+      "ego",
+      "r3",
+      "--file",
+      file,
+      "--content",
+      "y",
+      "--db-path",
+      dbPath,
+    ]);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /--file and --content/);
+
+    for (const key of ["r1", "r2", "r3"])
+      assert.equal(readIdentity(dbPath, key), undefined, `${key} was not written`);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+    cleanup();
+  }
+});
+
 test("front door rejects an empty `identity set` content without writing", () => {
   const { dbPath, cleanup } = identityDbCopy();
   try {

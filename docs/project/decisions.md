@@ -11,6 +11,141 @@ resolved.
 
 ## Completed Decisions
 
+### A host migrates a home only behind a verified, retained backup
+
+**Date:** 2026-10-28
+**Reference:** [CV24.DS5](roadmap/cv24-embeddable-core-for-mirror-desktop/cv24-ds5-migrate-on-request/index.md)
+**Participants:** Alisson Vale (Navigator, from the `mirror-desktop` Journey)
+
+`migrateHome` is the call Mirror Desktop's last 0.3 phase will run against
+the Navigator's production home. The backup `ensureMigratedOnOpen` takes has
+two gaps that matter there:
+
+- **It is overwritten.** It always writes one fixed name,
+  `frontdoor-pre-migration-backup.db`, and removes the previous file first, so
+  the next migration of the same home destroys the last pre-image.
+- **It is never verified.** Nobody checks it, records its hash, or prepares
+  it to restore. `prepareArchiveSnapshot` (CR061) does exactly that for
+  `runtime backup --verify`, but the migration path never calls it.
+
+**`migrateHome` takes its own backup, and nothing migrates until the backup
+is verified.** Under the bootstrap lock, it:
+
+1. snapshots the database to
+   `backups/pre-migration-<last applied id>-<UTC stamp>-<random>.db`, mode
+   0600, a name never reused;
+2. runs `prepareArchiveSnapshot`, which converts it to WAL and runs
+   `quick_check`, and requires `ok`;
+3. records its SHA-256 and size;
+4. requires the migration report of the backup to name the same pending list
+   as the live database, so the backup is a true pre-image.
+
+Only then does it migrate. Any failure removes the backup file and changes
+nothing in the home.
+
+**The core never deletes these backups.** They are kept until the person or
+the host removes them.
+
+**`ensureMigratedOnOpen` and the CLI's backup are unchanged.** Giving the
+front door the same custody is a separate decision.
+
+### A host creates a home beside its target and renames it into place, writing nothing outside it
+
+**Date:** 2026-10-28
+**Reference:** [CV24.DS4](roadmap/cv24-embeddable-core-for-mirror-desktop/cv24-ds4-create-a-home/index.md)
+**Participants:** Alisson Vale (Navigator, from the `mirror-desktop` Journey)
+
+Mirror Desktop 0.3's first-run assistant creates a person's first home through
+`createHome`. That home has to be seeded, and seeding writes the `identity`
+table, which neither narrowed host handle may write. The CLI's `seed` writes
+through `openLiveWriteDatabase`. On a database created a moment earlier, that
+snapshot is an undo of nothing, and the CLI has no all-or-nothing property:
+an interrupted `init` plus `seed` leaves half a home that the next `init`
+refuses.
+
+**`createHome` builds the whole home in a staging directory beside the
+target.** The directory is named `.<name>.creating-<pid>-<random>` and created
+0700. In it, `createHome`:
+
+1. copies the templates;
+2. bootstraps the database through `bootstrapDatabase`;
+3. seeds it through the bootstrap handle;
+4. confirms that the migration report reads `current` and that the seed
+   recorded no errors.
+
+Only then does it rename the directory to the target. On any failure it
+removes the staging directory. Until the rename, no other process knows the
+path, so there is no prior state to protect. This is the reason
+`openDatabaseForBootstrap` may write a file it is creating.
+
+**It writes nothing outside the target.** In particular, it never writes
+`~/.config/mirror/env`. The CLI's `init` writes `MIRROR_USER` there when no
+user is configured, and every `mirror` and `mirror-hook` process on the
+machine reads that file, including the runtime hooks of Pi, Claude Code and
+Codex. A host creating its own home must not redirect the person's terminal
+Mirror. The host keeps the path itself and passes it explicitly, as every
+CV24 call requires.
+
+**It grants no write to an existing home.** Anything at the target, even an
+empty directory, is refused. Re-seeding an existing home (`seed --force`)
+overwrites a person's edited identity, so it is a separate decision.
+
+One race is accepted and named. On POSIX, `rename` replaces an *empty*
+directory created at the target between the final check and the rename. The
+window is one system call, and what it could replace is empty.
+
+### A host's Conversation writes are narrowed, not snapshotted
+
+**Date:** 2026-10-28
+**Reference:** [CV24.DS2](roadmap/cv24-embeddable-core-for-mirror-desktop/cv24-ds2-conversations-as-calls/index.md)
+**Participants:** Alisson Vale (Navigator, from the `mirror-desktop` Journey)
+
+Mirror Desktop 0.3 hosts this core in a long-lived process and records every
+turn of every Conversation through it. The core's live-write seam,
+`openLiveWriteDatabase`, takes a `VACUUM INTO` snapshot before each write.
+That shape was built for a CLI invocation, which snapshots, writes and exits.
+On the Navigator's 108 MB home the snapshot measured 920, 900 and 913 ms, on a
+copy made through SQLite's backup API in a scratch directory. A host that
+writes on every turn would pay about 0.9 s and a full-database write each
+time, and each snapshot would overwrite the front door's last-write undo with
+a chat message.
+
+[The MCP server's write](#the-mcp-servers-one-write-is-narrowed-instead-of-backup-gated)
+met the same mismatch and was narrowed instead of gated, and it said that any
+further narrowed writer is a new decision. This is that decision.
+
+**`openDatabaseForConversationWrites` is the second narrowed writer.** It
+returns a handle whose `prepare` accepts only:
+
+- a single `SELECT`;
+- `INSERT INTO` `conversations`, `messages` or `runtime_sessions` with a
+  `VALUES` list;
+- `UPDATE conversations SET` any of `title`, `journey`, `interface` and
+  `metadata`, `WHERE id = ?`.
+
+Its `exec` accepts only `BEGIN IMMEDIATE`, `COMMIT` and `ROLLBACK`.
+Everything else is refused before it reaches the driver: any `DELETE`, any
+DDL, an update to any other column, a write to any other table, `INSERT OR
+REPLACE`, and multi-statement text.
+
+Unlike the MCP handle, it is shaped as a `WritableDatabase`, because the
+ported Conversation functions it serves (`getOrCreateSessionConversation`,
+`appendConversationMessages`, `writeTitle`, `updateConversation`) take one
+and run their own transactions. The narrowing is enforced in the handle at
+run time, not by its type, so it holds wherever the handle travels.
+
+**Two further conditions:**
+
+- **The handle opens only a `current` database.** The library's calls check
+  the migration report (CV24.DS1) first, and refuse anything else without
+  opening it for writing. They never migrate.
+- **Whole-home protection is unchanged.** `runtime backup` and the migration
+  snapshot remain the ways to recover a home. What this decision gives up is
+  the per-write undo, for writes that cannot destroy anything.
+
+This handle is for Conversation writes only. Wider host writes, such as
+deletion, Journey administration or identity, are each a new decision.
+
 ### An obeyed injection probe fails the release gate at any score, and is never waived by re-running the suite
 
 **Date:** 2026-09-22 · **Context:** CV22.DS10.TS3 moved the model-behavior
@@ -2580,6 +2715,11 @@ decided together at the CV22 release gate as a release precondition. The options
 to keep the whole-history import and document it, to ask once before importing, or to
 import only what is newer than the home.
 
+**Superseded 2026-10-21** by [Session maintenance imports no Pi session; a home holds
+the Pi conversations it logged live](#session-maintenance-imports-no-pi-session-a-home-holds-the-pi-conversations-it-logged-live):
+maintenance no longer imports Pi sessions at all, so the floor below has nothing left
+to limit.
+
 **The decision: session maintenance backfills a Pi session into a home only when the
 session is newer than the home.** A home's age is the first `applied_at` in its
 `_migrations` ledger, which a fresh database writes at its first open and every
@@ -3323,6 +3463,46 @@ invisible to its model. Asked for a skill by name that was not offered, Codex ra
 over the scratch directory; only agy stopped, because headless mode denied the
 command. An agent will go looking for an extension it was told exists, and Codex in
 its default sandbox found it.
+
+### Session maintenance imports no Pi session; a home holds the Pi conversations it logged live
+
+**Date:** 2026-10-21 · **Context:** [CR153](refinement/rs010-cv22-oracle-and-port-hygiene/cr153-a-home-s-pi-backfill-imports-another-home-s-sessions.md),
+captured from CV21.DS5.US3's live route, measured on the maintainer's two homes before
+planning, and reviewed through six lenses before approval. It supersedes the mechanism
+of [A new Mirror home imports only the Pi sessions that are newer than itself](#a-new-mirror-home-imports-only-the-pi-sessions-that-are-newer-than-itself).
+
+**The decision: session maintenance no longer imports Pi sessions. A home's Pi
+conversations are the ones the Pi extension logged into it, as they happened.** Nothing
+in Mirror reads Pi's session files, and `PI_SESSIONS_DIR` is inert.
+
+**Why.** The backfill decided ownership from an absence: any Pi session file on the
+machine that this home's `runtime_sessions` did not track was this home's to import.
+That held while a machine had one home. With two, each imported the other's sessions —
+on the maintainer's machine, 543 conversations since July, both ways, each titled again
+through the provider — and both imported the sessions of validation routes' scratch
+homes and of Pi run without Mirror. The gap the backfill existed to fill, a session the
+home's own extension saw but never logged a turn of, came up once in three months there.
+
+**Not chosen.** A claim recorded at session start, importing only claimed sessions with
+no logged turn, would have kept that one recovery for a table, a migration, and a claim
+lifecycle. A mark written into each Pi session file, importing only the files marked
+with the home's own, would have left every home reading every other home's files at
+every start. Against importing nothing, neither earned its cost.
+
+**What it keeps.** Live logging, unchanged. A person who wants a Pi session Mirror did
+not log could have it imported on request: a feature with its own story, not something
+maintenance does in the background.
+
+**What it does not do.** It removes no conversation already imported
+([CR154](refinement/rs010-cv22-oracle-and-port-hygiene/cr154-a-home-cannot-list-or-remove-the-pi-conversations-it-imported.md)
+is the follow-up), and it protects a home only from installs that carry it: a home on
+an older version keeps importing its neighbours' sessions until it is updated.
+
+**What it replaces.** The 2026-10-10 floor — a home imports only the Pi sessions newer
+than its birth, read from the `_migrations` ledger — goes with the import it limited.
+Nothing reads the ledger's first `applied_at` now, and a copied database carries its
+source's ledger anyway
+([CR156](refinement/rs010-cv22-oracle-and-port-hygiene/cr156-a-home-made-by-copying-another-s-database-is-the-same-home-twice.md)).
 
 ## Open Discussions
 
@@ -4703,3 +4883,355 @@ not carried: `carriedForward` carries the cadence, which belongs to the journey,
 nothing else. A field that belongs to an item names the item it belongs to, and Pull
 keeps it only for that item. `flowUnitCarry.test.ts` grades Pull at every case and
 walks both preauthorized Plan routes on the story after a Delivery Story.
+
+### The contract's parity matrix is the single authority for runtime parity
+
+**Date:** 2026-10-24 · **Context:** [CV21.DS11.TS1](roadmap/cv21-runtime-expansion-ii/cv21-ds11-contract-docs-refresh/cv21-ds11-ts1-the-parity-matrix-is-written-once-with-version-binary-and-date/index.md).
+CV21's per-runtime Delivery Stories each measured their own runtime and left the
+cross-runtime view to DS11. By then parity was claimed in five places that disagreed:
+the [2026-10-13 decision](#cv21-converges-on-the-canonical-plugin-with-a-native-layer-for-antigravity-and-shared-hooks-that-know-their-runtime)
+held the only matrix, a snapshot with Codex and Antigravity at "L4 reachable"; the
+architecture counted four harnesses and had no Grok Build row; README and Getting
+Started named five runtimes in prose; the contract had a reference implementation per
+runtime and no matrix. Nothing failed while they drifted.
+
+**The decision.** The runtime interface contract's
+[Parity Matrix](../product/specs/runtime-interface/index.md#parity-matrix) is the single
+authority for what each runtime gets from Mirror and at what level.
+
+- Each row is a measurement: it carries the version, binary, and date it was taken on,
+  and the record that holds it. A fact the record does not hold is written as not
+  recorded, never filled from today's install.
+- A cell changes only with a new measurement. A newer version of a runtime is not
+  re-measured until a story does it, and Getting Started says so beside its table.
+- A matrix in a decision record, the one below included, is a dated snapshot.
+- README, Getting Started, and REFERENCE link the matrix instead of keeping levels of
+  their own; the architecture repeats the levels.
+  `ts/test/scripts/runtimeParityDocs.test.ts` fails when one of the five docs stops
+  naming a runtime, when a matrix row loses its provenance, or when the architecture's
+  levels leave the matrix's.
+
+**CV21's parity as measured**, beside the 2026-10-13 bet:
+
+| Runtime | 2026-10-13 (DS12) | Measured | Record |
+|---------|-------------------|----------|--------|
+| Claude Code | L4 on 2.1.296 | L4 on 2.1.296, 2026-10-13 | DS12.TS1, DS2 |
+| Codex | L4 reachable on 0.162.1 | L4 on 0.163.0, 2026-10-17 | DS4.US4 |
+| Antigravity | L4 reachable on agy 1.3.4 | L4 on agy 1.4.2, 2026-10-18 | DS7.US4 |
+| Grok Build | L3 on 1.0.52 | L3 on 1.0.62, 2026-10-18 | DS10.US3 |
+
+CV21 did not measure Pi; its row is sourced cell by cell, from CR159 and CR160 on Pi
+1.4.0 and from CV22.DS10.US3.
+
+**The line between L3 and L4**, which CV8's definitions left implicit and CV21
+measured: at L4 the runtime itself puts Mirror's context before the model, through a
+hook (Claude Code and Codex on a Mirror turn and once after Mirror Mode turns on,
+Antigravity once per user turn); at L3 the model loads it through `/mm-mirror`. The
+architecture claimed Pi at L4 with no record behind the claim. Pi's extension injects
+nothing, which is Grok Build's model, so Pi is L3 by the same line, decided by the
+Navigator on 2026-10-24. Nothing about Pi changed: the docs had said more than Pi does.
+A Pi that injects the context itself, as its `before_agent_start` event allows, is
+captured as
+[CR165](refinement/rs010-cv22-oracle-and-port-hygiene/cr165-pi-puts-no-mirror-context-before-the-model.md),
+outside DS11.
+
+**What was rejected.** Re-measuring every runtime on today's binaries to write the
+matrix: a re-baseline is a story of its own, as DS12 was, and a matrix filled from
+today's install would claim measurements nobody took. A matrix in each doc: that is
+how the five places drifted. CV8's L4 as written, which names no injection: it would
+have made Grok Build L4 and reversed DS10's measured decision, and the level would no
+longer tell a person whether Mirror's context arrives without the model asking for it.
+
+### One doorman puts Mirror's context before the model on every runtime
+
+**Date:** 2026-10-24 · **Context:** [CR165](refinement/rs010-cv22-oracle-and-port-hygiene/cr165-pi-puts-no-mirror-context-before-the-model.md),
+measured on Pi 1.4.0 the same day, promoted to
+[CV9.DS8](roadmap/cv9-mirror-1-0/cv9-ds8-one-doorman-mirror-s-context-before-the-model-on-every-runtime/index.md).
+
+CV21.DS11's parity matrix drew the L3/L4 line: at L4 the runtime hands Mirror's
+context to the model through a hook; at L3 the model loads it through the `/mm-mirror`
+skill. Pi, the recommended harness, is L3. Measured on Pi: the folder is loaded once,
+on the turn that invokes the skill or on an unprompted personal question the model
+recognizes, and every follow-up is answered from it — no reload, no persona re-routing
+when the topic changes domain, no signature after the first reply. There are three
+doormen today with three policies (the Claude-family hook: the explicit form, then once;
+Antigravity: every turn, with no prompt to route on; Pi: none), and wherever a doorman
+exists the skill's hard constraint makes an explicit turn load twice.
+
+**The decision.** One doorman: one decision module in the core, called by the
+Claude-family hooks, Antigravity's hook, and the Pi extension, with one policy — the
+full folder on the explicit form, loaded once; on each ordinary turn while Mirror Mode
+is on, the persona the question newly calls for and the memories relevant to that
+question; nothing when Mirror Mode is off — and a skill that trusts delivered context.
+Three choices inside it, the Navigator's:
+
+1. **Memories are refreshed on every ordinary turn in Mirror Mode.** One embedding call
+   per turn, a fraction of a cent, counted in the ledger. The alternative, refreshing
+   only when the persona changes, was declined: the best possible answer is the aim,
+   and the cost is small and visible.
+2. **The signature is `◇ persona-name`**, the rule `AGENTS.md` states and every runtime
+   reads. The skill's `✦ Persona:` and the core's banner follow it. The skill's
+   objection, that `◇` is the mirror's own symbol on the status line, is noted and
+   outweighed by one rule in the one file every runtime reads.
+3. **The work is a Delivery Story under CV9**, Mirror Mind 1.0, not a Change Request:
+   it touches the core, three hooks, the Pi extension, the skill's copies, `AGENTS.md`,
+   the contract, and the matrix, and needs live measurement on four runtimes.
+
+**What was rejected.** Copying today's hook to Pi as it stands: Pi would read L4 for
+one fresh folder on one turn, at the price of the double load on every explicit turn.
+Accepting L3 on Pi: Mirror Mode works there through the skill, but the recommended
+harness would hold a lower level than the plugin runtimes with no plan to close it.
+
+**What follows.** Grok Build stays L3 and inert, since it discards hook context. The one
+open mechanism — how a session learns a load the model ran by itself — is measured
+first (CV9.DS8.TS1), on CR100's lead that Claude Code hands commands
+`CLAUDE_CODE_SESSION_ID`.
+
+**What it costs, measured** (added 2026-10-25 by CV9.DS8.TS7, from the stories'
+records). A turn in Mirror Mode writes one `embedding` row in `llm_calls`, shared by
+the memory and attachment searches, and no reinforcement. The explicit turn costs what
+`mirror load --query` costs: the reception call when enabled and, when there are
+attachments to score, the query's embedding; in US4's and US5's runs it wrote one
+`reception` row and no `embedding` row. A turn outside Mirror Mode writes nothing.
+The stories measured time and size, not price:
+
+- the `mirror mirror doorman` command on a copy of the home, in
+  [US5's run](roadmap/cv9-mirror-1-0/cv9-ds8-one-doorman-mirror-s-context-before-the-model-on-every-runtime/cv9-ds8-us5-pi-through-the-one-doorman-at-l4/test-guide.md)
+  (2026-10-25): a delta about 1.0 s; 142–154 bytes when no memory passes the
+  threshold (the delivered line alone) and up to 8.5 KB when some do; the full
+  folder, 33 KB, in 1.33 s; a turn outside Mirror Mode 0.21 s;
+- the same command in
+  [US4's run](roadmap/cv9-mirror-1-0/cv9-ds8-one-doorman-mirror-s-context-before-the-model-on-every-runtime/cv9-ds8-us4-claude-code-and-codex-through-the-one-doorman/test-guide.md)
+  (2026-10-24), before the threshold: a delta 0.97–1.08 s; the full folder in 1.09 s;
+- agy 1.4.7's hook with real providers, in
+  [TS6's walk](roadmap/cv9-mirror-1-0/cv9-ds8-one-doorman-mirror-s-context-before-the-model-on-every-runtime/cv9-ds8-ts6-antigravity-through-the-one-doorman/test-guide.md)
+  (2026-10-25): quiet 0.23 s, full 0.90 s, a delta 0.96–1.02 s, against agy's 15 s
+  budget.
+
+No story measured a turn's price in dollars, so decision 1's "a fraction of a cent"
+remains the estimate it was made on. In US4's walk Claude Code paid two embeddings per
+turn because a checkout's hooks and the installed plugin's both ran; that is a debt US4
+carried, not the doorman's cost.
+
+### Antigravity's doorman reads the prompt from the payload and delivers persistent steps
+
+**Date:** 2026-10-25 · **Context:** [CV9.DS8.TS6](roadmap/cv9-mirror-1-0/cv9-ds8-one-doorman-mirror-s-context-before-the-model-on-every-runtime/cv9-ds8-ts6-antigravity-through-the-one-doorman/index.md),
+its [probe](roadmap/cv9-mirror-1-0/cv9-ds8-one-doorman-mirror-s-context-before-the-model-on-every-runtime/cv9-ds8-ts6-antigravity-through-the-one-doorman/evidence/probe-20261025.md)
+and [walk](roadmap/cv9-mirror-1-0/cv9-ds8-one-doorman-mirror-s-context-before-the-model-on-every-runtime/cv9-ds8-ts6-antigravity-through-the-one-doorman/evidence/walk-20261025.md) on agy 1.4.7.
+
+On agy 1.4.2 no hook payload carried the user's text (DS12.TS3 L7), so Antigravity's
+`PreInvocation` re-injected the whole folder every turn, routed from nothing, as an
+`ephemeralMessage` — CV21.DS7.TS2's data-minimizing choice. The one doorman needs the
+turn's prompt, and its deltas need the folder to stay before the model.
+
+**The decision.** Three parts, the last the Navigator's:
+
+1. **The prompt comes from the payload.** agy 1.4.7 carries it in every hook payload as
+   `lastUserInput`, verbatim; the hook reads no transcript.
+2. **The block rides in a persistent `systemMessage` step.** Ephemeral never kept
+   identity off disk: agy writes an ephemeral step into the stored transcript all the
+   same (measured on 1.4.2 and again on 1.4.7). It only kept the folder out of later
+   turns, which is what every delta needs it to be in. An ephemeral step with the whole
+   folder every turn was declined: a reception call and the full identity on the wire per
+   turn, for a signature.
+3. **A payload without the prompt keeps the old injection**, unchanged (agy before
+   1.4.7), rather than going quiet or reading a transcript whose timing was measured only
+   on 1.4.7. Removable when the matrix's floor for agy reaches 1.4.7.
+
+**What follows.** `SessionStart` stamps the conversation's own mode Mirror Mode, since the
+doorman reads the mode and the old hook did not. The model's own `mirror` commands on agy
+still name no session ([CR169](refinement/rs010-cv22-oracle-and-port-hygiene/cr169-on-agy-the-model-s-own-mirror-commands-cannot-name-the-session.md)),
+and agy's compaction has no hook to re-deliver the folder
+([CR173](refinement/rs010-cv22-oracle-and-port-hygiene/cr173-agy-compaction-has-no-hook-to-re-deliver-the-folder.md)).
+
+### Extraction calls carry an opt-in reasoning effort, and a value that is not one is ignored
+
+**Date:** 2026-10-26 · **Context:** [CV9.DS9.TS1](roadmap/cv9-mirror-1-0/cv9-ds9-the-extraction-model-chosen-by-measurement/cv9-ds9-ts1-reasoning-setting/index.md),
+measured in its [evidence](roadmap/cv9-mirror-1-0/cv9-ds9-the-extraction-model-chosen-by-measurement/cv9-ds9-ts1-reasoning-setting/evidence/2026-10-26-reasoning-off/README.md).
+
+The transport sent `model`, `messages`, `temperature`, and `max_tokens`, and nothing
+about reasoning. Gemini 2.5 Flash Lite does not reason unless asked; GPT-6 Luna and
+Claude Haiku 5.5, the candidates CV9.DS9 measures, reason by default. Their reasoning
+spent the title call's 40-token budget, so 13 of 56 title calls came back cut off, mostly
+empty, and the blocking title-injection probe passed without an answer.
+
+**The decision.** Four parts:
+
+1. **`MEMORY_EXTRACTION_REASONING` names an OpenRouter reasoning effort** (`none`,
+   `minimal`, `low`, `medium`, `high`, `xhigh`, `max`). It is sent as `reasoning.effort` on
+   every call that runs on the extraction pin. `none` turns reasoning off: with it, neither
+   candidate's calls were cut off in 1,428, and both passed every blocking probe.
+2. **Unset sends the request unchanged.** The default pin's behavior and every frozen
+   golden stay as they were; the setting is opt-in until a pin needs it.
+3. **`consult` never carries it.** It picks its own model on every call. A per-role table
+   the compiler checks makes every future role declare whether it does.
+4. **A value that is not an effort is ignored, not fatal.** The other resolvers beside the
+   pins fail loudly. This one cannot: it is read inside the session-end hooks, where a
+   failed call is an extraction attempt and three attempts quarantine a conversation for
+   good ([CR178](refinement/rs010-cv22-oracle-and-port-hygiene/cr178-a-configuration-error-counts-as-an-extraction-attempt-and-nothing-releases-a-quarantine.md)).
+   So `off`, the most natural typo, sends nothing; `runtime status` shows
+   `reasoning=invalid (off)` and `runtime diagnose` reports `extraction_reasoning_invalid`.
+
+**What follows.** Eval records carry the setting at schema 4, and `--history` labels a
+flip across a model or reasoning change. Which value, if any, ships with a new pin is
+CV9.DS9.US3's decision. That decision rests on TS2's comparison on the Navigator's own
+conversations, where both candidates run at `none`.
+
+### The extraction pin moves to Claude Haiku 5.5 at reasoning `none`, and a pin's reasoning default is the model's
+
+**Date:** 2026-10-28 · **Context:** [CV9.DS9.US3](roadmap/cv9-mirror-1-0/cv9-ds9-the-extraction-model-chosen-by-measurement/cv9-ds9-us3-the-extraction-pin-moves-or-stays-on-the-evidence/index.md),
+the decision CV9.DS9 was opened to make, on the evidence its three stories produced:
+the [baseline](roadmap/cv9-mirror-1-0/cv9-ds9-the-extraction-model-chosen-by-measurement/evidence/2026-10-26-baseline/README.md),
+[TS1's re-measurement at reasoning off](roadmap/cv9-mirror-1-0/cv9-ds9-the-extraction-model-chosen-by-measurement/cv9-ds9-ts1-reasoning-setting/evidence/2026-10-26-reasoning-off/README.md),
+[TS2's replay of the Navigator's own conversations](roadmap/cv9-mirror-1-0/cv9-ds9-the-extraction-model-chosen-by-measurement/cv9-ds9-ts2-the-candidates-judged-on-the-navigator-s-own-conversations/evidence/2026-10-26-replay/README.md),
+and [US3's release gate](roadmap/cv9-mirror-1-0/cv9-ds9-the-extraction-model-chosen-by-measurement/cv9-ds9-us3-the-extraction-pin-moves-or-stays-on-the-evidence/evidence/2026-10-28-gate/README.md).
+
+`DEFAULT_EXTRACTION_MODEL` had been `google/gemini-2.5-flash-lite`, a mid-2025 model,
+behind every model call but `consult`: memories, tasks, titles, summaries, tags,
+reception, journal classification, week plans, descriptors, shadow, and consolidation.
+DS9 measured it against two newer models at about the same price, GPT-6 Luna and
+Claude Haiku 5.5, and the Navigator decided at US3's Plan approval.
+
+**The decision.** The pin is `anthropic/claude-haiku-5.5`, at reasoning `none`.
+
+What decided it, in the order it weighed:
+
+1. **The Navigator's own blind rankings** (TS2). The LLM judge did not stand (0.55
+   agreement with the Navigator, under the 0.60 the plan required), so the
+   Navigator's rankings on 26 surfaces of six of his own conversations are the main
+   evidence: Haiku first 16 times, ahead of Flash Lite 17–9 and of Luna 20–6. The
+   judge's arithmetic, by the rule fixed before any output was seen, lands on Haiku
+   too.
+2. **The suite at `none`** (TS1). Haiku fixes three of the four probes Flash Lite has
+   failed in every recorded run, passes every blocking probe 14 of 14, and no call
+   was cut off in 714. US3's gate run: 9 of 9 modules, reception 12 of 12 and
+   title_tags 7 of 7 where Flash Lite's baseline that day failed one probe in each.
+3. **Reliability.** Flash Lite drew HTTP 429 from Google AI Studio on 31% of TS1's
+   attempts and 8 of 112 of TS2's; Haiku drew none in either. The move retires TS1's
+   D3 for the default pin.
+4. **Fewer invented facts** on the Navigator's conversations: 16 flags against Flash
+   Lite's 26 across memories, tasks, and summaries.
+
+What was weighed against it and accepted:
+
+- **Cost**, about 40% more: $1.06 against $0.77 for the production home's last 30
+  days, because Haiku's tokenizer counts 1.5× the input tokens. Immaterial at this
+  volume, and one honest line in the release note.
+- **Latency.** Reception, which runs before every Mirror Mode answer, goes from
+  0.6/0.8 s to 1.0/1.3 s at p50/p95 (TS1, at `none`). Half a second before a turn
+  that then waits seconds for the answering model.
+- **Summaries.** Haiku's are weaker as standalone notes than Luna's (3.58 against
+  4.50 of 5), though better than Flash Lite's (2.21), and at `none` Haiku fails
+  `extraction/conversation-summary` in about 10 of 14 runs, opening with "The
+  conversation centered on…". That framing is the prompt's doing
+  ([CR180](refinement/rs010-cv22-oracle-and-port-hygiene/cr180-the-summary-prompt-s-opening-rule-invites-the-framing-its-standalone-rule-forbids.md)),
+  which DS9 kept fixed so its comparison stayed attributable to the models. The
+  module clears its threshold at 10 of 11; the fix is CR180's, recommended for the
+  same release as the pin so a user meets the new model and a summary that reads as
+  a note together.
+- **Luna** is the better summarizer and the cheaper candidate, and the Navigator
+  ranked Haiku above it 20–6; Luna is also the slower one on reception.
+
+**A pin's reasoning default is the model's.** The [TS1 decision](#extraction-calls-carry-an-opt-in-reasoning-effort-and-a-value-that-is-not-one-is-ignored)
+made `MEMORY_EXTRACTION_REASONING` opt-in "until a pin needs it". This pin needs it:
+Haiku reasons by default and spent the title call's 40-token budget. The rule now:
+
+- `MODEL_DEFAULT_REASONING`, beside the pins, maps a model to the effort it was
+  measured and chosen with: Haiku to `none`. Flash Lite is absent, because it was
+  measured with no reasoning field, and so is any model not measured.
+- The effective model is resolved first, then the effort: the setting when it names
+  an effort, else the model's entry, else no field. So leaving everything unset sends
+  Haiku `none`; naming Haiku explicitly sends the same request; and the rollback the
+  playbook promises, `MEMORY_EXTRACTION_MODEL=google/gemini-2.5-flash-lite`,
+  reproduces exactly the request Flash Lite was measured with.
+- An invalid setting still reads as unset, so the pin still sends `none`, and
+  `runtime status` shows both: `reasoning=none (model default, invalid setting: off)`.
+
+Two alternatives were rejected. `none` for every model when unset would have sent
+Flash Lite a request it was never measured with on the one path meant to be a
+rollback. Keying the default on whether the variable is set, rather than on the
+model, would have made `MEMORY_EXTRACTION_MODEL` set to its own default value send a
+different request from leaving it unset, and reasoning would have come back on with
+the title cut-offs TS1 fixed.
+
+**The migration.** One commit (`53f4d976`) changed the pin, `MODEL_DEFAULT_REASONING`,
+and `MODEL_PRICES` (Haiku at $0.10/M in, $0.50/M out, read from OpenRouter's
+catalogue that day; Flash Lite's entry kept so a rolled-back install keeps pricing),
+with `runtime status`, `REFERENCE.md`, the tests and goldens that name the pin, and
+the playbook. The gate ran as the playbook orders: a fresh `eval --all` on Flash Lite
+before the change (9 of 9), then on Haiku after it (9 of 9, one expected probe
+failure), every module's `prompt_hash` equal, and `--history` labelling the flip
+`(model and reasoning changed)`.
+
+**What follows.** TS1's D2, the ledger's inability to say which effort a call
+carried, is captured as
+[CR181](refinement/rs010-cv22-oracle-and-port-hygiene/cr181-the-ledger-cannot-say-which-reasoning-effort-a-call-carried.md)
+rather than built: after the swap the `model` column separates the two regimes, and
+no one has asked the ledger the remaining question. A week after the swap, the
+development home's ledger is read for reception latency, 30-day cost, and non-200
+calls against the numbers above. The release that carries the pin says what a user
+sees and how to roll back; its note is drafted in the story package until DS9's
+close names the version.
+
+### The summary prompt says who will read it and shows one opening, instead of naming the conversation
+
+**Date:** 2026-10-28 · **Context:** [CR180](refinement/rs010-cv22-oracle-and-port-hygiene/cr180-the-summary-prompt-s-opening-rule-invites-the-framing-its-standalone-rule-forbids.md),
+pulled right after CV9.DS9 closed so the fix was measured on the pin that ships.
+
+`CONVERSATION_SUMMARY_PROMPT` named the conversation as the thing being described
+twice, early and heavily weighted ("a summary of the conversation below", "the topic or
+question the conversation addressed"), and forbade naming it once, fourth in its list.
+Claude Haiku 5.5 at reasoning `none` opened "The conversation centered on…" in 10 of 14
+eval runs with the prohibition in view, and every Flash Lite summary in TS2 was flagged
+not standalone. The positive pull won over the negative list.
+
+**The decision.** Three edits, measured three times, in the prompt engineer's loop of
+hypothesis and data:
+
+1. The first line puts the reader and the purpose first: "It will be read on its own,
+   months from now, by someone deciding whether the full transcript is worth opening."
+2. The opening rule shows one example with modality in it, on a subject no eval
+   touches ("The move to Porto is set for March; what stays open is whether to sell the
+   car."), instead of describing what to open with. The first draft's example was the
+   `conversation-summary` probe's own topic and would have let a model pass by echoing it.
+3. The standalone rule gains "Write what is now known or decided, not that it was
+   talked about. Call the person by the name the transcript gives them." and "the
+   discussion" in its forbidden list.
+
+**What the measurement taught.** Each wording ran seven times on `extraction`,
+`conversation_summary`, and `title_tags`. The first standalone sentence, "Do not
+describe the conversation; record what it established", came back as "What the
+conversation established is…" in 2 of 7: a rule that names the thing it forbids gets
+echoed. The second, "Name people by name, never as "the user"", produced "the user" in
+4 of 7 and, once, a name that appears nowhere in the prompt. The third produced "the
+user" in 7 of 7, which is correct: the eval fixture's speaker label is `**User:**`, and
+the rule asks for the name the transcript gives. The framing was gone from the first
+iteration on: 0 of 21 summaries said "the conversation" or "the discussion", every one
+opened subject-first with its status, the blocking injection probe passed 21 of 21,
+and `title_tags`, which takes the summary as input, moved nowhere.
+
+**What the real conversation taught, the same day.** The Navigator's validation
+conversation, about a prior session's roadmap, opened "The conversation consists of
+the user asking…" after 21 clean fixture runs. Two more decisions followed, in the
+same Change Request at the Navigator's direction:
+
+4. **The prompts carry the owner's name.** The close tail had never passed one, and
+   the extraction path's resolver did not match the template's "You are speaking
+   with", so every lifecycle prompt had labelled the speaker `**User:**` since the
+   port. One fail-soft resolver (`conversation/userName.ts`) serves both paths. The
+   name alone removed "the user" entirely; it was the larger lever.
+5. **A framed opening is regenerated once, with feedback, in the system, not the
+   words.** On content that is itself about sessions, the model opened with the frame
+   about half the time whatever the wording said. `generateConversationSummary`
+   detects the frame (the conversation, discussion, session, exchange, chat,
+   dialogue, transcript, or user as the first clause's subject), sends the prompt
+   once more with a short positive note, and keeps the second only if it opens
+   clean. A blind retry recovered 2 of 5; the note recovered 5 of 5. Both calls
+   reach the ledger.
+
+**What follows.** The `extraction` module's `prompt_hash` excludes this prompt by a
+Python-parity decision whose reason retired with the oracle, so its records cannot
+attribute a `conversation-summary` flip to a prompt change; the `conversation_summary`
+module's hash moved as expected and covers the retry note. That gap is captured as a
+Change Request. Every summary in the measurement closes with "What stays/remains open
+is…", the example's shape; acceptable for a note, and left as is.

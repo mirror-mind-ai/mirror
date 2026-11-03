@@ -56,6 +56,55 @@ function refContains(repository: string, ancestor: string, descendant: string): 
   return null;
 }
 
+/** The one command that levels the lock, as `packageLock.test.ts` names it. */
+const LOCK_FIX =
+  "run `npm install --package-lock-only --ignore-scripts` and commit package-lock.json";
+
+/**
+ * CR193: a release commit bumps `package.json` by hand, and nothing in the
+ * route regenerated the lock. Its root said `mirror-core 0.0.0` through nine
+ * releases, every `npm install` on a clone dirtied the tree, and the doctor
+ * passed each one. `ts/test/scripts/packageLock.test.ts` (PR #48) fails CI on
+ * the mismatch; this is the same four comparisons, before the tag exists.
+ */
+function lockfileCheck(repository: string): ReleaseCheck {
+  const read = (file: string): Record<string, unknown> | null => {
+    const path = join(repository, file);
+    if (!existsSync(path)) return null;
+    try {
+      const parsed: unknown = JSON.parse(readFileSync(path, "utf8"));
+      return parsed && typeof parsed === "object" ? (parsed as Record<string, unknown>) : null;
+    } catch {
+      return null;
+    }
+  };
+  const pkg = read("package.json");
+  if (pkg === null) return check("lockfile", "fail", `package.json unreadable; ${LOCK_FIX}`);
+  if (!existsSync(join(repository, "package-lock.json"))) {
+    return check("lockfile", "fail", `package-lock.json missing; ${LOCK_FIX}`);
+  }
+  const lock = read("package-lock.json");
+  if (lock === null) return check("lockfile", "fail", `package-lock.json unreadable; ${LOCK_FIX}`);
+  const nested = ((lock.packages as Record<string, unknown> | undefined)?.[""] ?? {}) as Record<
+    string,
+    unknown
+  >;
+  const expected = `${String(pkg.name)} ${String(pkg.version)}`;
+  const drift: string[] = [];
+  if (lock.name !== pkg.name || lock.version !== pkg.version) {
+    drift.push(`root says ${String(lock.name)} ${String(lock.version)}`);
+  }
+  if (nested.name !== pkg.name || nested.version !== pkg.version) {
+    drift.push(`packages[""] says ${String(nested.name)} ${String(nested.version)}`);
+  }
+  if (drift.length === 0) return check("lockfile", "pass", `package-lock.json names ${expected}`);
+  return check(
+    "lockfile",
+    "fail",
+    `package.json is ${expected}, package-lock.json ${drift.join(", ")}; ${LOCK_FIX}`,
+  );
+}
+
 function repositoryRoot(start: string): string | null {
   const result = runGit(["rev-parse", "--show-toplevel"], start);
   const value = result.stdout.trim();
@@ -97,6 +146,8 @@ export function buildReleaseDoctorReport(options: {
       ? check("package version", "pass", found)
       : check("package version", "fail", `expected ${expected}, found ${found ?? "unknown"}`),
   );
+
+  checks.push(lockfileCheck(repository));
 
   const notePath = join(repository, "docs", "releases", `${display}.md`);
   if (existsSync(notePath)) {

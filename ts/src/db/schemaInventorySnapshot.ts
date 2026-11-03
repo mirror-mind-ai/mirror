@@ -1926,13 +1926,6 @@ export const SCHEMA_INVENTORY_SNAPSHOT: SchemaInventory = {
           "type": "TEXT"
         },
         {
-          "dflt_value": "0",
-          "name": "hook_injected",
-          "notnull": 1,
-          "pk": 0,
-          "type": "INTEGER"
-        },
-        {
           "dflt_value": "1",
           "name": "active",
           "notnull": 1,
@@ -1979,7 +1972,7 @@ export const SCHEMA_INVENTORY_SNAPSHOT: SchemaInventory = {
         }
       ],
       "sql":
-        "CREATE TABLE runtime_sessions ( session_id TEXT PRIMARY KEY, conversation_id TEXT REFERENCES conversations(id), interface TEXT, mirror_active INTEGER NOT NULL DEFAULT 0, persona TEXT, journey TEXT, hook_injected INTEGER NOT NULL DEFAULT 0, active INTEGER NOT NULL DEFAULT 1, started_at TEXT NOT NULL, updated_at TEXT NOT NULL, closed_at TEXT, metadata TEXT)"
+        "CREATE TABLE runtime_sessions ( session_id TEXT PRIMARY KEY, conversation_id TEXT REFERENCES conversations(id), interface TEXT, mirror_active INTEGER NOT NULL DEFAULT 0, persona TEXT, journey TEXT, active INTEGER NOT NULL DEFAULT 1, started_at TEXT NOT NULL, updated_at TEXT NOT NULL, closed_at TEXT, metadata TEXT)"
     },
     "tasks": {
       "columns": [

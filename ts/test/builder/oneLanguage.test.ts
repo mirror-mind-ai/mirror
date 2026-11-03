@@ -14,6 +14,7 @@ import { fileURLToPath } from "node:url";
 import { invokeBuilderArgv, invokeReadOnlyBuilderArgv } from "#builder/argv.ts";
 import { bootstrapDatabase } from "#db/bootstrap.ts";
 import { authorPlan } from "#helpers/authorScaffold.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 import { createJourney } from "#journey/journeyWrite.ts";
 
 const NOW = "2026-09-28T12:00:00.000000Z";
@@ -66,7 +67,7 @@ test("the Debt Review surface records no action needed, in English", () => {
 });
 
 test("inspect-method names Ariad's lifecycle in English", () => {
-  const db = bootstrapDatabase(join(mkdtempSync(join(tmpdir(), "one-language-")), "memory.db"));
+  const db = bootstrapDatabase(join(tempDir("one-language-"), "memory.db"));
   try {
     const inspected = invokeReadOnlyBuilderArgv(db, ["inspect-method", "ariad"]);
     assert.equal(inspected.exitCode, 0, inspected.stderr);

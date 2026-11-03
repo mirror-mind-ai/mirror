@@ -23,6 +23,7 @@ import {
   decodeMetadata,
   GLOBAL_STICKY_DEFAULTS_SESSION_ID,
   getRuntimeSession,
+  resolveNamedRuntimeSessionId,
   resolveRuntimeSessionId,
   upsertRuntimeSession,
 } from "./runtimeSession.ts";
@@ -120,13 +121,33 @@ export async function runMirrorLoad(
   });
   persistStickyDefaults(db, resolved.persona, resolved.journey, input.nowIso());
   activateOperatingMode(db, { mode: "Mirror Mode", journey: resolved.journey }, input.nowIso());
+  // The NAMED session -- explicit, else the one the harness put in the
+  // environment -- never a guess (CV9.DS8.TS2, closing TS1's measured gap:
+  // the skill's own load passed the environment id into the route and this
+  // write ignored it, so a self-started Mirror Mode left `mirror_active`
+  // unwritten and the doorman had nothing to learn from).
+  const namedSessionId = resolveNamedRuntimeSessionId(
+    input.sessionId ?? null,
+    input.environmentSessionId ?? null,
+  );
+  if (namedSessionId) {
+    // The session's own mode row as well as the global one (CV9.DS8.US4): the
+    // doorman reads the session's row first, and `build load` stamps that same
+    // row Builder -- without this write a Mirror re-entry in the same session
+    // would read as Builder and the deltas would never resume.
+    activateOperatingMode(
+      db,
+      { mode: "Mirror Mode", journey: resolved.journey, sessionId: namedSessionId },
+      input.nowIso(),
+    );
+  }
   writeMirrorState(
     db,
     {
       active: true,
       persona: resolved.persona,
       journey: resolved.journey,
-      sessionId: input.sessionId ?? null,
+      sessionId: namedSessionId,
     },
     input.nowIso(),
   );
@@ -246,7 +267,6 @@ export function persistStickyDefaults(
       mirrorActive: false,
       ...(persona !== null ? { persona } : {}),
       ...(journey !== null ? { journey } : {}),
-      hookInjected: true,
       active: false,
     },
     nowIso,
@@ -271,7 +291,6 @@ function writeMirrorState(
       mirrorActive: input.active,
       ...(input.persona !== undefined && input.persona !== null ? { persona: input.persona } : {}),
       ...(input.journey !== undefined && input.journey !== null ? { journey: input.journey } : {}),
-      hookInjected: !input.active,
     },
     nowIso,
   );

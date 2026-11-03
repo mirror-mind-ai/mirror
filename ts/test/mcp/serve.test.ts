@@ -1,12 +1,12 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { openDatabaseCopyForWrite } from "#db/database.ts";
 import { createSchema } from "#db/schema.ts";
+import { tempDir } from "#helpers/tempDir.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -19,9 +19,7 @@ const HERE = dirname(fileURLToPath(import.meta.url));
  * the way a client does -- with a real database -- rather than with none.
  */
 function fixtureDatabasePath(): string {
-  const dir = mkdtempSync(join(tmpdir(), "mirror-core-mcp-serve-"));
-  const tmp = join(dir, "tmp");
-  mkdirSync(tmp);
+  const tmp = tempDir("mirror-core-mcp-serve-");
   const path = join(tmp, "copy.db");
   const db = openDatabaseCopyForWrite(path);
   try {

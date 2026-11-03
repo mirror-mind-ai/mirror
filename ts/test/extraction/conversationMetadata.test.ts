@@ -29,6 +29,8 @@ import {
   generateConversationSummary,
   generateConversationTags,
   generateConversationTitle,
+  opensWithConversationFrame,
+  SUMMARY_RETRY_NOTE,
 } from "#extraction/conversationMetadata.ts";
 import {
   type LlmRequest,
@@ -362,4 +364,119 @@ test("tags returns [] when the response is not a JSON array", async () => {
 test("summary is trimmed, matching Python's .strip()", async () => {
   const provider = new StubProvider({ content: "  A summary sentence.  \n" });
   assert.equal(await generateConversationSummary(provider, MESSAGES), "A summary sentence.");
+});
+
+// --- CR180: the opening-frame guard --------------------------------------------
+//
+// On conversations that are themselves about sessions and roadmaps, Claude Haiku
+// 5.5 at reasoning off still opened "The conversation centers on…" about half the
+// time after the prompt change, where ordinary conversations opened clean 21 of
+// 21. A rule that names the frame gets echoed, so the fix is not more wording: a
+// summary that opens with the frame is generated once more, and the second is
+// kept only if it opens clean. Every call that happened reaches the ledger.
+
+class SequenceProvider {
+  readonly calls: LlmRequest[] = [];
+  private readonly replies: (LlmResponse | Error)[];
+  constructor(replies: (LlmResponse | Error)[]) {
+    this.replies = replies;
+  }
+  async complete(request: LlmRequest): Promise<LlmResponse> {
+    this.calls.push(request);
+    const reply = this.replies[this.calls.length - 1];
+    if (reply === undefined) throw new Error("no reply scripted");
+    if (reply instanceof Error) throw reply;
+    return reply;
+  }
+}
+
+test("opensWithConversationFrame names the openings the guard regenerates", () => {
+  for (const opening of [
+    "The conversation centers on Vinícius asking what the first item means.",
+    "The conversation consists of the user asking about a prior session.",
+    "This discussion covered three options.",
+    "The Mirror conversation with Vinícius centers on readiness.",
+    "  the session established that the pin moved.",
+    "The exchange was about pricing.",
+    "The user Vinícius asked what the previous session covered.",
+    "The transcript is a substantive working session on readiness, so a summary is warranted.",
+  ]) {
+    assert.ok(opensWithConversationFrame(opening), opening);
+  }
+  for (const opening of [
+    "The Mirror 1.0 roadmap question is open: the CV9 done condition still describes the deleted core.",
+    "Pricing moves from per-seat to usage-based; the decision is made.",
+    "Vinícius asked what the first roadmap item means, and the answer is that CV9's done condition is stale.",
+    "The subject is readiness for Mirror 1.0.",
+    "",
+  ]) {
+    assert.equal(opensWithConversationFrame(opening), false, opening);
+  }
+});
+
+test("a summary that opens clean is one call (CR180)", async () => {
+  const provider = new SequenceProvider([{ content: "Pricing moves to usage-based.", model: "m" }]);
+  const seen: string[] = [];
+  const summary = await generateConversationSummary(provider, MESSAGES, {
+    onLlmCall: (response) => seen.push(response.content),
+  });
+  assert.equal(summary, "Pricing moves to usage-based.");
+  assert.equal(provider.calls.length, 1);
+  assert.deepEqual(seen, ["Pricing moves to usage-based."]);
+});
+
+test("a summary that opens with the frame is generated once more, and a clean second is kept (CR180)", async () => {
+  const provider = new SequenceProvider([
+    { content: "The conversation centers on pricing.", model: "m" },
+    { content: "Pricing moves to usage-based; the decision is made.", model: "m" },
+  ]);
+  const seen: string[] = [];
+  const summary = await generateConversationSummary(provider, MESSAGES, {
+    onLlmCall: (response) => seen.push(response.content),
+  });
+  assert.equal(summary, "Pricing moves to usage-based; the decision is made.");
+  assert.equal(provider.calls.length, 2);
+  assert.equal(provider.calls[1]?.role, "conversation_summary");
+  // The retry carries feedback: the first prompt, then the retry note, nothing else.
+  assert.equal(provider.calls[1]?.prompt, `${provider.calls[0]?.prompt}${SUMMARY_RETRY_NOTE}`);
+  assert.doesNotMatch(
+    SUMMARY_RETRY_NOTE,
+    /"the conversation"|centers on/i,
+    "the note never quotes the frame",
+  );
+  assert.deepEqual(seen, [
+    "The conversation centers on pricing.",
+    "Pricing moves to usage-based; the decision is made.",
+  ]);
+});
+
+test("a second summary that also opens with the frame is not taken; the first stands (CR180)", async () => {
+  const provider = new SequenceProvider([
+    { content: "The conversation centers on pricing, decided.", model: "m" },
+    { content: "The discussion covered pricing.", model: "m" },
+  ]);
+  const summary = await generateConversationSummary(provider, MESSAGES);
+  assert.equal(summary, "The conversation centers on pricing, decided.");
+  assert.equal(provider.calls.length, 2);
+});
+
+test("a failed second call keeps the first summary and fires onLlmCall once (CR180)", async () => {
+  const provider = new SequenceProvider([
+    { content: "The conversation centers on pricing.", model: "m" },
+    new Error("provider down"),
+  ]);
+  let called = 0;
+  const summary = await generateConversationSummary(provider, MESSAGES, {
+    onLlmCall: () => {
+      called += 1;
+    },
+  });
+  assert.equal(summary, "The conversation centers on pricing.");
+  assert.equal(called, 1);
+});
+
+test("an empty summary is not regenerated: trivial conversations stay empty (CR180)", async () => {
+  const provider = new SequenceProvider([{ content: "", model: "m" }]);
+  assert.equal(await generateConversationSummary(provider, MESSAGES), "");
+  assert.equal(provider.calls.length, 1);
 });
