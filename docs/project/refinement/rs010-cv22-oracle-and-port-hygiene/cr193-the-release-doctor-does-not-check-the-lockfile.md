@@ -91,6 +91,28 @@ existing doctor-failure path; DevOps and security, nothing new reaches a remote 
   the diff is the root's `name`, `version`, `license`, `bin`, nothing else.
 - `ts/test/scripts/packageLock.test.ts`, merged with PR #48, green at `fc6a648a`.
 
+### Implementation and validation, 2026-11-02
+
+- Commits on `main`: `8c0fd9f5` (doctor and tests), `c23f5245` (versioning page).
+- `release.test.ts`: the fixture carries a level lock; four new tests cover the root left
+  behind, the nested root alone behind, a missing and an unreadable lock, and promotion
+  creating no tag. 21 tests in the file, 395 across `ts/test/runtime` and
+  `ts/test/scripts`, all passing; `tsc --noEmit` and `biome check` clean.
+- Acceptance on `main` at `caf5fce5`'s tree: `npm run release:doctor -- --target v0.39.1`
+  prints `[✓] lockfile: package-lock.json names mirror-mind 0.39.1`; with the lock's root
+  edited back to `mirror-core 0.0.0` it prints `[✗] lockfile: package.json is mirror-mind
+  0.39.1, package-lock.json root says mirror-core 0.0.0; run \`npm install
+  --package-lock-only --ignore-scripts\` and commit package-lock.json`.
+- Validation accepted by the Navigator, 2026-11-02, on that evidence.
+
+### Debt review
+
+- The doctor and `packageLock.test.ts` make the same four comparisons in two places; the
+  fix string is spelled in both. Two readers, one rule, neither importing the other: the
+  doctor is maintainer tooling under `ts/scripts/`, the test a CI guard. Accepted.
+- No other findings.
+
 ## Outcome
 
-Pending: captured, not planned.
+Done, 2026-11-02. A release commit that leaves `package-lock.json` behind fails the doctor
+before anything is tagged, with the command that fixes it. On `main` at `c23f5245`.
