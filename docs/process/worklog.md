@@ -12,6 +12,26 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-11-03 — v0.39.3: Windows Gets Its Hooks
+
+Patch release of PR #53, PR #50, and PR #54 (@rodrigoimmaginario). On a Windows package
+install npm's global `mirror-hook` and `mirror` are shell shims, and the plugin's wrappers
+and MCP locator handed them to Node: no Claude Code conversation was ever logged there.
+They now run the package's own bin (one rule in the two generators, the copies
+regenerated). `runtime diagnose`'s exit 1 is logged as a verdict, so `front_door_errors`
+stops feeding itself; this delivers
+[CR139](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr139-a-verdict-that-exits-1-is-logged-as-a-front-door-error.md),
+with CR127 and CR176 closed as its duplicates. The docs point a Windows reader to
+mirror-mind-ai/mirror-installer.
+
+Each PR reviewed through four lenses; #50 and #53 took one maintainer commit each (the
+verdict rule beside its command and a sure test finding; the locator's run-as-written
+shim case). #54 merged as written. One macOS CI run on #54 failed in the updater smoke's
+package lane with a bare exit 1 and passed on re-run.
+
+No migration. No model or prompt changed, so the model-behavior gate does not apply.
+Release note: [v0.39.3](../releases/v0.39.3.md).
+
 ### 2026-11-03 — v0.39.2: Input, Read the Platform's Way
 
 Patch release of PR #49 and PR #48 (@rodrigoimmaginario),
