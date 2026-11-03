@@ -111,6 +111,11 @@ export const MCP_LOCATOR = [
   '[ -n "$mmbin" ] || mmbin="$(command -v mirror 2>/dev/null)"',
   `for mmdir in ${GLOBAL_BIN_DIRS.join(" ")}; do [ -n "$mmbin" ] && break; [ -x "$mmdir/mirror" ] && mmbin="$mmdir/mirror"; done`,
   '[ -n "$mmbin" ] || { echo "mirror-mind: mirror not found on PATH; the MCP server cannot start. Install mirror-mind (npm install -g mirror-mind) or set MIRROR_BIN to its bin directory." >&2; exit 1; }',
+  // On Windows npm's global `mirror` is a POSIX shell shim with node_modules/
+  // beside it, and Node cannot run the shim; the package's own bin is the
+  // entry when it is there (a POSIX prefix keeps node_modules under lib/).
+  'mmjs="$(dirname "$mmbin")/node_modules/mirror-mind/bin/mirror.js"',
+  '[ -f "$mmjs" ] && mmbin="$mmjs"',
   'mmnode="$MIRROR_NODE"',
   '[ -n "$mmnode" ] && [ -x "$mmnode" ] || mmnode="$(command -v node 2>/dev/null)"',
   `for mmdir in "$(dirname "$mmbin")" ${GLOBAL_BIN_DIRS.join(" ")}; do [ -n "$mmnode" ] && break; [ -x "$mmdir/node" ] && mmnode="$mmdir/node"; done`,
