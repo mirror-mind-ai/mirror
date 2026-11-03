@@ -170,7 +170,7 @@ import {
 } from "./render/tasksImportSync.ts";
 import { renderWeekView } from "./render/week.ts";
 import { retiredRefusal, routeMemoryCommand } from "./routing.ts";
-import { runRuntimeReadRoute, runWelcomeRoute } from "./runtimeRoute.ts";
+import { isRuntimeVerdict, runRuntimeReadRoute, runWelcomeRoute } from "./runtimeRoute.ts";
 import { runMemorySearchRoute } from "./searchRoute.ts";
 import { resolveSeedPaths } from "./seedPaths.ts";
 import { isSessionStartWelcome, runSessionStartWelcomeRoute } from "./sessionStartWelcomeRoute.ts";
@@ -1823,13 +1823,10 @@ async function dispatchTs(argv: readonly string[]): Promise<number | DispatchOut
   if (argv[0] === "welcome") return runWelcomeRoute(argv);
   if (argv[0] === "runtime") {
     const exitCode = await runRuntimeReadRoute(argv);
-    // `runtime diagnose` exits 1 to say "attention needed" -- its contract
-    // with scripts. Logged as a failure, that line was itself a front-door
-    // error, and `front_door_errors` counted it: every diagnose with findings
-    // fed the finding it reported, one line per run.
-    if (argv[1] === "diagnose" && exitCode === 1)
-      return { exitCode, detail: "verdict=attention", verdict: true };
-    return exitCode;
+    // A verdict, not a failure: `isRuntimeVerdict` says which (CR139).
+    return isRuntimeVerdict(argv, exitCode)
+      ? { exitCode, detail: "verdict=attention", verdict: true }
+      : exitCode;
   }
   if (argv[0] === "mcp") return runMcpServer();
   if (isMemorySearch(argv)) return runMemorySearch(argv);

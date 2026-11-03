@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync } from "node:fs";
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
@@ -87,7 +87,11 @@ test("`runtime diagnose` with findings exits 1 and does not count itself as a fr
   const dbPath = join(tmpDir, "memory.db");
   renameSync(copyPath, dbPath);
   try {
-    // A home whose Node cannot be found is one sure finding (hook_node_unresolvable).
+    // One sure finding, made so on purpose: a home directory and database that
+    // are group/other-readable (`loose_permissions`). A bare PATH is not one
+    // since CR191: diagnose finds Node in the usual places on most hosts.
+    chmodSync(tmpDir, 0o755);
+    chmodSync(dbPath, 0o644);
     const env = {
       ...process.env,
       NODE_OPTIONS: "--no-warnings",
