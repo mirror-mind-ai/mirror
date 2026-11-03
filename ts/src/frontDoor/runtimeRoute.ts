@@ -254,6 +254,17 @@ function logWelcomeCheck(home: string, env: NodeJS.ProcessEnv, check: RemoteChec
 }
 
 /** Port of the read half of `cmd_runtime`. */
+/**
+ * `runtime diagnose` exits 1 to say "attention needed": its contract with
+ * scripts, not a failure. The front door logs that exit as a verdict (PR #50,
+ * CR139), at INFO, so `front_door_errors` does not count the diagnose that
+ * reported it -- every diagnose with findings used to feed the finding, one
+ * line per run. The rule lives here, beside the command whose contract it is.
+ */
+export function isRuntimeVerdict(argv: readonly string[], exitCode: number): boolean {
+  return argv[0] === "runtime" && argv[1] === "diagnose" && exitCode === 1;
+}
+
 export async function runRuntimeReadRoute(
   argv: readonly string[],
   io: InstallRouteIo = {},

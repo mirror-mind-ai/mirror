@@ -6,7 +6,7 @@
 
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -41,12 +41,25 @@ interface Fixture {
   cleanup: () => void;
 }
 
+/** The lock's root, the four fields `packageLock.test.ts` compares (CR193). */
+function writeLock(repo: string, name: string, version: string): void {
+  const lock = {
+    name,
+    version,
+    lockfileVersion: 3,
+    requires: true,
+    packages: { "": { name, version } },
+  };
+  writeFileSync(join(repo, "package-lock.json"), `${JSON.stringify(lock, null, 2)}\n`);
+}
+
 /** A repository shaped like this one: version, release note, index, a commit. */
 function fixture(version = "1.2.3"): Fixture {
   const repo = mkdtempSync(join(tmpdir(), "us2-release-"));
   git(repo, "init", "-q", "-b", "main");
   writeFileSync(join(repo, "pyproject.toml"), `[project]\nname = "x"\nversion = "${version}"\n`);
   stageMirrorPackage(repo, { version });
+  writeLock(repo, "mirror-mind", version);
   mkdirSync(join(repo, "docs", "releases"), { recursive: true });
   writeFileSync(join(repo, "docs", "releases", `v${version}.md`), `# v${version} — A Release\n`);
   writeFileSync(join(repo, "docs", "releases", "index.md"), `- [v${version}](v${version}.md)\n`);
@@ -65,6 +78,7 @@ test("a release-ready repository passes every check the oracle makes", () => {
     assert.equal(byName.get("release note exists")?.state, "pass");
     assert.equal(byName.get("release note heading")?.state, "pass");
     assert.equal(byName.get("release index")?.state, "pass");
+    assert.equal(byName.get("lockfile")?.state, "pass");
     // Not tagged and no stable ref yet: warnings, not failures -- the doctor
     // runs BEFORE the tag exists, which is the point of running it.
     assert.equal(byName.get("release tag")?.state, "warn");
@@ -100,6 +114,85 @@ test("each defect the doctor exists to catch is caught", () => {
     report = buildReleaseDoctorReport({ target: "v1.2.3", start: f.repo });
     byName = new Map(report.checks.map((c) => [c.name, c]));
     assert.equal(byName.get("git tree clean")?.state, "fail");
+  } finally {
+    f.cleanup();
+  }
+});
+
+// CR193: nine releases bumped package.json and left package-lock.json at
+// `mirror-core 0.0.0`, and the doctor passed each. The lock is one of the
+// files a release commit changes, so its root is checked as the version is.
+const LOCK_FIX =
+  "run `npm install --package-lock-only --ignore-scripts` and commit package-lock.json";
+
+test("a lock left behind by the version bump fails the doctor, naming the command that fixes it", () => {
+  const f = fixture();
+  try {
+    writeLock(f.repo, "mirror-core", "0.0.0");
+    git(f.repo, "commit", "-qam", "a release commit that forgot the lock");
+    const report = buildReleaseDoctorReport({ target: "v1.2.3", start: f.repo });
+    const lock = report.checks.find((c) => c.name === "lockfile");
+    assert.equal(lock?.state, "fail");
+    assert.match(lock?.detail ?? "", /mirror-core 0\.0\.0/);
+    assert.match(lock?.detail ?? "", /mirror-mind 1\.2\.3/);
+    assert.ok(lock?.detail?.endsWith(LOCK_FIX), lock?.detail);
+    assert.equal(hasFailures(report), true);
+    assert.match(renderReleaseDoctor(report), /\[✗\] lockfile: /);
+  } finally {
+    f.cleanup();
+  }
+});
+
+test("a lock whose nested root alone is behind fails too: the four fields the guard test compares", () => {
+  const f = fixture();
+  try {
+    const lock = JSON.parse(readFileSync(join(f.repo, "package-lock.json"), "utf8"));
+    lock.packages[""].version = "1.2.2";
+    writeFileSync(join(f.repo, "package-lock.json"), `${JSON.stringify(lock, null, 2)}\n`);
+    git(f.repo, "commit", "-qam", "nested root behind");
+    const report = buildReleaseDoctorReport({ target: "v1.2.3", start: f.repo });
+    const check = report.checks.find((c) => c.name === "lockfile");
+    assert.equal(check?.state, "fail");
+    assert.match(check?.detail ?? "", /packages\[""\]/);
+  } finally {
+    f.cleanup();
+  }
+});
+
+test("a missing or unreadable lock fails the doctor with the same fix", () => {
+  const f = fixture();
+  try {
+    rmSync(join(f.repo, "package-lock.json"));
+    git(f.repo, "commit", "-qam", "no lock");
+    let report = buildReleaseDoctorReport({ target: "v1.2.3", start: f.repo });
+    let check = report.checks.find((c) => c.name === "lockfile");
+    assert.equal(check?.state, "fail");
+    assert.match(check?.detail ?? "", /package-lock\.json missing/);
+    assert.ok(check?.detail?.endsWith(LOCK_FIX), check?.detail);
+
+    writeFileSync(join(f.repo, "package-lock.json"), "{ not json\n");
+    git(f.repo, "add", "-A");
+    git(f.repo, "commit", "-qm", "broken lock");
+    report = buildReleaseDoctorReport({ target: "v1.2.3", start: f.repo });
+    check = report.checks.find((c) => c.name === "lockfile");
+    assert.equal(check?.state, "fail");
+    assert.match(check?.detail ?? "", /package-lock\.json unreadable/);
+    assert.ok(check?.detail?.endsWith(LOCK_FIX), check?.detail);
+  } finally {
+    f.cleanup();
+  }
+});
+
+test("promotion with a lock left behind creates no tag", () => {
+  const f = fixture();
+  try {
+    writeLock(f.repo, "mirror-core", "0.0.0");
+    git(f.repo, "commit", "-qam", "a release commit that forgot the lock");
+    const result = runReleasePromotion({ target: "v1.2.3", start: f.repo, push: true });
+    assert.equal(result.success, false);
+    assert.equal(result.steps[0]?.name, "release doctor");
+    assert.equal(result.steps[0]?.state, "fail");
+    assert.equal(git(f.repo, "tag", "--list").trim(), "", "no tag on a lock left behind");
   } finally {
     f.cleanup();
   }

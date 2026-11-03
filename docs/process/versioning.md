@@ -85,6 +85,17 @@ A push to `main` is not a release. `stable` advances only through release promot
 
 Git tags and the `stable` branch are the updater contract. GitHub Releases are the public release surface. Every promoted stable release should have a GitHub Release attached to the same tag, marked latest when it is the newest stable release, and using the repository release note as its body.
 
+## The Release Commit
+
+A release is one commit that changes, together: `version` in `package.json` and in the two
+plugin manifests (`plugins/mirror-mind/plugin.json`, `plugins/mirror-mind/.claude-plugin/plugin.json`);
+`package-lock.json`, regenerated with `npm install --package-lock-only --ignore-scripts` so its
+root names the same package and version; the release note under `docs/releases/`; its line in
+`docs/releases/index.md`; and the worklog entry. `npm run release:doctor -- --target vX.Y.Z`
+checks each of these before promotion and fails on a lock left behind, naming that command
+(CR193): nine releases, v0.36.0 to v0.39.1, bumped `package.json` and left the lock at
+`mirror-core 0.0.0`, and every `npm install` on a clone dirtied the tree.
+
 ## Release Notes Are Required for Future Releases
 
 Every future version after this adoption point should have a narrative release note under `docs/releases/vMAJOR.MINOR.PATCH.md`.

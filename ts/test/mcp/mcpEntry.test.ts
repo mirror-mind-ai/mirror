@@ -118,6 +118,7 @@ describe("the MCP entry's text", () => {
       "MIRROR_NODE",
       "mmbin",
       "mmdir",
+      "mmjs",
       "mmnode",
     ]);
   });
@@ -190,6 +191,33 @@ describe("the MCP entry, run as written", () => {
     });
     assert.equal(result.status, 0, result.stderr);
     assert.ok(existsSync(marker), "the node MIRROR_NODE names ran the server");
+  });
+
+  test("an npm shell shim beside node_modules, as Windows's global prefix is shaped: the package's own bin runs (PR #53)", () => {
+    // On Windows npm writes no symlink: `mirror` in its prefix is a POSIX
+    // shell shim with `node_modules/` beside it. Handed to Node, the shim
+    // died on its second line ("SyntaxError: missing ) after argument list")
+    // and the MCP server never started. Modeled on POSIX: a prefix in that
+    // shape, the shim a script Node cannot run, the real bin one fixed path
+    // away. The server answering `initialize` is the proof the bin ran.
+    const root = scratch();
+    const prefix = join(root, "npm-prefix");
+    const pkgBin = join(prefix, "node_modules", "mirror-mind", "bin");
+    mkdirSync(pkgBin, { recursive: true });
+    writeFileSync(
+      join(prefix, "mirror"),
+      '#!/bin/sh\nbasedir=$(dirname "$(echo "$0" | sed -e \'s,\\\\,/,g\')")\nexec node "$basedir/node_modules/mirror-mind/bin/mirror.js" "$@"\n',
+      { mode: 0o755 },
+    );
+    symlinkSync(join(REPO_ROOT, "bin", "mirror.js"), join(pkgBin, "mirror.js"));
+    const result = runEntry(root, {
+      HOME: join(root, "home"),
+      PATH: `${resolve(process.execPath, "..")}:/usr/bin:/bin`,
+      MIRROR_BIN: prefix,
+      MIRROR_HOME: join(root, "mirror-home"),
+    });
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(serverName(result.stdout), "mirror-mind");
   });
 
   test("a .env beside the plugin is not read, and the client's environment reaches the server", () => {

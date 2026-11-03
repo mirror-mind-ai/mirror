@@ -12,6 +12,59 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-11-03 — v0.39.2: Input, Read the Platform's Way
+
+Patch release of PR #49 and PR #48 (@rodrigoimmaginario),
+[CR194](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr194-powershell-stdin-reaches-identity-set-as-utf-16-or-ascii.md),
+and [CR193](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr193-the-release-doctor-does-not-check-the-lockfile.md).
+`runtime diagnose` looked for `node` on a `:`-split PATH and warned every Windows install;
+a PowerShell byte-order mark was stored as identity content; the lockfile's root had said
+`mirror-core 0.0.0` through nine releases. PR #49's review found the two PowerShell 5.1
+hazards beside the BOM, UTF-16 from `>` and ASCII from the pipe, and CR194 answered them
+with one decoder and `--file`. CR193 put the lock check in the release doctor, and this is
+the first release it checked: the release commit regenerates `package-lock.json`.
+
+Both PRs were reviewed through four lenses and merged as written, each with one
+maintainer commit on the branch. Rodrigo was asked on PR #49 to measure PowerShell 5.1
+itself once this release is out.
+
+No migration. No model or prompt changed, so the model-behavior gate does not apply.
+Release note: [v0.39.2](../releases/v0.39.2.md).
+
+After the release commit:
+
+- CI was green on all four jobs and the docs check before the tag existed; the release
+  doctor's `lockfile` check passed on its first release.
+- `release:promote` (dry run, then `--push`) tagged `v0.39.2` and moved `stable` to `e7185c3d`.
+- The GitHub Release is published and marked latest.
+- The Navigator approved the `release` environment and the npm stage, and moved `latest`
+  with 2FA. `latest` and `stable` are at 0.39.2, `gitHead` `e7185c3d`.
+- The Navigator's own Homebrew package was updated to 0.39.2 with `mirror runtime update`.
+
+### 2026-11-02 — v0.39.1: Pi Finds Its Node, or Says So
+
+Patch release of PR #47 (@rodrigoimmaginario) and
+[CR191](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr191-the-pi-extension-cannot-find-node-where-the-hook-wrappers-can.md).
+A Pi opened where `node` is not on the PATH exited with `spawn node ENOENT`; PR #47 keeps
+it up, and CR191 makes the extension resolve Node where the hook wrappers look, say so once
+when nothing resolves, and write the `hooks.log` line `runtime diagnose` reads. PR #47 was
+reviewed through four lenses on 2026-11-01 and merged as it was on 2026-11-02 after CI on
+the branch updated to `main`; CR191 was captured, planned, implemented, and validated by the
+Navigator the same day against Pi 1.5.0 with a bare PATH.
+
+No migration. No model or prompt changed, so the model-behavior gate does not apply.
+Release note: [v0.39.1](../releases/v0.39.1.md).
+
+After the release commit:
+
+- CI was green on all four jobs and the docs check before the tag existed.
+- `release:promote` (dry run, then `--push`) tagged `v0.39.1` and moved `stable` to `27018088`.
+- The GitHub Release is published and marked latest.
+- The Navigator approved the `release` environment and the npm stage, and moved `latest`
+  with 2FA. `latest` and `stable` are at 0.39.1, `gitHead` `27018088`.
+- The Navigator's own Homebrew package was updated to 0.39.1 with `mirror runtime update`:
+  the Pi he runs daily carries the fix.
+
 ### 2026-10-31 — CR189 done: v0.39.0's note names PR #46 and the Windows update step
 
 v0.39.0 shipped PR #46 without a word about it. A dated addition to its note now says it: a
