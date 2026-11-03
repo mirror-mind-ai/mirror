@@ -12,6 +12,22 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-11-03 — v0.39.4: The Reply Finds Its Prompt
+
+Patch release of PR #51 (@alannascimento1, his first here),
+[CR166](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr166-a-plain-language-journey-switch-strands-its-turn.md)
+and
+[CR196](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr196-a-prompt-typed-while-a-turn-runs-loses-its-reply-on-claude-code.md).
+On Claude Code the Stop hook dropped the reply to a prompt typed while a turn ran (the
+prompt hook fires at queue time under the running turn's id) and to a journey entered in
+plain words (the Builder load switches the conversation mid-turn). Both are paired now;
+CR166 had been in the backlog since 2026-10-24, CR196 was captured at merge. Reviewed
+through four lenses, no amendments; merged as written after the first-time-contributor CI
+gate was approved and all four jobs passed.
+
+No schema change, no migration. No model or prompt changed, so the model-behavior gate
+does not apply. Release note: [v0.39.4](../releases/v0.39.4.md).
+
 ### 2026-11-03 — v0.39.3: Windows Gets Its Hooks
 
 Patch release of PR #53, PR #50, and PR #54 (@rodrigoimmaginario). On a Windows package
