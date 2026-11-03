@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
@@ -82,6 +82,71 @@ test("front door `journey update` reads content from stdin when given '-'", () =
     db.close();
     assert.equal(row?.content, "Piped content\n");
   } finally {
+    cleanup();
+  }
+});
+
+test("front door `journey update --file` reads the file as bytes (CR194)", () => {
+  const { dbPath, cleanup } = journeyDbCopy();
+  const dir = mkdtempSync(join(tmpdir(), "mirror-core-journey-file-"));
+  try {
+    const text = "Caminho: ação, não reação.\n";
+    const file = join(dir, "caminho.md");
+    writeFileSync(file, Buffer.concat([Buffer.from([0xff, 0xfe]), Buffer.from(text, "utf16le")]));
+    const result = spawnFrontDoor([
+      "journey",
+      "update",
+      "demo",
+      "--file",
+      file,
+      "--db-path",
+      dbPath,
+    ]);
+    assert.equal(result.status, 0, result.stderr);
+    const db = openDatabaseReadOnly(dbPath);
+    const row = db
+      .prepare("SELECT content FROM identity WHERE layer = 'journey_path' AND key = 'demo'")
+      .get() as { content: string } | undefined;
+    db.close();
+    assert.equal(row?.content, text);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+    cleanup();
+  }
+});
+
+test("front door `journey update --file` with '-' or a missing file is refused without writing (CR194)", () => {
+  const { dbPath, cleanup } = journeyDbCopy();
+  const dir = mkdtempSync(join(tmpdir(), "mirror-core-journey-file-"));
+  try {
+    const file = join(dir, "caminho.md");
+    writeFileSync(file, "x\n");
+    let result = spawnFrontDoor(
+      ["journey", "update", "demo", "-", "--file", file, "--db-path", dbPath],
+      {},
+      "y\n",
+    );
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /--file and '-'/);
+    result = spawnFrontDoor([
+      "journey",
+      "update",
+      "demo",
+      "--file",
+      join(dir, "nope.md"),
+      "--db-path",
+      dbPath,
+    ]);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /cannot read /);
+    const db = openDatabaseReadOnly(dbPath);
+    const row = db
+      .prepare("SELECT 1 FROM identity WHERE layer = 'journey_path' AND key = 'demo'")
+      .get();
+    db.close();
+    assert.equal(row, undefined, "nothing was written");
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
     cleanup();
   }
 });

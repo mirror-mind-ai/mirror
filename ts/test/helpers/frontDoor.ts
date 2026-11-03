@@ -17,7 +17,7 @@ export interface FrontDoorResult {
 export function spawnFrontDoor(
   args: string[],
   env: Record<string, string> = {},
-  input?: string,
+  input?: string | Buffer,
 ): FrontDoorResult {
   const result = spawnSync(process.execPath, [CLI, ...args], {
     encoding: "utf8",
