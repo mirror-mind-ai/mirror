@@ -16,7 +16,9 @@ When receiving `/mm-journey update <slug> <content>`: answered by the TS core (C
 
 ```bash
 mirror journey update <slug> "<content>"
-# or pipe via stdin:
+# longer than a line: write it to a file, read as bytes, untouched by the shell
+mirror journey update <slug> --file <path>
+# a one-liner through stdin (not on Windows PowerShell 5.1, whose pipe is ASCII):
 echo "<content>" | mirror journey update <slug> -
 ```
 

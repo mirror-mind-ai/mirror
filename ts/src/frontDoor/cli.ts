@@ -80,6 +80,7 @@ import { configFilePath, loadConfiguration, silenceExperimentalWarnings } from "
 import { runSeed } from "#seed/seed.ts";
 import { getTasksForWeek, listTasks } from "#tasks/taskStore.ts";
 import { computeWeekRange } from "#tasks/weekView.ts";
+import { expandHome } from "#util/paths.ts";
 import { PROGRAM } from "#util/program.ts";
 import { newId, nowIso } from "#util/pyGenerators.ts";
 import { hasOption, optionValue, stripOptionWithValue } from "./args.ts";
@@ -169,7 +170,7 @@ import {
 } from "./render/tasksImportSync.ts";
 import { renderWeekView } from "./render/week.ts";
 import { retiredRefusal, routeMemoryCommand } from "./routing.ts";
-import { runRuntimeReadRoute, runWelcomeRoute } from "./runtimeRoute.ts";
+import { isRuntimeVerdict, runRuntimeReadRoute, runWelcomeRoute } from "./runtimeRoute.ts";
 import { runMemorySearchRoute } from "./searchRoute.ts";
 import { resolveSeedPaths } from "./seedPaths.ts";
 import { isSessionStartWelcome, runSessionStartWelcomeRoute } from "./sessionStartWelcomeRoute.ts";
@@ -187,6 +188,7 @@ import {
   applyTasksStatusChange,
   type TaskStatusTarget,
 } from "./tasksWriteRoute.ts";
+import { readStdinText, readTextFile } from "./textInput.ts";
 import { answerUsage } from "./usage.ts";
 
 /**
@@ -522,12 +524,19 @@ function runShadowRead(db: Database, args: readonly string[]): number {
   return 0;
 }
 
+/** Stdin as human text, decoded by its mark (PR #49, CR194: `textInput.ts`). */
 function readStdinContent(): string {
-  try {
-    return readFileSync(0, "utf8");
-  } catch {
-    return "";
-  }
+  return readStdinText();
+}
+
+/**
+ * CR194: `--file <path>`, the text read by Mirror as bytes, so the shell's pipe
+ * never touches it (PowerShell 5.1's pipe is ASCII by default, and its `>` is
+ * UTF-16LE). `~` expands as it does for `--mirror-home`; a relative path is
+ * the cwd's. The refusal names the path and nothing from the error.
+ */
+function readFileContent(path: string): { text: string } | { error: string } {
+  return readTextFile(expandHome(path));
 }
 
 /** `conversations append` (CV22.DS7.US10 slice B′). */
@@ -840,7 +849,10 @@ function refusedNewIdentityKey(args: readonly string[], layer: string, key: stri
 function runIdentityWrite(argv: readonly string[]): number {
   const args = argv.slice(2);
   const positionals = stripOptionWithValue(
-    stripOptionWithValue(stripOptionWithValue(args, "--content"), "--db-path"),
+    stripOptionWithValue(
+      stripOptionWithValue(stripOptionWithValue(args, "--content"), "--file"),
+      "--db-path",
+    ),
     "--mirror-home",
   );
   const layer = positionals[0];
@@ -854,7 +866,23 @@ function runIdentityWrite(argv: readonly string[]): number {
     console.error(`Error: ${refused}`);
     return 1;
   }
-  const content = optionValue(args, "--content") ?? readStdinContent();
+  const inlineContent = optionValue(args, "--content");
+  const filePath = optionValue(args, "--file");
+  if (inlineContent !== null && filePath !== null) {
+    console.error("Error: --file and --content name two sources for one content; pass one.");
+    return 1;
+  }
+  let content: string;
+  if (filePath !== null) {
+    const read = readFileContent(filePath);
+    if ("error" in read) {
+      console.error(`Error: ${read.error}`);
+      return 1;
+    }
+    content = read.text;
+  } else {
+    content = inlineContent ?? readStdinContent();
+  }
   if (!content.trim()) {
     console.error("Error: content is empty.");
     return 1;
@@ -1007,22 +1035,36 @@ function runJourneyWrite(argv: readonly string[]): number {
  */
 const JOURNEY_UPDATE_USAGE =
   `Usage: ${PROGRAM} journey update <slug> <content>\n` +
-  "       Pass '-' as <content> to read it from stdin.";
+  "       Pass '-' as <content> to read it from stdin, or --file <path> to read a file.";
 const FLAG_SHAPED_CONTENT = /^--?[A-Za-z]/;
 
 function runJourneyUpdateWrite(argv: readonly string[]): number {
   const args = argv.slice(2);
   const positionals = stripOptionWithValue(
-    stripOptionWithValue(args, "--db-path"),
+    stripOptionWithValue(stripOptionWithValue(args, "--file"), "--db-path"),
     "--mirror-home",
   );
   const slug = positionals[0];
   let content = positionals[1];
-  if (!slug || content === undefined) {
+  const filePath = optionValue(args, "--file");
+  if (!slug || (content === undefined && filePath === null)) {
     console.error(JOURNEY_UPDATE_USAGE);
     return 1;
   }
-  if (content === "-") {
+  if (filePath !== null) {
+    if (content !== undefined) {
+      console.error(
+        `Error: --file and ${content === "-" ? "'-'" : "<content>"} name two sources for one content; pass one.`,
+      );
+      return 1;
+    }
+    const read = readFileContent(filePath);
+    if ("error" in read) {
+      console.error(`Error: ${read.error}`);
+      return 1;
+    }
+    content = read.text;
+  } else if (content === "-") {
     content = readStdinContent();
   } else if (FLAG_SHAPED_CONTENT.test(content)) {
     console.error(
@@ -1669,6 +1711,8 @@ interface DispatchOutcome {
   exitCode: number;
   /** Content-free route metadata for the durable front-door log. */
   detail?: string;
+  /** The non-zero exit is the command's answer, not a failure (`frontDoorLog.ts`). */
+  verdict?: boolean;
 }
 
 async function dispatch(argv: readonly string[]): Promise<DispatchOutcome> {
@@ -1777,7 +1821,13 @@ async function dispatchTs(argv: readonly string[]): Promise<number | DispatchOut
   // database, when at all, through a read-only handle -- no bootstrap, no
   // migrate-on-open, and for `welcome --status-line` no subprocess whatsoever.
   if (argv[0] === "welcome") return runWelcomeRoute(argv);
-  if (argv[0] === "runtime") return runRuntimeReadRoute(argv);
+  if (argv[0] === "runtime") {
+    const exitCode = await runRuntimeReadRoute(argv);
+    // A verdict, not a failure: `isRuntimeVerdict` says which (CR139).
+    return isRuntimeVerdict(argv, exitCode)
+      ? { exitCode, detail: "verdict=attention", verdict: true }
+      : exitCode;
+  }
   if (argv[0] === "mcp") return runMcpServer();
   if (isMemorySearch(argv)) return runMemorySearch(argv);
   if (isConsult(argv)) {
@@ -1853,6 +1903,7 @@ export async function main(rawArgv = process.argv.slice(2)): Promise<number> {
       route: decision.engine,
       exitCode: outcome.exitCode,
       ...(outcome.detail ? { detail: outcome.detail } : {}),
+      ...(outcome.verdict ? { verdict: true } : {}),
     });
     return outcome.exitCode;
   } catch (error) {

@@ -239,15 +239,15 @@ See [MEMORY_RECEPTION](#memory_reception).
 
 ## Hook Node resolution
 
-**What it is:** `MIRROR_NODE`, the path of the `node` binary the runtime hook wrappers should run.
+**What it is:** `MIRROR_NODE`, the path of the `node` binary the runtime hook wrappers and the Pi extension should run.
 
-**Used by:** every hook wrapper under `.claude/hooks/`, `plugins/mirror-mind/hooks/`, and `plugins/mirror-mind/agy/`.
+**Used by:** every hook wrapper under `.claude/hooks/`, `plugins/mirror-mind/hooks/`, and `plugins/mirror-mind/agy/`; the plugin's MCP entry; and the Pi extension, `.pi/extensions/mirror-logger.ts` (CR191).
 
-**How to change it:** set `MIRROR_NODE=/path/to/node` in the environment the runtime is launched with. Without it a wrapper tries `command -v node`, then the nvm `current` symlink, `/opt/homebrew/bin/node`, and `/usr/local/bin/node`.
+**How to change it:** set `MIRROR_NODE=/path/to/node` in the environment the runtime is launched with. Without it a wrapper tries `command -v node`, then the Node beside the Mirror entry, then the nvm `current` symlink, `/opt/homebrew/bin/node`, and `/usr/local/bin/node`. The Pi extension searches in the same order; its "beside the entry" is the `bin/` of the prefix the package is installed under (`/opt/homebrew/bin/node` for a Homebrew Node), which is the Node that installed the package. The extension takes an absolute path only; a relative one, a directory, a missing path, or a file that is not executable is warned once in `mirror-logger.log`, with the reason, and the search goes on without it.
 
 **Active in code:** yes. The wrappers read it before Node starts; `runtime diagnose` checks the same order from its own environment, and reports the failures `hooks.log` recorded in the last seven days.
 
-**Effects:** a GUI-launched runtime often does not inherit the `PATH` that holds `node`, or finds an older one first. A wrapper that cannot find Node, or finds one older than 24 that cannot run the hook, skips the hook and writes one line to `<mirror home>/hooks.log` instead of failing the user's turn, so "Mirror stopped remembering" has a place to be diagnosed.
+**Effects:** a GUI-launched runtime often does not inherit the `PATH` that holds `node`, or finds an older one first. A wrapper that cannot find Node, or finds one older than 24 that cannot run the hook, skips the hook and writes one line to `<mirror home>/hooks.log` instead of failing the user's turn, so "Mirror stopped remembering" has a place to be diagnosed. A Pi whose extension finds no Node stays up, says so once at session start with the fix, writes the same kind of line to `hooks.log` (`pi:session-start: node not found on PATH or in the usual places; …`), and runs nothing for that session.
 
 ## TypeScript live-provider transport (CV22.DS8)
 

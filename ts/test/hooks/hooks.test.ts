@@ -225,6 +225,52 @@ describe("diagnose reports the transition's leftovers", () => {
     assert.match(findings[0]?.recommendation ?? "", /MIRROR_NODE/);
   });
 
+  test("node is looked for with the platform's PATH separator and executable name", () => {
+    // Splitting on `:` cut `C:\Program Files\nodejs` into `C` and a path, and
+    // `/node` never matched `node.exe`: the finding fired on every Windows
+    // install that had Node. Both platforms, on every host: CI runs this file
+    // on macOS and Ubuntu only, so the Windows branch is proved here or not at all.
+    const probed: string[] = [];
+    const windows = hookNodeFindings(
+      { PATH: "C:\\Windows;C:\\Program Files\\nodejs", HOME: "C:\\Users\\h" } as NodeJS.ProcessEnv,
+      (p) => {
+        probed.push(p);
+        return p === "C:\\Program Files\\nodejs\\node.exe";
+      },
+      "win32",
+    );
+    assert.deepEqual(windows, []);
+    assert.ok(probed.includes("C:\\Windows\\node.exe"), probed.join(" "));
+    assert.ok(
+      !probed.some((p) => p === "C:\\Windows\\node" || p.startsWith("C\\")),
+      probed.join(" "),
+    );
+
+    probed.length = 0;
+    const posixFound = hookNodeFindings(
+      { PATH: "/usr/bin:/opt/node/bin", HOME: "/h" } as NodeJS.ProcessEnv,
+      (p) => {
+        probed.push(p);
+        return p === "/opt/node/bin/node";
+      },
+      "linux",
+    );
+    assert.deepEqual(posixFound, []);
+    assert.deepEqual(
+      probed,
+      ["/usr/bin/node", "/opt/node/bin/node"],
+      "byte-for-byte the old lookup",
+    );
+
+    // The host's own platform, as runtime diagnose calls it.
+    const dir = process.platform === "win32" ? "C:\\Program Files\\nodejs" : "/opt/node/bin";
+    const expected = join(dir, process.platform === "win32" ? "node.exe" : "node");
+    assert.deepEqual(
+      hookNodeFindings({ PATH: dir, HOME: "/h" } as NodeJS.ProcessEnv, (p) => p === expected),
+      [],
+    );
+  });
+
   test("node on PATH, or MIRROR_NODE set, reports nothing", () => {
     assert.deepEqual(
       hookNodeFindings({ PATH: "/usr/bin", HOME: "/h" } as NodeJS.ProcessEnv, () => true),

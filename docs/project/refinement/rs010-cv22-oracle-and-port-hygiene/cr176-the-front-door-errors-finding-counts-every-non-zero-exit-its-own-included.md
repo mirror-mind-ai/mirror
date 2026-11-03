@@ -50,4 +50,10 @@ with no other test; the two diagnose runs of 2026-10-25, reporting 6 and then 9.
 
 ## Outcome
 
-Pending: captured, not planned.
+**Rejected 2026-11-03**, by the Navigator's decision: a duplicate, not declined.
+[CR139](cr139-a-verdict-that-exits-1-is-logged-as-a-front-door-error.md), captured
+2026-10-15, describes the same loop and carries CR127's options; this CR was captured ten
+days later from the v0.37.0 update without finding it. CR139 is delivered by PR #50
+(@rodrigoimmaginario), merged 2026-11-03: the diagnose exit is logged as a verdict. The
+revisit trigger recorded here, "the next change to `runtime diagnose` or to the front-door
+log", is what PR #50 was.

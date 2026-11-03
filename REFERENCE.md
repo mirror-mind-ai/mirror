@@ -56,10 +56,10 @@ the bare `/mm-<skill>` and qualifies a skill only when two share a name; the
 | `/mm-explore` | `$mm-explore` | `/mm:explore` | Explorer Mode for a journey, with explicit deactivation, in-session story surfaces, and Builder handoff artifacts — preserves uncertainty before construction | `<slug>`, `deactivate`, `story show|update|clear|open|thicken|snapshot|attractors|experiment|handoff|promote` |
 | `/mm-soul` | `$mm-soul` | `/mm:soul` | Soul Mode ritual entry and possible-listenings surface for inner-life listening | `[slug]` |
 | `mirror mode` | — | — | Internal explicit Mirror operating mode lifecycle used by runtime skills and status bars | `activate <mode> [--journey J]`, `deactivate`, `status` |
-| `/mm-identity` | `$mm-identity` | `/mm:identity` | Read and update identity directly in the database | `list [--layer L]`, `get <layer> <key>`, `set <layer> <key>`, `edit <layer> <key>` |
+| `/mm-identity` | `$mm-identity` | `/mm:identity` | Read and update identity directly in the database | `list [--layer L]`, `get <layer> <key>`, `set <layer> <key> [--content TEXT \| --file PATH]`, `edit <layer> <key>` |
 | `/mm-consult` | `$mm-consult` | `/mm:consult` | Asks other LLMs through OpenRouter with Mirror context | `<family> [tier] "prompt"`, `credits` |
 | `/mm-journeys` | `$mm-journeys` | `/mm:journeys` | Lists journeys with status | no arguments |
-| `/mm-journey` | `$mm-journey` | `/mm:journey` | Shows detailed journey identity, journey path, memories, and conversations | `[journey]`, `update <journey> <content>` |
+| `/mm-journey` | `$mm-journey` | `/mm:journey` | Shows detailed journey identity, journey path, memories, and conversations | `[journey]`, `update <journey> <content \| - \| --file PATH>` |
 | `/mm-memories` | `$mm-memories` | `/mm:memories` | Lists or searches memories by type, layer, and journey | `--type T`, `--layer L`, `--journey J`, `--search "Q"`, `--limit N` |
 | `/mm-tasks` | `$mm-tasks` | `/mm:tasks` | Manages tasks by journey | `list`, `add "title"`, `done <id>`, `doing <id>`, `block <id>`, `delete <id>`, `import`, `sync` |
 | `/mm-week` | `$mm-week` | `/mm:week` | Weekly planning | `view`, `plan "text"`, `save` |
@@ -931,7 +931,7 @@ to the homes root (`~/.mirror-minds`).
 | `MIRROR_STALE_ORPHAN_MINUTES` | `30` | How long an open conversation may sit idle before session maintenance closes it as an orphan, with its runtime session deactivated. On Codex 0.163.0, whose sessions outlive the TUI and whose SessionEnd fires only when the daemon reaps the idle thread, this is the fallback close (CV21.DS4.US4). A route sets it to `0` to prove the close now. |
 | `MIRROR_WELCOME` | (unset) | Set to `off`, `0`, `false`, or `no` to suppress the welcome card emitted by `mirror welcome`. See `docs/product/specs/welcome/index.md`. |
 | `MIRROR_TS_MCP_GUARDS` | (unset) | Set to `0` to remove the MCP wallet and abuse guards (rate limit, spend ceiling, argument caps). See [Configuration](docs/reference/configuration.md#mcp-wallet-and-abuse-guards-cv22ds9ts1). |
-| `MIRROR_NODE` | (unset) | The `node` binary the hook wrappers and the plugin's MCP entry run, when the runtime's `PATH` does not hold one (a GUI launch). Searched after it: `PATH`, the directory the Mirror entry was found in, `~/.nvm/current/bin`, `/opt/homebrew/bin`, `/usr/local/bin`. |
+| `MIRROR_NODE` | (unset) | The `node` binary the hook wrappers, the plugin's MCP entry, and the Pi extension run, when the runtime's `PATH` does not hold one (a GUI launch). Searched after it: `PATH`, the directory the Mirror entry was found in (for the Pi extension, the `bin/` of the prefix the package is installed under), `~/.nvm/current/bin`, `/opt/homebrew/bin`, `/usr/local/bin`. The Pi extension takes an absolute path only, and warns once in `mirror-logger.log` about a value it will not use. |
 | `MIRROR_BIN` | (unset) | The directory holding `mirror` and `mirror-hook` (`$(npm prefix -g)/bin`), for the plugin's hook wrappers and MCP entry, which run from a runtime's plugin cache and cannot reach the tree by a relative path. Searched after it: `PATH`, `~/.nvm/current/bin`, `/opt/homebrew/bin`, `/usr/local/bin`. Same trust class as `MIRROR_NODE`: whoever sets it chooses what runs. |
 
 The plugin manifest's MCP entry is `/bin/sh -c <locator>`: it finds the
