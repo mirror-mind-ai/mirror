@@ -812,11 +812,15 @@ an actionable message.
 
 **Supported today: POSIX (macOS, Linux).** The hook wrappers and the plugin's MCP
 entry (a `/bin/sh` command) are POSIX shell, CI runs on Linux, and the
-data-at-rest posture below is POSIX file modes. **There is no Windows product.**
-The PowerShell installer and the Windows Frame were retired by CV22.DS10.US3
+data-at-rest posture below is POSIX file modes. **This repository ships no
+Windows product.** The PowerShell installer and the Windows Frame were retired by CV22.DS10.US3
 (decision D4): they installed and called the Python engine, and they still do at
 `v0.31.14`, as their [cutoff](docs/releases/pending-cutoffs.md#the-windows-frame-and-installer)
-says. A Windows story over the npm package — invocation, path handling, an
+says. A per-user Windows installer over the npm package now lives in its own
+repository, [mirror-mind-ai/mirror-installer](https://github.com/mirror-mind-ai/mirror-installer):
+it pins the core version it tests against and follows releases through its own
+contract check, outside this package and its CI, and it changes nothing in this
+envelope. A Windows story in the core — invocation, path handling, an
 ACL-based data-at-rest posture, a snapshot promotion that survives an open
 database, and Windows CI — is its own story, and none is promised while nobody
 asks for it.

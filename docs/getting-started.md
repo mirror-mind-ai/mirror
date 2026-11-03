@@ -50,7 +50,10 @@ node --version   # must be v24.0.0 or newer
 Install or upgrade from [nodejs.org](https://nodejs.org/). `runtime status`
 reports the detected Node version. Currently POSIX (macOS/Linux) is the
 supported platform; see [REFERENCE.md](../REFERENCE.md#platform-envelope) for
-the platform envelope.
+the platform envelope. On Windows, the separate
+[Mirror Mind for Windows](https://github.com/mirror-mind-ai/mirror-installer)
+installer puts Node, Git Bash, Pi and Mirror in place in one pass, and its own
+repository is where it is supported.
 
 ### Pi — recommended harness
 
