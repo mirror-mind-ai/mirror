@@ -175,6 +175,50 @@ the amendments folded. Driver `@viniciusteles`, Delivery `main`.
   (`-Encoding Unicode`); `$OutputEncoding` defaults to ASCII for native commands.
   PowerShell 7: UTF-8 without a mark for both.
 
+### Implementation and validation, 2026-11-03
+
+- Commits on `main`: `a45d5405` (decoder, `--file`, tests, golden), `befae44f` (skills in
+  the three forms and REFERENCE), `51696c68` (the troubleshooting section).
+- Checks before the commits: `tsc --noEmit` and `biome check` clean (the one warning
+  predates this work); `bash scripts/test_leaves_nothing.sh`: 3,753 tests, 0 failures,
+  nothing left behind; doc links, temp homes, retired surfaces, skill parity, and
+  `buildClaudePlugin.ts --check` clean.
+- The journey-update golden moved with the usage line, which now names `--file`: the
+  Python oracle it pinned is retired, and the line is how a person finds the option.
+- Navigator validation, 2026-11-03 16:42–16:45, this machine, the checkout's front door
+  against a scratch copy of the real database (`--db-path`), with three files of the same
+  Portuguese text: UTF-8, UTF-8 with a mark, UTF-16LE with a mark as Windows PowerShell
+  5.1's `>` writes it (first bytes `ff fe`). Eight steps, each as expected:
+  1. `identity set --file` of the UTF-8 file: the text, accents intact.
+  2. `--file` of the UTF-16LE file: the same text; no `ÿþ`, no NULs.
+  3. The UTF-16LE file through stdin (`< file`, the `cmd.exe` case): the same text.
+  4. The UTF-8-with-mark file through stdin: stored bytes begin `2320 5065 7266 696c`
+     (`# Perfil`), not `ef bb bf`.
+  5. `journey update --file` of the UTF-16LE file: updated, the same text back.
+  6. Refusals, exit 1 each, one line each, nothing written: a missing file (`cannot read
+     <path>`), a directory (the same line), `--file` with `--content`, `--file` with `-`;
+     `identity get` found none of the three keys.
+  7. A one-liner through the pipe: unchanged.
+  8. The scratch removed; the real home untouched throughout.
+- Windows PowerShell 5.1 itself: not measured here. Per decision 6, Rodrigo Immaginario is
+  asked on PR #49's thread to try the pipe with and without the shell fix, and `--file`,
+  once the release carries this.
+- Validation accepted by the Navigator, 2026-11-03.
+
+### Debt review
+
+- `readStdinContent` in `cli.ts` is now a one-line delegate to `readStdinText`; kept so
+  the two call sites read as they did. Could be inlined; not worth a diff of its own.
+- The decoder refuses nothing: an odd trailing byte in UTF-16BE is dropped, as Node's
+  UTF-16LE decoder drops one. Documented in the code; no finding.
+- The skills' plugin copies are generated from `.claude/skills/`, and the Pi form is a
+  separate file: three edits for one sentence. That is the layout (CR102, CR159), not
+  this CR's debt.
+- No other findings.
+
 ## Outcome
 
-Pending: planned, approved 2026-11-02; implementation on `main`.
+Done, 2026-11-03. Text on stdin is decoded by its mark, UTF-8 or UTF-16; `--file` reads a
+file as bytes, the route around a pipe that cannot be trusted; the troubleshooting page
+names the three PowerShell 5.1 behaviors and the way around each. On `main` at `51696c68`;
+for the next release.
