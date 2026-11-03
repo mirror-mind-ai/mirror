@@ -253,6 +253,69 @@ Portuguese such as `Âncora` unchanged.
 
 ---
 
+## Text piped from PowerShell loses its accents, or arrives as UTF-16
+
+**Date:** 2026-11-02
+**Status:** fixed for the marks (PR #49, CR194); the ASCII pipe is routed around, not detected
+**Affected component:** `identity set` without `--content`, `journey update <slug> -`
+**Severity:** an identity entry or journey path stored with every accent replaced, or with a stray character at its head
+
+### Symptom
+
+After `Get-Content perfil.md | mirror identity set ego perfil` in Windows PowerShell
+5.1, `mirror identity get ego perfil` shows `N?o h? transi??o` where the file said
+`Não há transição`. Or the entry starts with an invisible character (U+FEFF) that
+shows up as `ï»¿` in some viewers. Or, from `cmd.exe` with `< file`, the entry is two
+replacement characters followed by the text with a NUL between every letter.
+
+### Root cause
+
+Three things Windows PowerShell 5.1 does to text, none of them Mirror's:
+
+- what it pipes to a native command goes through `$OutputEncoding`, whose default
+  is ASCII: every character outside ASCII becomes `?`, and nothing marks the loss;
+- what it pipes may begin with a UTF-8 byte-order mark, which is a signature, not
+  content;
+- what `>` writes to a file is UTF-16LE, with its own mark.
+
+Mirror read stdin as UTF-8 and stored what arrived. PowerShell 7 does none of
+these: its pipe and its `>` are UTF-8 without a mark.
+
+### Diagnosis
+
+```bash
+mirror identity get <layer> <key>
+```
+
+`?` where a letter should be is the ASCII pipe; a leading `ï»¿` is the UTF-8 mark;
+NULs between letters are UTF-16 read as UTF-8. The database holds exactly what
+arrived, so the repair is to set the entry again, correctly, through one of the
+routes below.
+
+### Fix
+
+Since CR194 Mirror decodes the marks itself: a UTF-8 or UTF-16 mark on stdin or in
+a file chooses the decoding and is dropped. The ASCII pipe is not detectable (`?`
+is a character), so the fix is a route that never meets the pipe:
+
+```powershell
+mirror identity set ego perfil --file perfil.md
+mirror journey update <slug> --file caminho.md
+```
+
+`--file` reads the file as bytes, whatever wrote it. It is the route for anything
+longer than a line on every platform; on PowerShell 5.1 it is the only safe one.
+
+To use the pipe anyway, make it UTF-8 for the session, or in `$PROFILE`:
+
+```powershell
+$OutputEncoding = [Console]::OutputEncoding = [Text.UTF8Encoding]::new()
+```
+
+Or use PowerShell 7, where none of this happens.
+
+---
+
 ## Pi Builder conversations appear without journeys
 
 **Date:** 2026-05-25
