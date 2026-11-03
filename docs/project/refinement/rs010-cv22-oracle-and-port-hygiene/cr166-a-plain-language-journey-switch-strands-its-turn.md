@@ -49,6 +49,29 @@ direction. Filed in RS010 beside CR100, which covers the same function on a *gue
 session. Here the session is the right one; the switch's timing is the defect. Not
 planned. Current Focus unchanged.
 
+2026-11-03: delivered by [PR #51](https://github.com/mirror-mind-ai/mirror/pull/51)
+(@alannascimento1, opened 2026-10-30), which found the case on its own from a week of
+`hooks.log` and the session transcript, and fixed it the first way Expected Behavior
+names: the prompt keeps its reply, in the conversation the switch opens.
+`switchConversation` moves the old conversation's last row to the new one when it is a
+hook prompt (one carrying a `turn_id`) with no reply after it; a prompt logged by hand
+stays, so `mm-new` and the logger CLI behave as before. The same PR fixes the queued
+prompt case, captured as CR196 at merge. Assigned at merge: Driver `@alannascimento1`,
+Delivery PR #51.
+
+Reviewed through four lenses on 2026-11-03: engineer, database architect, quality
+assurance, DevOps engineer. No amendments; merged as written after CI ran on the branch
+updated to `main` (the first-time-contributor gate approved by the maintainer).
+
+Debt recorded, both named by the author:
+
+- The moved prompt's `created_at` precedes the new conversation's `started_at`. No reader
+  compares the two today.
+- The move happens after the old conversation's close-time extraction, which therefore
+  still saw the prompt: its summary may describe a message that now lives in the new
+  conversation. Moving it earlier would mean starting the new conversation before closing
+  the old; left as is, and said here.
+
 ## Evidence
 
 - The production home, 2026-10-24, 14:00–14:14 UTC, read-only (counts only): 7
@@ -68,4 +91,7 @@ planned. Current Focus unchanged.
 
 ## Outcome
 
-Open.
+Done, 2026-11-03, merged as `a1807b4c`. A plain-language journey switch keeps the turn's
+prompt with its reply in the journey's conversation; no `nothing_waiting` line for it.
+Pinned by `logger-lifecycle.test.ts` (the move, and the hand-logged prompt that stays) and
+`replyLogging.test.ts` (end to end). For the next release.

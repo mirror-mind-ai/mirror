@@ -130,3 +130,4 @@ evidence stays honest as both cores move.
 - [CR193 — The release doctor checks the package version and not the lockfile's, so a release commit that forgets `package-lock.json` passes it](cr193-the-release-doctor-does-not-check-the-lockfile.md)
 - [CR194 — Text piped from Windows PowerShell reaches `identity set` and `journey update -` as UTF-16 or as ASCII, and is stored as it arrives](cr194-powershell-stdin-reaches-identity-set-as-utf-16-or-ascii.md)
 - [CR195 — The test suite writes four lines into the developer's real `front-door.log` on every run, three of them `ERROR`](cr195-the-test-suite-writes-four-lines-into-the-real-home-s-front-door-log.md)
+- [CR196 — A prompt typed while a turn runs loses its reply on Claude Code: the prompt hook fires at queue time, under the running turn's id](cr196-a-prompt-typed-while-a-turn-runs-loses-its-reply-on-claude-code.md)
