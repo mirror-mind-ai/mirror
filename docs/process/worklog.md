@@ -31,6 +31,16 @@ itself once this release is out.
 No migration. No model or prompt changed, so the model-behavior gate does not apply.
 Release note: [v0.39.2](../releases/v0.39.2.md).
 
+After the release commit:
+
+- CI was green on all four jobs and the docs check before the tag existed; the release
+  doctor's `lockfile` check passed on its first release.
+- `release:promote` (dry run, then `--push`) tagged `v0.39.2` and moved `stable` to `e7185c3d`.
+- The GitHub Release is published and marked latest.
+- The Navigator approved the `release` environment and the npm stage, and moved `latest`
+  with 2FA. `latest` and `stable` are at 0.39.2, `gitHead` `e7185c3d`.
+- The Navigator's own Homebrew package was updated to 0.39.2 with `mirror runtime update`.
+
 ### 2026-11-02 — v0.39.1: Pi Finds Its Node, or Says So
 
 Patch release of PR #47 (@rodrigoimmaginario) and
