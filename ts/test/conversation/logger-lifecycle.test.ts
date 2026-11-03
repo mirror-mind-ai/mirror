@@ -207,6 +207,43 @@ test("switchConversation defaults the interface to claude_code without a session
   db.close();
 });
 
+function conversationsOfMessages(db: WritableDatabase): string[] {
+  return (
+    db.prepare("SELECT conversation_id FROM messages ORDER BY created_at, rowid").all() as {
+      conversation_id: string;
+    }[]
+  ).map((row) => row.conversation_id);
+}
+
+test("switchConversation moves a hook prompt still owed its reply into the new conversation", async () => {
+  const db = fixture();
+  logUserMessage(
+    db,
+    "s1",
+    "enter journey x",
+    { interface: "claude_code", metadata: { turn_id: "p1" } },
+    deps,
+  );
+
+  const newId = await switchConversation(db, "s1", { journey: "x" }, laterDeps);
+
+  assert.deepEqual(conversationsOfMessages(db), [newId]);
+  db.close();
+});
+
+test("switchConversation leaves a prompt without a turn id where it was", async () => {
+  // A manual switch (`mm-new`, the logger CLI) after a prompt logged by hand:
+  // nothing says a reply to it is coming in this turn.
+  const db = fixture();
+  logUserMessage(db, "s1", "first", { interface: "pi" }, deps);
+  const oldId = String(session(db, "s1")?.conversation_id);
+
+  await switchConversation(db, "s1", {}, laterDeps);
+
+  assert.deepEqual(conversationsOfMessages(db), [oldId]);
+  db.close();
+});
+
 // --- end_session ---
 
 test("endSession is a no-op when the session has no bound conversation", async () => {

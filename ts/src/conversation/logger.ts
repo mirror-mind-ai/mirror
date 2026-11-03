@@ -212,11 +212,13 @@ function discardMarkerActive(session: RuntimeSessionRow | null): boolean {
 }
 
 /**
- * What a message row may carry beside its text. The runtime's turn id (US8)
- * is the one field today: written by the prompt and Stop hooks, read by the
- * reply rule, and NULL for every message logged another way, as before.
+ * What a message row may carry beside its text: the runtime's turn id (US8),
+ * written by the prompt and Stop hooks and read by the reply rule, and the
+ * turn a prompt was queued during, when it arrived while that turn still owed
+ * its reply. NULL for every message logged another way, as before.
  */
 export interface MessageMetadata {
+  readonly queued_in_turn?: string;
   readonly turn_id?: string;
 }
 
@@ -375,7 +377,15 @@ export async function endConversation(
   }
 }
 
-/** Python `switch_conversation`: close the old conversation, bind a new one. */
+/**
+ * Python `switch_conversation`: close the old conversation, bind a new one.
+ *
+ * A prompt still owed its reply moves to the new conversation: when the
+ * model switches during a turn (a Builder load asked for in plain words), the
+ * turn's Stop pairs its reply in the conversation the session is bound to by
+ * then, and the prompt it answers has to be there. Only a hook prompt counts,
+ * one that carries a turn id; a prompt logged by hand stays where it was.
+ */
 export async function switchConversation(
   db: WritableDatabase,
   sessionId: string | null,
@@ -388,6 +398,8 @@ export async function switchConversation(
 
   const runtimeSession = getRuntimeSession(db, resolved);
   const oldConversationId = runtimeSession?.conversationId ?? null;
+  const last = oldConversationId ? lastMessage(db, oldConversationId) : null;
+  const waitingPrompt = last && last.role === "user" && turnIdOfRow(last) ? last : null;
   if (oldConversationId) {
     await endConversation(db, oldConversationId, { extract: true }, deps, hooks);
   }
@@ -404,6 +416,12 @@ export async function switchConversation(
     },
     deps,
   );
+  if (waitingPrompt) {
+    db.prepare("UPDATE messages SET conversation_id = ? WHERE rowid = ?").run(
+      newConversationId,
+      waitingPrompt.rowid,
+    );
+  }
   upsertRuntimeSession(
     db,
     resolved,
@@ -550,7 +568,11 @@ export type StopHookOutcome =
         // command -- the reply is lost. The only skip the caller reports.
         | "nothing_waiting";
     }
-  | { action: "logged"; sessionId: string; pairedBy: "turn_id" | "last_message" }
+  | {
+      action: "logged";
+      sessionId: string;
+      pairedBy: "turn_id" | "queued_prompt" | "last_message";
+    }
   | { action: "failed"; error: string };
 
 export interface HookLoggingOptions {
@@ -653,7 +675,7 @@ export function handleUserPromptHook(
       db,
       sessionId,
       content,
-      { interface: interfaceName, metadata: turnMetadata(turnIdOf(payload)) },
+      { interface: interfaceName, metadata: promptMetadata(db, sessionId, turnIdOf(payload)) },
       deps,
     );
     return { action: "logged", sessionId };
@@ -726,6 +748,64 @@ function turnIdOfRow(row: MessageRow): string {
 }
 
 /**
+ * A prompt's metadata. Claude Code fires the prompt hook when a prompt typed
+ * during a running turn enters its queue, with the running turn's id; the
+ * prompt later runs as a turn of its own, under an id no prompt hook sends. A
+ * second prompt under a turn whose reply is still owed is therefore recorded
+ * as queued during it, not as its prompt, so the running turn's reply stays
+ * with its own question and the queued turn's Stop can claim this one.
+ */
+function promptMetadata(
+  db: WritableDatabase,
+  sessionId: string,
+  turnId: string,
+): MessageMetadata | null {
+  const conversationId = getRuntimeSession(db, sessionId)?.conversationId ?? null;
+  if (turnId && conversationId) {
+    const running = promptOfTurn(db, conversationId, turnId);
+    if (running && !answeredAfter(db, conversationId, running, turnId)) {
+      return { queued_in_turn: turnId };
+    }
+  }
+  return turnMetadata(turnId);
+}
+
+/**
+ * The oldest queued prompt no turn has claimed, among those typed after the
+ * conversation's last ordinary prompt. A queued prompt Claude Code folded into
+ * the running turn instead of running it as its own is never claimed, and a
+ * later ordinary prompt retires it, so a Stop long after cannot take it.
+ */
+function unclaimedQueuedPrompt(db: WritableDatabase, conversationId: string): MessageRow | null {
+  const row = db
+    .prepare(
+      `SELECT rowid, role, created_at, metadata FROM messages AS queued
+       WHERE conversation_id = ? AND role = 'user'
+         AND json_extract(metadata, '$.queued_in_turn') IS NOT NULL
+         AND json_extract(metadata, '$.turn_id') IS NULL
+         AND NOT EXISTS (
+           SELECT 1 FROM messages AS later
+           WHERE later.conversation_id = queued.conversation_id AND later.role = 'user'
+             AND json_extract(later.metadata, '$.queued_in_turn') IS NULL
+             AND (later.created_at > queued.created_at
+                  OR (later.created_at = queued.created_at AND later.rowid > queued.rowid)))
+       ORDER BY created_at, rowid LIMIT 1`,
+    )
+    .get(conversationId);
+  return (row as MessageRow | undefined) ?? null;
+}
+
+/** Give a queued prompt the id of the turn it ran as. */
+function claimQueuedPrompt(db: WritableDatabase, row: MessageRow, turnId: string): void {
+  const metadata = decodeMetadata(row.metadata);
+  metadata.turn_id = turnId;
+  db.prepare("UPDATE messages SET metadata = ? WHERE rowid = ?").run(
+    pythonJsonDumps(metadata),
+    row.rowid,
+  );
+}
+
+/**
  * The Stop hook (CV21.DS2.US8): log the turn's final answer beside its prompt.
  *
  * A reply is logged when it answers a logged prompt, and never otherwise:
@@ -734,6 +814,9 @@ function turnIdOfRow(row: MessageRow): string {
  *     same -- unless a reply with that turn id already follows it, which is a
  *     repeat Stop (a Stop re-fired after another hook blocked). An assistant
  *     row without the turn id (a hand-logged summary) does not count;
+ *   * else, when the turn id is new, by the oldest queued prompt no turn has
+ *     claimed (`promptMetadata`): the turn a prompt typed mid-turn ran as.
+ *     Never for a turn the prompt hook skipped as a command;
  *   * else by position, when the conversation's last message is a logged
  *     prompt -- unless both sides carry a turn id and they differ, which means
  *     this turn's prompt was a command and an older prompt is waiting because
@@ -770,11 +853,11 @@ export function handleStopHook(
     const session = getRuntimeSession(db, sessionId);
     if (discardMarkerActive(session)) return { action: "skipped", reason: "discarded" };
     const turnId = turnIdOf(payload);
+    const commandTurn = (): boolean =>
+      Boolean(turnId) && decodeMetadata(session?.metadata ?? null)[SKIPPED_TURN_KEY] === turnId;
     const nothingWaiting = (): StopHookOutcome => {
       if (!turnId) return { action: "skipped", reason: "session_event" };
-      if (decodeMetadata(session?.metadata ?? null)[SKIPPED_TURN_KEY] === turnId) {
-        return { action: "skipped", reason: "command_turn" };
-      }
+      if (commandTurn()) return { action: "skipped", reason: "command_turn" };
       return { action: "skipped", reason: "nothing_waiting" };
     };
     const conversationId = session?.conversationId ?? null;
@@ -797,6 +880,18 @@ export function handleStopHook(
           deps,
         );
         return { action: "logged", sessionId, pairedBy: "turn_id" };
+      }
+      const queued = commandTurn() ? null : unclaimedQueuedPrompt(db, conversationId);
+      if (queued) {
+        claimQueuedPrompt(db, queued, turnId);
+        logAssistantMessage(
+          db,
+          sessionId,
+          message,
+          { interface: interfaceName, metadata: turnMetadata(turnId) },
+          deps,
+        );
+        return { action: "logged", sessionId, pairedBy: "queued_prompt" };
       }
       if (last && last.role === "user" && !turnIdOfRow(last)) {
         logAssistantMessage(
