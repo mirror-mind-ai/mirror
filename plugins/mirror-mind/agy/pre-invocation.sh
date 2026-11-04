@@ -35,8 +35,13 @@ env_value() {
   [ -n "$value" ] || value="$(env_file_value "$1" "${XDG_CONFIG_HOME:-$HOME/.config}/mirror/env")"
   printf '%s' "$value"
 }
+# `note <line> daily` writes at most once a day (UTC): for a setting to fix
+# rather than a hook that failed, so the line stays inside diagnose's seven-day
+# window while the setting stays wrong, without one per hook per turn (CR192).
+# The log is read into a variable, not piped to `grep -q`: under pipefail, a
+# reader that stops early can fail the pipeline and the line be written twice.
 note() {
-  local home user
+  local home user seen today
   home="$(env_value MIRROR_HOME)"
   user="$(env_value MIRROR_USER)"
   if [ -n "$home" ]; then
@@ -46,6 +51,11 @@ note() {
     [ -d "$home" ] || [ ! -d "$HOME/.mirror/$user" ] || home="$HOME/.mirror/$user"
   else
     return 0
+  fi
+  if [ "${2:-}" = daily ]; then
+    today="$(date -u +%Y-%m-%d)"
+    seen="$(grep -F -- ": $1" "$home/hooks.log" 2>/dev/null)"
+    case "$seen" in "$today"T*|*$'\n'"$today"T*) return 0 ;; esac
   fi
   mkdir -p "$home" 2>/dev/null \
     && printf '%s %s: %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$HOOK" "$1" >> "$home/hooks.log" 2>/dev/null
@@ -75,10 +85,41 @@ if [ -z "$ENTRY" ]; then
   exit 0
 fi
 
-NODE="${MIRROR_NODE:-}"
-if [ -z "$NODE" ] || [ ! -x "$NODE" ]; then
-  NODE="$(command -v node 2>/dev/null || true)"
+# Find Node. /usr/bin/python3 exists on every macOS; node usually lives under
+# nvm or Homebrew and is NOT on the PATH of a GUI-launched runtime. The Python
+# hooks could end in `|| true` because they always found their interpreter;
+# the same silence here would hide a new failure — no logging, no inject, no
+# close tail — that a user would meet weeks later as "Mirror stopped
+# remembering". So an unresolvable Node is RECORDED, never swallowed. The
+# directory the entry was found in is searched first: an npm global bin holds
+# the `node` that installed the package beside `mirror-hook`, while a system
+# `/usr/local/bin/node` can be years older (CI's Ubuntu runner has one).
+#
+# MIRROR_NODE is used only as an absolute path to an executable file, as every
+# reader uses it (CR192): a relative one would resolve against the project the
+# runtime spawned this hook from. Anything else is noted with its reason, in
+# the Pi extension's words, once a day, and the search goes on without it.
+# "Absolute" is the MCP locator's pattern too, and it classifies exactly as
+# path.win32.isAbsolute: under Git Bash the Windows installer writes
+# C:\Program Files\nodejs\node.exe (PR #47).
+NODE=""
+if [ -n "${MIRROR_NODE:-}" ]; then
+  refused=""
+  case "$MIRROR_NODE" in
+    /*|\\*|[A-Za-z]:[\\/]*)
+      if [ -d "$MIRROR_NODE" ]; then refused="a directory"
+      elif [ ! -e "$MIRROR_NODE" ]; then refused="missing"
+      elif [ ! -f "$MIRROR_NODE" ] || [ ! -x "$MIRROR_NODE" ]; then refused="not executable"
+      else NODE="$MIRROR_NODE"
+      fi
+      ;;
+    *) refused="relative" ;;
+  esac
+  if [ -n "$refused" ]; then
+    note "MIRROR_NODE=${MIRROR_NODE//[$'\r\n']/} is $refused; searching the PATH and the usual places instead" daily
+  fi
 fi
+[ -n "$NODE" ] || NODE="$(command -v node 2>/dev/null || true)"
 for candidate in "$(dirname "$ENTRY")/node" "$HOME/.nvm/current/bin/node" /opt/homebrew/bin/node /usr/local/bin/node; do
   [ -n "$NODE" ] && break
   [ -x "$candidate" ] && NODE="$candidate"

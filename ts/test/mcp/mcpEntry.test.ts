@@ -120,7 +120,14 @@ describe("the MCP entry's text", () => {
       "mmdir",
       "mmjs",
       "mmnode",
+      "mmwhy",
     ]);
+  });
+
+  test("reads MIRROR_NODE once, because Grok pastes a set variable's value into the text (CR192)", () => {
+    // Each `$MIRROR_NODE` is a place Grok would paste the value into shell
+    // text at load time; the locator copies it into `mmnode` and uses that.
+    assert.equal(MCP_LOCATOR.split("$MIRROR_NODE").length - 1, 1);
   });
 
   test("parses as POSIX sh", () => {
@@ -191,6 +198,73 @@ describe("the MCP entry, run as written", () => {
     });
     assert.equal(result.status, 0, result.stderr);
     assert.ok(existsSync(marker), "the node MIRROR_NODE names ran the server");
+    assert.equal(result.stderr, "", "a value it uses is not reported");
+  });
+
+  test("a relative MIRROR_NODE is never run: one stderr line says why, and the server starts through the PATH (CR192)", () => {
+    // The cwd is the user's project, and this one holds an executable bin/node.
+    const root = scratch();
+    const bin = scratchBin(root);
+    const marker = join(root, "project-node-ran");
+    mkdirSync(join(root, "bin"));
+    writeFileSync(join(root, "bin", "node"), `#!/bin/sh\ntouch "${marker}"\n`, { mode: 0o755 });
+
+    const result = runEntry(root, {
+      HOME: join(root, "home"),
+      PATH: `${bin}:/usr/bin:/bin`,
+      MIRROR_NODE: "bin/node",
+      MIRROR_HOME: join(root, "mirror-home"),
+    });
+
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(serverName(result.stdout), "mirror-mind");
+    assert.ok(!existsSync(marker), "the project's bin/node never ran");
+    assert.equal(
+      result.stderr,
+      "mirror-mind: MIRROR_NODE=bin/node is relative; searching the PATH and the usual places instead\n",
+    );
+  });
+
+  test("each value it will not use is refused with its reason, printed intact on one line (CR192)", () => {
+    // Stand-ins for `mirror` and `node`, so each case is one process, not a
+    // server start. The installer's value goes through printf: dash's echo
+    // would turn the `\n` of `\nodejs` into a newline.
+    const root = scratch();
+    const standIns = join(root, "stand-ins");
+    const ran = join(root, "path-node-ran");
+    const notExecutable = join(root, "node-without-x");
+    mkdirSync(standIns);
+    writeFileSync(join(standIns, "mirror"), "", { mode: 0o755 });
+    writeFileSync(join(standIns, "node"), `#!/bin/sh\ntouch "${ran}"\n`, { mode: 0o755 });
+    writeFileSync(notExecutable, "", { mode: 0o644 });
+    const cases: [value: string, reason: string, printed?: string][] = [
+      [root, "a directory"],
+      [join(root, "nowhere", "node"), "missing"],
+      [notExecutable, "not executable"],
+      ["C:node.exe", "relative"],
+      ["C:\\Program Files\\nodejs\\node.exe", "missing"],
+      ["bin/node\nforged", "relative", "bin/nodeforged"],
+    ];
+    for (const [value, reason, printed = value] of cases) {
+      rmSync(ran, { force: true });
+      const result = spawnSync(MCP_ENTRY.command, [...MCP_ENTRY.args], {
+        cwd: root,
+        env: {
+          HOME: join(root, "home"),
+          PATH: `${standIns}:/usr/bin:/bin`,
+          MIRROR_BIN: standIns,
+          MIRROR_NODE: value,
+        },
+        encoding: "utf8",
+      });
+      assert.equal(result.status, 0, `${value}: ${result.stderr}`);
+      assert.equal(
+        result.stderr,
+        `mirror-mind: MIRROR_NODE=${printed} is ${reason}; searching the PATH and the usual places instead\n`,
+        value,
+      );
+      assert.ok(existsSync(ran), `${value}: the server still started, through the PATH`);
+    }
   });
 
   test("an npm shell shim beside node_modules, as Windows's global prefix is shaped: the package's own bin runs (PR #53)", () => {

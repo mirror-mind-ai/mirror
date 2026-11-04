@@ -195,6 +195,11 @@ jobs:
     # itself, so "green on Windows" is a CI fact rather than a report. It is
     # not a Windows product promise: REFERENCE.md's platform envelope stands
     # until the suite as a whole runs here. About a minute.
+    #
+    # CR192 added a third file, run under Git Bash, where the hook wrappers run
+    # on Windows: the Windows installer's `MIRROR_NODE`, a `node.exe` under a
+    # path with a space, must count as absolute. A POSIX-only pattern would
+    # refuse it on every hook (Rodrigo Immaginario, PR #47).
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v6
@@ -209,6 +214,10 @@ jobs:
 
       - name: Install kind and npm strategy on Windows (node:test)
         run: node --test ts/test/runtime/installKind.test.ts ts/test/runtime/packageStrategy.test.ts
+
+      - name: MIRROR_NODE in the Windows installer's form, under Git Bash (node:test)
+        shell: bash
+        run: node --test ts/test/hooks/mirrorNodeRule.test.ts
 
   smoke:
     # End-to-end through the real front-door process, as SEQUENCES: the unit

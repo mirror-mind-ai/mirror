@@ -24,7 +24,7 @@
 // replay substrate or reports inconclusive, exactly as the oracle reports
 // inconclusive without a key; the live fetch belongs to DS8.
 
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { accessSync, constants, existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { basename, dirname, join, posix, win32 } from "node:path";
 import { openDatabaseReadOnly } from "#db/database.ts";
 import {
@@ -842,6 +842,22 @@ export const HOOK_NODE_CANDIDATES: readonly string[] = [
   "/usr/local/bin/node",
 ];
 
+/**
+ * An executable that is not a directory: what every reader of `MIRROR_NODE`
+ * accepts (CR192), and what `hookNodeFindings` is handed to probe with.
+ * `X_OK` alone passes a directory, and on Windows it is only an existence
+ * check, so the directory is ruled out first.
+ */
+export function isExecutableFile(path: string): boolean {
+  try {
+    if (statSync(path).isDirectory()) return false;
+    accessSync(path, constants.X_OK);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** How far back `hookFailureFindings` looks. Longer than the front door's day,
  * because a hook failure is the kind a user notices weeks later. */
 const HOOK_FAILURE_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
@@ -915,17 +931,20 @@ export function hookNodeFindings(
   isExecutable: (path: string) => boolean,
   platform: NodeJS.Platform = process.platform,
 ): DriftFinding[] {
-  const explicit = env.MIRROR_NODE ?? "";
-  if (explicit && isExecutable(explicit)) return [];
-  const candidates = HOOK_NODE_CANDIDATES.map((candidate) =>
-    candidate.replace("$HOME", env.HOME ?? ""),
-  );
   // The platform's PATH separator and its executable name: `;` and `node.exe`
   // on Windows, where splitting on `:` cut `C:\Program Files\nodejs` into `C`
   // and a path and the finding fired on every install that had Node (PR #49).
   // `platform` is a parameter so the test runs both branches on every host:
   // CI's Windows job runs two files and this one is not among them.
   const paths = platform === "win32" ? win32 : posix;
+  // MIRROR_NODE counts only as every hook reads it: an absolute path to an
+  // executable file (CR192). A relative one would resolve against this
+  // terminal's cwd, and no hook would use it.
+  const explicit = env.MIRROR_NODE ?? "";
+  if (explicit && paths.isAbsolute(explicit) && isExecutable(explicit)) return [];
+  const candidates = HOOK_NODE_CANDIDATES.map((candidate) =>
+    candidate.replace("$HOME", env.HOME ?? ""),
+  );
   const name = platform === "win32" ? "node.exe" : "node";
   const onPath = (env.PATH ?? "")
     .split(paths.delimiter)

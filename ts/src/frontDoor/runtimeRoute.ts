@@ -29,6 +29,7 @@ import {
   extractionReasoningFindings,
   hookFailureFindings,
   hookNodeFindings,
+  isExecutableFile,
   openRouterKeyFindings,
   pluginWiringFindings,
   probeModelPins,
@@ -345,14 +346,7 @@ export async function runRuntimeReadRoute(
       // and nothing else on this report would say so.
       ...openRouterKeyFindings(env),
       ...hookFailureFindings(report),
-      ...hookNodeFindings(env, (path) => {
-        try {
-          accessSync(path, constants.X_OK);
-          return true;
-        } catch {
-          return false;
-        }
-      }),
+      ...hookNodeFindings(env, isExecutableFile),
       // CV21.DS4.TS6: the plugin wiring. Codex's versioned cache goes stale
       // after an npm update; Claude Code's link can dangle. Absence is not
       // drift, so an unwired machine stays green.

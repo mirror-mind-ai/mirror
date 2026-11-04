@@ -235,7 +235,7 @@ export interface NodeResolution {
  * then `NODE_CANDIDATES`. Not `process.execPath`: Pi may run on a Node older
  * than the core needs. On Windows the PATH is the last place looked.
  *
- * A relative `MIRROR_NODE` is refused here, though the wrappers accept one: it
+ * A relative `MIRROR_NODE` is refused, as every reader refuses one (CR192): it
  * would resolve against whatever project Pi was opened in.
  *
  * The absolute candidates make "nothing anywhere" a fact about the host, so

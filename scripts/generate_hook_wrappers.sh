@@ -26,10 +26,12 @@
 # tree form too: under `npm root -g` the tree sits below `node_modules`, where
 # Node will not strip types (D15).
 #
-# The template is a QUOTED heredoc with placeholders -- @HOOK@, @LOCATE@,
-# @ENTRY@ -- so the shell it contains is written exactly as it runs, with no
-# escaping. @LOCATE@ and @ENTRY@ are filled from the per-form fragments below,
-# where @DEPTH@ is the tree form's depth to the root.
+# The templates are QUOTED heredocs with placeholders -- @HOOK@, @LOCATE@,
+# @ENTRY@, @LOG@, @NODE@ -- so the shell they contain is written exactly as it
+# runs, with no escaping. @LOCATE@ and @ENTRY@ are filled from the per-form
+# fragments below, where @DEPTH@ is the tree form's depth to the root; @LOG@
+# (the hooks.log helpers) and @NODE@ (the Node search) from two fragments every
+# form shares, each written once (CR192).
 #
 # Usage:
 #   bash scripts/generate_hook_wrappers.sh          # write
@@ -84,53 +86,11 @@ HOOK="@HOOK@"
 # .env when the wrapper is in a tree, else from the user's config file
 # (~/.config/mirror/env), in the core's order (US3, D3). A GUI launch carries
 # neither variable, and the first wrappers then wrote to a home nobody reads.
-env_file_value() {
-  [ -f "$2" ] || return 0
-  sed -n -E "s/^[[:space:]]*(export[[:space:]]+)?$1[[:space:]]*=[[:space:]]*//p" "$2" \
-    | tail -n 1 | tr -d "\"'\r"
-}
-env_value() {
-  local value=""
-  if [ -n "${!1+set}" ]; then printf '%s' "${!1}"; return; fi
-  [ -z "$REPO_ROOT" ] || value="$(env_file_value "$1" "$REPO_ROOT/.env")"
-  [ -n "$value" ] || value="$(env_file_value "$1" "${XDG_CONFIG_HOME:-$HOME/.config}/mirror/env")"
-  printf '%s' "$value"
-}
-note() {
-  local home user
-  home="$(env_value MIRROR_HOME)"
-  user="$(env_value MIRROR_USER)"
-  if [ -n "$home" ]; then
-    home="${home/#\~/$HOME}"
-  elif [ -n "$user" ]; then
-    home="$HOME/.mirror-minds/$user"
-    [ -d "$home" ] || [ ! -d "$HOME/.mirror/$user" ] || home="$HOME/.mirror/$user"
-  else
-    return 0
-  fi
-  mkdir -p "$home" 2>/dev/null \
-    && printf '%s %s: %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$HOOK" "$1" >> "$home/hooks.log" 2>/dev/null
-}
+@LOG@
 
 @ENTRY@
 
-# Find Node. /usr/bin/python3 exists on every macOS; node usually lives under
-# nvm or Homebrew and is NOT on the PATH of a GUI-launched runtime. The Python
-# hooks could end in `|| true` because they always found their interpreter;
-# the same silence here would hide a new failure — no logging, no inject, no
-# close tail — that a user would meet weeks later as "Mirror stopped
-# remembering". So an unresolvable Node is RECORDED, never swallowed. The
-# directory the entry was found in is searched first: an npm global bin holds
-# the `node` that installed the package beside `mirror-hook`, while a system
-# `/usr/local/bin/node` can be years older (CI's Ubuntu runner has one).
-NODE="${MIRROR_NODE:-}"
-if [ -z "$NODE" ] || [ ! -x "$NODE" ]; then
-  NODE="$(command -v node 2>/dev/null || true)"
-fi
-for candidate in "$(dirname "$ENTRY")/node" "$HOME/.nvm/current/bin/node" /opt/homebrew/bin/node /usr/local/bin/node; do
-  [ -n "$NODE" ] && break
-  [ -x "$candidate" ] && NODE="$candidate"
-done
+@NODE@
 
 if [ -z "$NODE" ]; then
   note "node not found on PATH; hook skipped. Set MIRROR_NODE."
@@ -148,6 +108,93 @@ if [ "$status" -ne 0 ]; then
   note "node exited $status before the hook finished ($NODE, $("$NODE" --version 2>/dev/null || echo 'version unknown')); Mirror needs Node 24 or later. Set MIRROR_NODE."
 fi
 exit 0
+EOF
+
+# --- shared by every form: the hooks.log helpers -----------------------------
+#
+# The two templates had byte-identical copies of these, held equal by nothing
+# but care; CR192 changes `note`, so they are written once and spliced in.
+IFS= read -r -d '' LOG_HELPERS <<'EOF' || true
+env_file_value() {
+  [ -f "$2" ] || return 0
+  sed -n -E "s/^[[:space:]]*(export[[:space:]]+)?$1[[:space:]]*=[[:space:]]*//p" "$2" \
+    | tail -n 1 | tr -d "\"'\r"
+}
+env_value() {
+  local value=""
+  if [ -n "${!1+set}" ]; then printf '%s' "${!1}"; return; fi
+  [ -z "$REPO_ROOT" ] || value="$(env_file_value "$1" "$REPO_ROOT/.env")"
+  [ -n "$value" ] || value="$(env_file_value "$1" "${XDG_CONFIG_HOME:-$HOME/.config}/mirror/env")"
+  printf '%s' "$value"
+}
+# `note <line> daily` writes at most once a day (UTC): for a setting to fix
+# rather than a hook that failed, so the line stays inside diagnose's seven-day
+# window while the setting stays wrong, without one per hook per turn (CR192).
+# The log is read into a variable, not piped to `grep -q`: under pipefail, a
+# reader that stops early can fail the pipeline and the line be written twice.
+note() {
+  local home user seen today
+  home="$(env_value MIRROR_HOME)"
+  user="$(env_value MIRROR_USER)"
+  if [ -n "$home" ]; then
+    home="${home/#\~/$HOME}"
+  elif [ -n "$user" ]; then
+    home="$HOME/.mirror-minds/$user"
+    [ -d "$home" ] || [ ! -d "$HOME/.mirror/$user" ] || home="$HOME/.mirror/$user"
+  else
+    return 0
+  fi
+  if [ "${2:-}" = daily ]; then
+    today="$(date -u +%Y-%m-%d)"
+    seen="$(grep -F -- ": $1" "$home/hooks.log" 2>/dev/null)"
+    case "$seen" in "$today"T*|*$'\n'"$today"T*) return 0 ;; esac
+  fi
+  mkdir -p "$home" 2>/dev/null \
+    && printf '%s %s: %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$HOOK" "$1" >> "$home/hooks.log" 2>/dev/null
+}
+EOF
+
+# --- shared by every form: the Node search ------------------------------------
+IFS= read -r -d '' FIND_NODE <<'EOF' || true
+# Find Node. /usr/bin/python3 exists on every macOS; node usually lives under
+# nvm or Homebrew and is NOT on the PATH of a GUI-launched runtime. The Python
+# hooks could end in `|| true` because they always found their interpreter;
+# the same silence here would hide a new failure — no logging, no inject, no
+# close tail — that a user would meet weeks later as "Mirror stopped
+# remembering". So an unresolvable Node is RECORDED, never swallowed. The
+# directory the entry was found in is searched first: an npm global bin holds
+# the `node` that installed the package beside `mirror-hook`, while a system
+# `/usr/local/bin/node` can be years older (CI's Ubuntu runner has one).
+#
+# MIRROR_NODE is used only as an absolute path to an executable file, as every
+# reader uses it (CR192): a relative one would resolve against the project the
+# runtime spawned this hook from. Anything else is noted with its reason, in
+# the Pi extension's words, once a day, and the search goes on without it.
+# "Absolute" is the MCP locator's pattern too, and it classifies exactly as
+# path.win32.isAbsolute: under Git Bash the Windows installer writes
+# C:\Program Files\nodejs\node.exe (PR #47).
+NODE=""
+if [ -n "${MIRROR_NODE:-}" ]; then
+  refused=""
+  case "$MIRROR_NODE" in
+    /*|\\*|[A-Za-z]:[\\/]*)
+      if [ -d "$MIRROR_NODE" ]; then refused="a directory"
+      elif [ ! -e "$MIRROR_NODE" ]; then refused="missing"
+      elif [ ! -f "$MIRROR_NODE" ] || [ ! -x "$MIRROR_NODE" ]; then refused="not executable"
+      else NODE="$MIRROR_NODE"
+      fi
+      ;;
+    *) refused="relative" ;;
+  esac
+  if [ -n "$refused" ]; then
+    note "MIRROR_NODE=${MIRROR_NODE//[$'\r\n']/} is $refused; searching the PATH and the usual places instead" daily
+  fi
+fi
+[ -n "$NODE" ] || NODE="$(command -v node 2>/dev/null || true)"
+for candidate in "$(dirname "$ENTRY")/node" "$HOME/.nvm/current/bin/node" /opt/homebrew/bin/node /usr/local/bin/node; do
+  [ -n "$NODE" ] && break
+  [ -x "$candidate" ] && NODE="$candidate"
+done
 EOF
 
 # --- the tree form: resolve the tree from THIS FILE, never from the cwd ------
@@ -229,44 +276,11 @@ fi
 # A hook never fails the user's turn, and never fails in silence: when it
 # cannot do its job it appends ONE line to <mirror home>/hooks.log and exits
 # 0 — after answering agy's contract, so the agent loop never stalls.
-env_file_value() {
-  [ -f "$2" ] || return 0
-  sed -n -E "s/^[[:space:]]*(export[[:space:]]+)?$1[[:space:]]*=[[:space:]]*//p" "$2" \
-    | tail -n 1 | tr -d "\"'\r"
-}
-env_value() {
-  local value=""
-  if [ -n "${!1+set}" ]; then printf '%s' "${!1}"; return; fi
-  [ -z "$REPO_ROOT" ] || value="$(env_file_value "$1" "$REPO_ROOT/.env")"
-  [ -n "$value" ] || value="$(env_file_value "$1" "${XDG_CONFIG_HOME:-$HOME/.config}/mirror/env")"
-  printf '%s' "$value"
-}
-note() {
-  local home user
-  home="$(env_value MIRROR_HOME)"
-  user="$(env_value MIRROR_USER)"
-  if [ -n "$home" ]; then
-    home="${home/#\~/$HOME}"
-  elif [ -n "$user" ]; then
-    home="$HOME/.mirror-minds/$user"
-    [ -d "$home" ] || [ ! -d "$HOME/.mirror/$user" ] || home="$HOME/.mirror/$user"
-  else
-    return 0
-  fi
-  mkdir -p "$home" 2>/dev/null \
-    && printf '%s %s: %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$HOOK" "$1" >> "$home/hooks.log" 2>/dev/null
-}
+@LOG@
 
 @ENTRY@
 
-NODE="${MIRROR_NODE:-}"
-if [ -z "$NODE" ] || [ ! -x "$NODE" ]; then
-  NODE="$(command -v node 2>/dev/null || true)"
-fi
-for candidate in "$(dirname "$ENTRY")/node" "$HOME/.nvm/current/bin/node" /opt/homebrew/bin/node /usr/local/bin/node; do
-  [ -n "$NODE" ] && break
-  [ -x "$candidate" ] && NODE="$candidate"
-done
+@NODE@
 
 if [ -z "$NODE" ]; then
   printf '{}\n'
@@ -294,6 +308,13 @@ render() {
   esac
   locate="${locate%$'\n'}"
   entry="${entry%$'\n'}"
+  # The shared fragments carry backslashes -- the case pattern, printf's \n --
+  # so they are spliced in by the text around their placeholder, never as the
+  # replacement in ${out//@X@/...}, which bash 5.2 processes for `&` and the
+  # backslashes that quote it (patsub_replacement). Each template holds each
+  # placeholder once (CR192).
+  out="${out%%@LOG@*}${LOG_HELPERS%$'\n'}${out#*@LOG@}"
+  out="${out%%@NODE@*}${FIND_NODE%$'\n'}${out#*@NODE@}"
   out="${out//@LOCATE@/$locate}"
   out="${out//@ENTRY@/$entry}"
   out="${out//@HOOK@/$hook}"

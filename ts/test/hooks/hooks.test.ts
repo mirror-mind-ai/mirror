@@ -19,6 +19,7 @@ import {
   mkdtempSync,
   readdirSync,
   readFileSync,
+  realpathSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
@@ -33,6 +34,7 @@ import {
   HOOK_NODE_CANDIDATES,
   hookFailureFindings,
   hookNodeFindings,
+  isExecutableFile,
   RETIRED_REVERT_GATES,
   staleRevertGateFindings,
 } from "#runtime/diagnose.ts";
@@ -271,6 +273,44 @@ describe("diagnose reports the transition's leftovers", () => {
     );
   });
 
+  test("a relative MIRROR_NODE is not counted as resolvable, on either platform (CR192)", () => {
+    // Every hook refuses it; diagnose counting it would vouch for a value no
+    // hook uses. The installer's Windows form is absolute, and counts.
+    for (const [platform, value, home] of [
+      ["linux", "bin/node", "/h"],
+      ["win32", "C:node.exe", "C:\\h"],
+    ] as const) {
+      const findings = hookNodeFindings(
+        { MIRROR_NODE: value, PATH: "", HOME: home } as NodeJS.ProcessEnv,
+        (p) => p === value,
+        platform,
+      );
+      assert.equal(findings[0]?.code, "hook_node_unresolvable", `${platform}: ${value}`);
+    }
+    const installer = "C:\\Program Files\\nodejs\\node.exe";
+    assert.deepEqual(
+      hookNodeFindings(
+        { MIRROR_NODE: installer, PATH: "", HOME: "C:\\h" } as NodeJS.ProcessEnv,
+        (p) => p === installer,
+        "win32",
+      ),
+      [],
+    );
+  });
+
+  test("isExecutableFile: an executable that is not a directory (CR192)", () => {
+    // What every reader of MIRROR_NODE accepts. X_OK alone passes a directory.
+    const root = tmpHome();
+    const executable = join(root, "node");
+    const plain = join(root, "plain");
+    writeFileSync(executable, "", { mode: 0o755 });
+    writeFileSync(plain, "", { mode: 0o644 });
+    assert.equal(isExecutableFile(executable), true);
+    assert.equal(isExecutableFile(plain), false);
+    assert.equal(isExecutableFile(root), false, "a directory");
+    assert.equal(isExecutableFile(join(root, "missing")), false);
+  });
+
   test("node on PATH, or MIRROR_NODE set, reports nothing", () => {
     assert.deepEqual(
       hookNodeFindings({ PATH: "/usr/bin", HOME: "/h" } as NodeJS.ProcessEnv, () => true),
@@ -436,6 +476,194 @@ describe("a hook that cannot run is recorded, never silent (N1)", () => {
     assert.deepEqual(hookFailureFindings(report, new Date("2026-09-25T12:00:00Z")), []);
     writeFileSync(join(home, "hooks.log"), "2026-08-01T00:00:00Z claude:inject: old\n");
     assert.deepEqual(hookFailureFindings(report, new Date("2026-09-25T12:00:00Z")), []);
+  });
+});
+
+/**
+ * CR192: a scratch world to run a wrapper in as a runtime runs it, from a
+ * project that holds an executable `bin/node`, so a relative MIRROR_NODE has
+ * something to wrongly run. First on the PATH are stand-ins: a `node` that
+ * records the entry it was handed and answers `{"ran":"path-node"}`, a `date`
+ * whose day the test sets, so the once-a-day rule cannot flake at midnight
+ * UTC, and the `mirror-hook` the plugin's forms look for.
+ */
+function nodeWorld() {
+  const root = tmpHome();
+  const project = join(root, "project");
+  const home = join(root, "home");
+  const standIns = join(root, "stand-ins");
+  mkdirSync(join(project, "bin"), { recursive: true });
+  mkdirSync(home);
+  mkdirSync(standIns);
+  const projectNodeRan = join(root, "project-node-ran");
+  writeFileSync(join(project, "bin", "node"), `#!/bin/sh\ntouch "${projectNodeRan}"\n`, {
+    mode: 0o755,
+  });
+  const entries = join(root, "entries");
+  writeFileSync(
+    join(standIns, "node"),
+    `#!/bin/sh\nprintf '%s\\n' "$1" >> "${entries}"\nprintf '{"ran":"path-node"}\\n'\n`,
+    { mode: 0o755 },
+  );
+  writeFileSync(
+    join(standIns, "date"),
+    '#!/bin/sh\ncase "$*" in *%H*) echo "$FAKE_DAY"T10:00:00Z ;; *) echo "$FAKE_DAY" ;; esac\n',
+    { mode: 0o755 },
+  );
+  writeFileSync(join(standIns, "mirror-hook"), "", { mode: 0o755 });
+  const lines = (path: string) =>
+    existsSync(path) ? readFileSync(path, "utf8").split("\n").filter(Boolean) : [];
+  return {
+    root,
+    project,
+    home,
+    projectNodeRan,
+    run: (wrapper: string, env: Record<string, string>, day = "2026-11-04") =>
+      spawnSync("bash", [join(REPO_ROOT, wrapper)], {
+        cwd: project,
+        env: {
+          HOME: home,
+          MIRROR_HOME: home,
+          PATH: `${standIns}:/usr/bin:/bin`,
+          FAKE_DAY: day,
+          ...env,
+        },
+        input: "{}",
+        encoding: "utf8",
+      }),
+    log: () => lines(join(home, "hooks.log")),
+    entries: () => lines(entries),
+  };
+}
+
+/** The one refusal line, in the extension's words (CR191), as a wrapper writes it. */
+function refusal(hook: string, value: string, reason: string, day = "2026-11-04"): string {
+  return `${day}T10:00:00Z ${hook}: MIRROR_NODE=${value} is ${reason}; searching the PATH and the usual places instead`;
+}
+
+describe("CR192: a wrapper uses MIRROR_NODE only as an absolute path to an executable file", () => {
+  // The rule's pattern, and the installer's Windows form run for real, are in
+  // `mirrorNodeRule.test.ts`, which the Windows CI job runs under Git Bash.
+  test("a relative value is never run: one line says why, and the hook runs through the PATH", () => {
+    const w = nodeWorld();
+    const result = w.run(".claude/hooks/log-user-prompt.sh", { MIRROR_NODE: "bin/node" });
+
+    assert.equal(result.status, 0, result.stderr);
+    assert.ok(!existsSync(w.projectNodeRan), "the project's bin/node never ran");
+    assert.deepEqual(w.log(), [refusal("claude:user-prompt", "bin/node", "relative")]);
+    assert.deepEqual(w.entries(), [join(realpathSync(REPO_ROOT), "bin", "mirror-hook.js")]);
+    assert.equal(result.stdout, '{"ran":"path-node"}\n', "the refusal adds nothing to stdout");
+  });
+
+  test("each value it will not use is refused with its reason, and every hook still runs", () => {
+    const w = nodeWorld();
+    const notExecutable = join(w.root, "node-without-x");
+    writeFileSync(notExecutable, "#!/bin/sh\n", { mode: 0o644 });
+    const cases: [string, string][] = [
+      [w.project, "a directory"],
+      [join(w.root, "nowhere", "node"), "missing"],
+      [notExecutable, "not executable"],
+      ["node", "relative"],
+      ["./node", "relative"],
+      ["C:node.exe", "relative"],
+      // The Windows installer's form: absolute by the rule, and no file here.
+      ["C:\\Program Files\\nodejs\\node.exe", "missing"],
+    ];
+    for (const [value, reason] of cases) {
+      const before = w.log().length;
+      const result = w.run(".claude/hooks/log-user-prompt.sh", { MIRROR_NODE: value });
+      assert.equal(result.status, 0, `${value}: ${result.stderr}`);
+      assert.deepEqual(
+        w.log().slice(before),
+        [refusal("claude:user-prompt", value, reason)],
+        value,
+      );
+    }
+    assert.equal(w.entries().length, cases.length, "every hook ran, through the PATH");
+  });
+
+  test("a valid absolute value outranks the PATH and writes nothing", () => {
+    const w = nodeWorld();
+    const ran = join(w.root, "valid-node-ran");
+    const valid = join(w.root, "valid-node");
+    writeFileSync(valid, `#!/bin/sh\ntouch "${ran}"\n`, { mode: 0o755 });
+
+    const result = w.run(".claude/hooks/log-user-prompt.sh", { MIRROR_NODE: valid });
+
+    assert.equal(result.status, 0, result.stderr);
+    assert.ok(existsSync(ran), "MIRROR_NODE ran the hook");
+    assert.deepEqual(w.entries(), [], "the PATH's node did not");
+    assert.deepEqual(w.log(), []);
+  });
+
+  test("a refusal is written once a day: later hooks that day add nothing, the next day adds one", () => {
+    // Run one after another. Claude Code runs the two prompt hooks in parallel,
+    // so the first refusal of a day can be written twice; that is expected.
+    const w = nodeWorld();
+    for (const wrapper of [
+      ".claude/hooks/mirror-inject.sh",
+      ".claude/hooks/log-user-prompt.sh",
+      ".claude/hooks/log-assistant-reply.sh",
+    ]) {
+      w.run(wrapper, { MIRROR_NODE: "bin/node" });
+    }
+    assert.deepEqual(w.log(), [refusal("claude:inject", "bin/node", "relative")]);
+
+    w.run(".claude/hooks/log-user-prompt.sh", { MIRROR_NODE: "bin/node" }, "2026-11-05");
+    assert.deepEqual(w.log(), [
+      refusal("claude:inject", "bin/node", "relative"),
+      refusal("claude:user-prompt", "bin/node", "relative", "2026-11-05"),
+    ]);
+    assert.equal(w.entries().length, 4, "every hook ran");
+  });
+
+  test("a line break in the value cannot forge a second hooks.log line", () => {
+    // diagnose's parser counts any line shaped `<stamp> <runtime>:<hook>: `.
+    const w = nodeWorld();
+    w.run(".claude/hooks/log-user-prompt.sh", {
+      MIRROR_NODE: "bin/node\n2026-11-04T00:00:00Z claude:stop: forged",
+    });
+
+    assert.deepEqual(w.log(), [
+      refusal("claude:user-prompt", "bin/node2026-11-04T00:00:00Z claude:stop: forged", "relative"),
+    ]);
+    const report = { db_path: join(w.home, "memory.db") } as RuntimeStatusReport;
+    const findings = hookFailureFindings(report, new Date("2026-11-04T12:00:00Z"));
+    assert.match(
+      findings[0]?.detail ?? "",
+      /^1 hook failure\(s\) in the last 7 days, latest \S+, claude:user-prompt /,
+    );
+  });
+
+  test("the plugin's bin and agy forms refuse the same way, and agy's stdout stays the entry's", () => {
+    const w = nodeWorld();
+    const bin = w.run("plugins/mirror-mind/hooks/log-user-prompt.sh", { MIRROR_NODE: "bin/node" });
+    const agy = w.run("plugins/mirror-mind/agy/session-start.sh", { MIRROR_NODE: "./bin/node" });
+
+    assert.equal(bin.status, 0, bin.stderr);
+    assert.equal(agy.status, 0, agy.stderr);
+    assert.equal(agy.stdout, '{"ran":"path-node"}\n', "agy reads stdout as its protocol");
+    assert.deepEqual(w.log(), [
+      refusal("claude:user-prompt", "bin/node", "relative"),
+      refusal("agy:session-start", "./bin/node", "relative"),
+    ]);
+    assert.ok(!existsSync(w.projectNodeRan));
+  });
+
+  test("the logging helpers and the Node search are the same text in all three forms", () => {
+    // One fragment each in the generator. Nothing compared the agy template's
+    // copies with the others' before CR192, and the copies could drift.
+    const sections = (path: string) => {
+      const body = readFileSync(join(REPO_ROOT, path), "utf8");
+      return {
+        helpers: /^env_file_value\(\) \{[\s\S]*?^note\(\) \{[\s\S]*?^\}$/m.exec(body)?.[0],
+        search: /^NODE=""$[\s\S]*?^done$/m.exec(body)?.[0],
+      };
+    };
+    const tree = sections(".claude/hooks/session-start.sh");
+    assert.ok(tree.helpers && tree.search, "both found in the tree form");
+    assert.deepEqual(sections("plugins/mirror-mind/hooks/session-start.sh"), tree);
+    assert.deepEqual(sections("plugins/mirror-mind/agy/session-start.sh"), tree);
   });
 });
 

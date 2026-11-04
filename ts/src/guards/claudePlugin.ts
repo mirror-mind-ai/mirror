@@ -82,6 +82,18 @@ export function readVersion(repoRoot: string): string {
 export const GLOBAL_BIN_DIRS = ['"$HOME/.nvm/current/bin"', "/opt/homebrew/bin", "/usr/local/bin"];
 
 /**
+ * What the shell readers of `MIRROR_NODE` call an absolute path (CR192): one
+ * `case` pattern, written into the hook wrappers by
+ * `scripts/generate_hook_wrappers.sh` and into the locator below, and held
+ * equal by `mirrorNodeRule.test.ts`. It classifies exactly as
+ * `path.win32.isAbsolute`, on every platform: under Git Bash the Windows
+ * installer writes `C:\Program Files\nodejs\node.exe`, which a POSIX-only
+ * pattern would refuse on every hook (PR #47). On POSIX a drive or backslash
+ * value names no file, and is refused as missing.
+ */
+export const ABSOLUTE_PATH_CASE = "/*|\\\\*|[A-Za-z]:[\\\\/]*";
+
+/**
  * The MCP entry's locator (CV21.DS2.US6).
  *
  * The manifest used to name `${CLAUDE_PLUGIN_ROOT}/mcp/launch.sh`. Claude Code
@@ -92,6 +104,12 @@ export const GLOBAL_BIN_DIRS = ['"$HOME/.nvm/current/bin"', "/opt/homebrew/bin",
  * the same directories for `node`. A client whose PATH holds neither (a GUI
  * launch) still starts the server, and one with no `mirror` anywhere gets one
  * stderr line naming the install step, and exit 1.
+ *
+ * `MIRROR_NODE` is used only as an absolute path to an executable file, as
+ * every reader uses it (CR192); anything else gets one stderr line with the
+ * reason, in the Pi extension's words, and the search goes on without it. The
+ * value is read once, into `mmnode`, and printed with `printf` and its line
+ * breaks removed: dash's `echo` turns the `\n` of `\nodejs` into a newline.
  *
  * Written for what three runtimes do to the string (the US6 spike):
  *
@@ -117,7 +135,10 @@ export const MCP_LOCATOR = [
   'mmjs="$(dirname "$mmbin")/node_modules/mirror-mind/bin/mirror.js"',
   '[ -f "$mmjs" ] && mmbin="$mmjs"',
   'mmnode="$MIRROR_NODE"',
-  '[ -n "$mmnode" ] && [ -x "$mmnode" ] || mmnode="$(command -v node 2>/dev/null)"',
+  'mmwhy=""',
+  `[ -n "$mmnode" ] && case "$mmnode" in ${ABSOLUTE_PATH_CASE}) if [ -d "$mmnode" ]; then mmwhy="a directory"; elif [ ! -e "$mmnode" ]; then mmwhy="missing"; elif [ ! -f "$mmnode" ] || [ ! -x "$mmnode" ]; then mmwhy="not executable"; fi ;; *) mmwhy="relative" ;; esac`,
+  `[ -n "$mmwhy" ] && { printf 'mirror-mind: MIRROR_NODE=%s is %s; searching the PATH and the usual places instead\\n' "$(printf '%s' "$mmnode" | tr -d '\\r\\n')" "$mmwhy" >&2; mmnode=""; }`,
+  '[ -n "$mmnode" ] || mmnode="$(command -v node 2>/dev/null)"',
   `for mmdir in "$(dirname "$mmbin")" ${GLOBAL_BIN_DIRS.join(" ")}; do [ -n "$mmnode" ] && break; [ -x "$mmdir/node" ] && mmnode="$mmdir/node"; done`,
   '[ -n "$mmnode" ] || { echo "mirror-mind: node not found on PATH; the MCP server cannot start. Set MIRROR_NODE." >&2; exit 1; }',
   'exec "$mmnode" "$mmbin" mcp',
