@@ -263,15 +263,20 @@ Portuguese such as `Âncora` unchanged.
 ### Symptom
 
 After `Get-Content perfil.md | mirror identity set ego perfil` in Windows PowerShell
-5.1, `mirror identity get ego perfil` shows `N?o h? transi??o` where the file said
-`Não há transição`. Or the entry starts with an invisible character (U+FEFF) that
-shows up as `ï»¿` in some viewers. Or, from `cmd.exe` with `< file`, the entry is two
-replacement characters followed by the text with a NUL between every letter.
+5.1, an editor-saved UTF-8 file without a mark can come back as `N??o h??…`: each
+accented letter becomes two question marks. Text that PowerShell already decoded
+correctly, such as a line typed in the session or read with `Get-Content -Encoding
+UTF8`, loses one accented character to one `?` under the default pipe encoding. Or the
+entry starts with an invisible character (U+FEFF) that shows up as `ï»¿` in some
+viewers. Or, from `cmd.exe` with `< file`, the entry is two replacement characters
+followed by the text with a NUL between every letter.
 
 ### Root cause
 
-Three things Windows PowerShell 5.1 does to text, none of them Mirror's:
+Four Windows PowerShell 5.1 encoding behaviors matter here, none of them Mirror's:
 
+- `Get-Content` reads a UTF-8 file without a mark through the active ANSI code page;
+  for example, `ã` becomes the two characters `Ã£` before the pipe runs;
 - what it pipes to a native command goes through `$OutputEncoding`, whose default
   is ASCII: every character outside ASCII becomes `?`, and nothing marks the loss;
 - what it pipes may begin with a UTF-8 byte-order mark, which is a signature, not
@@ -287,10 +292,13 @@ these: its pipe and its `>` are UTF-8 without a mark.
 mirror identity get <layer> <key>
 ```
 
-`?` where a letter should be is the ASCII pipe; a leading `ï»¿` is the UTF-8 mark;
-NULs between letters are UTF-16 read as UTF-8. The database holds exactly what
-arrived, so the repair is to set the entry again, correctly, through one of the
-routes below.
+One `?` where an accented letter should be is the ASCII pipe after correct decoding.
+Two per letter mean `Get-Content` first decoded an unmarked UTF-8 file through the ANSI
+code page and the ASCII pipe then replaced both resulting characters. Mojibake such as
+`Ã£` after making the pipe UTF-8 means the source file was still decoded through ANSI.
+A leading `ï»¿` is the UTF-8 mark; NULs between letters are UTF-16 read as UTF-8. The
+database holds exactly what arrived, so the repair is to set the entry again, correctly,
+through one of the routes below.
 
 ### Fix
 
@@ -306,13 +314,18 @@ mirror journey update <slug> --file caminho.md
 `--file` reads the file as bytes, whatever wrote it. It is the route for anything
 longer than a line on every platform; on PowerShell 5.1 it is the only safe one.
 
-To use the pipe anyway, make it UTF-8 for the session, or in `$PROFILE`:
+To use the pipe anyway, make it UTF-8 for the session, or in `$PROFILE`. For an
+editor-saved UTF-8 file without a mark, also tell Windows PowerShell 5.1 how to decode
+the file:
 
 ```powershell
 $OutputEncoding = [Console]::OutputEncoding = [Text.UTF8Encoding]::new()
+Get-Content -Encoding UTF8 perfil.md | mirror identity set ego perfil
 ```
 
-Or use PowerShell 7, where none of this happens.
+The first line alone is enough when the text is already decoded correctly, such as text
+typed in the session. It does not repair text that `Get-Content` already decoded through
+the ANSI code page. Or use PowerShell 7, where none of this happens.
 
 ---
 

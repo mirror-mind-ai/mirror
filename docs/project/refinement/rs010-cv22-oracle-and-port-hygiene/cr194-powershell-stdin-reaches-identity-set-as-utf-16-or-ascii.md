@@ -30,10 +30,11 @@ input arriving in an encoding the reader was not told about, and stored as it ar
 - A stdin that begins with a UTF-16 mark (`FF FE`, `FE FF`) is decoded as UTF-16 of
   that endianness before anything else looks at it; the mark is dropped as the UTF-8
   one is.
-- The Windows troubleshooting page names the three PowerShell 5.1 behaviors (the UTF-8
-  mark, `>` as UTF-16LE, `$OutputEncoding` ASCII) beside the one-line fix for each
-  (`$OutputEncoding = [Console]::OutputEncoding = [Text.UTF8Encoding]::new()`, or
-  PowerShell 7), and `--content` as the route that bypasses stdin.
+- The Windows troubleshooting page names the relevant PowerShell 5.1 encoding
+  boundaries: `Get-Content` decoding unmarked UTF-8 through the ANSI code page, the
+  `$OutputEncoding` ASCII pipe, the UTF-8 mark, and `>` as UTF-16LE. It gives the full
+  pipe fix (`Get-Content -Encoding UTF8` plus UTF-8 `$OutputEncoding`), PowerShell 7,
+  and `--file` as the route that bypasses both shell boundaries.
 - Decision for Plan: whether content that arrives through stdin with `?` where
   letters were is detectable at all without guessing, and if not, whether the doc line
   is the whole answer for that case.
@@ -76,10 +77,12 @@ anyone who wants the pipe.
 4. **Docs.** `REFERENCE.md`'s `/mm-identity` and `/mm-journey` rows gain `--file`;
    `.pi/skills/mm-identity/SKILL.md` and `mm-journey/SKILL.md` show it beside the pipe
    form (and the plugin copies regenerate, `buildClaudePlugin.ts`);
-   `docs/process/troubleshooting.md` gains a section beside the mojibake one: the three
-   PowerShell 5.1 behaviors (the UTF-8 mark, `>` as UTF-16LE, `$OutputEncoding` ASCII),
-   `--file` as the route that avoids all three, and the shell fix
-   (`$OutputEncoding = [Console]::OutputEncoding = [Text.UTF8Encoding]::new()`, or
+   `docs/process/troubleshooting.md` gains a section beside the mojibake one: the
+   PowerShell 5.1 input boundaries (the UTF-8 mark, `>` as UTF-16LE,
+   `$OutputEncoding` ASCII, and `Get-Content` decoding unmarked UTF-8 through ANSI),
+   `--file` as the route that avoids them, and the complete shell fix
+   (`Get-Content -Encoding UTF8` plus
+   `$OutputEncoding = [Console]::OutputEncoding = [Text.UTF8Encoding]::new()`, or
    PowerShell 7) for the pipe.
 
 ### Affected files
@@ -109,7 +112,8 @@ Automated: the decoder's unit tests (UTF-8 plain, UTF-8 mark, UTF-16LE, UTF-16BE
 mark alone); the front-door tests above through `spawnFrontDoor` with a `Buffer` on
 stdin. By the Navigator: `mirror identity set ego probe --file <a UTF-8 file with
 accents>` on this machine, read back with `identity get`, then removed. A PowerShell
-5.1 run is not available here and is recorded as not measured.
+5.1 run was not available before release; the reporter's post-release measurement is
+recorded in Evidence below.
 
 ### Exclusions
 
@@ -200,10 +204,23 @@ the amendments folded. Driver `@viniciusteles`, Delivery `main`.
      `identity get` found none of the three keys.
   7. A one-liner through the pipe: unchanged.
   8. The scratch removed; the real home untouched throughout.
-- Windows PowerShell 5.1 itself: not measured here. Per decision 6, Rodrigo Immaginario is
-  asked on PR #49's thread to try the pipe with and without the shell fix, and `--file`,
-  once the release carries this.
-- Validation accepted by the Navigator, 2026-11-03.
+- Windows PowerShell 5.1, post-release validation by Rodrigo Immaginario on 2026-11-03
+  ([PR #49 comment](https://github.com/mirror-mind-ai/mirror/pull/49#issuecomment-6610137363)):
+  v0.39.2 installed from npm into a throwaway prefix, called through npm's `mirror.ps1`
+  shim, with a throwaway home on Windows PowerShell 5.1.26100. `perfil.md` contained
+  `Não há transição sem ação` as editor-saved UTF-8 without a mark.
+  1. With the default ASCII `$OutputEncoding`, each accented letter became two question
+     marks (`N??o h??…`). `Get-Content` first decoded the UTF-8 bytes through code page
+     1252 into two characters such as `Ã£`; the pipe then replaced both with `?`.
+  2. Setting UTF-8 `$OutputEncoding` alone preserved that already-created mojibake
+     (`ã` arrived as `Ã£`). Adding `Get-Content -Encoding UTF8` made the pipe intact.
+  3. `identity set ego probe2 --file perfil.md` was intact with no shell setting, for
+     both editor-saved UTF-8 and a UTF-16LE file written by `>` with `FF FE`.
+  4. `runtime diagnose` reported no `hook_node_unresolvable`; its only finding was an
+     unrelated stale Codex plugin cache.
+- Validation accepted by the Navigator, 2026-11-03. Rodrigo's measurement confirmed the
+  implementation and exposed the incomplete pipe example; the troubleshooting page now
+  includes `Get-Content -Encoding UTF8` and distinguishes one from two question marks.
 
 ### Debt review
 
@@ -214,11 +231,15 @@ the amendments folded. Driver `@viniciusteles`, Delivery `main`.
 - The skills' plugin copies are generated from `.claude/skills/`, and the Pi form is a
   separate file: three edits for one sentence. That is the layout (CR102, CR159), not
   this CR's debt.
-- No other findings.
+- The same Windows run observed that Mirror's `✓` renders as three unrelated characters
+  on the default PowerShell 5.1 console code page 437. That is console-glyph compatibility,
+  not text-input decoding; it remains outside CR194 and was not changed here.
 
 ## Outcome
 
 Done, 2026-11-03. Text on stdin is decoded by its mark, UTF-8 or UTF-16; `--file` reads a
-file as bytes, the route around a pipe that cannot be trusted; the troubleshooting page
-names the three PowerShell 5.1 behaviors and the way around each. On `main` at `51696c68`;
-for the next release.
+file as bytes, the route around a pipe that cannot be trusted. Post-release validation on
+Windows PowerShell 5.1 confirmed `--file` for unmarked UTF-8 and UTF-16LE and corrected
+the troubleshooting route: an editor-saved UTF-8 file needs `Get-Content -Encoding UTF8`
+as well as UTF-8 `$OutputEncoding`. The original implementation was on `main` at
+`51696c68`; the evidence and operational documentation now include the real Windows run.
