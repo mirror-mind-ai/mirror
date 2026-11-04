@@ -384,10 +384,50 @@ amendments folded. Driver `@viniciusteles`, Delivery `main`.
   `loose_permissions` (the route's `mkdir` made the home 755) and
   `openrouter_key_missing` (the route empties the key). The final count was 1.
 - Validation accepted by the Navigator, 2026-11-04.
-- **Pending.** The Windows job, which runs on push, and Rodrigo's installer run on
-  PR #47, the gate before the release is tagged.
+- **CI on `main`, 2026-11-04.** Pushed as `746456b2` (code, tests, CI), `6ee393f2`
+  (docs), and `39a98f52` (validation). Tests run 41921988933 passed on every job:
+  `ts (ubuntu-latest)`, `ts (macos-latest)`, `smoke`, and `windows-install-kind`; the
+  Docs run passed. In the Windows job the new Git Bash step ran
+  `mirrorNodeRule.test.ts`: 4 tests, 4 passed, none skipped. The pattern classified as
+  `win32.isAbsolute` under Git Bash's bash. A `node.exe` under `Program Files\nodejs`,
+  named in its Windows form, ran the hook with no refusal line. `C:node.exe` was
+  refused as `relative`, and the hook ran through the PATH.
+- **Pending.** Rodrigo's installer run on PR #47, the gate before the release that
+  carries CR192 is tagged.
+
+### Debt review
+
+- The pattern is written twice, in TypeScript (`ABSOLUTE_PATH_CASE`) and in the
+  generator's `@NODE@` fragment, because the generator is bash.
+  `mirrorNodeRule.test.ts` holds them equal, as `mcpEntry.test.ts` holds
+  `GLOBAL_BIN_DIRS` to the wrappers' list. Accepted.
+- The rule has three implementations: the shell pattern, `isExecutableFile()` with
+  `path.isAbsolute`, and the Pi extension's `resolveNode()`, which imports nothing from
+  the core (CR191). Two small differences remain, both accepted. The extension trims
+  whitespace (decided at approval). The TypeScript readers accept a special file that is
+  not a directory and has the execute bit, where the shells' `[ -f ]` refuses it. No
+  real `MIRROR_NODE` is a FIFO or a device.
+- The daily mode of `note` searches `hooks.log` on each refusal, and nothing rotates
+  `hooks.log` (excluded at planning). The search runs only when a value is refused.
+- The agy wrappers now carry the full "Find Node" comment, which their template
+  lacked: the cost of one fragment. Accepted.
+- The plugin smoke still cannot reach its missing-hook step on a machine with a global
+  `mirror-hook` (CR172, captured). CI's runners have none, and it passed there.
+- The validation route needed `MIRROR_USER=` exported empty, because the core rightly
+  refuses a `MIRROR_HOME` that conflicts with the user a checkout's `.env` names. Any
+  scratch-home route on a configured machine needs the same; this route says so. No
+  change.
+- Where Codex and Antigravity keep an MCP server's stderr is not verified; the docs
+  claim only what each CLI's own help shows. Not captured unless the Navigator asks.
+- No other findings.
 
 ## Outcome
 
-Pending: validated 2026-11-04; the Windows CI job, and Rodrigo's installer run before
-the release, are pending.
+Done, 2026-11-04. Every reader of `MIRROR_NODE` uses it only as an absolute path to an
+executable file, refuses anything else with its reason, and keeps searching. The hook
+wrappers note a refusal in `hooks.log` once a day, the MCP entry on stderr, and
+`runtime diagnose` does not count a refused value. One shell pattern, the
+`path.win32.isAbsolute` rule, makes the Windows installer's
+`C:\Program Files\nodejs\node.exe` absolute under Git Bash, and CI proves it on Windows.
+On `main` at `39a98f52` (code `746456b2`, docs `6ee393f2`), for the next release, which
+waits for Rodrigo's installer run on PR #47. The release note draft above is ready.
