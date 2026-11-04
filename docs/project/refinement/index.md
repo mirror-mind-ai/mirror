@@ -9,7 +9,7 @@ If a linked document and this index disagree, this index wins.
 ## Current Focus
 
 - Refinement Story: RS010
-- Change Request: none
+- Change Request: CR192
 
 Selecting a focus is an explicit project decision. Reading this file never selects or
 executes work.
@@ -109,7 +109,7 @@ Open work is ordered intentionally. Terminal history follows open work.
 | 74 | [CR184](rs010-cv22-oracle-and-port-hygiene/cr184-the-extraction-eval-s-prompt-hash-excludes-the-summary-prompt-its-probe-sends.md) | RS010 | The extraction eval's prompt hash excludes the summary prompt its probe sends | captured | — | — |
 | 75 | [CR188](rs010-cv22-oracle-and-port-hygiene/cr188-a-provider-outage-crashes-the-commands-that-call-a-model-with-a-stack-trace.md) | RS010 | A timeout, an outage, a rate limit, or a server error crashes the commands that call a model with a stack trace, and `journal` loses the entry | captured | — | — |
 | 76 | [CR190](rs001-ariad-runtime-trust/cr190-prepare-checks-mirror-s-own-doc-paths-and-reports-the-project-s-guide-missing.md) | RS001 | Prepare checks Mirror's own doc paths, so a project that keeps its rules in `CLAUDE.md` is reported missing its development guide | captured | — | — |
-| 77 | [CR192](rs010-cv22-oracle-and-port-hygiene/cr192-the-hook-wrappers-and-the-mcp-locator-accept-a-relative-mirror-node.md) | RS010 | The hook wrappers and the MCP locator accept a relative `MIRROR_NODE`, and say nothing about one they will not use | captured | — | — |
+| 77 | [CR192](rs010-cv22-oracle-and-port-hygiene/cr192-the-hook-wrappers-and-the-mcp-locator-accept-a-relative-mirror-node.md) | RS010 | The hook wrappers and the MCP locator accept a relative `MIRROR_NODE`, and say nothing about one they will not use | in_progress | @viniciusteles | `main` |
 | 78 | [CR195](rs010-cv22-oracle-and-port-hygiene/cr195-the-test-suite-writes-four-lines-into-the-real-home-s-front-door-log.md) | RS010 | The test suite writes four lines into the developer's real `front-door.log` on every run, three of them `ERROR` | captured | — | — |
 | 79 | [CR197](rs010-cv22-oracle-and-port-hygiene/cr197-the-hook-wrappers-and-the-mcp-locator-accept-a-relative-mirror-bin.md) | RS010 | The hook wrappers and the MCP locator accept a relative `MIRROR_BIN`, so Node can run a JavaScript file from the project the session is in | captured | — | — |
 | — | [CR193](rs010-cv22-oracle-and-port-hygiene/cr193-the-release-doctor-does-not-check-the-lockfile.md) | RS010 | The release doctor checks the package version and not the lockfile's, so a release commit that forgets `package-lock.json` passes it | done | @viniciusteles | `main` |
