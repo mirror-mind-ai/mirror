@@ -809,10 +809,15 @@ not injected, and conversations never get titles or memories.
 ```text
 2026-09-24T10:12:03Z claude:session-start: node not found on PATH; hook skipped. Set MIRROR_NODE.
 2026-09-25T08:40:11Z claude:inject: node exited 9 before the hook finished (/usr/local/bin/node, v18.19.0); Mirror needs Node 24 or later. Set MIRROR_NODE.
+2026-11-04T10:00:00Z claude:user-prompt: MIRROR_NODE=bin/node is relative; searching the PATH and the usual places instead
 ```
 
 The second line is a Node that was found but is too old to run the hook: an
 older install earlier on the runtime's `PATH` than the one your terminal uses.
+The third is a `MIRROR_NODE` the hooks will not use (CR192): a relative path, a
+directory, a path that no longer exists, such as a Node version an upgrade
+removed, or a file that is not executable. The hook still runs, through the
+search, and the line is written at most once a day.
 
 On Pi the symptom is louder: the session opens with one warning,
 `` Mirror: `node` is not on the PATH Pi inherited, nor in the usual places — set MIRROR_NODE=/path/to/node (Node 24 or later) where Pi is launched. Mirror will not log this session. ``,
@@ -852,11 +857,21 @@ it also counts the lines `hooks.log` recorded in the last seven days
 ### Fix
 
 Set `MIRROR_NODE` to the absolute path of a `node` 24 or later, in the
-environment the runtime is launched with:
+environment the runtime is launched with. A relative path is refused, because
+it would resolve against whatever project the runtime was opened in; on
+Windows, `C:\Program Files\nodejs\node.exe` is absolute.
 
 ```bash
 which node   # in a terminal where it works
 ```
+
+After the fix no new line is written, but `runtime diagnose` keeps counting
+the lines from the last seven days, so read the latest stamp. The plugin's MCP
+entry reads the same variable and writes the same refusal, prefixed
+`mirror-mind: `, to the MCP server's stderr, which the client keeps with its
+MCP or debug output; Claude Code and Grok write a debug log when started with
+`--debug`. The hooks run in the same environment, so `hooks.log` usually shows
+the value first.
 
 Without it, a wrapper tries `command -v node`, then `~/.nvm/current/bin/node`,
 `/opt/homebrew/bin/node`, and `/usr/local/bin/node`. A wrapper that finds
@@ -874,7 +889,9 @@ claude:session-start: mirror-hook not found on PATH; hook skipped. Install mirro
 ```
 
 `MIRROR_BIN` is the same trust class as `MIRROR_NODE`: an executable path the
-environment names, honored as given.
+environment names. It is still honored as given, relative or not (CR197),
+while `MIRROR_NODE` is used only as an absolute path to an executable file
+(CR192).
 
 ### Recovery of affected sessions
 

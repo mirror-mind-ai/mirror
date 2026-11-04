@@ -702,9 +702,14 @@ hook wrapper therefore resolves Node explicitly, in this order: `$MIRROR_NODE`,
 `command -v node`, the directory the Mirror entry was found in (an npm global
 bin holds the `node` that installed the package beside `mirror-hook`, while a
 system `/usr/local/bin/node` can be years older), `~/.nvm/current/bin/node`,
-`/opt/homebrew/bin/node`, `/usr/local/bin/node`. A wrapper that finds
-none writes one line to `<mirror home>/hooks.log` and exits 0: it skips the
-hook, never fails the turn, and is never silent. The Node it finds must be 24
+`/opt/homebrew/bin/node`, `/usr/local/bin/node`. `$MIRROR_NODE` is used only
+as an absolute path to an executable file (CR192): any other value is refused
+with its reason, in one `hooks.log` line at most once a day, and the search
+goes on. "Absolute" is one shell pattern the wrappers and the plugin's MCP
+entry share, and it classifies as `path.win32.isAbsolute`, so the Windows
+installer's `C:\Program Files\nodejs\node.exe` counts under Git Bash. A
+wrapper that finds no Node writes one line to `<mirror home>/hooks.log` and
+exits 0: it skips the hook, never fails the turn, and is never silent. The Node it finds must be 24
 or later. An older one fails before the hook starts, and the wrapper records
 that exit the same way. The wrapper passes no flag: the entry reads
 configuration and silences its own warnings (US3, D3). The log's home is
@@ -715,7 +720,7 @@ from `~/.config/mirror/env`.
 The Pi extension is the fifth resolver (CR191): no wrapper runs it, so it
 searches the same places itself, in the same order, with the Node beside the
 tree it ships in (`<prefix>/bin/node` for a global install) in the wrappers'
-"beside the entry" position, and takes `MIRROR_NODE` as an absolute path only.
+"beside the entry" position, and applies the same rule to `MIRROR_NODE`.
 When nothing resolves it spawns nothing, warns once in the session with the
 fix, and writes one line to `hooks.log` as `pi:session-start`. A test pins its
 candidate list to `HOOK_NODE_CANDIDATES`, as one pins the wrappers'.

@@ -243,9 +243,16 @@ See [MEMORY_RECEPTION](#memory_reception).
 
 **Used by:** every hook wrapper under `.claude/hooks/`, `plugins/mirror-mind/hooks/`, and `plugins/mirror-mind/agy/`; the plugin's MCP entry; and the Pi extension, `.pi/extensions/mirror-logger.ts` (CR191).
 
-**How to change it:** set `MIRROR_NODE=/path/to/node` in the environment the runtime is launched with. Without it a wrapper tries `command -v node`, then the Node beside the Mirror entry, then the nvm `current` symlink, `/opt/homebrew/bin/node`, and `/usr/local/bin/node`. The Pi extension searches in the same order; its "beside the entry" is the `bin/` of the prefix the package is installed under (`/opt/homebrew/bin/node` for a Homebrew Node), which is the Node that installed the package. The extension takes an absolute path only; a relative one, a directory, a missing path, or a file that is not executable is warned once in `mirror-logger.log`, with the reason, and the search goes on without it.
+**How to change it:** set `MIRROR_NODE=/path/to/node` in the environment the runtime is launched with; on Windows, a path such as `C:\Program Files\nodejs\node.exe`, the form the Windows installer writes. Without it a wrapper tries `command -v node`, then the Node beside the Mirror entry, then the nvm `current` symlink, `/opt/homebrew/bin/node`, and `/usr/local/bin/node`. The Pi extension searches in the same order; its "beside the entry" is the `bin/` of the prefix the package is installed under (`/opt/homebrew/bin/node` for a Homebrew Node), which is the Node that installed the package.
 
-**Active in code:** yes. The wrappers read it before Node starts; `runtime diagnose` checks the same order from its own environment, and reports the failures `hooks.log` recorded in the last seven days.
+**The rule (CR192):** every reader uses `MIRROR_NODE` only when it is an absolute path to an executable file. Absolute is `/…` on POSIX, and `C:\…`, `C:/…`, or `\\server\share\…` on Windows. The hook wrappers and the MCP entry, which run in a POSIX shell and under Git Bash on Windows, accept both platforms' forms; on a POSIX machine a Windows form names no file. Any other value is refused with its reason (`relative`, `a directory`, `missing`, or `not executable`), and the search goes on without it. A relative value would resolve against the project the runtime was opened in. Every reader words the refusal the same way, `MIRROR_NODE=<value> is <reason>; searching the PATH and the usual places instead`, where it records failures:
+
+- **the hook wrappers:** one line in `<mirror home>/hooks.log`, at most once a day (UTC) for the same value;
+- **the plugin's MCP entry:** one line on the server's stderr, prefixed `mirror-mind: `, which the client keeps with its MCP or debug output;
+- **the Pi extension:** a warning in `mirror-logger.log`;
+- **`runtime diagnose`:** it does not count the value as a Node a hook can find.
+
+**Active in code:** yes. The wrappers read it before Node starts; `runtime diagnose` checks the same order and the same rule from its own environment, and reports the failures `hooks.log` recorded in the last seven days.
 
 **Effects:** a GUI-launched runtime often does not inherit the `PATH` that holds `node`, or finds an older one first. A wrapper that cannot find Node, or finds one older than 24 that cannot run the hook, skips the hook and writes one line to `<mirror home>/hooks.log` instead of failing the user's turn, so "Mirror stopped remembering" has a place to be diagnosed. A Pi whose extension finds no Node stays up, says so once at session start with the fix, writes the same kind of line to `hooks.log` (`pi:session-start: node not found on PATH or in the usual places; …`), and runs nothing for that session.
 
