@@ -131,3 +131,4 @@ evidence stays honest as both cores move.
 - [CR194 — Text piped from Windows PowerShell reaches `identity set` and `journey update -` as UTF-16 or as ASCII, and is stored as it arrives](cr194-powershell-stdin-reaches-identity-set-as-utf-16-or-ascii.md)
 - [CR195 — The test suite writes four lines into the developer's real `front-door.log` on every run, three of them `ERROR`](cr195-the-test-suite-writes-four-lines-into-the-real-home-s-front-door-log.md)
 - [CR196 — A prompt typed while a turn runs loses its reply on Claude Code: the prompt hook fires at queue time, under the running turn's id](cr196-a-prompt-typed-while-a-turn-runs-loses-its-reply-on-claude-code.md)
+- [CR197 — The hook wrappers and the MCP locator accept a relative `MIRROR_BIN`, so Node can run a JavaScript file from the project the session is in](cr197-the-hook-wrappers-and-the-mcp-locator-accept-a-relative-mirror-bin.md)
