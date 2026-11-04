@@ -208,8 +208,12 @@ By the Navigator, before `validated`, on this machine, with nothing touching the
 home and no paid call:
 
 1. In a scratch directory, a project holding an executable `bin/node` whose only effect
-   is to create a marker file, and an empty home. Export `MIRROR_HOME=<scratch home>`,
-   `OPENROUTER_API_KEY=` (empty), and `MIRROR_NODE=bin/node`.
+   is to create a marker file, an empty home, and an empty config directory. Export
+   `MIRROR_HOME=<scratch home>`, `MIRROR_USER=` (empty, not unset),
+   `XDG_CONFIG_HOME=<scratch config>`, `OPENROUTER_API_KEY=` (empty), and
+   `MIRROR_NODE=bin/node`. An empty `MIRROR_USER` outranks the one a checkout's `.env`
+   or the config file names, which the core would otherwise report as conflicting
+   with the scratch home (found in the Driver's dry run, below).
 2. From the project, run the plugin's prompt hook the way Claude Code runs it, twice:
    `printf '{"session_id":"cr192","prompt":"hi"}' | bash <checkout>/plugins/mirror-mind/hooks/log-user-prompt.sh`.
 3. Pass: `hooks.log` holds exactly one refusal line; the marker does not exist; the
@@ -314,6 +318,76 @@ amendments folded. Driver `@viniciusteles`, Delivery `main`.
 - `.claude/settings.json` and `plugins/mirror-mind/hooks/hooks.json` register
   `mirror-inject.sh` and `log-user-prompt.sh` on the same `UserPromptSubmit` event.
 
+### Implementation, 2026-11-04
+
+- **Code.** `scripts/generate_hook_wrappers.sh` gains the shared `@LOG@` and `@NODE@`
+  fragments, spliced by the text around the placeholder; the 13 wrappers are
+  regenerated. `ts/src/guards/claudePlugin.ts` exports `ABSOLUTE_PATH_CASE` and applies
+  the rule in `MCP_LOCATOR`; the three generated manifests follow.
+  `ts/src/runtime/diagnose.ts` exports `isExecutableFile()` and applies the rule in
+  `hookNodeFindings`, which `ts/src/frontDoor/runtimeRoute.ts` now calls with it. The
+  extension's comment is corrected; `.github/workflows/tests.yml` gains the Windows
+  step. Docs: `REFERENCE.md`, `docs/reference/configuration.md`,
+  `docs/process/troubleshooting.md`, `docs/product/specs/runtime-interface/index.md`.
+- **Tests, written first.** They failed for the reasons the CR names: today's locator
+  ran a directory (exit 126) and the project's `bin/node`. New:
+  `ts/test/hooks/mirrorNodeRule.test.ts` (the pattern pinned across the three wrapper
+  forms and the locator; the classification table in bash and dash; a real wrapper run
+  with a Node under `Program Files/nodejs`, and with `C:node.exe`); nine cases in
+  `hooks.test.ts` (each reason, the planted `bin/node`, a valid value, the daily rule
+  across two fixed days, a forged line break, the bin and agy forms, the shared
+  fragments, and diagnose's rule and `isExecutableFile()`); three in
+  `mcpEntry.test.ts` (one read of `MIRROR_NODE`, a real server start past a relative
+  value, each reason printed intact).
+- **Deviation from scope 6.** The Windows step runs `mirrorNodeRule.test.ts` under Git
+  Bash rather than an inline script, so the same assertions run on every host and on
+  Windows. The test copies `node.exe` under the temp directory's
+  `Program Files/nodejs`, not under `$RUNNER_TEMP`, and passes the wrapper to bash by a
+  relative path; `mirrorNodeRule.test.ts` joins the affected files.
+- **Checks, this machine (macOS, bash 3.2, Node 26.12.1).** Typecheck clean; biome
+  with the one warning that predates this work; `bash scripts/test_leaves_nothing.sh`:
+  3,784 tests, 3,781 passed, 0 failed, 3 skipped (machine-dependent), and nothing left
+  behind; the four touched test files under `MEMORY_ENV=test`: 96 tests, 0 failed;
+  `generate_hook_wrappers.sh --check` in sync, and in sync under bash 5.2.37 too
+  (`docker run bash:5.2`, `patsub_replacement` on), against bytes generated under
+  bash 3.2; `buildClaudePlugin.ts --check`, `checkDocLinks`, `checkTestTempHomes`,
+  `checkRetiredSurfaces`, `checkSkillCommandParity`, and `checkPackContents` clean.
+- **Smokes.** `smoke_mirror_mcp.sh` passed, with no data leaked into production.
+  `smoke_claude_plugin.sh` passed its first steps with the new wrappers and entry
+  (validation by `claude` and `grok`, the hooks writing to the configured home, the
+  MCP entry starting the server), then failed at "no hooks.log line after mirror-hook
+  went missing". The same step fails identically at `e6bb4a1d`, before CR192, in a
+  throwaway worktree: CR172's failure on a machine with a global `mirror-hook`.
+- **The Driver's dry run of the Navigator's route.** The first run, with
+  `MIRROR_USER` unset, met the wrapper's conditions, but the core refused the scratch
+  home: `MIRROR_HOME (...) conflicts with MIRROR_USER (vinicius-dev)`. `mirror-hook`
+  on this machine links into this checkout, whose `.env` names `MIRROR_USER`, so
+  `conversations` and `diagnose` refused too. With `MIRROR_USER=` exported empty, every
+  pass condition held: two hook runs exited 0; `hooks.log` held one refusal line; the
+  marker was absent; the prompt was in the scratch home; `runtime diagnose` reported
+  `hook_failures_recorded` naming `claude:user-prompt`; a valid `MIRROR_NODE` added no
+  line. The real homes' `hooks.log` and `memory.db` were unchanged throughout (size and
+  mtime). The route above is corrected.
+- **Not verified.** Where each client keeps an MCP server's stderr: no client debug log
+  exists on this machine, and running a client would touch the real home. The docs say
+  only what each CLI's own help shows: Claude Code 2.1.312 and Grok 1.0.70 write a debug
+  log with `--debug` or `--debug-file`. Codex 0.164.0 shows no such flag, and Antigravity
+  was not checked. The hooks read the same environment, so `hooks.log` shows a refused
+  value too.
+- **Navigator validation, 2026-11-04 21:40 UTC**, on this machine, the route above run
+  against the working tree. After two hook runs `hooks.log` held one line,
+  `2026-11-04T21:40:16Z claude:user-prompt: MIRROR_NODE=bin/node is relative; searching
+  the PATH and the usual places instead`. The marker did not exist. `mirror
+  conversations` listed the scratch conversation (`abaa7aaf`, 2 messages, `hi`).
+  `mirror runtime diagnose` reported `hook_failures_recorded` (1, latest
+  `claude:user-prompt`), beside two findings from the scratch setup:
+  `loose_permissions` (the route's `mkdir` made the home 755) and
+  `openrouter_key_missing` (the route empties the key). The final count was 1.
+- Validation accepted by the Navigator, 2026-11-04.
+- **Pending.** The Windows job, which runs on push, and Rodrigo's installer run on
+  PR #47, the gate before the release is tagged.
+
 ## Outcome
 
-Pending: planned, approved 2026-11-04; implementation on `main`.
+Pending: validated 2026-11-04; the Windows CI job, and Rodrigo's installer run before
+the release, are pending.
