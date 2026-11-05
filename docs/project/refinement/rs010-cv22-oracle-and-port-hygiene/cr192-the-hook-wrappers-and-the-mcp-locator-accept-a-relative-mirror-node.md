@@ -277,6 +277,13 @@ amendments folded. Driver `@viniciusteles`, Delivery `main`.
 
 ### Release note draft
 
+Rodrigo's installer run (Evidence) corrected two claims below, and the release note
+carries the corrections. `runtime diagnose` does not say why it refuses a value: it only
+stops counting it as a Node the hooks can use, and the hooks' refusal line reaches it as
+`hook_failures_recorded`. And the installer's `MIRROR_NODE` is not under
+`C:\Program Files\nodejs\`: the run shows it under
+`AppData\Local\Programs\MirrorMind\node\`, in the same drive-letter form.
+
 > **Every reader uses `MIRROR_NODE` only when it is an absolute path to an executable
 > file** (CR192; the Windows constraint came from @rodrigoimmaginario). A relative value
 > such as `bin/node` could make a hook run a file from the project you were in, and a
@@ -392,8 +399,21 @@ amendments folded. Driver `@viniciusteles`, Delivery `main`.
   `win32.isAbsolute` under Git Bash's bash. A `node.exe` under `Program Files\nodejs`,
   named in its Windows form, ran the hook with no refusal line. `C:node.exe` was
   refused as `relative`, and the hook ran through the PATH.
-- **Pending.** Rodrigo's installer run on PR #47, the gate before the release that
-  carries CR192 is tagged.
+- **Rodrigo's installer run, the release gate, 2026-11-04**
+  ([PR #47](https://github.com/mirror-mind-ai/mirror/pull/47#issuecomment-6644116024)).
+  On Windows, against `main` at `28d9718b`, packed and installed the way the installer
+  does, in a throwaway prefix and home: the installer's contract passed 21/21. With
+  `MIRROR_NODE` in the installer's form,
+  `…\AppData\Local\Programs\MirrorMind\node\node.exe` under a user folder with a space
+  and accents, first with no `node` on the PATH and then with the PATH as installed, the
+  prompt hook exited 0 and the prompt reached `messages`, the plugin's MCP server answered
+  `initialize`, and `hooks.log` stayed empty. With `MIRROR_NODE=C:node.exe`, `hooks.log`
+  held exactly one line, `MIRROR_NODE=C:node.exe is relative; searching the PATH and the
+  usual places instead`, and the hook and the MCP server still ran. With that value,
+  `runtime diagnose` found Node on the PATH and reported nothing about the refused value:
+  no finding of its own was planned (scope 5, Exclusions), and he suggests one. His
+  `MIRROR_BIN=C:/Users/…/.mirror/bin`, with forward slashes, went to CR197. The gate is
+  clear.
 
 ### Debt review
 
@@ -427,7 +447,8 @@ Done, 2026-11-04. Every reader of `MIRROR_NODE` uses it only as an absolute path
 executable file, refuses anything else with its reason, and keeps searching. The hook
 wrappers note a refusal in `hooks.log` once a day, the MCP entry on stderr, and
 `runtime diagnose` does not count a refused value. One shell pattern, the
-`path.win32.isAbsolute` rule, makes the Windows installer's
-`C:\Program Files\nodejs\node.exe` absolute under Git Bash, and CI proves it on Windows.
-On `main` at `39a98f52` (code `746456b2`, docs `6ee393f2`), for the next release, which
-waits for Rodrigo's installer run on PR #47. The release note draft above is ready.
+`path.win32.isAbsolute` rule, makes the Windows installer's drive-letter `MIRROR_NODE`
+absolute under Git Bash; CI proves it on Windows, and so did Rodrigo's installer run.
+On `main` at `39a98f52` (code `746456b2`, docs `6ee393f2`), for the next release.
+Rodrigo's run on PR #47 passed on 2026-11-04, so the gate is clear; the release note
+takes the draft above with the two corrections the run made.
