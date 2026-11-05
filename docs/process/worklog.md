@@ -30,6 +30,14 @@ value, and the installer's `MIRROR_NODE` is under `AppData\Local\Programs\Mirror
 No schema change, no migration. No model or prompt changed, so the model-behavior gate
 does not apply. Release note: [v0.39.5](../releases/v0.39.5.md).
 
+After the release commit:
+
+- Docs and the four Tests jobs were green before the tag existed.
+- `release:promote` (dry run, then `--push`) tagged `v0.39.5` and moved `stable` to `3f7140bc`.
+- The GitHub Release is published and marked latest.
+- The Navigator approved the `release` environment and the npm stage, and moved `latest`
+  with 2FA. `latest` and `stable` are at 0.39.5, `gitHead` `3f7140bc`.
+
 ### 2026-11-03 — v0.39.4: The Reply Finds Its Prompt
 
 Patch release of PR #51 (@alannascimento1, his first here),
