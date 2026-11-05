@@ -707,7 +707,8 @@ as an absolute path to an executable file (CR192): any other value is refused
 with its reason, in one `hooks.log` line at most once a day, and the search
 goes on. "Absolute" is one shell pattern the wrappers and the plugin's MCP
 entry share, and it classifies as `path.win32.isAbsolute`, so the Windows
-installer's `C:\Program Files\nodejs\node.exe` counts under Git Bash. A
+installer's drive-letter path (`C:\Users\…\AppData\Local\Programs\MirrorMind\node\node.exe`)
+counts under Git Bash. A
 wrapper that finds no Node writes one line to `<mirror home>/hooks.log` and
 exits 0: it skips the hook, never fails the turn, and is never silent. The Node it finds must be 24
 or later. An older one fails before the hook starts, and the wrapper records

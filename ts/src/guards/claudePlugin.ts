@@ -87,8 +87,9 @@ export const GLOBAL_BIN_DIRS = ['"$HOME/.nvm/current/bin"', "/opt/homebrew/bin",
  * `scripts/generate_hook_wrappers.sh` and into the locator below, and held
  * equal by `mirrorNodeRule.test.ts`. It classifies exactly as
  * `path.win32.isAbsolute`, on every platform: under Git Bash the Windows
- * installer writes `C:\Program Files\nodejs\node.exe`, which a POSIX-only
- * pattern would refuse on every hook (PR #47). On POSIX a drive or backslash
+ * installer writes a drive-letter path,
+ * `C:\Users\…\AppData\Local\Programs\MirrorMind\node\node.exe`, which a
+ * POSIX-only pattern would refuse on every hook (PR #47). On POSIX a drive or backslash
  * value names no file, and is refused as missing.
  */
 export const ABSOLUTE_PATH_CASE = "/*|\\\\*|[A-Za-z]:[\\\\/]*";

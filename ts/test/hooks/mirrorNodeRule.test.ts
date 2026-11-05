@@ -1,9 +1,9 @@
 // CR192: every reader uses MIRROR_NODE only as an absolute path to an
 // executable file. The shell readers -- the generated hook wrappers and the
 // plugin's MCP locator -- share one `case` pattern for "absolute", and it has to
-// be the Windows rule: under Git Bash the Windows installer writes
-// `C:\Program Files\nodejs\node.exe`, which a POSIX-only `/*` would refuse on
-// every hook (Rodrigo Immaginario, PR #47).
+// be the Windows rule: under Git Bash the Windows installer writes a
+// drive-letter path, `C:\Users\…\AppData\Local\Programs\MirrorMind\node\node.exe`,
+// which a POSIX-only `/*` would refuse on every hook (Rodrigo Immaginario, PR #47).
 //
 // This is the file the Windows CI job runs under Git Bash, so every case here
 // must hold on win32 as on POSIX: no shell-script stubs, which a native Node
@@ -166,8 +166,8 @@ function hooksLog(home: string): string[] {
 
 describe("CR192: a wrapper run as a runtime runs it", () => {
   test("a node under a path with a space, named in the platform's absolute form, runs the hook with no refusal", () => {
-    // On Windows this is the installer's shape: `...\Program Files\nodejs\node.exe`,
-    // read under Git Bash. Elsewhere, the same directory names on a POSIX path.
+    // On Windows this is the installer's shape, a drive-letter path with a space in
+    // it (the installer's is under the user's folder), read under Git Bash. Elsewhere, the same directory names on a POSIX path.
     const root = scratch();
     const { wrapper, ran, home } = treeWithStub(root);
     const nodeDir = join(root, "Program Files", "nodejs");

@@ -171,8 +171,9 @@ IFS= read -r -d '' FIND_NODE <<'EOF' || true
 # runtime spawned this hook from. Anything else is noted with its reason, in
 # the Pi extension's words, once a day, and the search goes on without it.
 # "Absolute" is the MCP locator's pattern too, and it classifies exactly as
-# path.win32.isAbsolute: under Git Bash the Windows installer writes
-# C:\Program Files\nodejs\node.exe (PR #47).
+# path.win32.isAbsolute: under Git Bash the Windows installer writes a
+# drive-letter path, C:\Users\...\AppData\Local\Programs\MirrorMind\node\node.exe
+# (PR #47).
 NODE=""
 if [ -n "${MIRROR_NODE:-}" ]; then
   refused=""
