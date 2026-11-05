@@ -49,6 +49,7 @@ Dropped   no longer relevant or replaced by another item
 | D-029 | The Pi extension records only the first prompt of an agent run; prompts Pi queues into the run never reach the conversation record | data integrity | medium | Carried | CV9.E2.S32 Navigator validation (step 2) | The next change to the extension's `agent_end` handler, or the next question about the fidelity of Pi conversation records |
 | D-030 | The prompt that runs `build load` is recorded in the conversation `build load` closes; the reply opens the new one without it | data integrity | low | Carried | CV9.E2.S32 Navigator validation (observed) | The next change to `switchConversation` or to where a runtime records the prompt, or the fix for D-029 |
 | D-031 | `smoke_claude_plugin.sh` step 6 ("mirror-hook gone") cannot run on a machine with a global Mirror install | testing | low | Carried | CV21.DS8.US1 validation (observed) | The next change to the plugin wrappers' bin search, or the next time a Driver needs the smoke green locally |
+| D-032 | The refinement protocol allocates IDs at capture time, which is safe only while one person allocates | process | low | Carried | PR #38 closure (its CR015/CR016 collided with `main`) | A second person writes refinement documents, or the next ID collision |
 
 ## D-001 — Metadata lifecycle policy and evidence filtering live inside ConversationService
 
@@ -1391,3 +1392,49 @@ pointing at an empty directory for step 6, if the wrapper honours an explicit
 empty bin, or by running the step under a `HOME` and PATH whose fallback
 directories are empty -- and passes on a machine with a global install. A
 comment in the smoke names why.
+
+## D-032 — The refinement protocol allocates IDs at capture time
+
+**Kind:** process
+**Severity:** low
+**Status:** Carried
+**Source:** closure of [PR #38](https://github.com/mirror-mind-ai/mirror/pull/38),
+2026-11-04. The PR proposed the fix below; it was closed unmerged because its own
+IDs had collided with `main` and the project has had one refinement writer since.
+
+### Carrying reason
+
+The [collaboration protocol](refinement/rs002-collaborative-refinement-work/collaboration-protocol.md)
+(§2, step 3) and `mm-build`'s capture route allocate the next `CRNNN`/`RSNNN` from
+the canonical index when a capture is drafted. Whoever allocates reads the index on
+`main`, so a number held anywhere else -- a working tree, a pushed branch, an open
+pull request -- is invisible to the next allocator.
+
+That has cost two collisions. On 2026-08-14 two clones held CR008 and CR009 for
+eight days (resolved by renumbering in #37). PR #38 then pushed CR015 and CR016 on a
+branch with an open pull request, and both numbers were allocated on `main` to
+different requests on 2026-08-26 and 2026-08-29. The PR's premise, "a branch with
+an open pull request is a visible claim", was false: the claim was on origin and
+nobody allocating could see it.
+
+Carried because, since 2026-09-01, every change to the refinement tree has one
+author, and a single allocator cannot collide with itself. The rules would cost
+more than they save until that changes.
+
+### Revisit trigger
+
+A second person writes refinement documents -- a maintainer capturing CRs on a
+long-lived branch, or a contributor capturing their own -- or the next ID collision.
+
+### Closure condition
+
+The protocol and `mm-build` adopt the three norms PR #38 proposed, with publication
+corrected:
+
+1. Drafts are numberless: a slug, no `CRNNN` or `RSNNN`, so a draft claims nothing.
+2. A number is allocated only by landing its canonical row on `main`. A pushed
+   branch or an open pull request is not publication.
+3. A session that touched the refinement tree ends published, or with its
+   divergence named in the handoff (PR #38's §9).
+
+Or Dropped, if refinement stays single-writer.
