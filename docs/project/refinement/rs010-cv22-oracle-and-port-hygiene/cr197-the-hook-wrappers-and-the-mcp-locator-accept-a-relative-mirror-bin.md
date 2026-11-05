@@ -33,6 +33,11 @@ what runs"), and `docs/process/troubleshooting.md` calls it "honored as given".
 - `MIRROR_BIN` follows CR192's rule: it is used when it is an absolute path, by CR192's
   shell pattern, to a directory holding the bin the reader needs as an executable file.
   Otherwise it is refused with the reason, and the search goes on without it.
+- The forward-slash drive form stays accepted. `MIRROR_BIN=C:/Users/…/.mirror/bin` is
+  what a Windows machine sets for the Claude Code forwarders, and it works on `main`
+  today. CR192's pattern already counts it as absolute (`mirrorNodeRule.test.ts` pins
+  `C:/Program Files/nodejs/node.exe`). This CR's tests pin it for `MIRROR_BIN` too, so a
+  narrower pattern cannot refuse it and log that refusal on every such machine.
 - A refusal is recorded where the reader records failures, in CR192's form: the wrappers'
   once-a-day `hooks.log` line, the locator's stderr line.
 - `hooks.test.ts` and `mcpEntry.test.ts` pin the rule, and `REFERENCE.md` and
@@ -69,6 +74,12 @@ once-a-day refusal note that this CR can reuse, so it follows CR192.
   honored as given."
 - [CR192](cr192-the-hook-wrappers-and-the-mcp-locator-accept-a-relative-mirror-node.md),
   Decisions Taken At Approval, decision 3.
+- Rodrigo Immaginario's installer run on
+  [PR #47](https://github.com/mirror-mind-ai/mirror/pull/47#issuecomment-6644116024),
+  2026-11-04, against `main` at `28d9718b`: his Windows machine sets
+  `MIRROR_BIN=C:/Users/…/.mirror/bin`, with forward slashes, for the Claude Code
+  forwarders. With the prefix in that form and off the PATH, the hook and the MCP server
+  ran.
 
 ## Outcome
 
