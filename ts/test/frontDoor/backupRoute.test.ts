@@ -11,6 +11,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 import { MirrorHomeNotConfiguredError } from "#frontDoor/dbPath.ts";
 import { runBackupRoute, type SafetyToolsIo } from "#frontDoor/dbSafetyToolsRoute.ts";
 import { tempDir } from "#helpers/tempDir.ts";
@@ -23,7 +24,7 @@ const golden = JSON.parse(
   meta: { frozen_now: string };
   scenarios: Record<string, { stdout: string; stderr: string; exit_code: number }>;
 };
-const CLI = new URL("../../src/frontDoor/cli.ts", import.meta.url).pathname;
+const CLI = fileURLToPath(new URL("../../src/frontDoor/cli.ts", import.meta.url));
 
 interface Answer {
   exitCode: number;

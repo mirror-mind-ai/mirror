@@ -14,6 +14,7 @@ import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:f
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 import {
   runExtCommand,
   runExtensionsCommand,
@@ -37,7 +38,7 @@ const golden = JSON.parse(
   ),
 ) as { home_token: string; cases: GoldenCase[] };
 
-const FIXTURE_HOME = new URL("../fixtures/extension-catalog/home", import.meta.url).pathname;
+const FIXTURE_HOME = fileURLToPath(new URL("../fixtures/extension-catalog/home", import.meta.url));
 
 /**
  * A disposable COPY, like the generator's: a case that ever learns to write

@@ -12,9 +12,10 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 import { exitQuietlyOnBrokenPipe } from "#runtime/brokenPipe.ts";
 
-const CLI = new URL("../../src/frontDoor/cli.ts", import.meta.url).pathname;
+const CLI = fileURLToPath(new URL("../../src/frontDoor/cli.ts", import.meta.url));
 
 function fakeStream(): NodeJS.WritableStream {
   return new EventEmitter() as unknown as NodeJS.WritableStream;

@@ -12,6 +12,7 @@ import { execFileSync, spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 import { bootstrapDatabase } from "#db/bootstrap.ts";
 import { openDatabaseForBootstrap } from "#db/database.ts";
 import { assertNamesNoInterpreter } from "#helpers/noInterpreter.ts";
@@ -19,8 +20,8 @@ import { tempDir } from "#helpers/tempDir.ts";
 import { packageVersion } from "#runtime/version.ts";
 import { stageMirrorPackage } from "../support/mirrorTree.ts";
 
-const CLI = new URL("../../src/frontDoor/cli.ts", import.meta.url).pathname;
-const REPO_ROOT = new URL("../../..", import.meta.url).pathname;
+const CLI = fileURLToPath(new URL("../../src/frontDoor/cli.ts", import.meta.url));
+const REPO_ROOT = fileURLToPath(new URL("../../..", import.meta.url));
 
 const GIT_ENV = {
   GIT_AUTHOR_NAME: "Mirror Fixture",

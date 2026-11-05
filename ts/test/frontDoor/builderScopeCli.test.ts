@@ -14,12 +14,13 @@ import { spawnSync } from "node:child_process";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 import { setAdoptedMethod } from "#builder/methodAdoption.ts";
 import { bootstrapDatabase } from "#db/bootstrap.ts";
 import { tempDir } from "#helpers/tempDir.ts";
 import { createJourney } from "#journey/journeyWrite.ts";
 
-const CLI = new URL("../../src/frontDoor/cli.ts", import.meta.url).pathname;
+const CLI = fileURLToPath(new URL("../../src/frontDoor/cli.ts", import.meta.url));
 const NOW = "2026-09-26T00:00:00Z";
 
 const ROADMAP_INDEX = `# Roadmap

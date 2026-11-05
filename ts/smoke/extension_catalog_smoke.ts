@@ -33,8 +33,9 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const REPO_ROOT = dirname(dirname(dirname(new URL(import.meta.url).pathname)));
+const REPO_ROOT = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
 const FIXTURES = join(REPO_ROOT, "ts", "test", "fixtures", "ext-catalog-writes");
 const EXTENSION_ID = "notes";
 

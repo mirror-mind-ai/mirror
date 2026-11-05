@@ -32,10 +32,11 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 import { bootstrapDatabase } from "#db/bootstrap.ts";
 import { createJourney } from "#journey/journeyWrite.ts";
 
-const CLI = new URL("../../src/frontDoor/cli.ts", import.meta.url).pathname;
+const CLI = fileURLToPath(new URL("../../src/frontDoor/cli.ts", import.meta.url));
 
 /** Every interpreter the core could reach for. Shimmed by name, not by path. */
 const SHIMMED = ["uv", "python", "python3"] as const;

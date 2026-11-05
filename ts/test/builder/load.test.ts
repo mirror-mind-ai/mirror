@@ -21,6 +21,7 @@ import assert from "node:assert/strict";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 import { setDeliveryCursor } from "#builder/deliveryCursor.ts";
 import { mergeRankedResults, runBuildLoad } from "#builder/load.ts";
 import { setAdoptedMethod } from "#builder/methodAdoption.ts";
@@ -245,7 +246,7 @@ test("every recorded load matches Python on all four faces", async () => {
       `and the partial outage where call ${call} fails`,
     );
   }
-  const provider = await loadReplayEmbeddingProvider(FIXTURE.pathname);
+  const provider = await loadReplayEmbeddingProvider(fileURLToPath(FIXTURE));
   for (const entry of invocations) {
     const { db } = seedDatabase(entry);
     try {
@@ -448,7 +449,7 @@ test("an outage changes the memories block and nothing else about the session st
   const healthy = recorded("load_lexical_healthy");
   const offline = recorded("load_lexical_offline");
   const good = await runRecorded(healthy, {
-    provider: await loadReplayEmbeddingProvider(FIXTURE.pathname),
+    provider: await loadReplayEmbeddingProvider(fileURLToPath(FIXTURE)),
   });
   const bad = await runRecorded(offline, { provider: FAILING_PROVIDER });
 
@@ -560,7 +561,7 @@ test("either search failing degrades the command, whichever one it was", async (
   // one ranking is semantic and the other lexical inside a single command -- and
   // the two cases render DIFFERENT blocks, which is what makes "report the first
   // status" and "report the second" both wrong.
-  const replay = await loadReplayEmbeddingProvider(FIXTURE.pathname);
+  const replay = await loadReplayEmbeddingProvider(fileURLToPath(FIXTURE));
   const blocks: string[] = [];
   for (const name of ["load_partial_outage", "load_first_call_outage"]) {
     const entry = recorded(name);

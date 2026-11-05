@@ -16,6 +16,7 @@ import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSyn
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { after, describe, test } from "node:test";
+import { fileURLToPath } from "node:url";
 
 import { ExtensionValidationError } from "#extensions/errors.ts";
 import { loadExtensionManifest } from "#extensions/manifest.ts";
@@ -113,8 +114,9 @@ describe("the extension template", () => {
     // demanded an entrypoint would have left the template producing extensions
     // the validator rejects. The template is graded as an author uses it: every
     // placeholder filled in, every `.template` renamed.
-    const template = new URL("../../../docs/product/extensions/template/", import.meta.url)
-      .pathname;
+    const template = fileURLToPath(
+      new URL("../../../docs/product/extensions/template/", import.meta.url),
+    );
     const fill = (text: string): string =>
       text
         .replaceAll("<id_underscored>", "demo_widget")

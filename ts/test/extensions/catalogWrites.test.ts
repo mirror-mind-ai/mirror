@@ -26,6 +26,7 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, join, relative, sep } from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 import { bootstrapDatabase } from "#db/bootstrap.ts";
 import type { WritableDatabase } from "#db/database.ts";
 import {
@@ -59,7 +60,7 @@ const golden = JSON.parse(
   readFileSync(new URL("../fixtures/ext-catalog-writes.golden.json", import.meta.url), "utf8"),
 ) as { timestamp_token: string; cases: GoldenCase[] };
 
-const FIXTURES = new URL("../fixtures/ext-catalog-writes", import.meta.url).pathname;
+const FIXTURES = fileURLToPath(new URL("../fixtures/ext-catalog-writes", import.meta.url));
 const TOKEN = golden.timestamp_token;
 
 interface World {

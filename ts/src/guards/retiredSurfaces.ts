@@ -500,8 +500,10 @@ export const RETIRED: readonly RetiredSurface[] = [
     // Windows spells `C:\...` as `/C:/...` -- and read as one it made every
     // install under such a directory `unknown` (PR #42, CR140). The fix is
     // `import.meta.dirname` or `fileURLToPath`; this row keeps the idiom from
-    // coming back in code. Tests may spell the bug to pin it, so the scope is
-    // the product and its scripts.
+    // coming back in code. The tests and smokes are in scope too (issue #44):
+    // twenty fixture and CLI paths there read a URL's pathname, so the suite
+    // failed when run from a checkout under such a directory. Only the files
+    // that spell the bug to pin it are exempt.
     surfaceId: "url-pathname-as-path",
     story: "PR #42 (CR140)",
     absentPaths: [],
@@ -509,8 +511,11 @@ export const RETIRED: readonly RetiredSurface[] = [
     // off a variable (`url.pathname`). Prose writes `URL.pathname`, capital U,
     // which neither pattern matches, so a comment may still name the cause.
     forbiddenPatterns: ["\\)\\.pathname\\b", "\\b[a-z_$][\\w$]*\\.pathname\\b"],
-    residueScope: ["ts/src/", "ts/scripts/"],
-    exemptions: {},
+    residueScope: ["ts/src/", "ts/scripts/", "ts/test/", "ts/smoke/"],
+    exemptions: {
+      "ts/test/runtime/installKind.test.ts":
+        "asserts what a URL's pathname spells for a non-ASCII checkout, the bug it pins",
+    },
   },
   {
     surfaceId: "gemini-cli",

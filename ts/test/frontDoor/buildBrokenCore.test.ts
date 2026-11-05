@@ -10,11 +10,12 @@ import { spawnSync } from "node:child_process";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 import { bootstrapDatabase } from "#db/bootstrap.ts";
 import { tempDir } from "#helpers/tempDir.ts";
 
-const CLI = new URL("../../src/frontDoor/cli.ts", import.meta.url).pathname;
-const REPO_ROOT = new URL("../../..", import.meta.url).pathname;
+const CLI = fileURLToPath(new URL("../../src/frontDoor/cli.ts", import.meta.url));
+const REPO_ROOT = fileURLToPath(new URL("../../..", import.meta.url));
 
 function run(cliArgs: string[], env: NodeJS.ProcessEnv, cwd = REPO_ROOT) {
   const result = spawnSync(process.execPath, [CLI, ...cliArgs], { cwd, encoding: "utf8", env });

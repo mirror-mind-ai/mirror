@@ -13,6 +13,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 import { bootstrapDatabase } from "#db/bootstrap.ts";
 import { openDatabaseReadOnly } from "#db/database.ts";
 import { openLiveWriteDatabase } from "#frontDoor/liveBackup.ts";
@@ -23,7 +24,7 @@ import {
 } from "#frontDoor/sessionStartWelcomeRoute.ts";
 import { tempDir } from "#helpers/tempDir.ts";
 
-const CLI = new URL("../../src/frontDoor/cli.ts", import.meta.url).pathname;
+const CLI = fileURLToPath(new URL("../../src/frontDoor/cli.ts", import.meta.url));
 
 /** Where `setMute` keeps its flag: beside the database (`logger.ts`). */
 function muteFlagPath(home: string): string {

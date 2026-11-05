@@ -14,6 +14,7 @@ import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } f
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 import { bootstrapDatabase } from "#db/bootstrap.ts";
 import type { WritableDatabase } from "#db/database.ts";
 import { pythonUtcIsoformat } from "#extensions/bindings.ts";
@@ -36,7 +37,7 @@ const golden = JSON.parse(
   readFileSync(new URL("../fixtures/ext-bindings.golden.json", import.meta.url), "utf8"),
 ) as { timestamp_token: string; extension_id: string; steps: string[]; cases: GoldenCase[] };
 
-const FIXTURES = new URL("../fixtures/ext-bindings", import.meta.url).pathname;
+const FIXTURES = fileURLToPath(new URL("../fixtures/ext-bindings", import.meta.url));
 const TOKEN = golden.timestamp_token;
 const ISO_UTC = /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?\+00:00/g;
 

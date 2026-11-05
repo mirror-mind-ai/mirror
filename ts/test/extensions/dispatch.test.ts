@@ -35,6 +35,7 @@ import { chmodSync, cpSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 import { bootstrapDatabase } from "#db/bootstrap.ts";
 import type { WritableDatabase } from "#db/database.ts";
 import { pythonUtcIsoformat } from "#extensions/bindings.ts";
@@ -51,7 +52,7 @@ import {
 import { runMigrations } from "#extensions/migrations.ts";
 import { extensionSettingsPath, readExtensionSettings } from "#extensions/settings.ts";
 
-const FIXTURES = new URL("../fixtures/ext-dispatch", import.meta.url).pathname;
+const FIXTURES = fileURLToPath(new URL("../fixtures/ext-dispatch", import.meta.url));
 const EXTENSIONS = ["tools", "declared", "silent", "malformed"];
 
 interface World {

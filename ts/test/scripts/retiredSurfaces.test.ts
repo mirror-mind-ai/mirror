@@ -684,18 +684,26 @@ describe("the live pi-session-backfill row (CR153)", () => {
 describe("url-pathname-as-path (PR #42, CR140)", () => {
   const ROW = RETIRED.find((s) => s.surfaceId === "url-pathname-as-path") as RetiredSurface;
 
-  test("the row flags a URL's pathname read as a filesystem path, in src and scripts", () => {
+  test("the row flags a URL's pathname read as a filesystem path, in src, scripts, tests, and smokes", () => {
     const root = gitRepo({
       "ts/src/a.ts": 'const p = new URL("./x", import.meta.url).pathname;\n',
       "ts/scripts/b.ts": "const root = url.pathname.replace(//$/, '');\n",
-      "ts/test/c.test.ts": "assert.match(url.pathname, /C%C3%B3digo/);\n",
+      "ts/test/c.test.ts": 'const CLI = new URL("../cli.ts", import.meta.url).pathname;\n',
+      "ts/smoke/d.ts": "const ROOT = dirname(new URL(import.meta.url).pathname);\n",
       "docs/guide.md": "URL.pathname is not a filesystem path.\n",
     });
     const problems = checkResidue(ROW, trackedFiles(root), root);
     assert.deepEqual(
       problems.map((p) => p.message.replace(/^\s+/, "").split(" ")[1]),
-      ["ts/scripts/b.ts:1", "ts/src/a.ts:1"],
+      ["ts/scripts/b.ts:1", "ts/smoke/d.ts:1", "ts/src/a.ts:1", "ts/test/c.test.ts:1"],
     );
+  });
+
+  test("the test that pins the bug may spell it", () => {
+    const root = gitRepo({
+      "ts/test/runtime/installKind.test.ts": "assert.match(url.pathname, /C%C3%B3digo/);\n",
+    });
+    assert.deepEqual(checkResidue(ROW, trackedFiles(root), root), []);
   });
 
   test("the fixes are not flagged, and prose naming the cause is not either", () => {

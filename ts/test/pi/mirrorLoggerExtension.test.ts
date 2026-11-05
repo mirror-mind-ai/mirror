@@ -22,8 +22,9 @@ import { tempDir } from "#helpers/tempDir.ts";
 import { HOOK_NODE_CANDIDATES, hookFailureFindings } from "#runtime/diagnose.ts";
 import type { RuntimeStatusReport } from "#runtime/status.ts";
 
-const EXTENSION_PATH = new URL("../../../.pi/extensions/mirror-logger.ts", import.meta.url)
-  .pathname;
+const EXTENSION_PATH = fileURLToPath(
+  new URL("../../../.pi/extensions/mirror-logger.ts", import.meta.url),
+);
 
 // The extension resolves where `mirror-logger.log` goes ONCE, at module load,
 // from `MEMORY_DIR`. Point it at a directory of this file's own before the

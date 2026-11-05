@@ -5,12 +5,13 @@ import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 import { bootstrapDatabase } from "#db/bootstrap.ts";
 import { openDatabaseReadOnly } from "#db/database.ts";
 import { tempDir } from "#helpers/tempDir.ts";
 import { createJourney } from "#journey/journeyWrite.ts";
 
-const CLI = new URL("../../src/frontDoor/cli.ts", import.meta.url).pathname;
+const CLI = fileURLToPath(new URL("../../src/frontDoor/cli.ts", import.meta.url));
 
 interface Fixture {
   root: string;
@@ -80,7 +81,7 @@ test("the default route lazily dispatches an inspect leaf and logs only its name
 
 test("build load crosses the real route and logs calls, never the derived briefing query", () => {
   const f = fixture();
-  const fixtures = new URL("../fixtures/builder-load/", import.meta.url).pathname;
+  const fixtures = fileURLToPath(new URL("../fixtures/builder-load/", import.meta.url));
   try {
     const result = run(f, ["build", "load", "demo", "--session-id", "load-test"], {
       MIRROR_TS_BUILD_LLM_REPLAY: join(fixtures, "replay-llm.json"),
@@ -107,7 +108,7 @@ test("build load crosses the real route and logs calls, never the derived briefi
 // does (TS2's reader), so the mode lands where the doorman reads it.
 test("build load names its session from CLAUDE_CODE_SESSION_ID or CODEX_SESSION_ID when no --session-id is passed", () => {
   const f = fixture();
-  const fixtures = new URL("../fixtures/builder-load/", import.meta.url).pathname;
+  const fixtures = fileURLToPath(new URL("../fixtures/builder-load/", import.meta.url));
   try {
     const db = bootstrapDatabase(join(f.home, "memory.db"));
     // A decoy: the most recently updated active row, which the guess would pick.

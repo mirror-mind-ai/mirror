@@ -20,6 +20,7 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 import { bootstrapDatabase } from "#db/bootstrap.ts";
 import { pythonUtcIsoformat } from "#extensions/bindings.ts";
 import {
@@ -42,7 +43,9 @@ function home(): { root: string; home: string; cleanup: () => void } {
   return { root, home: mirrorHome, cleanup: () => rmSync(root, { recursive: true, force: true }) };
 }
 
-const FIXTURE_NOTES = new URL("../fixtures/ext-catalog-writes/notes", import.meta.url).pathname;
+const FIXTURE_NOTES = fileURLToPath(
+  new URL("../fixtures/ext-catalog-writes/notes", import.meta.url),
+);
 
 const RUNNING_AS_ROOT = typeof process.getuid === "function" && process.getuid() === 0;
 
