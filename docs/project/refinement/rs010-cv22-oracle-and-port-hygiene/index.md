@@ -133,3 +133,4 @@ evidence stays honest as both cores move.
 - [CR196 — A prompt typed while a turn runs loses its reply on Claude Code: the prompt hook fires at queue time, under the running turn's id](cr196-a-prompt-typed-while-a-turn-runs-loses-its-reply-on-claude-code.md)
 - [CR197 — The hook wrappers and the MCP locator accept a relative `MIRROR_BIN`, so Node can run a JavaScript file from the project the session is in](cr197-the-hook-wrappers-and-the-mcp-locator-accept-a-relative-mirror-bin.md)
 - [CR198 — `runtime diagnose` does not name a `MIRROR_NODE` that every reader refuses](cr198-runtime-diagnose-does-not-name-a-refused-mirror-node.md)
+- [CR199 · `deliverMirrorContext` takes three to seven seconds before every Desktop turn, and the embedding explains one or two of them](cr199-deliver-mirror-context-takes-three-to-seven-seconds-before-every-desktop-turn.md)
