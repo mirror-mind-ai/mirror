@@ -12,6 +12,24 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-11-05 — v0.39.5: The Node You Named, or Why Not
+
+Patch release of
+[CR192](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr192-the-hook-wrappers-and-the-mcp-locator-accept-a-relative-mirror-node.md),
+from CR191's debt review and Rodrigo Immaginario's Windows constraint on PR #47
+(@rodrigoimmaginario). The hook wrappers, the plugin's MCP locator, and `runtime diagnose`
+use `MIRROR_NODE` only as an absolute path to an executable file, the Pi extension's rule
+since v0.39.1; a refused value is noted with its reason, once a day in `hooks.log` and on
+the locator's stderr. One shell pattern classifies as `path.win32.isAbsolute`, so the
+installer's drive-letter path counts. Validated by the Navigator in a scratch home; CI
+passed on every job, the new Git Bash step included; Rodrigo's installer run against
+`main` at `28d9718b`, 21 of 21 on the installer's contract, was the gate before the tag.
+The release note corrects two claims of CR192's draft: diagnose does not name a refused
+value, and the installer's `MIRROR_NODE` is under `AppData\Local\Programs\MirrorMind`.
+
+No schema change, no migration. No model or prompt changed, so the model-behavior gate
+does not apply. Release note: [v0.39.5](../releases/v0.39.5.md).
+
 ### 2026-11-03 — v0.39.4: The Reply Finds Its Prompt
 
 Patch release of PR #51 (@alannascimento1, his first here),
