@@ -346,7 +346,8 @@ const ledgerAfterFirst = ledgerCount();
 step("session-maintenance (re-run)", ["conversation-logger", "session-maintenance"], "ts");
 check(ledgerCount() === ledgerAfterFirst, "the maintenance re-run adds zero ledger rows");
 
-// 5. The session-less route: a transcript backfills an assistant-less conversation.
+// 5. The session-less route: a transcript no session owns backfills nothing (CR151).
+//    Until CR151 it filled every assistant-less conversation in the transcript's window.
 step("user-prompt (smoke-2)", ["conversation-logger", "user-prompt"], "ts", {
   stdin: hook({
     session_id: "smoke-2",
@@ -372,8 +373,8 @@ check(
   query(
     "SELECT content FROM messages WHERE conversation_id = ? AND role = 'assistant'",
     smoke2?.conversation_id ?? "",
-  )[0]?.content === "the transcript's answer",
-  "the session-less session-end backfilled the assistant turn",
+  ).length === 0,
+  "the session-less session-end backfilled nothing: no session owns the transcript",
 );
 check(
   query("SELECT active FROM runtime_sessions WHERE session_id = 'smoke-2'")[0]?.active === 1,
