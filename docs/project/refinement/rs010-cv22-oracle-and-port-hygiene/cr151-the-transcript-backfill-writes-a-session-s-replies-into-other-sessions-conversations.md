@@ -241,9 +241,16 @@ the session's `ready` was stamped `2026-11-06T21:57:55.479000Z`, equal to the
 transcript entry's `…55.479Z`. An agent's run is evidence, not the Navigator's
 validation.
 
+**Run 3, the Navigator's, 2026-11-06 23:02, Claude Code 2.1.318, the corrected route.**
+`probe-direct` held its prompt alone (`user`, `ended` 0, no `assistant` row). The real
+session held its `user` row and an `assistant` row `ready`, `ended` 1, stamped
+`2026-11-06T22:03:00.288000Z`; the transcript's reply was at `22:03:00.288Z`. All three
+pass criteria met, Step 5 included.
+
 ## Outcome
 
-Implemented, not validated. Driver `@viniciusteles`, Delivery `main`, `in_progress`
+Implemented; the Navigator's run 3 meets the validation route. Awaiting the Navigator's
+acceptance for `validated`, then the debt review before `done`. Driver `@viniciusteles`, Delivery `main`, `in_progress`
 2026-11-06. Awaiting the Navigator's run of the [validation route](#validation-route)
 before `validated`.
 
