@@ -49,12 +49,19 @@ export type JourneyCallRejection =
   | "unknown_parent"
   | "unknown_journey"
   | "journey_changed"
-  | "journey_not_empty";
+  | "journey_not_empty"
+  // `deleteJourneyWithRecords` (journeyDeletion.ts):
+  | "journey_has_children"
+  | "extension_rows_held"
+  | "backup_failed";
 
 /** A call's refusal, named with the administration's codes where it had one. Nothing was written. */
 export class JourneyCallRejectedError extends Error {
   readonly reason: JourneyCallRejection;
-  /** For `journey_not_empty`: the association classes that hold records. */
+  /**
+   * For `journey_not_empty`: the association classes that hold records. For
+   * `journey_has_children`: the child Journeys. For `extension_rows_held`: the table.
+   */
   readonly populated: string[];
 
   constructor(reason: JourneyCallRejection, populated: string[] = []) {
