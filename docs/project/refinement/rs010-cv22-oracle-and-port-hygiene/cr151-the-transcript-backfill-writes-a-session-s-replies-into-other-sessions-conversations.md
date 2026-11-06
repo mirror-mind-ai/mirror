@@ -135,13 +135,15 @@ this checkout (`--plugin-dir`), and `mirror-hook` on the `PATH` is linked to it.
 
 ```bash
 export S=$(mktemp -d /tmp/cr151-validate-XXXX)
-export MIRROR_HOME=$S/mirror MIRROR_USER=cr151scratch
+export MIRROR_USER=cr151scratch MIRROR_HOME=$S/cr151scratch
 mkdir -p "$MIRROR_HOME" "$S/project"
 DB="$MIRROR_HOME/memory.db"
 ```
 
-Expected: the directory exists and is empty. Run every later step in this one shell, so
-the three variables stay set.
+Expected: the directory exists and is empty. The home directory's name must equal
+`MIRROR_USER`: any other name makes the hook print `MIRROR_HOME ... conflicts with
+MIRROR_USER` and exit 0 without logging. Run every later step in this one shell, so the
+variables stay set.
 
 **Step 2 — the orphan.** A prompt logged and no Stop, as a Ctrl-C in a first turn
 leaves it:
