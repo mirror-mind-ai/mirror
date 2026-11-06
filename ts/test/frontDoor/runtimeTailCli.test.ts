@@ -9,7 +9,15 @@
 
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
@@ -18,6 +26,7 @@ import { openDatabaseForBootstrap } from "#db/database.ts";
 import { assertNamesNoInterpreter } from "#helpers/noInterpreter.ts";
 import { tempDir } from "#helpers/tempDir.ts";
 import { packageVersion } from "#runtime/version.ts";
+import { compareSemver } from "#util/semver.ts";
 import { stageMirrorPackage } from "../support/mirrorTree.ts";
 
 const CLI = fileURLToPath(new URL("../../src/frontDoor/cli.ts", import.meta.url));
@@ -286,9 +295,18 @@ test("runtime version and release-notes answer from TS with exit 0", () => {
     const latest = runCli(f, ["runtime", "release-notes"], env);
     assert.equal(latest.status, 0, latest.stderr);
     assert.doesNotMatch(latest.stdout, /Fixture release/);
-    assert.match(latest.stdout, new RegExp(`v${shipped.replaceAll(".", "\\.")}`));
+    // The newest stable note. A release-train preview (X.Y.Z-next.N) has a note the
+    // reader does not list, so a preview checkout answers with the stable before it;
+    // a stable checkout's newest note is its own.
+    const newest = readdirSync(join(REPO_ROOT, "docs", "releases"))
+      .filter((name) => /^v\d+\.\d+\.\d+\.md$/.test(name))
+      .map((name) => name.slice(0, -3))
+      .sort(compareSemver)
+      .at(-1) as string;
+    if (/^\d+\.\d+\.\d+$/.test(shipped)) assert.equal(newest, `v${shipped}`);
+    assert.match(latest.stdout, new RegExp(`Release: ${newest.replaceAll(".", "\\.")} `));
     // An explicit version and the `latest` default resolve to the same note.
-    assert.equal(runCli(f, ["runtime", "release-notes", `v${shipped}`], env).stdout, latest.stdout);
+    assert.equal(runCli(f, ["runtime", "release-notes", newest], env).stdout, latest.stdout);
     assert.equal(runCli(f, ["runtime", "release-notes", "latest"], env).stdout, latest.stdout);
     // A version with no note is "not found", not a crash.
     const missing = runCli(f, ["runtime", "release-notes", "v0.0.1"], env);

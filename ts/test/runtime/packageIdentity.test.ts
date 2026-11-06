@@ -32,7 +32,8 @@ after(() => {
 describe("this repository", () => {
   test("reports the version package.json declares", () => {
     const version = packageVersion(REPO_ROOT);
-    assert.match(version ?? "", /^\d+\.\d+\.\d+$/);
+    // A stable X.Y.Z, or a release-train preview X.Y.Z-next.N (docs/process/versioning.md).
+    assert.match(version ?? "", /^\d+\.\d+\.\d+(-next\.[1-9]\d*)?$/);
   });
 
   test("is found by walking up from a nested directory", () => {

@@ -261,7 +261,8 @@ describe("version", () => {
     // re-points that body at package.json and the builder follows with no
     // edit, which is the entire reason there is one body.
     assert.equal(readVersion(REPO_ROOT), readVersion(REPO_ROOT));
-    assert.match(readVersion(REPO_ROOT), /^\d+\.\d+\.\d+$/);
+    // A stable X.Y.Z, or a release-train preview X.Y.Z-next.N (docs/process/versioning.md).
+    assert.match(readVersion(REPO_ROOT), /^\d+\.\d+\.\d+(-next\.[1-9]\d*)?$/);
   });
 });
 
