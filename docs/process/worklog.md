@@ -25,6 +25,36 @@ v0.39.5, and the release-notes reader and the welcome card ignore a prerelease. 
 pushed by hand, not through `release:promote`. No schema change, no migration, no model or
 prompt change, so the model-behavior gate does not apply.
 
+### 2026-11-06 — v0.40.0: A Reply Stays in Its Own Conversation, and a Journey Can Go
+
+Minor release closing the first train: everything merged since v0.39.5. Its own change is
+[CR151](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr151-the-transcript-backfill-writes-a-session-s-replies-into-other-sessions-conversations.md),
+captured from CV21.DS5.US3's live route on 2026-10-20 and closed the day of the release:
+`SessionEnd`'s transcript backfill chose conversations by time window alone, so one
+session's replies were copied into every open, reply-less conversation overlapping its
+transcript, stamped with the hook's clock. It now fills only the conversation the ending
+session is bound to, inside that conversation's own window, each reply at its transcript
+time; a payload with no session id, and a session bound to no conversation, backfill
+nothing. The Navigator chose that over a runtime-scoped fallback, which the recorded case
+would have passed through. Reviewed through three lenses (database architect, quality
+assurance, engineer) before any code. Validated by the Navigator on a real Claude Code
+session on the third run: the first two ran the published 0.39.5 because his Claude
+settings pin `MIRROR_BIN` to the installed package over the shell's value, and reproduced
+the defect on a real session, which the CR keeps as the "before". It also carries CR200
+(Journey deletion for Nautilus, previewed as v0.40.0-next.1), issue #44's `fileURLToPath`
+sweep of the tests and smokes, and the Windows installer's real `MIRROR_NODE` path in the
+docs. CR201 (replies backfilled after the close miss the extraction) was captured from the
+debt review.
+
+The pre-push gate caught what `npm test` did not: `conversation_lifecycle_smoke` still
+asserted the retired session-less backfill. One run of the bare-`PATH` suite showed a single
+failure that three reruns did not reproduce; its output was not captured, so the test is
+unidentified. `smoke_claude_plugin`'s last step fails on this machine as CR172 records,
+because a global `mirror-hook` is found through the wrappers' fallback directories.
+
+No schema change, no migration. No model or prompt changed, so the model-behavior gate does
+not apply. Release note: [v0.40.0](../releases/v0.40.0.md).
+
 ### 2026-11-06 — Process: the release train
 
 Process-only, no release. `docs/process/versioning.md` gains "The Release Train", at the
