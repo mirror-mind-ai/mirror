@@ -136,9 +136,18 @@ this checkout (`--plugin-dir`), and `mirror-hook` on the `PATH` is linked to it.
 ```bash
 export S=$(mktemp -d /tmp/cr151-validate-XXXX)
 export MIRROR_USER=cr151scratch MIRROR_HOME=$S/cr151scratch
+export MIRROR_BIN=$HOME/.local/mirror-dev/bin
 mkdir -p "$MIRROR_HOME" "$S/project"
 DB="$MIRROR_HOME/memory.db"
+readlink "$MIRROR_BIN/mirror-hook"
 ```
+
+Expected: the `readlink` prints a path inside this checkout
+(`.../mirror-dev/bin/mirror-hook.js`). `MIRROR_BIN` is what makes the plugin's hook
+wrappers run this checkout: without it they take the first `mirror-hook` on `PATH`,
+and a global install (`/opt/homebrew/bin/mirror-hook`) runs the code under test's
+predecessor. The first validation run did exactly that and reproduced the defect on
+a real session, so it is recorded below as the "before".
 
 Expected: the directory exists and is empty. The home directory's name must equal
 `MIRROR_USER`: any other name makes the hook print `MIRROR_HOME ... conflicts with
@@ -149,7 +158,7 @@ variables stay set.
 leaves it:
 
 ```bash
-echo '{"session_id":"probe-direct","prompt":"diagnostic prompt"}' | mirror-hook claude:user-prompt
+echo '{"session_id":"probe-direct","prompt":"diagnostic prompt"}' | "$MIRROR_BIN/mirror-hook" claude:user-prompt
 sqlite3 "$DB" "SELECT substr(c.id,1,8), c.ended_at, m.role, m.content
                FROM conversations c JOIN messages m ON m.conversation_id = c.id;"
 ```
@@ -192,7 +201,7 @@ counterpart in the transcript.
 **Step 5 — the transcript agrees (optional).**
 
 ```bash
-T=$(ls -t ~/.claude/projects/*cr151-validate*/*.jsonl | head -1)
+T=$(command ls -t ~/.claude/projects/*cr151-validate*/*.jsonl | head -1)
 grep '"type":"assistant"' "$T" | grep -o '"timestamp":"[^"]*"'
 ```
 
@@ -202,10 +211,20 @@ millisecond precision padded by `000`.
 **Step 6 — clean.**
 
 ```bash
-rm -rf "$S"; unset S DB MIRROR_HOME MIRROR_USER
+rm -rf "$S"; unset S DB MIRROR_HOME MIRROR_USER MIRROR_BIN
 ```
 
 Expected: nothing left but Claude's own session transcript under `~/.claude/projects`.
+
+**Run 1, 2026-11-06 22:46, Claude Code 2.1.318 (the "before").** The route ran without
+`MIRROR_BIN`, so the plugin's hooks ran the global `mirror-mind@0.39.5` in
+`/opt/homebrew`, which has the old backfill. Result: `probe-direct`, the orphan, got
+an `assistant` row `ready` at `21:47:44.987000Z`, and the real session's own row
+followed at `.988000Z`; the transcript's reply was at `21:47:44.443Z`, so both rows
+carry the hook clock, not the transcript's time. That is CR151's defect on a real
+session, in the published release. It does not test this change. Two route defects
+surfaced and are fixed above: the home's directory name must equal `MIRROR_USER`, and
+`MIRROR_BIN` must pin the checkout.
 
 ## Outcome
 
