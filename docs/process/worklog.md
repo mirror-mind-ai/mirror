@@ -12,6 +12,19 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-11-06 — v0.40.0-next.1: A Journey Can Go, Showing What Goes With It
+
+The first preview of the release train, prepared at the Navigator's word for Nautilus for
+Mirror. It carries
+[CR200](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr200-delete-a-journey-with-its-records-after-showing-what-will-go.md)
+(PR #55, merged as `0ae24fe5`): `previewJourneyDeletion` and `deleteJourneyWithRecords` in
+`mirror-mind/desktop`, deleting a Journey with its records by the Navigator's four rules,
+on the preview's digest, behind a verified backup; and the release train itself (PR #56).
+CI green on `main` for both merges. Staged under `next`: `stable` and `latest` stay at
+v0.39.5, and the release-notes reader and the welcome card ignore a prerelease. Its tag is
+pushed by hand, not through `release:promote`. No schema change, no migration, no model or
+prompt change, so the model-behavior gate does not apply.
+
 ### 2026-11-06 — Process: the release train
 
 Process-only, no release. `docs/process/versioning.md` gains "The Release Train", at the
