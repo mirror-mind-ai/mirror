@@ -136,29 +136,32 @@ this checkout (`--plugin-dir`), and `mirror-hook` on the `PATH` is linked to it.
 ```bash
 export S=$(mktemp -d /tmp/cr151-validate-XXXX)
 export MIRROR_USER=cr151scratch MIRROR_HOME=$S/cr151scratch
-export MIRROR_BIN=$HOME/.local/mirror-dev/bin
+CHECKOUT_BIN=$HOME/.local/mirror-dev/bin
 mkdir -p "$MIRROR_HOME" "$S/project"
 DB="$MIRROR_HOME/memory.db"
-readlink "$MIRROR_BIN/mirror-hook"
+readlink "$CHECKOUT_BIN/mirror-hook"
 ```
 
 Expected: the `readlink` prints a path inside this checkout
-(`.../mirror-dev/bin/mirror-hook.js`). `MIRROR_BIN` is what makes the plugin's hook
-wrappers run this checkout: without it they take the first `mirror-hook` on `PATH`,
-and a global install (`/opt/homebrew/bin/mirror-hook`) runs the code under test's
-predecessor. The first validation run did exactly that and reproduced the defect on
-a real session, so it is recorded below as the "before".
+(`.../mirror-dev/bin/mirror-hook.js`). The directory exists and is empty. The home
+directory's name must equal `MIRROR_USER`: any other name makes the hook print
+`MIRROR_HOME ... conflicts with MIRROR_USER` and exit 0 without logging. Run every
+later step in this one shell, so the variables stay set.
 
-Expected: the directory exists and is empty. The home directory's name must equal
-`MIRROR_USER`: any other name makes the hook print `MIRROR_HOME ... conflicts with
-MIRROR_USER` and exit 0 without logging. Run every later step in this one shell, so the
-variables stay set.
+Which `mirror-hook` the session's hooks run is decided by `MIRROR_BIN`, and a shell
+`export` does not decide it: Claude Code's own `settings.json` `env` block overrides
+the shell's, and an install by the package sets it (`MIRROR_BIN=/opt/homebrew/bin`).
+A machine with a global install also loads that install's plugin from
+`~/.claude/skills/mirror-mind`, so two plugins' hooks run in every session. Step 3
+therefore passes `--settings` to pin both to this checkout. Without it, the hooks run
+the installed release, whatever the shell says; the first two runs did exactly that
+and reproduced the defect on a real session, recorded below.
 
 **Step 2 — the orphan.** A prompt logged and no Stop, as a Ctrl-C in a first turn
 leaves it:
 
 ```bash
-echo '{"session_id":"probe-direct","prompt":"diagnostic prompt"}' | "$MIRROR_BIN/mirror-hook" claude:user-prompt
+echo '{"session_id":"probe-direct","prompt":"diagnostic prompt"}' | "$CHECKOUT_BIN/mirror-hook" claude:user-prompt
 sqlite3 "$DB" "SELECT substr(c.id,1,8), c.ended_at, m.role, m.content
                FROM conversations c JOIN messages m ON m.conversation_id = c.id;"
 ```
@@ -171,7 +174,9 @@ plugin:
 
 ```bash
 cd "$S/project"
-claude -p "Reply with the single word: ready" --plugin-dir /Users/vinicius/dev/workspace/mirror-dev/plugins/mirror-mind
+claude -p "Reply with the single word: ready" \
+  --plugin-dir /Users/vinicius/dev/workspace/mirror-dev/plugins/mirror-mind \
+  --settings "{\"env\":{\"MIRROR_BIN\":\"$CHECKOUT_BIN\"}}"
 ```
 
 Expected: Claude answers `ready`. Wait a few seconds: SessionEnd runs after the process
@@ -211,20 +216,30 @@ millisecond precision padded by `000`.
 **Step 6 — clean.**
 
 ```bash
-rm -rf "$S"; unset S DB MIRROR_HOME MIRROR_USER MIRROR_BIN
+rm -rf "$S"; unset S DB CHECKOUT_BIN MIRROR_HOME MIRROR_USER
 ```
 
 Expected: nothing left but Claude's own session transcript under `~/.claude/projects`.
 
-**Run 1, 2026-11-06 22:46, Claude Code 2.1.318 (the "before").** The route ran without
-`MIRROR_BIN`, so the plugin's hooks ran the global `mirror-mind@0.39.5` in
-`/opt/homebrew`, which has the old backfill. Result: `probe-direct`, the orphan, got
-an `assistant` row `ready` at `21:47:44.987000Z`, and the real session's own row
-followed at `.988000Z`; the transcript's reply was at `21:47:44.443Z`, so both rows
-carry the hook clock, not the transcript's time. That is CR151's defect on a real
-session, in the published release. It does not test this change. Two route defects
-surfaced and are fixed above: the home's directory name must equal `MIRROR_USER`, and
-`MIRROR_BIN` must pin the checkout.
+**Runs 1 and 2, 2026-11-06 22:46 and 22:52, Claude Code 2.1.318 (the "before").** Both
+ran the route as first written. The hooks ran the global `mirror-mind@0.39.5` in
+`/opt/homebrew`, which has the old backfill, because `~/.claude/settings.json` sets
+`MIRROR_BIN=/opt/homebrew/bin` over the shell's value, and `~/.claude/skills/mirror-mind`
+loads that install's plugin beside the checkout's. Result both times: `probe-direct`,
+the orphan, got an `assistant` row `ready` stamped by the hook clock, at the same
+instant as the real session's row (run 2: `21:53:09.359000Z` for both), after the
+conversation's `ended_at`, with no `turn_id` in its metadata (so not the Stop hook);
+the transcript's reply was at `21:53:08.966Z`. That is CR151's defect on a real
+session, in the published release. It does not test this change. The route's three
+defects are fixed above: the home's directory name must equal `MIRROR_USER`; the
+checkout must be pinned with `--settings`, not `export`; and `ls` must be
+`command ls`, because the Navigator's shell aliases it.
+
+**Agent replay of the corrected route, 2026-11-06 22:57** (same machine, the real
+`claude -p`, a scratch home): `probe-direct` held its prompt alone and stayed open;
+the session's `ready` was stamped `2026-11-06T21:57:55.479000Z`, equal to the
+transcript entry's `…55.479Z`. An agent's run is evidence, not the Navigator's
+validation.
 
 ## Outcome
 
