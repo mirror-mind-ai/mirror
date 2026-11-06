@@ -352,9 +352,20 @@ else
   # as it is, and a copy of it at the next patch version. The copy is every
   # tracked and untracked-unignored file, so no node_modules and no tmp/.
   VERSION_A="$(node -p 'require(process.argv[1]).version' "$ROOT_DIR/package.json")"
-  TARBALL_A="$(cd "$ROOT_DIR" && "$REAL_NPM" pack --pack-destination "$WORK" 2>/dev/null | tail -1)"
   mkdir -p "$WORK/pkgsrc"
   (cd "$ROOT_DIR" && "$REAL_GIT" ls-files -z --cached --others --exclude-standard | tar --null -T - -cf - 2>/dev/null) | tar -C "$WORK/pkgsrc" -xf -
+  case "$VERSION_A" in
+    *-*)
+      # A release-train preview (X.Y.Z-next.N) is never a channel's version:
+      # the updater refuses a dist-tag that is not a plain triple. The lane
+      # installs the tree at its stable base, X.Y.Z, as a stable install has it.
+      VERSION_A="$(cd "$WORK/pkgsrc" && "$REAL_NPM" version "${VERSION_A%%-*}" --no-git-tag-version 2>/dev/null | tr -d v)"
+      TARBALL_A="$(cd "$WORK/pkgsrc" && "$REAL_NPM" pack --pack-destination "$WORK" 2>/dev/null | tail -1)"
+      ;;
+    *)
+      TARBALL_A="$(cd "$ROOT_DIR" && "$REAL_NPM" pack --pack-destination "$WORK" 2>/dev/null | tail -1)"
+      ;;
+  esac
   VERSION_B="$(cd "$WORK/pkgsrc" && "$REAL_NPM" version patch --no-git-tag-version 2>/dev/null | tr -d v)"
   TARBALL_B="$(cd "$WORK/pkgsrc" && "$REAL_NPM" pack --pack-destination "$WORK" 2>/dev/null | tail -1)"
   if [ -f "$WORK/$TARBALL_A" ] && [ -f "$WORK/$TARBALL_B" ]; then
