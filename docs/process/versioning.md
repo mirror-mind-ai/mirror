@@ -85,6 +85,32 @@ A push to `main` is not a release. `stable` advances only through release promot
 
 Git tags and the `stable` branch are the updater contract. GitHub Releases are the public release surface. Every promoted stable release should have a GitHub Release attached to the same tag, marked latest when it is the newest stable release, and using the repository release note as its body.
 
+### The Release Train
+
+Pull requests merge into `main` as they are ready; a merge reaches no one. Users receive the Core
+in batches: a stable release closes a train when the Navigator calls it, by cadence or by
+milestone, and its release note gathers everything merged since the previous one.
+
+A consumer that embeds the Core, as Nautilus for Mirror does through `mirror-mind/desktop`, may need
+a change before the train leaves. It gets a **preview**: the release commit names a prerelease
+version, `X.Y.Z-next.N` (the `X.Y.Z` the train will carry, `N` counting from 1), and `publish.yml`
+stages it under the `next` dist-tag. `next` is read by no updater and moves neither `stable` nor
+`latest`, so terminal users see nothing; the consumer pins the tarball npm serves, by its sha256
+and the registry's sha512 integrity, exactly as it pins a stable version. A preview has a tag and
+a release note like any version, and its GitHub Release is marked as a prerelease, never latest.
+Its tag is pushed by hand (`git tag vX.Y.Z-next.N` on the release commit, then `git push origin
+vX.Y.Z-next.N`), never through `release:promote`, which moves `stable` to the commit it tags.
+The stable release that closes the train takes the plain `X.Y.Z`.
+
+**A preview with a migration cannot wait for the train.** One home is opened by both the embedding
+app and the terminal's `mirror`. A consumer running a preview that migrates the home leaves it
+`ahead` of the stable `mirror`, which then refuses it. So a migration either goes to `stable`
+before any consumer runs it against a real home, or the consumer waits for the train with it.
+A preview without a migration waits freely.
+
+Each publication, preview or stable, still passes the `release` environment's reviewer and the
+2FA approval of the stage: the train reduces releases users see, not the gates.
+
 ## The Release Commit
 
 A release is one commit that changes, together: `version` in `package.json` and in the two

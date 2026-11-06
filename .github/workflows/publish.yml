@@ -33,7 +33,8 @@
 #   npm dist-tag add mirror-mind@<version> latest
 #   npm view mirror-mind dist-tags    # latest and stable at <version>
 #
-# -- and a rehearsal under `next` leaves it alone. The last step prints this
+# -- and a rehearsal or a preview under `next` leaves it alone (the release
+# train, docs/process/versioning.md). The last step prints this
 # route with the version filled in.
 #
 # Dispatch it only on a commit whose Tests workflow is green.
@@ -44,7 +45,7 @@ on:
   workflow_dispatch:
     inputs:
       dist_tag:
-        description: "dist-tag for the staged version: `stable` for a release (the updater reads it; a maintainer then moves `latest`), `next` for a rehearsal"
+        description: "dist-tag for the staged version: `stable` for a release (the updater reads it; a maintainer then moves `latest`), `next` for a rehearsal or a preview (X.Y.Z-next.N)"
         required: true
         default: next
         type: string

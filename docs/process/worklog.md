@@ -12,6 +12,18 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-11-06 — Process: the release train
+
+Process-only, no release. `docs/process/versioning.md` gains "The Release Train", at the
+Navigator's word: pull requests merge into `main` freely and users receive the Core in
+batches, a stable release closing each train. A consumer that embeds the Core and needs a
+change sooner gets a preview, `X.Y.Z-next.N`, staged under the `next` dist-tag, which no
+updater reads; its tag is pushed by hand because `release:promote` moves `stable`. A
+preview with a migration cannot wait for the train: one home is opened by the app and by
+the stable `mirror`. Asked by Nautilus for Mirror, whose Journey deletion (CR200, PR #55)
+is the first change to ride a preview. Follow-up worth a CR: a `--preview` mode for
+`release:promote` that tags without moving `stable`.
+
 ### 2026-11-05 — v0.39.5: The Node You Named, or Why Not
 
 Patch release of
