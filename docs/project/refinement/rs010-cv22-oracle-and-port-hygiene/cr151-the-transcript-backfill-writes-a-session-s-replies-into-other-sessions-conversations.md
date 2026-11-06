@@ -289,9 +289,10 @@ Claude Code session: the orphan kept its prompt alone and the session's reply ca
 transcript's own timestamp. The same session, run against the published 0.39.5, copied
 `ready` into the orphan.
 
-**Carried by** the release that closes the current train; its note owes the behavior
-change, the two retired routes, and the instruction to update every install that has a
-home.
+**Carried by [v0.40.0](../../../releases/v0.40.0.md)**, the stable release that closed the
+first train: its note states the behavior change, the two retired routes, and the
+instruction to update every install that has a home. Installed on the maintainer's
+machine on 2026-11-06 and confirmed in his own configuration, with no pin.
 
 **To find replies an earlier version copied into the wrong conversation,** read-only:
 

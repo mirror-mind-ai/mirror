@@ -55,6 +55,24 @@ because a global `mirror-hook` is found through the wrappers' fallback directori
 No schema change, no migration. No model or prompt changed, so the model-behavior gate does
 not apply. Release note: [v0.40.0](../releases/v0.40.0.md).
 
+After the release commit:
+
+- Docs and the four Tests jobs were green on the release commit before the tag was pushed;
+  the pre-push gate's extra steps are in the paragraph above.
+- `release:promote` (`--push`) tagged `v0.40.0` and moved `stable` to `b4b13a33`. Its first
+  run, meant as a dry run, was not one: it made the tag and the local `stable` move, both
+  local until the push. Pass `--dry-run` for a dry run.
+- The GitHub Release is published and marked latest.
+- The Navigator approved the `release` environment and the npm stage, and moved `latest`
+  with 2FA. `latest` and `stable` are at 0.40.0, `gitHead` `b4b13a33`; `next` stays at
+  0.40.0-next.1.
+- The Navigator's Homebrew install was updated with `mirror runtime update` (0.39.5 to
+  0.40.0, backup verified, nothing to migrate), and a real `claude -p` session in his own
+  configuration, with no `--settings` pin, left the orphan with its prompt alone and
+  stamped the reply with the transcript's time. Until then his Claude Code ran the old
+  backfill, because his settings pin `MIRROR_BIN` to that install.
+- A `--help` on `mirror runtime update` runs the update; nothing here prints help.
+
 ### 2026-11-06 — Process: the release train
 
 Process-only, no release. `docs/process/versioning.md` gains "The Release Train", at the
