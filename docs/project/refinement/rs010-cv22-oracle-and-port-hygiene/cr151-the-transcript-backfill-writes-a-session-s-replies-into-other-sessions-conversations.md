@@ -247,13 +247,65 @@ session held its `user` row and an `assistant` row `ready`, `ended` 1, stamped
 `2026-11-06T22:03:00.288000Z`; the transcript's reply was at `22:03:00.288Z`. All three
 pass criteria met, Step 5 included.
 
+Accepted by the Navigator, 2026-11-06: "Validation accepted."
+
+## Debt Review (2026-11-06)
+
+**Proportionality.** One query narrowed and one insert re-timed, in two source files:
+`backfillAssistantMessages` loses its conversation loop and its `nowIso` dependency, and
+gains one function, `normalizeTimestamp`. `handleSessionEndHook` loses a branch. The tests
+grow: the unscoped golden is replaced by assertions that name which conversation changes
+and which do not. Nothing new is modeled: no table, no migration, no setting.
+Proportionate.
+
+**Debt left on purpose, captured:**
+
+- [CR201](cr201-a-reply-backfilled-after-the-close-misses-the-extraction-that-closed-the-conversation.md)
+  — replies backfilled into a conversation maintenance already closed and extracted are
+  read by no extraction. Unchanged by this CR, which pins that they land in the right
+  conversation.
+
+**Recorded, not owed:**
+
+- The golden's `transcript` and `hook_session_end` sections stay in `backfill.golden.json`
+  as frozen records of the defect, untyped and unread, beside `codex` and `pi_sessions`.
+- The change reaches a home only through an install that carries it. On the maintainer's
+  machine Claude Code runs the published package (`MIRROR_BIN` and the plugin under
+  `~/.claude/skills` both point at `/opt/homebrew`), so it keeps the old backfill until a
+  release is installed there. The validation route pins the checkout with `--settings` for
+  that reason; the release, installed through `mirror runtime update`, closes it.
+- A home that already holds replies copied into the wrong conversation keeps them. They
+  are indistinguishable from a real reply by content, and a pair of `assistant` rows with
+  the same text at the same instant, in two conversations, is the only trace.
+
 ## Outcome
 
-Implemented; the Navigator's run 3 meets the validation route. Awaiting the Navigator's
-acceptance for `validated`, then the debt review before `done`. Driver `@viniciusteles`, Delivery `main`, `in_progress`
-2026-11-06. Awaiting the Navigator's run of the [validation route](#validation-route)
-before `validated`.
+**Done 2026-11-06.** A session's transcript fills only the conversation that session is
+bound to, inside that conversation's own window, each reply stamped with its transcript
+time. A payload with no session id, or a session bound to no conversation, backfills
+nothing. Replies now sort between the prompts they answer for every reader that orders by
+`created_at`, which the `now` stamp never allowed. Validated by the Navigator on a real
+Claude Code session: the orphan kept its prompt alone and the session's reply carried the
+transcript's own timestamp. The same session, run against the published 0.39.5, copied
+`ready` into the orphan.
 
-Known risk, out of scope: on the late-SessionEnd branch (maintenance closed the
-conversation first), maintenance may already have extracted it, so the replies the
-backfill adds land after extraction read the conversation. Unchanged by this CR.
+**Carried by** the release that closes the current train; its note owes the behavior
+change, the two retired routes, and the instruction to update every install that has a
+home.
+
+**To find replies an earlier version copied into the wrong conversation,** read-only:
+
+```bash
+sqlite3 ~/.mirror-minds/<user>/memory.db \
+  "SELECT substr(a.conversation_id,1,8) AS conv, a.created_at, substr(a.content,1,40)
+     FROM messages a JOIN messages b
+       ON a.content = b.content AND substr(a.created_at,1,19) = substr(b.created_at,1,19)
+      AND a.conversation_id < b.conversation_id
+    WHERE a.role = 'assistant' AND b.role = 'assistant'
+    ORDER BY a.created_at"
+```
+
+A match is one reply written into two conversations within the same second (the copies of
+one backfill land milliseconds apart); two `ready`s a second apart in different conversations
+are a different thing, so read each row. The home's dated
+backups hold the rows as they were; removing the wrong copy is a manual edit.

@@ -135,3 +135,4 @@ evidence stays honest as both cores move.
 - [CR198 — `runtime diagnose` does not name a `MIRROR_NODE` that every reader refuses](cr198-runtime-diagnose-does-not-name-a-refused-mirror-node.md)
 - [CR199 · `deliverMirrorContext` takes three to seven seconds before every Desktop turn, and the embedding explains one or two of them](cr199-deliver-mirror-context-takes-three-to-seven-seconds-before-every-desktop-turn.md)
 - [CR200 · Delete a Journey with its records, after showing what will go](cr200-delete-a-journey-with-its-records-after-showing-what-will-go.md)
+- [CR201 — A reply backfilled after the close misses the extraction that closed the conversation](cr201-a-reply-backfilled-after-the-close-misses-the-extraction-that-closed-the-conversation.md)

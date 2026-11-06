@@ -232,9 +232,13 @@ Stop that names no turn. Only a reply nothing explains -- its turn's prompt
 neither logged nor skipped, the race with an async prompt logger -- is one
 `hooks.log` line, never the text, because `runtime diagnose` reads every line
 there as a failure (CV21.DS2 Debt Review).
-The transcript backfill at session end stays as the fallback, and fills only a
-conversation that holds no assistant message, so a Stop-logged reply is not
-recorded twice (CV21.DS2.US8).
+The transcript backfill at session end stays as the fallback. It fills only the
+conversation the ending session is bound to, and only when that conversation
+holds no assistant message, so a Stop-logged reply is not recorded twice
+(CV21.DS2.US8). Each reply it adds carries its transcript timestamp, and a
+transcript no session owns, a payload without a `session_id`, fills nothing
+(CR151: it used to fill every open, reply-less conversation in the transcript's
+time window, another session's included).
 
 **Antigravity** — the `Stop` handler reads the session's transcript JSONL and
 logs each turn beside its prompt, keyed on a `step_index` high-water mark
@@ -260,7 +264,7 @@ Closes the conversation record. Runtimes differ on extraction timing:
 
 **Claude Code** — has `session_id` and `transcript_path` from the environment.
 Extracts memories immediately and backfills assistant messages from the
-transcript.
+transcript into the session's own conversation.
 
 ```
 mirror conversation-logger session-end

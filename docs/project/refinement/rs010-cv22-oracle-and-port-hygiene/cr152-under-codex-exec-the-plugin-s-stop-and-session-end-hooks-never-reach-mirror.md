@@ -38,8 +38,8 @@ Anyone scripting Codex with Mirror — an automation, a cron job, an eval — lo
 reply, and the memory extracted from those conversations sees only prompts. And each
 such session leaves exactly the shape [CR151](cr151-the-transcript-backfill-writes-a-session-s-replies-into-other-sessions-conversations.md)
 needs: an open conversation with a prompt and no reply, into which the next Claude Code
-session's transcript backfill copies its replies. Until CR151 is fixed, the two
-compound.
+session's transcript backfill copied its replies. CR151 (2026-11-06) stopped that
+copy, so the two no longer compound; the lost replies are still lost.
 
 ## Plan Or Decision
 
