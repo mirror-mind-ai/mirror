@@ -100,6 +100,12 @@ name list (`desktopEntry.test.ts`).
 Not reused: `createJourney` and `setParentJourney` each open their own transaction and write no
 `display_name` or `sibling_position`, so creating with a position would take two transactions.
 
+## Later extension
+
+[CR200](../../../refinement/rs010-cv22-oracle-and-port-hygiene/cr200-delete-a-journey-with-its-records-after-showing-what-will-go.md)
+adds `previewJourneyDeletion` and `deleteJourneyWithRecords`: a Journey and its records, after a
+preview by rule, behind a named backup. `deleteJourney` is unchanged.
+
 ## Exclusions
 
 - Changing a Journey's id (slug). It keys Conversations, memories, tasks and Builder records;
