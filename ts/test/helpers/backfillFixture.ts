@@ -1,6 +1,13 @@
-// Shared scaffolding for the slice-E backfill goldens
-// (`ts/parity/generate_backfill_golden.py`): the same fixture corpus, the
-// same frozen clock, and the same state projection the generator records.
+// Shared scaffolding for the transcript backfill tests: the slice-E fixture
+// corpus, the frozen clock, and the state projection that
+// `ts/parity/generate_backfill_golden.py` recorded.
+//
+// No test grades against the golden's sections any more. CR151 rescoped the
+// backfill to the ending session's own conversation, so the `transcript` and
+// `hook_session_end` sections -- which recorded Python filling EVERY
+// conversation in the transcript's window, stamped `now` -- are frozen records
+// of the defect, kept as evidence, not as an oracle. The generator and its
+// Python source are gone; the corpus is graded by explicit assertions.
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -57,9 +64,9 @@ export interface BackfillGolden {
   meta: { now: string };
   // The golden's `codex` and `pi_sessions` sections are the frozen records of
   // two retired importers: the Codex one (CV21.DS4.TS5) and the Pi session
-  // backfill (CR153). Nothing reads them, so they are not typed here.
-  transcript: { state: BackfillState; rerun_state: BackfillState };
-  hook_session_end: { label: string; state: BackfillState }[];
+  // backfill (CR153); `transcript` and `hook_session_end` are the frozen
+  // record of the unscoped backfill CR151 retired. Nothing reads them, so they
+  // are not typed here.
 }
 
 export const backfillGolden: BackfillGolden = JSON.parse(readFileSync(GOLDEN_PATH, "utf8"));

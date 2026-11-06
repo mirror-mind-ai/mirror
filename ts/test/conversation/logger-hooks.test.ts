@@ -7,23 +7,16 @@
 // and always exits 0. Slash-prefixed prompts are never logged.
 
 import assert from "node:assert/strict";
+import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import {
   handleSessionEndHook,
   handleUserPromptHook,
-  logUserMessage,
   resolveTranscriptPath,
   setMute,
 } from "#conversation/logger.ts";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
-import {
-  backfillGolden,
-  frozenDeps,
-  seedTranscriptConversations,
-  snapshotState,
-  TRANSCRIPT_PATH,
-} from "#helpers/backfillFixture.ts";
 import { createRuntimeTables } from "#helpers/runtimeSchema.ts";
 import { tempDir } from "#helpers/tempDir.ts";
 
@@ -323,64 +316,234 @@ test("handleSessionEndHook with no session and no readable transcript does nothi
   db.close();
 });
 
-// Slice E: the four `hook_session_end` routes, replayed in the generator's
-// order on one database and graded against the oracle after each. The
-// session-less route is the one US5's port deliberately left out: an empty
-// session_id with a transcript still backfills.
-test("handleSessionEndHook routes match the Python oracle: session-less, no-op, no-op, ended-then-backfilled", async () => {
-  const { db, home } = fixture();
-  const frozen = frozenDeps();
-  const options = { mirrorHome: home, claudeProjectDir: null, homeDir: home };
-  seedTranscriptConversations(db);
-  const scenario = (label: string) => {
-    const found = backfillGolden.hook_session_end.find((s) => s.label === label);
-    assert.ok(found, `missing golden scenario ${label}`);
-    return found.state;
+// CR151: the SessionEnd backfill fills the ending session's own conversation
+// and nothing else. Each scenario runs the real hooks on a clock the test
+// moves, with a transcript whose replies fall inside every open window -- the
+// shape in which the time-window backfill copied one session's replies into
+// other sessions' conversations.
+
+function clock(start: string): { deps: typeof deps; at: (iso: string) => void } {
+  let now = start;
+  let counter = 0;
+  return {
+    deps: {
+      newId: () => {
+        counter += 1;
+        return `cr151-${String(counter).padStart(4, "0")}`;
+      },
+      nowIso: () => now,
+    },
+    at: (iso: string) => {
+      now = iso;
+    },
   };
+}
 
-  const sessionless = await handleSessionEndHook(
-    db,
-    JSON.stringify({ session_id: "", transcript_path: TRANSCRIPT_PATH }),
-    options,
-    frozen,
+function writeTranscript(dir: string, replies: [string, string][]): string {
+  const path = join(dir, "session.jsonl");
+  writeFileSync(
+    path,
+    replies
+      .map(([timestamp, text]) =>
+        JSON.stringify({
+          type: "assistant",
+          timestamp,
+          message: { role: "assistant", content: [{ type: "text", text }] },
+        }),
+      )
+      .join("\n"),
   );
-  assert.deepEqual(sessionless, { action: "backfilled", transcriptPath: TRANSCRIPT_PATH });
-  assert.deepEqual(snapshotState(db), scenario("sessionless_backfill_only"));
+  return path;
+}
 
-  assert.deepEqual(await handleSessionEndHook(db, "{}", options, frozen), {
-    action: "skipped",
-    reason: "nothing_to_do",
+function promptAs(
+  db: WritableDatabase,
+  home: string,
+  sessionId: string,
+  prompt: string,
+  hookDeps: typeof deps,
+): string {
+  handleUserPromptHook(
+    db,
+    JSON.stringify({ session_id: sessionId, prompt }),
+    { mirrorHome: home },
+    hookDeps,
+  );
+  const row = db
+    .prepare("SELECT conversation_id FROM runtime_sessions WHERE session_id = ?")
+    .get(sessionId);
+  return String(row?.conversation_id);
+}
+
+function contentsOf(db: WritableDatabase, conversationId: string): string[] {
+  return db
+    .prepare("SELECT role, content FROM messages WHERE conversation_id = ? ORDER BY created_at")
+    .all(conversationId)
+    .map((row) => `${String(row.role)}: ${String(row.content)}`);
+}
+
+const hookOptions = (home: string) => ({ mirrorHome: home, claudeProjectDir: null, homeDir: home });
+
+test("CR151 evidence: an orphan killed mid-first-turn gets none of another session's replies", async () => {
+  const { db, home } = fixture();
+  const { deps: clocked, at } = clock("2026-10-20T18:17:00.000000Z");
+  // The CR's `probe-direct`: a prompt logged, Stop never fired.
+  const orphan = promptAs(db, home, "probe-direct", "diagnostic prompt", clocked);
+  at("2026-10-20T20:41:00.000000Z");
+  const live = promptAs(db, home, "probe-session", "say ready", clocked);
+  const transcript = writeTranscript(home, [["2026-10-20T20:41:10.250Z", "ready"]]);
+  at("2026-10-20T20:41:17.309000Z");
+
+  const outcome = await handleSessionEndHook(
+    db,
+    JSON.stringify({ session_id: "probe-session", transcript_path: transcript }),
+    hookOptions(home),
+    clocked,
+  );
+
+  assert.deepEqual(outcome, {
+    action: "ended",
+    sessionId: "probe-session",
+    transcriptPath: transcript,
+    backfilled: true,
   });
-  assert.deepEqual(snapshotState(db), scenario("empty_payload_is_noop"));
+  assert.deepEqual(contentsOf(db, live), ["user: say ready", "assistant: ready"]);
+  assert.deepEqual(contentsOf(db, orphan), ["user: diagnostic prompt"]);
+  // The reply carries the transcript's instant, not the SessionEnd clock.
+  assert.equal(
+    db
+      .prepare("SELECT created_at FROM messages WHERE conversation_id = ? AND role = 'assistant'")
+      .get(live)?.created_at,
+    "2026-10-20T20:41:10.250000Z",
+  );
+  db.close();
+});
+
+test("CR151: a concurrent session still inside its first turn is left alone", async () => {
+  const { db, home } = fixture();
+  const { deps: clocked, at } = clock("2026-10-20T10:00:00.000000Z");
+  const ending = promptAs(db, home, "ending", "first question", clocked);
+  at("2026-10-20T10:00:05.000000Z");
+  // Another live session on the same runtime, started inside the ending
+  // session's window, its reply not yet logged.
+  const concurrent = promptAs(db, home, "concurrent", "still thinking", clocked);
+  const transcript = writeTranscript(home, [
+    ["2026-10-20T10:00:20.000Z", "answer one"],
+    ["2026-10-20T10:00:40.000Z", "answer two"],
+  ]);
+  at("2026-10-20T10:01:00.000000Z");
 
   await handleSessionEndHook(
     db,
-    JSON.stringify({ session_id: "", transcript_path: join(home, "missing-transcript.jsonl") }),
-    options,
-    frozen,
+    JSON.stringify({ session_id: "ending", transcript_path: transcript }),
+    hookOptions(home),
+    clocked,
   );
-  assert.deepEqual(snapshotState(db), scenario("missing_transcript_is_noop"));
 
-  // A live session opened at 10:05 with a user turn. Ending it first is what
-  // bounds the backfill to 10:05..now, so the late answers land in it.
-  logUserMessage(db, "sess-hook", "live session prompt", { interface: "claude_code" }, frozen);
-  db.prepare(
-    "UPDATE conversations SET started_at = ? WHERE id = " +
-      "(SELECT conversation_id FROM runtime_sessions WHERE session_id = 'sess-hook')",
-  ).run("2026-09-03T10:05:00.000000Z");
-  const ended = await handleSessionEndHook(
-    db,
-    JSON.stringify({ session_id: "sess-hook", transcript_path: TRANSCRIPT_PATH }),
-    options,
-    frozen,
+  assert.deepEqual(contentsOf(db, ending), [
+    "user: first question",
+    "assistant: answer one",
+    "assistant: answer two",
+  ]);
+  assert.deepEqual(contentsOf(db, concurrent), ["user: still thinking"]);
+  const other = db.prepare("SELECT ended_at FROM conversations WHERE id = ?").get(concurrent);
+  assert.equal(other?.ended_at, null);
+  db.close();
+});
+
+test("CR151: a late SessionEnd on a conversation maintenance already closed fills only it", async () => {
+  const { db, home } = fixture();
+  const { deps: clocked, at } = clock("2026-10-20T10:00:00.000000Z");
+  const own = promptAs(db, home, "late", "question", clocked);
+  at("2026-10-20T10:00:30.000000Z");
+  const neighbor = promptAs(db, home, "neighbor", "open neighbor", clocked);
+  // Maintenance closed the idle conversation at 10:02 before SessionEnd fired.
+  db.prepare("UPDATE conversations SET ended_at = ? WHERE id = ?").run(
+    "2026-10-20T10:02:00.000000Z",
+    own,
   );
-  assert.deepEqual(ended, {
+  const transcript = writeTranscript(home, [
+    ["2026-10-20T10:01:00.000Z", "inside its window"],
+    ["2026-10-20T10:05:00.000Z", "after its close"],
+  ]);
+  at("2026-10-20T10:30:00.000000Z");
+
+  const outcome = await handleSessionEndHook(
+    db,
+    JSON.stringify({ session_id: "late", transcript_path: transcript }),
+    hookOptions(home),
+    clocked,
+  );
+
+  assert.equal(outcome.action, "ended");
+  assert.deepEqual(contentsOf(db, own), ["user: question", "assistant: inside its window"]);
+  assert.deepEqual(contentsOf(db, neighbor), ["user: open neighbor"]);
+  db.close();
+});
+
+test("CR151: a transcript without a session id is attributed to nothing", async () => {
+  const { db, home } = fixture();
+  const { deps: clocked, at } = clock("2026-10-20T10:00:00.000000Z");
+  const open = promptAs(db, home, "open", "unanswered", clocked);
+  const transcript = writeTranscript(home, [["2026-10-20T10:00:20.000Z", "whose reply?"]]);
+  at("2026-10-20T10:01:00.000000Z");
+  const before = messageCount(db);
+
+  const outcome = await handleSessionEndHook(
+    db,
+    JSON.stringify({ session_id: "", transcript_path: transcript }),
+    hookOptions(home),
+    clocked,
+  );
+
+  assert.deepEqual(outcome, { action: "skipped", reason: "nothing_to_do" });
+  assert.equal(messageCount(db), before);
+  assert.deepEqual(contentsOf(db, open), ["user: unanswered"]);
+  db.close();
+});
+
+test("CR151: a session bound to no conversation ends and backfills nothing", async () => {
+  const { db, home } = fixture();
+  const { deps: clocked, at } = clock("2026-10-20T10:00:00.000000Z");
+  const open = promptAs(db, home, "open", "unanswered", clocked);
+  const transcript = writeTranscript(home, [["2026-10-20T10:00:20.000Z", "whose reply?"]]);
+  at("2026-10-20T10:01:00.000000Z");
+
+  const outcome = await handleSessionEndHook(
+    db,
+    JSON.stringify({ session_id: "never-prompted", transcript_path: transcript }),
+    hookOptions(home),
+    clocked,
+  );
+
+  assert.deepEqual(outcome, {
     action: "ended",
-    sessionId: "sess-hook",
-    transcriptPath: TRANSCRIPT_PATH,
-    backfilled: true,
+    sessionId: "never-prompted",
+    transcriptPath: transcript,
+    backfilled: false,
   });
-  assert.deepEqual(snapshotState(db), scenario("session_ended_then_backfilled"));
+  assert.deepEqual(contentsOf(db, open), ["user: unanswered"]);
+  db.close();
+});
+
+test("handleSessionEndHook with an empty payload or a missing transcript writes nothing", async () => {
+  const { db, home } = fixture();
+  const { deps: clocked, at } = clock("2026-10-20T10:00:00.000000Z");
+  const own = promptAs(db, home, "s-missing", "question", clocked);
+  at("2026-10-20T10:01:00.000000Z");
+  assert.deepEqual(await handleSessionEndHook(db, "{}", hookOptions(home), clocked), {
+    action: "skipped",
+    reason: "nothing_to_do",
+  });
+  const outcome = await handleSessionEndHook(
+    db,
+    JSON.stringify({ session_id: "s-missing", transcript_path: join(home, "missing.jsonl") }),
+    hookOptions(home),
+    clocked,
+  );
+  assert.equal(outcome.action, "ended");
+  assert.equal(outcome.action === "ended" && outcome.backfilled, false);
+  assert.deepEqual(contentsOf(db, own), ["user: question"]);
   db.close();
 });
 

@@ -584,7 +584,6 @@ export interface HookLoggingOptions {
 export type SessionEndHookOutcome =
   | { action: "skipped"; reason: "malformed_payload" | "nothing_to_do" }
   | { action: "ended"; sessionId: string; transcriptPath: string | null; backfilled: boolean }
-  | { action: "backfilled"; transcriptPath: string }
   | { action: "failed"; error: string };
 
 const parsePayload = parseHookPayloadObject;
@@ -917,12 +916,15 @@ export function handleStopHook(
 }
 
 /**
- * Python `hook_session_end`: end the session when the payload names one, then
- * backfill assistant turns from the transcript when it exists -- in that
- * order, so the just-ended conversation's `ended_at` bounds the backfill.
+ * Python `hook_session_end`: end the session the payload names, then backfill
+ * assistant turns from its transcript when it exists -- in that order, so the
+ * just-ended conversation's `ended_at` bounds the backfill.
  *
- * The two halves are independent: an empty `session_id` with a transcript
- * still backfills (the session-less route, slice E), and a session without a
+ * The backfill fills only the conversation the session is bound to (CR151).
+ * Python's session-less route -- no `session_id`, a transcript alone, filling
+ * every conversation in the transcript's time window -- is gone: a transcript
+ * no session owns cannot be attributed, so it writes nothing. A session with no
+ * bound conversation likewise backfills nothing; a session without a
  * transcript still ends. Everything is swallowed; the hook always exits 0.
  */
 export async function handleSessionEndHook(
@@ -943,42 +945,40 @@ export async function handleSessionEndHook(
     if (!payload) return { action: "skipped", reason: "malformed_payload" };
 
     const sessionId = payloadString(payload, "session_id");
+    if (!sessionId) return { action: "skipped", reason: "nothing_to_do" };
     const transcriptPath = resolveTranscriptPath(
       payloadString(payload, "transcript_path"),
       sessionId,
       options.claudeProjectDir,
       options.homeDir,
     );
+    // Read before the close, so the attribution does not lean on the close
+    // preserving `conversation_id` when it deactivates the session.
+    const runtimeSession = getRuntimeSession(db, sessionId);
+    const conversationId = runtimeSession?.conversationId ?? null;
     let backfilled = false;
     // After the close, which bounds the backfill window, and before the tail,
-    // which should see what the backfill adds (CV21.DS4.TS2).
+    // which should see what the backfill adds (CV21.DS4.TS2). A session with no
+    // bound conversation closes nothing and backfills nothing (CR151).
     const backfill = () => {
-      backfilled = transcriptPath !== null && existsSync(transcriptPath);
-      if (backfilled && transcriptPath !== null)
-        backfillAssistantMessages(db, transcriptPath, deps);
+      if (conversationId === null || transcriptPath === null || !existsSync(transcriptPath)) return;
+      backfilled = true;
+      backfillAssistantMessages(db, transcriptPath, conversationId, deps);
     };
 
-    if (sessionId) {
-      // The label US8 stamps on every prompt; the hook's own detection only when
-      // the row carries none; today's behavior when neither names a runtime.
-      const label = getRuntimeSession(db, sessionId)?.interface || options.interface || null;
-      const finalize = sessionEndRunsLlmTail(label);
-      const closed = await endSession(
-        db,
-        sessionId,
-        { extract: finalize, finalize, beforeTail: backfill },
-        deps,
-        hooks,
-      );
-      // A session with no bound conversation closes nothing; the backfill still runs.
-      if (!closed) backfill();
-    } else {
-      backfill();
-    }
+    // The label US8 stamps on every prompt; the hook's own detection only when
+    // the row carries none; today's behavior when neither names a runtime.
+    const label = runtimeSession?.interface || options.interface || null;
+    const finalize = sessionEndRunsLlmTail(label);
+    await endSession(
+      db,
+      sessionId,
+      { extract: finalize, finalize, beforeTail: backfill },
+      deps,
+      hooks,
+    );
 
-    if (sessionId) return { action: "ended", sessionId, transcriptPath, backfilled };
-    if (backfilled && transcriptPath !== null) return { action: "backfilled", transcriptPath };
-    return { action: "skipped", reason: "nothing_to_do" };
+    return { action: "ended", sessionId, transcriptPath, backfilled };
   } catch (error) {
     return { action: "failed", error: error instanceof Error ? error.message : String(error) };
   }
