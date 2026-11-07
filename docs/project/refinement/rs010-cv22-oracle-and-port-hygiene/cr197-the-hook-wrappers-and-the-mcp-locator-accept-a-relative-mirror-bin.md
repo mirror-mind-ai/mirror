@@ -164,26 +164,62 @@ CR names: the planted `bin/mirror-hook` and `bin/mirror` run.
 By the Navigator, before `validated`, on this machine, with nothing touching the real home
 and no paid call:
 
-1. In a scratch directory, make a project holding an executable `bin/mirror-hook` and
-   `bin/mirror`, each a script whose only effect is to create a marker file, an empty
-   home, and an empty config directory. Export `MIRROR_HOME=<scratch home>`,
-   `MIRROR_USER=` (empty, not unset), `XDG_CONFIG_HOME=<scratch config>`,
-   `OPENROUTER_API_KEY=` (empty), `MIRROR_NODE="$(command -v node)"`, and
-   `MIRROR_BIN=bin`.
-2. From the project, run the plugin's prompt hook the way Claude Code runs it, twice:
-   `printf '{"session_id":"cr197","prompt":"hi"}' | bash <checkout>/plugins/mirror-mind/hooks/log-user-prompt.sh`.
-3. From the project, start the MCP entry as the manifest carries it, and send it
-   `initialize`.
-4. Pass: `hooks.log` holds exactly one line, `… MIRROR_BIN=bin is relative; …`; the MCP
-   entry printed the same refusal on stderr and answered; no marker exists; the prompt is
-   in the scratch home (`mirror conversations`); and `mirror runtime diagnose` reports
-   `hook_failures_recorded`. Fail: a marker exists, or the hook wrote no refusal or two.
-5. Once more with `MIRROR_BIN=/opt/homebrew/bin`, the value your Claude settings set: no
-   new line, and the MCP entry's stderr is empty.
-6. Remove the scratch directory.
+```bash
+# 1. A scratch project holding an executable bin/mirror-hook and bin/mirror, each a
+#    script whose only effect is a marker file; an empty home and config.
+CHECKOUT=~/dev/workspace/mirror-dev
+S="$(mktemp -d)"
+mkdir -p "$S/project/bin" "$S/home" "$S/config" && chmod 700 "$S/home"
+printf 'require("node:fs").writeFileSync("%s/marker-hook", "ran");\n' "$S" > "$S/project/bin/mirror-hook"
+printf 'require("node:fs").writeFileSync("%s/marker-mirror", "ran");\n' "$S" > "$S/project/bin/mirror"
+chmod +x "$S/project/bin/mirror-hook" "$S/project/bin/mirror"
+export MIRROR_HOME="$S/home" MIRROR_USER= XDG_CONFIG_HOME="$S/config" OPENROUTER_API_KEY= \
+  MIRROR_NODE="$(command -v node)" MIRROR_BIN=bin
+cd "$S/project"
 
-The Driver runs the route first, as CR192's Driver did, and corrects it before the
-Navigator runs it. The exact commands for steps 1 and 3 are written then.
+# 2. The plugin's prompt hook, the way Claude Code runs it, twice.
+printf '{"session_id":"cr197","prompt":"cr197 route"}' | bash "$CHECKOUT/plugins/mirror-mind/hooks/log-user-prompt.sh"
+printf '{"session_id":"cr197","prompt":"cr197 route"}' | bash "$CHECKOUT/plugins/mirror-mind/hooks/log-user-prompt.sh"
+
+# 3. The MCP entry, as the manifest carries it, sent `initialize`.
+LOCATOR="$(node -p 'require(process.argv[1]).mcpServers["mirror-mind"].args[1]' "$CHECKOUT/plugins/mirror-mind/.claude-plugin/plugin.json")"
+INIT='{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"route","version":"0"}}}'
+printf '%s\n' "$INIT" | /bin/sh -c "$LOCATOR"
+
+# 4. Look.
+cat "$S/home/hooks.log"
+ls "$S"
+mirror conversations --limit 3
+mirror runtime diagnose
+
+# 5. Your own value, from your Claude settings.
+export MIRROR_BIN=/opt/homebrew/bin
+printf '{"session_id":"cr197b","prompt":"cr197 route"}' | bash "$CHECKOUT/plugins/mirror-mind/hooks/log-user-prompt.sh"
+printf '%s\n' "$INIT" | /bin/sh -c "$LOCATOR"
+cat "$S/home/hooks.log"
+
+# 6. Clean up.
+cd ~ && rm -rf "$S"
+```
+
+Pass:
+
+- after step 2, `hooks.log` holds exactly one line, ending `claude:user-prompt:
+  MIRROR_BIN=bin is relative; searching the PATH and the usual places instead`;
+- step 3 prints `mirror-mind: MIRROR_BIN=bin is relative; …` and then the server's answer,
+  a JSON line naming `mirror-mind`;
+- `ls "$S"` lists `config`, `home`, and `project`, and no marker;
+- `mirror conversations` lists a conversation titled `cr197 route`;
+- `mirror runtime diagnose` reports `hook_failures_recorded` (1, latest
+  `claude:user-prompt`), and `openrouter_key_missing`, which the route causes by emptying
+  the key;
+- in step 5, `hooks.log` still holds one line, and no `mirror-mind:` line comes before the
+  server's answer.
+
+Fail: a marker exists; after step 2 `hooks.log` holds no refusal, or two; or step 5
+refuses `/opt/homebrew/bin`.
+
+The Driver ran the route first, as CR192's Driver did (see Implementation, below).
 
 On Windows, Rodrigo Immaginario is asked on PR #47 to run the installer against `main`:
 his forward-slash `MIRROR_BIN` gives no refusal line, and the hooks and the MCP server
@@ -297,6 +333,58 @@ engineer, and writer. What each changed:
 - The Windows job runs `ts/test/hooks/mirrorNodeRule.test.ts` under Git Bash
   (`.github/workflows/tests.yml`, `windows-install-kind`).
 
+### Implementation, 2026-11-07
+
+- **Code.** `scripts/generate_hook_wrappers.sh`: `ENTRY_BIN` applies the rule and notes a
+  refusal once a day, and `@ENTRY@` is spliced by the text around its placeholder, as
+  `@LOG@` and `@NODE@` are. The eight bin and agy wrappers are regenerated; the five
+  tree-form wrappers came out byte-identical. `ts/src/guards/claudePlugin.ts`:
+  `MCP_LOCATOR` reads `$MIRROR_BIN` once, into `mmbindir`, tests it with
+  `ABSOLUTE_PATH_CASE`, reuses `mmwhy`, and prints a refusal with `printf`; the three
+  manifests are regenerated. `.github/workflows/tests.yml`: the Windows step names both
+  variables. Docs: `REFERENCE.md`, `docs/reference/configuration.md` (a new "Hook bin
+  resolution" section), `docs/process/troubleshooting.md`,
+  `docs/product/specs/runtime-interface/index.md`, `docs/getting-started.md`.
+- **Tests, written first.** Against `c32bf8d4` they failed for the reasons this CR
+  names: the plugin wrapper ran the project's `bin/mirror-hook`, the MCP entry ran its
+  `bin/mirror`, no refusal was written, and the pattern and the single read were absent.
+  The cases for valid values passed before and after. New: six cases in `hooks.test.ts`
+  (a relative value never run; each reason; a valid value outranking the PATH; the daily
+  rule and a forged line break; both variables refused in one run, the bin's line first;
+  the agy form), four in `mcpEntry.test.ts` (one read of `$MIRROR_BIN`; a relative value
+  never run, the server starting through the PATH; each reason printed intact; a valid
+  value outranking the PATH's `mirror`), and two in `mirrorNodeRule.test.ts` (the pattern
+  held equal in the bin and agy wrappers and the locator; a real wrapper run with
+  `MIRROR_BIN` in the platform's absolute form over npm's Windows prefix shape, which the
+  Windows job runs under Git Bash). One structural test changed: "the two forms share
+  everything but how the entry is found" removes the bin search through its last `exit 0`
+  and `fi`, because the `MIRROR_BIN` check now closes an `if` of its own before them.
+- **Checks, this machine (macOS, bash 3.2, Node 26.12.1).** Typecheck clean; Biome with
+  the one warning that predates this work (`ts/test/scripts/testTempHomes.test.ts`);
+  `bash scripts/test_leaves_nothing.sh`: 3,821 tests, 3,818 passed, 0 failed, 3 skipped
+  (machine-dependent), and nothing left behind; the three touched test files: 75 tests,
+  73 passed, 2 skipped; `generate_hook_wrappers.sh --check` in sync under bash 3.2 and
+  under the `bash:5.2` image; `buildClaudePlugin.ts --check`, `checkDocLinks`,
+  `checkTestTempHomes`, `checkRetiredSurfaces`, `checkSkillCommandParity`,
+  `checkPackContents`, and `git diff --check` clean.
+- **Smokes.** `smoke_mirror_mcp.sh` passed, with no data leaked into production.
+  `smoke_claude_plugin.sh` passed every step up to "no hooks.log line after mirror-hook
+  went missing", and failed there; it fails at the same step at `c32bf8d4`, before this
+  change, in a throwaway worktree: CR172's failure on a machine with a global
+  `mirror-hook`.
+- **The Driver's dry run of the route**, against the working tree, with a random prompt.
+  Both hook runs exited 0, and `hooks.log` held one line, `2026-11-07T17:28:09Z
+  claude:user-prompt: MIRROR_BIN=bin is relative; searching the PATH and the usual places
+  instead`. The MCP entry printed the same refusal on stderr and answered `initialize`
+  as `mirror-mind`. No marker existed, and `mirror conversations` listed the prompt.
+  `runtime diagnose` reported `hook_failures_recorded` (1, latest `claude:user-prompt`),
+  beside `openrouter_key_missing`. With `MIRROR_BIN=/opt/homebrew/bin` no line was added
+  and the entry's stderr was empty. The real homes' `hooks.log` kept their size and
+  modification time, and neither real database held the prompt. The route gains
+  `chmod 700` on the scratch home, which removes the `loose_permissions` finding CR192's
+  route showed.
+- **Not verified here.** The Windows case runs only in CI, after a push.
+
 ## Outcome
 
-Pending: approved on 2026-11-07 and in progress.
+Pending: implemented on 2026-11-07, awaiting the Navigator's validation.

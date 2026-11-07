@@ -888,10 +888,19 @@ the three directories above. The log line for that case names its own fix:
 claude:session-start: mirror-hook not found on PATH; hook skipped. Install mirror-mind (npm install -g mirror-mind) or set MIRROR_BIN to its bin directory.
 ```
 
-`MIRROR_BIN` is the same trust class as `MIRROR_NODE`: an executable path the
-environment names. It is still honored as given, relative or not (CR197),
-while `MIRROR_NODE` is used only as an absolute path to an executable file
-(CR192).
+`MIRROR_BIN` follows `MIRROR_NODE`'s rule (CR197): it is used only as an
+absolute path, here to the directory holding the bins. Any other value is
+refused, and the search goes on without it, with one line saying why:
+
+```text
+claude:session-start: MIRROR_BIN=bin is relative; searching the PATH and the usual places instead
+```
+
+The other reasons are `missing`, `not a directory`, and `a directory without
+an executable mirror-hook`, which is what a prefix left behind by a Node switch
+reads. Set it to `$(npm prefix -g)/bin`, as an absolute path. The plugin's MCP
+entry refuses a value the same way, for `mirror`, on the MCP server's stderr,
+prefixed `mirror-mind: `.
 
 ### Recovery of affected sessions
 
@@ -951,7 +960,8 @@ mirror runtime status        # Install: package (...) or clone (...)
   "$(npm root -g)/mirror-mind"`); after an install under another, point it at
   the new path.
 - **GUI-launched runtimes:** set `MIRROR_BIN` to the directory holding the two
-  bins (`$(npm prefix -g)/bin`) in the environment the runtime starts with;
+  bins (`$(npm prefix -g)/bin`), as an absolute path, in the environment the
+  runtime starts with;
   the plugin's wrappers and the MCP launcher honor it. `MIRROR_NODE` is the
   same idea for `node` itself.
 - **A clone:** `npm link` once at the repository root. The Pi extension prints
