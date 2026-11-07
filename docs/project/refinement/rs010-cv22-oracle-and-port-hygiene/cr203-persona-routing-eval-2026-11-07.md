@@ -1,4 +1,4 @@
-[< CR202](cr202-route-a-turns-persona-by-its-subject-and-let-it-have-none.md)
+[< CR203](cr203-route-a-turns-persona-by-its-subject-and-let-it-have-none.md)
 
 # Persona-routing eval, 2026-11-07
 
@@ -150,4 +150,4 @@ persona descriptions and short requests do not separate in that space. Not a can
 The harness was a short script outside both repositories: read the persona rows and the
 delivered context lines from copies, draw the sample, call the Decisions API with the
 request above, score against the labels. It is not committed, because its inputs are
-private. CR202's synthetic regression set is the public counterpart.
+private. CR203's synthetic regression set is the public counterpart.

@@ -136,4 +136,5 @@ evidence stays honest as both cores move.
 - [CR199 · `deliverMirrorContext` takes three to seven seconds before every Desktop turn, and the embedding explains one or two of them](cr199-deliver-mirror-context-takes-three-to-seven-seconds-before-every-desktop-turn.md)
 - [CR200 · Delete a Journey with its records, after showing what will go](cr200-delete-a-journey-with-its-records-after-showing-what-will-go.md)
 - [CR201 — A reply backfilled after the close misses the extraction that closed the conversation](cr201-a-reply-backfilled-after-the-close-misses-the-extraction-that-closed-the-conversation.md)
-- [CR202 · Route a turn's persona by its subject, and let a turn have none](cr202-route-a-turns-persona-by-its-subject-and-let-it-have-none.md)
+- [CR202 — A deleted journey leaves its extension bindings behind, and a new journey with the same slug inherits them](cr202-a-deleted-journey-leaves-its-extension-bindings-behind.md)
+- [CR203 · Route a turn's persona by its subject, and let a turn have none](cr203-route-a-turns-persona-by-its-subject-and-let-it-have-none.md)

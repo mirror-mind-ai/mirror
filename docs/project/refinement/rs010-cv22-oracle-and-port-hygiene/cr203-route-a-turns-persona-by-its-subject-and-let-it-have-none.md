@@ -1,6 +1,6 @@
 [< RS010](index.md) · [Canonical status](../index.md#change-requests)
 
-# CR202 · Route a turn's persona by its subject, and let a turn have none
+# CR203 · Route a turn's persona by its subject, and let a turn have none
 
 ## Problem
 
@@ -57,8 +57,8 @@ model's text, when the Core says none.
 
 ## Plan Or Decision
 
-Captured 2026-11-07 by the Navigator ("abra a CR201 no Core"; 201 was already taken), after
-the eval in [the eval report](cr202-persona-routing-eval-2026-11-07.md). Not planned.
+Captured 2026-11-07 by the Navigator ("abra a CR201 no Core"; 201 was already taken, and 202 was taken on `main` while this waited), after
+the eval in [the eval report](cr203-persona-routing-eval-2026-11-07.md). Not planned.
 
 Open before building:
 
@@ -73,7 +73,7 @@ Open before building:
 
 ## Evidence
 
-- [Persona-routing eval, 2026-11-07](cr202-persona-routing-eval-2026-11-07.md): method,
+- [Persona-routing eval, 2026-11-07](cr203-persona-routing-eval-2026-11-07.md): method,
   every candidate's numbers, held-out validation, latency, cost, limits and conclusions.
 - `ts/src/persona/detectPersona.ts`, `ts/src/mirror/doorman.ts` (`decideDoorman`,
   `runDelta`, `deliveredLine`), `ts/src/mirror/defaultResolution.ts`.

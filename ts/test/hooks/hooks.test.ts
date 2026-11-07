@@ -667,6 +667,196 @@ describe("CR192: a wrapper uses MIRROR_NODE only as an absolute path to an execu
   });
 });
 
+/**
+ * CR197: a scratch world to run a plugin wrapper in as a runtime runs it, from a
+ * project that holds an executable `bin/mirror-hook` whose JavaScript leaves a
+ * marker, so a relative MIRROR_BIN has something to wrongly run. Node is real
+ * (MIRROR_NODE names this one), so whatever entry a wrapper picks really runs.
+ * First on the PATH are stand-ins: the `mirror-hook` the search finds, whose
+ * JavaScript records the hook it ran for and answers `{"ran":"path-hook"}`; a
+ * `node` that execs this one, for when MIRROR_NODE is refused too; and a `date`
+ * whose day the test sets, so the once-a-day rule cannot flake at midnight UTC.
+ */
+function binWorld() {
+  const root = tmpHome();
+  const project = join(root, "project");
+  const home = join(root, "home");
+  const standIns = join(root, "stand-ins");
+  mkdirSync(join(project, "bin"), { recursive: true });
+  mkdirSync(home);
+  mkdirSync(standIns);
+  const projectBinRan = join(root, "project-bin-ran");
+  writeFileSync(
+    join(project, "bin", "mirror-hook"),
+    `require("node:fs").writeFileSync(${JSON.stringify(projectBinRan)}, "ran");\n`,
+    { mode: 0o755 },
+  );
+  const hooksRan = join(root, "hooks-ran");
+  writeFileSync(
+    join(standIns, "mirror-hook"),
+    [
+      `require("node:fs").appendFileSync(${JSON.stringify(hooksRan)}, (process.argv[2] ?? "") + "\\n");`,
+      `process.stdout.write('{"ran":"path-hook"}\\n');`,
+      "",
+    ].join("\n"),
+    { mode: 0o755 },
+  );
+  writeFileSync(join(standIns, "node"), `#!/bin/sh\nexec "${process.execPath}" "$@"\n`, {
+    mode: 0o755,
+  });
+  writeFileSync(
+    join(standIns, "date"),
+    '#!/bin/sh\ncase "$*" in *%H*) echo "$FAKE_DAY"T10:00:00Z ;; *) echo "$FAKE_DAY" ;; esac\n',
+    { mode: 0o755 },
+  );
+  const lines = (path: string) =>
+    existsSync(path) ? readFileSync(path, "utf8").split("\n").filter(Boolean) : [];
+  return {
+    root,
+    projectBinRan,
+    run: (wrapper: string, env: Record<string, string>, day = "2026-11-07") =>
+      spawnSync("bash", [join(REPO_ROOT, wrapper)], {
+        cwd: project,
+        env: {
+          HOME: home,
+          MIRROR_HOME: home,
+          MIRROR_NODE: process.execPath,
+          PATH: `${standIns}:/usr/bin:/bin`,
+          FAKE_DAY: day,
+          ...env,
+        },
+        input: "{}",
+        encoding: "utf8",
+      }),
+    log: () => lines(join(home, "hooks.log")),
+    hooksRan: () => lines(hooksRan),
+  };
+}
+
+/** The one MIRROR_BIN refusal line, in MIRROR_NODE's words (CR192), as a wrapper writes it. */
+function binRefusal(hook: string, value: string, reason: string, day = "2026-11-07"): string {
+  return `${day}T10:00:00Z ${hook}: MIRROR_BIN=${value} is ${reason}; searching the PATH and the usual places instead`;
+}
+
+describe("CR197: a plugin wrapper uses MIRROR_BIN only as an absolute path to a directory holding mirror-hook", () => {
+  // The pattern is MIRROR_NODE's, held equal in `mirrorNodeRule.test.ts`, which
+  // also runs a wrapper with the forward-slash drive form under Git Bash.
+  const PROMPT = "plugins/mirror-mind/hooks/log-user-prompt.sh";
+
+  test("a relative value is never used: the project's bin/mirror-hook never runs, one line says why, and the hook runs through the PATH", () => {
+    const w = binWorld();
+    const result = w.run(PROMPT, { MIRROR_BIN: "bin" });
+
+    assert.equal(result.status, 0, result.stderr);
+    assert.ok(!existsSync(w.projectBinRan), "the project's bin/mirror-hook never ran");
+    assert.deepEqual(w.log(), [binRefusal("claude:user-prompt", "bin", "relative")]);
+    assert.deepEqual(w.hooksRan(), ["claude:user-prompt"]);
+    assert.equal(result.stdout, '{"ran":"path-hook"}\n', "the refusal adds nothing to stdout");
+  });
+
+  test("each value it will not use is refused with its reason, and every hook still runs", () => {
+    const w = binWorld();
+    const aFile = join(w.root, "a-file");
+    writeFileSync(aFile, "");
+    const empty = join(w.root, "empty-bin");
+    mkdirSync(empty);
+    const notExecutable = join(w.root, "bin-without-x");
+    mkdirSync(notExecutable);
+    writeFileSync(join(notExecutable, "mirror-hook"), "", { mode: 0o644 });
+    const binIsDirectory = join(w.root, "bin-holding-a-directory");
+    mkdirSync(join(binIsDirectory, "mirror-hook"), { recursive: true });
+    const without = "a directory without an executable mirror-hook";
+    const cases: [string, string][] = [
+      [join(w.root, "nowhere"), "missing"],
+      [aFile, "not a directory"],
+      [empty, without],
+      [notExecutable, without],
+      [binIsDirectory, without],
+      ["./bin", "relative"],
+      ["~/bin", "relative"],
+      ["C:bin", "relative"],
+      // The forward-slash drive form a Windows machine sets: absolute by the
+      // rule, and no file here.
+      ["C:/Users/someone/.mirror/bin", "missing"],
+    ];
+    for (const [value, reason] of cases) {
+      const before = w.log().length;
+      const result = w.run(PROMPT, { MIRROR_BIN: value });
+      assert.equal(result.status, 0, `${value}: ${result.stderr}`);
+      assert.deepEqual(
+        w.log().slice(before),
+        [binRefusal("claude:user-prompt", value, reason)],
+        value,
+      );
+    }
+    assert.equal(w.hooksRan().length, cases.length, "every hook ran, through the PATH");
+    assert.ok(!existsSync(w.projectBinRan));
+  });
+
+  test("a valid absolute value outranks the PATH and writes nothing", () => {
+    const w = binWorld();
+    const prefix = join(w.root, "prefix-bin");
+    mkdirSync(prefix);
+    const ran = join(w.root, "prefix-hook-ran");
+    writeFileSync(
+      join(prefix, "mirror-hook"),
+      `require("node:fs").writeFileSync(${JSON.stringify(ran)}, process.argv[2] ?? "");\n`,
+      { mode: 0o755 },
+    );
+
+    const result = w.run(PROMPT, { MIRROR_BIN: prefix });
+
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(readFileSync(ran, "utf8"), "claude:user-prompt", "MIRROR_BIN's mirror-hook ran");
+    assert.deepEqual(w.hooksRan(), [], "the PATH's did not");
+    assert.deepEqual(w.log(), []);
+  });
+
+  test("a refusal is written once a day, and a line break in the value cannot forge a second line", () => {
+    // Run one after another. Claude Code runs the two prompt hooks in parallel,
+    // so the first refusal of a day can be written twice; that is expected.
+    const w = binWorld();
+    w.run("plugins/mirror-mind/hooks/mirror-inject.sh", { MIRROR_BIN: "bin" });
+    w.run(PROMPT, { MIRROR_BIN: "bin" });
+    w.run(PROMPT, { MIRROR_BIN: "bin" }, "2026-11-08");
+    w.run(PROMPT, { MIRROR_BIN: "bin\n2026-11-08T00:00:00Z claude:stop: forged" }, "2026-11-08");
+
+    assert.deepEqual(w.log(), [
+      binRefusal("claude:inject", "bin", "relative"),
+      binRefusal("claude:user-prompt", "bin", "relative", "2026-11-08"),
+      binRefusal(
+        "claude:user-prompt",
+        "bin2026-11-08T00:00:00Z claude:stop: forged",
+        "relative",
+        "2026-11-08",
+      ),
+    ]);
+    assert.equal(w.hooksRan().length, 4, "every hook ran");
+  });
+
+  test("with MIRROR_BIN and MIRROR_NODE both refused, one run writes both lines, the bin's first, and the hook still runs", () => {
+    const w = binWorld();
+    const result = w.run(PROMPT, { MIRROR_BIN: "bin", MIRROR_NODE: "bin/node" });
+
+    assert.equal(result.status, 0, result.stderr);
+    assert.deepEqual(w.log(), [
+      binRefusal("claude:user-prompt", "bin", "relative"),
+      refusal("claude:user-prompt", "bin/node", "relative", "2026-11-07"),
+    ]);
+    assert.deepEqual(w.hooksRan(), ["claude:user-prompt"]);
+  });
+
+  test("the agy form refuses the same way, and agy's stdout stays the entry's", () => {
+    const w = binWorld();
+    const result = w.run("plugins/mirror-mind/agy/session-start.sh", { MIRROR_BIN: "./bin" });
+
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(result.stdout, '{"ran":"path-hook"}\n', "agy reads stdout as its protocol");
+    assert.deepEqual(w.log(), [binRefusal("agy:session-start", "./bin", "relative")]);
+    assert.ok(!existsSync(w.projectBinRan));
+  });
+});
+
 describe("the wrapper forms", () => {
   // Three forms, counted per group, never as a total baked into a name (the
   // TS5 lesson): five tree wrappers resolve the tree from their own file;
@@ -718,13 +908,15 @@ describe("the wrapper forms", () => {
   test("the two forms share everything but how the entry is found", () => {
     // The generator fills two placeholders per form; nothing else may differ.
     // Both forms run the same entry the same way, so a fix to the Node search
-    // or the hooks.log contract reaches the plugin and the tree alike.
+    // or the hooks.log contract reaches the plugin and the tree alike. The bin
+    // search ends where it gives up, `exit 0` and `fi`: since CR197 its
+    // MIRROR_BIN check closes an `if` of its own before that.
     const strip = (body: string) =>
       body
         .replace(/^# Resolve the tree from THIS FILE[\s\S]*?^REPO_ROOT=.*$/m, "<LOCATE>")
         .replace(/^# This wrapper is the Claude plugin's[\s\S]*?^REPO_ROOT=""$/m, "<LOCATE>")
         .replace(/^ENTRY="\$REPO_ROOT\/bin\/mirror-hook\.js"$/m, "<ENTRY>")
-        .replace(/^# Find the bin\.[\s\S]*?^fi$/m, "<ENTRY>");
+        .replace(/^# Find the bin\.[\s\S]*?^ {2}exit 0\nfi$/m, "<ENTRY>");
     const tree = strip(normalized(TREE_WRAPPERS[0] ?? ""));
     const bin = strip(normalized(BIN_WRAPPERS[0] ?? ""));
     assert.match(tree, /<LOCATE>[\s\S]*<ENTRY>/);

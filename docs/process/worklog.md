@@ -12,6 +12,58 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-11-07 — v0.40.1: The Bins You Named, or Why Not
+
+Patch release of
+[CR197](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr197-the-hook-wrappers-and-the-mcp-locator-accept-a-relative-mirror-bin.md),
+captured in CR192's review and shipped ahead of the 1.0 gate by the CV9 re-baseline's
+decision. The plugin's hook wrappers and MCP locator use `MIRROR_BIN` only as an absolute
+path to a directory holding the bin they need, by `MIRROR_NODE`'s rule and pattern; a
+refused value is noted with its reason, once a day in `hooks.log` and on the locator's
+stderr. Planned, reviewed through five lenses (security engineer, engineer, quality
+assurance, DevOps engineer, writer) with the amendments folded, and approved; the
+Navigator decided that Rodrigo Immaginario's installer run does not gate the tag, against
+the DevOps engineer's recommendation. Tests written first ran the project's planted bins.
+Validated by the Navigator in a scratch home, his own `MIRROR_BIN=/opt/homebrew/bin`
+included. Debt review: `runtime diagnose` counting a refusal as a hook failure is deferred
+to CR198, widened to `MIRROR_BIN`. Also carries CV9.DS10, documents only.
+
+No schema change, no migration. No model or prompt changed, so the model-behavior gate
+does not apply. Release note: [v0.40.1](../releases/v0.40.1.md).
+
+After the release commit:
+
+- Docs and the four Tests jobs were green on `e95edbf0` before the tag existed, as they
+  were on `67892ec5`, whose Windows job ran CR197's Git Bash case.
+- `release:promote` (`--dry-run`, which created nothing, then `--push`) tagged `v0.40.1`
+  and moved `stable` to `e95edbf0`.
+- The GitHub Release is published and marked latest.
+- The Driver dispatched `publish.yml` on the tag under `stable`; the Navigator approved the
+  `release` environment and the npm stage, and moved `latest` with 2FA. `latest` and
+  `stable` are at 0.40.1, `gitHead` `e95edbf0`; `next` stays at 0.40.0-next.1.
+- The Navigator's first `mirror runtime update` ran the clone's `mirror`, which his
+  shell's PATH finds first, and left the Homebrew install at 0.40.0. Named by path,
+  `/opt/homebrew/bin/mirror runtime update` took it to 0.40.1 behind a backup; its plugin
+  wrappers carry the new `MIRROR_BIN` check, and his own `MIRROR_BIN=/opt/homebrew/bin`
+  writes no refusal to the production home's `hooks.log`. Worth a CR: `runtime update`
+  could say which install it updates when another install of `mirror` is on the machine.
+
+### 2026-11-07 — CV9.DS10: CV9 re-baselined on the TypeScript core
+
+Documents only, no release. CV9's done condition dated from 2026-04-30 and described the
+Python core: `store.conn` calls in a deleted `src/`, Gemini CLI, a `uv` install, and a web
+surface retired in September. Ariad's next pull in CV9 was still `CV9.E2.S2`, a Gemini-era
+story. The done condition is now a table of claims, each with the story that owns it and
+how it is checked, and Delivery Stories DS11 to DS19 are the way to 1.0: journeys reshaped
+without losing a record first, then recording, failures, privacy, first run, release
+trust, a statement of what 1.x keeps stable, a docs re-audit, and a rehearsal of a
+stranger's first week. E1 is superseded by CV22, E2 closed as a container (S2 was
+delivered by CV21.DS5), E6's surface is retired. A seven-persona panel reviewed the plan
+and corrected three errors in the first draft; its review is the story's evidence. AI-18
+and AI-19 closed (CV22.DS8, DS9), AI-08 carried past 1.0, and CR202 captured: a deleted
+journey leaves its extension bindings behind, found by reading. Validated by the Navigator.
+Decision: [CV9 is re-baselined on the TypeScript core](../project/decisions.md#cv9-is-re-baselined-on-the-typescript-core).
+
 ### 2026-11-06 — v0.40.0-next.1: A Journey Can Go, Showing What Goes With It
 
 The first preview of the release train, prepared at the Navigator's word for Nautilus for
@@ -6367,7 +6419,7 @@ Implementation plan produced for E6: `backfill-codex-session` CLI command,
 
 ## Next
 
-- **CV9 (In Progress):** Mirror Mind 1.0 — stabilization, boundary hardening, and the remaining conversation-metadata lifecycle apply work.
+- **CV9 (In Progress):** Mirror Mind 1.0 — the promise that Mirror does not lose, misfile, or leak what a person tells it, re-baselined on 2026-11-07 (CV9.DS10); the Delivery Stories to 1.0 are in the CV9 index.
 - **CV20 (In Progress):** Builder Mode Evolution — the Ariad method DSL (parser, registry, adoption, lifecycle execution).
 - **CV21 (In Progress):** Runtime Expansion II — package Mirror once as a canonical plugin + MCP server and propagate it to Claude, Codex, Antigravity, and Grok Build.
 - **Continuous refinement** of identity, memory quality, and runtime behavior based on real usage.
