@@ -1,6 +1,6 @@
 [< RS010](index.md) · [Canonical status](../index.md#change-requests)
 
-# CR203 · Hand the host the persona's name with its id
+# CR204 · Hand the host the persona's name with its id
 
 ## Problem
 
@@ -33,7 +33,7 @@ one; giving them one is content, not this change.
 
 ## Plan Or Decision
 
-Captured 2026-11-07 by the Navigator ("abra a CR203 no Core"), after Nautilus CR213 showed
+Captured 2026-11-07 by the Navigator ("abra a CR203 no Core"; renumbered CR204 when `main` took CR202 and the persona-routing CR moved to CR203), after Nautilus CR213 showed
 the persona beside its words and the name was found kept in metadata but never handed over.
 
 Open questions:

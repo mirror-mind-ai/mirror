@@ -3,7 +3,13 @@
 # CV9.E6 — Web Visibility
 
 **Epic:** Make the contents of a user's Mirror visible through a local web surface  
-**Status:** ✅ Done
+**Status:** ✅ Done — and since retired: the surface was not ported to TypeScript
+
+> **Retired surface.** The web console was retired, not ported, on 2026-09-17
+> ([decision](../../../decisions.md#the-web-console-is-retired-not-ported-and-ds7-closes-at-1414)),
+> and the TypeScript CLI has no `web` command. Mirror Desktop, the CV24 consumer of the
+> core, is its successor. This epic is history, and it is not part of the
+> [CV9 done condition](../index.md#done-condition).
 
 ---
 

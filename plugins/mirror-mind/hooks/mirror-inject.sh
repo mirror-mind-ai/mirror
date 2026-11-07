@@ -57,10 +57,31 @@ note() {
 }
 
 # Find the bin. MIRROR_BIN names the directory holding `mirror` and
-# `mirror-hook` (`$(npm prefix -g)/bin`), the same trust class as MIRROR_NODE;
-# then the PATH; then the global bin directories a GUI launch leaves off it.
+# `mirror-hook` (`$(npm prefix -g)/bin`); then the PATH; then the global bin
+# directories a GUI launch leaves off it.
+#
+# MIRROR_BIN is used only as an absolute path to a directory holding an
+# executable `mirror-hook`, by MIRROR_NODE's rule and pattern (CR197): a
+# relative one would resolve against the project the runtime spawned this hook
+# from, and Node would run that project's file. Anything else is noted with its
+# reason, in MIRROR_NODE's words, once a day, and the search goes on without it.
 ENTRY=""
-[ -n "${MIRROR_BIN:-}" ] && [ -x "$MIRROR_BIN/mirror-hook" ] && ENTRY="$MIRROR_BIN/mirror-hook"
+if [ -n "${MIRROR_BIN:-}" ]; then
+  refused=""
+  case "$MIRROR_BIN" in
+    /*|\\*|[A-Za-z]:[\\/]*)
+      if [ ! -e "$MIRROR_BIN" ]; then refused="missing"
+      elif [ ! -d "$MIRROR_BIN" ]; then refused="not a directory"
+      elif [ ! -f "$MIRROR_BIN/mirror-hook" ] || [ ! -x "$MIRROR_BIN/mirror-hook" ]; then refused="a directory without an executable mirror-hook"
+      else ENTRY="$MIRROR_BIN/mirror-hook"
+      fi
+      ;;
+    *) refused="relative" ;;
+  esac
+  if [ -n "$refused" ]; then
+    note "MIRROR_BIN=${MIRROR_BIN//[$'\r\n']/} is $refused; searching the PATH and the usual places instead" daily
+  fi
+fi
 [ -n "$ENTRY" ] || ENTRY="$(command -v mirror-hook 2>/dev/null || true)"
 for candidate in "$HOME/.nvm/current/bin" /opt/homebrew/bin /usr/local/bin; do
   [ -n "$ENTRY" ] && break

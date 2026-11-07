@@ -25,7 +25,7 @@ folder and index. Stories that are non-trivial have a `plan.md` and a
 | [CV6](cv6-intelligence-runtime-maturity/index.md) | Multi-User Onboarding, Identity Runtime Maturity, and Extensibility | ✅ Done |
 | [CV7](cv7-intelligence-depth/index.md) | Intelligence Depth | ✅ Done |
 | [CV8](cv8-runtime-expansion/index.md) | Runtime Expansion: Gemini CLI and Codex | ✅ Done |
-| [CV9](cv9-mirror-1-0/index.md) | Mirror Mind 1.0 — refactoring, stabilization, and public release preparation | 🟢 In Progress |
+| [CV9](cv9-mirror-1-0/index.md) | Mirror Mind 1.0 — stabilization and release preparation | 🟢 In Progress |
 | [CV10](cv10-coherence-engine/index.md) | Coherence Engine | 🟡 Planned |
 | [CV11](cv11-localization/index.md) | Localization | ⚪ Future |
 | [CV12](cv12-audience-modes/index.md) | Audience Modes | ⚪ Future |
@@ -46,28 +46,22 @@ folder and index. Stories that are non-trivial have a `plan.md` and a
 
 ## CV9 — Mirror Mind 1.0
 
-In progress. Mirror Mind 1.0 focuses on refactoring, stabilization, release
-hardening, documentation polish, process/versioning alignment, web visibility,
-and public readiness. Documentation Polish (CV9.E4), Process & Versioning
-Alignment (CV9.E5), and Distribution & Tooling (CV9.E3) are complete. Web
-Visibility (CV9.E6) is complete: the read-only Identity and Workspace
-perspectives were validated against the personal Mirror, including a repaired Pi
-Builder journey-association bug that had made Workspace conversation data look
-stale. Stabilization now includes production updater resilience, conversation title
-hardening (released in v0.16.1 and v0.17.0 respectively), and runtime state
-home containment (CV9.E2.S6): the runtime directory is the resolved mirror
-home for every environment, unconfigured resolution fails loudly instead of
-writing to the homes root, and `runtime diagnose` reports legacy root
-artifacts. Conversation
-metadata lifecycle was delivered as CV9.DS7, done on 2026-09-26 and since ported
-to TypeScript by CV22.DS7.US10. The one doorman was delivered as CV9.DS8, done on
-2026-10-25: on Pi, Claude Code, Codex, and Antigravity the runtime puts Mirror's
-context before the model, and Pi reached L4. CV9.DS9, done on 2026-10-28, chose
-the extraction model by measurement: Flash Lite against GPT-6 Luna and Claude
-Haiku 5.5, on the eval suite and on the Navigator's own conversations, and the pin
-moved to Claude Haiku 5.5 at reasoning off.
-Boundary Hardening and the remaining stabilization stories are still open before
-the full CV9 done condition is met.
+In progress, re-baselined on 2026-11-07
+([CV9.DS10](cv9-mirror-1-0/cv9-ds10-the-1-0-done-condition-describes-the-system-that-exists/index.md)).
+Mirror Mind 1.0 is the point where the project promises that Mirror does not lose,
+misfile, or leak what a person tells it, says what it sends where, and names what it
+keeps stable. Done: Distribution & Tooling (E3), Documentation & Polish (E4, whose audit
+predates the TypeScript rewrite), Process & Versioning Alignment (E5), the conversation
+metadata lifecycle (DS7, 2026-09-26), the one doorman (DS8, 2026-10-25, Pi at L4), and
+the extraction model chosen by measurement (DS9, 2026-10-28, Claude Haiku 5.5 at
+reasoning off). Boundary Hardening (E1) was superseded by CV22, Stabilization (E2) closed
+as a container, and the web surface (E6) was retired. The way to 1.0 is Delivery Stories
+DS10 to DS19, in the [CV9 index](cv9-mirror-1-0/index.md), whose done condition is a
+table of claims: journeys that can be reshaped without losing a record, conversations
+recorded where they belong, failures that never lose an entry, a page on what leaves the
+machine, a first run that uses the home it is given, a release the project can vouch for,
+a statement of what 1.x keeps stable, a docs re-audit, and a rehearsal of a stranger's
+first week.
 
 ---
 

@@ -111,6 +111,10 @@ export const ABSOLUTE_PATH_CASE = "/*|\\\\*|[A-Za-z]:[\\\\/]*";
  * reason, in the Pi extension's words, and the search goes on without it. The
  * value is read once, into `mmnode`, and printed with `printf` and its line
  * breaks removed: dash's `echo` turns the `\n` of `\nodejs` into a newline.
+ * `MIRROR_BIN` follows the same rule (CR197): only an absolute path to a
+ * directory holding an executable `mirror`, read once, into `mmbindir`, and
+ * refused in the same words. A relative one would resolve against the project
+ * the client started the server from, and Node would run that project's file.
  *
  * Written for what three runtimes do to the string (the US6 spike):
  *
@@ -119,14 +123,17 @@ export const ABSOLUTE_PATH_CASE = "/*|\\\\*|[A-Za-z]:[\\\\/]*";
  *     runtime that did so with an unset name would blank it;
  *   * no positional parameter (`$1`, `$@`, ...) and no backtick, for the same
  *     reason, and because the text travels through two JSON encoders;
- *   * variables named `mmbin`, `mmnode`, `mmdir`: Grok substitutes SET
+ *   * variables named `mmbin`, `mmbindir`, `mmnode`, `mmdir`: Grok substitutes SET
  *     environment variables by name inside MCP args at load time (`$HOME`
  *     became the path), so a script variable with a name a person exports
  *     would be replaced before the shell ever saw it.
  */
 export const MCP_LOCATOR = [
   'mmbin=""',
-  '[ -n "$MIRROR_BIN" ] && [ -x "$MIRROR_BIN/mirror" ] && mmbin="$MIRROR_BIN/mirror"',
+  'mmbindir="$MIRROR_BIN"',
+  'mmwhy=""',
+  `[ -n "$mmbindir" ] && case "$mmbindir" in ${ABSOLUTE_PATH_CASE}) if [ ! -e "$mmbindir" ]; then mmwhy="missing"; elif [ ! -d "$mmbindir" ]; then mmwhy="not a directory"; elif [ ! -f "$mmbindir/mirror" ] || [ ! -x "$mmbindir/mirror" ]; then mmwhy="a directory without an executable mirror"; else mmbin="$mmbindir/mirror"; fi ;; *) mmwhy="relative" ;; esac`,
+  `[ -n "$mmwhy" ] && printf 'mirror-mind: MIRROR_BIN=%s is %s; searching the PATH and the usual places instead\\n' "$(printf '%s' "$mmbindir" | tr -d '\\r\\n')" "$mmwhy" >&2`,
   '[ -n "$mmbin" ] || mmbin="$(command -v mirror 2>/dev/null)"',
   `for mmdir in ${GLOBAL_BIN_DIRS.join(" ")}; do [ -n "$mmbin" ] && break; [ -x "$mmdir/mirror" ] && mmbin="$mmdir/mirror"; done`,
   '[ -n "$mmbin" ] || { echo "mirror-mind: mirror not found on PATH; the MCP server cannot start. Install mirror-mind (npm install -g mirror-mind) or set MIRROR_BIN to its bin directory." >&2; exit 1; }',

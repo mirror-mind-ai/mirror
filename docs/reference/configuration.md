@@ -256,6 +256,23 @@ See [MEMORY_RECEPTION](#memory_reception).
 
 **Effects:** a GUI-launched runtime often does not inherit the `PATH` that holds `node`, or finds an older one first. A wrapper that cannot find Node, or finds one older than 24 that cannot run the hook, skips the hook and writes one line to `<mirror home>/hooks.log` instead of failing the user's turn, so "Mirror stopped remembering" has a place to be diagnosed. A Pi whose extension finds no Node stays up, says so once at session start with the fix, writes the same kind of line to `hooks.log` (`pi:session-start: node not found on PATH or in the usual places; …`), and runs nothing for that session.
 
+## Hook bin resolution
+
+**What it is:** `MIRROR_BIN`, the directory holding `mirror` and `mirror-hook`, which is `$(npm prefix -g)/bin`.
+
+**Used by:** the plugin's hook wrappers under `plugins/mirror-mind/hooks/` and `plugins/mirror-mind/agy/`, which run `mirror-hook`, and the plugin's MCP entry, which runs `mirror`. A runtime copies the plugin into its own cache, where no relative path reaches the Mirror tree. The wrappers under `.claude/hooks/` run their own tree's entry, and the Pi extension finds `mirror` itself; neither reads `MIRROR_BIN`.
+
+**How to change it:** set `MIRROR_BIN` to that directory, as an absolute path, in the environment the runtime is launched with: `/opt/homebrew/bin` for a Homebrew Node, or on Windows a drive-letter path such as `C:/Users/<you>/.mirror/bin`. Without it a reader tries `command -v`, then `~/.nvm/current/bin`, `/opt/homebrew/bin`, and `/usr/local/bin`.
+
+**The rule (CR197):** `MIRROR_NODE`'s, with the same test for an absolute path. `MIRROR_BIN` is used only when it is an absolute path to a directory holding the bin its reader needs as an executable file. Any other value is refused with its reason, and the search goes on without it. The reasons are `relative`, `missing`, `not a directory`, and `a directory without an executable mirror-hook`, or `mirror` for the MCP entry. A relative value would resolve against the project the runtime was opened in, and Node would run that project's file. Both readers word the refusal the same way, `MIRROR_BIN=<value> is <reason>; searching the PATH and the usual places instead`, where each records failures:
+
+- **the hook wrappers:** one line in `<mirror home>/hooks.log`, at most once a day (UTC) for the same value;
+- **the plugin's MCP entry:** one line on the server's stderr, prefixed `mirror-mind: `, which the client keeps with its MCP or debug output.
+
+An absolute value is trusted wherever it points: whoever sets it chooses what runs.
+
+**Active in code:** yes. `runtime diagnose` does not read the variable; a wrapper's refusal reaches it as a hook failure recorded in `hooks.log`.
+
 ## TypeScript live-provider transport (CV22.DS8)
 
 The core reaches OpenRouter through its own `fetch`-based transport
@@ -316,7 +333,8 @@ never the journey briefing used as the embedding query.
 The plugin manifest's MCP entry is `/bin/sh -c <locator>`, not an engine and
 not a file of the plugin's: the locator finds the installed `mirror` and `node`
 (`MIRROR_BIN`, the `PATH`, the global bin directories; `MIRROR_NODE` first for
-node) and `exec`s `mirror mcp` (CV21.DS2.US6; it named
+node; each variable by its rule, [bin](#hook-bin-resolution) and
+[Node](#hook-node-resolution)) and `exec`s `mirror mcp` (CV21.DS2.US6; it named
 `${CLAUDE_PLUGIN_ROOT}/mcp/launch.sh` until then, which Codex never expanded).
 
 The server needs `node` (â¥ 24) on the `PATH` the MCP client spawns it with,

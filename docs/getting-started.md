@@ -419,8 +419,8 @@ inherit the `PATH` that holds `node` and `mirror`, and its hooks will skip
 logging rather than fail your turn. Each skip writes one line to
 `~/.mirror-minds/your-name/hooks.log`, and `mirror runtime diagnose` reports
 them by count. Set `MIRROR_NODE=/path/to/node` (Node 24 or later) and, for the
-plugin on Claude Code or Codex, `MIRROR_BIN` to the directory holding `mirror-hook`, in
-the environment the runtime starts with
+plugin on Claude Code or Codex, `MIRROR_BIN` to the directory holding `mirror-hook`, as an
+absolute path, in the environment the runtime starts with
 ([troubleshooting](process/troubleshooting.md)).
 
 ---
