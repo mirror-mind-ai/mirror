@@ -31,6 +31,23 @@ to CR198, widened to `MIRROR_BIN`. Also carries CV9.DS10, documents only.
 No schema change, no migration. No model or prompt changed, so the model-behavior gate
 does not apply. Release note: [v0.40.1](../releases/v0.40.1.md).
 
+After the release commit:
+
+- Docs and the four Tests jobs were green on `e95edbf0` before the tag existed, as they
+  were on `67892ec5`, whose Windows job ran CR197's Git Bash case.
+- `release:promote` (`--dry-run`, which created nothing, then `--push`) tagged `v0.40.1`
+  and moved `stable` to `e95edbf0`.
+- The GitHub Release is published and marked latest.
+- The Driver dispatched `publish.yml` on the tag under `stable`; the Navigator approved the
+  `release` environment and the npm stage, and moved `latest` with 2FA. `latest` and
+  `stable` are at 0.40.1, `gitHead` `e95edbf0`; `next` stays at 0.40.0-next.1.
+- The Navigator's first `mirror runtime update` ran the clone's `mirror`, which his
+  shell's PATH finds first, and left the Homebrew install at 0.40.0. Named by path,
+  `/opt/homebrew/bin/mirror runtime update` took it to 0.40.1 behind a backup; its plugin
+  wrappers carry the new `MIRROR_BIN` check, and his own `MIRROR_BIN=/opt/homebrew/bin`
+  writes no refusal to the production home's `hooks.log`. Worth a CR: `runtime update`
+  could say which install it updates when another install of `mirror` is on the machine.
+
 ### 2026-11-07 — CV9.DS10: CV9 re-baselined on the TypeScript core
 
 Documents only, no release. CV9's done condition dated from 2026-04-30 and described the
