@@ -12,6 +12,22 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-11-07 — CV9.DS10: CV9 re-baselined on the TypeScript core
+
+Documents only, no release. CV9's done condition dated from 2026-04-30 and described the
+Python core: `store.conn` calls in a deleted `src/`, Gemini CLI, a `uv` install, and a web
+surface retired in September. Ariad's next pull in CV9 was still `CV9.E2.S2`, a Gemini-era
+story. The done condition is now a table of claims, each with the story that owns it and
+how it is checked, and Delivery Stories DS11 to DS19 are the way to 1.0: journeys reshaped
+without losing a record first, then recording, failures, privacy, first run, release
+trust, a statement of what 1.x keeps stable, a docs re-audit, and a rehearsal of a
+stranger's first week. E1 is superseded by CV22, E2 closed as a container (S2 was
+delivered by CV21.DS5), E6's surface is retired. A seven-persona panel reviewed the plan
+and corrected three errors in the first draft; its review is the story's evidence. AI-18
+and AI-19 closed (CV22.DS8, DS9), AI-08 carried past 1.0, and CR202 captured: a deleted
+journey leaves its extension bindings behind, found by reading. Validated by the Navigator.
+Decision: [CV9 is re-baselined on the TypeScript core](../project/decisions.md#cv9-is-re-baselined-on-the-typescript-core).
+
 ### 2026-11-06 — v0.40.0-next.1: A Journey Can Go, Showing What Goes With It
 
 The first preview of the release train, prepared at the Navigator's word for Nautilus for
@@ -6367,7 +6383,7 @@ Implementation plan produced for E6: `backfill-codex-session` CLI command,
 
 ## Next
 
-- **CV9 (In Progress):** Mirror Mind 1.0 — stabilization, boundary hardening, and the remaining conversation-metadata lifecycle apply work.
+- **CV9 (In Progress):** Mirror Mind 1.0 — the promise that Mirror does not lose, misfile, or leak what a person tells it, re-baselined on 2026-11-07 (CV9.DS10); the Delivery Stories to 1.0 are in the CV9 index.
 - **CV20 (In Progress):** Builder Mode Evolution — the Ariad method DSL (parser, registry, adoption, lifecycle execution).
 - **CV21 (In Progress):** Runtime Expansion II — package Mirror once as a canonical plugin + MCP server and propagate it to Claude, Codex, Antigravity, and Grok Build.
 - **Continuous refinement** of identity, memory quality, and runtime behavior based on real usage.

@@ -2,7 +2,7 @@
 
 # CV9.E4 — Documentation & Polish
 
-**Status:** ✅ Done  
+**Status:** ✅ Done — marked done on 2026-05-15, before the TypeScript rewrite; [CV9.DS18](../index.md#delivery-stories) re-audits the docs against the system that exists  
 **Goal:** Redesign the documentation information architecture so each document has a single, clear responsibility and a single, clear audience. Remove duplication. Fill structural gaps. Make the doc set navigable by someone who does not already know where everything is.
 
 ---
