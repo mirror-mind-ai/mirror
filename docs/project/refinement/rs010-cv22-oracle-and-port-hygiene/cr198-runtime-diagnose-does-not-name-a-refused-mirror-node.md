@@ -45,7 +45,12 @@ user's side.
 - The finding's severity and wording are decided at planning. Diagnose runs from a
   terminal, so its environment can differ from a GUI-launched runtime's, and the finding
   should not claim more than that environment shows.
-- `MIRROR_BIN`, once CR197 gives it the same rule, can take the same finding's shape.
+- `MIRROR_BIN` gets the same finding (widened 2026-11-07, from CR197's debt review). CR197
+  gave it `MIRROR_NODE`'s rule in the plugin's hook wrappers and MCP entry, and diagnose
+  reads no `MIRROR_BIN` at all: a refused value reaches it only as
+  `hook_failures_recorded`, whose recommendation names a missing or too-old Node or a
+  failing front-door call, though the hook ran through the PATH. Diagnose reads the value
+  from its own environment, applies the bin rule, and names it with its reason.
 
 ## Impact
 
@@ -57,7 +62,8 @@ fixing it is small: diagnose already classifies the value and only discards the 
 ## Plan Or Decision
 
 Captured, unassigned, 2026-11-05, at the Navigator's direction, from Rodrigo Immaginario's
-note on PR #47 after v0.39.5's release gate run.
+note on PR #47 after v0.39.5's release gate run. Widened to `MIRROR_BIN` on 2026-11-07,
+when the Navigator deferred CR197's first debt finding here.
 
 Not planned.
 

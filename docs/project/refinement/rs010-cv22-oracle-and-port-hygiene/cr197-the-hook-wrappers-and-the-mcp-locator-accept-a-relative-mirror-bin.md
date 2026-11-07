@@ -421,8 +421,12 @@ engineer, and writer. What each changed:
    `nodeWorld` fakes Node to see which entry it was handed, and `binWorld` runs a real
    Node, so that a wrongly chosen entry really runs. One helper would blur the two.
 
-Navigator decision: pending.
+Navigator decision, 2026-11-07: finding 1 deferred to CR198, which is widened to
+`MIRROR_BIN`; no action on findings 2 and 3.
 
 ## Outcome
 
-Pending: validated on 2026-11-07; the debt decision and closure are next.
+Done on 2026-11-07. The plugin's hook wrappers and MCP entry use `MIRROR_BIN` only as an
+absolute path to a directory holding the bin they need, refuse anything else with its
+reason, and keep searching. Validated by the Navigator on this machine; the Windows form
+is held by the Windows CI job. Ships in v0.40.1.

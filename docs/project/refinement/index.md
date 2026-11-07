@@ -9,7 +9,7 @@ If a linked document and this index disagree, this index wins.
 ## Current Focus
 
 - Refinement Story: RS010
-- Change Request: CR197
+- Change Request: none
 
 Selecting a focus is an explicit project decision. Reading this file never selects or
 executes work.
@@ -109,11 +109,11 @@ Open work is ordered intentionally. Terminal history follows open work.
 | 75 | [CR188](rs010-cv22-oracle-and-port-hygiene/cr188-a-provider-outage-crashes-the-commands-that-call-a-model-with-a-stack-trace.md) | RS010 | A timeout, an outage, a rate limit, or a server error crashes the commands that call a model with a stack trace, and `journal` loses the entry | captured | — | — |
 | 76 | [CR190](rs001-ariad-runtime-trust/cr190-prepare-checks-mirror-s-own-doc-paths-and-reports-the-project-s-guide-missing.md) | RS001 | Prepare checks Mirror's own doc paths, so a project that keeps its rules in `CLAUDE.md` is reported missing its development guide | captured | — | — |
 | 78 | [CR195](rs010-cv22-oracle-and-port-hygiene/cr195-the-test-suite-writes-four-lines-into-the-real-home-s-front-door-log.md) | RS010 | The test suite writes four lines into the developer's real `front-door.log` on every run, three of them `ERROR` | captured | — | — |
-| 79 | [CR197](rs010-cv22-oracle-and-port-hygiene/cr197-the-hook-wrappers-and-the-mcp-locator-accept-a-relative-mirror-bin.md) | RS010 | The hook wrappers and the MCP locator accept a relative `MIRROR_BIN`, so Node can run a JavaScript file from the project the session is in | validated | @viniciusteles | `main` |
-| 80 | [CR198](rs010-cv22-oracle-and-port-hygiene/cr198-runtime-diagnose-does-not-name-a-refused-mirror-node.md) | RS010 | `runtime diagnose` does not name a `MIRROR_NODE` that every reader refuses | captured | — | — |
+| 80 | [CR198](rs010-cv22-oracle-and-port-hygiene/cr198-runtime-diagnose-does-not-name-a-refused-mirror-node.md) | RS010 | `runtime diagnose` does not name a `MIRROR_NODE` or `MIRROR_BIN` that every reader refuses | captured | — | — |
 | 81 | [CR199](rs010-cv22-oracle-and-port-hygiene/cr199-deliver-mirror-context-takes-three-to-seven-seconds-before-every-desktop-turn.md) | RS010 | `deliverMirrorContext` takes three to seven seconds before every Desktop turn, and the embedding explains one or two of them | captured | — | — |
 | 82 | [CR201](rs010-cv22-oracle-and-port-hygiene/cr201-a-reply-backfilled-after-the-close-misses-the-extraction-that-closed-the-conversation.md) | RS010 | A reply backfilled after the close misses the extraction that closed the conversation | captured | — | — |
 | 83 | [CR202](rs010-cv22-oracle-and-port-hygiene/cr202-a-deleted-journey-leaves-its-extension-bindings-behind.md) | RS010 | A deleted journey leaves its extension bindings behind, and a new journey with the same slug inherits them | captured | — | — |
+| — | [CR197](rs010-cv22-oracle-and-port-hygiene/cr197-the-hook-wrappers-and-the-mcp-locator-accept-a-relative-mirror-bin.md) | RS010 | The hook wrappers and the MCP locator accept a relative `MIRROR_BIN`, so Node can run a JavaScript file from the project the session is in | done | @viniciusteles | `main` |
 | — | [CR151](rs010-cv22-oracle-and-port-hygiene/cr151-the-transcript-backfill-writes-a-session-s-replies-into-other-sessions-conversations.md) | RS010 | The transcript backfill writes a session's replies into other sessions' conversations | done | @viniciusteles | `main` |
 | — | [CR200](rs010-cv22-oracle-and-port-hygiene/cr200-delete-a-journey-with-its-records-after-showing-what-will-go.md) | RS010 | Delete a Journey with its records, after showing what will go: a preview by rule, then a deletion behind a named backup | done | @alissonvale | [PR #55](https://github.com/mirror-mind-ai/mirror/pull/55) |
 | — | [CR192](rs010-cv22-oracle-and-port-hygiene/cr192-the-hook-wrappers-and-the-mcp-locator-accept-a-relative-mirror-node.md) | RS010 | The hook wrappers and the MCP locator accept a relative `MIRROR_NODE`, and say nothing about one they will not use | done | @viniciusteles | `main` |
