@@ -5,6 +5,11 @@
 // drive-letter path, `C:\Users\…\AppData\Local\Programs\MirrorMind\node\node.exe`,
 // which a POSIX-only `/*` would refuse on every hook (Rodrigo Immaginario, PR #47).
 //
+// CR197 gave MIRROR_BIN the same rule and the same pattern: an absolute path to
+// a directory holding the reader's bin. Windows machines set it in the
+// forward-slash drive form, `C:/Users/…/.mirror/bin`, for the Claude Code
+// forwarders, and a refusal there would skip every hook.
+//
 // This is the file the Windows CI job runs under Git Bash, so every case here
 // must hold on win32 as on POSIX: no shell-script stubs, which a native Node
 // cannot run there, only Node itself and a JavaScript entry. The POSIX-only
@@ -52,6 +57,11 @@ function wrapperPattern(path: string): string {
   return /case "\$MIRROR_NODE" in\n\s*(\S+)\)\n/.exec(wrapperText(path))?.[1] ?? "";
 }
 
+/** The pattern a generated plugin wrapper tests MIRROR_BIN against (CR197). */
+function wrapperBinPattern(path: string): string {
+  return /case "\$MIRROR_BIN" in\n\s*(\S+)\)\n/.exec(wrapperText(path))?.[1] ?? "";
+}
+
 // Every shape the rule has to tell apart: POSIX-rooted; Windows drive-rooted
 // with either slash and either case; UNC and root-relative backslash paths;
 // and the relative ones -- a bare name, `./`, `../`, `~` (which nothing
@@ -78,7 +88,7 @@ const VALUES = [
 // the MCP locator runs under /bin/sh, which is dash on Ubuntu and bash on a Mac.
 const SHELLS = ["bash", ...(!WINDOWS && existsSync("/bin/dash") ? ["/bin/dash"] : [])];
 
-describe("CR192: one rule for what the shell readers call an absolute MIRROR_NODE", () => {
+describe("CR192 and CR197: one rule for what the shell readers call an absolute path", () => {
   test("the wrappers, in all three forms, and the MCP locator carry the same pattern", () => {
     for (const path of [
       ".claude/hooks/session-start.sh",
@@ -90,6 +100,19 @@ describe("CR192: one rule for what the shell readers call an absolute MIRROR_NOD
     assert.ok(
       MCP_LOCATOR.includes(`case "$mmnode" in ${ABSOLUTE_PATH_CASE}) `),
       "the locator tests its copy of MIRROR_NODE against the same pattern",
+    );
+  });
+
+  test("the plugin's bin and agy wrappers and the MCP locator test MIRROR_BIN against the same pattern (CR197)", () => {
+    for (const path of [
+      "plugins/mirror-mind/hooks/session-start.sh",
+      "plugins/mirror-mind/agy/session-start.sh",
+    ]) {
+      assert.equal(wrapperBinPattern(path), ABSOLUTE_PATH_CASE, path);
+    }
+    assert.ok(
+      MCP_LOCATOR.includes(`case "$mmbindir" in ${ABSOLUTE_PATH_CASE}) `),
+      "the locator tests its copy of MIRROR_BIN against the same pattern",
     );
   });
 
@@ -208,5 +231,64 @@ describe("CR192: a wrapper run as a runtime runs it", () => {
       / claude:user-prompt: MIRROR_NODE=C:node\.exe is relative; searching the PATH and the usual places instead$/,
     );
     assert.equal(readFileSync(ran, "utf8"), "claude:user-prompt", "the hook ran through the PATH");
+  });
+});
+
+/**
+ * A prefix shaped like npm's global bin on Windows, where npm writes no
+ * symlink: `mirror-hook` is a POSIX shell shim, and the package's own bin sits
+ * under `node_modules/` beside it, which is what the wrapper runs. The shim
+ * begins `#!/bin/sh`, as npm's does, because Git Bash decides the execute bit
+ * from a file's content and name rather than its mode. The package's bin is a
+ * JavaScript stub that records the hook it ran for.
+ */
+function npmShapedPrefix(root: string): { prefix: string; ran: string } {
+  const prefix = join(root, ".mirror", "bin");
+  const packageBin = join(prefix, "node_modules", "mirror-mind", "bin");
+  mkdirSync(packageBin, { recursive: true });
+  writeFileSync(
+    join(prefix, "mirror-hook"),
+    '#!/bin/sh\nexec node "$0/../node_modules/mirror-mind/bin/mirror-hook.js" "$@"\n',
+    { mode: 0o755 },
+  );
+  const ran = join(root, "entry-ran");
+  writeFileSync(
+    join(packageBin, "mirror-hook.js"),
+    `require("node:fs").writeFileSync(${JSON.stringify(ran)}, process.argv[2] ?? "");\n`,
+  );
+  return { prefix, ran };
+}
+
+describe("CR197: a plugin wrapper run as a runtime runs it", () => {
+  test("MIRROR_BIN named in the platform's absolute form, over npm's Windows prefix shape, runs the hook with no refusal", () => {
+    // On Windows this is the form Windows machines set for the Claude Code
+    // forwarders, a drive letter and forward slashes, read under Git Bash.
+    // Elsewhere, the same directories on a POSIX path. The plugin's wrapper
+    // finds no tree, so a copy runs as the original does.
+    const root = scratch();
+    const { prefix, ran } = npmShapedPrefix(root);
+    const home = join(root, "home");
+    mkdirSync(join(root, "plugin", "hooks"), { recursive: true });
+    writeFileSync(
+      join(root, "plugin", "hooks", "log-user-prompt.sh"),
+      wrapperText("plugins/mirror-mind/hooks/log-user-prompt.sh"),
+      { mode: 0o755 },
+    );
+
+    const result = runWrapper(root, "plugin/hooks/log-user-prompt.sh", home, {
+      MIRROR_BIN: WINDOWS ? prefix.replace(/\\/g, "/") : prefix,
+      MIRROR_NODE: process.execPath,
+      // Off Windows, no mirror-hook is on this PATH: a refused MIRROR_BIN would
+      // send the search to the global bin directories, not to this stub.
+      PATH: WINDOWS ? (process.env.PATH ?? "") : "/usr/bin:/bin",
+    });
+
+    assert.equal(result.status, 0, result.stderr);
+    assert.deepEqual(hooksLog(home), [], "no refusal and no failure");
+    assert.equal(
+      readFileSync(ran, "utf8"),
+      "claude:user-prompt",
+      "the hook ran through MIRROR_BIN",
+    );
   });
 });

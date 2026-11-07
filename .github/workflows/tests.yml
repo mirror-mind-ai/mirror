@@ -199,7 +199,9 @@ jobs:
     # CR192 added a third file, run under Git Bash, where the hook wrappers run
     # on Windows: the Windows installer's `MIRROR_NODE`, a `node.exe` under a
     # path with a space, must count as absolute. A POSIX-only pattern would
-    # refuse it on every hook (Rodrigo Immaginario, PR #47).
+    # refuse it on every hook (Rodrigo Immaginario, PR #47). CR197 runs a
+    # plugin wrapper there too, with `MIRROR_BIN` in the forward-slash drive
+    # form Windows machines set for the Claude Code forwarders.
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v6
@@ -215,7 +217,7 @@ jobs:
       - name: Install kind and npm strategy on Windows (node:test)
         run: node --test ts/test/runtime/installKind.test.ts ts/test/runtime/packageStrategy.test.ts
 
-      - name: MIRROR_NODE in the Windows installer's form, under Git Bash (node:test)
+      - name: MIRROR_NODE and MIRROR_BIN in their Windows forms, under Git Bash (node:test)
         shell: bash
         run: node --test ts/test/hooks/mirrorNodeRule.test.ts
 

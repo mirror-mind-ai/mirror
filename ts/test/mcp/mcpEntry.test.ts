@@ -117,6 +117,7 @@ describe("the MCP entry's text", () => {
       "MIRROR_BIN",
       "MIRROR_NODE",
       "mmbin",
+      "mmbindir",
       "mmdir",
       "mmjs",
       "mmnode",
@@ -128,6 +129,10 @@ describe("the MCP entry's text", () => {
     // Each `$MIRROR_NODE` is a place Grok would paste the value into shell
     // text at load time; the locator copies it into `mmnode` and uses that.
     assert.equal(MCP_LOCATOR.split("$MIRROR_NODE").length - 1, 1);
+  });
+
+  test("reads MIRROR_BIN once, for the same reason (CR197)", () => {
+    assert.equal(MCP_LOCATOR.split("$MIRROR_BIN").length - 1, 1);
   });
 
   test("parses as POSIX sh", () => {
@@ -265,6 +270,106 @@ describe("the MCP entry, run as written", () => {
       );
       assert.ok(existsSync(ran), `${value}: the server still started, through the PATH`);
     }
+  });
+
+  test("a relative MIRROR_BIN is never used: the project's bin/mirror never runs, one stderr line says why, and the server starts through the PATH (CR197)", () => {
+    // The cwd is the user's project, and this one holds an executable bin/mirror.
+    const root = scratch();
+    const bin = scratchBin(root);
+    const marker = join(root, "project-mirror-ran");
+    mkdirSync(join(root, "bin"));
+    writeFileSync(
+      join(root, "bin", "mirror"),
+      `require("node:fs").writeFileSync(${JSON.stringify(marker)}, "ran");\n`,
+      { mode: 0o755 },
+    );
+
+    const result = runEntry(root, {
+      HOME: join(root, "home"),
+      PATH: `${bin}:/usr/bin:/bin`,
+      MIRROR_BIN: "bin",
+      MIRROR_HOME: join(root, "mirror-home"),
+    });
+
+    assert.equal(result.status, 0, result.stderr);
+    assert.ok(!existsSync(marker), "the project's bin/mirror never ran");
+    assert.equal(serverName(result.stdout), "mirror-mind");
+    assert.equal(
+      result.stderr,
+      "mirror-mind: MIRROR_BIN=bin is relative; searching the PATH and the usual places instead\n",
+    );
+  });
+
+  test("each MIRROR_BIN it will not use is refused with its reason, printed intact on one line (CR197)", () => {
+    // Stand-ins for `mirror` and `node` on the PATH, so each case is one
+    // process, not a server start.
+    const root = scratch();
+    const standIns = join(root, "stand-ins");
+    const ran = join(root, "path-node-ran");
+    mkdirSync(standIns);
+    writeFileSync(join(standIns, "mirror"), "", { mode: 0o755 });
+    writeFileSync(join(standIns, "node"), `#!/bin/sh\ntouch "${ran}"\n`, { mode: 0o755 });
+    const aFile = join(root, "a-file");
+    writeFileSync(aFile, "");
+    const empty = join(root, "empty-bin");
+    mkdirSync(empty);
+    const notExecutable = join(root, "bin-without-x");
+    mkdirSync(notExecutable);
+    writeFileSync(join(notExecutable, "mirror"), "", { mode: 0o644 });
+    const binIsDirectory = join(root, "bin-holding-a-directory");
+    mkdirSync(join(binIsDirectory, "mirror"), { recursive: true });
+    const without = "a directory without an executable mirror";
+    const cases: [value: string, reason: string, printed?: string][] = [
+      [join(root, "nowhere"), "missing"],
+      [aFile, "not a directory"],
+      [empty, without],
+      [notExecutable, without],
+      [binIsDirectory, without],
+      ["./bin", "relative"],
+      ["C:bin", "relative"],
+      ["C:/Users/someone/.mirror/bin", "missing"],
+      ["bin\nforged", "relative", "binforged"],
+    ];
+    for (const [value, reason, printed = value] of cases) {
+      rmSync(ran, { force: true });
+      const result = spawnSync(MCP_ENTRY.command, [...MCP_ENTRY.args], {
+        cwd: root,
+        env: { HOME: join(root, "home"), PATH: `${standIns}:/usr/bin:/bin`, MIRROR_BIN: value },
+        encoding: "utf8",
+      });
+      assert.equal(result.status, 0, `${value}: ${result.stderr}`);
+      assert.equal(
+        result.stderr,
+        `mirror-mind: MIRROR_BIN=${printed} is ${reason}; searching the PATH and the usual places instead\n`,
+        value,
+      );
+      assert.ok(existsSync(ran), `${value}: the server still started, through the PATH`);
+    }
+  });
+
+  test("a valid absolute MIRROR_BIN outranks the PATH's mirror and says nothing (CR197)", () => {
+    const root = scratch();
+    const bin = scratchBin(root);
+    const decoys = join(root, "decoys");
+    mkdirSync(decoys);
+    const marker = join(root, "decoy-ran");
+    writeFileSync(
+      join(decoys, "mirror"),
+      `require("node:fs").writeFileSync(${JSON.stringify(marker)}, "ran");\n`,
+      { mode: 0o755 },
+    );
+
+    const result = runEntry(root, {
+      HOME: join(root, "home"),
+      PATH: `${decoys}:/usr/bin:/bin`,
+      MIRROR_BIN: bin,
+      MIRROR_HOME: join(root, "mirror-home"),
+    });
+
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(serverName(result.stdout), "mirror-mind");
+    assert.ok(!existsSync(marker), "the PATH's mirror did not run");
+    assert.equal(result.stderr, "", "a value it uses is not reported");
   });
 
   test("an npm shell shim beside node_modules, as Windows's global prefix is shaped: the package's own bin runs (PR #53)", () => {
