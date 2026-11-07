@@ -384,7 +384,45 @@ engineer, and writer. What each changed:
   `chmod 700` on the scratch home, which removes the `loose_permissions` finding CR192's
   route showed.
 - **Not verified here.** The Windows case runs only in CI, after a push.
+- **Navigator validation, 2026-11-07 19:11 UTC**, on this machine, in bash 3.2, the route
+  above run against `b2468024`. After the two hook runs, `hooks.log` held one line,
+  `2026-11-07T19:11:56Z claude:user-prompt: MIRROR_BIN=bin is relative; searching the
+  PATH and the usual places instead`. The MCP entry printed the same refusal, prefixed
+  `mirror-mind: `, then answered `initialize` as `mirror-mind`. `ls` showed `config`,
+  `home`, and `project`, and no marker. `mirror conversations` listed `ca458e73`,
+  `cr197 route`, 2 messages. `mirror runtime diagnose` reported two findings:
+  `openrouter_key_missing`, which the route causes, and `hook_failures_recorded` (1, latest
+  `claude:user-prompt`). With `MIRROR_BIN=/opt/homebrew/bin` the hook added no line, and
+  the MCP entry answered with nothing on stderr. Every pass condition held, and no fail
+  condition. Validated by the Navigator, 2026-11-07.
+
+### Debt review, 2026-11-07
+
+1. **`runtime diagnose` calls a refusal a hook failure, and its recommendation names
+   neither refused variable.** The Navigator's run shows it: the refused `MIRROR_BIN`
+   reached diagnose as `hook_failures_recorded`, whose recommendation reads "a missing or
+   too-old Node, or a failing front-door call", though the hook ran through the PATH.
+   CR192 left the same gap for `MIRROR_NODE`, and
+   [CR198](cr198-runtime-diagnose-does-not-name-a-refused-mirror-node.md) owns it.
+   Recommendation: **defer** to CR198, widened to `MIRROR_BIN`. Defer reason: the
+   `hooks.log` line the finding points to names the value and the reason, so a person who
+   follows it reaches the cause; rewording the recommendation alone would leave the
+   finding's name and severity wrong, which is CR198's decision. Revisit trigger: CR198's
+   planning, or a report of a refused `MIRROR_BIN` that `runtime diagnose` did not
+   explain.
+2. **The rule's checks are written once per reader:** two variables in two shell
+   readers, and `MIRROR_NODE`'s again in TypeScript, in diagnose and the Pi extension.
+   Recommendation: **no action**. The readers run in bash, in POSIX `sh` inside a
+   manifest, and in Node, so no copy can be shared. The pattern is one constant held
+   equal by a test, and each reader's reasons are pinned by its own tests, as CR192
+   accepted.
+3. **Two scratch worlds in `hooks.test.ts`.** `binWorld` repeats `nodeWorld`'s `date`
+   stand-in and log reader. Recommendation: **no action**. They differ in what is real:
+   `nodeWorld` fakes Node to see which entry it was handed, and `binWorld` runs a real
+   Node, so that a wrongly chosen entry really runs. One helper would blur the two.
+
+Navigator decision: pending.
 
 ## Outcome
 
-Pending: implemented on 2026-11-07, awaiting the Navigator's validation.
+Pending: validated on 2026-11-07; the debt decision and closure are next.
