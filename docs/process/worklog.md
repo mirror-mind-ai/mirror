@@ -12,6 +12,25 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-11-07 — v0.40.1: The Bins You Named, or Why Not
+
+Patch release of
+[CR197](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr197-the-hook-wrappers-and-the-mcp-locator-accept-a-relative-mirror-bin.md),
+captured in CR192's review and shipped ahead of the 1.0 gate by the CV9 re-baseline's
+decision. The plugin's hook wrappers and MCP locator use `MIRROR_BIN` only as an absolute
+path to a directory holding the bin they need, by `MIRROR_NODE`'s rule and pattern; a
+refused value is noted with its reason, once a day in `hooks.log` and on the locator's
+stderr. Planned, reviewed through five lenses (security engineer, engineer, quality
+assurance, DevOps engineer, writer) with the amendments folded, and approved; the
+Navigator decided that Rodrigo Immaginario's installer run does not gate the tag, against
+the DevOps engineer's recommendation. Tests written first ran the project's planted bins.
+Validated by the Navigator in a scratch home, his own `MIRROR_BIN=/opt/homebrew/bin`
+included. Debt review: `runtime diagnose` counting a refusal as a hook failure is deferred
+to CR198, widened to `MIRROR_BIN`. Also carries CV9.DS10, documents only.
+
+No schema change, no migration. No model or prompt changed, so the model-behavior gate
+does not apply. Release note: [v0.40.1](../releases/v0.40.1.md).
+
 ### 2026-11-07 — CV9.DS10: CV9 re-baselined on the TypeScript core
 
 Documents only, no release. CV9's done condition dated from 2026-04-30 and described the

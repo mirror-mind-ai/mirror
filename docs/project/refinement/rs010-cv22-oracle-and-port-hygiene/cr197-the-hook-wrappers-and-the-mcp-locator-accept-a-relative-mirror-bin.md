@@ -395,6 +395,12 @@ engineer, and writer. What each changed:
   `claude:user-prompt`). With `MIRROR_BIN=/opt/homebrew/bin` the hook added no line, and
   the MCP entry answered with nothing on stderr. Every pass condition held, and no fail
   condition. Validated by the Navigator, 2026-11-07.
+- **CI on `main`, 2026-11-07.** Pushed as `c32bf8d4` to `67892ec5`. Tests run 42405662185
+  passed on every job: `ts (ubuntu-latest)`, `ts (macos-latest)`, `smoke`, and
+  `windows-install-kind`; the Docs run passed. In the Windows job the Git Bash step ran
+  `mirrorNodeRule.test.ts`: 6 tests, 6 passed, none skipped, among them the plugin
+  wrapper run with `MIRROR_BIN` in the forward-slash drive form over npm's Windows prefix
+  shape, with no refusal line.
 
 ### Debt review, 2026-11-07
 
