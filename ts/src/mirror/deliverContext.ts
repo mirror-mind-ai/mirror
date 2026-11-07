@@ -36,7 +36,7 @@
 import { basename, dirname } from "node:path";
 import { isCommandTurn } from "#conversation/commandTurn.ts";
 import { DatabaseNotCurrentError } from "#conversation/hostCalls.ts";
-import { openDatabaseReadOnly } from "#db/database.ts";
+import { type Database, openDatabaseReadOnly } from "#db/database.ts";
 import { inspectMigrationState } from "#db/migrationReport.ts";
 import { openLiveWriteDatabase } from "#frontDoor/liveBackup.ts";
 import type { ProviderConfig } from "#providers/config.ts";
@@ -90,6 +90,11 @@ export interface DeliveredMirrorContext {
   block: string;
   /** The session's persona and Journey after the delivery. */
   persona: string | null;
+  /**
+   * CR204: the persona's own name, from its metadata, for a host to show; `null` when it has
+   * none or the turn has no persona. Display text only: `persona` stays the id.
+   */
+  personaName: string | null;
   journey: string | null;
 }
 
@@ -178,7 +183,7 @@ export async function deliverMirrorContext(
     read.close();
   }
   if (decision.kind === "nothing")
-    return { kind: "nothing", block: "", persona: null, journey: null };
+    return { kind: "nothing", block: "", persona: null, personaName: null, journey: null };
 
   const apiKey = typeof options.apiKey === "string" ? options.apiKey.trim() : "";
   if (!apiKey && !options.providers) throw new MirrorContextRejectedError("no_key");
@@ -203,14 +208,30 @@ export async function deliverMirrorContext(
       nowIso,
     });
     const state = readDoormanSessionState(db, sessionId);
+    const persona = state?.persona ?? null;
     return {
       kind: decision.kind,
       block: rendered.stdout,
-      persona: state?.persona ?? null,
+      persona,
+      personaName: persona ? personaName(db, persona) : null,
       journey: state?.journey ?? null,
     };
   } finally {
     db.close();
+  }
+}
+
+/** CR204: the `name` the seed kept in a persona's metadata, when it kept one. */
+function personaName(db: Database, key: string): string | null {
+  const row = db
+    .prepare("SELECT metadata FROM identity WHERE layer = 'persona' AND key = ?")
+    .get(key);
+  if (typeof row?.metadata !== "string") return null;
+  try {
+    const name: unknown = (JSON.parse(row.metadata) as Record<string, unknown> | null)?.name;
+    return typeof name === "string" && name.trim() ? name.trim() : null;
+  } catch {
+    return null;
   }
 }
 

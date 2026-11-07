@@ -126,6 +126,62 @@ test("the full folder takes the Journey the host names, over the one the session
   assert.equal(session(dbPath)?.journey, other);
 });
 
+/** Reception's classifier, choosing one persona for the turn. */
+class ChoosingReception implements LlmProvider {
+  readonly persona: string;
+  constructor(persona: string) {
+    this.persona = persona;
+  }
+  async complete(): Promise<LlmResponse> {
+    return {
+      content: JSON.stringify({ personas: [this.persona], journey: null }),
+      model: "test/reception",
+    };
+  }
+}
+
+// CR204: a host that shows who is speaking gets the persona's own name, not only its id.
+test("the delivery hands the host the persona's name with its id", async () => {
+  const { dbPath, journey } = desktopHome();
+  const delivered = await deliverMirrorContext(
+    dbPath,
+    { sessionId: SESSION, prompt: "Help me draft the opening.", journeyId: journey },
+    { providers: { embedding: new CountingEmbedding(), llm: new ChoosingReception("writer") } },
+  );
+  assert.equal(delivered.persona, "writer");
+  assert.equal(delivered.personaName, "Writer");
+});
+
+test("a persona without a name, and a turn without a persona, hand over no name", async () => {
+  const unnamed = desktopHome();
+  const db = new DatabaseSync(unnamed.dbPath);
+  const row = db
+    .prepare("SELECT metadata FROM identity WHERE layer = 'persona' AND key = 'writer'")
+    .get() as { metadata: string };
+  const { name: _name, ...rest } = JSON.parse(row.metadata) as Record<string, unknown>;
+  db.prepare("UPDATE identity SET metadata = ? WHERE layer = 'persona' AND key = 'writer'").run(
+    JSON.stringify(rest),
+  );
+  db.close();
+  const withoutName = await deliverMirrorContext(
+    unnamed.dbPath,
+    { sessionId: SESSION, prompt: "Help me draft the opening.", journeyId: unnamed.journey },
+    { providers: { embedding: new CountingEmbedding(), llm: new ChoosingReception("writer") } },
+  );
+  assert.equal(withoutName.persona, "writer");
+  assert.equal(withoutName.personaName, null);
+
+  const quiet = desktopHome();
+  const none = await deliverMirrorContext(
+    quiet.dbPath,
+    // Neutral words: no keyword routes them to a persona (as "plan" would route to the coach).
+    { sessionId: SESSION, prompt: "Hello there.", journeyId: quiet.journey },
+    { providers: providers() },
+  );
+  assert.equal(none.persona, null);
+  assert.equal(none.personaName, null);
+});
+
 test("the next turn is the doorman's delta, and a compaction makes the one after full again", async () => {
   const { dbPath, journey } = desktopHome();
   const used = providers();
@@ -161,7 +217,13 @@ test("a command turn gets nothing, needs no key, and writes nothing", async () =
     prompt: "/mm-journeys",
     journeyId: journey,
   });
-  assert.deepEqual(nothing, { kind: "nothing", block: "", persona: null, journey: null });
+  assert.deepEqual(nothing, {
+    kind: "nothing",
+    block: "",
+    persona: null,
+    personaName: null,
+    journey: null,
+  });
   assert.ok(readFileSync(dbPath).equals(before));
   assert.ok(
     !existsSync(join(dbPath, "..", "backups")),
