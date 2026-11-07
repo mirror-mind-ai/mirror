@@ -77,6 +77,8 @@ import {
 import { verifyBackupArchive } from "#runtime/backup.ts";
 import { exitQuietlyOnBrokenPipe } from "#runtime/brokenPipe.ts";
 import { configFilePath, loadConfiguration, silenceExperimentalWarnings } from "#runtime/config.ts";
+import { runningTreeRoot } from "#runtime/treeRoot.ts";
+import { packageVersion } from "#runtime/version.ts";
 import { runSeed } from "#seed/seed.ts";
 import { getTasksForWeek, listTasks } from "#tasks/taskStore.ts";
 import { computeWeekRange } from "#tasks/weekView.ts";
@@ -1821,6 +1823,12 @@ async function dispatchTs(argv: readonly string[]): Promise<number | DispatchOut
   // database, when at all, through a read-only handle -- no bootstrap, no
   // migrate-on-open, and for `welcome --status-line` no subprocess whatsoever.
   if (argv[0] === "welcome") return runWelcomeRoute(argv);
+  // `mirror --version`, the shape every CLI has (issue #58: it answered "Unknown command").
+  // The running tree's version, as `runtime version` reports it; nothing is opened or spawned.
+  if (argv[0] === "--version" || argv[0] === "-V") {
+    process.stdout.write(`${packageVersion(runningTreeRoot()) ?? "unknown"}\n`);
+    return 0;
+  }
   if (argv[0] === "runtime") {
     const exitCode = await runRuntimeReadRoute(argv);
     // A verdict, not a failure: `isRuntimeVerdict` says which (CR139).

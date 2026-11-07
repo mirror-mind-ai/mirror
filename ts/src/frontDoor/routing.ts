@@ -487,6 +487,12 @@ export function routeByFamily(
   const command = argv[0] ?? null;
   if (!command) return unknownCommand(null);
 
+  // `mirror --version` / `-V`: the version of the running tree, a read that opens nothing.
+  // Before this it fell through to "Unknown command" (issue #58).
+  if (command === "--version" || command === "-V") {
+    return { command, engine: "ts", reason: "version flag" };
+  }
+
   if (TS_READ_COMMANDS.has(command)) {
     return { command, engine: "ts", reason: "DS2 read command ported to TS" };
   }
