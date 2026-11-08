@@ -33,6 +33,23 @@ prompt changed, so the model-behavior gate's letter does not apply; the release 
 model call and a line the model reads, and the private rerun is its evidence. Release
 note: [v0.41.0](../releases/v0.41.0.md).
 
+After the release commit:
+
+- The four Tests jobs and Docs were green on PR #65 before the tag existed; it merged as
+  `1c95a812`.
+- `release:promote` (`--dry-run`, which created nothing, then `--push`) tagged `v0.41.0`
+  and moved `stable` to `1c95a812`.
+- The GitHub Release is published and marked latest.
+- The Driver dispatched `publish.yml` on the tag under `stable` (run 42480239136); the
+  Navigator approved the `release` environment and the npm stage, and moved `latest` with
+  2FA. `latest` and `stable` are at 0.41.0, `gitHead` `1c95a812`; `next` stays at
+  0.40.0-next.1.
+- The Driver ran `mirror runtime update` on the Navigator's machine by its path,
+  `/usr/local/bin/mirror`, after the release's handoff named `/opt/homebrew/bin/mirror`,
+  which this machine does not have: the path the v0.40.1 entry records belongs to another
+  machine. The global install went from 0.39.0 to 0.41.0 behind a verified backup, with no
+  migration pending. Nautilus for Mirror still embeds v0.40.0-next.1 until its pin moves.
+
 ### 2026-11-07 — v0.40.1: The Bins You Named, or Why Not
 
 Patch release of
