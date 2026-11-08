@@ -45,6 +45,7 @@
 // attachment embedding), plus the skill's own load until TS3 teaches it to
 // trust this line.
 
+import { createHash } from "node:crypto";
 import { isCommandTurn } from "#conversation/commandTurn.ts";
 import type { Database, WritableDatabase } from "#db/database.ts";
 import { memoriesById } from "#frontDoor/searchRoute.ts";
@@ -120,10 +121,48 @@ export const DOORMAN_DELIVERED_METADATA_KEY = "doorman_delivered";
  * The personas whose section the conversation already holds (CR203). A turn
  * may now have none, so "the session's persona" no longer says which sections
  * the transcript carries: a writer turn, a turn with none, and a writer turn
- * again must deliver the writer's section once. A full load starts the list
- * over with its own persona.
+ * again must deliver the writer's section once. A full load starts over with
+ * its own persona.
+ *
+ * Since CR206 it maps each id to the fingerprint of the prompt delivered, so a
+ * prompt edited after its delivery is delivered again. A session written by an
+ * earlier Core holds a list of ids: each reads as delivered with an unknown
+ * fingerprint, which the next turn routed to it adopts without delivering.
  */
 export const DOORMAN_PERSONAS_METADATA_KEY = "doorman_personas";
+
+/** A persona prompt's fingerprint: the content, not `updated_at`, so a new name alone is no edit. */
+function promptFingerprint(content: string): string {
+  return createHash("sha256").update(content, "utf8").digest("hex").slice(0, 16);
+}
+
+/** Delivered persona id → fingerprint; `null` for an id an earlier Core listed. */
+function deliveredPersonas(db: Database, sessionId: string | null): Map<string, string | null> {
+  if (!sessionId) return new Map();
+  const raw = decodeMetadata(getRuntimeSession(db, sessionId)?.metadata ?? null)[
+    DOORMAN_PERSONAS_METADATA_KEY
+  ];
+  if (Array.isArray(raw)) {
+    return new Map(
+      raw.filter((id): id is string => typeof id === "string").map((id) => [id, null]),
+    );
+  }
+  if (raw && typeof raw === "object") {
+    return new Map(
+      Object.entries(raw as Record<string, unknown>).map(([id, fingerprint]) => [
+        id,
+        typeof fingerprint === "string" ? fingerprint : null,
+      ]),
+    );
+  }
+  return new Map();
+}
+
+function personasRecord(
+  personas: ReadonlyMap<string, string | null>,
+): Record<string, string | null> {
+  return Object.fromEntries(personas);
+}
 
 /**
  * Set on the session when the runtime compacted the transcript (the Pi
@@ -148,7 +187,7 @@ export function forgetDoormanDelivery(
   const metadata = decodeMetadata(session.metadata);
   metadata[DOORMAN_REFRESH_METADATA_KEY] = true;
   metadata[DOORMAN_DELIVERED_METADATA_KEY] = [];
-  metadata[DOORMAN_PERSONAS_METADATA_KEY] = [];
+  metadata[DOORMAN_PERSONAS_METADATA_KEY] = {};
   updateRuntimeSessionColumns(db, sessionId, { metadata: pythonJsonDumps(metadata) }, nowIso);
 }
 
@@ -172,14 +211,14 @@ function rememberDelivered(
   sessionId: string | null,
   ids: readonly string[],
   nowIso: string,
-  options: { clearRefresh?: boolean; personas?: readonly string[] } = {},
+  options: { clearRefresh?: boolean; personas?: ReadonlyMap<string, string | null> } = {},
 ): void {
   if (!sessionId) return;
   const session = getRuntimeSession(db, sessionId);
   if (!session) return;
   const metadata = decodeMetadata(session.metadata);
   metadata[DOORMAN_DELIVERED_METADATA_KEY] = [...ids];
-  if (options.personas) metadata[DOORMAN_PERSONAS_METADATA_KEY] = [...options.personas];
+  if (options.personas) metadata[DOORMAN_PERSONAS_METADATA_KEY] = personasRecord(options.personas);
   if (options.clearRefresh) delete metadata[DOORMAN_REFRESH_METADATA_KEY];
   updateRuntimeSessionColumns(db, sessionId, { metadata: pythonJsonDumps(metadata) }, nowIso);
 }
@@ -187,14 +226,14 @@ function rememberDelivered(
 function rememberPersonas(
   db: WritableDatabase,
   sessionId: string | null,
-  personas: readonly string[],
+  personas: ReadonlyMap<string, string | null>,
   nowIso: string,
 ): void {
   if (!sessionId) return;
   const session = getRuntimeSession(db, sessionId);
   if (!session) return;
   const metadata = decodeMetadata(session.metadata);
-  metadata[DOORMAN_PERSONAS_METADATA_KEY] = [...personas];
+  metadata[DOORMAN_PERSONAS_METADATA_KEY] = personasRecord(personas);
   updateRuntimeSessionColumns(db, sessionId, { metadata: pythonJsonDumps(metadata) }, nowIso);
 }
 
@@ -325,9 +364,11 @@ async function runFull(
     // The conversation's context starts over with the folder: so does the
     // list of memories the deltas have put in it, and a compaction's refresh
     // is answered.
+    const persona = loaded.resolved.persona;
+    const content = persona ? getIdentityContent(db, "persona", persona) : null;
     rememberDelivered(db, input.sessionId, [], input.nowIso(), {
       clearRefresh: true,
-      personas: loaded.resolved.persona ? [loaded.resolved.persona] : [],
+      personas: new Map(persona && content ? [[persona, promptFingerprint(content)]] : []),
     });
   }
   const line = deliveredLine({
@@ -362,12 +403,23 @@ async function runDelta(
   const persona = turn.persona;
   const parts: string[] = [deliveredLine({ kind: "delta", persona, journey })];
 
-  const deliveredPersonas = deliveredList(db, input.sessionId, DOORMAN_PERSONAS_METADATA_KEY);
-  if (persona && !deliveredPersonas.has(persona)) {
-    const content = getIdentityContent(db, "persona", persona);
-    if (content) {
+  const content = persona ? getIdentityContent(db, "persona", persona) : null;
+  if (persona && content) {
+    const held = deliveredPersonas(db, input.sessionId);
+    const fingerprint = promptFingerprint(content);
+    const before = held.get(persona);
+    if (before === undefined) {
       parts.push(`=== persona/${persona} ===\n${content}`);
-      rememberPersonas(db, input.sessionId, [...deliveredPersonas, persona], input.nowIso());
+    } else if (before !== null && before !== fingerprint) {
+      // The old text stays in the transcript; two equal headers would give the
+      // model no order between them (CR206).
+      parts.push(
+        `=== persona/${persona} (revised: replaces the earlier persona/${persona} in this conversation) ===\n${content}`,
+      );
+    }
+    if (before !== fingerprint) {
+      held.set(persona, fingerprint);
+      rememberPersonas(db, input.sessionId, held, input.nowIso());
     }
   }
   // The session records the turn's answer, none included: a session's persona

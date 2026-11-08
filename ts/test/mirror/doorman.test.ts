@@ -605,7 +605,160 @@ test("runDoorman delta: a persona's section reaches the conversation once, acros
         db.prepare("SELECT metadata FROM runtime_sessions WHERE session_id = 'S'").get()?.metadata,
       ),
     ) as Record<string, unknown>;
-    assert.deepEqual(metadata.doorman_personas, [], "a compaction forgets them with the folder");
+    assert.deepEqual(metadata.doorman_personas, {}, "a compaction forgets them with the folder");
+  } finally {
+    db.close();
+  }
+});
+
+// --- CR206: a persona whose prompt changed is delivered again ----------------
+
+const REVISED = (id: string) =>
+  `=== persona/${id} (revised: replaces the earlier persona/${id} in this conversation) ===`;
+
+function sessionMetadata(db: WritableDatabase): Record<string, unknown> {
+  return JSON.parse(
+    String(
+      db.prepare("SELECT metadata FROM runtime_sessions WHERE session_id = 'S'").get()?.metadata ??
+        "{}",
+    ),
+  ) as Record<string, unknown>;
+}
+
+function setPrompt(db: WritableDatabase, key: string, content: string): void {
+  db.prepare(
+    "UPDATE identity SET content = ?, updated_at = 'later' WHERE layer = 'persona' AND key = ?",
+  ).run(content, key);
+}
+
+function deltaTurn(db: WritableDatabase, persona: string | null) {
+  return runDoorman(
+    db,
+    { kind: "delta", query: "a turn" },
+    runInput(
+      new CountingEmbeddingProvider(unitVector(2)),
+      undefined,
+      routerAnswering(persona).router,
+    ),
+  );
+}
+
+test("CR206: a delivered persona whose prompt changed is delivered again, once, under a header that says it replaces the earlier one", async () => {
+  const { db } = fixture();
+  try {
+    activate(db, null, "mirror");
+    assert.match((await deltaTurn(db, "writer")).stdout, /=== persona\/writer ===\nWriter context/);
+    setPrompt(db, "writer", "Writer context, signed W.");
+    const revised = await deltaTurn(db, "writer");
+    assert.ok(
+      revised.stdout.includes(`${REVISED("writer")}\nWriter context, signed W.`),
+      revised.stdout,
+    );
+    assert.equal(revised.stdout.match(/=== persona\//g)?.length, 1, "one section, the revised one");
+    assert.doesNotMatch(
+      (await deltaTurn(db, "writer")).stdout,
+      /=== persona\//,
+      "the revision is now held",
+    );
+    // An edit while another persona speaks waits for the edited persona's turn.
+    setPrompt(db, "writer", "Writer context, signed W2.");
+    assert.doesNotMatch((await deltaTurn(db, "cfo")).stdout, /persona\/writer/);
+    assert.ok(
+      (await deltaTurn(db, "writer")).stdout.includes(
+        `${REVISED("writer")}\nWriter context, signed W2.`,
+      ),
+    );
+  } finally {
+    db.close();
+  }
+});
+
+test("CR206: a change to the name or the description alone delivers nothing", async () => {
+  const { db } = fixture();
+  try {
+    activate(db, null, "mirror");
+    await deltaTurn(db, "writer");
+    db.prepare(
+      "UPDATE identity SET metadata = ?, updated_at = 'later' WHERE layer = 'persona' AND key = 'writer'",
+    ).run(
+      JSON.stringify({ name: "The Writer", description: "Writes", routing_keywords: ["draft"] }),
+    );
+    assert.doesNotMatch((await deltaTurn(db, "writer")).stdout, /=== persona\//);
+  } finally {
+    db.close();
+  }
+});
+
+test("CR206: the full load records what it delivered, and after a compaction the next delivery is a first one", async () => {
+  const { db } = fixture();
+  try {
+    activate(db, null, "mirror");
+    const full = () =>
+      runDoorman(
+        db,
+        { kind: "full", query: "a turn" },
+        runInput(
+          new CountingEmbeddingProvider(unitVector(2)),
+          undefined,
+          routerAnswering("cfo").router,
+        ),
+      );
+    await full();
+    // An edit right after the full load, before any delta: the load's own
+    // fingerprint is what tells it apart.
+    setPrompt(db, "cfo", "CFO context, edited at once.");
+    assert.ok(
+      (await deltaTurn(db, "cfo")).stdout.includes(
+        `${REVISED("cfo")}\nCFO context, edited at once.`,
+      ),
+    );
+    setPrompt(db, "cfo", "CFO context");
+    await full();
+    assert.doesNotMatch(
+      (await deltaTurn(db, "cfo")).stdout,
+      /=== persona\//,
+      "the full load delivered it",
+    );
+    setPrompt(db, "cfo", "CFO context, revised.");
+    assert.ok(
+      (await deltaTurn(db, "cfo")).stdout.includes(`${REVISED("cfo")}\nCFO context, revised.`),
+    );
+
+    setPrompt(db, "cfo", "CFO context, revised again.");
+    forgetDoormanDelivery(db, "S", "2026-11-08T00:00:00.000000Z");
+    const after = await full();
+    assert.match(after.stdout, /=== persona\/cfo ===\nCFO context, revised again\./);
+    assert.doesNotMatch(after.stdout, /revised:/, "a full load is never a revision");
+    assert.doesNotMatch((await deltaTurn(db, "cfo")).stdout, /=== persona\//);
+    assert.match(
+      (await deltaTurn(db, "writer")).stdout,
+      /=== persona\/writer ===\n/,
+      "a first delivery",
+    );
+  } finally {
+    db.close();
+  }
+});
+
+test("CR206: a session the previous Core wrote delivers no persona again until one is edited", async () => {
+  const { db } = fixture();
+  try {
+    activate(db, null, "mirror");
+    db.prepare("UPDATE runtime_sessions SET metadata = ? WHERE session_id = 'S'").run(
+      JSON.stringify({ doorman_personas: ["writer", "cfo"] }),
+    );
+    assert.doesNotMatch((await deltaTurn(db, "writer")).stdout, /=== persona\//);
+    assert.doesNotMatch((await deltaTurn(db, "cfo")).stdout, /=== persona\//);
+    setPrompt(db, "writer", "Writer context, edited later.");
+    assert.ok(
+      (await deltaTurn(db, "writer")).stdout.includes(
+        `${REVISED("writer")}\nWriter context, edited later.`,
+      ),
+    );
+    // The map keeps a short fingerprint per persona, never the prompt itself.
+    const kept = sessionMetadata(db).doorman_personas as Record<string, string>;
+    assert.deepEqual(Object.keys(kept).sort(), ["cfo", "writer"]);
+    for (const fingerprint of Object.values(kept)) assert.match(fingerprint, /^[0-9a-f]{16}$/);
   } finally {
     db.close();
   }
