@@ -74,6 +74,7 @@ describe("mirror-mind/desktop from node_modules", () => {
       "LearningRejectedError",
       "MigrateHomeRejectedError",
       "MirrorContextRejectedError",
+      "PersonaCallRejectedError",
       "addJourney",
       "appendConversationMessages",
       "createHome",
@@ -86,14 +87,17 @@ describe("mirror-mind/desktop from node_modules", () => {
       "inspectMigrationState",
       "learnFromConversations",
       "listJourneyConversations",
+      "listPersonas",
       "migrateHome",
       "moveJourney",
       "previewJourneyDeletion",
       "readJourneyTree",
+      "readPersona",
       "rebindConversationJourney",
       "renameConversation",
       "setJourneyProjectPath",
       "updateJourney",
+      "updatePersona",
     ]);
     assert.equal(out.state, "current");
     assert.deepEqual(out.pending, []);
