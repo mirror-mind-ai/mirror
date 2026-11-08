@@ -12,6 +12,21 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-11-08 — v0.42.0: A Persona the Host Can Read and Edit
+
+Minor release of
+[CR205](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr205-let-the-host-read-and-edit-a-persona.md)
+(PR #68, captured in PR #67), on the Navigator's word. `mirror-mind/desktop` gains
+`listPersonas`, `readPersona` and `updatePersona`, shaped like the Journey calls, for the
+persona screen of Nautilus for Mirror. Built test-first: 12 specs, 26 mutations (25 caught,
+the survivor the transaction, which a single-process test cannot see). The build departed
+from the capture three times, recorded in the CR: no metadata `briefing`, `expectedUpdatedAt`
+required, unreadable metadata refused. An edited prompt reaching an open conversation is
+CR206, "Deliver a persona again when its prompt changed", captured beside it (PR #69).
+
+No schema change, no migration, no model or `prompts.ts` change; the model-behavior gate
+does not apply. Release note: [v0.42.0](../releases/v0.42.0.md).
+
 ### 2026-11-08 — v0.41.0: A Persona When the Subject Asks for One
 
 Minor release of
