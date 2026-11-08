@@ -67,3 +67,50 @@ Field falsifier, run on a throwaway home through a real Pi session:
    text, and the turn follows it. This residual risk exists today for every identity layer; the
    case measures it rather than assumes it.
 4. A session written by the previous Core: no persona is delivered again until one is edited.
+
+## Delivered
+
+Built 2026-11-08 on the Navigator's word ("construa a CR206 do Core"), in
+`ts/src/mirror/doorman.ts`. No schema change and no change to the delivered line.
+
+- `doorman_personas` in the session's metadata is now an object, persona id to fingerprint: the
+  first 16 hex digits of the SHA-256 of the identity row's `content`. The prompt itself is never
+  kept there.
+- A delta routed to a persona compares. Not held: the ordinary section, as before. Held with the
+  same fingerprint: nothing. Held with another: the section again, under
+  `=== persona/<id> (revised: replaces the earlier persona/<id> in this conversation) ===`, and the
+  new fingerprint is kept.
+- `runFull` records the fingerprint of the persona it delivered, so an edit made right after a
+  full load, before any delta, is still seen.
+- `forgetDoormanDelivery` empties the map (`{}` where it wrote `[]`); the next turn is full and
+  its persona a first delivery, never a revision.
+
+Where the build departs from the capture, and why:
+
+- **A list from an earlier Core is adopted, not trusted forever.** Each listed id reads as
+  delivered with an unknown fingerprint; the first turn routed to it delivers nothing and keeps
+  the current fingerprint, and from then an edit is seen. An edit made after that persona's
+  delivery but before the first turn under this Core is therefore not seen until the next edit or
+  compaction. Any other reading either re-delivers every persona once on upgrade, which the
+  capture refused, or never sees an edit.
+- **The header's wording** is the capture's example, unchanged. The model-behavior gate covers
+  the extraction prompts and models, not injected section headers; the field falsifier below is
+  what measures whether the model takes the revision as the one in force.
+- An earlier Core reading the new object finds no list and delivers each persona once more: a
+  downgrade costs a repeated section, nothing else.
+
+## Validation
+
+- Spec first, in `ts/test/mirror/doorman.test.ts`: four CR206 cases, three red before the change
+  (the fourth, a name or description edit delivering nothing, already held and stays as a
+  guard). One earlier case changed: a compaction now leaves `{}`, not `[]`.
+- 13 mutations of the change, all caught. One survived the first run (the full load recording an
+  unknown fingerprint): its case, an edit right after a full load with no delta between, was
+  added.
+- `tsc` clean; Biome clean but for the known warning in `testTempHomes.test.ts`; the suite, 3,858
+  tests: 3,854 pass, 3 skipped, 1 known local failure (`the two cores describe a broken index
+  with the same driver text`). Run with a clean environment and a throwaway `HOME`; the
+  maintainer's `front-door.log` and `backups/` unchanged.
+- The field falsifier (four cases through a real Pi session) is not run yet: it needs this Core
+  embedded in a host. It runs when Nautilus for Mirror pins the release that carries it.
+
