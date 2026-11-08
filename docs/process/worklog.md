@@ -12,6 +12,20 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-11-08 — v0.43.0: A Persona Edit That Reaches the Open Conversation
+
+Minor release of
+[CR206](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr206-deliver-a-persona-again-when-its-prompt-changed.md)
+(PR #72, captured in PR #69), on the Navigator's word. `doorman_personas` becomes a map of
+persona id to a short fingerprint of the prompt delivered, so a prompt edited through
+v0.42.0's `updatePersona` reaches a conversation where that persona already spoke, under a
+`revised` header. Built test-first: four cases, 13 mutations, all caught. One departure,
+recorded in the CR: a session written by an earlier Core adopts the current fingerprint on its
+next turn rather than re-delivering every persona.
+
+No schema change, no migration, no model or `prompts.ts` change; the model-behavior gate
+does not apply. Release note: [v0.43.0](../releases/v0.43.0.md).
+
 ### 2026-11-08 — v0.42.0: A Persona the Host Can Read and Edit
 
 Minor release of
