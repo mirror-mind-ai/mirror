@@ -20,8 +20,8 @@ without a YAML `name` have none: on the maintainer's long-lived home, 10 of 28.
 - The delivery result gains `personaName: string | null`: the delivered persona's metadata
   `name` when it has one, and `null` when it has none or the turn has no persona. `persona`
   stays the id, so a host that reads only `persona` sees no change.
-- The name is read from the same identity read the delivery already makes; it adds no query
-  per turn beyond that read and no model call.
+- The name is read with one keyed read of that persona's identity row, on the connection the
+  delivery already holds, and only for a turn that has a persona; no model call.
 - The name is display text only. It never replaces the id in the context block, the signing
   rule or anything the Core stores.
 
@@ -48,3 +48,34 @@ Open questions:
 A host that delivers context for a persona with a `name` receives that name in
 `personaName`; for a persona without one, or a turn with none, it receives `null`; and a
 host that reads only `persona` behaves exactly as before.
+
+## Implementation
+
+`ts/src/mirror/deliverContext.ts`: `DeliveredMirrorContext` gains `personaName`. After the doorman
+writes, the session's persona is looked up in `identity` (`layer = 'persona'`) on the same live
+connection, and its metadata `name` is returned trimmed; a row without metadata, unreadable JSON, a
+missing or blank name, and a turn with no persona all give `null`. A turn that delivers nothing
+returns `personaName: null` without opening the home for writing. `persona` is unchanged, and the
+name goes nowhere else: not into the block, the signing rule or a stored row. The call's contract
+in CV24.DS6 says so.
+
+## Validation
+
+`ts/test/mirror/deliverContext.test.ts`, in a home `createHome` made, with a reception that chooses
+the template persona `writer`:
+
+- the delivery returns `persona: "writer"` and `personaName: "Writer"`;
+- with that persona's `name` removed from its metadata, `persona` stays `writer` and `personaName`
+  is `null`;
+- a turn that resolves no persona, and a command turn that delivers nothing, return `null`;
+- `ts/test/desktop/desktopEntry.test.ts` reads the field through the published `mirror-mind/desktop`
+  entry.
+
+Five mutations, each caught: not handing the name, handing the id as the name, reading another
+persona's row, falling back to the id, and leaving the field off the `nothing` result.
+
+`npm test` under a clean environment and a throwaway `HOME`: 3,819 of 3,823 pass, 3 skipped; the one failure,
+`the two cores describe a broken index with the same driver text` (`ts/test/runtime/diagnose.test.ts`),
+fails the same way on `main` without this change, on the maintainer's machine. The production home's
+`front-door.log` and `backups/` were unchanged afterwards. `tsc` and Biome are clean (Biome's one
+warning is in an unrelated test).
