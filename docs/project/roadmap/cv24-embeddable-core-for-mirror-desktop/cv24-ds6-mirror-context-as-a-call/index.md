@@ -14,7 +14,8 @@ A host gets Mirror's context for one turn with one call, and the call records th
 **`deliverMirrorContext(dbPath, { sessionId, prompt, journeyId }, { apiKey })`** returns
 `{ kind, block, persona, personaName, journey }`. `kind` is `nothing`, `full` or `delta`; `block` is
 the text the host gives the model as a hidden message (empty for `nothing`); `persona` and `journey`
-are the session's after the delivery. `personaName` (CR204) is that persona's own name from its
+are the session's after the delivery; since CR203 the persona is the turn's own, routed by its
+subject, and `null` when the turn has none. `personaName` (CR204) is that persona's own name from its
 metadata, for display, or `null` when it has none or the turn has no persona.
 
 **`forgetMirrorContext(dbPath, { sessionId })`** says the host compacted the transcript: the next

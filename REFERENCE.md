@@ -404,8 +404,16 @@ What a turn costs, and where it is counted:
 | Turn | Doorman | Model calls | `llm_calls` |
 |------|---------|-------------|-------------|
 | Mirror Mode off, ordinary | nothing | none | — |
-| explicit form | full folder | reception (when `MEMORY_RECEPTION` is on) and, when there are attachments to score, the query's embedding, as `mirror load --query` | as `mirror load` writes them |
-| Mirror Mode on, ordinary | delta | one embedding, shared by the memory and attachment searches | one row, `role = embedding` |
+| explicit form | full folder | reception (when `MEMORY_RECEPTION` is on), one persona-routing call and, when there are attachments to score, the query's embedding, as `mirror load --query` | as `mirror load` writes them |
+| Mirror Mode on, ordinary | delta | one embedding, shared by the memory and attachment searches, and one persona-routing call made beside it | one row `role = embedding`, one row `role = persona_routing` |
+
+A turn's persona is routed by its subject (CR203): a Decisions model chooses among the
+personas and says whether the subject belongs to any of them, and its choice is taken only
+at or above a threshold. Otherwise the turn takes the persona its Journey names as
+`default_persona` in the Journey's metadata, or none. A turn never inherits the session's
+persona, and any routing failure (no key, a timeout, a malformed answer) is a turn with no
+persona, whose delivered line tells the model not to sign. A persona named with
+`mirror load --persona` is not routed.
 
 The delta's memory search writes no reinforcement (`memory_access_log`): the doorman
 searches on the system's behalf on every turn, and a turn's injection must not raise a
@@ -884,7 +892,7 @@ conversation. Their 1.0 posture and full reasoning are recorded in
 
 | Variable | Default | Effect, cost, and trade-off |
 |----------|---------|------------------------------|
-| `MEMORY_RECEPTION` | `1` (on) | One classification call per Mirror-mode turn before the mirror answers; fails safe to keyword routing (10s timeout). Set `0` to disable — saves one interactive call per turn, loses turn-aware response shaping. |
+| `MEMORY_RECEPTION` | `1` (on) | One classification call per full Mirror load before the mirror answers: the Journey and whether the turn touches identity or the shadow (10s timeout). It no longer chooses the persona (CR203). Set `0` to disable — saves one interactive call per full load, loses turn-aware response shaping. |
 | `MEMORY_TWO_PASS` | unset (off) | Second-pass curation that dedups and refines new memories against history at write time: a query embedding per candidate plus one curation call. Set `1` to enable — fewer near-duplicate memories, at added per-conversation cost (not yet in the `llm_calls` ledger, debt D-003) and a risk of over-merging distinct memories. Off for 1.0; revisit when embedding spend is measurable. |
 | `MEMORY_SUMMARIZE` | unset (off) | LLM-written conversation summary instead of the free mechanical one. Set `1` to enable — marginal summary-quality gain for one call per conversation. |
 | `MEMORY_LOG_LLM_CALLS` | `metadata` | `off`, `metadata`, or `full`. `metadata` records role/model/tokens/latency/estimated-cost with no bodies; `full` adds prompt/response bodies; `off` disables logging. Legacy `1` maps to `full`. |
@@ -899,8 +907,10 @@ prints the values in force.
 
 | Variable | Default | Role |
 |----------|---------|------|
-| `MEMORY_EXTRACTION_MODEL` | `anthropic/claude-haiku-5.5` | The OpenRouter model behind every model call except `consult`: memory and task extraction, curation, conversation titles, tags, and summaries, reception, journal classification, week plans, persona descriptors, shadow, and consolidation. Setting it repoints an install without a release, and unsetting it returns to the pin. The pin moved from `google/gemini-2.5-flash-lite` to Claude Haiku 5.5 on 2026-10-28, chosen by measurement (CV9.DS9); to roll back, put `MEMORY_EXTRACTION_MODEL=google/gemini-2.5-flash-lite` in `${XDG_CONFIG_HOME:-~/.config}/mirror/env` (a clone may use its `.env`), and confirm with `mirror runtime status`, whose models line then names Flash Lite with no reasoning clause: the request Flash Lite was measured with. Rolling back restores Flash Lite's upstream rate limits (HTTP 429), which the move retired. A model change is a migration: see the development guide's model upgrade playbook. |
+| `MEMORY_EXTRACTION_MODEL` | `anthropic/claude-haiku-5.5` | The OpenRouter model behind every model call except `consult` and persona routing: memory and task extraction, curation, conversation titles, tags, and summaries, reception, journal classification, week plans, persona descriptors, shadow, and consolidation. Setting it repoints an install without a release, and unsetting it returns to the pin. The pin moved from `google/gemini-2.5-flash-lite` to Claude Haiku 5.5 on 2026-10-28, chosen by measurement (CV9.DS9); to roll back, put `MEMORY_EXTRACTION_MODEL=google/gemini-2.5-flash-lite` in `${XDG_CONFIG_HOME:-~/.config}/mirror/env` (a clone may use its `.env`), and confirm with `mirror runtime status`, whose models line then names Flash Lite with no reasoning clause: the request Flash Lite was measured with. Rolling back restores Flash Lite's upstream rate limits (HTTP 429), which the move retired. A model change is a migration: see the development guide's model upgrade playbook. |
 | `MEMORY_EMBEDDING_MODEL` | `openai/text-embedding-3-small` | The embedding model for memory and attachment search. |
+| `MEMORY_PERSONA_ROUTER_MODEL` | `liquid/d1-ultra` | The Decisions model that routes a Mirror Mode turn's persona through OpenRouter's Decisions API (CR203), chosen by an eval of 100 labelled turns. One attempt per turn, bounded by `MEMORY_LLM_TIMEOUT_RECEPTION`. Measure a replacement on a labelled set before setting it. |
+| `MEMORY_PERSONA_ROUTER_THRESHOLD` | `0.6` | The score, from 0 to 1, at or above which the router's choice is taken; below it the turn has the Journey's default persona or none. Higher means fewer personas and fewer wrong ones. A value outside 0 to 1, or not a number, reads as unset. |
 | `MEMORY_EXTRACTION_REASONING` | unset: the model's own default | The reasoning effort those calls ask for, sent as OpenRouter's `reasoning.effort`: `none` (reasoning off), `minimal`, `low`, `medium`, `high`, `xhigh`, or `max`. Unset, each model sends the effort it was measured with: Claude Haiku 5.5, the pin, sends `none`, because it reasons by default and spends a short call's token budget before it answers; Gemini 2.5 Flash Lite and any other model send no reasoning field and reason as their provider defaults (Flash Lite not at all; on Flash Lite, any effort but `none` turns its thinking on). Set, the value wins on any model. A value that is not an effort reads as unset rather than failing the calls: `runtime status` shows it beside the effort actually sent, `reasoning=none (model default, invalid setting: <value>)`, and `runtime diagnose` reports it. `consult` never carries it. |
 
 ### Environment Selection
