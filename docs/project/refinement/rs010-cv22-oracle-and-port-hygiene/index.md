@@ -140,3 +140,4 @@ evidence stays honest as both cores move.
 - [CR203 · Route a turn's persona by its subject, and let a turn have none](cr203-route-a-turns-persona-by-its-subject-and-let-it-have-none.md)
 - [CR204 · Hand the host the persona's name with its id](cr204-hand-the-host-the-personas-name-with-its-id.md)
 - [CR205 · Let the host read and edit a persona](cr205-let-the-host-read-and-edit-a-persona.md)
+- [CR206 · Deliver a persona again when its prompt changed](cr206-deliver-a-persona-again-when-its-prompt-changed.md)
