@@ -27,6 +27,12 @@ CR206, "Deliver a persona again when its prompt changed", captured beside it (PR
 No schema change, no migration, no model or `prompts.ts` change; the model-behavior gate
 does not apply. Release note: [v0.42.0](../releases/v0.42.0.md).
 
+Published the same day: tag `v0.42.0` and `stable` at `702bf2e7`, GitHub release marked
+latest, `publish.yml` approved by the Navigator, npm `stable` and `latest` at 0.42.0 with
+`gitHead` `702bf2e7`. Installed on the maintainer's machine with `mirror runtime update`
+(0.41.0 to 0.42.0, backup verified, no migration pending). A read-only probe of the
+installed package on a copy of that home listed 28 personas, all named, and read one whole.
+
 ### 2026-11-08 — v0.41.0: A Persona When the Subject Asks for One
 
 Minor release of
