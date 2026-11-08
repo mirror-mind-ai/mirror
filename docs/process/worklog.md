@@ -12,6 +12,27 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-11-08 — v0.41.0: A Persona When the Subject Asks for One
+
+Minor release of
+[CR203](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr203-route-a-turns-persona-by-its-subject-and-let-it-have-none.md)
+(PR #64, plan in PR #63) and
+[CR204](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr204-hand-the-host-the-personas-name-with-its-id.md)
+(PR #62), released together by the Navigator's decision. A turn's persona is the router's
+answer (a Decisions model, `liquid/d1-ultra`, taken at a Noul of 0.6 or more), else the
+Journey's `default_persona`, else none; never the session's by inheritance. Captured from an
+eval of 100 labelled production turns, planned, approved, built test-first with 24
+mutations (23 caught, the survivor equivalent), and rerun on the same 100 through the built
+code before the merge: 93 right, 3 wrong, 4 missed. The rerun moved the build off its
+plan once: personas are offered with their own description first, since descriptor-first
+doubled the wrong picks. `deliverMirrorContext` returns `personaName`. Not yet validated by
+the Navigator in the Navigator's own home; the rerun ran on a copy of it.
+
+No schema change, no migration. No extraction or embedding model and no `prompts.ts`
+prompt changed, so the model-behavior gate's letter does not apply; the release adds a
+model call and a line the model reads, and the private rerun is its evidence. Release
+note: [v0.41.0](../releases/v0.41.0.md).
+
 ### 2026-11-07 — v0.40.1: The Bins You Named, or Why Not
 
 Patch release of
