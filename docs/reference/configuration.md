@@ -175,7 +175,7 @@ A key OpenRouter refuses (HTTP 401 or 403) is one line too: `OpenRouter refused 
 
 **Active in code:** yes. `ts/src/frontDoor/mirrorModeRoute.ts`.
 
-**Effects:** when on, Mirror makes one classification call per Mirror-mode turn to route persona and journey, failing safe to keyword routing. `0` saves that call and loses turn-aware response shaping.
+**Effects:** when on, Mirror makes one classification call per full Mirror load to route the journey and shape the response. It no longer chooses the persona: since CR203 a Decisions model routes it (`MEMORY_PERSONA_ROUTER_MODEL`, `MEMORY_PERSONA_ROUTER_THRESHOLD` in `REFERENCE.md`). `0` saves that call and loses turn-aware response shaping.
 
 ## MEMORY_EXTRACTION_MAX_ATTEMPTS
 
@@ -283,7 +283,7 @@ The core reaches OpenRouter through its own `fetch`-based transport
 | Variable | Default | Meaning |
 |---|---|---|
 | `MEMORY_LLM_TIMEOUT_EXTRACTION` | `60` | Seconds bounding one extraction-tier call |
-| `MEMORY_LLM_TIMEOUT_RECEPTION` | `10` | Seconds bounding one interactive reception call |
+| `MEMORY_LLM_TIMEOUT_RECEPTION` | `10` | Seconds bounding one interactive reception call, and one persona-routing call (CR203) |
 | `MEMORY_LLM_TIMEOUT_EMBEDDING` | `15` | Seconds bounding one embedding call |
 | `MEMORY_LLM_MAX_RETRIES` | `2` | Retries **after** the first attempt (three attempts total) |
 

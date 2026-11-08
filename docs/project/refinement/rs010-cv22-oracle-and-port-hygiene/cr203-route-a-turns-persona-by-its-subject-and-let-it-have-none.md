@@ -130,6 +130,97 @@ Mutations, each expected caught: taking the persona below the threshold, keeping
 session's persona on none, ignoring the Journey default, treating an unknown key as a
 persona, signing on none, and logging content.
 
+## Implementation
+
+Built 2026-11-08, on the plan above.
+
+- **`ts/src/mirror/personaRouter.ts`** owns the route. `decisionsRequest` builds the eval's
+  body (the request bounded to 2,000 characters, each persona's text to 280 in the Choice and
+  90 in the Noul's list); `readDecisionsAnswer` reads the answer against the personas offered
+  and the threshold (inclusive); `LivePersonaRouter` posts it once to
+  `https://openrouter.ai/api/alpha/decisions`, bounded by `MEMORY_LLM_TIMEOUT_RECEPTION`, with
+  no retry, and never throws. `routeTurnPersona` is the one rule both paths call: the router's
+  answer when it names a persona that exists, else `journeyDefaultPersona`, else none.
+- **Configuration** (`ts/src/providers/config.ts`): `MEMORY_PERSONA_ROUTER_MODEL` and
+  `MEMORY_PERSONA_ROUTER_THRESHOLD`, an empty or invalid value reading as unset. A host
+  (`deliverMirrorContext`) passes no environment, so it routes with the defaults.
+- **The delta** (`doorman.ts`): `decideDoorman` no longer scores keywords and stays pure;
+  `runDelta` routes the persona and embeds the prompt side by side (`Promise.all`), so the
+  routing call does not add to the delivery CR199 measures. The session row records the
+  turn's answer, none included.
+- **Which persona sections the conversation holds** is a new session list,
+  `doorman_personas`, beside the delivered memories: a section is delivered the first time
+  its persona answers, a full load starts the list with its own persona, and a compaction
+  clears it. Before, "the session's persona" stood for that, and a turn with none would have
+  made a writer, none, writer sequence deliver the writer's section twice.
+- **The full load** (`defaultResolution.ts`): the persona the person named, else
+  `routeTurnPersona` once the Journey is resolved; a load without a query makes no call and
+  takes the Journey's default. Neither the sticky persona nor reception's pick decides any
+  more, and `writeMirrorState` records a load's none instead of keeping the earlier persona.
+- **The line** (`deliveredLine`): with no persona it reads
+  `answer as the mirror; no persona this turn: do not sign, and do not answer as an earlier persona`
+  (`NO_PERSONA_CLAUSE`). Nautilus for Mirror reads "no persona" as a first line without
+  `sign ◇`, which this keeps.
+- **The ledger**: one `llm_calls` row per call made, `role = persona_routing`, with the
+  model, latency and the cost the route reports, and an empty prompt and response in every
+  logging mode.
+- **Replay**: `MIRROR_TS_PERSONA_ROUTER_REPLAY` names recorded Decisions bodies a replay run
+  answers from, read through `readDecisionsAnswer`; without it a replay routes nothing. The
+  hook and front-door suites route through it.
+
+### Where the build departs from the plan
+
+- **Each persona is offered with its own `description` first**, then its generated
+  descriptor, then the start of its content. Built descriptor-first, the rerun below gave 6
+  wrong picks where the eval gave 2: 11 of the 28 production personas had no descriptor and
+  were offered a heading. The eval had offered the description; with it first, 3 wrong.
+- **`detectPersona` leaves turn routing only.** The `detect-persona` command, the MCP
+  `detect_persona` tool and the package export stay: they are public surfaces of their own,
+  and removing them is a separate decision.
+- **Reception's prompt is unchanged.** It still lists the personas, because its bytes are
+  digest-pinned; only its pick is ignored. Trimming the prompt is its own change.
+- **No command sets a Journey's `default_persona` yet.** The read is built and tested; the
+  setter (a command and a host call) is a follow-up.
+- **The none clause is a draft**, for the prompt engineer to settle; it is one constant.
+- **A full load's worst case grows**: reception, then routing, each bounded at 10 s. A delta
+  is unchanged at about 10 s, since its two calls run together.
+
+## Validation
+
+- `ts/test/mirror/personaRouter.test.ts` (14): the request pinned against the eval's body
+  and its bounds; the answer at, below and above the threshold, an unknown persona, nine
+  malformed bodies; the live router's single bounded call with the key it was given; the
+  settings and invalid thresholds; no key, no personas and a failed call; the description,
+  descriptor and content order; the Journey default and when it counts; the ledger without
+  content in `full` mode; the replay router and which router each transport gets.
+- `doorman.test.ts` (23): a delta never inherits; none says none and records none; the
+  Journey default with and without a router; a section once across writer, none, writer, the
+  full load and a compaction; the routing call made beside the embedding (a router that
+  answers only once the embedding has started); a full load with none clears the earlier
+  persona; the line with and without a persona.
+- `defaultResolution.test.ts`, `deliverContext.test.ts`, `mirrorModeCli.test.ts` and the
+  Claude and Antigravity hook suites: reception no longer decides; the sticky persona and
+  keywords no longer decide; a named persona is not routed; no query, no call; the command
+  path records none on a turn that asks for no persona.
+- **Mutations**: 24 tried, 23 caught. The survivor drops the guard that skips a ledger row
+  for a call never made; `llm_calls.model` is `NOT NULL`, so the row fails and is swallowed
+  either way: equivalent.
+- `npm test`, clean environment, throwaway `HOME`: 3,838 of 3,842 pass, 3 skipped; the one
+  failure, `the two cores describe a broken index with the same driver text`, fails the same
+  way on `main` on the maintainer's machine. `tsc` and Biome clean.
+- **The private 100, rerun through this code** (`LivePersonaRouter` and `routablePersonas`
+  on a copy of the production home, 28 personas, `liquid/d1-ultra` at 0.6), 2026-11-08:
+
+  | Run | Right | Wrong | Missed | Persona chosen | p50 / p95 | Cost per turn |
+  |---|---|---|---|---|---|---|
+  | The eval, 2026-11-07 | 94 | 2 | 4 | n/a | 0.56 / 1.12 s | US$ 0.000092 |
+  | This code, descriptor first | 91 | 6 | 3 | 44 | 0.66 / 1.49 s | US$ 0.000089 |
+  | **This code, description first** | **93** | **3** | **4** | 36 | 0.61 / 1.32 s | US$ 0.000081 |
+
+  The built router agrees with the eval's pick on 95 of 100 turns. Two of its three wrong
+  picks are the book Journey's writing persona on turns that ask for none: the case a
+  Journey default resolves, once one can be set.
+
 ## Evidence
 
 - [Persona-routing eval, 2026-11-07](cr203-persona-routing-eval-2026-11-07.md): method,
@@ -141,4 +232,5 @@ persona, signing on none, and logging content.
 
 ## Outcome
 
-Pending: planned 2026-11-08, awaiting the Navigator's word to build.
+Built 2026-11-08 on the plan the Navigator approved ("aprovo o plano, faça o merge do #63 e
+implemente"); released together with CR204, as the Navigator chose.

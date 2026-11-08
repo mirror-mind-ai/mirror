@@ -13,11 +13,13 @@
 //
 //   1. the explicit Mirror form in the prompt -> the full folder, routed from
 //      the query, before the first token; the session marked active by its id;
-//   2. Mirror Mode active, an ordinary turn -> the prompt is routed with
-//      `detectPersona` (a keyword score, no model call); a persona that newly
-//      scores has its section delivered and becomes the session's; the
-//      memories and attachments relevant to the prompt follow; the identity
-//      layers are not repeated -- they already sit in the transcript;
+//   2. Mirror Mode active, an ordinary turn -> the turn's persona is routed
+//      by its subject (CR203, `personaRouter.ts`): the router's answer, else
+//      the Journey's own default, else none -- never the session's by
+//      inheritance; a persona the conversation has not read yet has its
+//      section delivered; the memories and attachments relevant to the prompt
+//      follow; the identity layers are not repeated -- they already sit in
+//      the transcript;
 //      a skill invocation other than the Mirror form is not a question and
 //      gets nothing (CR160's command-turn rule);
 //   3. Mirror Mode not active -> nothing. The model's own routing may invoke
@@ -37,7 +39,8 @@
 //
 // What a turn costs: nothing when Mirror Mode is off; on an ordinary active
 // turn, ONE embedding, shared by the memory and attachment searches and
-// counted once in `llm_calls` (DS8 decision 1); on the explicit turn, what
+// counted once in `llm_calls` (DS8 decision 1), and ONE persona-routing call,
+// made beside the embedding, not after it (CR203); on the explicit turn, what
 // `mirror load --query` costs today (reception's LLM call when enabled, the
 // attachment embedding), plus the skill's own load until TS3 teaches it to
 // trust this line.
@@ -48,14 +51,13 @@ import { memoriesById } from "#frontDoor/searchRoute.ts";
 import { getIdentityContent } from "#identity/identityRead.ts";
 import { getActiveOperatingMode } from "#mode/operatingMode.ts";
 import { embeddingLedgerHook } from "#observability/ledgerHooks.ts";
-import { detectPersona, type PersonaRoutingRow } from "#persona/detectPersona.ts";
 import { type EmbeddingProvider, generateEmbeddingSafely } from "#providers/embedding.ts";
 import { searchMemoriesWithStatus } from "#search/memorySearch.ts";
 import { pythonJsonDumps } from "#util/pyGenerators.ts";
 import { relevantAttachments } from "./context.ts";
-import { personaRoutingRows } from "./defaultResolution.ts";
 import { mirrorForm } from "./mirrorForm.ts";
 import { type MirrorLoadInput, runMirrorLoad } from "./orchestration.ts";
+import { personaRoutingLedger, routeTurnPersona } from "./personaRouter.ts";
 import {
   decodeMetadata,
   getRuntimeSession,
@@ -80,8 +82,6 @@ export type DoormanDecision =
   | {
       readonly kind: "delta";
       readonly query: string;
-      /** The persona that newly scored, or null when the session's stands. */
-      readonly persona: string | null;
     };
 
 /** The stable prefix TS3's skill reads; everything after the colon varies. */
@@ -117,6 +117,15 @@ export const DOORMAN_MEMORY_SEMANTIC_THRESHOLD = 0.4;
 export const DOORMAN_DELIVERED_METADATA_KEY = "doorman_delivered";
 
 /**
+ * The personas whose section the conversation already holds (CR203). A turn
+ * may now have none, so "the session's persona" no longer says which sections
+ * the transcript carries: a writer turn, a turn with none, and a writer turn
+ * again must deliver the writer's section once. A full load starts the list
+ * over with its own persona.
+ */
+export const DOORMAN_PERSONAS_METADATA_KEY = "doorman_personas";
+
+/**
  * Set on the session when the runtime compacted the transcript (the Pi
  * extension's `session_compact`, CV9.DS8.US5): a delta's premise -- the
  * identity layers already sit in the transcript -- no longer holds, so the
@@ -139,20 +148,23 @@ export function forgetDoormanDelivery(
   const metadata = decodeMetadata(session.metadata);
   metadata[DOORMAN_REFRESH_METADATA_KEY] = true;
   metadata[DOORMAN_DELIVERED_METADATA_KEY] = [];
+  metadata[DOORMAN_PERSONAS_METADATA_KEY] = [];
   updateRuntimeSessionColumns(db, sessionId, { metadata: pythonJsonDumps(metadata) }, nowIso);
 }
 
 /** How many ranked memories a delta may read through to fill its five. */
 const DOORMAN_SEARCH_CEILING = 25;
 
-function deliveredMemoryIds(db: Database, sessionId: string | null): Set<string> {
+function deliveredList(db: Database, sessionId: string | null, key: string): Set<string> {
   if (!sessionId) return new Set();
-  const raw = decodeMetadata(getRuntimeSession(db, sessionId)?.metadata ?? null)[
-    DOORMAN_DELIVERED_METADATA_KEY
-  ];
+  const raw = decodeMetadata(getRuntimeSession(db, sessionId)?.metadata ?? null)[key];
   return new Set(
     Array.isArray(raw) ? raw.filter((id): id is string => typeof id === "string") : [],
   );
+}
+
+function deliveredMemoryIds(db: Database, sessionId: string | null): Set<string> {
+  return deliveredList(db, sessionId, DOORMAN_DELIVERED_METADATA_KEY);
 }
 
 function rememberDelivered(
@@ -160,14 +172,29 @@ function rememberDelivered(
   sessionId: string | null,
   ids: readonly string[],
   nowIso: string,
-  options: { clearRefresh?: boolean } = {},
+  options: { clearRefresh?: boolean; personas?: readonly string[] } = {},
 ): void {
   if (!sessionId) return;
   const session = getRuntimeSession(db, sessionId);
   if (!session) return;
   const metadata = decodeMetadata(session.metadata);
   metadata[DOORMAN_DELIVERED_METADATA_KEY] = [...ids];
+  if (options.personas) metadata[DOORMAN_PERSONAS_METADATA_KEY] = [...options.personas];
   if (options.clearRefresh) delete metadata[DOORMAN_REFRESH_METADATA_KEY];
+  updateRuntimeSessionColumns(db, sessionId, { metadata: pythonJsonDumps(metadata) }, nowIso);
+}
+
+function rememberPersonas(
+  db: WritableDatabase,
+  sessionId: string | null,
+  personas: readonly string[],
+  nowIso: string,
+): void {
+  if (!sessionId) return;
+  const session = getRuntimeSession(db, sessionId);
+  if (!session) return;
+  const metadata = decodeMetadata(session.metadata);
+  metadata[DOORMAN_PERSONAS_METADATA_KEY] = [...personas];
   updateRuntimeSessionColumns(db, sessionId, { metadata: pythonJsonDumps(metadata) }, nowIso);
 }
 
@@ -206,7 +233,6 @@ export function readDoormanSessionState(
 export function decideDoorman(input: {
   prompt: string;
   state: DoormanSessionState | null;
-  personas: readonly PersonaRoutingRow[];
 }): DoormanDecision {
   const explicit = mirrorForm(input.prompt);
   if (explicit) return { kind: "full", query: explicit.query };
@@ -220,19 +246,29 @@ export function decideDoorman(input: {
   // The runtime compacted the transcript: the folder is a summary now, so this
   // turn delivers it whole, routed from the prompt, and the deltas resume after.
   if (input.state.refresh) return { kind: "full", query: input.prompt };
-  const match = detectPersona(input.prompt, input.personas)[0]?.key ?? null;
-  const persona = match !== null && match !== input.state.persona ? match : null;
-  return { kind: "delta", query: input.prompt, persona };
+  // The persona is not decided here: routing it is a model call (CR203), and
+  // this function stays pure. `runDoorman` routes it, beside the embedding.
+  return { kind: "delta", query: input.prompt };
 }
+
+/**
+ * What the line says when a turn has no persona (CR203). Draft wording, for the
+ * prompt engineer to settle in review: no signature, and no earlier persona
+ * carried over.
+ */
+export const NO_PERSONA_CLAUSE =
+  "no persona this turn: do not sign, and do not answer as an earlier persona";
 
 export function deliveredLine(input: {
   kind: "full" | "delta";
   persona: string | null;
   journey: string | null;
 }): string {
+  // CR203: a turn may have no persona, and the model must hear that as this
+  // turn's answer, not as silence it may fill with the last persona it signed.
   const clause = input.persona
     ? `answer as the mirror; sign ◇ ${input.persona}`
-    : "answer as the mirror";
+    : `answer as the mirror; ${NO_PERSONA_CLAUSE}`;
   const what =
     input.kind === "full"
       ? "full"
@@ -289,7 +325,10 @@ async function runFull(
     // The conversation's context starts over with the folder: so does the
     // list of memories the deltas have put in it, and a compaction's refresh
     // is answered.
-    rememberDelivered(db, input.sessionId, [], input.nowIso(), { clearRefresh: true });
+    rememberDelivered(db, input.sessionId, [], input.nowIso(), {
+      clearRefresh: true,
+      personas: loaded.resolved.persona ? [loaded.resolved.persona] : [],
+    });
   }
   const line = deliveredLine({
     kind: "full",
@@ -305,28 +344,37 @@ async function runDelta(
   input: RunDoormanInput,
 ): Promise<RenderedDoorman> {
   const state = readDoormanSessionState(db, input.sessionId);
-  const persona = decision.persona ?? state?.persona ?? null;
   const journey = state?.journey ?? null;
-  const parts: string[] = [deliveredLine({ kind: "delta", persona, journey })];
-
-  if (decision.persona) {
-    const content = getIdentityContent(db, "persona", decision.persona);
-    if (content) parts.push(`=== persona/${decision.persona} ===\n${content}`);
-    if (input.sessionId) {
-      updateRuntimeSessionColumns(
-        db,
-        input.sessionId,
-        { persona: decision.persona },
-        input.nowIso(),
-      );
-    }
-  }
-
-  // One embedding for the turn, in the ledger once; both searches share it.
-  // Without a provider, or when it fails, the memory search degrades to FTS
+  // The turn's persona and its embedding, side by side: neither waits on the
+  // other. One embedding for the turn, in the ledger once; both searches share
+  // it. Without a provider, or when it fails, the memory search degrades to FTS
   // and the attachments are skipped: the delta still carries the line and the
   // persona.
-  const queryEmbedding = await embedOnce(db, decision.query, input);
+  const [turn, queryEmbedding] = await Promise.all([
+    routeTurnPersona(db, {
+      prompt: decision.query,
+      journey,
+      router: input.personaRouter,
+      onRouting: personaRoutingLedger(db, { sessionId: input.sessionId, now: input.nowIso }),
+    }),
+    embedOnce(db, decision.query, input),
+  ]);
+  const persona = turn.persona;
+  const parts: string[] = [deliveredLine({ kind: "delta", persona, journey })];
+
+  const deliveredPersonas = deliveredList(db, input.sessionId, DOORMAN_PERSONAS_METADATA_KEY);
+  if (persona && !deliveredPersonas.has(persona)) {
+    const content = getIdentityContent(db, "persona", persona);
+    if (content) {
+      parts.push(`=== persona/${persona} ===\n${content}`);
+      rememberPersonas(db, input.sessionId, [...deliveredPersonas, persona], input.nowIso());
+    }
+  }
+  // The session records the turn's answer, none included: a session's persona
+  // is the last turn's, not a default the next turn inherits.
+  if (input.sessionId && persona !== (state?.persona ?? null)) {
+    updateRuntimeSessionColumns(db, input.sessionId, { persona }, input.nowIso());
+  }
 
   const delivered = deliveredMemoryIds(db, input.sessionId);
   const memories = await searchMemoriesWithStatus(db, {
@@ -412,9 +460,4 @@ async function embedOnce(
   } catch {
     return null;
   }
-}
-
-/** The persona routing table the decision scores against; read once per turn. */
-export function doormanPersonas(db: Database): PersonaRoutingRow[] {
-  return personaRoutingRows(db);
 }

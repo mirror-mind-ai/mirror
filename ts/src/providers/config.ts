@@ -161,6 +161,31 @@ export function resolveExtractionReasoning(
   return { model, effort: null, source: null, invalid: setting.invalid };
 }
 
+/**
+ * CR203: the Decisions model that routes a turn's persona, and the Noul score
+ * at or above which its choice is taken. The eval of 2026-11-07 chose the pair
+ * (`docs/project/refinement/rs010-cv22-oracle-and-port-hygiene/`); they are
+ * settings so a later model replaces it without a code change, measured again
+ * on a labelled set first. An empty or invalid value reads as unset: a typo
+ * must not turn routing off, or on for every turn.
+ */
+export const DEFAULT_PERSONA_ROUTER_MODEL = "liquid/d1-ultra";
+export const DEFAULT_PERSONA_ROUTER_THRESHOLD = 0.6;
+
+export function resolvePersonaRouterModel(options: ModelPinOptions = {}): string {
+  const env = options.env ?? process.env;
+  return env.MEMORY_PERSONA_ROUTER_MODEL?.trim() || DEFAULT_PERSONA_ROUTER_MODEL;
+}
+
+export function resolvePersonaRouterThreshold(options: ModelPinOptions = {}): number {
+  const env = options.env ?? process.env;
+  const raw = env.MEMORY_PERSONA_ROUTER_THRESHOLD?.trim() ?? "";
+  const parsed = Number(raw);
+  return raw !== "" && Number.isFinite(parsed) && parsed >= 0 && parsed <= 1
+    ? parsed
+    : DEFAULT_PERSONA_ROUTER_THRESHOLD;
+}
+
 // Observability (AI-09, CV9.E2.S13): mirrors Python's MEMORY_LOG_LLM_CALLS
 // resolution exactly -- off | metadata | full, default metadata (never a
 // silent full -- bodies are opt-in only). Legacy "1" maps to "full" for

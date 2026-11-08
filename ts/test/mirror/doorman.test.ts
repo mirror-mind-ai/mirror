@@ -17,9 +17,11 @@ import {
   deliveredLine,
   forgetDoormanDelivery,
   type MemoryScore,
+  NO_PERSONA_CLAUSE,
   readDoormanSessionState,
   runDoorman,
 } from "#mirror/doorman.ts";
+import type { PersonaRouter, PersonaRouting } from "#mirror/personaRouter.ts";
 import { activateOperatingMode } from "#mode/operatingMode.ts";
 import type { EmbeddingProvider, EmbeddingResult } from "#providers/embedding.ts";
 
@@ -164,12 +166,29 @@ function times() {
   return () => `2026-10-24T00:00:0${value++}.000000Z`;
 }
 
-function runInput(provider?: EmbeddingProvider, scores?: MemoryScore[][]) {
+/** A router that answers as told, and counts its calls. */
+function routerAnswering(persona: string | null, extra: Partial<PersonaRouting> = {}) {
+  const calls: string[] = [];
+  const router: PersonaRouter = {
+    async route(input) {
+      calls.push(input.prompt);
+      return { persona, outcome: persona ? "chosen" : "below_threshold", ...extra };
+    },
+  };
+  return { router, calls };
+}
+
+function runInput(
+  provider?: EmbeddingProvider,
+  scores?: MemoryScore[][],
+  personaRouter?: PersonaRouter,
+) {
   return {
     identity: "mirror-dev",
     sessionId: "S",
     receptionEnabled: false,
     embeddingProvider: provider,
+    personaRouter,
     newId: ids(),
     nowIso: times(),
     onMemoryScores: scores
@@ -186,16 +205,14 @@ test("decideDoorman: Mirror Mode off and an ordinary prompt → nothing", () => 
   const decision = decideDoorman({
     prompt: "how do I split this module",
     state: { active: false, persona: null, journey: null },
-    personas: PERSONAS,
   });
   assert.deepEqual(decision, { kind: "nothing" });
 });
 
 test("decideDoorman: an unnamed session reads as inactive", () => {
-  assert.deepEqual(
-    decideDoorman({ prompt: "should I take the money", state: null, personas: PERSONAS }),
-    { kind: "nothing" },
-  );
+  assert.deepEqual(decideDoorman({ prompt: "should I take the money", state: null }), {
+    kind: "nothing",
+  });
 });
 
 test("decideDoorman: a skill command that is not the Mirror form → nothing, even with Mirror Mode on", () => {
@@ -212,23 +229,15 @@ test("decideDoorman: a skill command that is not the Mirror form → nothing, ev
     "$mirror-mind:mm:build mirror",
     "/compact",
   ]) {
-    assert.deepEqual(
-      decideDoorman({ prompt, state: active, personas: PERSONAS }),
-      { kind: "nothing" },
-      prompt,
-    );
+    assert.deepEqual(decideDoorman({ prompt, state: active }), { kind: "nothing" }, prompt);
   }
   // The Mirror form is the exception, in every spelling: it IS the question.
   assert.equal(
-    decideDoorman({ prompt: "$mm-mirror what about the budget", state: active, personas: PERSONAS })
-      .kind,
+    decideDoorman({ prompt: "$mm-mirror what about the budget", state: active }).kind,
     "full",
   );
   // And "$5 a month" is English, not a command.
-  assert.equal(
-    decideDoorman({ prompt: "$5 a month for the budget", state: active, personas: PERSONAS }).kind,
-    "delta",
-  );
+  assert.equal(decideDoorman({ prompt: "$5 a month for the budget", state: active }).kind, "delta");
 });
 
 test("decideDoorman: a session told to forget delivers the full folder on its next ordinary turn", () => {
@@ -239,7 +248,6 @@ test("decideDoorman: a session told to forget delivers the full folder on its ne
   const decision = decideDoorman({
     prompt: "and what about the budget",
     state: { active: true, persona: "cfo", journey: "mirror", refresh: true },
-    personas: PERSONAS,
   });
   assert.deepEqual(decision, { kind: "full", query: "and what about the budget" });
   // Off, a forgotten session still gets nothing; a command still gets nothing.
@@ -247,7 +255,6 @@ test("decideDoorman: a session told to forget delivers the full folder on its ne
     decideDoorman({
       prompt: "x",
       state: { active: false, persona: null, journey: null, refresh: true },
-      personas: PERSONAS,
     }),
     { kind: "nothing" },
   );
@@ -255,7 +262,6 @@ test("decideDoorman: a session told to forget delivers the full folder on its ne
     decideDoorman({
       prompt: "/skill:mm-journeys",
       state: { active: true, persona: null, journey: null, refresh: true },
-      personas: PERSONAS,
     }),
     { kind: "nothing" },
   );
@@ -290,44 +296,25 @@ test("forgetDoormanDelivery marks the session, readDoormanSessionState reads it,
 
 test("decideDoorman: the explicit form → full, with the query after the form, in any state", () => {
   for (const state of [null, { active: false, persona: null, journey: null }]) {
-    assert.deepEqual(
-      decideDoorman({ prompt: "/mm-mirror should I take the offer?", state, personas: PERSONAS }),
-      { kind: "full", query: "should I take the offer?" },
-    );
+    assert.deepEqual(decideDoorman({ prompt: "/mm-mirror should I take the offer?", state }), {
+      kind: "full",
+      query: "should I take the offer?",
+    });
   }
   assert.deepEqual(
     decideDoorman({
       prompt: "/mirror-mind:mm:mirror",
       state: { active: true, persona: "cfo", journey: "mirror" },
-      personas: PERSONAS,
     }),
     { kind: "full", query: "" },
   );
 });
 
-test("decideDoorman: active + a persona that newly scores → delta naming it", () => {
-  assert.deepEqual(
-    decideDoorman({
-      prompt: "review this article draft",
-      state: { active: true, persona: "cfo", journey: "mirror" },
-      personas: PERSONAS,
-    }),
-    { kind: "delta", query: "review this article draft", persona: "writer" },
-  );
-});
-
-test("decideDoorman: active + the same persona, or none → delta with no persona", () => {
+test("decideDoorman: active + an ordinary prompt → a delta with the query; the persona is not decided here (CR203)", () => {
   const state = { active: true, persona: "cfo", journey: "mirror" };
-  assert.deepEqual(decideDoorman({ prompt: "what about the budget", state, personas: PERSONAS }), {
-    kind: "delta",
-    query: "what about the budget",
-    persona: null,
-  });
-  assert.deepEqual(decideDoorman({ prompt: "tell me more", state, personas: PERSONAS }), {
-    kind: "delta",
-    query: "tell me more",
-    persona: null,
-  });
+  for (const prompt of ["review this article draft", "what about the budget", "tell me more"]) {
+    assert.deepEqual(decideDoorman({ prompt, state }), { kind: "delta", query: prompt });
+  }
 });
 
 // --- the delivered line ------------------------------------------------------
@@ -343,8 +330,15 @@ test("deliveredLine: one stable prefix, the session's persona, the clause with a
   );
   assert.equal(
     deliveredLine({ kind: "delta", persona: null, journey: null }),
-    `${DELIVERED_LINE_PREFIX}: delta (persona: none · journey: none) — answer as the mirror ===`,
+    `${DELIVERED_LINE_PREFIX}: delta (persona: none · journey: none) — answer as the mirror; ${NO_PERSONA_CLAUSE} ===`,
   );
+  // CR203: no persona is said, not left silent: no signature, and no earlier
+  // persona carried over.
+  assert.equal(
+    deliveredLine({ kind: "full", persona: null, journey: "mirror" }),
+    `${DELIVERED_LINE_PREFIX}: full — answer as the mirror; ${NO_PERSONA_CLAUSE} ===`,
+  );
+  assert.doesNotMatch(NO_PERSONA_CLAUSE, /◇/);
 });
 
 // --- the session state read --------------------------------------------------
@@ -409,24 +403,50 @@ test("runDoorman full: the delivered line, the transition surface, the folder; t
   const { db } = fixture();
   try {
     const provider = new CountingEmbeddingProvider(unitVector(0));
+    const routed = routerAnswering("cfo");
     const result = await runDoorman(
       db,
       { kind: "full", query: "should I take the money" },
-      runInput(provider),
+      runInput(provider, undefined, routed.router),
     );
+    assert.deepEqual(routed.calls, ["should I take the money"], "the full load routes too");
     const lines = result.stdout.split("\n");
     assert.equal(lines[0], `${DELIVERED_LINE_PREFIX}: full — answer as the mirror; sign ◇ cfo ===`);
     assert.match(result.stdout, /◌ {2}MIRROR MODE ACTIVE/);
     assert.match(result.stdout, /=== self\/soul ===\nSoul text/);
     assert.match(result.stdout, /=== persona\/cfo ===\nCFO context/);
     // The journey came from the semantic detector (the fixture's one vector
-    // matches everything); the persona from the keyword router.
+    // matches everything); the persona from the router.
     assert.deepEqual(sessionRow(db), {
       conversation_id: "conv-1",
       mirror_active: 1,
       persona: "cfo",
       journey: "mirror",
     });
+  } finally {
+    db.close();
+  }
+});
+
+test("runDoorman full whose subject has no persona: the line says none, and the session's earlier persona is cleared (CR203)", async () => {
+  const { db } = fixture();
+  try {
+    activate(db, "cfo", "mirror");
+    const result = await runDoorman(
+      db,
+      { kind: "full", query: "thanks, that settles it" },
+      runInput(
+        new CountingEmbeddingProvider(unitVector(0)),
+        undefined,
+        routerAnswering(null).router,
+      ),
+    );
+    assert.equal(
+      result.stdout.split("\n")[0],
+      `${DELIVERED_LINE_PREFIX}: full — answer as the mirror; ${NO_PERSONA_CLAUSE} ===`,
+    );
+    assert.doesNotMatch(result.stdout, /=== persona\//);
+    assert.equal(sessionRow(db)?.persona, null, "the folder is not signed by the earlier cfo");
   } finally {
     db.close();
   }
@@ -442,8 +462,8 @@ test("runDoorman delta with a new persona: line, persona section, memories, atta
     const scores: MemoryScore[][] = [];
     const result = await runDoorman(
       db,
-      { kind: "delta", query: "review this article draft", persona: "writer" },
-      runInput(provider, scores),
+      { kind: "delta", query: "review this article draft" },
+      runInput(provider, scores, routerAnswering("writer").router),
     );
     const lines = result.stdout.split("\n");
     assert.equal(
@@ -489,21 +509,164 @@ test("runDoorman delta with a new persona: line, persona section, memories, atta
   }
 });
 
-test("runDoorman delta with no new persona: the line names the session's persona, no persona section, persona unchanged", async () => {
+test("runDoorman delta whose subject has no persona: the line says none, no section, and the session records none (CR203)", async () => {
   const { db } = fixture();
   try {
     activate(db, "cfo", "mirror");
     const result = await runDoorman(
       db,
-      { kind: "delta", query: "what about the budget", persona: null },
-      runInput(new CountingEmbeddingProvider(unitVector(0))),
+      { kind: "delta", query: "what about the budget" },
+      runInput(
+        new CountingEmbeddingProvider(unitVector(0)),
+        undefined,
+        routerAnswering(null).router,
+      ),
     );
     assert.equal(
       result.stdout.split("\n")[0],
-      `${DELIVERED_LINE_PREFIX}: delta (persona: cfo · journey: mirror) — answer as the mirror; sign ◇ cfo ===`,
+      `${DELIVERED_LINE_PREFIX}: delta (persona: none · journey: mirror) — answer as the mirror; ${NO_PERSONA_CLAUSE} ===`,
     );
     assert.doesNotMatch(result.stdout, /=== persona\//);
-    assert.equal(sessionRow(db)?.persona, "cfo");
+    assert.equal(sessionRow(db)?.persona, null, "the session's cfo is not inherited");
+  } finally {
+    db.close();
+  }
+});
+
+test("runDoorman delta with no router: none, unless the Journey names a default (CR203)", async () => {
+  const { db } = fixture();
+  try {
+    activate(db, "cfo", "mirror");
+    const plain = await runDoorman(
+      db,
+      { kind: "delta", query: "tell me more" },
+      runInput(new CountingEmbeddingProvider(unitVector(0))),
+    );
+    assert.match(plain.stdout.split("\n")[0] ?? "", /persona: none/);
+
+    db.prepare("UPDATE identity SET metadata = ? WHERE layer = 'journey' AND key = 'mirror'").run(
+      JSON.stringify({ default_persona: "writer" }),
+    );
+    for (const router of [undefined, routerAnswering(null).router]) {
+      const fallback = await runDoorman(
+        db,
+        { kind: "delta", query: "tell me more" },
+        runInput(new CountingEmbeddingProvider(unitVector(0)), undefined, router),
+      );
+      assert.equal(
+        fallback.stdout.split("\n")[0],
+        `${DELIVERED_LINE_PREFIX}: delta (persona: writer · journey: mirror) — answer as the mirror; sign ◇ writer ===`,
+      );
+    }
+    const routed = await runDoorman(
+      db,
+      { kind: "delta", query: "what about the budget" },
+      runInput(
+        new CountingEmbeddingProvider(unitVector(0)),
+        undefined,
+        routerAnswering("cfo").router,
+      ),
+    );
+    assert.match(routed.stdout, /persona: cfo/, "the router's answer comes before the default");
+  } finally {
+    db.close();
+  }
+});
+
+test("runDoorman delta: a persona's section reaches the conversation once, across turns with none; a full load starts over", async () => {
+  const { db } = fixture();
+  try {
+    activate(db, null, "mirror");
+    const provider = new CountingEmbeddingProvider(unitVector(2));
+    const turn = (persona: string | null) =>
+      runDoorman(
+        db,
+        { kind: "delta", query: "a turn" },
+        runInput(provider, undefined, routerAnswering(persona).router),
+      );
+    assert.match((await turn("writer")).stdout, /=== persona\/writer ===/);
+    assert.doesNotMatch((await turn(null)).stdout, /=== persona\//);
+    const again = await turn("writer");
+    assert.match(again.stdout, /sign ◇ writer/);
+    assert.doesNotMatch(again.stdout, /=== persona\//, "the transcript already holds it");
+    assert.match((await turn("cfo")).stdout, /=== persona\/cfo ===/);
+
+    await runDoorman(
+      db,
+      { kind: "full", query: "a turn" },
+      runInput(provider, undefined, routerAnswering("cfo").router),
+    );
+    assert.doesNotMatch((await turn("cfo")).stdout, /=== persona\//, "the full load delivered it");
+    assert.match((await turn("writer")).stdout, /=== persona\/writer ===/, "the list started over");
+
+    forgetDoormanDelivery(db, "S", "2026-10-25T00:00:00.000000Z");
+    const metadata = JSON.parse(
+      String(
+        db.prepare("SELECT metadata FROM runtime_sessions WHERE session_id = 'S'").get()?.metadata,
+      ),
+    ) as Record<string, unknown>;
+    assert.deepEqual(metadata.doorman_personas, [], "a compaction forgets them with the folder");
+  } finally {
+    db.close();
+  }
+});
+
+test("runDoorman delta: the routing call runs beside the embedding, and the ledger keeps it without content", async () => {
+  const { db } = fixture();
+  try {
+    activate(db, null, "mirror");
+    let embeddingStarted: () => void = () => {};
+    const started = new Promise<void>((resolve) => {
+      embeddingStarted = resolve;
+    });
+    const provider: EmbeddingProvider = {
+      async embed() {
+        embeddingStarted();
+        return { vector: unitVector(0), promptTokens: 7 };
+      },
+    };
+    // The router answers only once the embedding has started: run one after
+    // the other, the turn would never finish.
+    const router: PersonaRouter = {
+      async route() {
+        await Promise.race([
+          started,
+          new Promise((_, reject) => setTimeout(() => reject(new Error("sequential")), 2000)),
+        ]);
+        return {
+          persona: "writer",
+          outcome: "chosen",
+          model: "liquid/d1-ultra",
+          latencyMs: 560,
+          costUsd: 9.2e-5,
+        };
+      },
+    };
+    const result = await runDoorman(
+      db,
+      { kind: "delta", query: "review this article draft" },
+      runInput(provider, undefined, router),
+    );
+    assert.match(result.stdout, /sign ◇ writer/);
+    const ledger = db
+      .prepare("SELECT role, model, prompt, response, session_id FROM llm_calls ORDER BY role")
+      .all();
+    assert.deepEqual(ledger, [
+      {
+        role: "embedding",
+        model: "openai/text-embedding-3-small",
+        prompt: "",
+        response: "",
+        session_id: "S",
+      },
+      {
+        role: "persona_routing",
+        model: "liquid/d1-ultra",
+        prompt: "",
+        response: "",
+        session_id: "S",
+      },
+    ]);
   } finally {
     db.close();
   }
@@ -518,12 +681,12 @@ test("runDoorman delta with nothing under it prints the line alone", async () =>
     activate(db, null, "mirror");
     const result = await runDoorman(
       db,
-      { kind: "delta", query: "tell me more", persona: null },
+      { kind: "delta", query: "tell me more" },
       runInput(new CountingEmbeddingProvider(unitVector(0))),
     );
     assert.equal(
       result.stdout,
-      `${DELIVERED_LINE_PREFIX}: delta (persona: none · journey: mirror) — answer as the mirror ===\n`,
+      `${DELIVERED_LINE_PREFIX}: delta (persona: none · journey: mirror) — answer as the mirror; ${NO_PERSONA_CLAUSE} ===\n`,
     );
   } finally {
     db.close();
@@ -545,7 +708,7 @@ test("runDoorman delta: memories under the semantic threshold are logged, not re
     // A query on an axis no memory shares: both score 0 semantically.
     const result = await runDoorman(
       db,
-      { kind: "delta", query: "something else entirely", persona: null },
+      { kind: "delta", query: "something else entirely" },
       runInput(new CountingEmbeddingProvider(unitVector(2)), scores),
     );
     assert.match(result.stdout, /^=== mirror context delivered/);
@@ -578,7 +741,7 @@ test("runDoorman delta: a memory exactly at the threshold is rendered; one under
     const scores: MemoryScore[][] = [];
     const result = await runDoorman(
       db,
-      { kind: "delta", query: "drafting", persona: null },
+      { kind: "delta", query: "drafting" },
       runInput(new CountingEmbeddingProvider(unitVector(0)), scores),
     );
     assert.equal(DOORMAN_MEMORY_SEMANTIC_THRESHOLD, 0.4);
@@ -614,11 +777,7 @@ test("runDoorman: a memory delivered once in a session is not delivered again; a
     db.prepare("INSERT INTO memories_fts(memories_fts) VALUES ('rebuild')").run();
     activate(db, "cfo", "mirror");
     const provider = new CountingEmbeddingProvider(unitVector(0));
-    const first = await runDoorman(
-      db,
-      { kind: "delta", query: "drafting", persona: null },
-      runInput(provider),
-    );
+    const first = await runDoorman(db, { kind: "delta", query: "drafting" }, runInput(provider));
     assert.match(first.stdout, /Near memory/);
     assert.match(first.stdout, /Second near memory/);
     const remembered = JSON.parse(
@@ -630,7 +789,7 @@ test("runDoorman: a memory delivered once in a session is not delivered again; a
 
     const second = await runDoorman(
       db,
-      { kind: "delta", query: "drafting again", persona: null },
+      { kind: "delta", query: "drafting again" },
       runInput(provider),
     );
     assert.doesNotMatch(second.stdout, /=== relevant memories ===|Near memory/);
@@ -643,11 +802,7 @@ test("runDoorman: a memory delivered once in a session is not delivered again; a
       ),
     ) as { doorman_delivered?: string[] };
     assert.deepEqual(reset.doorman_delivered ?? [], []);
-    const third = await runDoorman(
-      db,
-      { kind: "delta", query: "drafting", persona: null },
-      runInput(provider),
-    );
+    const third = await runDoorman(db, { kind: "delta", query: "drafting" }, runInput(provider));
     assert.match(third.stdout, /Near memory/);
   } finally {
     db.close();
@@ -660,8 +815,8 @@ test("runDoorman delta without a provider: FTS memories, no attachments, no thro
     activate(db, "cfo", "mirror");
     const result = await runDoorman(
       db,
-      { kind: "delta", query: "drafting articles", persona: "writer" },
-      runInput(new FailingEmbeddingProvider()),
+      { kind: "delta", query: "drafting articles" },
+      runInput(new FailingEmbeddingProvider(), undefined, routerAnswering("writer").router),
     );
     assert.match(result.stdout, /^=== mirror context delivered/);
     assert.match(result.stdout, /=== persona\/writer ===/);
@@ -680,7 +835,7 @@ test("runDoorman delta with no provider at all behaves as degraded", async () =>
     activate(db, "cfo", "mirror");
     const result = await runDoorman(
       db,
-      { kind: "delta", query: "drafting articles", persona: null },
+      { kind: "delta", query: "drafting articles" },
       runInput(undefined),
     );
     assert.match(result.stdout, /\[ego\] Near memory/);

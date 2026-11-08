@@ -6,6 +6,7 @@ import { createIdentityTable } from "#helpers/identitySchema.ts";
 import { createRuntimeTables } from "#helpers/runtimeSchema.ts";
 import { tempDir } from "#helpers/tempDir.ts";
 import { resolveMirrorDefaults } from "#mirror/defaultResolution.ts";
+import type { PersonaRouter, PersonaRouting } from "#mirror/personaRouter.ts";
 import { GLOBAL_STICKY_DEFAULTS_SESSION_ID } from "#mirror/runtimeSession.ts";
 import { ReplayLlmProvider } from "#providers/llm.ts";
 
@@ -56,7 +57,7 @@ test("explicit defaults win over reception and sticky values", async () => {
   db.close();
 });
 
-test("reception overrides sticky and controls identity/shadow gating", async () => {
+test("reception sets the Journey and the gating; it no longer decides the persona (CR203)", async () => {
   const db = fixture();
   const provider = new ReplayLlmProvider({
     kind: "llm",
@@ -71,7 +72,7 @@ test("reception overrides sticky and controls identity/shadow gating", async () 
     llmProvider: provider,
   });
   assert.deepEqual(result, {
-    persona: "engineer",
+    persona: null,
     journey: "mirror-ts-core",
     detectedJourney: null,
     touchesIdentity: false,
@@ -80,14 +81,94 @@ test("reception overrides sticky and controls identity/shadow gating", async () 
   db.close();
 });
 
-test("sticky defaults precede keyword fallback", async () => {
+/** A router that answers as told and records what it was asked. */
+function router(persona: string | null) {
+  const asked: { prompt: string; journey: string | null }[] = [];
+  const routings: PersonaRouting[] = [];
+  return {
+    asked,
+    routings,
+    personaRouter: {
+      async route(input: { prompt: string; journey: string | null }): Promise<PersonaRouting> {
+        asked.push({ prompt: input.prompt, journey: input.journey });
+        return { persona, outcome: persona ? "chosen" : "below_threshold", model: "m" };
+      },
+    } satisfies PersonaRouter,
+    onPersonaRouting: (routing: PersonaRouting) => {
+      routings.push(routing);
+    },
+  };
+}
+
+test("the persona is the router's answer for the query, with the Journey already resolved (CR203)", async () => {
+  const db = fixture();
+  const routed = router("engineer");
+  const result = await resolveMirrorDefaults(db, {
+    query: "debug mirror ts core",
+    receptionEnabled: false,
+    personaRouter: routed.personaRouter,
+    onPersonaRouting: routed.onPersonaRouting,
+  });
+  assert.equal(result.persona, "engineer");
+  assert.deepEqual(routed.asked, [{ prompt: "debug mirror ts core", journey: "sticky-journey" }]);
+  assert.equal(routed.routings.length, 1, "the call goes to the ledger's sink");
+  db.close();
+});
+
+test("the sticky Journey still applies; the sticky persona and the keywords no longer do (CR203)", async () => {
   const db = fixture();
   const result = await resolveMirrorDefaults(db, {
     query: "debug mirror ts core",
     receptionEnabled: false,
   });
-  assert.equal(result.persona, "sticky-persona");
+  assert.equal(result.persona, null, "neither sticky-persona nor the 'debug' keyword");
   assert.equal(result.journey, "sticky-journey");
   assert.equal(result.touchesIdentity, true);
+  const none = router(null);
+  assert.equal(
+    (
+      await resolveMirrorDefaults(db, {
+        query: "debug mirror ts core",
+        receptionEnabled: false,
+        personaRouter: none.personaRouter,
+      })
+    ).persona,
+    null,
+  );
+  db.close();
+});
+
+test("a named persona is not routed; a load without a query takes the Journey's default (CR203)", async () => {
+  const db = fixture();
+  db.prepare(
+    "UPDATE identity SET metadata = ? WHERE layer = 'journey' AND key = 'mirror-ts-core'",
+  ).run(JSON.stringify({ default_persona: "engineer" }));
+  const named = router("engineer");
+  const explicit = await resolveMirrorDefaults(db, {
+    persona: "explicit-persona",
+    query: "debug",
+    receptionEnabled: false,
+    personaRouter: named.personaRouter,
+  });
+  assert.equal(explicit.persona, "explicit-persona");
+  assert.equal(named.asked.length, 0, "the person's word is not second-guessed");
+
+  const unasked = router("other");
+  const fallback = await resolveMirrorDefaults(db, {
+    journey: "mirror-ts-core",
+    receptionEnabled: false,
+    personaRouter: unasked.personaRouter,
+  });
+  assert.equal(fallback.persona, "engineer");
+  assert.equal(unasked.asked.length, 0, "no query, no routing call");
+
+  const below = router(null);
+  const routedNone = await resolveMirrorDefaults(db, {
+    journey: "mirror-ts-core",
+    query: "thanks",
+    receptionEnabled: false,
+    personaRouter: below.personaRouter,
+  });
+  assert.equal(routedNone.persona, "engineer", "the router said none: the Journey's default");
   db.close();
 });

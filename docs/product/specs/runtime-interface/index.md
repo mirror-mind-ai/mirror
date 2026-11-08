@@ -426,12 +426,12 @@ Given the prompt and the session's state, the doorman prints one of three answer
 
 1. **The full folder**, when the prompt opens with the Mirror skill's explicit form:
    what `mirror mirror load --query` builds from the question — the identity
-   layers, the persona routed from it, the journey, the shadow patterns, and the
+   layers, the persona routed from it (below), the journey, the shadow patterns, and the
    memories and attachments relevant to it. The session is marked in Mirror Mode
    by its id.
-2. **A delta**, on an ordinary turn while Mirror Mode is on: the section of a
-   persona the prompt newly scores above threshold (`detectPersona`, a keyword
-   score, no model call), which becomes the session's persona; up to five memories
+2. **A delta**, on an ordinary turn while Mirror Mode is on: the turn's persona,
+   routed by its subject, with its section when the conversation has not read it
+   yet; up to five memories
    scoring at least 0.4 on the semantic score that the session has not been given
    yet; and the attachments scoring above 0.4. The identity layers are not
    repeated: they are already in the transcript. Without an embedding (no provider,
@@ -440,6 +440,15 @@ Given the prompt and the session's state, the doorman prints one of three answer
 3. **Nothing**, when Mirror Mode is off, and on a skill invocation other than the
    Mirror form, which is a command, not a question (CR160's rule, held by the
    doorman since CV9.DS8.US5).
+
+A turn's persona (CR203) is, in order: the persona the person named
+(`mirror load --persona`); the router's answer, a Decisions model asked which
+persona the subject belongs to and whether it belongs to any, taken only at or
+above `MEMORY_PERSONA_ROUTER_THRESHOLD`; the persona the turn's Journey names as
+`default_persona`; or none. It is never the session's by inheritance. With none,
+the delivered line says `persona: none` and tells the model not to sign and not
+to answer as an earlier persona. Every routing failure is none, and the turn goes
+on.
 
 Mirror Mode is on for a session when its `mirror_active` flag is set **and** its
 operating mode (the session's own, else the global record) is still Mirror Mode

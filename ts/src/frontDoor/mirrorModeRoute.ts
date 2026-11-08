@@ -4,7 +4,6 @@ import type { Database, WritableDatabase } from "#db/database.ts";
 import {
   type DoormanDecision,
   decideDoorman,
-  doormanPersonas,
   forgetDoormanDelivery,
   type MemoryScore,
   readDoormanSessionState,
@@ -16,6 +15,12 @@ import {
   logMirrorResponse,
   runMirrorLoad,
 } from "#mirror/orchestration.ts";
+import {
+  LivePersonaRouter,
+  loadReplayPersonaRouter,
+  PERSONA_ROUTER_REPLAY_ENV,
+  type PersonaRouter,
+} from "#mirror/personaRouter.ts";
 import { environmentSessionId, resolveNamedRuntimeSessionId } from "#mirror/runtimeSession.ts";
 import {
   activateOperatingMode,
@@ -43,6 +48,7 @@ export type MirrorRouteEnvironment = {
   MEMORY_RECEPTION?: string;
   MIRROR_TS_MIRROR_LLM_REPLAY?: string;
   MIRROR_TS_MIRROR_EMBEDDING_REPLAY?: string;
+  MIRROR_TS_PERSONA_ROUTER_REPLAY?: string;
 };
 
 export function isMirrorWrite(argv: readonly string[]): boolean {
@@ -109,7 +115,6 @@ export async function runMirrorDoormanRoute(
     decideDoorman({
       prompt,
       state: readDoormanSessionState(db, sessionId),
-      personas: doormanPersonas(db),
     }),
   );
   if (typeof decided === "number") return decided;
@@ -131,6 +136,7 @@ export async function runMirrorDoormanRoute(
       onReceptionOutcome: deps.onReceptionOutcome,
       llmProvider: receptionEnabled ? family.llm : undefined,
       embeddingProvider: family.embedding,
+      personaRouter: personaRouterFor(family.mode, env),
       onMemoryScores: deps.onMemoryScores,
       newId,
       nowIso,
@@ -139,6 +145,21 @@ export async function runMirrorDoormanRoute(
     process.stderr.write(rendered.stderr);
     return 0;
   });
+}
+
+/**
+ * CR203: the persona router for the family's transport. Live asks the
+ * Decisions route; a replay run reaches no network, so it answers from its
+ * recorded fixture when one is named, and otherwise routes nothing: its turns
+ * have the Journey's default or none.
+ */
+export function personaRouterFor(
+  mode: "replay" | "live",
+  env: MirrorRouteEnvironment,
+): PersonaRouter | undefined {
+  if (mode === "live") return new LivePersonaRouter({ env: { ...env } });
+  const fixture = env[PERSONA_ROUTER_REPLAY_ENV];
+  return fixture ? loadReplayPersonaRouter(fixture) : undefined;
 }
 
 export function isModeWrite(argv: readonly string[]): boolean {
@@ -241,6 +262,7 @@ export async function runMirrorWriteRoute(
     onReceptionOutcome: options.onReceptionOutcome,
     llmProvider: receptionEnabled ? family?.llm : undefined,
     embeddingProvider: family?.embedding,
+    personaRouter: family ? personaRouterFor(family.mode, env) : undefined,
     newId,
     nowIso,
   });
