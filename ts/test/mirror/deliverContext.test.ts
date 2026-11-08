@@ -23,6 +23,7 @@ import {
   MirrorContextRejectedError,
 } from "#mirror/deliverContext.ts";
 import { DELIVERED_LINE_PREFIX } from "#mirror/doorman.ts";
+import type { PersonaRouter } from "#mirror/personaRouter.ts";
 import {
   resolveLlmMaxRetries,
   resolveLlmTimeoutMs,
@@ -126,19 +127,10 @@ test("the full folder takes the Journey the host names, over the one the session
   assert.equal(session(dbPath)?.journey, other);
 });
 
-/** Reception's classifier, choosing one persona for the turn. */
-class ChoosingReception implements LlmProvider {
-  readonly persona: string;
-  constructor(persona: string) {
-    this.persona = persona;
-  }
-  async complete(): Promise<LlmResponse> {
-    return {
-      content: JSON.stringify({ personas: [this.persona], journey: null }),
-      model: "test/reception",
-    };
-  }
-}
+/** CR203's router, choosing one persona for the turn. */
+const choosing = (persona: string): PersonaRouter => ({
+  route: async () => ({ persona, outcome: "chosen" }),
+});
 
 // CR204: a host that shows who is speaking gets the persona's own name, not only its id.
 test("the delivery hands the host the persona's name with its id", async () => {
@@ -146,7 +138,7 @@ test("the delivery hands the host the persona's name with its id", async () => {
   const delivered = await deliverMirrorContext(
     dbPath,
     { sessionId: SESSION, prompt: "Help me draft the opening.", journeyId: journey },
-    { providers: { embedding: new CountingEmbedding(), llm: new ChoosingReception("writer") } },
+    { providers: { ...providers(), personaRouter: choosing("writer") } },
   );
   assert.equal(delivered.persona, "writer");
   assert.equal(delivered.personaName, "Writer");
@@ -166,7 +158,7 @@ test("a persona without a name, and a turn without a persona, hand over no name"
   const withoutName = await deliverMirrorContext(
     unnamed.dbPath,
     { sessionId: SESSION, prompt: "Help me draft the opening.", journeyId: unnamed.journey },
-    { providers: { embedding: new CountingEmbedding(), llm: new ChoosingReception("writer") } },
+    { providers: { ...providers(), personaRouter: choosing("writer") } },
   );
   assert.equal(withoutName.persona, "writer");
   assert.equal(withoutName.personaName, null);
@@ -174,8 +166,7 @@ test("a persona without a name, and a turn without a persona, hand over no name"
   const quiet = desktopHome();
   const none = await deliverMirrorContext(
     quiet.dbPath,
-    // Neutral words: no keyword routes them to a persona (as "plan" would route to the coach).
-    { sessionId: SESSION, prompt: "Hello there.", journeyId: quiet.journey },
+    { sessionId: SESSION, prompt: "How should I plan this week?", journeyId: quiet.journey },
     { providers: providers() },
   );
   assert.equal(none.persona, null);
@@ -309,24 +300,23 @@ test("writes nothing outside the home", async () => {
 });
 
 test("a host's decision: Mirror Mode from the first turn, the doorman's after", () => {
-  const personas = [{ key: "writer", routing_keywords: ["draft"] }];
   const off = { active: false, persona: null, journey: null };
   const on = { active: true, persona: null, journey: "j" };
-  assert.deepEqual(decideHostTurn({ prompt: "Hello", state: null, personas }), {
+  assert.deepEqual(decideHostTurn({ prompt: "Hello", state: null }), {
     kind: "full",
     query: "Hello",
   });
-  assert.deepEqual(decideHostTurn({ prompt: "Hello", state: off, personas }), {
+  assert.deepEqual(decideHostTurn({ prompt: "Hello", state: off }), {
     kind: "full",
     query: "Hello",
   });
-  assert.deepEqual(decideHostTurn({ prompt: "/mm-build x", state: off, personas }), {
+  assert.deepEqual(decideHostTurn({ prompt: "/mm-build x", state: off }), {
     kind: "nothing",
   });
-  assert.deepEqual(decideHostTurn({ prompt: "/mm-build x", state: on, personas }), {
+  assert.deepEqual(decideHostTurn({ prompt: "/mm-build x", state: on }), {
     kind: "nothing",
   });
-  assert.equal(decideHostTurn({ prompt: "a draft", state: on, personas }).kind, "delta");
+  assert.equal(decideHostTurn({ prompt: "a draft", state: on }).kind, "delta");
 });
 
 test("a host's providers get the key, one attempt and a 10 s bound each, and nothing else", () => {

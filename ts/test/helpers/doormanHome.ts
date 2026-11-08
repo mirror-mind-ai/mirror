@@ -3,9 +3,10 @@
 // Claude's inject hook (US4) and Antigravity's PreInvocation (TS6) both hand
 // the turn to `mirror doorman`; their tests drive the hook's real entry against
 // the same scratch home: a bootstrapped database holding the identity layers a
-// full load renders, two personas a prompt routes to by keyword (`money` ->
-// cfo, `draft` -> writer), one journey, and replayed providers, so a delta's
-// one embedding is counted in `llm_calls` without a network. One fixture, so
+// full load renders, two personas the replayed router routes a prompt to
+// (`money` or `budget` -> cfo, `draft` or `article` -> writer; anything else ->
+// none, CR203), one journey, and replayed providers, so a delta's one embedding
+// is counted in `llm_calls` without a network. One fixture, so
 // the two hooks are measured against one world and cannot drift apart.
 
 import { existsSync, readdirSync, writeFileSync } from "node:fs";
@@ -65,6 +66,22 @@ export function doormanHome(prefix: string): DoormanHome {
     join(dir, "llm.json"),
     JSON.stringify({ kind: "llm", responses: { reception: { content: "{}", model: "fixture" } } }),
   );
+  // CR203: the router's recorded answers, read as the live route's are.
+  const decided = (choice: string) => ({
+    answers: { persona: { type: "choice", choice }, fits: { type: "noul", noul: 0.9 } },
+  });
+  writeFileSync(
+    join(dir, "persona-router.json"),
+    JSON.stringify({
+      kind: "persona_router",
+      answers: [
+        { contains: "money", body: decided("cfo") },
+        { contains: "budget", body: decided("cfo") },
+        { contains: "draft", body: decided("writer") },
+        { contains: "article", body: decided("writer") },
+      ],
+    }),
+  );
   return { dir, dbPath };
 }
 
@@ -91,6 +108,7 @@ export function doormanHookEnv(
     MEMORY_RECEPTION: "0",
     MIRROR_TS_MIRROR_EMBEDDING_REPLAY: join(home.dir, "embedding.json"),
     MIRROR_TS_MIRROR_LLM_REPLAY: join(home.dir, "llm.json"),
+    MIRROR_TS_PERSONA_ROUTER_REPLAY: join(home.dir, "persona-router.json"),
     OPENROUTER_API_KEY: "",
     CLAUDE_CODE_SESSION_ID: "",
     CODEX_SESSION_ID: "",

@@ -156,6 +156,8 @@ test("front door mirror load query uses scrubbed reception and embedding replay 
       {
         MIRROR_TS_MIRROR_LLM_REPLAY: llmPath,
         MIRROR_TS_MIRROR_EMBEDDING_REPLAY: embeddingPath,
+        // CR203: the persona is the router's, not reception's pick.
+        MIRROR_TS_PERSONA_ROUTER_REPLAY: personaRouterFixture(fixtureDir, "routing", "engineer"),
         MEMORY_RECEPTION: "1",
       },
     );
@@ -301,6 +303,24 @@ test("front door mode activate/status/deactivate preserves the Python surface", 
 
 // --- CV9.DS8.TS2: the one doorman as a command -------------------------------
 
+/** CR203: the router's recorded answer for prompts naming `contains`; anything else is none. */
+function personaRouterFixture(dir: string, contains: string, persona: string): string {
+  const path = join(dir, "persona-router.json");
+  writeFileSync(
+    path,
+    JSON.stringify({
+      kind: "persona_router",
+      answers: [
+        {
+          contains,
+          body: { answers: { persona: { choice: persona }, fits: { noul: 0.9 } } },
+        },
+      ],
+    }),
+  );
+  return path;
+}
+
 function embeddingFixture(dir: string): string {
   const path = join(dir, "embedding.json");
   writeFileSync(
@@ -355,6 +375,7 @@ test("mirror doorman: the explicit form delivers the folder once, then an ordina
     const fixtureDir = join(ws.dbPath, "..");
     const env = {
       MIRROR_TS_MIRROR_EMBEDDING_REPLAY: embeddingFixture(fixtureDir),
+      MIRROR_TS_PERSONA_ROUTER_REPLAY: personaRouterFixture(fixtureDir, "debug", "engineer"),
       MEMORY_RECEPTION: "0",
     };
     const full = spawnFrontDoor(
@@ -402,12 +423,19 @@ test("mirror doorman: the explicit form delivers the folder once, then an ordina
       env,
     );
     assert.equal(delta.status, 0, delta.stderr);
+    // CR203: the next step's subject belongs to no persona, and the session's
+    // engineer is not inherited: the line says none, and the session records it.
     assert.match(
       delta.stdout,
-      /^=== mirror context delivered by the runtime for this turn: delta \(persona: engineer · journey: mirror-ts-core\) — answer as the mirror; sign ◇ engineer ===\n/,
+      /^=== mirror context delivered by the runtime for this turn: delta \(persona: none · journey: mirror-ts-core\) — answer as the mirror; no persona this turn: do not sign, and do not answer as an earlier persona ===\n/,
     );
     assert.doesNotMatch(delta.stdout, /MIRROR MODE ACTIVE|=== persona\/|=== user\/identity ===/);
     db = openDatabaseReadOnly(ws.dbPath);
+    assert.equal(
+      db.prepare("SELECT persona FROM runtime_sessions WHERE session_id = 'cli-session'").get()
+        ?.persona,
+      null,
+    );
     assert.equal(
       db.prepare("SELECT COUNT(*) AS n FROM llm_calls WHERE role = 'embedding'").get()?.n,
       1,

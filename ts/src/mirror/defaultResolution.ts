@@ -1,11 +1,11 @@
 import type { Database } from "#db/database.ts";
 import { descriptorsByLayer } from "#descriptor/descriptorRead.ts";
 import type { OnProviderCallOutcome } from "#observability/callOutcome.ts";
-import { detectPersona, type PersonaRoutingRow } from "#persona/detectPersona.ts";
 import { type EmbeddingProvider, generateEmbeddingSafely } from "#providers/embedding.ts";
 import type { LlmProvider, LlmResponse } from "#providers/llm.ts";
 import { cosineSimilarity } from "#search/ranker.ts";
 import { stripAccents } from "#util/slug.ts";
+import { type PersonaRouter, type PersonaRouting, routeTurnPersona } from "./personaRouter.ts";
 import { runReception, sliceCodePoints } from "./reception.ts";
 import { GLOBAL_STICKY_DEFAULTS_SESSION_ID, getRuntimeSession } from "./runtimeSession.ts";
 
@@ -28,6 +28,10 @@ export interface ResolveMirrorDefaultsInput {
   onReceptionLlmCall?: (response: LlmResponse, prompt: string) => void;
   /** Reception's outcome, category only; see `observability/callOutcome.ts`. */
   onReceptionOutcome?: OnProviderCallOutcome;
+  /** CR203: routes the persona when none was named; absent, no call is made. */
+  personaRouter?: PersonaRouter;
+  /** CR203: the routing call, for its ledger row; content-free. */
+  onPersonaRouting?: (routing: PersonaRouting) => void;
 }
 
 interface IdentityRoutingRow {
@@ -48,7 +52,6 @@ export async function resolveMirrorDefaults(
 
   const session = input.sessionId ? getRuntimeSession(db, input.sessionId) : null;
   const global = getRuntimeSession(db, GLOBAL_STICKY_DEFAULTS_SESSION_ID);
-  const stickyPersona = session?.persona || global?.persona || null;
   const stickyJourney = session?.journey || global?.journey || null;
   const query = input.query ?? null;
 
@@ -73,22 +76,32 @@ export async function resolveMirrorDefaults(
       input.onReceptionLlmCall,
       input.onReceptionOutcome,
     );
-    if (reception.personas.length > 0 && persona === null) persona = reception.personas[0] ?? null;
+    // Reception still names personas, and its prompt still offers them: the
+    // prompt is digest-pinned, and changing it is its own decision. Its pick
+    // no longer decides the turn (CR203): the router does, below.
     if (reception.journey && journey === null) journey = reception.journey;
     touchesIdentity = reception.touchesIdentity;
     touchesShadow = reception.touchesShadow;
   }
 
-  persona ??= stickyPersona;
   journey ??= stickyJourney;
 
-  if (persona === null && query) {
-    const matches = detectPersona(query, personaRoutingRows(db));
-    persona = matches[0]?.key ?? null;
-  }
   if (journey === null && query) {
     detectedJourney = await detectJourney(db, query, input.embeddingProvider);
     journey = detectedJourney[0]?.[0] ?? null;
+  }
+  // CR203: the persona the person named, else the turn's own by its subject,
+  // else the Journey's default, else none. Never the session's or the last
+  // load's by inheritance: a wrong persona is worse than none.
+  if (persona === null) {
+    persona = (
+      await routeTurnPersona(db, {
+        prompt: query ?? "",
+        journey,
+        router: query ? input.personaRouter : undefined,
+        onRouting: input.onPersonaRouting,
+      })
+    ).persona;
   }
 
   return { persona, journey, detectedJourney, touchesIdentity, touchesShadow };
@@ -175,14 +188,6 @@ function identityRoutingRows(db: Database, layer: string): IdentityRoutingRow[] 
 
 function descriptorMap(db: Database, layer: string): Map<string, string> {
   return new Map(descriptorsByLayer(db, layer).map((row) => [row.key, row.descriptor]));
-}
-
-/** Every persona's routing table, as `detectPersona` scores it. Shared with the doorman (CV9.DS8.TS2). */
-export function personaRoutingRows(db: Database): PersonaRoutingRow[] {
-  return identityRoutingRows(db, "persona").map((row) => ({
-    key: row.key,
-    routing_keywords: routingKeywords(row.metadata),
-  }));
 }
 
 function routingKeywords(metadata: string | null): string[] {
