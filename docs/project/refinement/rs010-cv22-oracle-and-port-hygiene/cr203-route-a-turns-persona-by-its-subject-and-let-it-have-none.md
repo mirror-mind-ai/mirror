@@ -58,18 +58,77 @@ model's text, when the Core says none.
 ## Plan Or Decision
 
 Captured 2026-11-07 by the Navigator ("abra a CR201 no Core"; 201 was already taken, and 202 was taken on `main` while this waited), after
-the eval in [the eval report](cr203-persona-routing-eval-2026-11-07.md). Not planned.
+the eval in [the eval report](cr203-persona-routing-eval-2026-11-07.md).
 
-Open before building:
+Planned 2026-11-08. The open questions are settled as follows; the first two are design,
+the last two stay with the owner:
 
-- Whether the full load (the explicit Mirror form, reception) uses the same router, so the
-  two paths cannot disagree. The recommendation is yes.
-- Whether a Journey may name a default persona the router falls back to. The eval did not
-  test this; it would have turned the book Journey's two wrong picks into right ones.
-- The regression set: the 100 labelled turns are the maintainer's private prompts and stay
-  out of this public repository. A synthetic set of the same shape, labelled the same way,
-  goes into the tests; the private set is rerun locally before a threshold changes.
-- The duplicate personas are content, not code: the owner's decision.
+- **One router for both paths.** The full load and the delta use the same module, so the
+  two paths cannot disagree. Reception keeps its own job (memories, Journey); it stops
+  deciding the persona.
+- **A Journey may name a default persona.** When the router answers none and the session's
+  Journey carries `default_persona` in its metadata, that persona is taken, with the
+  ordinary signing rule. This is the Journey's own word, not an inference; a Journey
+  without the field changes nothing. In the eval it would have turned the book Journey's
+  two wrong picks into right ones.
+- **The regression set is synthetic.** The 100 labelled turns are the maintainer's private
+  prompts and stay out of this public repository; a synthetic set of the same shape goes
+  into the tests, and the private set is rerun locally before a model or threshold changes.
+- **The duplicate personas are content**, not code: the owner's decision, outside this CR.
+
+### The build, in order
+
+1. **The route behind one module.** `ts/src/mirror/personaRouter.ts` owns the alpha shape:
+   it builds one `POST /api/alpha/decisions` request with one Choice among the personas
+   (key and descriptor) and one Noul asking whether the subject belongs to any of them,
+   and it parses the answer into `{ persona: string | null }`. The persona is taken only
+   when the Noul is at or above the threshold AND the Choice names a known key. A missing
+   key, a timeout, a refusal, a malformed body or an unknown key each give none; the
+   module never throws into a turn. A contract test pins the request and response shapes
+   with recorded bodies, so a change in the alpha route fails a test, not a turn.
+2. **Configuration.** `MEMORY_PERSONA_ROUTER_MODEL` (default `liquid/d1-ultra`) and
+   `MEMORY_PERSONA_ROUTER_THRESHOLD` (default `0.6`), read as the other provider settings
+   are (`ts/src/providers/config.ts`); an invalid value reads as unset. The call runs once,
+   bounded at 10 s like reception (`hostProviderEnv`); the eval's p95 is 1.1 s.
+3. **The delta stops inheriting.** `decideDoorman` stays pure and stops scoring keywords:
+   a delta decision carries the query, and the router is called where providers already
+   live, in `runDoorman`, before `runDelta` renders. `runDelta` drops
+   `decision.persona ?? state.persona`: the turn's persona is the router's answer, or the
+   Journey's default, or none. The session row records that answer, so the recorded
+   persona becomes the last one chosen, not a running default.
+4. **The full load agrees.** `resolveMirrorDefaults` takes the router's answer over the
+   sticky persona and reception's guess; an explicit `--persona` on the Mirror form still
+   wins, as the person's own word always does.
+5. **The line says none, and says it firmly.** `deliveredLine` with no persona reads
+   `persona: none`, `answer as the mirror`, carries no signing rule, and tells the model
+   not to keep answering or signing as an earlier persona. The exact words are the prompt
+   engineer's and are settled in review before the merge.
+6. **The ledger sees the call.** Each router call writes one `llm_calls` row through
+   `logLlmCall`, content-free like the embedding row: model, latency, outcome, no prompt
+   and no answer.
+7. **`detectPersona` retires from the doorman.** The keyword scorer stops deciding turns;
+   it is removed with its callers once both paths route through the module. No flag and no
+   dual path: a rollback is the release line's, as ever.
+
+### Validation
+
+`ts/test/mirror/personaRouter.test.ts` and the doorman's and resolution's existing suites:
+
+- the contract test pins both shapes with recorded bodies;
+- below the threshold, above it, unknown key, malformed body, refusal, timeout and no key
+  each land where the table above says, and none of them fails the turn;
+- a delta no longer inherits the session's persona; a full load and a delta given the same
+  subject choose the same persona;
+- the Journey default applies only when the router says none, and only when the Journey
+  names one;
+- the delivered line with none carries no signing rule and the settled wording;
+- one `llm_calls` row per routed turn, content-free;
+- a synthetic labelled set runs in the suite; the private 100 are rerun locally and the
+  numbers go into this record before the merge.
+
+Mutations, each expected caught: taking the persona below the threshold, keeping the
+session's persona on none, ignoring the Journey default, treating an unknown key as a
+persona, signing on none, and logging content.
 
 ## Evidence
 
@@ -82,4 +141,4 @@ Open before building:
 
 ## Outcome
 
-Pending: captured, not planned.
+Pending: planned 2026-11-08, awaiting the Navigator's word to build.
