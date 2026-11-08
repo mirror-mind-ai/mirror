@@ -26,6 +26,12 @@ next turn rather than re-delivering every persona.
 No schema change, no migration, no model or `prompts.ts` change; the model-behavior gate
 does not apply. Release note: [v0.43.0](../releases/v0.43.0.md).
 
+Published the same day: tag `v0.43.0` and `stable` at `7cad67c2`, GitHub release marked
+latest, `publish.yml` (run 42522479640) approved by the Navigator, npm `stable` and `latest` at
+0.43.0 with `gitHead` `7cad67c2`. Installed on the maintainer's machine with
+`mirror runtime update` (0.42.0 to 0.43.0, backup verified, no migration pending). The field
+falsifier waits for Nautilus for Mirror to pin this release.
+
 ### 2026-11-08 — v0.42.0: A Persona the Host Can Read and Edit
 
 Minor release of
