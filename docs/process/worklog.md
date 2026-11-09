@@ -12,6 +12,20 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-11-09 — v0.44.0: A Persona the Host Can Create and Delete
+
+Minor release of
+[CR207](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr207-let-the-host-create-and-delete-a-persona.md)
+(PR #75), on the Navigator's word. `createPersona`, `previewPersonaDeletion` and
+`deletePersona` join the Desktop API, for Nautilus for Mirror's CR222 and CR223. The deletion
+follows CR200's Journey deletion: digest, named verified backup, one transaction; history stays,
+machinery goes, live choices are cleared, an heir refuses. Built test-first: 15 cases and a closed
+inventory over the schema; 23 mutations, 22 caught, the survivor equivalent. One departure,
+recorded in the CR: no descriptor is generated, since CR203's router reads the description first.
+
+No schema change, no migration, no model or `prompts.ts` change; the model-behavior gate
+does not apply. Release note: [v0.44.0](../releases/v0.44.0.md).
+
 ### 2026-11-08 — v0.43.0: A Persona Edit That Reaches the Open Conversation
 
 Minor release of
