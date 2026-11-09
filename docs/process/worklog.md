@@ -26,6 +26,11 @@ recorded in the CR: no descriptor is generated, since CR203's router reads the d
 No schema change, no migration, no model or `prompts.ts` change; the model-behavior gate
 does not apply. Release note: [v0.44.0](../releases/v0.44.0.md).
 
+Published 2026-11-09: tag `v0.44.0` and `stable` at `de56989f`, GitHub release marked latest,
+`publish.yml` (run 42617415330) approved by the Navigator, npm `stable` and `latest` at 0.44.0
+with `gitHead` `de56989f`. Not yet installed on the maintainer's machine; Nautilus for Mirror
+pins it next, for its CR222 and CR223.
+
 ### 2026-11-08 — v0.43.0: A Persona Edit That Reaches the Open Conversation
 
 Minor release of
