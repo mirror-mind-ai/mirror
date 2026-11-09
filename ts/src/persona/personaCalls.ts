@@ -1,11 +1,13 @@
-// Personas as calls — CR205.
+// Personas as calls — CR205, and CR207's `createPersona`.
 //
 // A host that embeds this core (Nautilus for Mirror) shows a persona and edits
-// it through three calls:
+// it through these calls:
 //
 //   - `listPersonas`: every persona's id, name and description;
 //   - `readPersona`: one persona whole;
-//   - `updatePersona`: its name, prompt, description and routing keywords.
+//   - `updatePersona`: its name, prompt, description and routing keywords;
+//   - `createPersona` (CR207): a new persona with those fields, under an id no
+//     persona holds. Deleting one is `personaDeletion.ts`.
 //
 // A persona is one identity row (`layer = 'persona'`): `content` is its prompt,
 // and its metadata carries the rest. The default model and the inheritance are
@@ -27,7 +29,8 @@ import { type Database, openDatabaseReadOnly, withTransaction } from "#db/databa
 import { inspectMigrationState } from "#db/migrationReport.ts";
 import { openLiveWriteDatabase } from "#frontDoor/liveBackup.ts";
 import { upsertIdentity } from "#identity/identityStore.ts";
-import { nowIso } from "#util/pyGenerators.ts";
+import { newId, nowIso } from "#util/pyGenerators.ts";
+import { isKebabSlug } from "#util/slug.ts";
 
 export type PersonaCallRejection =
   | "invalid_request"
@@ -37,15 +40,23 @@ export type PersonaCallRejection =
   | "invalid_name"
   | "invalid_prompt"
   | "invalid_description"
-  | "invalid_routing_keywords";
+  | "invalid_routing_keywords"
+  // CR207.
+  | "invalid_persona_id"
+  | "persona_exists"
+  | "persona_has_heirs"
+  | "backup_failed";
 
 /** A call's refusal, naming the field when one was at fault. Nothing was written. */
 export class PersonaCallRejectedError extends Error {
   readonly reason: PersonaCallRejection;
+  /** The personas the refusal is about: the heirs, for `persona_has_heirs`. */
+  readonly personas: string[];
 
-  constructor(reason: PersonaCallRejection) {
-    super(reason);
+  constructor(reason: PersonaCallRejection, personas: string[] = []) {
+    super(personas.length ? `${reason}: ${personas.join(", ")}` : reason);
     this.reason = reason;
+    this.personas = personas;
   }
 }
 
@@ -62,6 +73,15 @@ export interface Persona extends PersonaSummary {
   inheritsFrom: string | null;
   /** What `updatePersona` takes back as `expectedUpdatedAt`. */
   updatedAt: string;
+}
+
+export interface CreatePersonaRequest {
+  /** The new persona's id: a kebab slug no persona holds. */
+  persona: string;
+  name: string;
+  prompt: string;
+  description?: string | null;
+  routingKeywords?: string[];
 }
 
 export interface UpdatePersonaRequest {
@@ -82,6 +102,7 @@ const MAX_DESCRIPTION = 2000;
 const MAX_KEYWORD = 80;
 const MAX_KEYWORDS = 200;
 const WRITABLE = new Set(["name", "prompt", "description", "routingKeywords"]);
+const CREATE_KEYS = new Set(["persona", ...WRITABLE]);
 const REQUEST_KEYS = new Set(["persona", "expectedUpdatedAt", ...WRITABLE]);
 
 type Metadata = Record<string, unknown>;
@@ -103,11 +124,11 @@ interface PersonaRow {
   metadata: string | null;
 }
 
-function reject(reason: PersonaCallRejection): never {
-  throw new PersonaCallRejectedError(reason);
+function reject(reason: PersonaCallRejection, personas?: string[]): never {
+  throw new PersonaCallRejectedError(reason, personas);
 }
 
-function text(value: unknown): string {
+export function text(value: unknown): string {
   if (typeof value !== "string" || value.length === 0) reject("invalid_request");
   return value;
 }
@@ -158,7 +179,7 @@ function personaOf(row: PersonaRow): Persona {
   };
 }
 
-function personaRow(db: Database, key: string): PersonaRow | undefined {
+export function personaRow(db: Database, key: string): PersonaRow | undefined {
   return db
     .prepare(
       "SELECT key, content, version, updated_at, metadata FROM identity WHERE layer = 'persona' AND key = ?",
@@ -166,7 +187,7 @@ function personaRow(db: Database, key: string): PersonaRow | undefined {
     .get(key) as unknown as PersonaRow | undefined;
 }
 
-function withRead<T>(dbPath: string, read: (db: Database) => T): T {
+export function withRead<T>(dbPath: string, read: (db: Database) => T): T {
   const report = inspectMigrationState(dbPath);
   if (report.state !== "current") throw new DatabaseNotCurrentError(report);
   const db = openDatabaseReadOnly(dbPath);
@@ -278,6 +299,57 @@ export function updatePersona(dbPath: string, request: UpdatePersonaRequest): Pe
       upsertIdentity(
         db,
         { id: key, layer: "persona", key, content, version: row.version, metadata },
+        nowIso(),
+      );
+      const written = personaRow(db, key);
+      if (!written) reject("unknown_persona");
+      return personaOf(written);
+    });
+  } finally {
+    db.close();
+  }
+}
+
+/**
+ * Create a persona; answer it whole. Its metadata holds what the seed writes
+ * for a persona file (`persona_id`, then the fields given), and it is offered
+ * to the router from the next turn by its description (`routablePersonas`).
+ * The default model and the inheritance are not taken, as in `updatePersona`.
+ */
+export function createPersona(dbPath: string, request: CreatePersonaRequest): Persona {
+  const key = text(request?.persona);
+  const given = Object.keys(request).filter(
+    (field) => request[field as keyof CreatePersonaRequest] !== undefined,
+  );
+  if (given.some((field) => !CREATE_KEYS.has(field))) reject("invalid_request");
+  if (!isKebabSlug(key)) reject("invalid_persona_id");
+  const name = request.name === null ? reject("invalid_name") : cleanName(request.name);
+  const prompt = cleanPrompt(request.prompt);
+  const meta: Metadata = { persona_id: key, name };
+  // A description is optional; `null`, as `undefined`, creates the persona without one.
+  const description = request.description == null ? null : cleanDescription(request.description);
+  if (description !== null) meta.description = description;
+  if (request.routingKeywords !== undefined) {
+    const keywords = cleanKeywords(request.routingKeywords);
+    if (keywords.length) meta.routing_keywords = keywords;
+  }
+
+  const report = inspectMigrationState(dbPath);
+  if (report.state !== "current") throw new DatabaseNotCurrentError(report);
+  const db = openLiveWriteDatabase(dbPath);
+  try {
+    return withTransaction(db, () => {
+      if (personaRow(db, key)) reject("persona_exists");
+      upsertIdentity(
+        db,
+        {
+          id: newId(),
+          layer: "persona",
+          key,
+          content: prompt,
+          version: "1.0.0",
+          metadata: JSON.stringify(meta),
+        },
         nowIso(),
       );
       const written = personaRow(db, key);

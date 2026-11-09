@@ -103,3 +103,59 @@ on these calls, after a release and a new pin. The CLI and the terminal flow are
 
 Captured 2026-11-08 on the Navigator's word ("capture a CR207 do Core"), for Nautilus CR222 and
 CR223, after Nautilus v0.4.0-alpha.10 shipped the persona list.
+
+## Delivered
+
+Built 2026-11-08 on the Navigator's word ("construa a Core CR207"). `createPersona` is in
+`ts/src/persona/personaCalls.ts`; the deletion is `ts/src/persona/personaDeletion.ts`. All three
+are exported by name from `lib/desktop.js`; `DESKTOP_API_VERSION` stays 1.
+
+- `createPersona(dbPath, { persona, name, prompt, description?, routingKeywords? })` writes one
+  row with its own generated id, version `1.0.0`, and metadata `{ persona_id, name, description?,
+  routing_keywords? }` (what the seed writes for a persona file, without the absent fields). It
+  answers the persona as `readPersona` reads it, so the host's edit screen takes it back at once.
+- `previewPersonaDeletion(dbPath, { persona })` answers `{ persona, heirs, kept, deleted, cleared,
+  digest }`: `kept` counts conversations, memories and runtime sessions; `deleted` counts the
+  descriptor, identity integrations and extension bindings; `cleared` names the Journeys whose
+  default it is and says whether the global sticky default names it.
+- `deletePersona(dbPath, { persona, expectedDigest })` answers `{ deleted, backup }`, the backup
+  as the Journey deletion's (`path`, `sha256`, `sizeBytes`).
+
+Where the build departs from the capture, and why:
+
+- **The routing question was already answered.** The capture said the router reads a persona's
+  descriptor or the start of its prompt, not its description. That is Reception's offer, which no
+  longer decides the persona. CR203's router (`routablePersonas`) reads the metadata
+  `description` first. A created persona with a description is routable from the next turn, and
+  no descriptor is generated; a test holds it.
+- **The id's grammar is the identity layer's own**, a kebab slug of up to 80 characters
+  (`isKebabSlug`, the rule `upsertIdentity` already enforces for a new key), so a persona the
+  terminal could create the host can create too. A refusal is `invalid_persona_id`; a taken one,
+  `persona_exists`. An id another layer holds (a Journey's) is accepted, as `UNIQUE(layer, key)`
+  allows.
+- **Sticky state.** Since CR203 no turn reads a session's or the global sticky persona, so only
+  the global sticky default row is cleared, as a live choice; every other runtime session keeps
+  the id as history.
+- **Heirs.** On the maintainer's home every `inherits_from` names a layer (`ego`, `self`), never a
+  persona, so the refusal guards a case no home holds today. Detaching heirs in the same act stays
+  open until one exists.
+- **`PersonaCallRejectedError` gains `personas`**, the heirs a `persona_has_heirs` refusal names,
+  as `JourneyCallRejectedError` names a Journey's children.
+- **`ext_*` tables are not searched.** No known extension column holds a persona's id; the
+  bindings in `_ext_bindings` are.
+
+## Validation
+
+- Spec first, `ts/test/persona/personaLifecycle.test.ts` (15), red on the missing module; the
+  Desktop entry's name list red before the exports. It includes a closed inventory: every core
+  column that can hold a persona's id (`persona`, a `layer`, a `target_kind`) must have a
+  decision in `PERSONA_DELETION_INVENTORY`.
+- 23 mutations (`createPersona` and `personaDeletion.ts`): 22 caught. Three survived a first run
+  and were answered with cases: an empty keyword list written as `[]`, a null description
+  refused instead of read as none (the code was simplified to read it as none), and a backup
+  left behind when the deletion fails after it (a trigger now makes it fail). The survivor is
+  equivalent: the heirs' `ORDER BY key` follows the `UNIQUE(layer, key)` index's own order.
+- `tsc` clean; Biome clean on the changed files; the suite, 3,873 tests: 3,869 pass, 3 skipped,
+  1 known local failure (`the two cores describe a broken index with the same driver text`). Run
+  with a clean environment and a throwaway `HOME`; the maintainer's `front-door.log` and
+  `backups/` unchanged.
