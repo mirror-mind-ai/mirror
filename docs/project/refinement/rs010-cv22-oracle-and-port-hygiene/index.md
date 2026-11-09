@@ -141,3 +141,4 @@ evidence stays honest as both cores move.
 - [CR204 · Hand the host the persona's name with its id](cr204-hand-the-host-the-personas-name-with-its-id.md)
 - [CR205 · Let the host read and edit a persona](cr205-let-the-host-read-and-edit-a-persona.md)
 - [CR206 · Deliver a persona again when its prompt changed](cr206-deliver-a-persona-again-when-its-prompt-changed.md)
+- [CR207 · Let the host create and delete a persona](cr207-let-the-host-create-and-delete-a-persona.md)
