@@ -37,6 +37,7 @@
 import { pathToFileURL } from "node:url";
 import { exitQuietlyOnBrokenPipe } from "#runtime/brokenPipe.ts";
 import { loadConfiguration, silenceExperimentalWarnings } from "#runtime/config.ts";
+import { osCredentialStore } from "#runtime/credentialStore.ts";
 import { agyPreInvocation, agySessionStart, agyStop } from "./agy.ts";
 import { claudeHook } from "./claude.ts";
 import { readStdin } from "./payload.ts";
@@ -89,7 +90,7 @@ export async function runAsEntry(rawArgv = process.argv.slice(2)): Promise<numbe
     noteHookFailure(name || "hooks", "stdout closed early");
     process.exit(code);
   });
-  loadConfiguration({ entryPath: import.meta.filename });
+  loadConfiguration({ entryPath: import.meta.filename, credentialStore: osCredentialStore() });
   try {
     return await dispatch(name);
   } catch (error) {

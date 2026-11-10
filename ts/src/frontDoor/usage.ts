@@ -35,6 +35,7 @@ export { PROGRAM };
  */
 export const FRONT_DOOR_COMMANDS: ReadonlyArray<readonly [name: string, summary: string]> = [
   ["init", "Initialize a user home from identity templates"],
+  ["openrouter", "Store, check, or remove the OpenRouter key in the system keychain"],
   ["seed", "Seed identity YAML files into the database"],
   ["identity", "Read and update identity in the database"],
   ["list", "List personas, journeys, extensions, or all"],

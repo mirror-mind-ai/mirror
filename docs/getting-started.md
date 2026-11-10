@@ -143,6 +143,15 @@ MIRROR_USER=your-name              # written by init; resolves to ~/.mirror-mind
 OPENROUTER_API_KEY=sk-or-...       # embeddings, memory extraction, /mm-consult
 ```
 
+Or keep the key out of a file and in your system keychain (Keychain on macOS,
+the Secret Service on Linux, Credential Manager on Windows):
+
+```text
+mirror openrouter setup     # asks for the key, hidden
+mirror openrouter status    # active or pending
+mirror openrouter remove    # deletes it
+```
+
 The key is never taken from the command line, so it never lands in a shell
 history. Mirror reads this file itself, on every command, from every runtime:
 nothing passes a flag, and values already set in your shell take precedence over

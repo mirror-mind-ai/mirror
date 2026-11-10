@@ -50,6 +50,51 @@ describe("configFilePath", () => {
   });
 });
 
+describe("loadConfiguration and the credential store", () => {
+  const store = { label: "Fake", get: () => "from-keychain" };
+
+  test("fills OPENROUTER_API_KEY from the store when nothing else set it", () => {
+    const env: Record<string, string | undefined> = {};
+    const report = loadConfiguration({
+      entryPath: "/nowhere/ts/src/frontDoor/cli.ts",
+      env,
+      home: tmp("mirror-config-home-"),
+      credentialStore: store,
+    });
+    assert.equal(env.OPENROUTER_API_KEY, "from-keychain");
+    assert.deepEqual(report.sources.at(-1), { kind: "keychain", label: "Fake" });
+  });
+
+  test("never overrides a key from the shell or a file, even an empty one", () => {
+    for (const set of ["shell", ""]) {
+      const env: Record<string, string | undefined> = { OPENROUTER_API_KEY: set };
+      loadConfiguration({
+        entryPath: "/nowhere/ts/src/frontDoor/cli.ts",
+        env,
+        home: tmp("mirror-config-home-"),
+        credentialStore: store,
+      });
+      assert.equal(env.OPENROUTER_API_KEY, set);
+    }
+  });
+
+  test("a store that throws is a missing key, not a failure", () => {
+    const env: Record<string, string | undefined> = {};
+    loadConfiguration({
+      entryPath: "/nowhere/ts/src/frontDoor/cli.ts",
+      env,
+      home: tmp("mirror-config-home-"),
+      credentialStore: {
+        label: "Broken",
+        get: () => {
+          throw new Error("no keyring");
+        },
+      },
+    });
+    assert.equal(env.OPENROUTER_API_KEY, undefined);
+  });
+});
+
 describe("loadConfiguration", () => {
   test("the environment wins over the clone's .env, which wins over the user file", () => {
     const root = stageMirrorPackage(tmp());
