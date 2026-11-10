@@ -77,6 +77,7 @@ import {
 import { verifyBackupArchive } from "#runtime/backup.ts";
 import { exitQuietlyOnBrokenPipe } from "#runtime/brokenPipe.ts";
 import { configFilePath, loadConfiguration, silenceExperimentalWarnings } from "#runtime/config.ts";
+import { osCredentialStore } from "#runtime/credentialStore.ts";
 import { runSeed } from "#seed/seed.ts";
 import { getTasksForWeek, listTasks } from "#tasks/taskStore.ts";
 import { computeWeekRange } from "#tasks/weekView.ts";
@@ -128,6 +129,7 @@ import {
 } from "./mirrorModeRoute.ts";
 import { namedRefusal } from "./namedRefusal.ts";
 import { nodeVersionError } from "./nodeSupport.ts";
+import { isOpenRouterCommand, runOpenRouter } from "./openRouterRoute.ts";
 import {
   renderConsolidateApply,
   renderConsolidateList,
@@ -1747,6 +1749,7 @@ async function dispatchTs(argv: readonly string[]): Promise<number | DispatchOut
     });
   }
   if (isInit(argv)) return runInit(argv);
+  if (isOpenRouterCommand(argv)) return runOpenRouter(argv);
   if (isSeed(argv)) return runSeedCommand(argv);
   if (isIdentityWrite(argv)) return runIdentityWrite(argv);
   if (isIdentityEdit(argv)) return runIdentityEditRoute(argv);
@@ -1944,7 +1947,7 @@ export async function runAsEntry(rawArgv = process.argv.slice(2)): Promise<numbe
   // Before anything that could write (CR148): `mirror … | head -1` ends
   // quietly, exit 0, instead of an unhandled EPIPE and a stack trace.
   exitQuietlyOnBrokenPipe(process.exit);
-  loadConfiguration({ entryPath: import.meta.filename });
+  loadConfiguration({ entryPath: import.meta.filename, credentialStore: osCredentialStore() });
   return main(rawArgv);
 }
 

@@ -554,6 +554,10 @@ export function routeByFamily(
     };
   }
 
+  if (command === "openrouter") {
+    return { command, engine: "ts", reason: "OpenRouter key in the OS credential store" };
+  }
+
   if (command === "seed") {
     return { command, engine: "ts", reason: "DS7.US1 Slice B seed write ported to TS" };
   }

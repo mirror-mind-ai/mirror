@@ -882,7 +882,9 @@ is permanent supported behavior. To stop the warning, run
 
 | Variable | Role |
 |----------|------|
-| `OPENROUTER_API_KEY` | Embeddings and every model call through OpenRouter: extraction and the other calls on the extraction model (see [Model Pins](#model-pins)), and the multi-LLM `consult` command. Without it, the commands that cannot work refuse in one line before touching the database, naming the file to add it to; search degrades and says so; `runtime status` and `runtime diagnose` report it. A key OpenRouter refuses is named in one line too. |
+| `OPENROUTER_API_KEY` | Embeddings and every model call through OpenRouter: extraction and the other calls on the extraction model (see [Model Pins](#model-pins)), and the multi-LLM `consult` command. Without it, the commands that cannot work refuse in one line before touching the database, naming the file to add it to; search degrades and says so; `runtime status` and `runtime diagnose` report it. A key OpenRouter refuses is named in one line too. Set it in the shell, in `~/.config/mirror/env`, or in the system keychain with `mirror openrouter setup`; that order is the precedence. |
+
+`mirror openrouter setup` asks for the key (hidden at a terminal, one line from a pipe; never an argument) and saves it in the operating system's credential store: Keychain on macOS, the Secret Service through `secret-tool` on Linux (`libsecret-tools`, with GNOME Keyring or KWallet running), Credential Manager on Windows. `mirror openrouter status` prints `active` when a key is configured and `pending` when none is; it never prints the key. `mirror openrouter remove` deletes the stored key, and names a key left in the config file, which it does not touch.
 
 ### Intelligence Flags
 

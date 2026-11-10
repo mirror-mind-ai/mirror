@@ -23,8 +23,8 @@ import {
 } from "#frontDoor/usage.ts";
 import { spawnFrontDoor } from "#helpers/frontDoor.ts";
 
-test("the usage block lists the 31 commands the front door answers, and every one routes", () => {
-  assert.equal(FRONT_DOOR_COMMANDS.length, 31);
+test("the usage block lists the 32 commands the front door answers, and every one routes", () => {
+  assert.equal(FRONT_DOOR_COMMANDS.length, 32);
   for (const [name] of FRONT_DOOR_COMMANDS) {
     const decision = routeMemoryCommand([name], {});
     const unknownTopLevel = decision.engine === "usage" && decision.request.scope === "top-level";

@@ -71,7 +71,11 @@ export function runInit(argv: readonly string[], env: NodeJS.ProcessEnv = proces
     const selection = selectionFor(mirrorHome, env);
     const steps: Step[] =
       selection === "none"
-        ? [["Add OPENROUTER_API_KEY=<your key> to that file (it is created readable by you only)"]]
+        ? [
+            [
+              `Run: ${PROGRAM} openrouter setup (stores the key in your system keychain), or add OPENROUTER_API_KEY=<your key> to that file (it is created readable by you only)`,
+            ],
+          ]
         : selection === "other"
           ? [selectThisOne(user, env)]
           : [];

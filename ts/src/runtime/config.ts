@@ -19,6 +19,9 @@
 //   3. `${XDG_CONFIG_HOME:-~/.config}/mirror/env` -- the OS user's, in the
 //      directory CV22.DS10.US2 already chose for the package update channel.
 //
+//   4. the OS credential store, for OPENROUTER_API_KEY only, when nothing above
+//      set it (`mirror openrouter setup` puts the key there).
+//
 // `process.loadEnvFile` has `--env-file` semantics: it fills what is unset and
 // never overrides, which is what makes the order above a precedence rather
 // than a last-writer-wins. A second mirror on the same machine runs with
@@ -28,12 +31,14 @@ import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "n
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { parseEnv } from "node:util";
+import type { CredentialStore } from "./credentialStore.ts";
 import { findPackageIdentity } from "./packageIdentity.ts";
 
 export type ConfigSource =
   | { kind: "environment" }
   | { kind: "tree_env"; path: string }
-  | { kind: "user_config"; path: string };
+  | { kind: "user_config"; path: string }
+  | { kind: "keychain"; label: string };
 
 export interface ConfigurationReport {
   /** Every source that contributed, in precedence order. */
@@ -68,6 +73,12 @@ export interface LoadConfigurationOptions extends ConfigIo {
   cwd?: string;
   /** Injection for tests; defaults to `process.loadEnvFile` semantics. */
   loadEnvFile?: (path: string, env: ConfigEnv) => void;
+  /**
+   * The OS credential store to fall back on for `OPENROUTER_API_KEY`. Opt-in:
+   * only the three entries pass one, so a test that loads configuration never
+   * reaches the machine's keychain.
+   */
+  credentialStore?: Pick<CredentialStore, "get" | "label"> | null;
 }
 
 /**
@@ -94,6 +105,22 @@ export function loadConfiguration(options: LoadConfigurationOptions): Configurat
   if (existsSync(userConfig)) {
     load(userConfig, env);
     sources.push({ kind: "user_config", path: userConfig });
+  }
+
+  // Last and only when the key is UNSET: an empty value is a decision (the
+  // tests set it to "" to be keyless) and a key from the shell or a file wins.
+  const store = options.credentialStore;
+  if (store && env.OPENROUTER_API_KEY === undefined) {
+    try {
+      const key = store.get();
+      if (key) {
+        env.OPENROUTER_API_KEY = key;
+        sources.push({ kind: "keychain", label: store.label });
+      }
+    } catch {
+      // A store that cannot be reached is a missing key, and the commands that
+      // need the key already say how to add one.
+    }
   }
 
   return { sources };
