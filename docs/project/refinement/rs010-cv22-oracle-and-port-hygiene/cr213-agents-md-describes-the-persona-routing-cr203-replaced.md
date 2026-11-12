@@ -39,7 +39,108 @@ Captured, unassigned, 2026-11-09, at the Navigator's direction, while reading th
 operating instructions for CR211. It edits the same file, so the two can travel
 together.
 
-Not planned.
+Planned on 2026-11-09 at the Navigator's direction. It travels with CR211: one change to
+`AGENTS.md`, one review. Reviewed through five lenses with CR211, and approved by the
+Navigator the same day. Two of the review's amendments are folded here (see Decisions
+Taken At Approval); the full list is in
+[CR211](cr211-the-operating-instructions-bound-nothing-about-a-tasks-size.md#decisions-taken-at-approval).
+
+### The text
+
+`AGENTS.md`'s "Automatic routing" paragraph tells the model to choose a persona itself,
+which CR203's router now does. Its "Routing protocol" paragraph describes keyword
+scoring. Both paragraphs are replaced by one:
+
+```text
+**Persona routing:** Mirror chooses each turn's persona; you do not. The
+context Mirror delivers for a turn, or a Mirror load command prints, names
+the persona to sign or says the turn has none; do not carry an earlier
+persona into such a turn. When the user asks for a persona by name, load
+with `--persona <id>`.
+```
+
+"A Mirror load command" covers `mirror mirror load` and `mirror build load`; the latter
+names the persona Builder signs. How the router chooses stays in `REFERENCE.md`: the
+model needs the behavior, not the mechanism.
+
+In the signature rules, the example headed "When switching personas" is headed "When the
+user asks for more than one persona's view". Otherwise it would still teach the model to
+route by itself. The other signature rules are unchanged.
+
+### Scope
+
+1. **`AGENTS.md`.** The routing paragraph is replaced, the signature example is
+   re-headed, and the plugin copy is regenerated.
+2. **`mirror detect-persona` and the MCP `detect_persona` tool.** Their behavior does not
+   change: they stay the keyword scorer, deterministic and free. Their one-line
+   descriptions say so. Draft: "Show which personas' routing keywords a query matches
+   (not the turn's router)". The places that change:
+   - `ts/src/frontDoor/usage.ts`;
+   - `ts/src/mcp/registry.ts`;
+   - `ts/test/goldens/mcp-protocol.golden.json`, which advances in the same commit as
+     `registry.ts`.
+3. **`REFERENCE.md`.** Step 2 of "The doorman" still says a turn "is scored with
+   `detect-persona`" and the persona "becomes the session's". It is rewritten to match the
+   paragraph CR203 already corrected below it.
+4. **Getting Started §9.** It is rewritten so `detect-persona` is a check of the seeded
+   keywords, not of routing.
+5. **`ts/test/scripts/operatingInstructions.test.ts`.** It asserts that `AGENTS.md` no
+   longer names `detectPersona`, `routing_keywords` or `mirror detect-persona`. Written
+   first, it fails on `4402e289`.
+
+### Affected files
+
+- `AGENTS.md` and `plugins/mirror-mind/rules/AGENTS.md` (generated)
+- `ts/src/frontDoor/usage.ts`, `ts/src/mcp/registry.ts`
+- `ts/test/goldens/mcp-protocol.golden.json`, `ts/test/scripts/operatingInstructions.test.ts`
+- `REFERENCE.md`, `docs/getting-started.md`
+
+### Acceptance
+
+1. **`AGENTS.md`.** It names no `detectPersona`, `routing_keywords` or
+   `mirror detect-persona`. It says the delivered context, or a Mirror load command,
+   names the persona, and that a persona asked for by name is loaded with `--persona`.
+   No signature example is headed "When switching personas". The plugin copy is
+   byte-equal to it.
+2. **The two descriptions.** `mirror --help` and the MCP `tools/list` describe
+   `detect-persona` as the keyword scorer. Its output, and the `detect-persona` render
+   golden, do not change.
+3. **The docs.** `REFERENCE.md`'s doorman steps and Getting Started §9 describe routing as
+   it runs.
+4. **Checks.** Typecheck, lint, the full suite, `checkDocLinks`,
+   `buildClaudePlugin.ts --check` and CI are clean.
+
+### Validation
+
+Automated: the `AGENTS.md` assertion and the advanced MCP golden. By the Navigator: read
+the new `AGENTS.md` section, then run `mirror --help` and `mirror detect-persona "debug
+this"` on this checkout. The descriptions are the only change.
+
+### Exclusions
+
+- **Routing `detect-persona` through the router.** It would cost a model call and break a
+  deterministic tool. Capture it as its own CR if wanted.
+- **Historical mentions.** `docs/product/extensions/binding-model.md`'s design diagram, and
+  the mentions in the engineering principles and the development guide, are left as they
+  are.
+- **`routing_keywords` themselves.** They are still seeded, listed and editable. Whether
+  they are still needed is a separate question.
+
+### Delivery
+
+One commit, after CR211's (one concern per commit). Nothing is committed, pushed or
+released without the Navigator's word.
+
+### Decisions Taken At Approval
+
+Folded from the five-lens review on 2026-11-09 (CR211's items 2, 3 and 10):
+
+1. **The routing paragraph** covers every load command, drops the router's mechanics,
+   and keeps "do not carry an earlier persona".
+2. **The signature example** "When switching personas" is re-headed "When the user asks
+   for more than one persona's view".
+3. **One commit for this CR.** The MCP golden advances in it, with the change to
+   `registry.ts`.
 
 ## Evidence
 
@@ -51,4 +152,4 @@ Not planned.
 
 ## Outcome
 
-Pending: captured, not planned.
+Pending: planned, not started.
