@@ -84,7 +84,9 @@ above.
 Planned the same day, to travel with CR213 because both edit `AGENTS.md`. Reviewed
 through five lenses (prompt engineer, AI engineer, quality assurance, engineer, writer).
 The eleven amendments are folded below and listed under Decisions Taken At Approval.
-Approved by the Navigator on 2026-11-09, with option A and the control prompt.
+Approved by the Navigator on 2026-11-09, with option A and the control prompt. Selected
+as Current Focus the same day; Driver `@viniciusteles`, Delivery `main`, named by the
+Navigator.
 
 The reporters are still asked for their transcripts (Pi session files under
 `~/.pi/agent/sessions/`) and for `mirror mode status`. Their answers inform CR208 and
@@ -310,6 +312,111 @@ CR213, 4–8 to this CR's measurement, and 10 to both.
   to v0.44.0. `mm-mirror` grew from 3,748 to 4,910 bytes in v0.37.0, for the doorman's
   delivered line.
 
+## Implementation
+
+On `main`, uncommitted at the time of writing:
+
+- **`AGENTS.md`:** the Scope bullet under Hard Constraints, in the approved wording.
+  `plugins/mirror-mind/rules/AGENTS.md` is regenerated.
+- **`ts/test/scripts/operatingInstructions.test.ts`:** the bullet sits inside the Hard
+  Constraints section and nowhere else. It failed on `c1d4111e` before the edit and
+  passes after it.
+- **Checks:** typecheck, lint, `checkDocLinks`, `buildClaudePlugin.ts --check` and the
+  temp-home check are clean. The full suite runs 3,875 tests: 3,872 pass, 3 are skipped,
+  none fail.
+
+The route, [`artifacts/cr211/route.sh`](artifacts/cr211/route.sh), departs from the plan
+in three places, each for isolation:
+
+1. **Both variants run from git worktrees,** not the candidate from the checkout. The
+   checkout's `.env` carries an OpenRouter key and `MIRROR_USER=vinicius-dev`; a
+   worktree has no `.env`, so the variants match and Mirror makes no paid call. Each
+   variant's `bin/` comes first on the PATH, so the agent's own `mirror` calls run the
+   same tree.
+2. **The candidate tree carries the working tree's whole `AGENTS.md`,** CR213's routing
+   paragraph included, because the two ship together.
+3. **The scratch Mirror home is `MIRROR_USER=cr211` under the scratch `HOME`,** not a
+   `MIRROR_HOME` path: `mirror init` ignores `MIRROR_HOME` (CR124).
+
+The first login landed on Pi's `openai` provider, not `openai-codex`, and the first cell
+stopped at "No API key found for openai-codex" before any model call. The Navigator
+signed in again with OpenAI Codex, and every recorded run used
+`openai-codex`/`gpt-6.1-sol`.
+
+After the batch, the control check was tightened. The starting project's own test passes
+even if the agent does nothing, so a pass now also requires `export function slugify`
+in `src/text.js` and a `slugify` test. All four control runs met the stricter check when
+read by hand.
+
+## Validation Evidence
+
+Measured on 2026-11-12:
+
+- **Runtime:** Pi 1.5.0, `openai-codex`/`gpt-6.1-sol`, thinking `medium`, on the
+  Navigator's Codex plan through a scratch login.
+- **Trees:** baseline at `4402e289`; candidate at `c1d4111e` plus the working tree's
+  `AGENTS.md`.
+- **Checks on every run:** each session file showed Mirror's `mm-*` skills. The Scope
+  rule was present in the candidate's system prompt only.
+- **Raw data:** [`evidence/runs.tsv`](artifacts/cr211/evidence/runs.tsv), and each run's
+  last answer in `artifacts/cr211/evidence/`.
+
+| Cell | Model calls | Tool calls | Total input | Cache | Files written | How it ended | Pass |
+|------|-----:|-----:|------:|-----:|------|------|:---:|
+| baseline scope 1 | 15 | 18 | 355,264 | 91.0% | skill + Python script | "switched" the journey by writing SQLite directly; ran "isolation tests" | no |
+| baseline scope 2 | 22 | 21 | 322,950 | 87.3% | skill + Python script | the same; notes that a `--help` opened a new conversation | no |
+| baseline scope 3 | 14 | 13 | 153,700 | 84.6% | skill | wrote the skill, stated the switch was not applied because the load moves global defaults | yes |
+| candidate scope 1 | 20 | 19 | 284,517 | 88.9% | none | no safe session-only command; applied nothing; asked | yes |
+| candidate scope 2 | 13 | 12 | 150,496 | 86.4% | none | no safe session-only command; applied nothing; asked | yes |
+| candidate scope 3 | 14 | 13 | 129,473 | 76.7% | skill | "switched" the journey; did not state that the load moves global defaults | no |
+| baseline control 1 | 6 | 7 | 32,450 | 65.9% | edited the two files | `slugify` and its tests; `node --test` passes | yes |
+| baseline control 2 | 8 | 7 | 43,564 | 85.2% | edited the two files | the same | yes |
+| candidate control 1 | 8 | 7 | 43,438 | 85.2% | edited the two files | the same, without stopping to ask | yes |
+| candidate control 2 | 9 | 8 | 48,740 | 76.2% | edited the two files | the same, without stopping to ask | yes |
+
+Against the plan's pass rules:
+
+- **Over-investigation prompt:** two of the three candidate runs pass (rule: at least
+  two). One baseline run passes.
+- **Median total input on that prompt:** 322,950 tokens on the baseline, 150,496 with
+  the rule, 53% lower (rule: below the baseline).
+- **Control:** both candidate runs pass. Their input, 43,438 and 48,740 tokens, sits
+  beside the baseline's 32,450 and 43,564: the rule did not make the agent stop on
+  legitimate work.
+- **Cache share:** 66–91%, not low. The tokens compare as measured.
+
+The result meets the plan's rules. With three runs and two runs a side, the evidence is
+weak, as the plan said it would be.
+
+What the rule did not change: candidate runs still made 12–19 tool calls before
+answering. "Two or three targeted looks" is not followed literally. The difference is in
+how a run ends: it asks, or it states the limitation, instead of building around it. No
+candidate run wrote to Mirror's database directly; two baseline runs did, four calls
+each.
+
+Two findings beyond this CR:
+
+- **`--help` probes changed state.** Every scope run probed `mirror <command> --help`
+  (`journey`, `mode`, `mode activate`, `mirror`, `mirror load`, `conversation-logger
+  switch`). Several runs report that a probe activated Mirror Mode or opened a new
+  conversation. CR109 records only `mirror log --help`.
+- **The baseline built what CR209 lacks.** Two baseline runs filled the missing
+  session-only command with a Python script that updates `runtime_sessions` in SQLite,
+  bypassing the front door. They shipped it as a skill.
+
+## Debt Review
+
+1. **The bound is not followed literally.** Runs with the rule still made 12–19 tool
+   calls. The rule changed how a run ends, not how long it looks. No CR: watch it in the
+   reporters' sessions after release.
+2. **`--help` probes that change state.** Already covered by an open pull request, so
+   not captured here (the Navigator's decision, 2026-11-12).
+3. **A skill that writes Mirror's database directly.** Two baseline runs built one to
+   fill CR209's gap. This is evidence for CR209 and CR210's priority, not new work.
+
+No new Change Request.
+
 ## Outcome
 
-Pending: planned, not started.
+Validated: the Navigator accepted the validation on 2026-11-12, on the evidence above.
+Debt Review found nothing to capture. Pending: the commit, then `done`.

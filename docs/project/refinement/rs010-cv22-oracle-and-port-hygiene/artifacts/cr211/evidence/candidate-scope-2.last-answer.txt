@@ -1,0 +1,5 @@
+Não encontrei um comando seguro para trocar **apenas a jornada desta sessão**: o `mirror load` também altera padrões globais, mesmo com sessão explícita.
+
+Além disso, ao consultar `mirror mirror load --help`, o CLI ativou Mirror Mode em vez de mostrar ajuda — efeito inesperado.
+
+Posso investigar uma alternativa estritamente local à sessão e criar a skill `.pi/skills/mm-session-journey/SKILL.md` com o procedimento validado? Ainda não alterei a jornada para `personal-growth` nem criei a skill.

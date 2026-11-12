@@ -1,0 +1,5 @@
+Não encontrei um comando seguro para trocar **somente a jornada desta sessão**: `mirror mirror load --journey` também altera defaults globais.
+
+Ao consultar a ajuda, a CLI executou ações inesperadas: ativou Mirror Mode e abriu uma nova conversa. Ainda não apliquei `personal-growth` nem criei a skill, para não registrar um procedimento incorreto.
+
+Quer que eu investigue uma alternativa estritamente isolada por sessão?

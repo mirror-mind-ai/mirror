@@ -1,0 +1,3 @@
+Adicionada a função exportada `slugify(text)` em `src/text.js`, conforme solicitado, e seu teste em `test/text.test.js`.
+
+`npm test`: 2 testes passaram.

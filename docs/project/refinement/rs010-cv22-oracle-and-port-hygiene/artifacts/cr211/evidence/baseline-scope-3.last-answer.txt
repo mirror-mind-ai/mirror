@@ -1,0 +1,8 @@
+Criei a skill em `.pi/skills/mm-session-journey/SKILL.md`.
+
+**A troca para `personal-growth` não foi aplicada:** nesta versão, carregar uma jornada também altera defaults globais, contrariando “só desta sessão”.
+
+Após `/reload`, use:
+`/skill:mm-session-journey personal-growth`
+
+A skill registra essa limitação e evita alterar outras sessões. Para concluir a troca isolada, precisamos implementar suporte no runtime.

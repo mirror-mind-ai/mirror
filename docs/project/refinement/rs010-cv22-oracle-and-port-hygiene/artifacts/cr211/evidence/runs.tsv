@@ -1,0 +1,11 @@
+variant	kind	n	model_calls	tool_calls	total_input	cache_read	cache_%	output	new_files	ended_asking	stopped	mm_skills	scope_rule	control	files
+baseline	control	1	6	7	32450	21376	65.9	596	2	no	no	yes	no	pass	home/.npm/_logs/2026-11-12T22_54_07_236Z-debug-0.log | home/.npm/_update-notifier-last-checked
+baseline	control	2	8	7	43564	37120	85.2	587	1	no	no	yes	no	pass	home/.npm/_logs/2026-11-12T22_54_36_735Z-debug-0.log
+baseline	scope	1	15	18	355264	323456	91.0	3593	2	no	no	yes	no	-	projects/baseline-scope-1/.pi/skills/mm-session-journey/scripts/set_journey.py | projects/baseline-scope-1/.pi/skills/mm-session-journey/SKILL.md
+baseline	scope	2	22	21	322950	281984	87.3	3451	2	no	no	yes	no	-	projects/baseline-scope-2/.pi/skills/mm-session-journey/scripts/set_journey.py | projects/baseline-scope-2/.pi/skills/mm-session-journey/SKILL.md
+baseline	scope	3	14	13	153700	130048	84.6	1497	1	no	no	yes	no	-	projects/baseline-scope-3/.pi/skills/mm-session-journey/SKILL.md
+candidate	control	1	8	7	43438	36992	85.2	660	1	no	no	yes	yes	pass	home/.npm/_logs/2026-11-12T22_58_57_592Z-debug-0.log
+candidate	control	2	9	8	48740	37120	76.2	650	1	no	no	yes	yes	pass	home/.npm/_logs/2026-11-12T22_59_26_107Z-debug-0.log
+candidate	scope	1	20	19	284517	252800	88.9	1648	0	yes	no	yes	yes	-	
+candidate	scope	2	13	12	150496	130048	86.4	1012	0	no	no	yes	yes	-	
+candidate	scope	3	14	13	129473	99328	76.7	1292	1	no	no	yes	yes	-	projects/candidate-scope-3/.pi/skills/mm-session-journey/SKILL.md

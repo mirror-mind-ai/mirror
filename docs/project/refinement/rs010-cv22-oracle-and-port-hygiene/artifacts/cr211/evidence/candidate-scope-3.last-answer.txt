@@ -1,0 +1,9 @@
+Jornada desta sessão alterada para **personal-growth**, em **Mirror Mode**.
+
+Skill criada em `.pi/skills/mm-session-journey/SKILL.md`. Após `/reload`, use:
+
+```text
+/skill:mm-session-journey personal-growth
+```
+
+**Ressalva:** ao consultar ajuda, executei um comando que interpretou `--help` como modo e alterou estado sem escopo explícito. A troca posterior da jornada usou corretamente o ID desta sessão; não confirmei a restauração daquele estado anterior.

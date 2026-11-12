@@ -53,3 +53,23 @@ test("the Pi extension runs the core it ships with and carries the instructions 
   assert.doesNotMatch(extension, /--env-file/);
   assert.doesNotMatch(extension, /_readDotenv\(process\.cwd\(\)\)/);
 });
+
+/** The text of one `###` section of AGENTS.md, from its heading to the next. */
+function agentsSection(heading: string): string {
+  const start = agents.indexOf(`\n### ${heading}\n`);
+  assert.ok(start >= 0, `AGENTS.md has a "### ${heading}" section`);
+  const next = agents.indexOf("\n### ", start + 1);
+  return agents.slice(start, next < 0 ? undefined : next);
+}
+
+test("the Hard Constraints bound a task's size: the Scope rule (CR211)", () => {
+  const constraints = agentsSection("Hard Constraints");
+  assert.match(constraints, /^- \*\*Scope:\*\* do what was asked, at the size it was asked\./m);
+  assert.match(constraints, /stop, say\s+what you could not find, and ask/);
+  assert.match(constraints, /tests beyond the change asked for/);
+  assert.doesNotMatch(
+    agents.replace(constraints, ""),
+    /\*\*Scope:\*\*/,
+    "the rule lives in Hard Constraints alone",
+  );
+});
