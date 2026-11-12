@@ -185,4 +185,5 @@ Nothing to capture. Routing `detect-persona` through the router stays an exclusi
 
 ## Outcome
 
-Validated on 2026-11-12. Pending: the commit, then `done`.
+Validated on 2026-11-12. Done the same day: `75364c14`, pushed to `main` after CR211's
+`ca11944b`. Ships in the next release.

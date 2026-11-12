@@ -419,4 +419,7 @@ No new Change Request.
 ## Outcome
 
 Validated: the Navigator accepted the validation on 2026-11-12, on the evidence above.
-Debt Review found nothing to capture. Pending: the commit, then `done`.
+Debt Review found nothing to capture.
+
+Done on 2026-11-12: `ca11944b`, pushed to `main` with CR213's `75364c14`. Ships in the
+next release.
