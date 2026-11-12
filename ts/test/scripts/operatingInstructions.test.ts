@@ -73,3 +73,11 @@ test("the Hard Constraints bound a task's size: the Scope rule (CR211)", () => {
     "the rule lives in Hard Constraints alone",
   );
 });
+
+test("persona routing is described as the runtime does it, not as keyword scoring (CR213)", () => {
+  assert.doesNotMatch(agents, /detectPersona|routing_keywords|mirror detect-persona/);
+  const model = agentsSection("Ego-Persona Model");
+  assert.match(model, /\*\*Persona routing:\*\* Mirror chooses each turn's persona; you do not\./);
+  assert.match(model, /--persona <id>/);
+  assert.doesNotMatch(model, /When switching personas/);
+});

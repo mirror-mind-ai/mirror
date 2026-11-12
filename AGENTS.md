@@ -102,16 +102,11 @@ what was done. Prefer small commits with clear review boundaries.
 The mirror has one voice: the ego. Personas are specialized lenses activated by
 the ego according to context.
 
-**Automatic routing:** activate a persona when the topic clearly belongs to a
-specialized domain, the depth required exceeds the generic ego repertoire, or
-the user explicitly asks for a persona.
-
-**Routing protocol:** persona routing is data-driven. Each persona in the
-database carries `routing_keywords` and a routing descriptor. At runtime,
-`detectPersona` (`ts/src/persona/detectPersona.ts`) scores the query against
-those keywords. If no persona scores above threshold, the ego answers alone. To
-inspect active routing:
-`mirror detect-persona "<query>"`.
+**Persona routing:** Mirror chooses each turn's persona; you do not. The
+context Mirror delivers for a turn, or a Mirror load command prints, names
+the persona to sign or says the turn has none; do not carry an earlier
+persona into such a turn. When the user asks for a persona by name, load
+with `--persona <id>`.
 
 **Signature format:**
 
@@ -124,7 +119,7 @@ When a persona is active:
 [first-person answer, unified voice]
 ```
 
-When switching personas:
+When the user asks for more than one persona's view:
 ```text
 ◇ product-designer
 

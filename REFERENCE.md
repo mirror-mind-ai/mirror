@@ -364,11 +364,11 @@ nothing, the full folder, or a delta, by one policy:
 1. **The explicit Mirror form** opens the prompt (`/mm-mirror …`, `/mm:mirror …`, and
    the plugin spellings): the full folder `mirror mirror load --query` builds, under
    the delivered line; the session is marked active by its id.
-2. **Mirror Mode active, an ordinary turn:** the prompt is scored with
-   `detect-persona`; a persona that newly scores has its section delivered and
-   becomes the session's; up to five memories scoring at least 0.4 on the semantic
-   score, not delivered earlier in the session, and the attachments above 0.4
-   follow. The identity layers are not repeated.
+2. **Mirror Mode active, an ordinary turn:** the turn's persona is routed by its
+   subject (below), and a turn may have none; a persona whose section the
+   conversation does not hold yet has it delivered. Up to five memories scoring at
+   least 0.4 on the semantic score, not delivered earlier in the session, and the
+   attachments above 0.4 follow. The identity layers are not repeated.
 3. **Mirror Mode not active:** nothing — no provider call, no write, no database
    snapshot.
 

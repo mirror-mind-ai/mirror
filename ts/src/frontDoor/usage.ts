@@ -39,7 +39,10 @@ export const FRONT_DOOR_COMMANDS: ReadonlyArray<readonly [name: string, summary:
   ["identity", "Read and update identity in the database"],
   ["list", "List personas, journeys, extensions, or all"],
   ["inspect", "Inspect a persona, an extension, the runtime catalog, or the call ledgers"],
-  ["detect-persona", "Show persona routing matches for a query"],
+  [
+    "detect-persona",
+    "Show which personas' routing keywords a query matches (not the turn's router)",
+  ],
   ["extensions", "List, validate, sync, install, or uninstall extensions"],
   ["ext", "Run a command-skill extension's CLI"],
   ["mirror", "Mirror Mode: load context, log, deactivate"],

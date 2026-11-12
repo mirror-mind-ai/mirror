@@ -44,6 +44,8 @@ Planned on 2026-11-09 at the Navigator's direction. It travels with CR211: one c
 Navigator the same day. Two of the review's amendments are folded here (see Decisions
 Taken At Approval); the full list is in
 [CR211](cr211-the-operating-instructions-bound-nothing-about-a-tasks-size.md#decisions-taken-at-approval).
+Started with CR211 the same day; Driver `@viniciusteles`, Delivery `main`, named by the
+Navigator.
 
 ### The text
 
@@ -150,6 +152,37 @@ Folded from the five-lens review on 2026-11-09 (CR211's items 2, 3 and 10):
 - The only remaining importers of `detectPersona` are
   `ts/src/frontDoor/render/detectPersona.ts` and `ts/src/mcp/tools/deterministic.ts`.
 
+## Implementation
+
+On `main`, uncommitted at the time of writing:
+
+- **`AGENTS.md`:** the "Persona routing" paragraph replaces "Automatic routing" and
+  "Routing protocol". The signature example is re-headed "When the user asks for more
+  than one persona's view". The plugin copy is regenerated.
+- **`detect-persona` descriptions:** they now read "Show which personas' routing keywords
+  a query matches (not the turn's router)" in `ts/src/frontDoor/usage.ts` and
+  `ts/src/mcp/registry.ts`. `ts/test/goldens/mcp-protocol.golden.json` advances with
+  them.
+- **Docs:** step 2 of `REFERENCE.md`'s doorman section describes subject routing.
+  Getting Started §9 calls `detect-persona` a check of the seeded keywords.
+- **The test:** the assertion in `ts/test/scripts/operatingInstructions.test.ts` failed
+  on `c1d4111e` and passes after the edit.
+- **Checks:** the MCP protocol and serve tests (35) pass, and so does the full suite
+  (3,875 tests, none failing). Typecheck, lint, `checkDocLinks` and
+  `buildClaudePlugin.ts --check` are clean.
+- **The measurement:** the text rode in CR211's candidate tree. That measurement did not
+  target routing, and it is not claimed as evidence for this CR.
+
+## Validation Evidence
+
+`mirror --help` lists `detect-persona` with the new description. Its output and the
+`detect-persona` render golden are unchanged. The Navigator accepted the validation on
+2026-11-12, together with CR211's.
+
+## Debt Review
+
+Nothing to capture. Routing `detect-persona` through the router stays an exclusion.
+
 ## Outcome
 
-Pending: planned, not started.
+Validated on 2026-11-12. Pending: the commit, then `done`.

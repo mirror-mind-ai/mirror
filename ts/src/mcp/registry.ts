@@ -166,7 +166,7 @@ export const TOOL_DECLARATIONS: readonly Omit<Tool, "handler">[] = [
   },
   {
     name: "detect_persona",
-    description: "Show persona routing matches for a query.",
+    description: "Show which personas' routing keywords a query matches (not the turn's router).",
     inputSchema: {
       type: "object",
       properties: { query: { type: "string" } },

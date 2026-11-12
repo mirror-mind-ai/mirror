@@ -441,7 +441,9 @@ mirror inspect persona writer
 What to check:
 - `list personas --verbose` shows 12 seeded personas with routing keywords
 - `list journeys` shows `personal-growth`
-- `detect-persona` returns sensible matches for natural-language queries
+- `detect-persona` shows which personas' routing keywords each query matches: a check
+  of what was seeded. A turn's persona is chosen at runtime by Mirror's router, which
+  reads the personas' descriptions and needs `OPENROUTER_API_KEY`
 - `inspect persona writer` shows the persona metadata stored in the database
 
 ### Success checklist
@@ -450,7 +452,7 @@ What to check:
 - `mirror seed` completes without errors
 - 12 personas appear in `mirror list personas --verbose`
 - `personal-growth` appears in `mirror list journeys`
-- persona routing responds sensibly to `mirror detect-persona "..."`
+- `mirror detect-persona "..."` matches the seeded routing keywords
 - your chosen runtime (Pi, Claude Code, Codex, or Antigravity) answers `/mm-journeys`
   from the installed package, and `mirror runtime status` reports
   `Install: package (mirror-mind@<version>)`
