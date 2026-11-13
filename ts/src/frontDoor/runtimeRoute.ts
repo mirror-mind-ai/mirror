@@ -16,7 +16,7 @@ import { createZipBackup } from "#backup/zipBackup.ts";
 import { dbNameForEnv, resolveMirrorHome } from "#frontDoor/dbPath.ts";
 import { frontDoorLogPath, logFrontDoor } from "#frontDoor/frontDoorLog.ts";
 import { homesRoot } from "#frontDoor/mirrorHomes.ts";
-import { isHelpFlag, renderUnknownSubcommand } from "#frontDoor/usage.ts";
+import { renderUnknownSubcommand } from "#frontDoor/usage.ts";
 import {
   renderBackupVerification,
   renderRuntimeBackupCreated,
@@ -42,7 +42,6 @@ import {
   cloneRoleFor,
   inspectGitFor,
   inspectGitWorktree,
-  packageVersion,
   renderRuntimeUpdateAvailability,
   renderRuntimeVersion,
   unavailableUpdateCheck,
@@ -76,6 +75,7 @@ import { runningTreeRoot } from "#runtime/treeRoot.ts";
 import { frontDoorSpawner, postUpdateHints, runUpdate, type UpdateSpawn } from "#runtime/update.ts";
 import { statusAllowsUpdatePreflight } from "#runtime/updateGate.ts";
 import { renderUpdateResult, updateLogDetail } from "#runtime/updatePipeline.ts";
+import { runningTreeVersion } from "#runtime/version.ts";
 import { expandHome } from "#util/paths.ts";
 import { composeWelcome, type RemoteCheck, welcomeDisabled } from "#welcome/card.ts";
 import { composeStatusLine } from "#welcome/statusLine.ts";
@@ -214,7 +214,7 @@ export function runWelcomeRoute(argv: readonly string[], io: WelcomeRouteIo = {}
 
   const home = resolveWelcomeHome(optionValue(args, "--mirror-home"), env);
   // The running tree's manifest: a file read, so the status line still spawns nothing.
-  const version = packageVersion(runningTreeRoot()) ?? "unknown";
+  const version = runningTreeVersion();
 
   if (args.includes("--status-line")) {
     const line = composeStatusLine({
@@ -266,36 +266,6 @@ export function isRuntimeVerdict(argv: readonly string[], exitCode: number): boo
   return argv[0] === "runtime" && argv[1] === "diagnose" && exitCode === 1;
 }
 
-/**
- * What each runtime subcommand takes, for `mirror runtime <subcommand> --help`. The
- * options are the ones the subcommand reads (`optionValue`/`includes` below); a flag a
- * subcommand does not read is not listed, so this stays true by construction. Issue #58:
- * `--help` after a subcommand used to be dropped and the subcommand ran -- `update --help`
- * performed an update -- which is the one outcome an exploratory flag must never have.
- */
-export const RUNTIME_SUBCOMMAND_USAGE: ReadonlyMap<string, string> = new Map([
-  ["status", "runtime status [--mirror-home PATH] [--channel stable|main]"],
-  ["version", "runtime version [--start COMMIT] [--channel stable|main]"],
-  ["diagnose", "runtime diagnose [--mirror-home PATH]"],
-  [
-    "update",
-    "runtime update [--check] [--dry-run] [--no-fetch] [--skip-migrations] [--repair-updater] [--mirror-home PATH] [--channel stable|main]",
-  ],
-  [
-    "release-notes",
-    "runtime release-notes [latest|<version>|pending] [--ref GIT_REF] [--from VERSION] [--no-fetch]",
-  ],
-  ["backup", "runtime backup [--mirror-home PATH] [--verify PATH]"],
-  ["migrate", "runtime migrate [--mirror-home PATH]"],
-  ["channel", "runtime channel [stable|main]"],
-]);
-
-/** The usage answer for `runtime <subcommand> -h|--help`: one line, stdout, exit 0. */
-export function renderRuntimeSubcommandUsage(subcommand: string): string {
-  const usage = RUNTIME_SUBCOMMAND_USAGE.get(subcommand) ?? `runtime ${subcommand}`;
-  return `usage: ${usage}\n`;
-}
-
 export async function runRuntimeReadRoute(
   argv: readonly string[],
   io: InstallRouteIo = {},
@@ -303,19 +273,10 @@ export async function runRuntimeReadRoute(
   const env = io.env ?? process.env;
   const args = argv.slice(1);
   const subcommand = args[0] ?? "";
-  // Help is answered before any subcommand runs: a flag that asks what a command does must
-  // not be the command doing it (issue #58). The family's own `runtime --help` is routing's.
-  if (
-    (RUNTIME_SUBCOMMANDS as readonly string[]).includes(subcommand) &&
-    args.slice(1).some(isHelpFlag)
-  ) {
-    writeOut(io, renderRuntimeSubcommandUsage(subcommand));
-    return 0;
-  }
   // The version is the running tree's, never the cwd's: for a skill the cwd
   // is the user's project, and for an installed package it is anything
   // (CV22.DS10.US3, the fourth tree reader the plan's list did not name).
-  const version = packageVersion(runningTreeRoot()) ?? "unknown";
+  const version = runningTreeVersion();
 
   if (subcommand === "version") {
     const startArg = optionValue(args, "--start");
@@ -579,7 +540,7 @@ function runRuntimeUpdate(
   io: InstallRouteIo,
   env: NodeJS.ProcessEnv,
 ): number {
-  const version = packageVersion(runningTreeRoot()) ?? "unknown";
+  const version = runningTreeVersion();
   const channelOverride = optionValue(args, "--channel");
   // The update lane asks npm, once, whether `-g` addresses this install: a
   // package outside npm's own global root is not the one `npm install -g`

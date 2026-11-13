@@ -35,6 +35,27 @@ you never run it yourself. Repository tooling — tests, smokes, CI — calls
 `node ts/src/frontDoor/cli.ts` directly, which is a statement about scripts, not
 about what anyone is told to type.
 
+### Help and version
+
+`-h` or `--help` anywhere after a command prints its usage on stdout, exits 0,
+and runs nothing: no database is opened, no stdin is read, no model is called.
+`mirror tasks delete <id> --help` names the arguments and deletes nothing. A
+subcommand that changes data, spends money, or moves the operating mode prints
+its own line; one that only reads prints its family's, which lists the
+subcommands. `mirror --help` alone prints every command, and `mirror --version`
+(or `-V`) prints the running version.
+
+A few commands keep their arguments as given. `mirror doorman` and the
+`conversation-logger` subcommands the hooks call carry the user's own text, so
+a prompt that is exactly `--help` stays a prompt; `welcome --status-line` and
+`conversations append` are machine calls too. `ext <id>` hands its arguments to
+the extension. `conversations imported` and `conversations skill-turns` print
+their own usage.
+
+Through v0.44.0, a help flag after a subcommand could run it. On such an
+install, ask `mirror <command> --help`, with the help flag in the subcommand's
+place.
+
 ## Commands
 
 What each runtime gets from Mirror, and how well, with the version and date it was

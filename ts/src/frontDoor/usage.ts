@@ -96,6 +96,18 @@ export type UsageRequest =
       readonly choices: readonly string[];
       /** The unrecognized subcommand, or "" when none was given. */
       readonly given: string;
+    }
+  | {
+      /**
+       * CR215: `-h`/`--help` after a command that has a usage line of its own.
+       * The line comes from a table (`commandHelp.ts`, `buildArgSpecs.ts`),
+       * never from argv.
+       */
+      readonly scope: "command";
+      /** The command as a user types it: `tasks add`, `seed`. */
+      readonly program: string;
+      /** Its usage line, without the `usage: ` prefix. */
+      readonly synopsis: string;
     };
 
 export interface UsageAnswer {
@@ -109,6 +121,13 @@ const HELP = new Set(["-h", "--help"]);
 /** Whether an argument asks for help: `-h` or `--help`, at any level. */
 export function isHelpFlag(argument: string): boolean {
   return HELP.has(argument);
+}
+
+const VERSION = new Set(["--version", "-V"]);
+
+/** Whether a top-level argument asks for the version: `--version` or `-V` (issue #58). */
+export function isVersionFlag(argument: string): boolean {
+  return VERSION.has(argument);
 }
 
 /** One family's `usage:` line. */
@@ -182,6 +201,9 @@ export function answerUsage(request: UsageRequest, context?: UsageContext): Usag
     }
     const unknown = request.given === null ? "" : `Unknown command: ${request.given}\n\n`;
     return { stream: "stdout", exitCode: 1, text: `${unknown}${USAGE}` };
+  }
+  if (request.scope === "command") {
+    return { stream: "stdout", exitCode: 0, text: `usage: ${request.synopsis}\n` };
   }
   if (HELP.has(request.given)) {
     return {

@@ -96,6 +96,22 @@ describe("the inject hook calls the doorman", () => {
     assert.doesNotMatch(same.stdout, /=== persona\/|MIRROR MODE ACTIVE/);
   });
 
+  test("a prompt that is exactly `--help` or `-h` is the user's prompt: a delta, never a usage line (CR215)", () => {
+    const h = home();
+    inject(h, { session_id: "S", prompt: "/mm:mirror should I take the money?" });
+    // The front door answers a help flag after a command with its usage; the doorman is
+    // exempt by name, because its `--prompt` carries what the user typed.
+    for (const prompt of ["--help", "-h"]) {
+      const out = inject(h, { session_id: "S", prompt });
+      assert.equal(out.status, 0, out.stderr);
+      assert.ok(
+        out.stdout.startsWith(`${DELIVERED_LINE_PREFIX}: delta`),
+        `a delta, got: ${out.stdout.slice(0, 120)}`,
+      );
+      assert.doesNotMatch(out.stdout, /usage:/);
+    }
+  });
+
   test("Mirror Mode off: nothing printed, nothing written, no snapshot taken", () => {
     const h = home();
     const out = inject(h, { session_id: "S", prompt: "how do I split this module" });

@@ -33,7 +33,7 @@ import type { OnProviderCallOutcome } from "#observability/callOutcome.ts";
 import { resolveFamilyProviders } from "#providers/familyProviders.ts";
 import { MIRROR_QUERY_TRANSPORT, mirrorQueryTransportFor } from "#providers/transport.ts";
 import { newId, nowIso } from "#util/pyGenerators.ts";
-import { hasOption, optionValue, stripOptionWithValue } from "./args.ts";
+import { hasOption, looksLikeAnOption, optionValue, stripOptionWithValue } from "./args.ts";
 
 /**
  * A type alias rather than an interface, for the same reason `RouteEnvironment`
@@ -183,6 +183,24 @@ export function mirrorDeactivateMissingSession(
     !optionValue(argv, "--session-id") &&
     environmentSessionId(env) === null
   );
+}
+
+/**
+ * CR109: `mirror log`'s summary, when it is shaped like an option, as the
+ * refusal to print; null otherwise. A word like `--summary` was a mistyped
+ * flag, never a response: taken as one, it became an assistant turn and the
+ * conversation's title. The front door asks before it opens the database, so a
+ * refusal writes nothing, not even the pre-write backup.
+ */
+export function mirrorLogSummaryRefusal(argv: readonly string[]): string | null {
+  if (argv[0] !== "mirror" || argv[1] !== "log") return null;
+  const summary = stripOptionWithValue(
+    stripOptionWithValue(stripOptionWithValue(argv.slice(2), "--session-id"), "--mirror-home"),
+    "--db-path",
+  )[0];
+  return summary !== undefined && looksLikeAnOption(summary)
+    ? `Error: '${summary}' looks like an option, not a response summary.`
+    : null;
 }
 
 export function runMirrorRead(db: Database, args: readonly string[]): number {

@@ -28,3 +28,14 @@ export function stripOptionWithValue(args: readonly string[], name: string): str
   }
   return out;
 }
+
+/**
+ * Whether free text a command takes as an argument is shaped like an option:
+ * one or two hyphens, then a letter (`--help`, `-stdin`). Such a word was a
+ * mistyped option, not content. A markdown list (`- item`) or an em-dash lead
+ * is not flag-shaped and stays valid. CR073 made `journey update` refuse it;
+ * CR109 made `mirror log` refuse it too.
+ */
+export function looksLikeAnOption(text: string): boolean {
+  return /^--?[A-Za-z]/.test(text);
+}

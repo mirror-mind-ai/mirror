@@ -323,12 +323,20 @@ test("front door `init` does not take a flag for a user name", () => {
   // (found while dogfooding on Windows): the only positional was read as the
   // user. A word that starts with `-` is a flag the command does not have,
   // and the answer is the usage line, with nothing created.
+  //
+  // CR215: a help flag is help, answered by routing before `init` runs: the usage line on
+  // stdout, exit 0. Any other flag still reaches `init`, which refuses it.
   const { home, cleanup } = fakeHome();
   try {
-    const result = spawnFrontDoor(["init", "--help"], { HOME: home, ...NO_USER });
+    const help = spawnFrontDoor(["init", "--help"], { HOME: home, ...NO_USER });
+    assert.equal(help.status, 0);
+    assert.equal(help.stdout, "usage: init <user>\n");
+    assert.equal(existsSync(join(home, ".mirror-minds", "--help")), false);
+
+    const result = spawnFrontDoor(["init", "--force"], { HOME: home, ...NO_USER });
     assert.equal(result.status, 2);
     assert.match(result.stderr, /^Usage: init <user>/);
-    assert.equal(existsSync(join(home, ".mirror-minds", "--help")), false);
+    assert.equal(existsSync(join(home, ".mirror-minds", "--force")), false);
   } finally {
     cleanup();
   }

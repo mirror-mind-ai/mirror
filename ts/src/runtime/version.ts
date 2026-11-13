@@ -7,6 +7,7 @@
 // so the runtime surface's call sites are unchanged.
 
 import { findPackageIdentity } from "./packageIdentity.ts";
+import { runningTreeRoot } from "./treeRoot.ts";
 
 /**
  * THE product version. One function, read by the updater, the release doctor,
@@ -33,4 +34,13 @@ export function packageVersion(start: string): string | null {
   // pyproject walk returned when it reached the filesystem root.
   if (!identity?.isMirrorMind) return null;
   return identity.version;
+}
+
+/**
+ * The version of the tree that is running, never the cwd's: what `mirror
+ * --version`, `runtime version`, and the welcome card report. `unknown` when
+ * the running tree is not a Mirror Mind package.
+ */
+export function runningTreeVersion(): string {
+  return packageVersion(runningTreeRoot()) ?? "unknown";
 }

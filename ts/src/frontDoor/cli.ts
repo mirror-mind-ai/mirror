@@ -77,15 +77,14 @@ import {
 import { verifyBackupArchive } from "#runtime/backup.ts";
 import { exitQuietlyOnBrokenPipe } from "#runtime/brokenPipe.ts";
 import { configFilePath, loadConfiguration, silenceExperimentalWarnings } from "#runtime/config.ts";
-import { runningTreeRoot } from "#runtime/treeRoot.ts";
-import { packageVersion } from "#runtime/version.ts";
+import { runningTreeVersion } from "#runtime/version.ts";
 import { runSeed } from "#seed/seed.ts";
 import { getTasksForWeek, listTasks } from "#tasks/taskStore.ts";
 import { computeWeekRange } from "#tasks/weekView.ts";
 import { expandHome } from "#util/paths.ts";
 import { PROGRAM } from "#util/program.ts";
 import { newId, nowIso } from "#util/pyGenerators.ts";
-import { hasOption, optionValue, stripOptionWithValue } from "./args.ts";
+import { hasOption, looksLikeAnOption, optionValue, stripOptionWithValue } from "./args.ts";
 import { canonicalArgv } from "./argvShape.ts";
 import { createBuildLoadRuntime } from "./buildLoadRuntime.ts";
 import { runConsultRoute } from "./consultRoute.ts";
@@ -122,6 +121,7 @@ import {
   isMirrorWrite,
   isModeWrite,
   mirrorDeactivateMissingSession,
+  mirrorLogSummaryRefusal,
   runMirrorDoormanRoute,
   runMirrorRead,
   runMirrorWriteRoute,
@@ -191,7 +191,7 @@ import {
   type TaskStatusTarget,
 } from "./tasksWriteRoute.ts";
 import { readStdinText, readTextFile } from "./textInput.ts";
-import { answerUsage } from "./usage.ts";
+import { answerUsage, isVersionFlag } from "./usage.ts";
 
 /**
  * Resolve the database path for a CLI invocation, mapping a configuration
@@ -1038,7 +1038,6 @@ function runJourneyWrite(argv: readonly string[]): number {
 const JOURNEY_UPDATE_USAGE =
   `Usage: ${PROGRAM} journey update <slug> <content>\n` +
   "       Pass '-' as <content> to read it from stdin, or --file <path> to read a file.";
-const FLAG_SHAPED_CONTENT = /^--?[A-Za-z]/;
 
 function runJourneyUpdateWrite(argv: readonly string[]): number {
   const args = argv.slice(2);
@@ -1068,7 +1067,7 @@ function runJourneyUpdateWrite(argv: readonly string[]): number {
     content = read.text;
   } else if (content === "-") {
     content = readStdinContent();
-  } else if (FLAG_SHAPED_CONTENT.test(content)) {
+  } else if (looksLikeAnOption(content)) {
     console.error(
       `Error: '${content}' looks like an option, not journey path text. ` +
         "Pass '-' as <content> to read it from stdin.",
@@ -1487,6 +1486,11 @@ async function withMirrorWriteDb(
 }
 
 function runMirrorWrite(argv: readonly string[]): Promise<number> | number {
+  const refusal = mirrorLogSummaryRefusal(argv);
+  if (refusal !== null) {
+    console.error(refusal);
+    return 2;
+  }
   if (mirrorDeactivateMissingSession(argv)) {
     console.error("warning: mirror deactivate invoked without --session-id; no state change.");
     return 0;
@@ -1825,8 +1829,8 @@ async function dispatchTs(argv: readonly string[]): Promise<number | DispatchOut
   if (argv[0] === "welcome") return runWelcomeRoute(argv);
   // `mirror --version`, the shape every CLI has (issue #58: it answered "Unknown command").
   // The running tree's version, as `runtime version` reports it; nothing is opened or spawned.
-  if (argv[0] === "--version" || argv[0] === "-V") {
-    process.stdout.write(`${packageVersion(runningTreeRoot()) ?? "unknown"}\n`);
+  if (isVersionFlag(argv[0] ?? "")) {
+    process.stdout.write(`${runningTreeVersion()}\n`);
     return 0;
   }
   if (argv[0] === "runtime") {

@@ -1,81 +1,54 @@
 // Issue #58: `mirror runtime <subcommand> --help` printed nothing and ran the subcommand --
 // `update --help` performed an update. Help is answered before any subcommand runs, one usage
 // line on stdout, exit 0, and `mirror --version` is a version, not an unknown command.
+//
+// CR215 moved the answer out of the runtime route into routing, where it covers every family:
+// these tests read it there, through the same answer the front door prints.
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import { test } from "node:test";
+import { COMMAND_SYNOPSES } from "#frontDoor/commandHelp.ts";
 import { routeMemoryCommand } from "#frontDoor/routing.ts";
-import {
-  RUNTIME_SUBCOMMAND_USAGE,
-  RUNTIME_SUBCOMMANDS,
-  renderRuntimeSubcommandUsage,
-  runRuntimeReadRoute,
-} from "#frontDoor/runtimeRoute.ts";
+import { RUNTIME_SUBCOMMANDS } from "#frontDoor/runtimeRoute.ts";
+import { answerUsage, type UsageAnswer } from "#frontDoor/usage.ts";
 
-async function run(
-  argv: readonly string[],
-): Promise<{ code: number; stdout: string; stderr: string }> {
-  let stdout = "";
-  let stderr = "";
-  const code = await runRuntimeReadRoute(argv, {
-    // An environment that names no install, no home and no network: if a subcommand ran, it
-    // would have to fail loudly here rather than answer.
-    env: { PATH: process.env.PATH ?? "", MIRROR_WELCOME_REMOTE_UPDATE_CHECK: "off" },
-    stdout: (text) => {
-      stdout += text;
-    },
-    stderr: (text) => {
-      stderr += text;
-    },
-  });
-  return { code, stdout, stderr };
+function helpAnswer(argv: readonly string[]): UsageAnswer {
+  const decision = routeMemoryCommand(argv);
+  assert.equal(decision.engine, "usage", `${argv.join(" ")} is answered by usage`);
+  if (decision.engine !== "usage") throw new Error("unreachable");
+  return answerUsage(decision.request);
 }
 
-test("runtime update --help answers its usage and runs nothing", async () => {
+const UPDATE_USAGE =
+  "usage: runtime update [--check] [--dry-run] [--no-fetch] [--skip-migrations] [--repair-updater] [--mirror-home PATH] [--channel stable|main]\n";
+
+test("runtime update --help answers its usage and runs nothing", () => {
   for (const flag of ["--help", "-h"]) {
-    const result = await run(["runtime", "update", flag]);
-    assert.equal(result.code, 0);
-    assert.equal(
-      result.stdout,
-      "usage: runtime update [--check] [--dry-run] [--no-fetch] [--skip-migrations] [--repair-updater] [--mirror-home PATH] [--channel stable|main]\n",
-    );
-    assert.equal(result.stderr, "");
+    assert.deepEqual(helpAnswer(["runtime", "update", flag]), {
+      stream: "stdout",
+      exitCode: 0,
+      text: UPDATE_USAGE,
+    });
   }
   // Help anywhere after the subcommand, among other arguments, still wins.
-  const late = await run(["runtime", "update", "--check", "--help"]);
-  assert.equal(late.code, 0);
-  assert.match(late.stdout, /^usage: runtime update /);
+  assert.equal(helpAnswer(["runtime", "update", "--check", "--help"]).text, UPDATE_USAGE);
 });
 
-test("every runtime subcommand the route dispatches has a usage line, and it is the one --help prints", async () => {
+test("every runtime subcommand the route dispatches has a usage line, and it is the one --help prints", () => {
   for (const subcommand of RUNTIME_SUBCOMMANDS) {
-    const usage = RUNTIME_SUBCOMMAND_USAGE.get(subcommand);
-    if (usage === undefined) {
+    const synopsis = COMMAND_SYNOPSES.get(`runtime ${subcommand}`);
+    if (synopsis === undefined) {
       // The two retired names answer from the retired-surface table, never from here.
       assert.ok(
         ["release-doctor", "release-promote"].includes(subcommand),
         `${subcommand} has no usage line`,
       );
+      assert.equal(routeMemoryCommand(["runtime", subcommand, "--help"]).engine, "retired");
       continue;
     }
-    assert.match(usage, new RegExp(`^runtime ${subcommand}\\b`));
-    const result = await run(["runtime", subcommand, "--help"]);
-    assert.equal(result.code, 0, `${subcommand} --help exit`);
-    assert.equal(result.stdout, renderRuntimeSubcommandUsage(subcommand));
-  }
-});
-
-test("the usage lines name only options the subcommand reads", () => {
-  // Each option in a usage line appears in runtimeRoute.ts as something read (`optionValue` or
-  // `includes`); a line that promised a flag nobody reads would be the bug in reverse.
-  const source = readRouteSource();
-  for (const [subcommand, usage] of RUNTIME_SUBCOMMAND_USAGE) {
-    for (const option of usage.match(/--[a-z-]+/g) ?? []) {
-      assert.ok(
-        source.includes(`"${option}"`),
-        `${subcommand}: ${option} is not read by the route`,
-      );
-    }
+    assert.match(synopsis, new RegExp(`^runtime ${subcommand}\\b`));
+    const answer = helpAnswer(["runtime", subcommand, "--help"]);
+    assert.equal(answer.exitCode, 0, `${subcommand} --help exit`);
+    assert.equal(answer.text, `usage: ${synopsis}\n`);
   }
 });
 
@@ -86,7 +59,3 @@ test("mirror --version is a version, not an unknown command", () => {
     assert.equal(decision.command, flag);
   }
 });
-
-function readRouteSource(): string {
-  return readFileSync(new URL("../../src/frontDoor/runtimeRoute.ts", import.meta.url), "utf8");
-}

@@ -265,6 +265,15 @@ describe("agy:pre-invocation through the doorman (agy 1.4.7 carries lastUserInpu
     const flag = systemStep(turn(h, "--session-id").stdout);
     assert.ok(flag.startsWith(`${DELIVERED_LINE_PREFIX}: delta`), flag.slice(0, 120));
 
+    // CR215: a prompt that is exactly a help flag is the user's prompt too. The front door
+    // answers `-h`/`--help` after a command with its usage, and the doorman is exempt by name:
+    // a usage line here would reach the model in place of the turn's context.
+    for (const prompt of ["--help", "-h"]) {
+      const help = systemStep(turn(h, prompt).stdout);
+      assert.ok(help.startsWith(`${DELIVERED_LINE_PREFIX}: delta`), help.slice(0, 120));
+      assert.doesNotMatch(help, /usage:/);
+    }
+
     for (const prompt of ["$(whoami)", 'x"; rm -rf /tmp/x; echo "', "a\nb", "--forget"]) {
       const out = turn(h, prompt);
       assert.equal(out.status, 0, out.stderr);

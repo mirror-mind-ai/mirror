@@ -17,12 +17,14 @@ import {
   WEEK_PLAN_TRANSPORT,
 } from "#providers/transport.ts";
 
+import { buildUsageSynopsis } from "./buildArgSpecs.ts";
+import { COMMAND_SYNOPSES } from "./commandHelp.ts";
 import {
   RUNTIME_SUBCOMMANDS,
   TS_RUNTIME_READ_SUBCOMMANDS,
   TS_RUNTIME_UPDATE_SUBCOMMANDS,
 } from "./runtimeRoute.ts";
-import type { UsageRequest } from "./usage.ts";
+import { FRONT_DOOR_COMMANDS, isHelpFlag, isVersionFlag, type UsageRequest } from "./usage.ts";
 
 /**
  * The engine a routed command answers from. One member since CV22.DS10.TS5:
@@ -467,7 +469,124 @@ export function routeMemoryCommand(
       anchor: retired.anchor,
     };
   }
-  return routeByFamily(argv, env);
+  // CR215: a help flag after a command is answered here, before any family
+  // claims the argv, so it never reaches a route that would run. After the
+  // retired match, so a removed surface still says it was removed.
+  return helpDecisionFor(argv) ?? routeByFamily(argv, env);
+}
+
+/**
+ * The `conversation-logger` subcommands a runtime's hooks call. Their argv
+ * carries the user's own text (`log-user <session> <content>`) or runs on every
+ * turn, so a word there that looks like help is the user's, not a request.
+ */
+const HOOK_LOGGER_SUBCOMMANDS = new Set([
+  "log-user",
+  "log-assistant",
+  "user-prompt",
+  "stop",
+  "session-start",
+  "session-end",
+  "session-end-pi",
+  "session-maintenance",
+]);
+
+/** `conversations` subcommands that answer `--help` themselves, or take a payload. */
+const CONVERSATIONS_OWN_ARGV = new Set(["append", "imported", "skill-turns"]);
+
+/**
+ * The argv shapes a help flag does not intercept (CR215), named one by one.
+ *
+ * The hook path, because the hooks of four runtimes put the user's prompt in
+ * argv: `mirror doorman --prompt <prompt>` on Claude Code, Antigravity, and Pi,
+ * and `conversation-logger log-user <session> <content>`. A user whose whole
+ * prompt is `--help` asked a question; answering it with a usage line would put
+ * that line into the model's context instead of Mirror's. `welcome
+ * --status-line` and `conversations append` are machine calls too.
+ *
+ * And the commands that answer help themselves: `ext` hands the rest of its
+ * argv to an extension's own CLI, and `conversations imported` and
+ * `conversations skill-turns` print their own usage.
+ */
+function keepsItsOwnArgv(argv: readonly string[]): boolean {
+  const command = argv[0];
+  if (command === "ext") return true;
+  if (command === "mirror") return argv[1] === "doorman";
+  if (command === "conversation-logger") {
+    return HOOK_LOGGER_SUBCOMMANDS.has(conversationLoggerSubcommand(argv) ?? "");
+  }
+  if (command === "welcome") return argv.includes("--status-line");
+  if (command === "conversations") return CONVERSATIONS_OWN_ARGV.has(argv[1] ?? "");
+  return false;
+}
+
+const FRONT_DOOR_COMMAND_NAMES = new Set(FRONT_DOOR_COMMANDS.map(([name]) => name));
+
+/**
+ * CR215: the answer to `-h` or `--help` anywhere after a known command.
+ *
+ * Before this, only the word in the subcommand's place was read as help, and a
+ * help flag anywhere else reached the subcommand, which dropped it or took it
+ * as an argument and ran: `tasks delete <id> --help` deleted the task. Now the
+ * usage engine answers it, before anything is opened, read, or spawned.
+ *
+ * The answer is the subcommand's own line where one exists, and otherwise the
+ * family's, which lists its subcommands. A help flag in the command's own place
+ * (`mirror --help`) is the top-level usage, answered as before.
+ */
+export function helpDecisionFor(argv: readonly string[]): RouteDecision | null {
+  const command = argv[0];
+  if (command === undefined || !FRONT_DOOR_COMMAND_NAMES.has(command)) return null;
+  if (!argv.slice(1).some(isHelpFlag)) return null;
+  if (keepsItsOwnArgv(argv)) return null;
+
+  const family = HELP_FAMILIES.get(command);
+  if (family === undefined) {
+    const synopsis = COMMAND_SYNOPSES.get(command);
+    return synopsis === undefined ? null : commandHelp(command, synopsis);
+  }
+  const subcommand = family.subcommand(argv);
+  if (subcommand === undefined || !family.choices.includes(subcommand)) {
+    return familyHelp(command, family.choices);
+  }
+  if (command === "explore" && subcommand === "story") {
+    const action = exploreStoryAction(argv) ?? "";
+    const program = `explore story ${action}`;
+    const synopsis = COMMAND_SYNOPSES.get(program);
+    return synopsis === undefined
+      ? familyHelp(command, [...TS_EXPLORE_STORY_ACTIONS], "explore story")
+      : commandHelp(program, synopsis, command);
+  }
+  const program = `${command} ${subcommand}`;
+  const synopsis =
+    command === "build" ? buildUsageSynopsis(subcommand) : COMMAND_SYNOPSES.get(program);
+  return synopsis === undefined || synopsis === null
+    ? familyHelp(command, family.choices)
+    : commandHelp(program, synopsis, command);
+}
+
+/** A command's own usage line. The reason names the table key, never argv. */
+function commandHelp(program: string, synopsis: string, command: string = program): RouteDecision {
+  return {
+    command,
+    engine: "usage",
+    reason: `help: ${program}`,
+    request: { scope: "command", program, synopsis },
+  };
+}
+
+/** A family's usage line, the one an unknown subcommand gets, answered as help. */
+function familyHelp(
+  command: string,
+  choices: readonly string[],
+  program: string = command,
+): RouteDecision {
+  return {
+    command,
+    engine: "usage",
+    reason: `help: ${program}`,
+    request: { scope: "family", program, choices, given: "--help" },
+  };
 }
 
 /**
@@ -489,7 +608,7 @@ export function routeByFamily(
 
   // `mirror --version` / `-V`: the version of the running tree, a read that opens nothing.
   // Before this it fell through to "Unknown command" (issue #58).
-  if (command === "--version" || command === "-V") {
+  if (isVersionFlag(command)) {
     return { command, engine: "ts", reason: "version flag" };
   }
 
@@ -1028,4 +1147,54 @@ function soulHarvestAction(argv: readonly string[]): string | undefined {
     if (index !== -1) args.splice(index, 2);
   }
   return args[0];
+}
+
+/** A family's subcommands, and where in argv its route reads which one was given. */
+interface HelpFamily {
+  readonly choices: readonly string[];
+  readonly subcommand: (argv: readonly string[]) => string | undefined;
+}
+
+const SECOND_WORD = (argv: readonly string[]): string | undefined => argv[1];
+
+/**
+ * CR215: every family with subcommands, from the SAME allowlists the routes
+ * above answer by and the unknown-subcommand answer lists. A family absent
+ * from here answers help with its one line in `COMMAND_SYNOPSES`.
+ */
+const HELP_FAMILIES: ReadonlyMap<string, HelpFamily> = new Map<string, HelpFamily>([
+  ["identity", { choices: IDENTITY_SUBCOMMANDS, subcommand: SECOND_WORD }],
+  ["extensions", { choices: [...TS4_EXTENSIONS_VERBS], subcommand: SECOND_WORD }],
+  ["inspect", { choices: ["persona", ...TS4_INSPECT_TARGETS], subcommand: SECOND_WORD }],
+  ["list", { choices: LIST_TARGETS, subcommand: SECOND_WORD }],
+  ["descriptor", { choices: DESCRIPTOR_SUBCOMMANDS, subcommand: SECOND_WORD }],
+  ["tasks", { choices: TASKS_SUBCOMMANDS, subcommand: SECOND_WORD }],
+  ["week", { choices: WEEK_SUBCOMMANDS, subcommand: SECOND_WORD }],
+  ["consolidate", { choices: CONSOLIDATE_SUBCOMMANDS, subcommand: SECOND_WORD }],
+  ["shadow", { choices: SHADOW_SUBCOMMANDS, subcommand: SECOND_WORD }],
+  ["mirror", { choices: MIRROR_SUBCOMMANDS, subcommand: SECOND_WORD }],
+  [
+    "conversation-logger",
+    {
+      choices: [...TS_CONVERSATION_LOGGER_SUBCOMMANDS, ...TS_CONVERSATION_LOGGER_LLM_SUBCOMMANDS],
+      subcommand: conversationLoggerSubcommand,
+    },
+  ],
+  [
+    "mode",
+    {
+      choices: MODE_SUBCOMMANDS,
+      subcommand: (argv) =>
+        argv.find((value, index) => index > 0 && MODE_SUBCOMMANDS.includes(value)),
+    },
+  ],
+  ["runtime", { choices: RUNTIME_SUBCOMMANDS, subcommand: SECOND_WORD }],
+  ["soul", { choices: [...TS_SOUL_SUBCOMMANDS], subcommand: SECOND_WORD }],
+  ["explore", { choices: [...TS_EXPLORE_SUBCOMMANDS], subcommand: SECOND_WORD }],
+  ["build", { choices: [...TS_BUILD_SUBCOMMANDS], subcommand: SECOND_WORD }],
+]);
+
+/** The families help answers by subcommand, for the test that walks every one. */
+export function helpFamilies(): ReadonlyMap<string, readonly string[]> {
+  return new Map([...HELP_FAMILIES].map(([name, family]) => [name, family.choices]));
 }
