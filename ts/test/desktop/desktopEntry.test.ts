@@ -74,11 +74,14 @@ describe("mirror-mind/desktop from node_modules", () => {
       "LearningRejectedError",
       "MigrateHomeRejectedError",
       "MirrorContextRejectedError",
+      "PersonaCallRejectedError",
       "addJourney",
       "appendConversationMessages",
       "createHome",
+      "createPersona",
       "deleteJourney",
       "deleteJourneyWithRecords",
+      "deletePersona",
       "deliverMirrorContext",
       "ensureConversation",
       "forgetMirrorContext",
@@ -86,14 +89,18 @@ describe("mirror-mind/desktop from node_modules", () => {
       "inspectMigrationState",
       "learnFromConversations",
       "listJourneyConversations",
+      "listPersonas",
       "migrateHome",
       "moveJourney",
       "previewJourneyDeletion",
+      "previewPersonaDeletion",
       "readJourneyTree",
+      "readPersona",
       "rebindConversationJourney",
       "renameConversation",
       "setJourneyProjectPath",
       "updateJourney",
+      "updatePersona",
     ]);
     assert.equal(out.state, "current");
     assert.deepEqual(out.pending, []);
@@ -121,7 +128,7 @@ console.log(JSON.stringify({ nothing, refused }));
     const result = run(root, probe, dbPath);
     assert.equal(result.status, 0, result.stderr);
     assert.deepEqual(JSON.parse(result.stdout), {
-      nothing: { kind: "nothing", block: "", persona: null, journey: null },
+      nothing: { kind: "nothing", block: "", persona: null, personaName: null, journey: null },
       refused: { name: "MirrorContextRejectedError", reason: "no_key" },
     });
   });

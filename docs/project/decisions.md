@@ -11,6 +11,56 @@ resolved.
 
 ## Completed Decisions
 
+### CV9 is re-baselined on the TypeScript core
+
+**Date:** 2026-11-07
+**Reference:** [CV9.DS10](roadmap/cv9-mirror-1-0/cv9-ds10-the-1-0-done-condition-describes-the-system-that-exists/index.md) and its [plan review](roadmap/cv9-mirror-1-0/cv9-ds10-the-1-0-done-condition-describes-the-system-that-exists/evidence/2026-11-07-plan-review.md)
+**Participants:** Vinícius Teles (Navigator); a persona panel (product-designer, quality-assurance, database-architect, security-engineer, devops-engineer, ai-engineer, writer); the engineer as Driver
+
+CV9's done condition was written on 2026-04-30. It named the Python core that CV22
+deleted, Gemini CLI, which is retired, a `uv` distribution path, and a web surface the
+console's retirement removed, and it asked for "high coverage" where nothing measures
+coverage. On 2026-10-28 a ranking of the ten most important items on the way to 1.0
+opened with this. The ranking was made from index titles and the AI audit's gate table,
+not from the status banners, and three of its items were wrong or stale.
+
+**Decided:**
+
+1. **The done condition is a table of claims**, each with a story, a check, and
+   evidence ([CV9 index](roadmap/cv9-mirror-1-0/index.md#done-condition)). The CI claim
+   names the gates in `.github/workflows/tests.yml` and `docs.yml` plus `eval --all`,
+   where "high coverage" had no threshold and no tool. The platforms are named: macOS
+   and Linux on Node.js 24 or newer, with Windows through the separate installer.
+2. **The earlier epics are re-stated.** E1 is superseded by CV22. E2 closes as a
+   container: S2 was delivered by CV21.DS5, and its one unmet bullet, actionable errors
+   for external failures, moves to DS13 and DS15. E6's surface is retired and leaves the
+   done condition. E4's audit is re-run by DS18.
+3. **1.0 is a promise, not a launch.** Mirror already publishes to npm, has a stable
+   channel, and ships GitHub Releases, so 1.0 is the day the project starts promising
+   something. DS17 names what 1.x keeps stable and how a breaking change is announced.
+   The first run is built for the main path, Pi, and the other four runtimes behave as
+   the parity matrix measures them.
+4. **DS11, journey reshaping, gates 1.0 and runs second.** "No record lost" is the
+   promise, and today a person can only delete a journey with its records or edit SQL by
+   hand. The panel's devops-engineer dissented: the story depends on nothing else in CV9,
+   so it could ship first as a minor release and the question would stop mattering.
+5. **Three corrections to the 2026-10-28 ranking.** AI-20 was decided on 2026-07-17 and
+   AI-21 closed by documentation on 2026-07-23, so neither needs a story. CR097's
+   collisions fail loudly and nothing persists, so the ids work is one story inside DS12,
+   with a safe upsert for the one silent path. Extension parity was delivered by
+   CV21.DS5, so CR146 (an authoring feature, RS011) and CR177 (contributors only) leave
+   the gate.
+6. **The AI audit's open findings are settled.** AI-18 and AI-19 were closed by
+   CV22.DS8 and CV22.DS9. AI-08, a fallback model for the extraction pin, is carried
+   past 1.0: DS13 is to make a provider outage leave a conversation pending instead of
+   counting toward its quarantine, so an outage delays learning and loses nothing.
+   AI-17 is carried by DS14.
+7. **CR197 ships as a patch ahead of the gate.** A relative `MIRROR_BIN` lets Node run a
+   project's own file, the class CR192 closed for `MIRROR_NODE` in v0.39.5.
+
+**Not decided here:** what DS17 names as stable, the order among DS12 to DS16, and
+whether DS19's rehearsal needs a series of `1.0.0-next` tags.
+
 ### A host migrates a home only behind a verified, retained backup
 
 **Date:** 2026-10-28

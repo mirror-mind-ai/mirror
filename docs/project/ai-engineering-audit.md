@@ -348,6 +348,19 @@
 > identity prose, not the fenced transcript). Delivered as plain documentation
 > maintenance, no story wrapper. Remaining open audit items: AI-08, AI-17 (P2)
 > and AI-18/AI-19 (CV22 DS5/DS6 plan inputs).
+>
+> **Status (updated 2026-11-07).** The CV9 re-baseline
+> ([CV9.DS10](roadmap/cv9-mirror-1-0/cv9-ds10-the-1-0-done-condition-describes-the-system-that-exists/index.md))
+> settled the open items. **AI-18** and **AI-19** are closed: CV22.DS8 built the
+> TypeScript `LlmTransport` with per-role timeouts, bounded retries, the error taxonomy,
+> and metadata-only logging, and CV22.DS9 added the MCP wallet guards. **AI-08** (a
+> fallback model for the background pipeline) is carried past 1.0 by decision: CV9.DS13
+> is to make a provider outage leave a conversation pending instead of counting toward
+> its quarantine, so an outage delays learning and loses nothing. **AI-17** is carried
+> by CV9.DS14. Its ledger part was done by CV9.E2.S14. What is open on the TypeScript
+> `consult` is the data flow, which no document states; a reduced-context mode; and the
+> hard-coded exchange rate (`USD_TO_BRL = 5.7` in `ts/src/consult/render.ts`). Every
+> finding in this audit is now closed or has an owner.
 
 ---
 

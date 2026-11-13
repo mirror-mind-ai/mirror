@@ -1,0 +1,3 @@
+Adicionei `slugify(text)` em `src/text.js` e seu teste em `test/text.test.js`, cobrindo acentos, pontuação, espaços e entradas vazias.
+
+`npm test`: 2 testes passaram.

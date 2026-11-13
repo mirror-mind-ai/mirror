@@ -2,9 +2,17 @@
 
 # CV9.E2.S2 — External Extension Runtime Surface Parity
 
-**Status:** Planned  
+**Status:** ⚪ Superseded by CV21.DS5  
 **Epic:** CV9.E2 Stabilization & Robustness  
 **Task:** `92c028c7` — Add external extension skill projection for Gemini CLI and Codex
+
+> **Superseded on 2026-11-07 ([CV9.DS10](../../cv9-ds10-the-1-0-done-condition-describes-the-system-that-exists/index.md)).**
+> [CV21.DS5](../../../cv21-runtime-expansion-ii/cv21-ds5-user-extensions-on-every-runtime/index.md)
+> delivered what this story set out to do, by another design: one generated plugin per
+> home, with `review-copy` and a `command-skill` measured live on Claude Code, Codex,
+> Antigravity, and Grok Build. The Python projection commands below were never built,
+> and Gemini CLI is retired. The text that follows is the 2026-05 proposal, kept as
+> written.
 
 ---
 

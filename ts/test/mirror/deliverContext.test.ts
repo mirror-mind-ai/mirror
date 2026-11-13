@@ -23,6 +23,7 @@ import {
   MirrorContextRejectedError,
 } from "#mirror/deliverContext.ts";
 import { DELIVERED_LINE_PREFIX } from "#mirror/doorman.ts";
+import type { PersonaRouter } from "#mirror/personaRouter.ts";
 import {
   resolveLlmMaxRetries,
   resolveLlmTimeoutMs,
@@ -126,6 +127,52 @@ test("the full folder takes the Journey the host names, over the one the session
   assert.equal(session(dbPath)?.journey, other);
 });
 
+/** CR203's router, choosing one persona for the turn. */
+const choosing = (persona: string): PersonaRouter => ({
+  route: async () => ({ persona, outcome: "chosen" }),
+});
+
+// CR204: a host that shows who is speaking gets the persona's own name, not only its id.
+test("the delivery hands the host the persona's name with its id", async () => {
+  const { dbPath, journey } = desktopHome();
+  const delivered = await deliverMirrorContext(
+    dbPath,
+    { sessionId: SESSION, prompt: "Help me draft the opening.", journeyId: journey },
+    { providers: { ...providers(), personaRouter: choosing("writer") } },
+  );
+  assert.equal(delivered.persona, "writer");
+  assert.equal(delivered.personaName, "Writer");
+});
+
+test("a persona without a name, and a turn without a persona, hand over no name", async () => {
+  const unnamed = desktopHome();
+  const db = new DatabaseSync(unnamed.dbPath);
+  const row = db
+    .prepare("SELECT metadata FROM identity WHERE layer = 'persona' AND key = 'writer'")
+    .get() as { metadata: string };
+  const { name: _name, ...rest } = JSON.parse(row.metadata) as Record<string, unknown>;
+  db.prepare("UPDATE identity SET metadata = ? WHERE layer = 'persona' AND key = 'writer'").run(
+    JSON.stringify(rest),
+  );
+  db.close();
+  const withoutName = await deliverMirrorContext(
+    unnamed.dbPath,
+    { sessionId: SESSION, prompt: "Help me draft the opening.", journeyId: unnamed.journey },
+    { providers: { ...providers(), personaRouter: choosing("writer") } },
+  );
+  assert.equal(withoutName.persona, "writer");
+  assert.equal(withoutName.personaName, null);
+
+  const quiet = desktopHome();
+  const none = await deliverMirrorContext(
+    quiet.dbPath,
+    { sessionId: SESSION, prompt: "How should I plan this week?", journeyId: quiet.journey },
+    { providers: providers() },
+  );
+  assert.equal(none.persona, null);
+  assert.equal(none.personaName, null);
+});
+
 test("the next turn is the doorman's delta, and a compaction makes the one after full again", async () => {
   const { dbPath, journey } = desktopHome();
   const used = providers();
@@ -161,7 +208,13 @@ test("a command turn gets nothing, needs no key, and writes nothing", async () =
     prompt: "/mm-journeys",
     journeyId: journey,
   });
-  assert.deepEqual(nothing, { kind: "nothing", block: "", persona: null, journey: null });
+  assert.deepEqual(nothing, {
+    kind: "nothing",
+    block: "",
+    persona: null,
+    personaName: null,
+    journey: null,
+  });
   assert.ok(readFileSync(dbPath).equals(before));
   assert.ok(
     !existsSync(join(dbPath, "..", "backups")),
@@ -247,24 +300,23 @@ test("writes nothing outside the home", async () => {
 });
 
 test("a host's decision: Mirror Mode from the first turn, the doorman's after", () => {
-  const personas = [{ key: "writer", routing_keywords: ["draft"] }];
   const off = { active: false, persona: null, journey: null };
   const on = { active: true, persona: null, journey: "j" };
-  assert.deepEqual(decideHostTurn({ prompt: "Hello", state: null, personas }), {
+  assert.deepEqual(decideHostTurn({ prompt: "Hello", state: null }), {
     kind: "full",
     query: "Hello",
   });
-  assert.deepEqual(decideHostTurn({ prompt: "Hello", state: off, personas }), {
+  assert.deepEqual(decideHostTurn({ prompt: "Hello", state: off }), {
     kind: "full",
     query: "Hello",
   });
-  assert.deepEqual(decideHostTurn({ prompt: "/mm-build x", state: off, personas }), {
+  assert.deepEqual(decideHostTurn({ prompt: "/mm-build x", state: off }), {
     kind: "nothing",
   });
-  assert.deepEqual(decideHostTurn({ prompt: "/mm-build x", state: on, personas }), {
+  assert.deepEqual(decideHostTurn({ prompt: "/mm-build x", state: on }), {
     kind: "nothing",
   });
-  assert.equal(decideHostTurn({ prompt: "a draft", state: on, personas }).kind, "delta");
+  assert.equal(decideHostTurn({ prompt: "a draft", state: on }).kind, "delta");
 });
 
 test("a host's providers get the key, one attempt and a 10 s bound each, and nothing else", () => {

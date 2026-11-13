@@ -1,0 +1,8 @@
+Jornada desta sessão alterada para **personal-growth**.
+
+Skill criada em `.pi/skills/mm-session-journey/`. Após `/reload`, use:
+```text
+/skill:mm-session-journey personal-growth
+```
+
+Testei o isolamento e a preservação do modo. Nota: durante a descoberta, um comando de ajuda abriu uma nova conversa de logging inadvertidamente.

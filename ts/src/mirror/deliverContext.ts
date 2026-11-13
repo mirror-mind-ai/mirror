@@ -36,7 +36,7 @@
 import { basename, dirname } from "node:path";
 import { isCommandTurn } from "#conversation/commandTurn.ts";
 import { DatabaseNotCurrentError } from "#conversation/hostCalls.ts";
-import { openDatabaseReadOnly } from "#db/database.ts";
+import { type Database, openDatabaseReadOnly } from "#db/database.ts";
 import { inspectMigrationState } from "#db/migrationReport.ts";
 import { openLiveWriteDatabase } from "#frontDoor/liveBackup.ts";
 import type { ProviderConfig } from "#providers/config.ts";
@@ -48,11 +48,11 @@ import {
   type DoormanDecision,
   type DoormanSessionState,
   decideDoorman,
-  doormanPersonas,
   forgetDoormanDelivery,
   readDoormanSessionState,
   runDoorman,
 } from "./doorman.ts";
+import { LivePersonaRouter, type PersonaRouter } from "./personaRouter.ts";
 
 export type MirrorContextRejection = "invalid_request" | "no_key";
 
@@ -81,7 +81,7 @@ export interface DeliverMirrorContextOptions {
   /** Reception's classifier for the full folder; on unless turned off. */
   receptionEnabled?: boolean;
   /** Tests only: providers in place of the live ones the key would build. */
-  providers?: { llm?: LlmProvider; embedding?: EmbeddingProvider };
+  providers?: { llm?: LlmProvider; embedding?: EmbeddingProvider; personaRouter?: PersonaRouter };
 }
 
 export interface DeliveredMirrorContext {
@@ -90,6 +90,11 @@ export interface DeliveredMirrorContext {
   block: string;
   /** The session's persona and Journey after the delivery. */
   persona: string | null;
+  /**
+   * CR204: the persona's own name, from its metadata, for a host to show; `null` when it has
+   * none or the turn has no persona. Display text only: `persona` stays the id.
+   */
+  personaName: string | null;
   journey: string | null;
 }
 
@@ -97,7 +102,6 @@ export interface DeliveredMirrorContext {
 export function decideHostTurn(input: {
   prompt: string;
   state: DoormanSessionState | null;
-  personas: Parameters<typeof decideDoorman>[0]["personas"];
 }): DoormanDecision {
   const decided = decideDoorman(input);
   // In Mirror Mode the doorman answers nothing only for a command turn, which
@@ -121,8 +125,11 @@ function assertCurrent(dbPath: string): void {
 /**
  * The providers' environment for a host call: the key, one attempt per call,
  * and the embedding bounded like reception (10 s). A full turn makes one
- * reception call and, with attachments, one embedding; a delta, one embedding.
- * So a turn waits at most about 20 s on its providers.
+ * reception call, one persona-routing call (CR203) and, with attachments, one
+ * embedding; a delta, one embedding and one routing call made beside it. So a
+ * delta waits at most about 10 s on its providers and a full turn about 30 s,
+ * only when every call runs to its bound; the routing settings are the
+ * defaults, since a host passes no environment.
  */
 export function hostProviderEnv(apiKey: string): Record<string, string> {
   return {
@@ -137,11 +144,12 @@ export function hostProviderEnv(apiKey: string): Record<string, string> {
 export function hostProviders(
   apiKey: string,
   createClient?: (config: ProviderConfig) => OpenRouterClient,
-): { llm: LlmProvider; embedding: EmbeddingProvider } {
+): { llm: LlmProvider; embedding: EmbeddingProvider; personaRouter: PersonaRouter } {
   const env = hostProviderEnv(apiKey);
   return {
     llm: new LiveLlmProvider({ env, ...(createClient ? { createClient } : {}) }),
     embedding: new LiveEmbeddingProvider({ env, ...(createClient ? { createClient } : {}) }),
+    personaRouter: new LivePersonaRouter({ env, ...(createClient ? { createClient } : {}) }),
   };
 }
 
@@ -172,18 +180,17 @@ export async function deliverMirrorContext(
     decision = decideHostTurn({
       prompt,
       state: readDoormanSessionState(read, sessionId),
-      personas: doormanPersonas(read),
     });
   } finally {
     read.close();
   }
   if (decision.kind === "nothing")
-    return { kind: "nothing", block: "", persona: null, journey: null };
+    return { kind: "nothing", block: "", persona: null, personaName: null, journey: null };
 
   const apiKey = typeof options.apiKey === "string" ? options.apiKey.trim() : "";
   if (!apiKey && !options.providers) throw new MirrorContextRejectedError("no_key");
   const receptionEnabled = options.receptionEnabled !== false;
-  const { llm, embedding } = options.providers ?? hostProviders(apiKey);
+  const { llm, embedding, personaRouter } = options.providers ?? hostProviders(apiKey);
 
   const db = openLiveWriteDatabase(dbPath);
   try {
@@ -198,19 +205,36 @@ export async function deliverMirrorContext(
       receptionEnabled,
       llmProvider: receptionEnabled ? llm : undefined,
       embeddingProvider: embedding,
+      personaRouter,
       extensionRuntime: { environment: {} },
       newId,
       nowIso,
     });
     const state = readDoormanSessionState(db, sessionId);
+    const persona = state?.persona ?? null;
     return {
       kind: decision.kind,
       block: rendered.stdout,
-      persona: state?.persona ?? null,
+      persona,
+      personaName: persona ? personaName(db, persona) : null,
       journey: state?.journey ?? null,
     };
   } finally {
     db.close();
+  }
+}
+
+/** CR204: the `name` the seed kept in a persona's metadata, when it kept one. */
+function personaName(db: Database, key: string): string | null {
+  const row = db
+    .prepare("SELECT metadata FROM identity WHERE layer = 'persona' AND key = ?")
+    .get(key);
+  if (typeof row?.metadata !== "string") return null;
+  try {
+    const name: unknown = (JSON.parse(row.metadata) as Record<string, unknown> | null)?.name;
+    return typeof name === "string" && name.trim() ? name.trim() : null;
+  } catch {
+    return null;
   }
 }
 

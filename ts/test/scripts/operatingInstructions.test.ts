@@ -53,3 +53,31 @@ test("the Pi extension runs the core it ships with and carries the instructions 
   assert.doesNotMatch(extension, /--env-file/);
   assert.doesNotMatch(extension, /_readDotenv\(process\.cwd\(\)\)/);
 });
+
+/** The text of one `###` section of AGENTS.md, from its heading to the next. */
+function agentsSection(heading: string): string {
+  const start = agents.indexOf(`\n### ${heading}\n`);
+  assert.ok(start >= 0, `AGENTS.md has a "### ${heading}" section`);
+  const next = agents.indexOf("\n### ", start + 1);
+  return agents.slice(start, next < 0 ? undefined : next);
+}
+
+test("the Hard Constraints bound a task's size: the Scope rule (CR211)", () => {
+  const constraints = agentsSection("Hard Constraints");
+  assert.match(constraints, /^- \*\*Scope:\*\* do what was asked, at the size it was asked\./m);
+  assert.match(constraints, /stop, say\s+what you could not find, and ask/);
+  assert.match(constraints, /tests beyond the change asked for/);
+  assert.doesNotMatch(
+    agents.replace(constraints, ""),
+    /\*\*Scope:\*\*/,
+    "the rule lives in Hard Constraints alone",
+  );
+});
+
+test("persona routing is described as the runtime does it, not as keyword scoring (CR213)", () => {
+  assert.doesNotMatch(agents, /detectPersona|routing_keywords|mirror detect-persona/);
+  const model = agentsSection("Ego-Persona Model");
+  assert.match(model, /\*\*Persona routing:\*\* Mirror chooses each turn's persona; you do not\./);
+  assert.match(model, /--persona <id>/);
+  assert.doesNotMatch(model, /When switching personas/);
+});

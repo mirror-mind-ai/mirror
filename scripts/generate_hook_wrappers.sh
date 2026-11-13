@@ -219,10 +219,31 @@ REPO_ROOT=""
 EOF
 IFS= read -r -d '' ENTRY_BIN <<'EOF' || true
 # Find the bin. MIRROR_BIN names the directory holding `mirror` and
-# `mirror-hook` (`$(npm prefix -g)/bin`), the same trust class as MIRROR_NODE;
-# then the PATH; then the global bin directories a GUI launch leaves off it.
+# `mirror-hook` (`$(npm prefix -g)/bin`); then the PATH; then the global bin
+# directories a GUI launch leaves off it.
+#
+# MIRROR_BIN is used only as an absolute path to a directory holding an
+# executable `mirror-hook`, by MIRROR_NODE's rule and pattern (CR197): a
+# relative one would resolve against the project the runtime spawned this hook
+# from, and Node would run that project's file. Anything else is noted with its
+# reason, in MIRROR_NODE's words, once a day, and the search goes on without it.
 ENTRY=""
-[ -n "${MIRROR_BIN:-}" ] && [ -x "$MIRROR_BIN/mirror-hook" ] && ENTRY="$MIRROR_BIN/mirror-hook"
+if [ -n "${MIRROR_BIN:-}" ]; then
+  refused=""
+  case "$MIRROR_BIN" in
+    /*|\\*|[A-Za-z]:[\\/]*)
+      if [ ! -e "$MIRROR_BIN" ]; then refused="missing"
+      elif [ ! -d "$MIRROR_BIN" ]; then refused="not a directory"
+      elif [ ! -f "$MIRROR_BIN/mirror-hook" ] || [ ! -x "$MIRROR_BIN/mirror-hook" ]; then refused="a directory without an executable mirror-hook"
+      else ENTRY="$MIRROR_BIN/mirror-hook"
+      fi
+      ;;
+    *) refused="relative" ;;
+  esac
+  if [ -n "$refused" ]; then
+    note "MIRROR_BIN=${MIRROR_BIN//[$'\r\n']/} is $refused; searching the PATH and the usual places instead" daily
+  fi
+fi
 [ -n "$ENTRY" ] || ENTRY="$(command -v mirror-hook 2>/dev/null || true)"
 for candidate in "$HOME/.nvm/current/bin" /opt/homebrew/bin /usr/local/bin; do
   [ -n "$ENTRY" ] && break
@@ -313,11 +334,12 @@ render() {
   # so they are spliced in by the text around their placeholder, never as the
   # replacement in ${out//@X@/...}, which bash 5.2 processes for `&` and the
   # backslashes that quote it (patsub_replacement). Each template holds each
-  # placeholder once (CR192).
+  # placeholder once (CR192). The bin search carries the pattern too since
+  # CR197, so @ENTRY@ is spliced the same way.
   out="${out%%@LOG@*}${LOG_HELPERS%$'\n'}${out#*@LOG@}"
   out="${out%%@NODE@*}${FIND_NODE%$'\n'}${out#*@NODE@}"
+  out="${out%%@ENTRY@*}${entry}${out#*@ENTRY@}"
   out="${out//@LOCATE@/$locate}"
-  out="${out//@ENTRY@/$entry}"
   out="${out//@HOOK@/$hook}"
   out="${out//@DEPTH@/$depth}"
   out="${out//@GATE@/$gate}"

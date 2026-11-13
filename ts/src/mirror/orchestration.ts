@@ -12,6 +12,7 @@ import type { EmbeddingProvider } from "#providers/embedding.ts";
 import type { LlmProvider } from "#providers/llm.ts";
 import { loadMirrorContext } from "./context.ts";
 import { type ResolvedMirrorDefaults, resolveMirrorDefaults } from "./defaultResolution.ts";
+import { type PersonaRouter, personaRoutingLedger } from "./personaRouter.ts";
 import { pythonTruthy, sliceCodePoints } from "./reception.ts";
 import {
   renderJourneyDetected,
@@ -47,6 +48,8 @@ export interface MirrorLoadInput {
   onReceptionOutcome?: OnProviderCallOutcome;
   llmProvider?: LlmProvider;
   embeddingProvider?: EmbeddingProvider;
+  /** CR203: routes a turn's persona by its subject; absent, the turn has the Journey's default or none. */
+  personaRouter?: PersonaRouter;
   databasePath?: string;
   mirrorHome?: string;
   user?: string;
@@ -72,6 +75,10 @@ export async function runMirrorLoad(
   const resolved = await resolveMirrorDefaults(db, {
     ...input,
     onReceptionOutcome: input.onReceptionOutcome,
+    onPersonaRouting: personaRoutingLedger(db, {
+      sessionId: input.sessionId ?? null,
+      now: input.nowIso,
+    }),
     // Priced, as Python's `build_llm_logger(role="reception")` prices it
     // (CV22.DS8.US3). The row existed before but carried a null cost, so
     // every Mirror Mode activation with a query would have logged live spend
@@ -289,7 +296,9 @@ function writeMirrorState(
     input.sessionId,
     {
       mirrorActive: input.active,
-      ...(input.persona !== undefined && input.persona !== null ? { persona: input.persona } : {}),
+      // A load's persona is recorded even when it is none (CR203): the session
+      // must not keep an earlier turn's persona as if this one had chosen it.
+      ...(input.persona !== undefined ? { persona: input.persona } : {}),
       ...(input.journey !== undefined && input.journey !== null ? { journey: input.journey } : {}),
     },
     nowIso,

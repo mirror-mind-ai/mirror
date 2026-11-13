@@ -1,0 +1,6 @@
+Feito: esta sessão agora usa **personal-growth**. Defaults globais, modo e histórico foram preservados.
+
+Skill criada em `.pi/skills/mm-session-journey/SKILL.md`, com testes de isolamento aprovados.
+
+Após `/reload`, use:
+`/skill:mm-session-journey <slug>`

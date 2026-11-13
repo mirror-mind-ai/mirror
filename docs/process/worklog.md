@@ -12,6 +12,156 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-11-09 — v0.44.0: A Persona the Host Can Create and Delete
+
+Minor release of
+[CR207](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr207-let-the-host-create-and-delete-a-persona.md)
+(PR #75), on the Navigator's word. `createPersona`, `previewPersonaDeletion` and
+`deletePersona` join the Desktop API, for Nautilus for Mirror's CR222 and CR223. The deletion
+follows CR200's Journey deletion: digest, named verified backup, one transaction; history stays,
+machinery goes, live choices are cleared, an heir refuses. Built test-first: 15 cases and a closed
+inventory over the schema; 23 mutations, 22 caught, the survivor equivalent. One departure,
+recorded in the CR: no descriptor is generated, since CR203's router reads the description first.
+
+No schema change, no migration, no model or `prompts.ts` change; the model-behavior gate
+does not apply. Release note: [v0.44.0](../releases/v0.44.0.md).
+
+Published 2026-11-09: tag `v0.44.0` and `stable` at `de56989f`, GitHub release marked latest,
+`publish.yml` (run 42617415330) approved by the Navigator, npm `stable` and `latest` at 0.44.0
+with `gitHead` `de56989f`. Not yet installed on the maintainer's machine; Nautilus for Mirror
+pins it next, for its CR222 and CR223.
+
+### 2026-11-08 — v0.43.0: A Persona Edit That Reaches the Open Conversation
+
+Minor release of
+[CR206](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr206-deliver-a-persona-again-when-its-prompt-changed.md)
+(PR #72, captured in PR #69), on the Navigator's word. `doorman_personas` becomes a map of
+persona id to a short fingerprint of the prompt delivered, so a prompt edited through
+v0.42.0's `updatePersona` reaches a conversation where that persona already spoke, under a
+`revised` header. Built test-first: four cases, 13 mutations, all caught. One departure,
+recorded in the CR: a session written by an earlier Core adopts the current fingerprint on its
+next turn rather than re-delivering every persona.
+
+No schema change, no migration, no model or `prompts.ts` change; the model-behavior gate
+does not apply. Release note: [v0.43.0](../releases/v0.43.0.md).
+
+Published the same day: tag `v0.43.0` and `stable` at `7cad67c2`, GitHub release marked
+latest, `publish.yml` (run 42522479640) approved by the Navigator, npm `stable` and `latest` at
+0.43.0 with `gitHead` `7cad67c2`. Installed on the maintainer's machine with
+`mirror runtime update` (0.42.0 to 0.43.0, backup verified, no migration pending). The field
+falsifier waits for Nautilus for Mirror to pin this release.
+
+### 2026-11-08 — v0.42.0: A Persona the Host Can Read and Edit
+
+Minor release of
+[CR205](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr205-let-the-host-read-and-edit-a-persona.md)
+(PR #68, captured in PR #67), on the Navigator's word. `mirror-mind/desktop` gains
+`listPersonas`, `readPersona` and `updatePersona`, shaped like the Journey calls, for the
+persona screen of Nautilus for Mirror. Built test-first: 12 specs, 26 mutations (25 caught,
+the survivor the transaction, which a single-process test cannot see). The build departed
+from the capture three times, recorded in the CR: no metadata `briefing`, `expectedUpdatedAt`
+required, unreadable metadata refused. An edited prompt reaching an open conversation is
+CR206, "Deliver a persona again when its prompt changed", captured beside it (PR #69).
+
+No schema change, no migration, no model or `prompts.ts` change; the model-behavior gate
+does not apply. Release note: [v0.42.0](../releases/v0.42.0.md).
+
+Published the same day: tag `v0.42.0` and `stable` at `702bf2e7`, GitHub release marked
+latest, `publish.yml` approved by the Navigator, npm `stable` and `latest` at 0.42.0 with
+`gitHead` `702bf2e7`. Installed on the maintainer's machine with `mirror runtime update`
+(0.41.0 to 0.42.0, backup verified, no migration pending). A read-only probe of the
+installed package on a copy of that home listed 28 personas, all named, and read one whole.
+
+### 2026-11-08 — v0.41.0: A Persona When the Subject Asks for One
+
+Minor release of
+[CR203](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr203-route-a-turns-persona-by-its-subject-and-let-it-have-none.md)
+(PR #64, plan in PR #63) and
+[CR204](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr204-hand-the-host-the-personas-name-with-its-id.md)
+(PR #62), released together by the Navigator's decision. A turn's persona is the router's
+answer (a Decisions model, `liquid/d1-ultra`, taken at a Noul of 0.6 or more), else the
+Journey's `default_persona`, else none; never the session's by inheritance. Captured from an
+eval of 100 labelled production turns, planned, approved, built test-first with 24
+mutations (23 caught, the survivor equivalent), and rerun on the same 100 through the built
+code before the merge: 93 right, 3 wrong, 4 missed. The rerun moved the build off its
+plan once: personas are offered with their own description first, since descriptor-first
+doubled the wrong picks. `deliverMirrorContext` returns `personaName`. Not yet validated by
+the Navigator in the Navigator's own home; the rerun ran on a copy of it.
+
+No schema change, no migration. No extraction or embedding model and no `prompts.ts`
+prompt changed, so the model-behavior gate's letter does not apply; the release adds a
+model call and a line the model reads, and the private rerun is its evidence. Release
+note: [v0.41.0](../releases/v0.41.0.md).
+
+After the release commit:
+
+- The four Tests jobs and Docs were green on PR #65 before the tag existed; it merged as
+  `1c95a812`.
+- `release:promote` (`--dry-run`, which created nothing, then `--push`) tagged `v0.41.0`
+  and moved `stable` to `1c95a812`.
+- The GitHub Release is published and marked latest.
+- The Driver dispatched `publish.yml` on the tag under `stable` (run 42480239136); the
+  Navigator approved the `release` environment and the npm stage, and moved `latest` with
+  2FA. `latest` and `stable` are at 0.41.0, `gitHead` `1c95a812`; `next` stays at
+  0.40.0-next.1.
+- The Driver ran `mirror runtime update` on the Navigator's machine by its path,
+  `/usr/local/bin/mirror`, after the release's handoff named `/opt/homebrew/bin/mirror`,
+  which this machine does not have: the path the v0.40.1 entry records belongs to another
+  machine. The global install went from 0.39.0 to 0.41.0 behind a verified backup, with no
+  migration pending. Nautilus for Mirror still embeds v0.40.0-next.1 until its pin moves.
+
+### 2026-11-07 — v0.40.1: The Bins You Named, or Why Not
+
+Patch release of
+[CR197](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr197-the-hook-wrappers-and-the-mcp-locator-accept-a-relative-mirror-bin.md),
+captured in CR192's review and shipped ahead of the 1.0 gate by the CV9 re-baseline's
+decision. The plugin's hook wrappers and MCP locator use `MIRROR_BIN` only as an absolute
+path to a directory holding the bin they need, by `MIRROR_NODE`'s rule and pattern; a
+refused value is noted with its reason, once a day in `hooks.log` and on the locator's
+stderr. Planned, reviewed through five lenses (security engineer, engineer, quality
+assurance, DevOps engineer, writer) with the amendments folded, and approved; the
+Navigator decided that Rodrigo Immaginario's installer run does not gate the tag, against
+the DevOps engineer's recommendation. Tests written first ran the project's planted bins.
+Validated by the Navigator in a scratch home, his own `MIRROR_BIN=/opt/homebrew/bin`
+included. Debt review: `runtime diagnose` counting a refusal as a hook failure is deferred
+to CR198, widened to `MIRROR_BIN`. Also carries CV9.DS10, documents only.
+
+No schema change, no migration. No model or prompt changed, so the model-behavior gate
+does not apply. Release note: [v0.40.1](../releases/v0.40.1.md).
+
+After the release commit:
+
+- Docs and the four Tests jobs were green on `e95edbf0` before the tag existed, as they
+  were on `67892ec5`, whose Windows job ran CR197's Git Bash case.
+- `release:promote` (`--dry-run`, which created nothing, then `--push`) tagged `v0.40.1`
+  and moved `stable` to `e95edbf0`.
+- The GitHub Release is published and marked latest.
+- The Driver dispatched `publish.yml` on the tag under `stable`; the Navigator approved the
+  `release` environment and the npm stage, and moved `latest` with 2FA. `latest` and
+  `stable` are at 0.40.1, `gitHead` `e95edbf0`; `next` stays at 0.40.0-next.1.
+- The Navigator's first `mirror runtime update` ran the clone's `mirror`, which his
+  shell's PATH finds first, and left the Homebrew install at 0.40.0. Named by path,
+  `/opt/homebrew/bin/mirror runtime update` took it to 0.40.1 behind a backup; its plugin
+  wrappers carry the new `MIRROR_BIN` check, and his own `MIRROR_BIN=/opt/homebrew/bin`
+  writes no refusal to the production home's `hooks.log`. Worth a CR: `runtime update`
+  could say which install it updates when another install of `mirror` is on the machine.
+
+### 2026-11-07 — CV9.DS10: CV9 re-baselined on the TypeScript core
+
+Documents only, no release. CV9's done condition dated from 2026-04-30 and described the
+Python core: `store.conn` calls in a deleted `src/`, Gemini CLI, a `uv` install, and a web
+surface retired in September. Ariad's next pull in CV9 was still `CV9.E2.S2`, a Gemini-era
+story. The done condition is now a table of claims, each with the story that owns it and
+how it is checked, and Delivery Stories DS11 to DS19 are the way to 1.0: journeys reshaped
+without losing a record first, then recording, failures, privacy, first run, release
+trust, a statement of what 1.x keeps stable, a docs re-audit, and a rehearsal of a
+stranger's first week. E1 is superseded by CV22, E2 closed as a container (S2 was
+delivered by CV21.DS5), E6's surface is retired. A seven-persona panel reviewed the plan
+and corrected three errors in the first draft; its review is the story's evidence. AI-18
+and AI-19 closed (CV22.DS8, DS9), AI-08 carried past 1.0, and CR202 captured: a deleted
+journey leaves its extension bindings behind, found by reading. Validated by the Navigator.
+Decision: [CV9 is re-baselined on the TypeScript core](../project/decisions.md#cv9-is-re-baselined-on-the-typescript-core).
+
 ### 2026-11-06 — v0.40.0-next.1: A Journey Can Go, Showing What Goes With It
 
 The first preview of the release train, prepared at the Navigator's word for Nautilus for
@@ -6367,7 +6517,7 @@ Implementation plan produced for E6: `backfill-codex-session` CLI command,
 
 ## Next
 
-- **CV9 (In Progress):** Mirror Mind 1.0 — stabilization, boundary hardening, and the remaining conversation-metadata lifecycle apply work.
+- **CV9 (In Progress):** Mirror Mind 1.0 — the promise that Mirror does not lose, misfile, or leak what a person tells it, re-baselined on 2026-11-07 (CV9.DS10); the Delivery Stories to 1.0 are in the CV9 index.
 - **CV20 (In Progress):** Builder Mode Evolution — the Ariad method DSL (parser, registry, adoption, lifecycle execution).
 - **CV21 (In Progress):** Runtime Expansion II — package Mirror once as a canonical plugin + MCP server and propagate it to Claude, Codex, Antigravity, and Grok Build.
 - **Continuous refinement** of identity, memory quality, and runtime behavior based on real usage.
