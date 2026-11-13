@@ -62,7 +62,70 @@ They are harmless but wrong.
 Captured, unassigned, 2026-11-13, at the Navigator's direction, from the four-lens review
 of PR #60, where the QA and DevOps lenses each named the other families as the open risk.
 
-Not planned.
+Planned and approved on 2026-11-13, after a four-lens review of the plan (engineering, QA,
+AI engineering, DevOps) amended it. Driver: @viniciusteles. Delivery: `main`.
+[CR109](cr109-mirror-log-help-records-help-and-renames-the-conversation.md) closes with
+this CR.
+
+### Scope
+
+- **One rule, in routing.** `routeMemoryCommand` answers a help flag after the retired
+  match and before any family, through the `usage` engine, which already answers before
+  anything is opened, read from stdin, or spawned. A command added later is covered
+  without anyone remembering to.
+- **What the answer says.** The subcommand's own usage line where one exists, else the
+  family's line, which lists its subcommands. Every subcommand that changes data, spends
+  money, or moves the operating mode gets its own line, so an agent learns the arguments
+  from help rather than by trying the command. `build`'s lines are generated from the
+  argument specs its parser already enforces. Families with no usage line of their own
+  (`journey`, `conversations`, `memories`, `journeys`, `recall`, `detect-persona`,
+  `welcome`) and commands with no subcommand (`seed`, `init`, `journal`, `consult`,
+  `backup`, `repair-encoding`, `mcp`) get one.
+- **Help wins for commands people type, and the user's text wins on the hook path.**
+  The hooks of four runtimes put the user's prompt in argv (`mirror doorman --prompt`,
+  `conversation-logger log-user`/`log-assistant`), so a prompt that is exactly `-h` or
+  `--help` must reach the doorman as a prompt. Exempt by name: `mirror doorman`; the
+  hook-facing `conversation-logger` subcommands (`log-user`, `log-assistant`,
+  `user-prompt`, `stop`, `session-start`, `session-end`, `session-end-pi`,
+  `session-maintenance`); `welcome --status-line`; `conversations append`.
+- **Help a command already answers stays its own:** `conversations imported`,
+  `conversations skill-turns`, and `ext`, whose extensions own their CLIs.
+- **#60's notes.** The `runtime` help check moves into the rule, so the usage table is
+  what decides; the `--version` flags and the version lookup each live in one place.
+- **CR109.** `mirror log` also refuses a summary that looks like an option, as
+  `journey update` has since CR073.
+
+### Non-goals
+
+- Usage lines for subcommands that only read: they answer with their family's line.
+- `--` as an end-of-options marker: no parser honors it, and adding it to the help scan
+  alone would make it half a convention.
+- Refusing unknown flags across families.
+
+### Acceptance
+
+- `-h` or `--help` anywhere after a known command answers usage on stdout, exit 0,
+  without opening the database, reading stdin, spawning, or calling a model.
+- Every family's every subcommand answers help; the test reads the same subcommand
+  constants routing does.
+- A prompt of exactly `--help` or `-h` still reaches the doorman, on every runtime's
+  hook path.
+- `conversations imported --help`, `conversations skill-turns --help`, and `ext --help`
+  answer as before. `runtime update --help` prints #60's line. `build show --help` now
+  exits 0 instead of 2, intended.
+- `--help` works on a machine with no user configured.
+- `mirror log --help` writes nothing; `mirror log --anything` is refused.
+
+### Validation route
+
+In a temporary home: `mirror tasks add probe`, then `mirror tasks delete <id> --help`
+prints usage and `mirror tasks list` still shows the task; `mirror build show --help`
+prints usage with exit 0; `mirror runtime update --help` prints its line.
+
+### Release note
+
+Warn that on earlier versions `--help` after a subcommand can run it; until updated,
+use `mirror <family> --help`. Name the visible change: `build … --help` exits 0.
 
 ## Evidence
 
@@ -117,4 +180,4 @@ Code:
 
 ## Outcome
 
-Pending: captured, not planned.
+Pending: in progress.
