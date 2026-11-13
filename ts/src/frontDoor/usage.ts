@@ -106,6 +106,11 @@ export interface UsageAnswer {
 
 const HELP = new Set(["-h", "--help"]);
 
+/** Whether an argument asks for help: `-h` or `--help`, at any level. */
+export function isHelpFlag(argument: string): boolean {
+  return HELP.has(argument);
+}
+
 /** One family's `usage:` line. */
 export function familyUsageLine(program: string, choices: readonly string[]): string {
   return `usage: ${program} [-h] {${choices.join(",")}} ...\n`;
