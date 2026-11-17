@@ -149,3 +149,4 @@ evidence stays honest as both cores move.
 - [CR212 · A conversation in Mirror Mode keeps receiving Mirror's deltas on coding turns, though the instructions say the mode follows the context](cr212-mirror-mode-deltas-keep-arriving-on-coding-turns.md)
 - [CR213 · `AGENTS.md` describes the keyword persona routing CR203 replaced, and points the model at a command that still runs it](cr213-agents-md-describes-the-persona-routing-cr203-replaced.md)
 - [CR214 · `mm-build` makes every journey read about 46 KB of Ariad protocol that applies only to a journey that adopted Ariad](cr214-mm-build-makes-every-journey-read-the-ariad-protocol.md)
+- [CR216 · A Mirror load can move a host's Conversation to another journey, and a terminal's replies can land in it](cr216-a-mirror-load-moves-a-host-conversation-to-another-journey.md)
