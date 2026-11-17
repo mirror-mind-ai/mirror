@@ -100,7 +100,8 @@ Read on 2026-11-17 against `origin/main` (`e6dca9e7`, v0.44.0 plus 13 commits):
 
 ## Outcome
 
-Implemented on `cr216-a-mirror-load-moves-a-host-conversation`, 2026-11-17; not yet committed.
+Implemented on `cr216-a-mirror-load-moves-a-host-conversation`, 2026-11-17, and merged into `main`
+by PR #79 (`304f43f0`) with CI green on Ubuntu, macOS and Windows install. Closed `done`.
 
 - **The mark.** `ensureConversation` (`ts/src/conversation/hostCalls.ts`) merges
   `journey_authority: "host"` into the Conversation's metadata, read inside the write
