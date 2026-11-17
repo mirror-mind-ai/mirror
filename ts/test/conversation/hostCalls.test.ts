@@ -139,6 +139,37 @@ test("ensureConversation sets title, Journey and interface on the bound Conversa
   assert.equal(after?.journey, "journey-two");
 });
 
+test("ensureConversation marks the Journey as the host's, keeping the metadata already there (CR216)", () => {
+  const dbPath = home();
+  const first = ensureConversation(dbPath, {
+    sessionId: "s-1",
+    journeyId: "journey-one",
+    title: "A",
+    interface: "desktop",
+  });
+  assert.deepEqual(JSON.parse(String(conversation(dbPath, first.conversationId)?.metadata)), {
+    journey_authority: "host",
+  });
+
+  // A Conversation ensured before CR216 gets the mark the next time it is ensured.
+  const db = openDatabaseForBootstrap(dbPath);
+  db.prepare("UPDATE conversations SET metadata = ? WHERE id = ?").run(
+    '{"learned_through": {"id": "m1"}}',
+    first.conversationId,
+  );
+  db.close();
+  ensureConversation(dbPath, {
+    sessionId: "s-1",
+    journeyId: "journey-one",
+    title: "A",
+    interface: "desktop",
+  });
+  assert.deepEqual(JSON.parse(String(conversation(dbPath, first.conversationId)?.metadata)), {
+    learned_through: { id: "m1" },
+    journey_authority: "host",
+  });
+});
+
 test("ensureConversation starts a new Conversation once the bound one has ended", () => {
   const dbPath = home();
   const first = ensureConversation(dbPath, {

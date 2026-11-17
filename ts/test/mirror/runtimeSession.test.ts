@@ -9,6 +9,7 @@ import { tempDir } from "#helpers/tempDir.ts";
 import {
   environmentSessionId,
   getRuntimeSession,
+  resolveRuntimeSessionId,
   updateRuntimeSessionColumns,
   upsertRuntimeSession,
 } from "#mirror/runtimeSession.ts";
@@ -63,6 +64,26 @@ test("updateRuntimeSessionColumns: only the named columns move; a missing row is
         interface: "pi",
       },
     );
+  } finally {
+    db.close();
+  }
+});
+
+test("a guessed session is never one whose Conversation a host owns (CR216)", () => {
+  const db = openDatabaseCopyForWrite(join(tempDir("runtime-session-host-"), "copy.db"));
+  try {
+    createRuntimeTables(db);
+    db.prepare(
+      "INSERT INTO conversations (id, started_at, interface, journey, metadata) VALUES (?, 't', ?, ?, ?)",
+    ).run("host-conv", "nautilus", "journey-host", '{"journey_authority": "host"}');
+    db.prepare(
+      "INSERT INTO conversations (id, started_at, interface, journey, metadata) VALUES (?, 't', ?, ?, ?)",
+    ).run("broken-conv", "pi", "journey-pi", "not json");
+    upsertRuntimeSession(db, "terminal", { interface: "pi", conversationId: "broken-conv" }, "t1");
+    upsertRuntimeSession(db, "host", { interface: "nautilus", conversationId: "host-conv" }, "t2");
+    assert.equal(resolveRuntimeSessionId(db, null, null), "terminal");
+    // Named, it is still the host's session: only a name reaches it.
+    assert.equal(resolveRuntimeSessionId(db, "host", null), "host");
   } finally {
     db.close();
   }

@@ -21,6 +21,7 @@ import {
   renderMirrorModeTransition,
 } from "./render.ts";
 import {
+  conversationJourneyIsHosts,
   decodeMetadata,
   GLOBAL_STICKY_DEFAULTS_SESSION_ID,
   getRuntimeSession,
@@ -323,11 +324,14 @@ function bindConversationContext(
   let conversationId: string;
   if (existing && existing.ended_at === null) {
     conversationId = String(existing.id);
-    db.prepare("UPDATE conversations SET persona = ?, journey = ? WHERE id = ?").run(
-      persona,
-      journey,
-      conversationId,
-    );
+    // CR216: never NULL over what the load did not resolve, and never move the
+    // journey of a Conversation a host owns; `rebindConversationJourney` does that.
+    if (persona !== null) {
+      db.prepare("UPDATE conversations SET persona = ? WHERE id = ?").run(persona, conversationId);
+    }
+    if (journey !== null && !conversationJourneyIsHosts(db, conversationId)) {
+      db.prepare("UPDATE conversations SET journey = ? WHERE id = ?").run(journey, conversationId);
+    }
   } else {
     conversationId = newId();
     db.prepare(

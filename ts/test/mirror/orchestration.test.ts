@@ -245,3 +245,96 @@ test("mirror load marks the session the harness named in the environment when no
   );
   db.close();
 });
+
+// CR216: a host's Conversation (Mirror Desktop CR094).
+function withHostConversation(db: ReturnType<typeof fixture>) {
+  db.prepare(
+    `INSERT INTO conversations (id, title, started_at, interface, persona, journey, metadata)
+     VALUES ('host-conv', 'Host title', 't', 'nautilus', 'writer', 'journey-host', '{"journey_authority": "host"}')`,
+  ).run();
+  db.prepare(
+    `INSERT INTO runtime_sessions (session_id, conversation_id, interface, journey, started_at, updated_at)
+     VALUES ('host-s', 'host-conv', 'nautilus', 'journey-host', 't9', 't9')`,
+  ).run();
+}
+
+function hostConversation(db: ReturnType<typeof fixture>) {
+  return db
+    .prepare("SELECT title, persona, journey FROM conversations WHERE id = 'host-conv'")
+    .get();
+}
+
+test("a load that names no session binds no host session, and its log writes nothing there (CR216)", async () => {
+  const db = fixture();
+  withHostConversation(db);
+  await runMirrorLoad(db, {
+    identity: "mirror-dev",
+    persona: "engineer",
+    journey: "mirror-ts-core",
+    receptionEnabled: false,
+    newId: ids(),
+    nowIso: times(),
+  });
+  assert.deepEqual(
+    { ...hostConversation(db) },
+    { title: "Host title", persona: "writer", journey: "journey-host" },
+  );
+  assert.equal(
+    db.prepare("SELECT conversation_id FROM runtime_sessions WHERE session_id = 'host-s'").get()
+      ?.conversation_id,
+    "host-conv",
+  );
+  logMirrorResponse(db, {
+    summary: "A terminal reply.",
+    muted: false,
+    newId: ids(),
+    nowIso: times(),
+  });
+  assert.equal(
+    db.prepare("SELECT count(*) AS n FROM messages WHERE conversation_id = 'host-conv'").get()?.n,
+    0,
+  );
+  assert.equal(hostConversation(db)?.title, "Host title");
+  db.close();
+});
+
+test("a load that names a host's session leaves the journey the host set (CR216)", async () => {
+  const db = fixture();
+  withHostConversation(db);
+  await runMirrorLoad(db, {
+    identity: "mirror-dev",
+    persona: "engineer",
+    journey: "mirror-ts-core",
+    sessionId: "host-s",
+    receptionEnabled: false,
+    newId: ids(),
+    nowIso: times(),
+  });
+  assert.equal(hostConversation(db)?.journey, "journey-host");
+  db.close();
+});
+
+test("a load that resolves no journey or persona leaves both on the Conversation (CR216)", async () => {
+  const db = fixture();
+  db.prepare(
+    `INSERT INTO conversations (id, started_at, interface, persona, journey)
+     VALUES ('term-conv', 't', 'pi', 'engineer', 'mirror-ts-core')`,
+  ).run();
+  db.prepare(
+    "UPDATE runtime_sessions SET conversation_id = 'term-conv' WHERE session_id = 's1'",
+  ).run();
+  const result = await runMirrorLoad(db, {
+    identity: "mirror-dev",
+    sessionId: "s1",
+    receptionEnabled: false,
+    newId: ids(),
+    nowIso: times(),
+  });
+  assert.equal(result.resolved.journey, null);
+  assert.equal(result.resolved.persona, null);
+  assert.deepEqual(
+    { ...db.prepare("SELECT persona, journey FROM conversations WHERE id = 'term-conv'").get() },
+    { persona: "engineer", journey: "mirror-ts-core" },
+  );
+  db.close();
+});
