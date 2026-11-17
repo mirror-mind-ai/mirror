@@ -26,6 +26,11 @@ operating instructions.
 No schema change, no migration, no model or `prompts.ts` change; the model-behavior gate does not
 apply. Release note: [v0.44.1](../releases/v0.44.1.md).
 
+Published 2026-11-17: tag `v0.44.1` and `stable` at `d2c565cd`, GitHub release marked latest,
+`publish.yml` (run 44091347355) approved by the Navigator, npm `stable` and `latest` at 0.44.1
+with `gitHead` `d2c565cd`. Not yet installed on the maintainer's machine; Nautilus for Mirror
+pins it next, for CR094's correction (CR216).
+
 ### 2026-11-09 — v0.44.0: A Persona the Host Can Create and Delete
 
 Minor release of
