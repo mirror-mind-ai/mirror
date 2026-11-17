@@ -31,6 +31,7 @@ import {
   appendConversationMessages as appendBatch,
   parseAppendRequest,
 } from "#conversation/append.ts";
+import { metadataDict } from "#conversation/closeTail.ts";
 import { cleanTitle, updateConversation, writeTitle } from "#conversation/lifecycleWrites.ts";
 import { getOrCreateSessionConversation } from "#conversation/logger.ts";
 import { openDatabaseForConversationWrites, type WritableDatabase } from "#db/database.ts";
@@ -39,8 +40,8 @@ import {
   type MigrationReport,
   type MigrationState,
 } from "#db/migrationReport.ts";
-import { upsertRuntimeSession } from "#mirror/runtimeSession.ts";
-import { newId, nowIso } from "#util/pyGenerators.ts";
+import { HOST_JOURNEY_AUTHORITY, upsertRuntimeSession } from "#mirror/runtimeSession.ts";
+import { newId, nowIso, pythonJsonDumps } from "#util/pyGenerators.ts";
 
 /** The database is not one these calls may write: anything but `current`. */
 export class DatabaseNotCurrentError extends Error {
@@ -128,8 +129,25 @@ export function ensureConversation(
       nowIso(),
     );
     updateConversation(db, conversationId, { title, journey: journeyId, interface: surface });
+    markJourneyAsTheHosts(db, conversationId);
     return { conversationId, journeyId };
   });
+}
+
+/**
+ * CR216: the host owns this Conversation's journey, so a Mirror load leaves it
+ * alone and a guessed session never lands on it. Merged into the metadata read
+ * inside the write, so the close tail's and learning's keys survive.
+ */
+function markJourneyAsTheHosts(db: WritableDatabase, conversationId: string): void {
+  const row = db.prepare("SELECT metadata FROM conversations WHERE id = ?").get(conversationId);
+  const metadata = metadataDict(typeof row?.metadata === "string" ? row.metadata : null);
+  if (metadata.journey_authority === HOST_JOURNEY_AUTHORITY) return;
+  metadata.journey_authority = HOST_JOURNEY_AUTHORITY;
+  db.prepare("UPDATE conversations SET metadata = ? WHERE id = ?").run(
+    pythonJsonDumps(metadata),
+    conversationId,
+  );
 }
 
 /** What `conversations append` would print as its rejection. */

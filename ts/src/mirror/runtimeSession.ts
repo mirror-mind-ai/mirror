@@ -3,6 +3,25 @@ import type { Database, WritableDatabase } from "#db/database.ts";
 export const GLOBAL_STICKY_DEFAULTS_SESSION_ID = "__global_sticky_defaults__";
 export const GLOBAL_OPERATING_MODE_SESSION_ID = "__global_operating_mode__";
 
+/**
+ * CR216: a Conversation whose journey a host owns. `ensureConversation` writes
+ * `journey_authority: "host"` into its `metadata`; the host asserts that
+ * journey on every append, so nothing but the host may move it.
+ */
+export const HOST_JOURNEY_AUTHORITY = "host";
+
+/** True when `metadata` holds the host's mark; malformed metadata is not marked. */
+const HOST_OWNED_METADATA = `CASE WHEN json_valid(metadata)
+    THEN json_extract(metadata, '$.journey_authority') END = '${HOST_JOURNEY_AUTHORITY}'`;
+
+export function conversationJourneyIsHosts(db: Database, conversationId: string): boolean {
+  return (
+    db
+      .prepare(`SELECT 1 FROM conversations WHERE id = ? AND ${HOST_OWNED_METADATA}`)
+      .get(conversationId) !== undefined
+  );
+}
+
 export interface RuntimeSessionRow {
   sessionId: string;
   conversationId: string | null;
@@ -229,6 +248,11 @@ export function resolveRuntimeSessionId(
   );
 }
 
+/**
+ * The active session updated last, of any interface, for a caller that was
+ * named none. Never a host's (CR216): a host names its sessions, and a guess
+ * that landed on one moved its Conversation to the guessing load's journey.
+ */
 function guessRuntimeSessionId(db: Database): string | null {
   const row = db
     .prepare(
@@ -237,6 +261,8 @@ function guessRuntimeSessionId(db: Database): string | null {
          AND session_id NOT IN (?, ?)
          AND interface IS NOT NULL
          AND interface != 'global_defaults'
+         AND (conversation_id IS NULL
+              OR conversation_id NOT IN (SELECT id FROM conversations WHERE ${HOST_OWNED_METADATA}))
        ORDER BY updated_at DESC
        LIMIT 1`,
     )
