@@ -12,6 +12,20 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-11-17 — v0.44.1: A Help Flag That Only Helps, and a Journey the Host Keeps
+
+Patch release on the Navigator's word, gathering what merged since v0.44.0.
+[CR216](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr216-a-mirror-load-moves-a-host-conversation-to-another-journey.md)
+(PR #79, promoted from Nautilus for Mirror's CR094): a Mirror load no longer moves a host's
+Conversation to another journey, nor writes a terminal's reply into it. Built test-first: five
+specs red on the defect, and the incident reproduced through the CLI on `origin/main` and gone on
+the branch. CR215 and Rodrigo Immaginario's PR #60: a help flag after a command answers its usage
+and runs nothing; its validation route was run again before this release. CR211 and CR213: the
+operating instructions.
+
+No schema change, no migration, no model or `prompts.ts` change; the model-behavior gate does not
+apply. Release note: [v0.44.1](../releases/v0.44.1.md).
+
 ### 2026-11-09 — v0.44.0: A Persona the Host Can Create and Delete
 
 Minor release of
