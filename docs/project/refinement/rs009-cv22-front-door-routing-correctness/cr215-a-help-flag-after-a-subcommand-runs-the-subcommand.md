@@ -180,7 +180,8 @@ Code:
 
 ## Outcome
 
-Implemented on `main`, 2026-11-13; awaiting the Navigator's validation.
+Implemented on `main`, 2026-11-13 (`e6dca9e7`). Validated by the Navigator on 2026-11-13;
+awaiting the debt decision.
 
 - **The rule.** `helpDecisionFor` in `ts/src/frontDoor/routing.ts`, called by
   `routeMemoryCommand` after the retired match. It reads each family's subcommands from
