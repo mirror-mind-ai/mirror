@@ -94,6 +94,7 @@ describe("mirror-mind/desktop from node_modules", () => {
       "moveJourney",
       "previewJourneyDeletion",
       "previewPersonaDeletion",
+      "readJourney",
       "readJourneyTree",
       "readPersona",
       "rebindConversationJourney",

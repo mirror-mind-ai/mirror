@@ -62,7 +62,7 @@ export interface JourneyTree {
 /** The export's depth bound: a node whose lineage is longer than this is not attached. */
 const MAX_DEPTH = 16;
 
-function metadataOf(raw: string | null): Record<string, unknown> {
+export function metadataOf(raw: string | null): Record<string, unknown> {
   try {
     const value: unknown = JSON.parse(raw || "{}");
     return value !== null && typeof value === "object" && !Array.isArray(value)
@@ -77,9 +77,14 @@ function collapse(text: string): string {
   return text.trim().split(/\s+/u).filter(Boolean).join(" ");
 }
 
+/** A Journey's name: metadata `display_name`, then the content's first `# ` heading, then the key. */
+export function journeyNameOf(row: JourneyTreeRow, meta: Record<string, unknown>): string {
+  const title = (row.content ?? "").match(/^#\s+(.+)$/m);
+  return (meta.display_name as string) || (title ? (title[1] ?? "").trim() : row.key);
+}
+
 function nodeOf(row: JourneyTreeRow, meta: Record<string, unknown>): JourneyTreeNode {
   const content = row.content ?? "";
-  const title = content.match(/^#\s+(.+)$/m);
   const status = content.match(/^\*\*Status:\*\*\s*(.+)$/m);
   const stage = content.match(/^\*\*Stage:\*\*\s*(.+)$/m);
   const description = content.match(
@@ -87,7 +92,7 @@ function nodeOf(row: JourneyTreeRow, meta: Record<string, unknown>): JourneyTree
   );
   const node: JourneyTreeNode = {
     id: row.key,
-    name: (meta.display_name as string) || (title ? (title[1] ?? "").trim() : row.key),
+    name: journeyNameOf(row, meta),
     updatedAt: row.updated_at,
   };
   const optional: Record<string, unknown> = {

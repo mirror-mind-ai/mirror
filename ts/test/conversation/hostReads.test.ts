@@ -1,7 +1,7 @@
 // CV24.DS3 — the reads a host's sidebar is built from.
 //
-// Three calls, all read-only: the Journey tree, a Journey's Conversations, and
-// one Conversation by exact id. Each asks the migration report first and
+// Four calls, all read-only: the Journey tree, one Journey's content whole
+// (CR217), a Journey's Conversations, and one Conversation by exact id. Each asks the migration report first and
 // refuses a database that is not `current`, opens read-only, never migrates,
 // and ignores MIRROR_HOME.
 
@@ -15,11 +15,13 @@ import { ConversationCallRejectedError, DatabaseNotCurrentError } from "#convers
 import {
   inspectConversation,
   listJourneyConversations,
+  readJourney,
   readJourneyTree,
 } from "#conversation/hostReads.ts";
 import { bootstrapDatabase } from "#db/bootstrap.ts";
 import { regressTo016 } from "#helpers/legacyDb.ts";
 import { tempDir } from "#helpers/tempDir.ts";
+import { JourneyCallRejectedError } from "#journey/journeyCalls.ts";
 
 function home(prefix = "mirror-host-reads-"): string {
   const dbPath = join(tempDir(prefix), "memory.db");
@@ -40,6 +42,10 @@ function home(prefix = "mirror-host-reads-"): string {
   journey("j1", "journey-one", "# One\n**Status:** active", { sibling_position: 1 });
   journey("j2", "journey-two", "# Two", { sibling_position: 0 });
   journey("j3", "journey-child", "# Child", { parent_journey: "journey-one" });
+  journey("j4", "journey-named", BRIEFING, { display_name: "Shown Name" });
+  db.prepare(
+    "INSERT INTO identity (id, layer, key, content, version, created_at, updated_at, metadata) VALUES ('j5', 'journey', 'journey-blank', '', '1.0.0', ?, ?, NULL)",
+  ).run("2026-10-01T00:00:00Z", "2026-10-02T00:00:00Z");
   const conversation = (
     id: string,
     journeyId: string,
@@ -67,6 +73,28 @@ function home(prefix = "mirror-host-reads-"): string {
   return dbPath;
 }
 
+const BRIEFING = [
+  "# Named",
+  "**Status:** active",
+  "**Stage:** Starting",
+  "",
+  "## Description",
+  "",
+  "The first paragraph.",
+  "",
+  "The second paragraph.",
+  "",
+  "## Field",
+  "",
+  "- `one/`: the first place.",
+  "- `two/`: the second place.",
+  "",
+  "## Current focus",
+  "",
+  "Clarify the next movement.",
+  "",
+].join("\n");
+
 function rejection(fn: () => unknown): string {
   try {
     fn();
@@ -85,10 +113,57 @@ test("readJourneyTree reads the home's Journeys in their stored order", () => {
     [
       ["journey-two", "Two", []],
       ["journey-one", "One", ["journey-child"]],
+      ["journey-blank", "journey-blank", []],
+      ["journey-named", "Shown Name", []],
     ],
   );
   assert.equal(tree.roots[1]?.status, "active");
   assert.equal(tree.roots[1]?.updatedAt, "2026-10-02T00:00:00Z");
+});
+
+test("readJourney reads one Journey's content whole, as the runtime delivers it", () => {
+  const dbPath = home();
+  assert.deepEqual(readJourney(dbPath, { journeyId: "journey-named" }), {
+    id: "journey-named",
+    name: "Shown Name",
+    content: BRIEFING,
+    updatedAt: "2026-10-02T00:00:00Z",
+  });
+  // The name follows the tree's rule: display_name, then the first heading, then the key.
+  assert.equal(readJourney(dbPath, { journeyId: "journey-two" }).name, "Two");
+  assert.deepEqual(readJourney(dbPath, { journeyId: "journey-blank" }), {
+    id: "journey-blank",
+    name: "journey-blank",
+    content: "",
+    updatedAt: "2026-10-02T00:00:00Z",
+  });
+  // The tree keeps its collapsed description.
+  const named = readJourneyTree(dbPath).roots.find((node) => node.id === "journey-named");
+  assert.equal(named?.description, "The first paragraph. The second paragraph.");
+});
+
+test("readJourney refuses an unknown Journey and a malformed request", () => {
+  const dbPath = home();
+  const reason = (fn: () => unknown): string => {
+    try {
+      fn();
+    } catch (error) {
+      if (error instanceof JourneyCallRejectedError) return error.reason;
+      if (error instanceof ConversationCallRejectedError) return error.reason;
+      throw error;
+    }
+    throw new Error("expected a rejection");
+  };
+  assert.equal(
+    reason(() => readJourney(dbPath, { journeyId: "no-such-journey" })),
+    "unknown_journey",
+  );
+  for (const request of [{ journeyId: "" }, { journeyId: 7 }, {}, null]) {
+    assert.equal(
+      reason(() => readJourney(dbPath, request as unknown as { journeyId: string })),
+      "invalid_request",
+    );
+  }
 });
 
 test("listJourneyConversations lists one Journey's Conversations, newest first", () => {
@@ -153,6 +228,7 @@ test("inspectConversation reads one Conversation by exact id", () => {
 
 const EVERY_READ: [string, (dbPath: string) => unknown][] = [
   ["tree", (p) => readJourneyTree(p)],
+  ["journey", (p) => readJourney(p, { journeyId: "journey-named" })],
   ["list", (p) => listJourneyConversations(p, { journeyId: "journey-one", limit: 5 })],
   ["inspect", (p) => inspectConversation(p, { conversationId: "conv-new-000001" })],
 ];
