@@ -12,6 +12,18 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-11-21 — v0.44.2: A Journey's Content, Read Whole
+
+Patch release on the Navigator's word, carrying one change from Mirror Desktop's CR263.
+[CR217](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr217-a-host-cannot-read-a-journeys-content-whole.md)
+(PR #82): `readJourney` answers one Journey's content whole for a host's briefing panel, where
+`readJourneyTree` carries only a collapsed description. Built test-first, with the CI green on
+Ubuntu, macOS and Windows. One local failure, `diagnose.test.ts` under Node 24.22.2, is a driver
+difference that passes in CI.
+
+No schema change, no migration, no model or `prompts.ts` change; the model-behavior gate does not
+apply. Release note: [v0.44.2](../releases/v0.44.2.md).
+
 ### 2026-11-17 — v0.44.1: A Help Flag That Only Helps, and a Journey the Host Keeps
 
 Patch release on the Navigator's word, gathering what merged since v0.44.0.
