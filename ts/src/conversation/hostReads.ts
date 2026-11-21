@@ -1,11 +1,14 @@
 // The reads a host's sidebar is built from — CV24.DS3.
 //
-// Three calls for a host that embeds this core (Mirror Desktop 0.3), each
-// replacing a route it took through Python:
+// Four calls for a host that embeds this core (Mirror Desktop 0.3), the first
+// three replacing a route it took through Python:
 //
 //   - `readJourneyTree`: every Journey as a tree (was the Journey registry dump
 //     CV22.DS10.TS4 retired as `journey-admin-verbs`; this is a new contract,
 //     see `journey/journeyTree.ts`);
+//   - `readJourney`: one Journey's content whole, the text the runtime delivers
+//     on a turn (CR217). The tree carries only a collapsed `## Description`,
+//     and a host's briefing panel needs every section;
 //   - `listJourneyConversations`: one Journey's Conversations, newest first
 //     (was the catalog script's `catalog`);
 //   - `inspectConversation`: one Conversation by EXACT id (was its `inspect`).
@@ -18,7 +21,14 @@
 import { listRecentConversationSummaries } from "#conversation/listing.ts";
 import { type Database, openDatabaseReadOnly } from "#db/database.ts";
 import { inspectMigrationState } from "#db/migrationReport.ts";
-import { buildJourneyTree, type JourneyTree, type JourneyTreeRow } from "#journey/journeyTree.ts";
+import { JourneyCallRejectedError } from "#journey/journeyCalls.ts";
+import {
+  buildJourneyTree,
+  type JourneyTree,
+  type JourneyTreeRow,
+  journeyNameOf,
+  metadataOf,
+} from "#journey/journeyTree.ts";
 import { ConversationCallRejectedError, DatabaseNotCurrentError } from "./hostCalls.ts";
 
 /** The catalog's bound, as Mirror Desktop's catalog script set it. */
@@ -53,6 +63,37 @@ export function readJourneyTree(dbPath: string): JourneyTree {
         .all() as unknown as JourneyTreeRow[],
     ),
   );
+}
+
+export interface JourneyContent {
+  id: string;
+  /** The tree's name for it. */
+  name: string;
+  /** The identity row's content, uncut; empty when it has none. */
+  content: string;
+  updatedAt: string;
+}
+
+/** One Journey's content whole, as the runtime delivers it to a turn. */
+export function readJourney(dbPath: string, request: { journeyId: string }): JourneyContent {
+  const journeyId = request?.journeyId;
+  if (typeof journeyId !== "string" || journeyId.length === 0) {
+    throw new JourneyCallRejectedError("invalid_request");
+  }
+  return withRead(dbPath, (db) => {
+    const row = db
+      .prepare(
+        "SELECT key, content, updated_at, metadata FROM identity WHERE layer = 'journey' AND key = ?",
+      )
+      .get(journeyId) as unknown as JourneyTreeRow | undefined;
+    if (!row) throw new JourneyCallRejectedError("unknown_journey");
+    return {
+      id: row.key,
+      name: journeyNameOf(row, metadataOf(row.metadata)),
+      content: row.content ?? "",
+      updatedAt: row.updated_at,
+    };
+  });
 }
 
 export interface JourneyConversationEntry {
