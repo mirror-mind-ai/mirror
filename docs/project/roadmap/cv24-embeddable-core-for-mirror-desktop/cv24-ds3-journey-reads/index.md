@@ -23,6 +23,14 @@ or Python, and none of them writes:
    returns `conversationId`, `journeyId`, `title`, `startedAt`, `endedAt` and `messageCount`, or
    refuses with `conversation_unavailable`.
 
+## A Fourth Read, Added Later
+
+[CR217](../../../refinement/rs010-cv22-oracle-and-port-hygiene/cr217-a-host-cannot-read-a-journeys-content-whole.md)
+adds **`readJourney(dbPath, { journeyId })`**. It answers one Journey's `id`, `name`, `content`
+and `updatedAt`, where `content` is the identity row uncut, the text the runtime delivers to a
+turn. The tree's collapsed `description` stays as it was. It is read under the same rules as the
+three reads above.
+
 ## A New Contract, Not a Revival
 
 Mirror Desktop's 0.2 line built its Journey tree from `journey export-registry`.
