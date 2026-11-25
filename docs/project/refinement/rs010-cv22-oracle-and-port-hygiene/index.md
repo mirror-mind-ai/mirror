@@ -151,3 +151,5 @@ evidence stays honest as both cores move.
 - [CR214 · `mm-build` makes every journey read about 46 KB of Ariad protocol that applies only to a journey that adopted Ariad](cr214-mm-build-makes-every-journey-read-the-ariad-protocol.md)
 - [CR216 · A Mirror load can move a host's Conversation to another journey, and a terminal's replies can land in it](cr216-a-mirror-load-moves-a-host-conversation-to-another-journey.md)
 - [CR217 · A host cannot read a Journey's content whole, only its collapsed description](cr217-a-host-cannot-read-a-journeys-content-whole.md)
+- [CR218 · A host cannot list a Journey's memories, so it reads the `memories` table itself](cr218-a-host-cannot-list-a-journeys-memories.md)
+- [CR219 · A memory that no longer holds cannot be forgotten, only buried with its whole Journey](cr219-a-memory-cannot-be-forgotten.md)
